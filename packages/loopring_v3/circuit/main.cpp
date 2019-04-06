@@ -81,11 +81,12 @@ bool generateProof(ethsnarks::ProtoboardT& pb, const char *provingKeyFilename, c
     return true;
 }
 
-bool trade(Mode mode, unsigned int numRings, const json& input, ethsnarks::ProtoboardT& outPb)
+bool trade(Mode mode, bool onchainDataAvailability, unsigned int numRings,
+           const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
     Loopring::TradeCircuitGadget circuit(outPb, "circuit");
-    circuit.generate_r1cs_constraints(numRings);
+    circuit.generate_r1cs_constraints(onchainDataAvailability, numRings);
     circuit.printInfo();
 
     if (mode == Mode::Validate || mode == Mode::Prove)
@@ -137,11 +138,11 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
     return true;
 }
 
-bool withdraw(Mode mode, bool onchain, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
+bool withdraw(Mode mode, bool onchainDataAvailability, bool onchain, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
     Loopring::WithdrawCircuitGadget circuit(outPb, onchain, "circuit");
-    circuit.generate_r1cs_constraints(numWithdrawals);
+    circuit.generate_r1cs_constraints(onchainDataAvailability, numWithdrawals);
     circuit.printInfo();
 
     if (mode == Mode::Validate || mode == Mode::Prove)
@@ -165,11 +166,11 @@ bool withdraw(Mode mode, bool onchain, unsigned int numWithdrawals, const json& 
     return true;
 }
 
-bool cancel(Mode mode, unsigned int numCancels, const json& input, ethsnarks::ProtoboardT& outPb)
+bool cancel(Mode mode, bool onchainDataAvailability, unsigned int numCancels, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
     Loopring::CancelsCircuitGadget circuit(outPb, "circuit");
-    circuit.generate_r1cs_constraints(numCancels);
+    circuit.generate_r1cs_constraints(onchainDataAvailability, numCancels);
     circuit.printInfo();
 
     if (mode == Mode::Validate || mode == Mode::Prove)
@@ -258,6 +259,9 @@ int main (int argc, char **argv)
     // Read meta data
     int blockType = input["blockType"].get<int>();
     unsigned int numElements = input["numElements"].get<int>();
+    bool onchainDataAvailability = input["onchainDataAvailability"].get<bool>();
+    std::string strOnchainDataAvailability = onchainDataAvailability ? "_DA_" : "_";
+    std::string postFix = strOnchainDataAvailability + std::to_string(numElements);
 
     std::cout << "Building circuit... " << std::endl;
     std::string baseFilename = "keys/";
@@ -266,8 +270,8 @@ int main (int argc, char **argv)
     {
         case 0:
         {
-            baseFilename += "trade_" + std::to_string(numElements);
-            if (!trade(mode, numElements, input, pb))
+            baseFilename += "trade" + postFix;
+            if (!trade(mode, onchainDataAvailability, numElements, input, pb))
             {
                 return 1;
             }
@@ -275,7 +279,7 @@ int main (int argc, char **argv)
         }
         case 1:
         {
-            baseFilename += "deposit_" + std::to_string(numElements);
+            baseFilename += "deposit" + postFix;
             if (!deposit(mode, numElements, input, pb))
             {
                 return 1;
@@ -286,8 +290,8 @@ int main (int argc, char **argv)
         case 3:
         {
             bool onchain = (blockType == 2) ? true : false;
-            baseFilename += "withdraw_" + (onchain ? std::string("onchain_") : std::string("offchain_")) + std::to_string(numElements);
-            if (!withdraw(mode, onchain, numElements, input, pb))
+            baseFilename += "withdraw_" + (onchain ? std::string("onchain") : std::string("offchain")) + postFix;
+            if (!withdraw(mode, onchainDataAvailability, onchain, numElements, input, pb))
             {
                 return 1;
             }
@@ -295,8 +299,8 @@ int main (int argc, char **argv)
         }
         case 4:
         {
-            baseFilename += "cancel_" + std::to_string(numElements);
-            if (!cancel(mode, numElements, input, pb))
+            baseFilename += "cancel" + postFix;
+            if (!cancel(mode, onchainDataAvailability, numElements, input, pb))
             {
                 return 1;
             }

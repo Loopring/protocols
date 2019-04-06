@@ -77,6 +77,8 @@ export class ExchangeTestUtil {
 
   private dualAuthKeyPair: any;
 
+  private onchainDataAvailability = true;
+
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
@@ -650,8 +652,8 @@ export class ExchangeTestUtil {
     } else if (block.blockType === 4) {
       verificationKeyFilename += "cancel";
     }
-
-    verificationKeyFilename += "_" + block.numElements + "_vk.json";
+    verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
+    verificationKeyFilename += block.numElements + "_vk.json";
 
     // Read the verification key and set it in the smart contract
     const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
@@ -736,6 +738,7 @@ export class ExchangeTestUtil {
       // console.log(requestData);
 
       const depositBlock: DepositBlock = {
+        onchainDataAvailability: false,
         startHash: new BN(requestData.accumulatedHash.slice(2), 16),
         deposits,
         startIndex,
@@ -887,6 +890,7 @@ export class ExchangeTestUtil {
       const operator = await this.getActiveOperator(realmID);
       const withdrawalBlock: WithdrawBlock = {
         withdrawals: withdrawalRequests,
+        onchainDataAvailability: this.onchainDataAvailability,
         operatorAccountID: operator.accountID,
         startHash: onchain ? new BN(requestData.accumulatedHash.slice(2), 16) : new BN(0),
         startIndex: onchain ? startIndex : 0,
@@ -911,17 +915,19 @@ export class ExchangeTestUtil {
       bs.addNumber(block.realmID, 4);
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
-      bs.addNumber(block.operatorAccountID, 3);
-      bs.addNumber(0, 32);
-      bs.addNumber(0, 32);
-      bs.addNumber(onchain ? startIndex : 0, 4);
-      bs.addNumber(onchain ? numRequestsProcessed : 0, 4);
+      if (onchain) {
+        bs.addNumber(0, 32);
+        bs.addNumber(0, 32);
+        bs.addNumber(startIndex, 4);
+        bs.addNumber(numRequestsProcessed, 4);
+      }
       for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.tokenID, 2);
         bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
       }
-      if (!onchain) {
+      if (!onchain && block.onchainDataAvailability) {
+        bs.addNumber(block.operatorAccountID, 3);
         for (const withdrawal of block.withdrawals) {
           bs.addNumber(withdrawal.walletAccountID, 3);
           bs.addNumber(withdrawal.feeTokenID, 2);
@@ -1069,6 +1075,7 @@ export class ExchangeTestUtil {
       const operator = await this.getActiveOperator(realmID);
       const ringBlock: RingBlock = {
         rings,
+        onchainDataAvailability: this.onchainDataAvailability,
         timestamp,
         realmID,
         operatorAccountID: operator.accountID,
@@ -1094,30 +1101,32 @@ export class ExchangeTestUtil {
       bs.addNumber(realmID, 4);
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
-      bs.addNumber(block.operatorAccountID, 3);
       bs.addNumber(ringBlock.timestamp, 4);
-      for (const ringSettlement of block.ringSettlements) {
-        const ring = ringSettlement.ring;
-        const orderA = ringSettlement.ring.orderA;
-        const orderB = ringSettlement.ring.orderB;
+      if (block.onchainDataAvailability) {
+        bs.addNumber(block.operatorAccountID, 3);
+        for (const ringSettlement of block.ringSettlements) {
+          const ring = ringSettlement.ring;
+          const orderA = ringSettlement.ring.orderA;
+          const orderB = ringSettlement.ring.orderB;
 
-        bs.addNumber(ring.minerAccountID, 3);
-        bs.addNumber(ring.feeRecipientAccountID, 3);
-        bs.addNumber(ring.tokenID, 2);
-        bs.addBN(new BN(ring.fee, 10), 12);
-        bs.addBN(new BN(ring.margin, 10), 12);
-        let index = 0;
-        for (const order of [orderA, orderB]) {
-          bs.addNumber(order.accountID, 3);
-          bs.addNumber(order.walletAccountID, 3);
-          bs.addNumber(order.tokenS, 2);
-          bs.addNumber(order.tokenF, 2);
-          bs.addNumber(order.orderID, 4);
-          bs.addBN(new BN(index === 0 ? ring.fillS_A : ring.fillS_B, 10), 12);
-          bs.addBN(new BN(index === 0 ? ring.fillF_A : ring.fillF_B, 10), 12);
-          bs.addNumber(order.walletSplitPercentage, 1);
-          bs.addNumber(order.waiveFeePercentage, 1);
-          index++;
+          bs.addNumber(ring.minerAccountID, 3);
+          bs.addNumber(ring.feeRecipientAccountID, 3);
+          bs.addNumber(ring.tokenID, 2);
+          bs.addBN(new BN(ring.fee, 10), 12);
+          bs.addBN(new BN(ring.margin, 10), 12);
+          let index = 0;
+          for (const order of [orderA, orderB]) {
+            bs.addNumber(order.accountID, 3);
+            bs.addNumber(order.walletAccountID, 3);
+            bs.addNumber(order.tokenS, 2);
+            bs.addNumber(order.tokenF, 2);
+            bs.addNumber(order.orderID, 4);
+            bs.addBN(new BN(index === 0 ? ring.fillS_A : ring.fillS_B, 10), 12);
+            bs.addBN(new BN(index === 0 ? ring.fillF_A : ring.fillF_B, 10), 12);
+            bs.addNumber(order.walletSplitPercentage, 1);
+            bs.addNumber(order.waiveFeePercentage, 1);
+            index++;
+          }
         }
       }
 
@@ -1165,6 +1174,7 @@ export class ExchangeTestUtil {
       const operator = await this.getActiveOperator(realmID);
       const cancelBlock: CancelBlock = {
         cancels,
+        onchainDataAvailability: this.onchainDataAvailability,
         operatorAccountID: operator.accountID,
       };
 
@@ -1178,15 +1188,17 @@ export class ExchangeTestUtil {
       bs.addNumber(block.realmID, 4);
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
-      bs.addNumber(block.operatorAccountID, 3);
-      for (const cancel of cancels) {
-        bs.addNumber(cancel.accountID, 3);
-        bs.addNumber(cancel.orderTokenID, 2);
-        bs.addNumber(cancel.orderID, 4);
-        bs.addNumber(cancel.walletAccountID, 3);
-        bs.addNumber(cancel.feeTokenID, 2);
-        bs.addBN(cancel.fee, 12);
-        bs.addNumber(cancel.walletSplitPercentage, 1);
+      if (block.onchainDataAvailability) {
+        bs.addNumber(block.operatorAccountID, 3);
+        for (const cancel of cancels) {
+          bs.addNumber(cancel.accountID, 3);
+          bs.addNumber(cancel.orderTokenID, 2);
+          bs.addNumber(cancel.orderID, 4);
+          bs.addNumber(cancel.walletAccountID, 3);
+          bs.addNumber(cancel.feeTokenID, 2);
+          bs.addBN(cancel.fee, 12);
+          bs.addNumber(cancel.walletSplitPercentage, 1);
+        }
       }
 
       // Commit the block

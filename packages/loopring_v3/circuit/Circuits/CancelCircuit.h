@@ -278,6 +278,7 @@ class CancelsCircuitGadget : public GadgetT
 public:
     jubjub::Params params;
 
+    bool onchainDataAvailability;
     unsigned int numCancels;
     std::vector<CancelGadget> cancels;
 
@@ -326,8 +327,9 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(int numCancels)
+    void generate_r1cs_constraints(bool onchainDataAvailability, int numCancels)
     {
+        this->onchainDataAvailability = onchainDataAvailability;
         this->numCancels = numCancels;
 
         pb.set_input_sizes(1);
@@ -337,8 +339,11 @@ public:
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(constants.accountPadding);
-        publicData.add(operatorAccountID.bits);
+        if (onchainDataAvailability)
+        {
+            publicData.add(constants.accountPadding);
+            publicData.add(operatorAccountID.bits);
+        }
         for (size_t j = 0; j < numCancels; j++)
         {
             VariableT cancelAccountsRoot = (j == 0) ? merkleRootBefore.packed : cancels.back().getNewAccountsRoot();
@@ -354,9 +359,12 @@ public:
             );
             cancels.back().generate_r1cs_constraints();
 
-            // Store data from withdrawal
-            std::vector<VariableArrayT> ringPublicData = cancels.back().getPublicData();
-            publicData.add(cancels.back().getPublicData());
+            if (onchainDataAvailability)
+            {
+                // Store data from cancellation
+                std::vector<VariableArrayT> ringPublicData = cancels.back().getPublicData();
+                publicData.add(cancels.back().getPublicData());
+            }
         }
 
         operatorAccountID.generate_r1cs_constraints(true);

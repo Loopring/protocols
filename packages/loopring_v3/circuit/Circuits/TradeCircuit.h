@@ -646,6 +646,7 @@ class TradeCircuitGadget : public GadgetT
 {
 public:
 
+    bool onchainDataAvailability;
     unsigned int numRings;
     jubjub::Params params;
     std::vector<RingSettlementGadget*> ringSettlements;
@@ -700,8 +701,9 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(int numRings)
+    void generate_r1cs_constraints(bool onchainDataAvailability, int numRings)
     {
+        this->onchainDataAvailability = onchainDataAvailability;
         this->numRings = numRings;
 
         pb.set_input_sizes(1);
@@ -716,9 +718,12 @@ public:
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(constants.accountPadding);
-        publicData.add(operatorAccountID.bits);
         publicData.add(timestamp.bits);
+        if (onchainDataAvailability)
+        {
+            publicData.add(constants.accountPadding);
+            publicData.add(operatorAccountID.bits);
+        }
         for (size_t j = 0; j < numRings; j++)
         {
             const VariableT ringAccountsRoot = (j == 0) ? merkleRootBefore.packed : ringSettlements.back()->getNewAccountsRoot();
@@ -735,8 +740,11 @@ public:
             ));
             ringSettlements.back()->generate_r1cs_constraints();
 
-            // Store data from ring settlement
-            publicData.add(ringSettlements.back()->getPublicData());
+            if (onchainDataAvailability)
+            {
+                // Store data from ring settlement
+                publicData.add(ringSettlements.back()->getPublicData());
+            }
         }
 
         // Pay the operator

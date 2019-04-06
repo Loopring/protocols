@@ -61,6 +61,7 @@ export interface RingInfo {
 export interface RingBlock {
   rings: RingInfo[];
 
+  onchainDataAvailability?: boolean;
   timestamp?: number;
   realmID?: number;
   operatorAccountID?: number;
@@ -79,6 +80,7 @@ export interface Deposit {
 export interface DepositBlock {
   deposits: Deposit[];
 
+  onchainDataAvailability?: boolean;
   startHash: BN;
   startIndex: number;
   count: number;
@@ -107,6 +109,8 @@ export interface Withdrawal {
 export interface WithdrawBlock {
   withdrawals: WithdrawalRequest[];
 
+  onchainDataAvailability?: boolean;
+
   operatorAccountID?: number;
 
   startHash: BN;
@@ -126,6 +130,8 @@ export interface Cancel {
 
 export interface CancelBlock {
   cancels: Cancel[];
+
+  onchainDataAvailability?: boolean;
 
   operatorAccountID?: number;
 }

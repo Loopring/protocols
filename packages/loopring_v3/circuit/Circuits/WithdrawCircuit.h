@@ -323,6 +323,7 @@ class WithdrawCircuitGadget : public GadgetT
 public:
     jubjub::Params params;
 
+    bool onchainDataAvailability;
     unsigned int numAccounts;
     bool onchain;
     std::vector<WithdrawGadget> withdrawals;
@@ -386,8 +387,9 @@ public:
         }
     }
 
-    void generate_r1cs_constraints(int numAccounts)
+    void generate_r1cs_constraints(bool onchainDataAvailability, int numAccounts)
     {
+        this->onchainDataAvailability = onchainDataAvailability;
         this->numAccounts = numAccounts;
 
         pb.set_input_sizes(1);
@@ -401,8 +403,6 @@ public:
         publicData.add(realmID.bits);
         publicData.add(merkleRootBefore.bits);
         publicData.add(merkleRootAfter.bits);
-        publicData.add(constants.accountPadding);
-        publicData.add(operatorAccountID.bits);
         for (size_t j = 0; j < numAccounts; j++)
         {
             VariableT withdrawalAccountsRoot = (j == 0) ? merkleRootBefore.packed : withdrawals.back().getNewAccountsRoot();
@@ -446,11 +446,6 @@ public:
         }
         else
         {
-            publicData.add(withdrawalBlockHashStart);
-            publicData.add(withdrawalBlockHashStart);
-            publicData.add(startIndex.bits);
-            publicData.add(count.bits);
-
             updateAccount_O = new UpdateAccountGadget(pb, withdrawals.back().getNewAccountsRoot(), operatorAccountID.bits,
                 {publicKey.x, publicKey.y, nonce, balancesRoot_before},
                 {publicKey.x, publicKey.y, nonce, withdrawals.back().getNewOperatorBalancesRoot()},
@@ -463,9 +458,11 @@ public:
         {
             publicData.add(withdrawal.getPublicDataGeneral());
         }
-        if (!onchain)
+        if (!onchain && onchainDataAvailability)
         {
             // Now store the data specifically for offchain withdrawals
+            publicData.add(constants.accountPadding);
+            publicData.add(operatorAccountID.bits);
             for (auto& withdrawal : withdrawals)
             {
                 publicData.add(withdrawal.getPublicDataOffchain());
