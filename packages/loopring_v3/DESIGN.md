@@ -642,15 +642,19 @@ Without data-availability we are limited by how many blocks (and thus by how man
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
 - Gas cost/ring settlement: ~300,000 gas
-- => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**
+- => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**.
 
 
-|  | Loopring 2.x  | Loopring 3.0 (with Data Availability)  | Loopring 3.0 (without Data Availability)  |
-| :----- |:-------------: |:---------------:| -------------:|
-|Trades / Ethereum Block| ~26      | ~900 |      ~7000|
-| Trades) / Second | ~2      | ~60        |           ~450 |
-| Cost  / Trade |  |         |             |
 
+
+|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability)  | Loopring 3.0 <br> (w/o Data Availability)  |
+| :----- |:-------------: |:---------------:| :-------------:|
+|Trades per Ethereum Block| ~26      | ~900 |      ~7000|
+| Trades per Second | ~2      | ~60        |           ~450 |
+| Costper Trade | ~300,000 gas | ~8890 gas | ~1150 gas|
+| Cost in USD per Trade <br> (1ETH=164USD) | ~0.1 | ~0.003* | ~0.0004* |
+
+* *Cost in USD per Trade* in the table does not cover off-chain proof generation.
 
 ### Future Improvements
 
