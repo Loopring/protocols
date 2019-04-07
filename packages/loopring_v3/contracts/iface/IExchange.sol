@@ -445,6 +445,9 @@ contract IExchange
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
+    ///      Calling this method with a different trading public key will effectively
+    ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
+    ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
