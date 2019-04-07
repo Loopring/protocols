@@ -27,6 +27,7 @@ public:
     const VariableT one;
     const VariableT _100;
     const VariableT emptyTradeHistory;
+    const VariableT maxAmount;
 
     const VariableArrayT padding_0;
     const VariableArrayT padding_00;
@@ -43,6 +44,7 @@ public:
         one(make_variable(pb, FieldT::one(), FMT(prefix, ".one"))),
         _100(make_variable(pb, ethsnarks::FieldT(100), FMT(prefix, "._100"))),
         emptyTradeHistory(make_variable(pb, ethsnarks::FieldT(EMPTY_TRADE_HISTORY), FMT(prefix, ".emptyTradeHistory"))),
+        maxAmount(make_variable(pb, ethsnarks::FieldT(MAX_AMOUNT), FMT(prefix, ".maxAmount"))),
         padding_0(1, zero),
         padding_00(2, zero),
         accountPadding(4, zero),
@@ -62,6 +64,7 @@ public:
         pb.add_r1cs_constraint(ConstraintT(one, FieldT::one(), FieldT::one()), ".one");
         pb.add_r1cs_constraint(ConstraintT(_100, FieldT::one(), ethsnarks::FieldT(100)), "._100");
         pb.add_r1cs_constraint(ConstraintT(emptyTradeHistory, FieldT::one(), ethsnarks::FieldT(EMPTY_TRADE_HISTORY)), ".emptyTradeHistory");
+        pb.add_r1cs_constraint(ConstraintT(maxAmount, FieldT::one(), ethsnarks::FieldT(MAX_AMOUNT)), ".maxAmount");
     }
 };
 
@@ -395,6 +398,39 @@ public:
         pb.add_r1cs_constraint(ConstraintT(leqGadget.leq(), FieldT::one(), FieldT::one()), FMT(annotation_prefix, ".leq == 1"));
     }
 };
+
+class PercentageGadget : public GadgetT
+{
+public:
+    libsnark::dual_variable_gadget<FieldT> value;
+    LeqGadget leq100Gadget;
+
+    PercentageGadget(
+        ProtoboardT& pb,
+        const Constants& constants,
+        const std::string& prefix
+    ) :
+        GadgetT(pb, prefix),
+        value(pb, NUM_BITS_PERCENTAGE, FMT(prefix, ".value")),
+        leq100Gadget(pb, value.packed, constants._100, NUM_BITS_PERCENTAGE, FMT(prefix, ".percentage <= 100"))
+    {
+
+    }
+
+    void generate_r1cs_witness(ethsnarks::FieldT percentage)
+    {
+        value.bits.fill_with_bits_of_field_element(pb, percentage);
+        value.generate_r1cs_witness_from_bits();
+        leq100Gadget.generate_r1cs_witness();
+    }
+
+    void generate_r1cs_constraints()
+    {
+        value.generate_r1cs_constraints(true);
+        leq100Gadget.generate_r1cs_constraints();
+    }
+};
+
 
 class MulDivGadget : public GadgetT
 {

@@ -339,7 +339,7 @@ void from_json(const json& j, RingSettlement& ringSettlement)
     ringSettlement.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
 }
 
-class TradeContext
+class RingSettlementBlock
 {
 public:
 
@@ -356,40 +356,42 @@ public:
     std::vector<Loopring::RingSettlement> ringSettlements;
 };
 
-void from_json(const json& j, TradeContext& context)
+void from_json(const json& j, RingSettlementBlock& block)
 {
-    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
+    block.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
-    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
-    context.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
+    block.timestamp = ethsnarks::FieldT(j["timestamp"].get<unsigned int>());
 
-    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
-    context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
+    block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read settlements
     json jRingSettlements = j["ringSettlements"];
     for(unsigned int i = 0; i < jRingSettlements.size(); i++)
     {
-        context.ringSettlements.emplace_back(jRingSettlements[i].get<Loopring::RingSettlement>());
+        block.ringSettlements.emplace_back(jRingSettlements[i].get<Loopring::RingSettlement>());
     }
 }
 
 class Deposit
 {
 public:
+    ethsnarks::FieldT amount;
     BalanceUpdate balanceUpdate;
     AccountUpdate accountUpdate;
 };
 
 void from_json(const json& j, Deposit& deposit)
 {
+    deposit.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
     deposit.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
     deposit.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
 }
 
-class DepositContext
+class DepositBlock
 {
 public:
     ethsnarks::FieldT realmID;
@@ -405,30 +407,83 @@ public:
     std::vector<Loopring::Deposit> deposits;
 };
 
-void from_json(const json& j, DepositContext& context)
+void from_json(const json& j, DepositBlock& block)
 {
-    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
+    block.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
-    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
-    context.startHash = libff::bigint<libff::alt_bn128_r_limbs>(j["startHash"].get<std::string>().c_str());
+    block.startHash = libff::bigint<libff::alt_bn128_r_limbs>(j["startHash"].get<std::string>().c_str());
 
-    context.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
-    context.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
+    block.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
+    block.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
 
     // Read deposits
     json jDeposits = j["deposits"];
     for(unsigned int i = 0; i < jDeposits.size(); i++)
     {
-        context.deposits.emplace_back(jDeposits[i].get<Loopring::Deposit>());
+        block.deposits.emplace_back(jDeposits[i].get<Loopring::Deposit>());
     }
 }
 
-class Withdrawal
+class OnchainWithdrawal
 {
 public:
-    ethsnarks::FieldT amount;
+    ethsnarks::FieldT amountRequested;
+    BalanceUpdate balanceUpdate;
+    AccountUpdate accountUpdate;
+};
+
+void from_json(const json& j, OnchainWithdrawal& withdrawal)
+{
+    withdrawal.amountRequested = ethsnarks::FieldT(j.at("amountRequested").get<std::string>().c_str());
+    withdrawal.balanceUpdate = j.at("balanceUpdate").get<BalanceUpdate>();
+    withdrawal.accountUpdate = j.at("accountUpdate").get<AccountUpdate>();
+}
+
+class OnchainWithdrawalBlock
+{
+public:
+
+    ethsnarks::FieldT realmID;
+
+    ethsnarks::FieldT merkleRootBefore;
+    ethsnarks::FieldT merkleRootAfter;
+
+    libff::bigint<libff::alt_bn128_r_limbs> startHash;
+
+    ethsnarks::FieldT startIndex;
+    ethsnarks::FieldT count;
+
+    std::vector<Loopring::OnchainWithdrawal> withdrawals;
+};
+
+void from_json(const json& j, OnchainWithdrawalBlock& block)
+{
+    block.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
+
+    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+
+    block.startHash = libff::bigint<libff::alt_bn128_r_limbs>(j["startHash"].get<std::string>().c_str());
+
+    block.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
+    block.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
+
+    // Read withdrawals
+    json jWithdrawals = j["withdrawals"];
+    for(unsigned int i = 0; i < jWithdrawals.size(); i++)
+    {
+        block.withdrawals.emplace_back(jWithdrawals[i].get<Loopring::OnchainWithdrawal>());
+    }
+}
+
+
+class OffchainWithdrawal
+{
+public:
+    ethsnarks::FieldT amountRequested;
     ethsnarks::FieldT fee;
     ethsnarks::FieldT walletSplitPercentage;
     Signature signature;
@@ -441,9 +496,9 @@ public:
     BalanceUpdate balanceUpdateF_O;
 };
 
-void from_json(const json& j, Withdrawal& withdrawal)
+void from_json(const json& j, OffchainWithdrawal& withdrawal)
 {
-    withdrawal.amount = ethsnarks::FieldT(j.at("amount").get<std::string>().c_str());
+    withdrawal.amountRequested = ethsnarks::FieldT(j.at("amountRequested").get<std::string>().c_str());
     withdrawal.fee = ethsnarks::FieldT(j.at("fee").get<std::string>().c_str());
     withdrawal.walletSplitPercentage = ethsnarks::FieldT(j.at("walletSplitPercentage"));
     withdrawal.signature = j.at("signature").get<Signature>();
@@ -456,7 +511,7 @@ void from_json(const json& j, Withdrawal& withdrawal)
     withdrawal.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
 }
 
-class WithdrawContext
+class OffchainWithdrawalBlock
 {
 public:
 
@@ -473,29 +528,24 @@ public:
     ethsnarks::FieldT operatorAccountID;
     AccountUpdate accountUpdate_O;
 
-    std::vector<Loopring::Withdrawal> withdrawals;
+    std::vector<Loopring::OffchainWithdrawal> withdrawals;
 };
 
-void from_json(const json& j, WithdrawContext& context)
+void from_json(const json& j, OffchainWithdrawalBlock& block)
 {
-    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
+    block.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
-    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
-    context.startHash = libff::bigint<libff::alt_bn128_r_limbs>(j["startHash"].get<std::string>().c_str());
-
-    context.startIndex = ethsnarks::FieldT(j["startIndex"].get<std::string>().c_str());
-    context.count = ethsnarks::FieldT(j["count"].get<std::string>().c_str());
-
-    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
-    context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
+    block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read withdrawals
     json jWithdrawals = j["withdrawals"];
     for(unsigned int i = 0; i < jWithdrawals.size(); i++)
     {
-        context.withdrawals.emplace_back(jWithdrawals[i].get<Loopring::Withdrawal>());
+        block.withdrawals.emplace_back(jWithdrawals[i].get<Loopring::OffchainWithdrawal>());
     }
 }
 
@@ -531,7 +581,7 @@ void from_json(const json& j, Cancellation& cancellation)
     cancellation.balanceUpdateF_O = j.at("balanceUpdateF_O").get<BalanceUpdate>();
 }
 
-class CancelContext
+class OrderCancellationBlock
 {
 public:
     ethsnarks::FieldT realmID;
@@ -545,21 +595,21 @@ public:
     std::vector<Loopring::Cancellation> cancels;
 };
 
-void from_json(const json& j, CancelContext& context)
+void from_json(const json& j, OrderCancellationBlock& block)
 {
-    context.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
+    block.realmID = ethsnarks::FieldT(j["realmID"].get<unsigned int>());
 
-    context.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
-    context.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
+    block.merkleRootBefore = ethsnarks::FieldT(j["merkleRootBefore"].get<std::string>().c_str());
+    block.merkleRootAfter = ethsnarks::FieldT(j["merkleRootAfter"].get<std::string>().c_str());
 
-    context.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
-    context.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
+    block.operatorAccountID = ethsnarks::FieldT(j.at("operatorAccountID"));
+    block.accountUpdate_O = j.at("accountUpdate_O").get<AccountUpdate>();
 
     // Read cancels
     json jCancels = j["cancels"];
     for(unsigned int i = 0; i < jCancels.size(); i++)
     {
-        context.cancels.emplace_back(jCancels[i].get<Loopring::Cancellation>());
+        block.cancels.emplace_back(jCancels[i].get<Loopring::Cancellation>());
     }
 }
 

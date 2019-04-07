@@ -33,6 +33,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("110", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             amountF: new BN(web3.utils.toWei("100", "ether")),
+            orderID: 1,
           },
         orderB:
           {
@@ -42,6 +43,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
             amountF: new BN(web3.utils.toWei("90", "ether")),
+            orderID: 2,
           },
       };
 
