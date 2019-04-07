@@ -150,7 +150,10 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint8 blockType,
         uint16 numElements,
-        bytes memory data
+        bytes memory data   // This field already has all the dummy (0-valued) requests padded,
+                            // therefore the size of this field totally depends on
+                            // `numElements` instead of the actually user requests processed
+                            // in this block. This is fine because 0-bytes consume fewer gas.
         )
         private
     {
