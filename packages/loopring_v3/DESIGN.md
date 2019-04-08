@@ -1,3 +1,75 @@
+## Table of Contents
+
+   * [Loopring 3.0](#loopring-30)
+      * [Introduction](#introduction)
+      * [New Development](#new-development)
+      * [Trading with Off-chain Balances](#trading-with-off-chain-balances)
+         * [Apparent Immediate Finality](#apparent-immediate-finality)
+         * [Higher Throughput &amp; Lower Cost](#higher-throughput--lower-cost)
+   * [Design](#design)
+      * [Merkle Tree](#merkle-tree)
+      * [Blocks](#blocks)
+         * [Circuit Permutations](#circuit-permutations)
+         * [Committing and Verifying Blocks On-chain](#committing-and-verifying-blocks-on-chain)
+      * [Operators](#operators)
+         * [Restrictions Imposed on the Operator](#restrictions-imposed-on-the-operator)
+            * [Restrict Order Matching](#restrict-order-matching)
+            * [Enforced Sequence of Ring Settlements](#enforced-sequence-of-ring-settlements)
+            * [Only Allow Off-chain Requests to be Used Once](#only-allow-off-chain-requests-to-be-used-once)
+      * [Exchanges](#exchanges)
+         * [Exchange Creation](#exchange-creation)
+         * [Exchange Staking](#exchange-staking)
+            * [Withdrawing the Stake](#withdrawing-the-stake)
+         * [Maintenance Mode](#maintenance-mode)
+         * [Token Registration](#token-registration)
+         * [Token Deposit Disabling](#token-deposit-disabling)
+         * [On-chain Fees](#on-chain-fees)
+      * [Fee Model](#fee-model)
+      * [Signatures](#signatures)
+      * [Account Creation](#account-creation)
+      * [Depositing](#depositing)
+      * [Withdrawing](#withdrawing)
+         * [Automatic Distribution of Withdrawals](#automatic-distribution-of-withdrawals)
+         * [Fee Burning](#fee-burning)
+         * [Off-chain Withdrawal Request](#off-chain-withdrawal-request)
+         * [On-chain Withdrawal Request](#on-chain-withdrawal-request)
+      * [Ring Settlement](#ring-settlement)
+         * [Rings Accepted in the Circuit](#rings-accepted-in-the-circuit)
+         * [Off-chain Data](#off-chain-data)
+            * [Orders](#orders)
+            * [Rings](#rings)
+      * [Cancelling Orders](#cancelling-orders)
+         * [Limit Validity in Time](#limit-validity-in-time)
+         * [Off-chain Order Cancellaton Request](#off-chain-order-cancellaton-request)
+         * [Updating the Account Info](#updating-the-account-info)
+         * [The party with the dual-author keys stops signing rings containing the order](#the-party-with-the-dual-author-keys-stops-signing-rings-containing-the-order)
+         * [Creating an order with a larger orderID in the same trading history slot](#creating-an-order-with-a-larger-orderid-in-the-same-trading-history-slot)
+         * [The DEX removes the order in the order-book](#the-dex-removes-the-order-in-the-order-book)
+      * [Trading History](#trading-history)
+         * [Order Aliasing](#order-aliasing)
+            * [Safely updating the validUntil time of an order](#safely-updating-the-validuntil-time-of-an-order)
+            * [The possibility for some simple filling logic between orders](#the-possibility-for-some-simple-filling-logic-between-orders)
+      * [On-chain Deposit/Withdraw Request Handling](#on-chain-depositwithdraw-request-handling)
+      * [Withdrawal Mode](#withdrawal-mode)
+      * [Wallets](#wallets)
+      * [Ring-Matchers](#ring-matchers)
+      * [Brokers](#brokers)
+      * [Timestamp in Circuits](#timestamp-in-circuits)
+      * [On-chain Data](#on-chain-data)
+      * [Throughput (Ring Settlements)](#throughput-ring-settlements)
+         * [On-chain Data-availability Limit](#on-chain-data-availability-limit)
+         * [Constraints Limit](#constraints-limit)
+         * [Results](#results)
+            * [Comparison Table](#comparison-table)
+         * [Future Improvements](#future-improvements)
+         * [Proof Generation Cost](#proof-generation-cost)
+   * [Case Studies](#case-studies)
+      * [DEX with CEX-like Experience](#dex-with-cex-like-experience)
+         * [Setting up the exchange](#setting-up-the-exchange)
+         * [Trading](#trading)
+      * [Deposit and Withdrawal Process](#deposit-and-withdrawal-process)
+      * [Order Sharing with Dual-Authoring](#order-sharing-with-dual-authoring)
+
 
 # Loopring 3.0
 
@@ -533,6 +605,12 @@ We do however know the approximate time the block will be committed on the Ether
 
 ## On-chain Data
 
+From the yellow paper:
+- 4 gas is paid for every zero byte of data or code for a transaction
+- 68 gas is paid for every non-zero byte of data or code for a transaction
+
+In the calculations below we use 68 gas/byte for our data-availability data. Please note that these numbers are **worst case** numbers. We currently don't pack the data-availability data very tightly so there will be a lot of zeros. The gas cost in practice will be significantly lower (up to ~30% lower).
+
 #### Data-availability for ring settlements
 
 ```
@@ -615,7 +693,7 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 ### On-chain Data-availability Limit
 
 - Verifying a proof + some state updates/querying: ~600,000 gas
-- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second**
+- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second (worst case)**
 
 These numbers can be improved by packing the data more tightly.
 
@@ -634,7 +712,9 @@ Our **most expensive** ring settlement circuit without data-availability support
 In a single block we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so multiple blocks can be committed if needed.
 
 Using 2 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
-- => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second**
+- => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second (worst case)**
+
+Note again that these are worst case numbers. The data will contain a lot of zeros which will make it possible to commit more than 2 blocks/Ethereum block. In practice we expect this number to be closer to **~80 rings/second (expected)**
 
 Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can verify in a single Ethereum block:
 - => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
@@ -645,14 +725,13 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 - => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**.
 
 
-#### Comparison Table
 
 
-|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability)  | Loopring 3.0 <br> (w/o Data Availability)  |
+|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
 | :----- |:-------------: |:---------------:| :-------------:|
-|Trades per Ethereum Block| ~26      | ~900 |      ~7000|
-| Trades per Second | ~2      | ~60        |           ~450 |
-| Costper Trade | ~300,000 gas | ~8890 gas | ~1150 gas|
+|Trades per Ethereum Block| ~26      | ~900 - ~1200 |      ~7000|
+| Trades per Second | ~2      | ~60 - ~80        |           ~450 |
+| Cost per Trade | ~300,000 gas | ~8890 - ~6670 gas | ~1150 gas|
 | Cost in USD per Trade <br> (1ETH=164USD) | ~0.1 | ~0.003* | ~0.0004* |
 
 * *Cost in USD per Trade* in the table does not cover off-chain proof generation.

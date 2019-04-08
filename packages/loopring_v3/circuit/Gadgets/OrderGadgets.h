@@ -33,8 +33,8 @@ public:
     libsnark::dual_variable_gadget<FieldT> allOrNone;
     libsnark::dual_variable_gadget<FieldT> validSince;
     libsnark::dual_variable_gadget<FieldT> validUntil;
-    libsnark::dual_variable_gadget<FieldT> walletSplitPercentage;
-    libsnark::dual_variable_gadget<FieldT> waiveFeePercentage;
+    PercentageGadget walletSplitPercentage;
+    PercentageGadget waiveFeePercentage;
 
     const jubjub::VariablePointT publicKey;
 
@@ -51,9 +51,6 @@ public:
     VariableT balanceS;
     VariableT balanceB;
     VariableT balanceF;
-
-    ForceLeqGadget validateWalletSplitPercentage;
-    ForceLeqGadget validateWaiveFeePercentage;
 
     const VariableArrayT message;
     SignatureVerifier signatureVerifier;
@@ -83,8 +80,8 @@ public:
         allOrNone(pb, 1, FMT(prefix, ".allOrNone")),
         validSince(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validSince")),
         validUntil(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".validUntil")),
-        walletSplitPercentage(pb, NUM_BITS_PERCENTAGE, FMT(prefix, ".walletSplitPercentage")),
-        waiveFeePercentage(pb, NUM_BITS_PERCENTAGE, FMT(prefix, ".waiveFeePercentage")),
+        walletSplitPercentage(pb, constants, FMT(prefix, ".walletSplitPercentage")),
+        waiveFeePercentage(pb, constants, FMT(prefix, ".waiveFeePercentage")),
 
         publicKey(pb, FMT(prefix, ".publicKey")),
 
@@ -102,15 +99,12 @@ public:
         balanceB(make_variable(pb, FMT(prefix, ".balanceB"))),
         balanceF(make_variable(pb, FMT(prefix, ".balanceF"))),
 
-        validateWalletSplitPercentage(pb, walletSplitPercentage.packed, constants._100, NUM_BITS_PERCENTAGE, FMT(prefix, ".validateWalletSplitPercentage")),
-        validateWaiveFeePercentage(pb, waiveFeePercentage.packed, constants._100, NUM_BITS_PERCENTAGE, FMT(prefix, ".validateWaiveFeePercentage")),
-
         message(flatten({realmID.bits, orderID.bits, accountID.bits, walletAccountID,
                          dualAuthPublicKeyX.bits, dualAuthPublicKeyY.bits,
                          tokenS.bits, tokenB.bits, tokenF.bits,
                          amountS.bits, amountB.bits, amountF.bits,
                          allOrNone.bits, validSince.bits, validUntil.bits,
-                         walletSplitPercentage.bits, constants.padding_00})),
+                         walletSplitPercentage.value.bits, constants.padding_00})),
         signatureVerifier(pb, params, publicKey, message, FMT(prefix, ".signatureVerifier"))
     {
 
@@ -120,7 +114,6 @@ public:
     {
         return signatureVerifier.getHash();
     }
-
 
     void generate_r1cs_witness(const Order& order)
     {
@@ -151,10 +144,8 @@ public:
         validSince.generate_r1cs_witness_from_bits();
         validUntil.bits.fill_with_bits_of_field_element(pb, order.validUntil);
         validUntil.generate_r1cs_witness_from_bits();
-        walletSplitPercentage.bits.fill_with_bits_of_field_element(pb, order.walletSplitPercentage);
-        walletSplitPercentage.generate_r1cs_witness_from_bits();
-        waiveFeePercentage.bits.fill_with_bits_of_field_element(pb, order.waiveFeePercentage);
-        waiveFeePercentage.generate_r1cs_witness_from_bits();
+        walletSplitPercentage.generate_r1cs_witness(order.walletSplitPercentage);
+        waiveFeePercentage.generate_r1cs_witness(order.waiveFeePercentage);
 
         pb.val(tradeHistoryFilled) = order.tradeHistoryFilled;
         pb.val(tradeHistoryCancelled) = order.tradeHistoryCancelled;
@@ -173,9 +164,6 @@ public:
         dualAuthPublicKeyX.generate_r1cs_witness_from_bits();
         dualAuthPublicKeyY.bits.fill_with_bits_of_field_element(pb, order.dualAuthPublicKey.y);
         dualAuthPublicKeyY.generate_r1cs_witness_from_bits();
-
-        validateWalletSplitPercentage.generate_r1cs_witness();
-        validateWaiveFeePercentage.generate_r1cs_witness();
 
         signatureVerifier.generate_r1cs_witness(order.signature);
     }
@@ -199,13 +187,13 @@ public:
         allOrNone.generate_r1cs_constraints(true);
         validSince.generate_r1cs_constraints(true);
         validUntil.generate_r1cs_constraints(true);
-        walletSplitPercentage.generate_r1cs_constraints(true);
-        waiveFeePercentage.generate_r1cs_constraints(true);
+        walletSplitPercentage.generate_r1cs_constraints();
+        waiveFeePercentage.generate_r1cs_constraints();
 
         tradeHistory.generate_r1cs_constraints();
 
-        validateWalletSplitPercentage.generate_r1cs_constraints();
-        validateWaiveFeePercentage.generate_r1cs_constraints();
+        dualAuthPublicKeyX.generate_r1cs_constraints(true);
+        dualAuthPublicKeyY.generate_r1cs_constraints(true);
 
         signatureVerifier.generate_r1cs_constraints();
     }

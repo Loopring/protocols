@@ -1,8 +1,9 @@
 #include "Utils/Data.h"
-#include "Circuits/TradeCircuit.h"
+#include "Circuits/RingSettlementCircuit.h"
 #include "Circuits/DepositCircuit.h"
-#include "Circuits/WithdrawCircuit.h"
-#include "Circuits/CancelCircuit.h"
+#include "Circuits/OnchainWithdrawalCircuit.h"
+#include "Circuits/OffchainWithdrawalCircuit.h"
+#include "Circuits/OrderCancellationCircuit.h"
 
 #include "ThirdParty/json.hpp"
 #include "ethsnarks.hpp"
@@ -85,7 +86,7 @@ bool trade(Mode mode, bool onchainDataAvailability, unsigned int numRings,
            const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    Loopring::TradeCircuitGadget circuit(outPb, "circuit");
+    Loopring::RingSettlementCircuit circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(onchainDataAvailability, numRings);
     circuit.printInfo();
 
@@ -98,10 +99,10 @@ bool trade(Mode mode, bool onchainDataAvailability, unsigned int numRings,
             return false;
         }
 
-        Loopring::TradeContext context = input.get<Loopring::TradeContext>();
+        Loopring::RingSettlementBlock block = input.get<Loopring::RingSettlementBlock>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(context))
+        if (!circuit.generateWitness(block))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
@@ -113,7 +114,7 @@ bool trade(Mode mode, bool onchainDataAvailability, unsigned int numRings,
 bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    Loopring::DepositsCircuitGadget circuit(outPb, "circuit");
+    Loopring::DepositCircuit circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(numDeposits);
     circuit.printInfo();
 
@@ -126,10 +127,10 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
             return false;
         }
 
-        Loopring::DepositContext context = input.get<Loopring::DepositContext>();
+        Loopring::DepositBlock block = input.get<Loopring::DepositBlock>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(context))
+        if (!circuit.generateWitness(block))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
@@ -138,10 +139,10 @@ bool deposit(Mode mode, unsigned int numDeposits, const json& input, ethsnarks::
     return true;
 }
 
-bool withdraw(Mode mode, bool onchainDataAvailability, bool onchain, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
+bool onchainWithdraw(Mode mode, bool onchainDataAvailability, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    Loopring::WithdrawCircuitGadget circuit(outPb, onchain, "circuit");
+    Loopring::OnchainWithdrawalCircuit circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(onchainDataAvailability, numWithdrawals);
     circuit.printInfo();
 
@@ -154,10 +155,38 @@ bool withdraw(Mode mode, bool onchainDataAvailability, bool onchain, unsigned in
             return false;
         }
 
-        Loopring::WithdrawContext context = input.get<Loopring::WithdrawContext>();
+        Loopring::OnchainWithdrawalBlock block = input.get<Loopring::OnchainWithdrawalBlock>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(context))
+        if (!circuit.generateWitness(block))
+        {
+            std::cerr << "Could not generate witness!" << std::endl;
+            return false;
+        }
+    }
+    return true;
+}
+
+bool offchainWithdraw(Mode mode, bool onchainDataAvailability, unsigned int numWithdrawals, const json& input, ethsnarks::ProtoboardT& outPb)
+{
+    // Build the circuit
+    Loopring::OffchainWithdrawalCircuit circuit(outPb, "circuit");
+    circuit.generate_r1cs_constraints(onchainDataAvailability, numWithdrawals);
+    circuit.printInfo();
+
+    if (mode == Mode::Validate || mode == Mode::Prove)
+    {
+        json jWithdrawals = input["withdrawals"];
+        if (jWithdrawals.size() != numWithdrawals)
+        {
+            std::cerr << "Invalid number of withdrawals in input file: " << jWithdrawals.size() << std::endl;
+            return false;
+        }
+
+        Loopring::OffchainWithdrawalBlock block = input.get<Loopring::OffchainWithdrawalBlock>();
+
+        // Generate witness values for the given input values
+        if (!circuit.generateWitness(block))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
@@ -169,7 +198,7 @@ bool withdraw(Mode mode, bool onchainDataAvailability, bool onchain, unsigned in
 bool cancel(Mode mode, bool onchainDataAvailability, unsigned int numCancels, const json& input, ethsnarks::ProtoboardT& outPb)
 {
     // Build the circuit
-    Loopring::CancelsCircuitGadget circuit(outPb, "circuit");
+    Loopring::OrderCancellationCircuit circuit(outPb, "circuit");
     circuit.generate_r1cs_constraints(onchainDataAvailability, numCancels);
     circuit.printInfo();
 
@@ -182,10 +211,10 @@ bool cancel(Mode mode, bool onchainDataAvailability, unsigned int numCancels, co
             return false;
         }
 
-        Loopring::CancelContext context = input.get<Loopring::CancelContext>();
+        Loopring::OrderCancellationBlock block = input.get<Loopring::OrderCancellationBlock>();
 
         // Generate witness values for the given input values
-        if (!circuit.generateWitness(context))
+        if (!circuit.generateWitness(block))
         {
             std::cerr << "Could not generate witness!" << std::endl;
             return false;
@@ -287,11 +316,18 @@ int main (int argc, char **argv)
             break;
         }
         case 2:
+        {
+            baseFilename += "withdraw_onchain" + postFix;
+            if (!onchainWithdraw(mode, onchainDataAvailability, numElements, input, pb))
+            {
+                return 1;
+            }
+            break;
+        }
         case 3:
         {
-            bool onchain = (blockType == 2) ? true : false;
-            baseFilename += "withdraw_" + (onchain ? std::string("onchain") : std::string("offchain")) + postFix;
-            if (!withdraw(mode, onchainDataAvailability, onchain, numElements, input, pb))
+            baseFilename += "withdraw_offchain" + postFix;
+            if (!offchainWithdraw(mode, onchainDataAvailability, numElements, input, pb))
             {
                 return 1;
             }

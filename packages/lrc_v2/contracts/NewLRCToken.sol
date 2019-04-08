@@ -1,4 +1,4 @@
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 /**
  * @title ERC20Basic
@@ -84,7 +84,7 @@ contract BasicToken is ERC20Basic {
         balances[burner] = balances[burner].sub(_value);
         totalSupply_ = totalSupply_.sub(_value);
         burnedTotalNum_ = burnedTotalNum_.add(_value);
-        
+
         emit Burn(burner, _value);
         return true;
     }
