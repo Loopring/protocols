@@ -40,8 +40,15 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 ```
 ./install
 
-make
 npm run compile
+```
+
+### Circuits
+
+The code of our circuits is currently not open source. If you have access to the private repo `loopring3-circuits` please clone it and update the `circuit_src_folder` variable in `circuit/CMakeLists.txt` so it points to the correct folder.
+
+```
+make
 ```
 
 ## Run Unit Tests
