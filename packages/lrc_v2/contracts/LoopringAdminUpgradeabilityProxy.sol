@@ -1,4 +1,4 @@
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 /**
  * @title Proxy
@@ -171,10 +171,10 @@ contract UpgradeabilityProxy is BaseUpgradeabilityProxy {
   constructor(address _logic, bytes memory _data) public payable {
     assert(IMPLEMENTATION_SLOT == keccak256("org.loopring.proxy.implementation"));
     _setImplementation(_logic);
-    if(_data.length > 0) {
-      (bool success,) = _logic.delegatecall(_data);
-      require(success);
-    }
+    /* if(_data.length > 0) { */
+    /*   (bool success,) = _logic.delegatecall(_data); */
+    /*   require(success); */
+    /* } */
   }
 }
 
@@ -318,7 +318,7 @@ contract AdminUpgradeabilityProxy is BaseAdminUpgradeabilityProxy, Upgradeabilit
 }
 
 contract LoopringAdminUpgradeabilityProxy is AdminUpgradeabilityProxy {
-    constructor(address _implementation, address _admin, bytes memory _data) public
-        AdminUpgradeabilityProxy(_implementation, _admin, _data) {
+    constructor(address _implementation, address _admin) public
+        AdminUpgradeabilityProxy(_implementation, _admin, bytes("")) {
     }
 }
