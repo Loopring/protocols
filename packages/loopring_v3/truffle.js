@@ -14,7 +14,7 @@ module.exports = {
           runs: 10000
         }
       },
-      version: "0.5.2"
+      version: "0.5.7"
     }
   },
   networks: {

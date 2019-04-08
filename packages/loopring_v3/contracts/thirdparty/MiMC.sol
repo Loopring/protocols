@@ -3,7 +3,7 @@
 // Copyright (c) 2018 HarryR
 // License: LGPL-3.0+
 
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 /**
 * Implements MiMC-p/p over the altBN scalar field used by zkSNARKs
