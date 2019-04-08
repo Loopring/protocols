@@ -3,7 +3,7 @@
 // Copyright (c) 2018 ZeppelinOS Global Limited.
 // License: MIT License
 
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 /**
  * @title Proxy

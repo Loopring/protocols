@@ -645,6 +645,7 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 - => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**.
 
 
+#### Comparison Table
 
 
 |  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability)  | Loopring 3.0 <br> (w/o Data Availability)  |
