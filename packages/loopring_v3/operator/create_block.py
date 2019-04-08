@@ -10,7 +10,7 @@ from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
 
 
-class TradeExport(object):
+class RingSettlementBlock(object):
     def __init__(self):
         self.blockType = 0
         self.ringSettlements = []
@@ -20,7 +20,7 @@ class TradeExport(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
-class DepositExport(object):
+class DepositBlock(object):
     def __init__(self):
         self.blockType = 1
         self.deposits = []
@@ -29,10 +29,18 @@ class DepositExport(object):
         self.numElements = len(self.deposits)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
+class OnchainWithdrawalBlock(object):
+    def __init__(self):
+        self.blockType = 2
+        self.withdrawals = []
 
-class WithdrawalExport(object):
-    def __init__(self, onchain):
-        self.blockType = 2 if onchain else 3
+    def toJSON(self):
+        self.numElements = len(self.withdrawals)
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+class OffchainWithdrawalBlock(object):
+    def __init__(self):
+        self.blockType = 3
         self.withdrawals = []
 
     def toJSON(self):
@@ -40,7 +48,7 @@ class WithdrawalExport(object):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
-class CancelExport(object):
+class OrderCancellationBlock(object):
     def __init__(self):
         self.blockType = 4
         self.cancels = []
@@ -103,15 +111,43 @@ def ringFromJSON(jRing, state):
 
     return ring
 
+def createRingSettlementBlock(state, data):
+    block = RingSettlementBlock()
+    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.realmID = state.realmID
+    block.merkleRootBefore = str(state.getRoot())
+    block.timestamp = int(data["timestamp"])
+    block.operatorAccountID = int(data["operatorAccountID"])
 
-def deposit(state, data):
-    export = DepositExport()
-    export.onchainDataAvailability = data["onchainDataAvailability"]
-    export.realmID = state.realmID
-    export.merkleRootBefore = str(state.getRoot())
-    export.startHash = str(data["startHash"])
-    export.startIndex = str(data["startIndex"])
-    export.count = str(data["count"])
+    context = Context(block.operatorAccountID, block.timestamp)
+
+    # Operator payment
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
+
+    for ringInfo in data["rings"]:
+        ring = ringFromJSON(ringInfo, state)
+        ringSettlement = state.settleRing(context, ring)
+        block.ringSettlements.append(ringSettlement)
+
+    # Operator payment
+    proof = state._accountsTree.createProof(block.operatorAccountID)
+    state.updateAccountTree(block.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
+    rootAfter = state._accountsTree._root
+    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+
+    block.merkleRootAfter = str(state.getRoot())
+    return block
+
+def createDepositBlock(state, data):
+    block = DepositBlock()
+    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.realmID = state.realmID
+    block.merkleRootBefore = str(state.getRoot())
+    block.startHash = str(data["startHash"])
+    block.startIndex = str(data["startIndex"])
+    block.count = str(data["count"])
 
     for depositInfo in data["deposits"]:
         accountID = int(depositInfo["accountID"])
@@ -123,25 +159,42 @@ def deposit(state, data):
 
         deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, token, amount)
 
-        export.deposits.append(deposit)
+        block.deposits.append(deposit)
 
-    export.merkleRootAfter = str(state.getRoot())
-    return export
+    block.merkleRootAfter = str(state.getRoot())
+    return block
 
+def createOnchainWithdrawalBlock(state, data):
+    block = OnchainWithdrawalBlock()
+    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.realmID = state.realmID
+    block.merkleRootBefore = str(state.getRoot())
+    block.startHash = str(data["startHash"])
+    block.startIndex = str(data["startIndex"])
+    block.count = str(data["count"])
 
-def withdraw(onchain, state, data):
-    export = WithdrawalExport(onchain)
-    export.onchainDataAvailability = data["onchainDataAvailability"]
-    export.realmID = state.realmID
-    export.merkleRootBefore = str(state.getRoot())
-    export.startHash = str(data["startHash"])
-    export.startIndex = str(data["startIndex"])
-    export.count = str(data["count"])
-    export.operatorAccountID = int(data["operatorAccountID"])
+    for withdrawalInfo in data["withdrawals"]:
+        accountID = int(withdrawalInfo["accountID"])
+        tokenID = int(withdrawalInfo["tokenID"])
+        amount = int(withdrawalInfo["amount"])
+
+        withdrawal = state.onchainWithdraw(block.realmID, accountID, tokenID, amount)
+
+        block.withdrawals.append(withdrawal)
+
+    block.merkleRootAfter = str(state.getRoot())
+    return block
+
+def createOffchainWithdrawalBlock(state, data):
+    block = OffchainWithdrawalBlock()
+    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.realmID = state.realmID
+    block.merkleRootBefore = str(state.getRoot())
+    block.operatorAccountID = int(data["operatorAccountID"])
 
     # Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
 
     for withdrawalInfo in data["withdrawals"]:
         accountID = int(withdrawalInfo["accountID"])
@@ -152,31 +205,31 @@ def withdraw(onchain, state, data):
         fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
-        withdrawal = state.withdraw(onchain, export.realmID, accountID, tokenID, amount,
-                                             export.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
-        export.withdrawals.append(withdrawal)
+        withdrawal = state.offchainWithdraw(block.realmID, accountID, tokenID, amount,
+                                            block.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
+        block.withdrawals.append(withdrawal)
 
     # Operator payment
-    proof = state._accountsTree.createProof(export.operatorAccountID)
-    state.updateAccountTree(export.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    proof = state._accountsTree.createProof(block.operatorAccountID)
+    state.updateAccountTree(block.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
-    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
-    export.merkleRootAfter = str(state.getRoot())
-    return export
+    block.merkleRootAfter = str(state.getRoot())
+    return block
 
 
-def cancel(state, data):
-    export = CancelExport()
-    export.onchainDataAvailability = data["onchainDataAvailability"]
-    export.realmID = state.realmID
-    export.merkleRootBefore = str(state.getRoot())
-    export.operatorAccountID = int(data["operatorAccountID"])
+def createOrderCancellationBlock(state, data):
+    block = OrderCancellationBlock()
+    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.realmID = state.realmID
+    block.merkleRootBefore = str(state.getRoot())
+    block.operatorAccountID = int(data["operatorAccountID"])
 
     # Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
 
     for cancelInfo in data["cancels"]:
         accountID = int(cancelInfo["accountID"])
@@ -187,48 +240,18 @@ def cancel(state, data):
         fee = int(cancelInfo["fee"])
         walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
-        export.cancels.append(state.cancelOrder(export.realmID, accountID, orderTokenID, orderID,
-                                                walletAccountID, export.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
+        block.cancels.append(state.cancelOrder(block.realmID, accountID, orderTokenID, orderID,
+                                               walletAccountID, block.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
 
     # Operator payment
-    proof = state._accountsTree.createProof(export.operatorAccountID)
-    state.updateAccountTree(export.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
+    proof = state._accountsTree.createProof(block.operatorAccountID)
+    state.updateAccountTree(block.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
-    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
-    export.merkleRootAfter = str(state.getRoot())
-    return export
-
-
-def trade(state, data):
-    export = TradeExport()
-    export.onchainDataAvailability = data["onchainDataAvailability"]
-    export.realmID = state.realmID
-    export.merkleRootBefore = str(state.getRoot())
-    export.timestamp = int(data["timestamp"])
-    export.operatorAccountID = int(data["operatorAccountID"])
-
-    context = Context(export.operatorAccountID, export.timestamp)
-
-    # Operator payment
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(export.operatorAccountID))
-
-    for ringInfo in data["rings"]:
-        ring = ringFromJSON(ringInfo, state)
-        ringSettlement = state.settleRing(context, ring)
-        export.ringSettlements.append(ringSettlement)
-
-    # Operator payment
-    proof = state._accountsTree.createProof(export.operatorAccountID)
-    state.updateAccountTree(export.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(export.operatorAccountID))
-    rootAfter = state._accountsTree._root
-    export.accountUpdate_O = AccountUpdateData(export.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-
-    export.merkleRootAfter = str(state.getRoot())
-    return export
+    block.merkleRootAfter = str(state.getRoot())
+    return block
 
 
 def main(realmID, blockIdx, blockType, inputFilename, outputFilename):
@@ -245,18 +268,20 @@ def main(realmID, blockIdx, blockType, inputFilename, outputFilename):
     #blockType = data["blockType"]
 
     if blockType == "0":
-        output = trade(state, data)
-    if blockType == "1":
-        output = deposit(state, data)
-    if blockType == "2":
-        output = withdraw(True, state, data)
-    if blockType == "3":
-        output = withdraw(False, state, data)
-    if blockType == "4":
-        output = cancel(state, data)
+        block = createRingSettlementBlock(state, data)
+    elif blockType == "1":
+        block = createDepositBlock(state, data)
+    elif blockType == "2":
+        block = createOnchainWithdrawalBlock(state, data)
+    elif blockType == "3":
+        block = createOffchainWithdrawalBlock(state, data)
+    elif blockType == "4":
+        block = createOrderCancellationBlock(state, data)
+    else:
+        raise Exception("Unknown block type")
 
     f = open(outputFilename,"w+")
-    f.write(output.toJSON())
+    f.write(block.toJSON())
     f.close()
 
     # Validate the block

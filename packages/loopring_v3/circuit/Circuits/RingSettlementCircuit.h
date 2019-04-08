@@ -1,5 +1,5 @@
-#ifndef _TRADECIRCUIT_H_
-#define _TRADECIRCUIT_H_
+#ifndef _RINGSETTLEMENTCIRCUIT_H_
+#define _RINGSETTLEMENTCIRCUIT_H_
 
 #include "../Utils/Constants.h"
 #include "../Utils/Data.h"
@@ -9,10 +9,8 @@
 #include "../Gadgets/TradingHistoryGadgets.h"
 #include "../Gadgets/MathGadgets.h"
 
-#include "../ThirdParty/BigInt.hpp"
 #include "ethsnarks.hpp"
 #include "utils.hpp"
-#include "gadgets/sha256_many.hpp"
 #include "gadgets/subadd.hpp"
 
 using namespace ethsnarks;
@@ -186,8 +184,8 @@ public:
         filledAfterB(make_variable(pb, FMT(prefix, ".filledAfterB"))),
 
         // Calculate fees
-        feePaymentA(pb, constants, fillF_A.packed, orderA.walletSplitPercentage.packed, orderA.waiveFeePercentage.packed, FMT(prefix, "feePaymentA")),
-        feePaymentB(pb, constants, fillF_B.packed, orderB.walletSplitPercentage.packed, orderB.waiveFeePercentage.packed, FMT(prefix, "feePaymentB")),
+        feePaymentA(pb, constants, fillF_A.packed, orderA.walletSplitPercentage.value.packed, orderA.waiveFeePercentage.value.packed, FMT(prefix, "feePaymentA")),
+        feePaymentB(pb, constants, fillF_B.packed, orderB.walletSplitPercentage.value.packed, orderB.waiveFeePercentage.value.packed, FMT(prefix, "feePaymentB")),
 
         // Balances before
         balanceS_A_before(make_variable(pb, FMT(prefix, ".balanceS_A_before"))),
@@ -350,7 +348,7 @@ public:
 
         // Signatures
         message(flatten({orderA.getHash(), orderB.getHash(),
-                         orderA.waiveFeePercentage.bits, orderB.waiveFeePercentage.bits,
+                         orderA.waiveFeePercentage.value.bits, orderB.waiveFeePercentage.value.bits,
                          minerAccountID.bits, tokenID, fee.bits,
                          feeRecipientAccountID.bits,
                          nonce_before.bits})),
@@ -389,8 +387,8 @@ public:
             orderA.orderID.bits,
             fillS_A.bits,
             fillF_A.bits,
-            constants.padding_0, orderA.walletSplitPercentage.bits,
-            constants.padding_0, orderA.waiveFeePercentage.bits,
+            constants.padding_0, orderA.walletSplitPercentage.value.bits,
+            constants.padding_0, orderA.waiveFeePercentage.value.bits,
 
             constants.accountPadding, orderB.accountID.bits,
             constants.accountPadding, orderB.walletAccountID,
@@ -399,8 +397,8 @@ public:
             orderB.orderID.bits,
             fillS_B.bits,
             fillF_B.bits,
-            constants.padding_0, orderB.walletSplitPercentage.bits,
-            constants.padding_0, orderB.waiveFeePercentage.bits
+            constants.padding_0, orderB.walletSplitPercentage.value.bits,
+            constants.padding_0, orderB.waiveFeePercentage.value.bits
         };
     }
 
@@ -642,7 +640,7 @@ public:
     }
 };
 
-class TradeCircuitGadget : public GadgetT
+class RingSettlementCircuit : public GadgetT
 {
 public:
 
@@ -661,13 +659,13 @@ public:
     libsnark::dual_variable_gadget<FieldT> merkleRootAfter;
     libsnark::dual_variable_gadget<FieldT> timestamp;
 
-    const jubjub::VariablePointT publicKey;
+    // Operator
     libsnark::dual_variable_gadget<FieldT> operatorAccountID;
+    const jubjub::VariablePointT publicKey;
     const VariableT balancesRoot_before;
-
     UpdateAccountGadget* updateAccount_O;
 
-    TradeCircuitGadget(ProtoboardT& pb, const std::string& prefix) :
+    RingSettlementCircuit(ProtoboardT& pb, const std::string& prefix) :
         GadgetT(pb, prefix),
 
         publicDataHash(pb, 256, FMT(prefix, ".publicDataHash")),
@@ -680,15 +678,15 @@ public:
         merkleRootBefore(pb, 256, FMT(prefix, ".merkleRootBefore")),
         merkleRootAfter(pb, 256, FMT(prefix, ".merkleRootAfter")),
 
-        publicKey(pb, FMT(prefix, ".publicKey")),
         operatorAccountID(pb, TREE_DEPTH_ACCOUNTS, FMT(prefix, ".operatorAccountID")),
+        publicKey(pb, FMT(prefix, ".publicKey")),
         balancesRoot_before(make_variable(pb, FMT(prefix, ".balancesRoot_before"))),
         timestamp(pb, NUM_BITS_TIMESTAMP, FMT(prefix, ".timestamp"))
     {
         this->updateAccount_O = nullptr;
     }
 
-    ~TradeCircuitGadget()
+    ~RingSettlementCircuit()
     {
         if (updateAccount_O)
         {
@@ -767,41 +765,39 @@ public:
         std::cout << pb.num_constraints() << " constraints (" << (pb.num_constraints() / numRings) << "/ring)" << std::endl;
     }
 
-    bool generateWitness(const TradeContext& context)
+    bool generateWitness(const RingSettlementBlock& block)
     {
-        if (context.ringSettlements.size() != numRings)
+        if (block.ringSettlements.size() != numRings)
         {
-            std::cout << "Invalid number of rings: " << context.ringSettlements.size()  << std::endl;
+            std::cout << "Invalid number of rings: " << block.ringSettlements.size()  << std::endl;
             return false;
         }
 
         constants.generate_r1cs_witness();
 
-        realmID.bits.fill_with_bits_of_field_element(pb, context.realmID);
+        realmID.bits.fill_with_bits_of_field_element(pb, block.realmID);
         realmID.generate_r1cs_witness_from_bits();
 
-        merkleRootBefore.bits.fill_with_bits_of_field_element(pb, context.merkleRootBefore);
+        merkleRootBefore.bits.fill_with_bits_of_field_element(pb, block.merkleRootBefore);
         merkleRootBefore.generate_r1cs_witness_from_bits();
-        merkleRootAfter.bits.fill_with_bits_of_field_element(pb, context.merkleRootAfter);
+        merkleRootAfter.bits.fill_with_bits_of_field_element(pb, block.merkleRootAfter);
         merkleRootAfter.generate_r1cs_witness_from_bits();
 
-        timestamp.bits.fill_with_bits_of_field_element(pb, context.timestamp);
+        timestamp.bits.fill_with_bits_of_field_element(pb, block.timestamp);
         timestamp.generate_r1cs_witness_from_bits();
 
-        operatorAccountID.bits.fill_with_bits_of_field_element(pb, context.operatorAccountID);
+        operatorAccountID.bits.fill_with_bits_of_field_element(pb, block.operatorAccountID);
         operatorAccountID.generate_r1cs_witness_from_bits();
+        pb.val(publicKey.x) = block.accountUpdate_O.before.publicKey.x;
+        pb.val(publicKey.y) = block.accountUpdate_O.before.publicKey.y;
+        pb.val(balancesRoot_before) = block.accountUpdate_O.before.balancesRoot;
 
-        pb.val(publicKey.x) = context.accountUpdate_O.before.publicKey.x;
-        pb.val(publicKey.y) = context.accountUpdate_O.before.publicKey.y;
-
-        pb.val(balancesRoot_before) = context.accountUpdate_O.before.balancesRoot;
-
-        for(unsigned int i = 0; i < context.ringSettlements.size(); i++)
+        for(unsigned int i = 0; i < block.ringSettlements.size(); i++)
         {
-            ringSettlements[i]->generate_r1cs_witness(context.ringSettlements[i]);
+            ringSettlements[i]->generate_r1cs_witness(block.ringSettlements[i]);
         }
 
-        updateAccount_O->generate_r1cs_witness(context.accountUpdate_O.proof);
+        updateAccount_O->generate_r1cs_witness(block.accountUpdate_O.proof);
 
         publicData.generate_r1cs_witness();
 

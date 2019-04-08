@@ -65,7 +65,7 @@ class BalanceLeaf(object):
         # Trading history
         tradeHistoryLeafsDict = jBalance["_tradeHistoryLeafs"]
         for key, val in tradeHistoryLeafsDict.items():
-            self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"])
+            self._tradeHistoryLeafs[key] = TradeHistoryLeaf(val["filled"], val["cancelled"], val["orderID"])
         self._tradingHistoryTree._root = jBalance["_tradingHistoryTree"]["_root"]
         self._tradingHistoryTree._db.kv = jBalance["_tradingHistoryTree"]["_db"]["kv"]
 
@@ -163,6 +163,8 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
+        if int(self._balancesLeafs[str(tokenID)].balance) >= 2 ** 96:
+            self._balancesLeafs[str(tokenID)].balance = str((2 ** 96) - 1)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -256,7 +258,8 @@ class AccountUpdateData(object):
 
 
 class Deposit(object):
-    def __init__(self, balanceUpdate, accountUpdate):
+    def __init__(self, amount, balanceUpdate, accountUpdate):
+        self.amount = str(amount)
         self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
 
@@ -436,34 +439,37 @@ class RingSettlement(object):
         self.matchingFee_B = matchingFee_B
 
 
-class Withdrawal(object):
+class OnchainWithdrawal(object):
     def __init__(self,
-                 publicKey,
-                 walletPublicKey,
-                 realmID,
-                 accountID, tokenID, amount,
-                 walletAccountID,
-                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
-                 nonce,
-                 amountWithdrawn,
-                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
-                 balanceUpdateF_W, accountUpdate_W,
-                 balanceUpdateF_O):
-        self.publicKeyX = str(publicKey.x)
-        self.publicKeyY = str(publicKey.y)
-        self.walletPublicKeyX = str(walletPublicKey.x)
-        self.walletPublicKeyY = str(walletPublicKey.y)
-        self.realmID = realmID
+                 amountRequested, balanceUpdate, accountUpdate,
+                 accountID, tokenID, amountWithdrawn):
+        self.amountRequested = str(amountRequested)
+        self.balanceUpdate = balanceUpdate
+        self.accountUpdate = accountUpdate
         self.accountID = accountID
         self.tokenID = tokenID
-        self.amount = str(amount)
+        self.amountWithdrawn = str(amountWithdrawn)
+
+class OffchainWithdrawal(object):
+    def __init__(self,
+                 realmID,
+                 accountID, tokenID, amountRequested, amountWithdrawn,
+                 walletAccountID, feeTokenID, fee, walletSplitPercentage,
+                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
+                 balanceUpdateF_W, accountUpdate_W,
+                 balanceUpdateF_O,
+                 nonce):
+        self.realmID = realmID
+
+        self.accountID = accountID
+        self.tokenID = tokenID
+        self.amountRequested = str(amountRequested)
+        self.amountWithdrawn = str(amountWithdrawn)
+
         self.walletAccountID = walletAccountID
-        self.operatorAccountID = operatorAccountID
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
         self.walletSplitPercentage = walletSplitPercentage
-        self.nonce = int(nonce)
-        self.amountWithdrawn = str(amountWithdrawn)
 
         self.balanceUpdateF_A = balanceUpdateF_A
         self.balanceUpdateW_A = balanceUpdateW_A
@@ -474,9 +480,11 @@ class Withdrawal(object):
 
         self.balanceUpdateF_O = balanceUpdateF_O
 
+        self.nonce = nonce
+
     def message(self):
         msg_parts = [FQ(int(self.realmID), 1<<32),
-                     FQ(int(self.accountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.amount), 1<<96),
+                     FQ(int(self.accountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.amountRequested), 1<<96),
                      FQ(int(self.walletAccountID), 1<<20), FQ(int(self.feeTokenID), 1<<8),
                      FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
                      FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
@@ -768,7 +776,6 @@ class State(object):
         accountUpdate_B = AccountUpdateData(ring.orderB.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-
         # Update wallet A
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.orderA.walletAccountID))
@@ -781,7 +788,6 @@ class State(object):
         rootAfter = self._accountsTree._root
         accountUpdateA_W = AccountUpdateData(ring.orderA.walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
-
 
         # Update wallet B
         rootBefore = self._accountsTree._root
@@ -796,7 +802,6 @@ class State(object):
         accountUpdateB_W = AccountUpdateData(ring.orderB.walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-
         # Update feeRecipient
         rootBefore = self._accountsTree._root
         accountBefore = copyAccountInfo(self.getAccount(ring.feeRecipientAccountID))
@@ -809,7 +814,6 @@ class State(object):
         accountAfter = copyAccountInfo(self.getAccount(ring.feeRecipientAccountID))
         rootAfter = self._accountsTree._root
         accountUpdate_F = AccountUpdateData(ring.feeRecipientAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-
 
         # Update ringmatcher
         accountM = self.getAccount(ring.minerAccountID)
@@ -827,7 +831,6 @@ class State(object):
         rootAfter = self._accountsTree._root
         accountUpdate_M = AccountUpdateData(ring.minerAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
-
 
         # Operator payment
         balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenID, int(ring.fee))
@@ -877,7 +880,7 @@ class State(object):
         rootAfter = self._accountsTree._root
 
         accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        return Deposit(balanceUpdate, accountUpdate)
+        return Deposit(amount, balanceUpdate, accountUpdate)
 
     def getAccount(self, accountID):
         # Make sure the leaf exist in our map
@@ -885,10 +888,31 @@ class State(object):
             print("Account doesn't exist: " + str(accountID))
         return self._accounts[str(accountID)]
 
-    def withdraw(self,
-                 onchain,
-                 realmID, accountID, tokenID, amount,
-                 operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage):
+    def onchainWithdraw(self, realmID, accountID, tokenID, amountRequested):
+        # Calculate amount withdrawn
+        balance = int(self.getAccount(accountID).getBalance(tokenID))
+        amount = int(amountRequested) if (int(amountRequested) < balance) else balance
+
+        # Update account
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(accountID))
+        proof = self._accountsTree.createProof(accountID)
+
+        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amount)
+
+        self.updateAccountTree(accountID)
+        accountAfter = copyAccountInfo(self.getAccount(accountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        ###
+
+        withdrawal = OnchainWithdrawal(amountRequested, balanceUpdate, accountUpdate,
+                                       accountID, tokenID, amount)
+        return withdrawal
+
+    def offchainWithdraw(self,
+                         realmID, accountID, tokenID, amountRequested,
+                         operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
         feeToOperator = int(fee) - feeToWallet
@@ -902,11 +926,10 @@ class State(object):
         balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
         balance = int(self.getAccount(accountID).getBalance(tokenID))
-        amountWithdrawn = int(amount) if (int(amount) < balance) else balance
+        amountWithdrawn = int(amountRequested) if (int(amountRequested) < balance) else balance
 
         balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
-        if not onchain:
-            self.getAccount(accountID).nonce += 1
+        self.getAccount(accountID).nonce += 1
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))
@@ -931,22 +954,14 @@ class State(object):
         balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
 
         account = self.getAccount(accountID)
-        walletAccount = self.getAccount(walletAccountID)
-        withdrawal = Withdrawal(Point(int(account.publicKeyX), int(account.publicKeyY)),
-                                Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
-                                realmID,
-                                accountID, tokenID, amount,
-                                walletAccountID,
-                                operatorAccountID, feeTokenID, fee, walletSplitPercentage,
-                                nonce,
-                                amountWithdrawn,
-                                balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
-                                balanceUpdateF_W, accountUpdate_W,
-                                balanceUpdateF_O)
-        if not onchain:
-            withdrawal.sign(FQ(int(account.secretKey)))
-        else:
-            withdrawal.signature = Signature(None)
+        withdrawal = OffchainWithdrawal(realmID,
+                                        accountID, tokenID, amountRequested, amountWithdrawn,
+                                        walletAccountID, feeTokenID, fee, walletSplitPercentage,
+                                        balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
+                                        balanceUpdateF_W, accountUpdate_W,
+                                        balanceUpdateF_O,
+                                        nonce)
+        withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 
     def cancelOrder(self,
