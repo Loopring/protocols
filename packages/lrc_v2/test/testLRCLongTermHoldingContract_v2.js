@@ -1,7 +1,7 @@
-const LongTermContract = artifacts.require("NewLRCLongTermHoldingContract");
-const LrcToken = artifacts.require("NewLRCToken");
+const LongTermContract = artifacts.require("LRCLongTermHoldingContract_v2");
+const LrcToken = artifacts.require("LRC_v2");
 
-contract("NewLRCLongTermHoldingContract", async (accounts) => {
+contract("LRCLongTermHoldingContract_v2", async (accounts) => {
   let lrcToken;
   let longTermContract;
   const owner = accounts[0];
