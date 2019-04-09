@@ -1,6 +1,6 @@
-const LrcToken = artifacts.require("NewLRCToken");
+const LrcToken = artifacts.require("LRC_v2");
 
-contract("NewLRCToken", async (accounts) => {
+contract("LRC_v2", async (accounts) => {
   let lrcToken;
 
   const numberToBN = (num) => {

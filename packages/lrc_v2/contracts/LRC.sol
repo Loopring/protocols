@@ -317,7 +317,7 @@ contract AdminUpgradeabilityProxy is BaseAdminUpgradeabilityProxy, Upgradeabilit
   }
 }
 
-contract LoopringAdminUpgradeabilityProxy is AdminUpgradeabilityProxy {
+contract LRC is AdminUpgradeabilityProxy {
     constructor(address _implementation, address _admin) public
         AdminUpgradeabilityProxy(_implementation, _admin, bytes("")) {
     }

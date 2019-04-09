@@ -1,8 +1,8 @@
-const LrcToken = artifacts.require("NewLRCToken");
-const LoopringAdminUpgradeabilityProxy = artifacts.require("LoopringAdminUpgradeabilityProxy");
+const LrcToken = artifacts.require("LRC_v2");
+const LRC = artifacts.require("LRC");
 
-contract("LoopringAdminUpgradeabilityProxy", async (accounts) => {
-  let loopringAdminUpgradeabilityProxy;
+contract("LRC", async (accounts) => {
+  let lrcProxy;
   let proxyInstance;
 
   const numberToBN = (num) => {
@@ -12,16 +12,16 @@ contract("LoopringAdminUpgradeabilityProxy", async (accounts) => {
 
   before(async () => {
     await LrcToken.deployed();
-    loopringAdminUpgradeabilityProxy = await new LoopringAdminUpgradeabilityProxy(
+    lrcProxy = await new LRC(
       LrcToken.address,
       accounts[0],
       "0x0"
     );
 
     // console.log("LrcToken:", LrcToken.address);
-    // console.log("loopringAdminUpgradeabilityProxy:", loopringAdminUpgradeabilityProxy.address);
+    // console.log("lrcProxy:", lrcProxy.address);
 
-    proxyInstance = await LrcToken.at(loopringAdminUpgradeabilityProxy.address);
+    proxyInstance = await LrcToken.at(lrcProxy.address);
   });
 
   it("should be able to get name, decimals and totalSupply", async () => {
