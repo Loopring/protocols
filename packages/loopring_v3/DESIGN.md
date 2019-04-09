@@ -842,7 +842,7 @@ Simple wallets probably don't want to pay for the infrastructure to sign rings a
 This order sharing is only possible when orders are created for the same exchange contract, so it's a big advantage for multiple parties to decide to use the same Exchange contract to maximize liquidity.
 
 Recap:
-- DEXs/Wallets/Ring-matchers can keep track of his orders and the balances of his users because every order that is used needs to pass through him.s
+- DEXs/Wallets/Ring-matchers can keep track of his orders and the balances of his users because every order that is used needs to pass through him
 - Orders are canceled by not signing any rings anymore with the order, which only the party with the dual-author keys stored in the order can do.
 - No collisions (if all parties act correctly).
 - Fine-grained order sharing with the possibility of a fee.
