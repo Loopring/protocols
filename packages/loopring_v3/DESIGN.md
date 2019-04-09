@@ -85,7 +85,7 @@ In the long run, we still want to support on-chain transfers due to reasons such
 
 Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trust-less and secure.
 
-Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
+Data availability for the Merkle tree is an option that can be turned on or off when creating exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
 
 ## New Development
 
@@ -250,7 +250,7 @@ The following on-chain requests can require a fee to be paid in ETH to the excha
 - Depositing
 - Withdrawing
 
-An Exchange is allowed to freely set the fees for any of the above. However, for withdrawals, the Loopring contract enforces a maximum fee. This is to ensure an exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
+Exchange is allowed to freely set the fees for any of the above. However, for withdrawals, the Loopring contract enforces a maximum fee. This is to ensure exchange cannot stop users from withdrawing by setting an extremely high withdrawal fee.
 
 Any function requiring a fee on-chain can be sent ETH. If the user sends more ETH than required (e.g. because the exact fee amount in hard to manually set) then the surplus is immediately sent back.
 
@@ -566,7 +566,7 @@ function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 3
 
 The operator may stop submitting new blocks and proofs at any time. If that happens we need to ensure users can still withdraw their funds.
 
-An exchange can go in withdrawal mode when any of the conditions below are true:
+Exchange can go in withdrawal mode when any of the conditions below are true:
 - An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
 - A block remains unfinalized for longer than `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE`
 
