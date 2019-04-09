@@ -761,9 +761,9 @@ Ring settlements are ~5x more expensive than simple token transfers, but this wi
 
 ### Setting up the exchange
 
-The DEX can decide to use an existing exchange so it does not need to setup its own infrastructure to handle block creation and creating proofs. This also makes it possible to share orders with all other parties using that exchange.
+The DEX can decide to use an existing exchange so it does not need to set up its own infrastructure to handle block creation and creating proofs. This also makes it possible to share orders with all other parties using that exchange.
 
-In this case study let's create a new exchange. The exchange owner just needs to call `createExchange` on the Loopring contract. This creates a brand new exchange contract.
+In this case study, let's create a new exchange. The exchange owner just needs to call `createExchange` on the Loopring contract. This creates a brand new exchange contract.
 
 ### Trading
 
