@@ -85,7 +85,7 @@ In the long run, we still want to support on-chain transfers due to reasons such
 
 Note that there is never any risk of losing funds when depositing to the smart contract. Both options are trust-less and secure.
 
-Data availability for the Merkle tree is an option that can be turned on or off when creating an exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
+Data availability for the Merkle tree is an option that can be turned on or off when creating exchange built on Loopring. When data-availability is enabled, anyone can recreate the Merkle tree just by using the data published on-chain.
 
 ## New Development
 
@@ -197,7 +197,7 @@ The Loopring contract is the creator of all exchanges built on top of the Loopri
 
 Anyone can create a new exchange by calling `createExchange` on the Loopring contract. A small amount of LRC may need to be burned to create a new exchange.
 
-An exchange has an owner and an operator. The owner is the only one who can call some functions related to the more business side of things, like registering tokens, putting the exchange in maintenance mode and setting the operator. The operator is responsible for committing and proving blocks.
+Exchange has an owner and an operator. The owner is the only one who can call some functions related to the more business side of things, like registering tokens, putting the exchange in maintenance mode and setting the operator. The operator is responsible for committing and proving blocks.
 
 ### Exchange Staking
 
@@ -213,7 +213,6 @@ Exchanges with a large stake have a lot to lose by not playing by the rules and 
 #### Withdrawing the Stake
 
 The stake of an exchange can only be withdrawn when the exchange was shut down correctly. This is done as follows:
-- The exchange owner sets the state to a shutdown state. This stops users from submitting new on-chain requests
 - All remaining open on-chain requests are processed, no other types of blocks can be committed.
 - Only special withdrawal blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key, and the account nonce.
 - If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the full stake.
@@ -566,7 +565,7 @@ function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 3
 
 The operator may stop submitting new blocks and proofs at any time. If that happens we need to ensure users can still withdraw their funds.
 
-An exchange can go in withdrawal mode when any of the conditions below are true:
+Exchange can go in withdrawal mode when any of the conditions below are true:
 - An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
 - A block remains unfinalized for longer than `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE`
 
