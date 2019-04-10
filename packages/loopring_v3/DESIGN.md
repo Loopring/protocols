@@ -218,7 +218,7 @@ The exchange owner can choose to shut down the exchange at any time. However, th
 - From this point on only special on-chain withdrawal blocks can be committed. These withdrawals not only withdraw the balance for a token in an account, they also reset the trading history root, the account public key, and the account nonce back to the default values of the Merkle tree
 - Once the complete tree is reset to its initial state (`lastBlock.merkleRoot == genesisBlock.merkleRoot`) the exchange owner is allowed to withdraw the full stake by calling `withdrawStake`.
 
-The exchange can only stay a limited amount of time in shutdown before we go into [withdrawal mode](#withdrawal-mode) if the state isn't reverted back to the initial state in a maximum amount of time, which can be calculated as follows:
+An exchange that is shutdown only has a limited amount of time to revert the state back to the initial state before we go into [withdrawal mode](#withdrawal-mode). This maximum amount of time can be calculated as follows:
 ```
 maxTimeInShutdown = MAX_TIME_IN_SHUTDOWN_BASE + (numAccounts * MAX_TIME_IN_SHUTDOWN_DELTA)
 ```
