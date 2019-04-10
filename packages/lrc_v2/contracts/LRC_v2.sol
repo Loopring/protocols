@@ -134,7 +134,7 @@ contract ERC20 is ERC20Basic {
  * @dev Based on code by FirstBlood: https://github.com/Firstbloodio/token/blob/master/smart_contract/FirstBloodToken.sol
  */
 contract StandardToken is ERC20, BasicToken {
-    uint public constant MAX_UINT = 2**256 - 1;
+    uint private constant MAX_UINT = 2**256 - 1;
 
     mapping (address => mapping (address => uint256)) internal allowed;
 
@@ -239,7 +239,7 @@ contract StandardToken is ERC20, BasicToken {
     }
 }
 
-contract NewLRCToken is StandardToken {
+contract LRC_v2 is StandardToken {
     using SafeMath for uint256;
 
     string     public name = "LoopringCoin V2";

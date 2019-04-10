@@ -123,7 +123,7 @@ contract Token {
 /// @title Long-Team Holding Incentive Program
 /// @author Daniel Wang - <daniel@loopring.org>, Kongliang Zhong - <kongliang@loopring.org>.
 /// For more information, please visit https://loopring.org.
-contract NewLRCLongTermHoldingContract {
+contract LRCLongTermHoldingContract_v2 {
     using SafeMath for uint;
     using Math for uint;
 
@@ -237,7 +237,7 @@ contract NewLRCLongTermHoldingContract {
         require(users.length == timestamps.length);
         for (uint i = 0; i < users.length; i++) {
             require(users[i] != address(0));
-            require(timestamps[i] >= depositStopTime && timestamps[i] <= depositStopTime);
+            require(timestamps[i] >= depositStartTime && timestamps[i] <= depositStopTime);
             Record memory record = Record(lrcAmounts[i], timestamps[i]);
             records[users[i]] = record;
 
