@@ -481,6 +481,8 @@ contract Exchange is IExchange, Ownable
 
     function withdrawFromMerkleTree(
         address token,
+        uint    pubKeyX,
+        uint    pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
@@ -492,6 +494,8 @@ contract Exchange is IExchange, Ownable
         state.withdrawFromMerkleTreeFor(
             msg.sender,
             token,
+            pubKeyX,
+            pubKeyY,
             nonce,
             balance,
             tradeHistoryRoot,
@@ -504,6 +508,8 @@ contract Exchange is IExchange, Ownable
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
+        uint    pubKeyX,
+        uint    pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
@@ -515,6 +521,8 @@ contract Exchange is IExchange, Ownable
         state.withdrawFromMerkleTreeFor(
             owner,
             token,
+            pubKeyX,
+            pubKeyY,
             nonce,
             balance,
             tradeHistoryRoot,

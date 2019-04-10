@@ -587,6 +587,8 @@ contract IExchange
     ///      has withdrawn the balance in State.withdrawnInWithdrawMode.
     ///
     /// @param  token The address of the token to withdraw the tokens for
+    /// @param  pubKeyX The first part of the public key of the account
+    /// @param  pubKeyY The second part of the public key of the account
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
@@ -594,6 +596,8 @@ contract IExchange
     /// @param  accountPath The merkle proof for the balance of the token
     function withdrawFromMerkleTree(
         address token,
+        uint    pubKeyX,
+        uint    pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
@@ -614,6 +618,8 @@ contract IExchange
     ///
     /// @param  owner The owner of the account to withdraw the funds for.
     /// @param  token The address of the token to withdraw the tokens for
+    /// @param  pubKeyX The first part of the public key of the account
+    /// @param  pubKeyY The second part of the public key of the account
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
@@ -622,6 +628,8 @@ contract IExchange
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
+        uint    pubKeyX,
+        uint    pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,

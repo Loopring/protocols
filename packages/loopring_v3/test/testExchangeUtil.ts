@@ -1366,7 +1366,7 @@ export class ExchangeTestUtil {
     this.pendingBlocks[this.exchangeId] = [];
   }
 
-  public async withdrawFromMerkleTree(owner: string, token: string) {
+  public async withdrawFromMerkleTree(owner: string, token: string, pubKeyX: string, pubKeyY: string) {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
@@ -1388,6 +1388,8 @@ export class ExchangeTestUtil {
     const tx = await this.exchange.withdrawFromMerkleTreeFor(
       owner,
       token,
+      pubKeyX,
+      pubKeyY,
       web3.utils.toBN(data.proof.account.nonce),
       web3.utils.toBN(data.proof.balance.balance),
       web3.utils.toBN(data.proof.balance.tradingHistoryRoot),
