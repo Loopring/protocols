@@ -19,7 +19,7 @@
       * [Exchanges](#exchanges)
          * [Exchange Creation](#exchange-creation)
          * [Exchange Staking](#exchange-staking)
-            * [Withdrawing the Stake](#withdrawing-the-stake)
+         * [Exchange Shutdown](#exchange-shutdown)
          * [Maintenance Mode](#maintenance-mode)
          * [Token Registration](#token-registration)
          * [Token Deposit Disabling](#token-deposit-disabling)
@@ -201,7 +201,7 @@ Exchange has an owner and an operator. The owner is the only one who can call so
 
 ### Exchange Staking
 
-An exchange stakes LRC. Anyone can add to the stake of an exchange by calling `depositStake`, withdrawing the stake however is only allowed when the exchange is completely shut down (and all balances are withdrawn).
+An exchange stakes LRC. Anyone can add to the stake of an exchange by calling `depositStake`, withdrawing the stake however is only allowed when the exchange is completely [shut down](#exchange-shutdown).
 
 The stake ensures that the exchange behaves correctly. This is done by
 - burning the complete stake if a block isn't proven in time
@@ -210,14 +210,21 @@ The stake ensures that the exchange behaves correctly. This is done by
 
 Exchanges with a large stake have a lot to lose by not playing by the rules and have nothing to gain because the operator/owner can never steal funds for itself.
 
-#### Withdrawing the Stake
+### Exchange Shutdown
 
-The stake of an exchange can only be withdrawn when the exchange was shut down correctly. This is done as follows:
-- All remaining open on-chain requests are processed, no other types of blocks can be committed.
-- Only special withdrawal blocks can be committed. These withdrawals not only withdraw the complete balance for a token in an account, it also resets the trading history root, the account public key, and the account nonce.
-- If the complete tree is reset to its initial state (`currentBlock.merkleRoot == genesisBlock.merkleRoot`) and all blocks are proven the exchange owner is allowed to withdraw the full stake.
+The exchange owner can choose to shut down the exchange at any time. However, the stake of an exchange can only be withdrawn when the exchange was shut down completely by returning all funds back to the users. This is done as follows:
+- The exchange owner calls `shutdown` on the exchange contract. This will disallow new on-chain requests by users.
+- First, all remaining open on-chain deposit requests need to be processed
+- From this point on only special on-chain withdrawal blocks can be committed. These withdrawals not only withdraw the balance for a token in an account, they also reset the trading history root, the account public key, and the account nonce back to the default values of the Merkle tree
+- Once the complete tree is reset to its initial state (`lastBlock.merkleRoot == genesisBlock.merkleRoot`) the exchange owner is allowed to withdraw the full stake by calling `withdrawStake`.
 
-This also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise, the exchange loses the amount staked.
+An exchange that is shutdown only has a limited amount of time to revert the state back to the initial state before we go into [withdrawal mode](#withdrawal-mode). This maximum amount of time can be calculated as follows:
+```
+maxTimeInShutdown = MAX_TIME_IN_SHUTDOWN_BASE + (numAccounts * MAX_TIME_IN_SHUTDOWN_DELTA)
+```
+In general, the more accounts an exchange has the more withdrawals need to be done when the exchange is shutdown. We also want to limit this amount of time because otherwise funds from users could be stuck for a long time.
+
+This mechanism also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise, the exchange loses the amount staked.
 
 ### Maintenance Mode
 
