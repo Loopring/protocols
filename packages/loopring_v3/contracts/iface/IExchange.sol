@@ -579,6 +579,12 @@ contract IExchange
     /// @dev Allows an account owner to withdraw his funds using the balances stored
     ///      in the merkle tree. The funds will be sent to the owner of the acount.
     ///
+    ///      Trading pubKey matching the offchain Merkle tree need to be provided.
+    ///      The pubKey may already be reset to 0 when the exchange is shutdown.
+    ///      The pubKey passed in here is used to calculate the Merkle root, which
+    ///      needs to match perfectly with the offchain Merkle root. The onchain pubKey
+    ///      doesn't matter at all in withdrawal mode.
+    ///
     ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
     ///      committing blocks and is not able to commit anymore blocks).
     ///
