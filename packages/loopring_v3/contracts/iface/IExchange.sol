@@ -815,7 +815,10 @@ contract IExchange
     ///      the exchange stake with withdrawStake.
     ///
     ///      Note that the exchange can still enter the withdrawal mode after this function
-    ///      has been invoked successfully.
+    ///      has been invoked successfully. To prevent entering the withdrawal mode, exchange
+    ///      operators need to reset the Merkle tree to its initial state by doingwithdrawals
+    ///      within MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
+    ///      seconds. 
     ///
     ///      Can only be called by the exchange owner.
     ///
