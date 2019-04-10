@@ -42,8 +42,6 @@
          * [The DEX removes the order in the order-book](#the-dex-removes-the-order-in-the-order-book)
       * [Trading History](#trading-history)
          * [Order Aliasing](#order-aliasing)
-         * [Safely updating the validUntil time of an order](#safely-updating-the-validuntil-time-of-an-order)
-         * [The possibility for some simple filling logic between orders](#the-possibility-for-some-simple-filling-logic-between-orders)
       * [On-chain Deposit/Withdraw Request Handling](#on-chain-depositwithdraw-request-handling)
       * [Withdrawal Mode](#withdrawal-mode)
       * [Wallets](#wallets)
