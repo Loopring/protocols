@@ -56,6 +56,51 @@ library ExchangeMode
         if (result == false) {
             result = isAnyUnfinalizedBlockTooOld(S);
         }
+
+        // Check if we're longer in a non-initial state while shutdown than allowed
+        if (result == false && isShutdown(S) && !isInInitialState(S)) {
+            // The max amount of time an exchange can be in shutdown is
+            // MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
+            uint maxTimeInShutdown = ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE();
+            maxTimeInShutdown = maxTimeInShutdown.add(S.accounts.length.mul(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()));
+            result = now > S.shutdownStartTime.add(maxTimeInShutdown);
+        }
+    }
+
+    function isShutdown(
+        ExchangeData.State storage S
+        )
+        internal // inline call
+        view
+        returns (bool)
+    {
+        return S.shutdownStartTime > 0;
+    }
+
+    function isInInitialState(
+        ExchangeData.State storage S
+        )
+        internal // inline call
+        view
+        returns (bool)
+    {
+        ExchangeData.Block storage firstBlock = S.blocks[0];
+        ExchangeData.Block storage lastBlock = S.blocks[S.blocks.length - 1];
+        return (lastBlock.state == ExchangeData.BlockState.FINALIZED) &&
+            (lastBlock.numDepositRequestsCommitted == S.depositChain.length) &&
+            (lastBlock.merkleRoot == firstBlock.merkleRoot);
+    }
+
+    function areUserRequestsEnabled(
+        ExchangeData.State storage S
+        )
+        internal // inline call
+        view
+        returns (bool)
+    {
+        // Users requests are possible when the exchange is not in maintenance mode
+        // and the exchange hasn't been shutdown
+        return (now >= S.disableUserRequestsUntil) && !isShutdown(S);
     }
 
     function isAnyUnfinalizedBlockTooOld(

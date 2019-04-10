@@ -65,7 +65,7 @@ library ExchangeBlocks
         )
         internal  // inline call
     {
-        // Exchange cannot be in withdraw mode
+        // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
@@ -118,7 +118,7 @@ library ExchangeBlocks
         )
         public
     {
-        // Exchange cannot be in withdraw mode
+        // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
@@ -157,7 +157,7 @@ library ExchangeBlocks
         )
         private
     {
-        // Exchange cannot be in withdraw mode
+        // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
         // TODO: Check if this exchange has a minimal amount of LRC staked?
@@ -177,6 +177,7 @@ library ExchangeBlocks
         // Get the current block
         ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
 
+        // Get the old and new Merkle roots
         bytes32 merkleRootBefore;
         bytes32 merkleRootAfter;
         assembly {
@@ -184,9 +185,21 @@ library ExchangeBlocks
             merkleRootAfter := mload(add(data, 68))
         }
         require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
+        require(merkleRootBefore != merkleRootAfter, "INVALID_STATE_UPDATE");
 
         uint32 numDepositRequestsCommitted = uint32(currentBlock.numDepositRequestsCommitted);
         uint32 numWithdrawalRequestsCommitted = uint32(currentBlock.numWithdrawalRequestsCommitted);
+
+        // When the exchange is shutdown:
+        // - First force all outstanding deposits to be done
+        // - Allow withdrawing using the special shutdown mode of ONCHAIN_WITHDRAWAL (with count == 0)
+        if (S.isShutdown()) {
+            if (numDepositRequestsCommitted < S.depositChain.length) {
+                require(blockType == uint(ExchangeData.BlockType.DEPOSIT), "SHUTDOWN_DEPOSITS_FORCED");
+            } else {
+                require(blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL), "SHUTDOWN_WITHDRAWALS_FORCED");
+            }
+        }
 
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
@@ -236,10 +249,14 @@ library ExchangeBlocks
                     )
                 );
             }
+            bytes32 inputStartingHash = 0x0;
+            bytes32 inputEndingHash = 0x0;
             assembly {
-                mstore(add(data, 100), startingHash)
-                mstore(add(data, 132), endingHash)
+                inputStartingHash := mload(add(data, 100))
+                inputEndingHash := mload(add(data, 132))
             }
+            require(inputStartingHash == startingHash, "INVALID_DEPOSIT_STARTING_HASH");
+            require(inputEndingHash == endingHash, "INVALID_DEPOSIT_ENDING_HASH");
             numDepositRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
             uint startIdx = 0;
@@ -252,24 +269,35 @@ library ExchangeBlocks
             require (count <= numElements, "INVALID_REQUEST_RANGE");
             require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
 
-            bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
-            bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
-            // Pad the block so it's full
-            for (uint i = count; i < numElements; i++) {
-                endingHash = sha256(
-                    abi.encodePacked(
-                        endingHash,
-                        uint24(0),
-                        uint16(0),
-                        uint96(0)
-                    )
-                );
+            if (S.isShutdown()) {
+                require (count == 0, "INVALID_WITHDRAWALS_COUNT");
+                // Don't check anything here, the operator can do all necessary withdrawals
+                // in any order he wants (the circuit still ensures the withdrawals are valid)
+            } else {
+                require (count > 0, "INVALID_WITHDRAWALS_COUNT");
+                bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
+                bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
+                // Pad the block so it's full
+                for (uint i = count; i < numElements; i++) {
+                    endingHash = sha256(
+                        abi.encodePacked(
+                            endingHash,
+                            uint24(0),
+                            uint16(0),
+                            uint96(0)
+                        )
+                    );
+                }
+                bytes32 inputStartingHash = 0x0;
+                bytes32 inputEndingHash = 0x0;
+                assembly {
+                    inputStartingHash := mload(add(data, 100))
+                    inputEndingHash := mload(add(data, 132))
+                }
+                require(inputStartingHash == startingHash, "INVALID_WITHDRAWAL_STARTING_HASH");
+                require(inputEndingHash == endingHash, "INVALID_WITHDRAWAL_ENDING_HASH");
+                numWithdrawalRequestsCommitted = uint32(startIdx + count);
             }
-            assembly {
-                mstore(add(data, 100), startingHash)
-                mstore(add(data, 132), endingHash)
-            }
-            numWithdrawalRequestsCommitted = uint32(startIdx + count);
         } else if (blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
             // Do nothing
         } else if (blockType == uint(ExchangeData.BlockType.ORDER_CANCELLATION)) {

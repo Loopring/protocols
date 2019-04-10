@@ -109,6 +109,9 @@ contract IExchange
             uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
+            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
+            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
+            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             uint32 FEE_BLOCK_FINE_START_TIME,
             uint32 FEE_BLOCK_FINE_MAX_DURATION,
@@ -268,6 +271,21 @@ contract IExchange
     function getStake()
         external
         view
+        returns (uint);
+
+    /// @dev Withdraws the amount staked for this exchange.
+    ///      This can only be done if the exchange has been correctly shutdown:
+    ///      - The exchange owner has shutdown the exchange
+    ///      - All deposit requests are processed
+    ///      - All funds are returned to the users (merkle root is reset to initial state)
+    ///
+    ///      Can only be called by the exchange owner.
+    ///
+    /// @return The amount of LRC withdrawn
+    function withdrawStake(
+        address recipient
+        )
+        external
         returns (uint);
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
@@ -561,6 +579,12 @@ contract IExchange
     /// @dev Allows an account owner to withdraw his funds using the balances stored
     ///      in the merkle tree. The funds will be sent to the owner of the acount.
     ///
+    ///      Trading pubKey matching the offchain Merkle tree need to be provided.
+    ///      The pubKey may already be reset to 0 when the exchange is shutdown.
+    ///      The pubKey passed in here is used to calculate the Merkle root, which
+    ///      needs to match perfectly with the offchain Merkle root. The onchain pubKey
+    ///      doesn't matter at all in withdrawal mode.
+    ///
     ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
     ///      committing blocks and is not able to commit anymore blocks).
     ///
@@ -569,6 +593,8 @@ contract IExchange
     ///      has withdrawn the balance in State.withdrawnInWithdrawMode.
     ///
     /// @param  token The address of the token to withdraw the tokens for
+    /// @param  pubKeyX The first part of the public key of the account
+    /// @param  pubKeyY The second part of the public key of the account
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
@@ -576,6 +602,8 @@ contract IExchange
     /// @param  accountPath The merkle proof for the balance of the token
     function withdrawFromMerkleTree(
         address token,
+        uint    pubKeyX,
+        uint    pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
@@ -596,6 +624,8 @@ contract IExchange
     ///
     /// @param  owner The owner of the account to withdraw the funds for.
     /// @param  token The address of the token to withdraw the tokens for
+    /// @param  pubKeyX The first part of the public key of the account
+    /// @param  pubKeyY The second part of the public key of the account
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
@@ -604,6 +634,8 @@ contract IExchange
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
+        uint    pubKeyX,
+        uint    pubKeyY,
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
@@ -776,6 +808,24 @@ contract IExchange
         external
         view
         returns (uint costLRC);
+
+    /// @dev Shuts down the exchange.
+    ///      Once the exchange is shutdown all onchain requests are permanently disabled.
+    ///      When all requirements are fulfilled the exchange owner can withdraw
+    ///      the exchange stake with withdrawStake.
+    ///
+    ///      Note that the exchange can still enter the withdrawal mode after this function
+    ///      has been invoked successfully. To prevent entering the withdrawal mode, exchange
+    ///      operators need to reset the Merkle tree to its initial state by doingwithdrawals
+    ///      within MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
+    ///      seconds. 
+    ///
+    ///      Can only be called by the exchange owner.
+    ///
+    /// @return success True if the exchange is shutdown, else False
+    function shutdown()
+        external
+        returns (bool success);
 
     /// @dev Get number of available/processed deposits/withdrawals.
     /// @return numDepositRequestsProcessed The num of the processed deposit requests

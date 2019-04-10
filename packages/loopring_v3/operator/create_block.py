@@ -173,12 +173,16 @@ def createOnchainWithdrawalBlock(state, data):
     block.startIndex = str(data["startIndex"])
     block.count = str(data["count"])
 
+    # If count == 0 the exchange is shutdown and we do withdrawals that also reset
+    # the state back to default values
+    shutdown = int(block.count) == 0
+
     for withdrawalInfo in data["withdrawals"]:
         accountID = int(withdrawalInfo["accountID"])
         tokenID = int(withdrawalInfo["tokenID"])
         amount = int(withdrawalInfo["amount"])
 
-        withdrawal = state.onchainWithdraw(block.realmID, accountID, tokenID, amount)
+        withdrawal = state.onchainWithdraw(block.realmID, accountID, tokenID, amount, shutdown)
 
         block.withdrawals.append(withdrawal)
 

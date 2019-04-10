@@ -99,6 +99,12 @@ class BalanceLeaf(object):
                                       rootBefore, rootAfter,
                                       leafBefore, leafAfter)
 
+    def resetTradeHistory(self):
+        # Trading history
+        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
+        self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
+        self._tradeHistoryLeafs = {}
+
 
 class TradeHistoryLeaf(object):
     def __init__(self, filled = 0, cancelled = 0, orderID = 0):
@@ -154,7 +160,7 @@ class Account(object):
     def getBalance(self, address):
         return self.getBalanceLeaf(address).balance
 
-    def updateBalance(self, tokenID, amount):
+    def updateBalance(self, tokenID, amount, shutdown = False):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -165,6 +171,8 @@ class Account(object):
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
         if int(self._balancesLeafs[str(tokenID)].balance) >= 2 ** 96:
             self._balancesLeafs[str(tokenID)].balance = str((2 ** 96) - 1)
+        if shutdown:
+            self._balancesLeafs[str(tokenID)].resetTradeHistory()
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -888,7 +896,7 @@ class State(object):
             print("Account doesn't exist: " + str(accountID))
         return self._accounts[str(accountID)]
 
-    def onchainWithdraw(self, realmID, accountID, tokenID, amountRequested):
+    def onchainWithdraw(self, realmID, accountID, tokenID, amountRequested, shutdown):
         # Calculate amount withdrawn
         balance = int(self.getAccount(accountID).getBalance(tokenID))
         amount = int(amountRequested) if (int(amountRequested) < balance) else balance
@@ -898,7 +906,11 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(accountID))
         proof = self._accountsTree.createProof(accountID)
 
-        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amount)
+        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amount, shutdown)
+        if shutdown:
+            self.getAccount(accountID).publicKeyX = str(0)
+            self.getAccount(accountID).publicKeyY = str(0)
+            self.getAccount(accountID).nonce = 0
 
         self.updateAccountTree(accountID)
         accountAfter = copyAccountInfo(self.getAccount(accountID))

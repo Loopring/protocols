@@ -187,8 +187,8 @@ contract LoopringV3 is ILoopringV3, Ownable
                 BurnableERC20(lrcAddress).burn(burnedLRC),
                 "BURN_FAILURE"
             );
-            exchangeStakes[exchangeId] -= burnedLRC;
-            totalStake -= burnedLRC;
+            exchangeStakes[exchangeId - 1] = exchangeStakes[exchangeId - 1].sub(burnedLRC);
+            totalStake = totalStake.sub(burnedLRC);
         }
         emit StakeBurned(exchangeId, burnedLRC);
     }
@@ -209,10 +209,10 @@ contract LoopringV3 is ILoopringV3, Ownable
             ),
             "TRANSFER_FAILURE"
         );
-        stakedLRC = exchangeStakes[exchangeId] + amountLRC;
-        exchangeStakes[exchangeId] = stakedLRC;
-        totalStake += stakedLRC;
-        emit StakeDeposited(exchangeId, stakedLRC);
+        stakedLRC = exchangeStakes[exchangeId - 1].add(amountLRC);
+        exchangeStakes[exchangeId - 1] = stakedLRC;
+        totalStake = totalStake.add(amountLRC);
+        emit StakeDeposited(exchangeId, amountLRC);
     }
 
     function withdrawStake(
@@ -240,15 +240,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         amount = (stakedLRC > requestedAmount) ? requestedAmount : stakedLRC;
         if (amount > 0) {
             require(
-                lrcAddress.safeTransferFrom(
-                    address(this),
+                lrcAddress.safeTransfer(
                     recipient,
                     amount
                 ),
                 "WITHDRAWAL_FAILURE"
             );
-            exchangeStakes[exchangeId] -= amount;
-            totalStake -= amount;
+            exchangeStakes[exchangeId - 1] = exchangeStakes[exchangeId - 1].sub(amount);
+            totalStake = totalStake.sub(amount);
         }
         emit StakeWithdrawn(exchangeId, amount);
     }

@@ -380,6 +380,7 @@ export class Simulator {
         tradeHistory[Number(orderID)] = {
           filled: tradeHistoryValue.filled,
           cancelled: tradeHistoryValue.cancelled,
+          orderID: tradeHistoryValue.orderID,
         };
       }
       balances[Number(tokenID)] = {

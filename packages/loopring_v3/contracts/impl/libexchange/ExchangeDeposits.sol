@@ -100,7 +100,7 @@ library ExchangeDeposits
     {
         require(recipient != address(0), "ZERO_ADDRESS");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);

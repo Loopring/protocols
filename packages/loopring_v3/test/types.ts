@@ -155,6 +155,7 @@ export interface Wallet {
 export interface TradeHistory {
   filled: BN;
   cancelled: boolean;
+  orderID: number;
 }
 
 export interface Balance {
