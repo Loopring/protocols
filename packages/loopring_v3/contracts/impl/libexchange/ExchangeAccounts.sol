@@ -115,12 +115,11 @@ library ExchangeAccounts
         returns (uint24 accountID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
 
         require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
 
-        require(S.accounts.length < 2 ** 24, "TOO_MANY_ACCOUNTS");
         require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
 
         if (returnFeeSurplus) {
@@ -158,7 +157,7 @@ library ExchangeAccounts
         returns (uint24 accountID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
 
         require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");
 

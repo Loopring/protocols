@@ -5,6 +5,7 @@ import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
 import path = require("path");
 import * as pjs from "protocol2-js";
+import { SHA256 } from "sha2";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
@@ -50,16 +51,18 @@ export class ExchangeTestUtil {
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
+  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public MAX_NUM_TOKENS: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
 
-  public MAX_NUM_STATES: number = 64;
+  public tokenAddressToIDMap = new Map<string, number>();
+  public tokenIDToAddressMap = new Map<number, string>();
+
+  public zeroAddress = "0x" + "00".repeat(20);
 
   private contracts = new Artifacts(artifacts);
-
-  private tokenAddressToIDMap = new Map<string, number>();
-  private tokenIDToAddressMap = new Map<number, string>();
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -71,13 +74,13 @@ export class ExchangeTestUtil {
 
   private pendingBlocks: Block[][] = [];
 
-  private zeroAddress = "0x" + "00".repeat(20);
-
   private orderIDGenerator: number = 0;
 
   private dualAuthKeyPair: any;
 
   private onchainDataAvailability = true;
+
+  private MAX_NUM_EXCHANGES: number = 128;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -98,7 +101,7 @@ export class ExchangeTestUtil {
       {from: this.testContext.deployer},
     );
 
-    for (let i = 0; i < this.MAX_NUM_STATES; i++) {
+    for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
       this.pendingRings.push(rings);
 
@@ -131,6 +134,8 @@ export class ExchangeTestUtil {
     const settings = (await this.exchange.getGlobalSettings());
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
     this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
+    this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
@@ -536,6 +541,18 @@ export class ExchangeTestUtil {
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
 
+  public async requestShutdownWithdrawal(realmID: number, accountID: number, token: string, amount: BN) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    const tokenID = this.tokenAddressToIDMap.get(token);
+
+    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
+                              accountID, tokenID, amount, 0, tokenID, new BN(0),
+                              0, 0, 0);
+    return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
+  }
+
   public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
                     tokenID: number, amount: BN) {
@@ -734,12 +751,27 @@ export class ExchangeTestUtil {
       const startIndex = (await this.exchange.getNumDepositRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
-      const requestData = await this.exchange.getDepositRequest(startIndex - 1);
+      const firstRequestData = await this.exchange.getDepositRequest(startIndex - 1);
+      const startingHash = firstRequestData.accumulatedHash;
       // console.log(requestData);
 
+      // Calculate ending hash
+      let endingHash = startingHash;
+      for (const deposit of deposits) {
+        const hashData = new pjs.Bitstream();
+        hashData.addHex(endingHash);
+        hashData.addNumber(deposit.accountID, 3);
+        hashData.addBN(new BN(deposit.publicKeyX, 10), 32);
+        hashData.addBN(new BN(deposit.publicKeyY, 10), 32);
+        hashData.addNumber(deposit.tokenID, 2);
+        hashData.addBN(deposit.amount, 12);
+        endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
+      }
+
+      // Block info
       const depositBlock: DepositBlock = {
         onchainDataAvailability: false,
-        startHash: new BN(requestData.accumulatedHash.slice(2), 16),
+        startHash: new BN(startingHash.slice(2), 16),
         deposits,
         startIndex,
         count: numRequestsProcessed,
@@ -762,8 +794,8 @@ export class ExchangeTestUtil {
       bs.addNumber(block.realmID, 4);
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
-      bs.addNumber(0, 32);
-      bs.addNumber(0, 32);
+      bs.addBN(new BN(startingHash.slice(2), 16), 32);
+      bs.addBN(new BN(endingHash.slice(2), 16), 32);
       bs.addNumber(startIndex, 4);
       bs.addNumber(numRequestsProcessed, 4);
 
@@ -805,6 +837,7 @@ export class ExchangeTestUtil {
             tradeHistory[Number(tradeHistoryKey)] = {
               filled: new BN(jTradeHistory.filled, 10),
               cancelled: jTradeHistory.cancelled === 1,
+              orderID: jTradeHistory.orderID,
             };
           }
           balances[Number(balanceKey)] = {
@@ -813,7 +846,7 @@ export class ExchangeTestUtil {
           };
 
           // Make sure all tokens exist
-          for (let i = 0; i < 2 ** 12; i++) {
+          for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
             if (!balances[i]) {
               balances[i] = {
                 balance: new BN(0),
@@ -842,7 +875,7 @@ export class ExchangeTestUtil {
     return this.operators[realmID];
   }
 
-  public async commitWithdrawalRequests(onchain: boolean, realmID: number) {
+  public async commitWithdrawalRequests(onchain: boolean, realmID: number, shutdown: boolean = false) {
     let pendingWithdrawals: WithdrawalRequest[];
     if (onchain) {
       pendingWithdrawals = this.pendingOnchainWithdrawalRequests[realmID];
@@ -855,46 +888,58 @@ export class ExchangeTestUtil {
 
     const blockType = onchain ? 2 : 3;
 
-    const numWithdrawsPerBlock = 8;
+    const numWithdrawsPerBlock = 2;
     const numBlocks = Math.floor((pendingWithdrawals.length + numWithdrawsPerBlock - 1) / numWithdrawsPerBlock);
     for (let i = 0; i < numBlocks; i++) {
-      const withdrawalRequests: WithdrawalRequest[] = [];
+      const withdrawals: WithdrawalRequest[] = [];
       let numRequestsProcessed = 0;
       // Get all withdrawals for the block
       for (let b = i * numWithdrawsPerBlock; b < (i + 1) * numWithdrawsPerBlock; b++) {
         if (b < pendingWithdrawals.length) {
-          withdrawalRequests.push(pendingWithdrawals[b]);
+          withdrawals.push(pendingWithdrawals[b]);
           numRequestsProcessed++;
         } else {
-          const walletAccountID = this.wallets[realmID][0].walletAccountID;
           const dummyWithdrawalRequest: WithdrawalRequest = {
             accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
-            walletAccountID,
+            walletAccountID: onchain ? 0 : this.wallets[realmID][0].walletAccountID,
             feeTokenID: 0,
             fee: new BN(0),
             walletSplitPercentage: 0,
           };
-          withdrawalRequests.push(dummyWithdrawalRequest);
+          withdrawals.push(dummyWithdrawalRequest);
         }
       }
-      assert(withdrawalRequests.length === numWithdrawsPerBlock);
+      assert(withdrawals.length === numWithdrawsPerBlock);
 
       const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
-      const requestData = await this.exchange.getWithdrawRequest(startIndex - 1);
+      const firstRequestData = await this.exchange.getWithdrawRequest(startIndex - 1);
+      const startingHash = firstRequestData.accumulatedHash;
       // console.log(requestData);
 
+      // Calculate ending hash
+      let endingHash = startingHash;
+      for (const withdrawal of withdrawals) {
+        const hashData = new pjs.Bitstream();
+        hashData.addHex(endingHash);
+        hashData.addNumber(withdrawal.accountID, 3);
+        hashData.addNumber(withdrawal.tokenID, 2);
+        hashData.addBN(withdrawal.amount, 12);
+        endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
+      }
+
+      // Block info
       const operator = await this.getActiveOperator(realmID);
       const withdrawalBlock: WithdrawBlock = {
-        withdrawals: withdrawalRequests,
+        withdrawals,
         onchainDataAvailability: this.onchainDataAvailability,
-        operatorAccountID: operator.accountID,
-        startHash: onchain ? new BN(requestData.accumulatedHash.slice(2), 16) : new BN(0),
+        operatorAccountID: onchain ? 0 : operator.accountID,
+        startHash: onchain ? new BN(startingHash.slice(2), 16) : new BN(0),
         startIndex: onchain ? startIndex : 0,
-        count: onchain ? numRequestsProcessed : 0,
+        count: shutdown ? 0 : (onchain ? numRequestsProcessed : 0),
       };
 
       // Store state before
@@ -916,10 +961,10 @@ export class ExchangeTestUtil {
       bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
       bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
       if (onchain) {
-        bs.addNumber(0, 32);
-        bs.addNumber(0, 32);
-        bs.addNumber(startIndex, 4);
-        bs.addNumber(numRequestsProcessed, 4);
+        bs.addBN(new BN(startingHash.slice(2), 16), 32);
+        bs.addBN(new BN(endingHash.slice(2), 16), 32);
+        bs.addNumber(block.startIndex, 4);
+        bs.addNumber(block.count, 4);
       }
       for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.accountID, 3);
@@ -965,6 +1010,10 @@ export class ExchangeTestUtil {
 
   public async commitOnchainWithdrawalRequests(realmID: number) {
     return this.commitWithdrawalRequests(true, realmID);
+  }
+
+  public async commitShutdownWithdrawalRequests(realmID: number) {
+    return this.commitWithdrawalRequests(true, realmID, true);
   }
 
   public async submitPendingWithdrawals(addressBook?: { [id: string]: string; }) {
@@ -1561,6 +1610,7 @@ export class ExchangeTestUtil {
         state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[order.orderID] = {
           filled: new BN(0),
           cancelled: false,
+          orderID: 0,
         };
       }
     }

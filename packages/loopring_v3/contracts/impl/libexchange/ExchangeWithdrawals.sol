@@ -108,7 +108,7 @@ library ExchangeWithdrawals
     {
         require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(now >= S.disableUserRequestsUntil, "USER_REQUEST_SUSPENDED");
+        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableWithdrawalSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(token);

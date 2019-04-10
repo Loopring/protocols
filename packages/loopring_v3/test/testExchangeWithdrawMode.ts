@@ -17,7 +17,7 @@ contract("Exchange", (accounts: string[]) => {
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     await exchangeTestUtil.withdrawFromMerkleTree(owner, token);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
-    assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdraw mode incorrect");
+    assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdrawal mode incorrect");
   };
 
   const withdrawFromDepositRequestChecked = async (requestIdx: number,
@@ -25,10 +25,10 @@ contract("Exchange", (accounts: string[]) => {
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     await exchangeTestUtil.withdrawFromDepositRequest(requestIdx);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
-    assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdraw mode incorrect");
+    assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdrawal mode incorrect");
   };
 
-  describe("Withdraw Mode", function() {
+  describe("Withdrawal Mode", function() {
     this.timeout(0);
 
     it("ERC20: withdraw from merkle tree", async () => {

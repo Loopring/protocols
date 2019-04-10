@@ -109,6 +109,9 @@ contract IExchange
             uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
+            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
+            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
+            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             uint32 FEE_BLOCK_FINE_START_TIME,
             uint32 FEE_BLOCK_FINE_MAX_DURATION,
@@ -268,6 +271,21 @@ contract IExchange
     function getStake()
         external
         view
+        returns (uint);
+
+    /// @dev Withdraws the amount staked for this exchange.
+    ///      This can only be done if the exchange has been correctly shutdown:
+    ///      - The exchange owner has shutdown the exchange
+    ///      - All deposit requests are processed
+    ///      - All funds are returned to the users (merkle root is reset to initial state)
+    ///
+    ///      Can only be called by the exchange owner.
+    ///
+    /// @return The amount of LRC withdrawn
+    function withdrawStake(
+        address recipient
+        )
+        external
         returns (uint);
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
@@ -776,6 +794,18 @@ contract IExchange
         external
         view
         returns (uint costLRC);
+
+    /// @dev Shuts down the exchange.
+    ///      Once the exchange is shutdown all onchain requests are permanently disabled.
+    ///      When all requirements are fulfilled the exchange owner can withdraw
+    ///      the exchange stake with withdrawStake.
+    ///
+    ///      Can only be called by the exchange owner.
+    ///
+    /// @return success True if the exchange is shutdown, else False
+    function shutdown()
+        external
+        returns (bool success);
 
     /// @dev Get number of available/processed deposits/withdrawals.
     /// @return numDepositRequestsProcessed The num of the processed deposit requests

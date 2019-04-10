@@ -86,6 +86,9 @@ contract Exchange is IExchange, Ownable
             uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
             uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
             uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
+            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
+            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
+            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
             uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
             uint32 FEE_BLOCK_FINE_START_TIME,
             uint32 FEE_BLOCK_FINE_MAX_DURATION,
@@ -100,6 +103,9 @@ contract Exchange is IExchange, Ownable
             ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
             ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
+            ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS(),
+            ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE(),
+            ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA(),
             ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
             ExchangeData.FEE_BLOCK_FINE_START_TIME(),
             ExchangeData.FEE_BLOCK_FINE_MAX_DURATION(),
@@ -266,10 +272,21 @@ contract Exchange is IExchange, Ownable
         return state.loopring.getStake(state.id);
     }
 
+    function withdrawStake(
+        address recipient
+        )
+        external
+        onlyOwner
+        returns (uint)
+    {
+        return state.withdrawStake(recipient);
+    }
+
     function burnStake()
         external
     {
-        if(state.isAnyUnfinalizedBlockTooOld()) {
+        // Always allow burning the stake when the exchange gets into withdrawal mode for now
+        if(state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
             state.loopring.burnAllStake(state.id);
         }
@@ -612,6 +629,16 @@ contract Exchange is IExchange, Ownable
         returns (uint costLRC)
     {
         costLRC = state.getDowntimeCostLRC(durationSeconds);
+    }
+
+    function shutdown()
+        external
+        onlyOwner
+        returns (bool success)
+    {
+        require(!state.isInWithdrawalMode(), "INVALID_MODE");
+        state.shutdownStartTime = now;
+        return true;
     }
 
     function getRequestStats()

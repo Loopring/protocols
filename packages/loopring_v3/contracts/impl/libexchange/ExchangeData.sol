@@ -160,6 +160,8 @@ library ExchangeData
     function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
     function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 1 days; }
     function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_BASE() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 15 seconds; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 1 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20; }
@@ -199,5 +201,8 @@ library ExchangeData
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
 
         uint numBlocksFinalized;
+
+        // Time when the exchange was shutdown
+        uint shutdownStartTime;
     }
 }
