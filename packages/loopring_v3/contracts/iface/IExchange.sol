@@ -814,6 +814,9 @@ contract IExchange
     ///      When all requirements are fulfilled the exchange owner can withdraw
     ///      the exchange stake with withdrawStake.
     ///
+    ///      Note that the exchange can still enter the withdrawal mode after this function
+    ///      has been invoked successfully.
+    ///
     ///      Can only be called by the exchange owner.
     ///
     /// @return success True if the exchange is shutdown, else False
