@@ -82,7 +82,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange, "DepositRequested", web3.eth.blockNumber,
     );
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.accountID, eventObj.args.depositBlockIdx, eventObj.args.slotIdx];
+      return [eventObj.args.accountID, eventObj.args.depositIdx];
     });
     assert.equal(items.length, 1, "A single Deposit event should have been emitted");
     assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");
@@ -116,7 +116,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange, "DepositRequested", web3.eth.blockNumber,
     );
     const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.accountID, eventObj.args.depositBlockIdx, eventObj.args.slotIdx];
+      return [eventObj.args.accountID, eventObj.args.depositIdx];
     });
     assert.equal(items.length, 1, "A single Deposit event should have been emitted");
     assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");

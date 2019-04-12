@@ -16,10 +16,10 @@
 */
 pragma solidity 0.5.7;
 
-
 import "../iface/IBlockVerifier.sol";
 
 import "../lib/Ownable.sol";
+import "../impl/libexchange/ExchangeData.sol";
 
 import "../thirdparty/Verifier.sol";
 
@@ -28,37 +28,44 @@ import "../thirdparty/Verifier.sol";
 /// @author Brecht Devos - <brecht@loopring.org>,
 contract BlockVerifier is IBlockVerifier, Ownable
 {
-    uint256[14] vk;
-    uint256[] gammaABC;
+    mapping (bool => mapping (uint8 => mapping (uint16 => uint256[18]))) verificationKeys;
 
     function setVerifyingKey(
-        uint256[14] calldata _vk,
-        uint256[] calldata _gammaABC
+        uint8 blockType,
+        bool onchainDataAvailability,
+        uint16 numElements,
+        uint256[18] calldata _vk
         )
         external
         onlyOwner
     {
-        vk = _vk;
-        gammaABC = _gammaABC;
+        // While _vk[0] could be 0, we don't allow it so we can use this to easily check
+        // if the verification key is set
+        require(_vk[0] != 0, "INVALID_DATA");
+        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
+        require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
+        for (uint i = 0; i < 18; i++) {
+            verificationKeys[onchainDataAvailability][blockType][numElements][i] = _vk[i];
+        }
     }
 
     function canVerify(
-        uint8/* blockType*/,
-        bool/* onchainDataAvailability*/,
-        uint16/* numElements*/
+        uint8 blockType,
+        bool onchainDataAvailability,
+        uint16 numElements
         )
         external
         view
         returns (bool)
     {
-        // TODO(brecht)
-        return true;
+        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
+        return verificationKeys[dataAvailability][blockType][numElements][0] != 0;
     }
 
     function verifyProof(
-        uint8/* blockType*/,
-        bool/* onchainDataAvailability*/,
-        uint16/* numElements*/,
+        uint8 blockType,
+        bool onchainDataAvailability,
+        uint16 numElements,
         bytes32 publicDataHash,
         uint256[8] calldata proof
         )
@@ -70,19 +77,33 @@ contract BlockVerifier is IBlockVerifier, Ownable
         publicInputs[0] = uint256(publicDataHash);
 
         uint256[14] memory _vk;
-        uint256[] memory _vk_gammaABC;
-        (_vk, _vk_gammaABC) = getVerifyingKey();
+        uint256[] memory _vk_gammaABC = new uint[](4);
+        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
+        uint256[18] storage verificationKey = verificationKeys[dataAvailability][blockType][numElements];
+        for (uint i = 0; i < 14; i++) {
+            _vk[i] = verificationKey[i];
+        }
+        _vk_gammaABC[0] = verificationKey[14];
+        _vk_gammaABC[1] = verificationKey[15];
+        _vk_gammaABC[2] = verificationKey[16];
+        _vk_gammaABC[3] = verificationKey[17];
 
-        // Q(dongw): can we use `vk` and `grammaABC` directly here?
         return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
     }
 
-    function getVerifyingKey()
-        public
-        view
-        returns (uint256[14] memory out_vk, uint256[] memory out_gammaABC)
+    function needsDataAvailability(
+        uint8 blockType,
+        bool onchainDataAvailability
+        )
+        internal
+        pure
+        returns (bool)
     {
-        return (vk, gammaABC);
+        // On-chain requests never need data-availability
+        return (
+            (blockType == uint(ExchangeData.BlockType.DEPOSIT)) ||
+            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL))
+            ? false : onchainDataAvailability
+        );
     }
-
 }
