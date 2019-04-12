@@ -1,7 +1,6 @@
 import BN = require("bn.js");
 
 export interface OrderInfo {
-  // required fields in contract
   owner?: string;
   tokenS?: string;
   tokenB?: string;
@@ -68,7 +67,7 @@ export interface RingBlock {
 }
 
 export interface Deposit {
-  depositBlockIdx: number;
+  depositIdx: number;
   accountID: number;
   secretKey: string;
   publicKeyX: string;
@@ -96,7 +95,7 @@ export interface WithdrawalRequest {
   fee: BN;
   walletSplitPercentage: number;
 
-  withdrawBlockIdx?: number;
+  withdrawalIdx?: number;
   slotIdx?: number;
 }
 
@@ -201,8 +200,8 @@ export interface SimulatorWithdrawReport {
 }
 
 export interface DepositInfo {
+  owner: string;
+  token: string;
   accountID: number;
-  depositBlockIdx: number;
-  slotIdx: number;
   depositIdx: number;
 }

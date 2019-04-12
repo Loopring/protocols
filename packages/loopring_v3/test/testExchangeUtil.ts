@@ -29,6 +29,12 @@ export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
 
+  public ringSettlementBlockSizes = [1, 2];
+  public depositBlockSizes = [4, 8];
+  public onchainWithdrawalBlockSizes = [4, 8];
+  public offchainWithdrawalBlockSizes = [4, 8];
+  public orderCancellationBlockSizes = [4, 8];
+
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
@@ -127,6 +133,7 @@ export class ExchangeTestUtil {
     await this.createExchange(
       this.testContext.deployer,
       true,
+      this.onchainDataAvailability,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether")),
     );
@@ -409,16 +416,12 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    const tokenID = this.tokenAddressToIDMap.get(token);
 
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
-    // console.log("numAvailableSlots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
-        const timeToWait = (await this.exchange.MIN_TIME_BLOCK_OPEN()).toNumber();
-        await this.advanceBlockTimestamp(timeToWait);
-        numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
-        assert(numAvailableSlots > 0, "numAvailableSlots > 0");
-        // console.log("numAvailableSlots: " + numAvailableSlots);
+      await this.commitDeposits(realmID);
+      numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
+      assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
     const fees = await this.exchange.getFees();
@@ -472,13 +475,13 @@ export class ExchangeTestUtil {
     });
 
     const depositInfo: DepositInfo = {
+      owner,
+      token,
       accountID: items[0][0].toNumber(),
-      depositBlockIdx: 0,
-      slotIdx: 0,
       depositIdx: items[0][1].toNumber(),
     };
 
-    this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositBlockIdx, depositInfo.accountID,
+    this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositIdx, depositInfo.accountID,
                     secretKey, publicKeyX, publicKeyY,
                     this.tokenAddressToIDMap.get(token), amount);
     return depositInfo;
@@ -508,12 +511,9 @@ export class ExchangeTestUtil {
     const tokenID = this.tokenAddressToIDMap.get(token);
 
     let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
-    // console.log("numAvailableSlots: " + numAvailableSlots);
     if (numAvailableSlots === 0) {
-        const timeToWait = (await this.exchange.MIN_TIME_BLOCK_OPEN()).toNumber();
-        await this.advanceBlockTimestamp(timeToWait);
+        await this.commitOnchainWithdrawalRequests(realmID);
         numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
-        // console.log("numAvailableSlots: " + numAvailableSlots);
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
@@ -531,13 +531,12 @@ export class ExchangeTestUtil {
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.withdrawalIdx];
     });
-    const withdrawBlockIdx = items[0][0].toNumber();
-    const slotIdx = 0;
+    const withdrawalIdx = items[0][0].toNumber();
 
     const walletAccountID = this.wallets[realmID][0].walletAccountID;
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
                               accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
-                              0, withdrawBlockIdx, slotIdx);
+                              0, withdrawalIdx);
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
 
@@ -549,14 +548,14 @@ export class ExchangeTestUtil {
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
                               accountID, tokenID, amount, 0, tokenID, new BN(0),
-                              0, 0, 0);
+                              0, 0);
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
 
-  public addDeposit(deposits: Deposit[], depositBlockIdx: number, accountID: number,
+  public addDeposit(deposits: Deposit[], depositIdx: number, accountID: number,
                     secretKey: string, publicKeyX: string, publicKeyY: string,
                     tokenID: number, amount: BN) {
-    deposits.push({accountID, depositBlockIdx, secretKey, publicKeyX, publicKeyY, tokenID, amount});
+    deposits.push({accountID, depositIdx, secretKey, publicKeyX, publicKeyY, tokenID, amount});
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
@@ -584,9 +583,9 @@ export class ExchangeTestUtil {
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN,
                               walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
-                              withdrawBlockIdx?: number, slotIdx?: number) {
+                              withdrawalIdx?: number) {
     withdrawalRequests.push({accountID, tokenID, amount, walletAccountID,
-                             feeTokenID, fee, walletSplitPercentage, withdrawBlockIdx, slotIdx});
+                             feeTokenID, fee, walletSplitPercentage, withdrawalIdx});
   }
 
   public sendRing(realmID: number, ring: RingInfo) {
@@ -625,6 +624,9 @@ export class ExchangeTestUtil {
     const bitstream = new pjs.Bitstream(data);
     const realmID = bitstream.extractUint32(0);
 
+    // Make sure the keys are generated
+    await this.generateKeys(filename);
+
     // const activeOperator = await this.getActiveOperator(realmID);
     // assert.equal(activeOperator.operatorID, operator.operatorID);
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
@@ -646,16 +648,15 @@ export class ExchangeTestUtil {
     return block;
   }
 
-  public async verifyBlock(blockIdx: number, blockFilename: string) {
+  public async generateKeys(blockFilename: string) {
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
-    const proofFilename = "./blocks/block_" + block.realmID + "_" + blockIdx + "_proof.json";
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
-      ["-prove", blockFilename, proofFilename],
+      ["-createkeys", blockFilename],
       {stdio: "inherit"},
     );
-    assert(result.status === 0, "verifyBlock failed: " + blockFilename);
+    assert(result.status === 0, "generateKeys failed: " + blockFilename);
 
     let verificationKeyFilename = "keys/";
     if (block.blockType === 0) {
@@ -674,8 +675,26 @@ export class ExchangeTestUtil {
 
     // Read the verification key and set it in the smart contract
     const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
-    const vkFlattened = this.flattenVK(vk);
-    await this.blockVerifier.setVerifyingKey(vkFlattened[0], vkFlattened[1]);
+    const vkFlattened = this.flattenList(this.flattenVK(vk));
+    // console.log(vkFlattened);
+    await this.blockVerifier.setVerifyingKey(
+      block.blockType,
+      block.onchainDataAvailability,
+      block.numElements,
+      vkFlattened,
+    );
+  }
+
+  public async verifyBlock(blockIdx: number, blockFilename: string) {
+    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+    const proofFilename = "./blocks/block_" + block.realmID + "_" + blockIdx + "_proof.json";
+    const result = childProcess.spawnSync(
+      "build/circuit/dex_circuit",
+      ["-prove", blockFilename, proofFilename],
+      {stdio: "inherit"},
+    );
+    assert(result.status === 0, "verifyBlock failed: " + blockFilename);
 
     // Read the proof
     const proof = JSON.parse(fs.readFileSync(proofFilename, "ascii"));
@@ -718,23 +737,20 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const numDepositsPerBlock = 8;
-    const numBlocks = Math.floor((pendingDeposits.length + numDepositsPerBlock - 1) / numDepositsPerBlock);
-    for (let i = 0; i < numBlocks; i++) {
+    let numDepositsDone = 0;
+    while (numDepositsDone < pendingDeposits.length) {
       const deposits: Deposit[] = [];
-      let isFull = true;
-      let numRequestsProcessed = 0;
-
-      const settings = (await this.exchange.getGlobalSettings());
+      let numRequestsInBlock = 0;
 
       // Get all deposits for the block
-      for (let b = i * numDepositsPerBlock; b < (i + 1) * numDepositsPerBlock; b++) {
+      const blockSize = this.getBestBlockSize(pendingDeposits.length - numDepositsDone, this.depositBlockSizes);
+      for (let b = numDepositsDone; b < numDepositsDone + blockSize; b++) {
           if (b < pendingDeposits.length) {
             deposits.push(pendingDeposits[b]);
-            numRequestsProcessed++;
+            numRequestsInBlock++;
           } else {
             const dummyDeposit: Deposit = {
-              depositBlockIdx: deposits[0].depositBlockIdx,
+              depositIdx: 0,
               accountID: 0,
               secretKey: "0",
               publicKeyX: "0",
@@ -743,10 +759,10 @@ export class ExchangeTestUtil {
               amount: new BN(0),
             };
             deposits.push(dummyDeposit);
-            isFull = false;
           }
       }
-      assert(deposits.length === numDepositsPerBlock);
+      assert(deposits.length === blockSize);
+      numDepositsDone += blockSize;
 
       const startIndex = (await this.exchange.getNumDepositRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
@@ -774,7 +790,7 @@ export class ExchangeTestUtil {
         startHash: new BN(startingHash.slice(2), 16),
         deposits,
         startIndex,
-        count: numRequestsProcessed,
+        count: numRequestsInBlock,
       };
 
       // Store state before
@@ -797,11 +813,11 @@ export class ExchangeTestUtil {
       bs.addBN(new BN(startingHash.slice(2), 16), 32);
       bs.addBN(new BN(endingHash.slice(2), 16), 32);
       bs.addNumber(startIndex, 4);
-      bs.addNumber(numRequestsProcessed, 4);
+      bs.addNumber(numRequestsInBlock, 4);
 
       // Commit the block
       const operator = await this.getActiveOperator(realmID);
-      const blockInfo = await this.commitBlock(operator, 1, numDepositsPerBlock, bs.getData(), blockFilename);
+      const blockInfo = await this.commitBlock(operator, 1, blockSize, bs.getData(), blockFilename);
 
       blockInfos.push(blockInfo);
     }
@@ -888,16 +904,18 @@ export class ExchangeTestUtil {
 
     const blockType = onchain ? 2 : 3;
 
-    const numWithdrawsPerBlock = 2;
-    const numBlocks = Math.floor((pendingWithdrawals.length + numWithdrawsPerBlock - 1) / numWithdrawsPerBlock);
-    for (let i = 0; i < numBlocks; i++) {
+    let numWithdrawalsDone = 0;
+    while (numWithdrawalsDone < pendingWithdrawals.length) {
       const withdrawals: WithdrawalRequest[] = [];
-      let numRequestsProcessed = 0;
+      let numRequestsInBlock = 0;
       // Get all withdrawals for the block
-      for (let b = i * numWithdrawsPerBlock; b < (i + 1) * numWithdrawsPerBlock; b++) {
+      const blockSizes = onchain ? this.onchainWithdrawalBlockSizes : this.offchainWithdrawalBlockSizes;
+      const blockSize = this.getBestBlockSize(pendingWithdrawals.length - numWithdrawalsDone, blockSizes);
+      for (let b = numWithdrawalsDone; b < numWithdrawalsDone + blockSize; b++) {
         if (b < pendingWithdrawals.length) {
+          pendingWithdrawals[b].slotIdx = withdrawals.length;
           withdrawals.push(pendingWithdrawals[b]);
-          numRequestsProcessed++;
+          numRequestsInBlock++;
         } else {
           const dummyWithdrawalRequest: WithdrawalRequest = {
             accountID: onchain ? 0 : this.dummyAccountId,
@@ -911,7 +929,8 @@ export class ExchangeTestUtil {
           withdrawals.push(dummyWithdrawalRequest);
         }
       }
-      assert(withdrawals.length === numWithdrawsPerBlock);
+      assert(withdrawals.length === blockSize);
+      numWithdrawalsDone += blockSize;
 
       const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
@@ -939,7 +958,7 @@ export class ExchangeTestUtil {
         operatorAccountID: onchain ? 0 : operator.accountID,
         startHash: onchain ? new BN(startingHash.slice(2), 16) : new BN(0),
         startIndex: onchain ? startIndex : 0,
-        count: shutdown ? 0 : (onchain ? numRequestsProcessed : 0),
+        count: shutdown ? 0 : (onchain ? numRequestsInBlock : 0),
       };
 
       // Store state before
@@ -982,7 +1001,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, blockType, numWithdrawsPerBlock, bs.getData(), blockFilename);
+      await this.commitBlock(operator, blockType, blockSize, bs.getData(), blockFilename);
 
       // Add as a pending withdrawal
       let withdrawalIdx = 0;
@@ -1050,12 +1069,12 @@ export class ExchangeTestUtil {
     const blockNumber = await web3.eth.getBlockNumber();
     const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
-    const numRingsPerBlock = 2;
-    const numBlocks = Math.floor((pendingRings.length + numRingsPerBlock - 1) / numRingsPerBlock);
-    for (let i = 0; i < numBlocks; i++) {
+    let numRingsDone = 0;
+    while (numRingsDone < pendingRings.length) {
       // Get all rings for the block
+      const blockSize = this.getBestBlockSize(pendingRings.length - numRingsDone, this.ringSettlementBlockSizes);
       const rings: RingInfo[] = [];
-      for (let b = i * numRingsPerBlock; b < (i + 1) * numRingsPerBlock; b++) {
+      for (let b = numRingsDone; b < numRingsDone + blockSize; b++) {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
@@ -1119,7 +1138,8 @@ export class ExchangeTestUtil {
           rings.push(dummyRing);
         }
       }
-      assert(rings.length === numRingsPerBlock);
+      assert(rings.length === blockSize);
+      numRingsDone += blockSize;
 
       const operator = await this.getActiveOperator(realmID);
       const ringBlock: RingBlock = {
@@ -1180,7 +1200,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, 0, 2, bs.getData(), blockFilename);
+      await this.commitBlock(operator, 0, blockSize, bs.getData(), blockFilename);
     }
 
     this.pendingRings[realmID] = [];
@@ -1196,12 +1216,12 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const numCancelsPerBlock = 8;
-    const numBlocks = Math.floor((pendingCancels.length + numCancelsPerBlock - 1) / numCancelsPerBlock);
-    for (let i = 0; i < numBlocks; i++) {
+    let numCancelsDone = 0;
+    while (numCancelsDone < pendingCancels.length) {
       // Get all cancels for the block
+      const blockSize = this.getBestBlockSize(pendingCancels.length - numCancelsDone, this.depositBlockSizes);
       const cancels: Cancel[] = [];
-      for (let b = i * numCancelsPerBlock; b < (i + 1) * numCancelsPerBlock; b++) {
+      for (let b = numCancelsDone; b < numCancelsDone + blockSize; b++) {
         if (b < pendingCancels.length) {
           cancels.push(pendingCancels[b]);
         } else {
@@ -1218,7 +1238,8 @@ export class ExchangeTestUtil {
           cancels.push(dummyCancel);
         }
       }
-      assert(cancels.length === numCancelsPerBlock);
+      assert(cancels.length === blockSize);
+      numCancelsDone += blockSize;
 
       const operator = await this.getActiveOperator(realmID);
       const cancelBlock: CancelBlock = {
@@ -1251,7 +1272,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, 4, 8, bs.getData(), blockFilename);
+      await this.commitBlock(operator, 4, blockSize, bs.getData(), blockFilename);
     }
 
     this.pendingCancels[realmID] = [];
@@ -1295,6 +1316,7 @@ export class ExchangeTestUtil {
   public async createExchange(
       owner: string,
       bSetupTestState: boolean = true,
+      onchainDataAvailability: boolean = true,
       accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
       depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
@@ -1310,7 +1332,7 @@ export class ExchangeTestUtil {
     await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {from: owner});
 
     // Create the new exchange
-    const tx = await this.loopringV3.createExchange(owner, true, {from: owner});
+    const tx = await this.loopringV3.createExchange(owner, onchainDataAvailability, {from: owner});
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
@@ -1324,6 +1346,7 @@ export class ExchangeTestUtil {
     this.exchangeOwner = owner;
     this.exchangeOperator = owner;
     this.exchangeId = realmID;
+    this.onchainDataAvailability = onchainDataAvailability;
 
     await this.registerTokens();
 
@@ -1807,6 +1830,16 @@ export class ExchangeTestUtil {
       " (" + filledBeforePercentage.toString(10) + "% -> " + filledAfterPercentage.toString(10) + "%)" +
       " (" + this.getPrettyCancelled(before.cancelled) + " -> " + this.getPrettyCancelled(after.cancelled) + ")",
     );
+  }
+
+  private getBestBlockSize(count: number, blockSizes: number[]) {
+    let blockSize = blockSizes[0];
+    let i = 1;
+    while (count > blockSize && i < blockSizes.length) {
+      blockSize = blockSizes[i];
+      i++;
+    }
+    return blockSize;
   }
 
 }

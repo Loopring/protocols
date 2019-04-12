@@ -142,7 +142,7 @@ def createRingSettlementBlock(state, data):
 
 def createDepositBlock(state, data):
     block = DepositBlock()
-    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.onchainDataAvailability = False
     block.realmID = state.realmID
     block.merkleRootBefore = str(state.getRoot())
     block.startHash = str(data["startHash"])
@@ -166,7 +166,7 @@ def createDepositBlock(state, data):
 
 def createOnchainWithdrawalBlock(state, data):
     block = OnchainWithdrawalBlock()
-    block.onchainDataAvailability = data["onchainDataAvailability"]
+    block.onchainDataAvailability = False
     block.realmID = state.realmID
     block.merkleRootBefore = str(state.getRoot())
     block.startHash = str(data["startHash"])
