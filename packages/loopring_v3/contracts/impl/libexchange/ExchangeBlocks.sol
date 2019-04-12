@@ -67,10 +67,13 @@ library ExchangeBlocks
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+
         ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-        require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "BLOCK_VERIFIED_ALREADY");
+        require(
+            specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
+            "BLOCK_VERIFIED_ALREADY"
+        );
 
         // Check if we still accept a proof for this block
         require(
@@ -135,7 +138,6 @@ library ExchangeBlocks
             now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
             "PROOF_NOT_TOO_LATE"
         );
-
         // Burn the complete stake of the exchange
         S.loopring.burnAllStake(S.id);
 
@@ -172,10 +174,10 @@ library ExchangeBlocks
         assembly {
             exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
         }
-        require(exchangeIdInData == S.id, "INVALID_ID");
+        require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
 
         // Get the current block
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
+        ExchangeData.Block storage prevBlock = S.blocks[S.blocks.length - 1];
 
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore;
@@ -184,20 +186,21 @@ library ExchangeBlocks
             merkleRootBefore := mload(add(data, 36))
             merkleRootAfter := mload(add(data, 68))
         }
-        require(merkleRootBefore == currentBlock.merkleRoot, "INVALID_MERKLE_ROOT");
+        require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
         require(merkleRootBefore != merkleRootAfter, "INVALID_STATE_UPDATE");
 
-        uint32 numDepositRequestsCommitted = uint32(currentBlock.numDepositRequestsCommitted);
-        uint32 numWithdrawalRequestsCommitted = uint32(currentBlock.numWithdrawalRequestsCommitted);
+        uint32 numDepositRequestsCommitted = uint32(prevBlock.numDepositRequestsCommitted);
+        uint32 numWithdrawalRequestsCommitted = uint32(prevBlock.numWithdrawalRequestsCommitted);
 
         // When the exchange is shutdown:
         // - First force all outstanding deposits to be done
-        // - Allow withdrawing using the special shutdown mode of ONCHAIN_WITHDRAWAL (with count == 0)
+        // - Allow withdrawing using the special shutdown mode of ONCHAIN_WITHDRAWAL (with
+        //   count == 0)
         if (S.isShutdown()) {
             if (numDepositRequestsCommitted < S.depositChain.length) {
-                require(blockType == uint(ExchangeData.BlockType.DEPOSIT), "SHUTDOWN_DEPOSITS_FORCED");
+                require(blockType == uint(ExchangeData.BlockType.DEPOSIT), "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
             } else {
-                require(blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL), "SHUTDOWN_WITHDRAWALS_FORCED");
+                require(blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL), "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
             }
         }
 
@@ -206,10 +209,10 @@ library ExchangeBlocks
         // be processed first, even if there is also a deposit block forced.
         if (blockType != uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) &&
             isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
-            revert("WITHDRAWAL_BLOCK_COMMIT_FORCED");
+            revert("WITHDRAWAL_BLOCK_FORCED");
         } else if (blockType != uint(ExchangeData.BlockType.DEPOSIT) &&
             isDepositRequestForced(S, numDepositRequestsCommitted)) {
-            revert("DEPOSIT_BLOCK_COMMIT_FORCED");
+            revert("DEPOSIT_BLOCK_FORCED");
         }
 
         if (blockType == uint(ExchangeData.BlockType.RING_SETTLEMENT)) {
@@ -257,7 +260,8 @@ library ExchangeBlocks
             }
             require(inputStartingHash == startingHash, "INVALID_DEPOSIT_STARTING_HASH");
             require(inputEndingHash == endingHash, "INVALID_DEPOSIT_ENDING_HASH");
-            numDepositRequestsCommitted = uint32(startIdx + count);
+
+            numDepositRequestsCommitted += uint32(count);
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
             uint startIdx = 0;
             uint count = 0;
@@ -270,11 +274,11 @@ library ExchangeBlocks
             require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
 
             if (S.isShutdown()) {
-                require (count == 0, "INVALID_WITHDRAWALS_COUNT");
+                require (count == 0, "INVALID_WITHDRAWAL_COUNT");
                 // Don't check anything here, the operator can do all necessary withdrawals
                 // in any order he wants (the circuit still ensures the withdrawals are valid)
             } else {
-                require (count > 0, "INVALID_WITHDRAWALS_COUNT");
+                require (count > 0, "INVALID_WITHDRAWAL_COUNT");
                 bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
                 bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
                 // Pad the block so it's full
@@ -296,7 +300,8 @@ library ExchangeBlocks
                 }
                 require(inputStartingHash == startingHash, "INVALID_WITHDRAWAL_STARTING_HASH");
                 require(inputEndingHash == endingHash, "INVALID_WITHDRAWAL_ENDING_HASH");
-                numWithdrawalRequestsCommitted = uint32(startIdx + count);
+                numWithdrawalRequestsCommitted += uint32(count);
+
             }
         } else if (blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
             // Do nothing
@@ -345,31 +350,33 @@ library ExchangeBlocks
 
     function isDepositRequestForced(
         ExchangeData.State storage S,
-        uint depositIdx
+        uint numRequestsCommitted
         )
         private
         view
         returns (bool)
     {
-        if (depositIdx < S.depositChain.length) {
-            return S.depositChain[depositIdx].timestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
-        } else {
+        if (numRequestsCommitted == S.depositChain.length) {
             return false;
+        } else {
+            return S.depositChain[numRequestsCommitted].timestamp < now.sub(
+                ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
         }
     }
 
     function isWithdrawalRequestForced(
         ExchangeData.State storage S,
-        uint withdrawIdx
+        uint numRequestsCommitted
         )
         private
         view
         returns (bool)
     {
-        if (withdrawIdx < S.withdrawalChain.length) {
-            return S.withdrawalChain[withdrawIdx].timestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
-        } else {
+        if (numRequestsCommitted == S.withdrawalChain.length) {
             return false;
+        } else {
+            return S.withdrawalChain[numRequestsCommitted].timestamp < now.sub(
+                ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED());
         }
     }
 }
