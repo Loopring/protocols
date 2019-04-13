@@ -178,9 +178,8 @@ contract("Exchange", (accounts: string[]) => {
       const exchangeState = await exchangeTestUtil.loadRealm(exchangeId, currentBlockIdx);
 
       // Do all withdrawal requests to completely reset the merkle tree
-      const accountsKeys: string[] = Object.keys(exchangeState.accounts);
-      for (const accountKey of accountsKeys) {
-        const account = exchangeState.accounts[Number(accountKey)];
+      for (let accountID = 0; accountID < exchangeState.accounts.length; accountID++) {
+        const account = exchangeState.accounts[accountID];
         let bAccountReset = false;
         for (const tokenID of Object.keys(account.balances)) {
           const balanceValue = account.balances[Number(tokenID)];
@@ -195,13 +194,13 @@ contract("Exchange", (accounts: string[]) => {
             bAccountReset = true;
             const tokenAddress = exchangeTestUtil.tokenIDToAddressMap.get(Number(tokenID));
             await exchangeTestUtil.requestShutdownWithdrawal(
-              exchangeId, account.accountID, tokenAddress, balanceValue.balance,
+              exchangeId, accountID, tokenAddress, balanceValue.balance,
             );
           }
         }
         if (!bAccountReset && (account.publicKeyX !== "0" || account.publicKeyY !== "0" || account.nonce !== 0)) {
           await exchangeTestUtil.requestShutdownWithdrawal(
-            exchangeId, account.accountID, exchangeTestUtil.zeroAddress, new BN(0),
+            exchangeId, accountID, exchangeTestUtil.zeroAddress, new BN(0),
           );
         }
       }

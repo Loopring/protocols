@@ -11,7 +11,8 @@ import { Artifacts } from "../util/Artifacts";
 import { Context } from "./context";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer,
+import { Account, Balance, Block, BlockType, Cancel, CancelBlock,
+         Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer,
          Operator, OrderInfo, Realm, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
@@ -28,6 +29,8 @@ function replacer(name: any, val: any) {
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
+
+  public TREE_DEPTH_TRADING_HISTORY = 14;
 
   public ringSettlementBlockSizes = [1, 2];
   public depositBlockSizes = [4, 8];
@@ -619,7 +622,7 @@ export class ExchangeTestUtil {
     return [nextBlockIdx, outputFilename];
   }
 
-  public async commitBlock(operator: Operator, blockType: number, numElements: number,
+  public async commitBlock(operator: Operator, blockType: BlockType, numElements: number,
                            data: string, filename: string) {
     const bitstream = new pjs.Bitstream(data);
     const realmID = bitstream.extractUint32(0);
@@ -659,15 +662,15 @@ export class ExchangeTestUtil {
     assert(result.status === 0, "generateKeys failed: " + blockFilename);
 
     let verificationKeyFilename = "keys/";
-    if (block.blockType === 0) {
+    if (block.blockType === BlockType.RING_SETTLEMENT) {
       verificationKeyFilename += "trade";
-    } else if (block.blockType === 1) {
+    } else if (block.blockType === BlockType.DEPOSIT) {
       verificationKeyFilename += "deposit";
-    } else if (block.blockType === 2) {
+    } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
       verificationKeyFilename += "withdraw_onchain";
-    } else if (block.blockType === 3) {
+    } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
       verificationKeyFilename += "withdraw_offchain";
-    } else if (block.blockType === 4) {
+    } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
       verificationKeyFilename += "cancel";
     }
     verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
@@ -803,7 +806,7 @@ export class ExchangeTestUtil {
       const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
 
       // Validate state change
-      // this.validateDeposits(deposits, stateBefore, stateAfter);
+      this.validateDeposits(deposits, stateBefore, stateAfter);
 
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
@@ -817,7 +820,7 @@ export class ExchangeTestUtil {
 
       // Commit the block
       const operator = await this.getActiveOperator(realmID);
-      const blockInfo = await this.commitBlock(operator, 1, blockSize, bs.getData(), blockFilename);
+      const blockInfo = await this.commitBlock(operator, BlockType.DEPOSIT, blockSize, bs.getData(), blockFilename);
 
       blockInfos.push(blockInfo);
     }
@@ -832,12 +835,25 @@ export class ExchangeTestUtil {
     if (blockIdx === undefined) {
       blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     }
-    const accounts: {[key: number]: Account} = {};
+    const accounts: Account[] = [];
     if (blockIdx > 0) {
       const stateFile = "states/state_" + realmID + "_" + blockIdx + ".json";
       const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
       const accountsKeys: string[] = Object.keys(jState.accounts_values);
+      let numAccounts = 1;
+      for (const accountKey of accountsKeys) {
+        numAccounts = (Number(accountKey) >= numAccounts) ? Number(accountKey) + 1 : numAccounts;
+      }
+      for (let i = 0; i < numAccounts; i++) {
+        const emptyAccount: Account = {
+          publicKeyX: "0",
+          publicKeyY: "0",
+          nonce: 0,
+          balances: {},
+        };
+        accounts.push(emptyAccount);
+      }
       for (const accountKey of accountsKeys) {
         const jAccount = jState.accounts_values[accountKey];
 
@@ -860,19 +876,8 @@ export class ExchangeTestUtil {
             balance: new BN(jBalance.balance, 10),
             tradeHistory,
           };
-
-          // Make sure all tokens exist
-          for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
-            if (!balances[i]) {
-              balances[i] = {
-                balance: new BN(0),
-                tradeHistory: {},
-              };
-            }
-          }
         }
         const account: Account = {
-          accountID: Number(accountKey),
           publicKeyX: jAccount.publicKeyX,
           publicKeyY: jAccount.publicKeyY,
           nonce: jAccount.nonce,
@@ -880,7 +885,28 @@ export class ExchangeTestUtil {
         };
         accounts[Number(accountKey)] = account;
       }
+    } else {
+      const emptyAccount: Account = {
+        publicKeyX: "0",
+        publicKeyY: "0",
+        nonce: 0,
+        balances: {},
+      };
+      accounts.push(emptyAccount);
     }
+
+    // Make sure all tokens exist
+    for (const account of accounts) {
+      for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
+        if (!account.balances[i]) {
+          account.balances[i] = {
+            balance: new BN(0),
+            tradeHistory: {},
+          };
+        }
+      }
+    }
+
     const realm: Realm = {
       accounts,
     };
@@ -902,7 +928,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const blockType = onchain ? 2 : 3;
+    const blockType = onchain ? BlockType.ONCHAIN_WITHDRAWAL : BlockType.OFFCHAIN_WITHDRAWAL;
 
     let numWithdrawalsDone = 0;
     while (numWithdrawalsDone < pendingWithdrawals.length) {
@@ -922,7 +948,7 @@ export class ExchangeTestUtil {
             tokenID: 0,
             amount: new BN(0),
             walletAccountID: onchain ? 0 : this.wallets[realmID][0].walletAccountID,
-            feeTokenID: 0,
+            feeTokenID: 1,
             fee: new BN(0),
             walletSplitPercentage: 0,
           };
@@ -972,7 +998,11 @@ export class ExchangeTestUtil {
       const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
 
       // Validate state change
-      this.validateWithdrawals(withdrawalBlock, stateBefore, stateAfter);
+      if (onchain) {
+        this.validateOnchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
+      } else {
+        this.validateOffchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
+      }
 
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
@@ -1200,7 +1230,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, 0, blockSize, bs.getData(), blockFilename);
+      await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
     }
 
     this.pendingRings[realmID] = [];
@@ -1231,7 +1261,7 @@ export class ExchangeTestUtil {
             orderTokenID: 0,
             orderID: 0,
             walletAccountID,
-            feeTokenID: 0,
+            feeTokenID: 1,
             fee: new BN(0),
             walletSplitPercentage: 0,
           };
@@ -1248,8 +1278,18 @@ export class ExchangeTestUtil {
         operatorAccountID: operator.accountID,
       };
 
+      // Store state before
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
+
       // Create the block
       const [blockIdx, blockFilename] = await this.createBlock(realmID, 4, JSON.stringify(cancelBlock, replacer, 4));
+
+      // Store state after
+      const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
+
+      // Validate state change
+      this.validateOrderCancellations(cancelBlock, stateBefore, stateAfter);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
@@ -1272,7 +1312,7 @@ export class ExchangeTestUtil {
       }
 
       // Commit the block
-      await this.commitBlock(operator, 4, blockSize, bs.getData(), blockFilename);
+      await this.commitBlock(operator, BlockType.ORDER_CANCELLATION, blockSize, bs.getData(), blockFilename);
     }
 
     this.pendingCancels[realmID] = [];
@@ -1495,10 +1535,10 @@ export class ExchangeTestUtil {
   }
 
   public compareStates(stateA: Realm, stateB: Realm) {
-    const accountsKeys: string[] = Object.keys(stateA.accounts);
-    for (const accountKey of accountsKeys) {
-      const accountA = stateA.accounts[Number(accountKey)];
-      const accountB = stateB.accounts[Number(accountKey)];
+    assert.equal(stateA.accounts.length, stateA.accounts.length, "number of accounts does not match");
+    for (let accountID = 0; accountID < stateA.accounts.length; accountID++) {
+      const accountA = stateA.accounts[accountID];
+      const accountB = stateB.accounts[accountID];
 
       for (const tokenID of Object.keys(accountA.balances)) {
         const balanceValueA = accountA.balances[Number(tokenID)];
@@ -1508,15 +1548,15 @@ export class ExchangeTestUtil {
           const tradeHistoryValueA = balanceValueA.tradeHistory[Number(orderID)];
           const tradeHistoryValueB = balanceValueA.tradeHistory[Number(orderID)];
 
-          assert(tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled));
-          assert(tradeHistoryValueA.cancelled === tradeHistoryValueB.cancelled);
+          assert(tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled), "trade history filled does not match");
+          assert.equal(tradeHistoryValueA.cancelled, tradeHistoryValueB.cancelled, "cancelled does not match");
+          assert.equal(tradeHistoryValueA.orderID, tradeHistoryValueB.orderID, "orderID does not match");
         }
-        assert(balanceValueA.balance.eq(balanceValueB.balance));
+        assert(balanceValueA.balance.eq(balanceValueB.balance), "balance does not match");
       }
-      assert.equal(accountA.accountID, accountB.accountID);
-      assert.equal(accountA.publicKeyX, accountB.publicKeyX);
-      assert.equal(accountA.publicKeyY, accountB.publicKeyY);
-      assert.equal(accountA.nonce, accountB.nonce);
+      assert.equal(accountA.publicKeyX, accountB.publicKeyX, "pubKeyX does not match");
+      assert.equal(accountA.publicKeyY, accountB.publicKeyY, "pubKeyY does not match");
+      assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
     }
   }
 
@@ -1555,14 +1595,13 @@ export class ExchangeTestUtil {
       let bNewAccount = false;
       if (accountBefore === undefined) {
         const balances: {[key: number]: Balance} = {};
-        for (let i = 0; i < 2 ** 12; i++) {
+        for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
           balances[i] = {
             balance: new BN(0),
             tradeHistory: {},
           };
         }
         const emptyAccount: Account = {
-          accountID: deposit.accountID,
           publicKeyX: "0",
           publicKeyY: "0",
           nonce: 0,
@@ -1582,7 +1621,7 @@ export class ExchangeTestUtil {
       if (accountBefore.nonce !== accountAfter.nonce) {
         console.log("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
       }
-      for (let i = 0; i < 2 ** 12; i++) {
+      for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
         if (!accountBefore.balances[i].balance.eq(accountAfter.balances[i].balance)) {
           this.prettyPrintBalanceChange(deposit.accountID, i, accountBefore.balances[i].balance,
                                                               accountAfter.balances[i].balance);
@@ -1597,28 +1636,76 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateOnchainWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: Realm, stateAfter: Realm) {
     console.log("----------------------------------------------------");
-    /*const operatorAccountID = withdrawBlock.operatorAccountID;
     let latestState = stateBefore;
+    const shutdown = withdrawBlock.count === 0;
     for (const withdrawal of withdrawBlock.withdrawals) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.withdraw(withdrawBlock, latestState);
+      const simulatorReport = simulator.onchainWithdraw(withdrawal, shutdown, latestState);
 
-      let accountBefore = latestState.accounts[withdrawal.accountID];
-      const accountAfter = simulatorReport.stateAfter.accounts[withdrawal.accountID];
+      const accountBefore = latestState.accounts[withdrawal.accountID];
+      const accountAfter = simulatorReport.realmAfter.accounts[withdrawal.accountID];
 
-      this.prettyPrintBalanceChange(
-        withdrawal.accountID, withdrawal.tokenID,
-        accountBefore.balances[i].balance,
-        accountAfter.balances[i].balance,
-      );
+      if (withdrawal.tokenID > 0) {
+        this.prettyPrintBalanceChange(
+          withdrawal.accountID, withdrawal.tokenID,
+          accountBefore.balances[withdrawal.tokenID].balance,
+          accountAfter.balances[withdrawal.tokenID].balance,
+        );
+      }
 
-      latestState = simulatorReport.stateAfter;
+      latestState = simulatorReport.realmAfter;
     }
 
     // Verify resulting state
-    this.compareStates(stateAfter, latestState);*/
+    this.compareStates(stateAfter, latestState);
+    console.log("----------------------------------------------------");
+  }
+
+  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: Realm, stateAfter: Realm) {
+    console.log("----------------------------------------------------");
+    const operatorAccountID = withdrawBlock.operatorAccountID;
+    let latestState = stateBefore;
+    for (const withdrawal of withdrawBlock.withdrawals) {
+      const simulator = new Simulator();
+      const simulatorReport = simulator.offchainWithdraw(withdrawal, latestState, operatorAccountID);
+
+      const accountBefore = latestState.accounts[withdrawal.accountID];
+      const accountAfter = simulatorReport.realmAfter.accounts[withdrawal.accountID];
+
+      if (withdrawal.tokenID > 0) {
+        this.prettyPrintBalanceChange(
+          withdrawal.accountID, withdrawal.tokenID,
+          accountBefore.balances[withdrawal.tokenID].balance,
+          accountAfter.balances[withdrawal.tokenID].balance,
+        );
+      }
+
+      latestState = simulatorReport.realmAfter;
+    }
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
+    console.log("----------------------------------------------------");
+  }
+
+  public validateOrderCancellations(cancelBlock: CancelBlock, stateBefore: Realm, stateAfter: Realm) {
+    console.log("----------------------------------------------------");
+    const operatorAccountID = cancelBlock.operatorAccountID;
+    let latestState = stateBefore;
+    for (const cancel of cancelBlock.cancels) {
+      const simulator = new Simulator();
+      const simulatorReport = simulator.cancelOrder(cancel, latestState, operatorAccountID);
+
+      // const accountBefore = latestState.accounts[cancel.accountID];
+      // const accountAfter = simulatorReport.realmAfter.accounts[cancel.accountID];
+
+      latestState = simulatorReport.realmAfter;
+    }
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
     console.log("----------------------------------------------------");
   }
 
@@ -1631,8 +1718,9 @@ export class ExchangeTestUtil {
     }
     for (const order of orders) {
       // Make sure the trading history for the orders exists
-      if (!state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[order.orderID]) {
-        state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[order.orderID] = {
+      const tradeHistorySlot = order.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+      if (!state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[tradeHistorySlot]) {
+        state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[tradeHistorySlot] = {
           filled: new BN(0),
           cancelled: false,
           orderID: 0,
@@ -1819,8 +1907,9 @@ export class ExchangeTestUtil {
   }
 
   private logFilledAmountOrder(description: string, accountBefore: Account, accountAfter: Account, order: OrderInfo) {
-    const before = accountBefore.balances[order.tokenIdS].tradeHistory[order.orderID];
-    const after = accountAfter.balances[order.tokenIdS].tradeHistory[order.orderID];
+    const tradeHistorySlot = order.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+    const before = accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
+    const after = accountAfter.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.amountS);
     const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.amountS);
     const filledBeforePretty = this.getPrettyAmount(order.tokenIdS, before.filled);

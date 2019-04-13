@@ -411,7 +411,7 @@ contract("Exchange", (accounts: string[]) => {
                             ownerA, toWithdraw);
     });
 
-    it("Offchain withdrawal request", async () => {
+    it("Offchain withdrawal request (token == feeToken)", async () => {
       await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -431,7 +431,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
         realmID, accountID, token, toWithdraw,
-        feeToken, fee, 0, wallet.walletAccountID,
+        feeToken, fee, 20, wallet.walletAccountID,
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
       await exchangeTestUtil.verifyPendingBlocks(realmID);
@@ -441,6 +441,43 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, 0,
                             accountID, token,
                             owner, balance.sub(fee));
+    });
+
+    it("Offchain withdrawal request (token != feeToken)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const wallet = exchangeTestUtil.wallets[realmID][0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "LRC";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      // Deposit token
+      const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      // Deposit feeToken
+      await exchangeTestUtil.deposit(realmID, owner,
+                                     keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                     feeToken, fee);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(realmID);
+
+      const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
+        realmID, accountID, token, toWithdraw,
+        feeToken, fee, 40, wallet.walletAccountID,
+      );
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance);
     });
 
     it("Withdraw (normal account)", async () => {
