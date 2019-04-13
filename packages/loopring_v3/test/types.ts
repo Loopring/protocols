@@ -1,5 +1,13 @@
 import BN = require("bn.js");
 
+export enum BlockType {
+  RING_SETTLEMENT = 0,
+  DEPOSIT,
+  ONCHAIN_WITHDRAWAL,
+  OFFCHAIN_WITHDRAWAL,
+  ORDER_CANCELLATION,
+}
+
 export interface OrderInfo {
   owner?: string;
   tokenS?: string;
@@ -163,7 +171,6 @@ export interface Balance {
 }
 
 export interface Account {
-  accountID: number;
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
@@ -171,7 +178,7 @@ export interface Account {
 }
 
 export interface Realm {
-  accounts: {[key: number]: Account};
+  accounts: Account[];
 }
 
 export interface DetailedTokenTransfer {
@@ -183,18 +190,13 @@ export interface DetailedTokenTransfer {
   subPayments: DetailedTokenTransfer[];
 }
 
-export interface SimulatorTradeReport {
+export interface RingSettlementSimulatorReport {
   realmBefore: Realm;
   realmAfter: Realm;
   detailedTransfers: DetailedTokenTransfer[];
 }
 
-export interface SimulatorDepositReport {
-  realmBefore: Realm;
-  realmAfter: Realm;
-}
-
-export interface SimulatorWithdrawReport {
+export interface SimulatorReport {
   realmBefore: Realm;
   realmAfter: Realm;
 }
