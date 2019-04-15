@@ -267,8 +267,8 @@ library ExchangeWithdrawals
         ExchangeData.Account storage account = S.accounts[accountID];
 
         if (amount > 0) {
-            // Set the amount to 0 so it cannot be withdrawn anymore
-            data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF000000000000000000000000;
+            // Set everything to 0 so it cannot be withdrawn anymore
+            data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000000000000000;
             assembly {
                 mstore(add(withdrawals, offset), data)
             }

@@ -480,6 +480,7 @@ export class ExchangeTestUtil {
     const depositInfo: DepositInfo = {
       owner,
       token,
+      amount,
       accountID: items[0][0].toNumber(),
       depositIdx: items[0][1].toNumber(),
     };
@@ -1332,7 +1333,7 @@ export class ExchangeTestUtil {
         // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
-      const tokenID = (await this.getTokenID(tokenAddress)).toNumber();
+      const tokenID = await this.getTokenID(tokenAddress);
       this.tokenAddressToIDMap.set(tokenAddress, tokenID);
       this.tokenIDToAddressMap.set(tokenID, tokenAddress);
     }
@@ -1341,7 +1342,11 @@ export class ExchangeTestUtil {
 
   public async getTokenID(tokenAddress: string) {
     const tokenID = await this.exchange.getTokenID(tokenAddress);
-    return tokenID;
+    return tokenID.toNumber();
+  }
+
+  public getTokenAddressFromID(tokenID: number) {
+    return this.tokenIDToAddressMap.get(tokenID);
   }
 
   public async getAccountID(owner: string) {
@@ -1728,6 +1733,10 @@ export class ExchangeTestUtil {
       }
     }
     return state;
+  }
+
+  public getRandomInt(max: number) {
+    return Math.floor(Math.random() * max);
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
