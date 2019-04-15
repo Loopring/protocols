@@ -22,7 +22,7 @@ import "./Exchange.sol";
 /// @title An Implementation of IExchangeDeployer.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-/// @dev We created this library to work around the gas limit -- inlining the
+/// @dev We created this library to work around the gas limit -- inlining all the
 ///      enclosed function directly into LoopringV3 will make LoopringV3 too large
 ///      to deploy.
 library ExchangeDeployer

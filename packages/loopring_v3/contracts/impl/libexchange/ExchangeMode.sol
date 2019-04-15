@@ -22,8 +22,8 @@ import "./ExchangeData.sol";
 
 
 /// @title IManagingMode.
-/// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeMode
 {
     using MathUint  for uint;

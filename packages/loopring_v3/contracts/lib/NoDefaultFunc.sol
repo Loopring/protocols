@@ -19,6 +19,7 @@ pragma solidity 0.5.7;
 
 /// @title NoDefaultFunc
 /// @dev Disable default functions.
+/// @author Brecht Devos - <brecht@loopring.org>
 contract NoDefaultFunc
 {
     function ()

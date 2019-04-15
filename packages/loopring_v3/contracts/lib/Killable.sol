@@ -21,6 +21,7 @@ import "../lib/Claimable.sol";
 
 /// @title Killable
 /// @dev The Killable contract allows the contract owner to suspend, resume or kill the contract
+/// @author Brecht Devos - <brecht@loopring.org>
 contract Killable is Claimable
 {
     bool public suspended = false;

@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.7;
 
+
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>

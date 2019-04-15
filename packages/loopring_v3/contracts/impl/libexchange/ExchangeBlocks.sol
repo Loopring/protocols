@@ -26,8 +26,8 @@ import "./ExchangeMode.sol";
 
 
 /// @title ExchangeAccounts.
-/// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeBlocks
 {
     using MathUint          for uint;

@@ -27,8 +27,8 @@ import "./ExchangeTokens.sol";
 
 
 /// @title ExchangeAccounts.
-/// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeWithdrawals
 {
     using MathUint          for uint;
