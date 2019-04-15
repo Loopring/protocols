@@ -204,6 +204,7 @@ export interface SimulatorReport {
 export interface DepositInfo {
   owner: string;
   token: string;
+  amount: BN;
   accountID: number;
   depositIdx: number;
 }

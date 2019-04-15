@@ -7,10 +7,6 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchangeId = 0;
 
-  const getRandomInt = (max: number) => {
-    return Math.floor(Math.random() * max);
-  };
-
   const createRandomRing = () => {
     const ring: RingInfo = {
       orderA:
@@ -38,7 +34,7 @@ contract("Exchange", (accounts: string[]) => {
   const doRandomDeposit = async () => {
     const orderOwners = exchangeTestUtil.testContext.orderOwners;
     const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-    const owner = orderOwners[Number(getRandomInt(orderOwners.length))];
+    const owner = orderOwners[Number(exchangeTestUtil.getRandomInt(orderOwners.length))];
     const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
     const token = exchangeTestUtil.getTokenAddress("LRC");
     return await exchangeTestUtil.deposit(exchangeId, owner,
@@ -73,8 +69,8 @@ contract("Exchange", (accounts: string[]) => {
     exchangeTestUtil.cancelOrderID(
       exchangeId,
       depositInfo.accountID,
-      getRandomInt(2 ** 8),
-      getRandomInt(2 ** 14),
+      exchangeTestUtil.getRandomInt(exchangeTestUtil.MAX_NUM_TOKENS),
+      exchangeTestUtil.getRandomInt(2 ** exchangeTestUtil.TREE_DEPTH_TRADING_HISTORY),
       exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
       1,
       new BN(0),
@@ -150,7 +146,7 @@ contract("Exchange", (accounts: string[]) => {
       const blockSizes = exchangeTestUtil.onchainWithdrawalBlockSizes;
       for (const blockSize of blockSizes) {
         for (let i = 0; i < blockSize; i++) {
-          const randomDeposit = deposits[getRandomInt(numDeposits)];
+          const randomDeposit = deposits[exchangeTestUtil.getRandomInt(numDeposits)];
           await doRandomOnchainWithdrawal(randomDeposit);
         }
         await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
@@ -174,7 +170,7 @@ contract("Exchange", (accounts: string[]) => {
         const blockSizes = exchangeTestUtil.offchainWithdrawalBlockSizes;
         for (const blockSize of blockSizes) {
           for (let i = 0; i < blockSize; i++) {
-            const randomDeposit = deposits[getRandomInt(numDeposits)];
+            const randomDeposit = deposits[exchangeTestUtil.getRandomInt(numDeposits)];
             await doRandomOffchainWithdrawal(randomDeposit);
           }
           await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);
@@ -199,7 +195,7 @@ contract("Exchange", (accounts: string[]) => {
         const blockSizes = exchangeTestUtil.orderCancellationBlockSizes;
         for (const blockSize of blockSizes) {
           for (let i = 0; i < blockSize; i++) {
-            const randomDeposit = deposits[getRandomInt(numDeposits)];
+            const randomDeposit = deposits[exchangeTestUtil.getRandomInt(numDeposits)];
             await doRandomOrderCancellation(randomDeposit);
           }
           await exchangeTestUtil.commitCancels(exchangeId);

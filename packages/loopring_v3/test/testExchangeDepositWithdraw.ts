@@ -1,12 +1,13 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { RingInfo } from "./types";
+import { DepositInfo, RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
+  let loopring: any;
   let realmID = 0;
 
   const createOrUpdateAccountChecked = async (keyPair: any, owner: string, fee: BN) => {
@@ -180,6 +181,88 @@ contract("Exchange", (accounts: string[]) => {
                               owner, new BN(0), bBurn);
   };
 
+  const distributeWithdrawalsChecked = async (blockIdx: number, deposits: DepositInfo[],
+                                              from: string, tooLate: boolean = false) => {
+    const LRC = await exchangeTestUtil.getTokenContract("LRC");
+    // Balances owners
+    const balanceOwnerBefore: BN[] = [];
+    for (const deposit of deposits) {
+      balanceOwnerBefore.push(await exchangeTestUtil.getOnchainBalance(deposit.owner, deposit.token));
+    }
+    // Balances contract
+    const balancesContractBefore: BN[] = [];
+    const balancesContractExpected: BN[] = [];
+    for (let i = 0; i < exchangeTestUtil.MAX_NUM_TOKENS; i++) {
+      balancesContractBefore.push(new BN(0));
+      balancesContractExpected.push(new BN(0));
+      const token = exchangeTestUtil.getTokenAddressFromID(i);
+      if (token) {
+        const balance = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+        balancesContractBefore[i] = balance;
+        balancesContractExpected[i] = balance;
+      }
+    }
+    // Exchange stake
+    const stakeBefore = await exchange.getStake();
+    const totalStakeBefore = await loopring.totalStake();
+    // LRC balance from
+    const balanceFromBefore = await exchangeTestUtil.getOnchainBalance(from, "LRC");
+    // LRC supply
+    const lrcSupplyBefore = await LRC.totalSupply();
+
+    // Distribute the withdrawals
+    const tx = await exchange.distributeWithdrawals(blockIdx, {from});
+    console.log("\x1b[46m%s\x1b[0m", "[DistributeWithdrawals] Gas used: " + tx.receipt.gasUsed);
+
+    // Check balances owners
+    const balanceOwnerAfter: BN[] = [];
+    for (const deposit of deposits) {
+      balanceOwnerAfter.push(await exchangeTestUtil.getOnchainBalance(deposit.owner, deposit.token));
+      const tokenID = await exchangeTestUtil.getTokenID(deposit.token);
+      balancesContractExpected[tokenID] = balancesContractExpected[tokenID].sub(deposit.amount);
+    }
+    for (let i = 0; i < deposits.length; i++) {
+      assert(balanceOwnerAfter[i].eq(balanceOwnerBefore[i].add(deposits[i].amount)),
+           "Token balance of owner should be increased by amountToOwner");
+    }
+    // Check balances contract
+    for (let i = 0; i < exchangeTestUtil.MAX_NUM_TOKENS; i++) {
+      const token = exchangeTestUtil.getTokenAddressFromID(i);
+      if (token) {
+        const balance = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
+        assert(balance.eq(balancesContractExpected[i]), "Token balance of contract incorrect");
+      }
+    }
+    // Check stake
+    const stakeAfter = await exchange.getStake();
+    const totalStakeAfter = await loopring.totalStake();
+    // LRC balance from
+    const balanceFromAfter = await exchangeTestUtil.getOnchainBalance(from, "LRC");
+    // LRC supply
+    const lrcSupplyAfter = await LRC.totalSupply();
+    if (tooLate) {
+      // Stake reduced by withdrawalFineLRC * numWithdrawals
+      const withdrawalFineLRC = await loopring.withdrawalFineLRC();
+      const totalFine = withdrawalFineLRC.mul(new BN(deposits.length));
+      assert(stakeAfter.eq(stakeBefore.sub(totalFine)), "Stake not reduced correctly by fine");
+      assert(totalStakeAfter.eq(totalStakeBefore.sub(totalFine)), "Total stake not reduced correctly by fine");
+      // Distributer gets paid half the fine
+      const reward = totalFine.div(new BN(2));
+      assert(balanceFromAfter.eq(balanceFromBefore.add(reward)), "distributer should be rewarded 50% of fine");
+      // Half is burned
+      const burned = totalFine.sub(reward);
+      assert(lrcSupplyAfter.eq(lrcSupplyBefore.sub(burned)), "half of fine should be burned");
+    } else {
+      // Stake remains the same
+      assert(stakeAfter.eq(stakeBefore), "Stake should remain the same");
+      assert(totalStakeAfter.eq(totalStakeBefore), "Total stake should remain the same");
+      // Operator doesn't get paid
+      assert(balanceFromAfter.eq(balanceFromBefore), "Operator doesn't get rewarded");
+      // Nothing is burned
+      assert(lrcSupplyAfter.eq(lrcSupplyBefore), "No LRC burned");
+    }
+  };
+
   const createExchange = async (bSetupTestState: boolean = true) => {
     realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
     exchange = exchangeTestUtil.exchange;
@@ -189,6 +272,7 @@ contract("Exchange", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
+    loopring = exchangeTestUtil.loopringV3;
     realmID = 1;
   });
 
@@ -486,7 +570,6 @@ contract("Exchange", (accounts: string[]) => {
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const wallet = exchangeTestUtil.wallets[realmID][0];
 
       const balanceA = new BN(web3.utils.toWei("7", "ether"));
       const toWithdrawA = new BN(web3.utils.toWei("4", "ether"));
@@ -625,6 +708,138 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, 1,
                             ring.orderB.walletAccountID, ring.orderB.tokenF,
                             walletB.owner, walletFeeB, true);
+    });
+
+    it("Distribute withdrawals (by operator)", async () => {
+      await createExchange();
+
+      // Do deposits to fill a complete block
+      const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[0];
+      const deposits: DepositInfo[] = [];
+      for (let i = 0; i < blockSize; i++) {
+        const orderOwners = exchangeTestUtil.testContext.orderOwners;
+        const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+        const owner = orderOwners[i];
+        const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+        const token = exchangeTestUtil.getTokenAddress("LRC");
+        const deposit = await exchangeTestUtil.deposit(realmID, owner,
+                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                       token, amount);
+        deposits.push(deposit);
+      }
+      await exchangeTestUtil.commitDeposits(realmID);
+
+      for (const deposit of deposits) {
+        exchangeTestUtil.requestWithdrawalOffchain(
+          realmID,
+          deposit.accountID,
+          deposit.token,
+          deposit.amount,
+          "LRC",
+          new BN(0),
+          0,
+          exchangeTestUtil.wallets[realmID][0].walletAccountID,
+        );
+      }
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
+
+      // Incorrect block index
+      await expectThrow(
+        exchange.distributeWithdrawals(123456, {from: exchangeTestUtil.exchangeOperator}),
+        "INVALID_BLOCK_IDX",
+      );
+
+      // Block without any withdrawals
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx, {from: exchangeTestUtil.exchangeOperator}),
+        "INVALID_BLOCK_TYPE",
+      );
+
+      // Block not finalized yet
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.exchangeOperator}),
+        "BLOCK_NOT_FINALIZED",
+      );
+
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+
+      // Try to call from a non-operator address
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
+        "UNAUTHORIZED",
+      );
+
+      // Distribute the withdrawals
+      await distributeWithdrawalsChecked(blockIdx + 1, deposits, exchangeTestUtil.exchangeOperator);
+
+      // Try to distribute again
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.exchangeOperator}),
+        "WITHDRAWALS_ALREADY_DISTRIBUTED",
+      );
+    });
+
+    it.only("Distribute withdrawals (not by operator)", async () => {
+      await createExchange();
+
+      // Deposit some LRC to stake for the exchange
+      const depositer = exchangeTestUtil.testContext.operators[2];
+      const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+      await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
+
+      await loopring.depositStake(realmID, stakeAmount, {from: depositer});
+
+      // Do deposits to fill a complete block
+      const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[0];
+      const deposits: DepositInfo[] = [];
+      for (let i = 0; i < blockSize; i++) {
+        const orderOwners = exchangeTestUtil.testContext.orderOwners;
+        const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+        const owner = orderOwners[i];
+        const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+        const token = exchangeTestUtil.getTokenAddress("LRC");
+        const deposit = await exchangeTestUtil.deposit(realmID, owner,
+                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                       token, amount);
+        deposits.push(deposit);
+      }
+      await exchangeTestUtil.commitDeposits(realmID);
+
+      for (const deposit of deposits) {
+        exchangeTestUtil.requestWithdrawalOffchain(
+          realmID,
+          deposit.accountID,
+          deposit.token,
+          deposit.amount,
+          "LRC",
+          new BN(0),
+          0,
+          exchangeTestUtil.wallets[realmID][0].walletAccountID,
+        );
+      }
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
+
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+
+      // Try to call from a non-operator address
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
+        "UNAUTHORIZED",
+      );
+
+      // Wait the max time only the operator can do it
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
+
+      // Distribute the withdrawals
+      await distributeWithdrawalsChecked(blockIdx + 1, deposits, exchangeTestUtil.testContext.deployer, true);
+
+      // Try to distribute again
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
+        "WITHDRAWALS_ALREADY_DISTRIBUTED",
+      );
     });
 
   });
