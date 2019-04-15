@@ -38,7 +38,7 @@ library ExchangeBalances
         uint96  balance,
         uint256 tradeHistoryRoot,
         uint256[20] memory accountMerkleProof,
-        uint256[8] memory balanceMerkleProof
+        uint256[8]  memory balanceMerkleProof
         )
         public
         pure
@@ -68,7 +68,7 @@ library ExchangeBalances
         uint96  balance,
         uint256 tradeHistoryRoot,
         uint256[20] memory accountMerkleProof,
-        uint256[8] memory balanceMerkleProof
+        uint256[8]  memory balanceMerkleProof
         )
         public
         pure
@@ -94,8 +94,8 @@ library ExchangeBalances
 
     function getBalancesRoot(
         uint16 tokenID,
-        uint balance,
-        uint tradeHistoryRoot,
+        uint   balance,
+        uint   tradeHistoryRoot,
         uint256[8] memory balanceMerkleProof
         )
         internal
@@ -124,11 +124,11 @@ library ExchangeBalances
     }
 
     function getAccountInternalsRoot(
-        uint24 accountID,
+        uint24  accountID,
         uint256 pubKeyX,
         uint256 pubKeyY,
-        uint nonce,
-        uint balancesRoot,
+        uint256 nonce,
+        uint256 balancesRoot,
         uint256[20] memory accountMerkleProof
         )
         internal
