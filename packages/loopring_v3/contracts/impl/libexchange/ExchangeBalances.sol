@@ -179,10 +179,10 @@ library ExchangeBalances
         public
         pure
     {
-        // Actually only up to 20 items in the list will be used. We keep 8 more in case
-        // we will change the depth of the Merkle tree.
+        // Actually only up to 20 items in the list will be used in 3.0. We keep more in case
+        // we will change the depth of the Merkle tree in the future.
 
-        // When we calculate the tree hash, the leaf nodes will use IVs[0] as the hashing
+        // When we calculate the tree hashes, the leaf nodes will use IVs[0] as the hashing
         // salt, the parent nodes of the leafs will use IVs[1], ...
         IVs[0] = 149674538925118052205057075966660054952481571156186698930522557832224430770;
         IVs[1] = 9670701465464311903249220692483401938888498641874948577387207195814981706974;

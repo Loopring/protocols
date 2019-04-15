@@ -384,9 +384,9 @@ contract IExchange
     ///                - Fee amount: 12 bytes
     ///                - WalletSplitPercentage: 1 byte
     function commitBlock(
-        uint8 blockType,
+        uint8  blockType,
         uint16 numElements,
-        bytes calldata data
+        bytes  calldata data
         )
         external;
 
@@ -559,7 +559,7 @@ contract IExchange
         returns (
             bytes32 accumulatedHash,
             uint256 accumulatedFee,
-            uint32 timestamp
+            uint32  timestamp
         );
 
     // Set the large value for amount to withdraw the complete balance
@@ -574,7 +574,7 @@ contract IExchange
     /// @param amount The amount of tokens to deposit
     function withdraw(
         address tokenAddress,
-        uint96 amount
+        uint96  amount
         )
         external
         payable;
@@ -601,8 +601,11 @@ contract IExchange
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountSideNodes The merkle proof for the account
-    /// @param  accountSideNodes The merkle proof for the balance of the token
+    /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
+    ///                      The deepest hash in the tree is the 1st element of the array.
+    /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
+    ///                      token for the account. The deepest hash in the tree is the
+    ///                      1st element of the array.
     function withdrawFromMerkleTree(
         address token,
         uint    pubKeyX,
@@ -610,8 +613,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountSideNodes,
-        uint256[8] calldata balanceMerkleProof
+        uint256[20] calldata accountMerkleProof,
+        uint256[8]  calldata balanceMerkleProof
         )
         external;
 
@@ -632,8 +635,11 @@ contract IExchange
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountSideNodes The merkle proof for the account
-    /// @param  accountSideNodes The merkle proof for the balance of the token
+    /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
+    ///                      The deepest hash in the tree is the 1st element of the array.
+    /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
+    ///                      token for the account. The deepest hash in the tree is the
+    ///                      1st element of the array.
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
@@ -642,8 +648,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountSideNodes,
-        uint256[8] calldata balanceMerkleProof
+        uint256[20] calldata accountMerkleProof,
+        uint256[8]  calldata balanceMerkleProof
         )
         external;
 
