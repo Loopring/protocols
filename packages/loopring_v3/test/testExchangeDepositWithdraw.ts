@@ -780,7 +780,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it.only("Distribute withdrawals (not by operator)", async () => {
+    it("Distribute withdrawals (not by operator)", async () => {
       await createExchange();
 
       // Deposit some LRC to stake for the exchange
