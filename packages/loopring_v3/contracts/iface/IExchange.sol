@@ -180,8 +180,11 @@ contract IExchange
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountPath The merkle proof for the account
-    /// @param  accountPath The merkle proof for the balance of the token for the account
+    /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
+    ///                      The deepest hash in the tree is the 1st element of the array.
+    /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
+    ///                      token for the account. The deepest hash in the tree is the
+    ///                      1st element of the array.
     /// @return True if the given information is stored in the merkle tree, false otherwise
     function isAccountBalanceCorrect(
         uint256 merkleRoot,
@@ -192,8 +195,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountPath,
-        uint256[8] calldata balancePath
+        uint256[20] calldata accountMerkleProof,
+        uint256[8]  calldata balanceMerkleProof
         )
         external
         pure
@@ -598,8 +601,8 @@ contract IExchange
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountPath The merkle proof for the account
-    /// @param  accountPath The merkle proof for the balance of the token
+    /// @param  accountSideNodes The merkle proof for the account
+    /// @param  accountSideNodes The merkle proof for the balance of the token
     function withdrawFromMerkleTree(
         address token,
         uint    pubKeyX,
@@ -607,8 +610,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountPath,
-        uint256[8] calldata balancePath
+        uint256[20] calldata accountSideNodes,
+        uint256[8] calldata balanceMerkleProof
         )
         external;
 
@@ -629,8 +632,8 @@ contract IExchange
     /// @param  nonce The nonce of the account
     /// @param  balance The balance of the account for the given token
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountPath The merkle proof for the account
-    /// @param  accountPath The merkle proof for the balance of the token
+    /// @param  accountSideNodes The merkle proof for the account
+    /// @param  accountSideNodes The merkle proof for the balance of the token
     function withdrawFromMerkleTreeFor(
         address owner,
         address token,
@@ -639,8 +642,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountPath,
-        uint256[8] calldata balancePath
+        uint256[20] calldata accountSideNodes,
+        uint256[8] calldata balanceMerkleProof
         )
         external;
 
@@ -818,7 +821,7 @@ contract IExchange
     ///      has been invoked successfully. To prevent entering the withdrawal mode, exchange
     ///      operators need to reset the Merkle tree to its initial state by doingwithdrawals
     ///      within MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
-    ///      seconds. 
+    ///      seconds.
     ///
     ///      Can only be called by the exchange owner.
     ///

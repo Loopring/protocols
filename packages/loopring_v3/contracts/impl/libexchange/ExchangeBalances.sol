@@ -37,8 +37,8 @@ library ExchangeBalances
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] memory accountPath,
-        uint256[8] memory balancePath
+        uint256[20] memory accountMerkleProof,
+        uint256[8] memory balanceMerkleProof
         )
         public
         pure
@@ -52,8 +52,8 @@ library ExchangeBalances
             nonce,
             balance,
             tradeHistoryRoot,
-            accountPath,
-            balancePath
+            accountMerkleProof,
+            balanceMerkleProof
         );
         require(isCorrect, "INVALID_MERKLE_TREE_DATA");
     }
@@ -67,8 +67,8 @@ library ExchangeBalances
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] memory accountPath,
-        uint256[8] memory balancePath
+        uint256[20] memory accountMerkleProof,
+        uint256[8] memory balanceMerkleProof
         )
         public
         pure
@@ -79,7 +79,7 @@ library ExchangeBalances
             tokenID,
             balance,
             tradeHistoryRoot,
-            balancePath
+            balanceMerkleProof
         );
         calculatedRoot = getAccountInternalsRoot(
             accountID,
@@ -87,7 +87,7 @@ library ExchangeBalances
             pubKeyY,
             nonce,
             calculatedRoot,
-            accountPath
+            accountMerkleProof
         );
         isCorrect = (calculatedRoot == merkleRoot);
     }
@@ -96,7 +96,7 @@ library ExchangeBalances
         uint16 tokenID,
         uint balance,
         uint tradeHistoryRoot,
-        uint256[8] memory balancePath
+        uint256[8] memory balanceMerkleProof
         )
         internal
         pure
@@ -111,14 +111,14 @@ library ExchangeBalances
         uint256 balanceItem = MiMC.Hash(balanceLeafElements, 1);
 
         // Calculate merkle root of balances tree
-        uint tokenAddress = tokenID;
+        uint _id = tokenID;
         for (uint depth = 0; depth < 8; depth++) {
-            if (tokenAddress & 1 == 1) {
-                balanceItem = hashImpl(balancePath[depth], balanceItem, IVs[depth]);
+            if (_id & 1 == 1) {
+                balanceItem = hashImpl(balanceMerkleProof[depth], balanceItem, IVs[depth]);
             } else {
-                balanceItem = hashImpl(balanceItem, balancePath[depth], IVs[depth]);
+                balanceItem = hashImpl(balanceItem, balanceMerkleProof[depth], IVs[depth]);
             }
-            tokenAddress = tokenAddress / 2;
+            _id = _id / 2;
         }
         return balanceItem;
     }
@@ -129,7 +129,7 @@ library ExchangeBalances
         uint256 pubKeyY,
         uint nonce,
         uint balancesRoot,
-        uint256[20] memory accountPath
+        uint256[20] memory accountMerkleProof
         )
         internal
         pure
@@ -145,14 +145,14 @@ library ExchangeBalances
         accountLeafElements[3] = balancesRoot;
         uint256 accountItem = MiMC.Hash(accountLeafElements, 1);
 
-        uint accountAddress = accountID;
+        uint _id = accountID;
         for (uint depth = 0; depth < 20; depth++) {
-            if (accountAddress & 1 == 1) {
-                accountItem = hashImpl(accountPath[depth], accountItem, IVs[depth]);
+            if (_id & 1 == 1) {
+                accountItem = hashImpl(accountMerkleProof[depth], accountItem, IVs[depth]);
             } else {
-                accountItem = hashImpl(accountItem, accountPath[depth], IVs[depth]);
+                accountItem = hashImpl(accountItem, accountMerkleProof[depth], IVs[depth]);
             }
-            accountAddress = accountAddress / 2;
+            _id = _id / 2;
         }
         return accountItem;
     }
@@ -179,6 +179,11 @@ library ExchangeBalances
         public
         pure
     {
+        // Actually only up to 20 items in the list will be used. We keep 8 more in case
+        // we will change the depth of the Merkle tree.
+
+        // When we calculate the tree hash, the leaf nodes will use IVs[0] as the hashing
+        // salt, the parent nodes of the leafs will use IVs[1], ...
         IVs[0] = 149674538925118052205057075966660054952481571156186698930522557832224430770;
         IVs[1] = 9670701465464311903249220692483401938888498641874948577387207195814981706974;
         IVs[2] = 18318710344500308168304415114839554107298291987930233567781901093928276468271;
