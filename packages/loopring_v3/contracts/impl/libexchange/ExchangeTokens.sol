@@ -78,7 +78,7 @@ library ExchangeTokens
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
         if (amountToBurn > 0) {
-            require(BurnableERC20(S.lrcAddress).burn(amountToBurn), "BURN_FAILURE");
+            require(BurnableERC20(S.lrcAddress).burnFrom(msg.sender, amountToBurn), "BURN_FAILURE");
         }
 
         ExchangeData.Token memory token = ExchangeData.Token(tokenAddress, false);
