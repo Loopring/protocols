@@ -20,6 +20,7 @@ import "./Ownable.sol";
 
 
 /// @title Claimable
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Extension for the Ownable contract, where the ownership needs
 ///      to be claimed. This allows the new owner to accept the transfer.
 contract Claimable is Ownable

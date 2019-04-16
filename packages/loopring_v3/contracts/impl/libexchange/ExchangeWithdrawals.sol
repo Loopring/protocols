@@ -27,8 +27,8 @@ import "./ExchangeTokens.sol";
 
 
 /// @title ExchangeAccounts.
-/// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
+/// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeWithdrawals
 {
     using MathUint          for uint;
@@ -162,8 +162,8 @@ library ExchangeWithdrawals
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] memory accountPath,
-        uint256[8] memory balancePath
+        uint256[20] memory accountMerkleProof,
+        uint256[8]  memory balanceMerkleProof
         )
         public
     {
@@ -186,8 +186,8 @@ library ExchangeWithdrawals
             nonce,
             balance,
             tradeHistoryRoot,
-            accountPath,
-            balancePath
+            accountMerkleProof,
+            balanceMerkleProof
         );
 
         // Make sure the balance can only be withdrawn once
@@ -405,9 +405,9 @@ library ExchangeWithdrawals
     function withdrawAndBurn(
         ExchangeData.State storage S,
         address accountOwner,
-        uint16 tokenID,
-        uint amount,
-        bool bBurn
+        uint16  tokenID,
+        uint    amount,
+        bool    bBurn
         )
         internal
     {

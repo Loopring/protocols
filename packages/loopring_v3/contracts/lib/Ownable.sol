@@ -18,6 +18,7 @@ pragma solidity 0.5.7;
 
 
 /// @title Ownable
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @dev The Ownable contract has an owner address, and provides basic
 ///      authorization control functions, this simplifies the implementation of
 ///      "user permissions".
@@ -46,7 +47,7 @@ contract Ownable
     }
 
     /// @dev Allows the current owner to transfer control of the contract to a
-    ///      newOwner.
+    ///      new owner.
     /// @param newOwner The address to transfer ownership to.
     function transferOwnership(
         address newOwner

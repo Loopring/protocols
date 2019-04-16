@@ -207,8 +207,8 @@ library ExchangeAccounts
         uint32 nonce,
         uint96 balance,
         uint256 tradeHistoryRoot,
-        uint256[20] memory accountPath,
-        uint256[8] memory balancePath
+        uint256[20] memory accountMerkleProof,
+        uint256[8]  memory balanceMerkleProof
         )
         public
         view
@@ -222,8 +222,8 @@ library ExchangeAccounts
             nonce,
             balance,
             tradeHistoryRoot,
-            accountPath,
-            balancePath
+            accountMerkleProof,
+            balanceMerkleProof
         );
     }
 

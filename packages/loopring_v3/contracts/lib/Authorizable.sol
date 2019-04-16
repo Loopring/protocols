@@ -20,6 +20,7 @@ import "../lib/Claimable.sol";
 
 
 /// @title Authorizable
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @dev The Authorizable contract allows a contract to be used by other contracts
 ///      by authorizing it by the contract owner.
 contract Authorizable is Claimable
