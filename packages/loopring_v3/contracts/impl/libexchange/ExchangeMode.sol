@@ -99,7 +99,7 @@ library ExchangeMode
         returns (bool)
     {
         // Users requests are possible when the exchange is not in maintenance mode,
-        // the exchange hasn't been shutdown, and the exchange isn't is withdrawal mode
+        // the exchange hasn't been shutdown, and the exchange isn't in withdrawal mode
         return (now >= S.disableUserRequestsUntil) && !isShutdown(S) && !isInWithdrawalMode(S);
     }
 
