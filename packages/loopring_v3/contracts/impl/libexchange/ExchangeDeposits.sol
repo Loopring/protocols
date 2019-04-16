@@ -99,7 +99,6 @@ library ExchangeDeposits
         public
     {
         require(recipient != address(0), "ZERO_ADDRESS");
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 

@@ -63,6 +63,13 @@ export class ExchangeTestUtil {
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
   public MAX_NUM_TOKENS: number;
 
+  public BURNRATE_TIER1: BN;
+  public BURNRATE_TIER2: BN;
+  public BURNRATE_TIER3: BN;
+  public BURNRATE_TIER4: BN;
+
+  public TIER_UPGRADE_DURATION: number;
+
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
 
@@ -71,7 +78,7 @@ export class ExchangeTestUtil {
 
   public zeroAddress = "0x" + "00".repeat(20);
 
-  private contracts = new Artifacts(artifacts);
+  public contracts = new Artifacts(artifacts);
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -101,12 +108,12 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
-      new BN(0),
+      new BN(1),
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("2", "ether")),
-      new BN(0),
-      new BN(0),
+      new BN(web3.utils.toWei("2000", "ether")),
+      new BN(web3.utils.toWei("1000", "ether")),
       {from: this.testContext.deployer},
     );
 
@@ -148,6 +155,13 @@ export class ExchangeTestUtil {
     this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
+
+    this.BURNRATE_TIER1 = await this.loopringV3.BURNRATE_TIER1();
+    this.BURNRATE_TIER2 = await this.loopringV3.BURNRATE_TIER2();
+    this.BURNRATE_TIER3 = await this.loopringV3.BURNRATE_TIER3();
+    this.BURNRATE_TIER4 = await this.loopringV3.BURNRATE_TIER4();
+
+    this.TIER_UPGRADE_DURATION = (await this.loopringV3.TIER_UPGRADE_DURATION()).toNumber();
   }
 
   public async setupTestState(realmID: number) {
@@ -1320,15 +1334,16 @@ export class ExchangeTestUtil {
   }
 
   public async registerTokens() {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-
     for (const token of this.testContext.allTokens) {
       const tokenAddress = (token === null) ? this.zeroAddress : token.address;
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
       if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
+        // Make sure the exchange owner can pay the registration fee
+        const registrationCost = await this.exchange.getLRCFeeForRegisteringOneMoreToken();
+        await this.setBalanceAndApprove(this.exchangeOwner, "LRC", registrationCost);
+        // Register the token
         const tx = await this.exchange.registerToken(tokenAddress, {from: this.exchangeOwner});
         // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
@@ -1393,8 +1408,6 @@ export class ExchangeTestUtil {
     this.exchangeId = realmID;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    await this.registerTokens();
-
     await this.exchange.setFees(
       accountCreationFeeInETH,
       accountUpdateFeeInETH,
@@ -1404,6 +1417,7 @@ export class ExchangeTestUtil {
     );
 
     if (bSetupTestState) {
+      await this.registerTokens();
       await this.setupTestState(realmID);
     }
 
@@ -1478,7 +1492,7 @@ export class ExchangeTestUtil {
       contractAddress = this.exchange.address;
     }
     const Token = await this.getTokenContract(token);
-    await Token.setBalance(owner, amount);
+    await Token.transfer(owner, amount, {from: this.testContext.deployer});
     await Token.approve(contractAddress, amount, {from: owner});
   }
 

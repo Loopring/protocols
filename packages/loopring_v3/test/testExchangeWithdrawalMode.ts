@@ -7,10 +7,21 @@ import { OrderInfo, RingInfo } from "./types";
 contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
+  let exchange: any;
+  let loopring: any;
+  let realmID = 0;
+
+  const createExchange = async (bSetupTestState: boolean = true) => {
+    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    exchange = exchangeTestUtil.exchange;
+  };
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    exchange = exchangeTestUtil.exchange;
+    loopring = exchangeTestUtil.loopringV3;
+    realmID = 1;
   });
 
   const withdrawFromMerkleTreeChecked = async (owner: string, token: string,
@@ -34,7 +45,7 @@ contract("Exchange", (accounts: string[]) => {
     this.timeout(0);
 
     it("ERC20: withdraw from merkle tree", async () => {
-      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
@@ -71,7 +82,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("ETH: withdraw from merkle tree", async () => {
-      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
@@ -109,7 +120,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("Withdraw from deposit block", async () => {
-      const realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0]);
+      await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
@@ -174,6 +185,56 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchangeTestUtil.withdrawFromDepositRequest(depositInfoC.depositIdx),
         "WITHDRAWN_ALREADY",
+      );
+    });
+
+    it("Should not be able to do any more block state changes", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("7.1", "ether"));
+      const token = exchangeTestUtil.getTokenAddress("LRC");
+
+      const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+
+      // Request withdrawal onchain
+      await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
+
+      // Operator doesn't do anything for a long time
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
+
+      // Try to shutdown the exchange
+      await expectThrow(
+        exchange.shutdown({from: exchangeTestUtil.exchangeOwner}),
+        "INVALID_MODE",
+      );
+
+      // Try to commit a block
+      await expectThrow(
+        exchange.commitBlock(0, 2, web3.utils.hexToBytes("0x0"),
+        {from: exchangeTestUtil.exchangeOperator}),
+        "INVALID_MODE",
+      );
+
+      // Try to verify a block
+      await expectThrow(
+        exchange.verifyBlock(1, [0, 0, 0, 0, 0, 0, 0, 0],
+        {from: exchangeTestUtil.exchangeOperator}),
+        "INVALID_MODE",
+      );
+
+      // Try to revert a block
+      await expectThrow(
+        exchange.revertBlock(1,
+        {from: exchangeTestUtil.exchangeOperator}),
+        "INVALID_MODE",
       );
     });
 

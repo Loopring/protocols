@@ -645,6 +645,7 @@ contract Exchange is IExchange, Ownable
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
+        require(!state.isShutdown(), "ALREADY_SHUTDOWN");
         state.shutdownStartTime = now;
         return true;
     }

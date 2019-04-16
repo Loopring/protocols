@@ -262,5 +262,18 @@ contract("Exchange", (accounts: string[]) => {
       await exchange.burnStake();
     });
 
+    it("Should not be able to shutdown when already shutdown", async () => {
+      await createExchange();
+
+      // Shut down the exchange
+      await exchange.shutdown({from: exchangeTestUtil.exchangeOwner});
+
+      // Try to shut down again
+      await expectThrow(
+        exchange.shutdown({from: exchangeTestUtil.exchangeOwner}),
+        "ALREADY_SHUTDOWN",
+      );
+    });
+
   });
 });

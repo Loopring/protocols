@@ -114,7 +114,6 @@ library ExchangeAccounts
         private
         returns (uint24 accountID)
     {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
 
@@ -156,7 +155,6 @@ library ExchangeAccounts
         private
         returns (uint24 accountID)
     {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
 
         require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");

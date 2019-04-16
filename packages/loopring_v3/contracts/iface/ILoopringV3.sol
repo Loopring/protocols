@@ -90,8 +90,8 @@ contract ILoopringV3
     uint    public tokenRegistrationFeeLRCBase  = 0;
     uint    public tokenRegistrationFeeLRCDelta = 0;
 
-     // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
-    uint16  public  tierUpgradeCostBips  =  0; // 0.01% or 130K LRC
+    // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
+    uint16  public  tierUpgradeCostBips  =  1; // 0.01% or 130K LRC
 
     mapping (address => Token) public tokens;
 
@@ -259,7 +259,7 @@ contract ILoopringV3
     ///
     /// @param  token The address of the token. Use 0x0 for Ether.
     /// @param  recipient The address to receive the tokens.
-   function withdrawTheBurn(
+    function withdrawTheBurn(
         address token,
         address payable recipient
         )
