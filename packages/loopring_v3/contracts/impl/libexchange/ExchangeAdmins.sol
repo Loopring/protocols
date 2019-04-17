@@ -113,10 +113,10 @@ library ExchangeAdmins
             );
         }
 
-        if (now < S.disableUserRequestsUntil) {
+        if (now > S.disableUserRequestsUntil) {
             S.disableUserRequestsUntil = now;
         }
-        S.disableUserRequestsUntil += durationSeconds;
+        S.disableUserRequestsUntil = S.disableUserRequestsUntil.add(durationSeconds);
     }
 
     function getRemainingDowntime(
@@ -126,7 +126,7 @@ library ExchangeAdmins
         view
         returns (uint duration)
     {
-        if (now <= S.disableUserRequestsUntil || S.isInWithdrawalMode()) {
+        if (S.disableUserRequestsUntil == 0 || now >= S.disableUserRequestsUntil || S.isInWithdrawalMode()) {
             duration = 0;
         } else {
             duration = S.disableUserRequestsUntil - now;

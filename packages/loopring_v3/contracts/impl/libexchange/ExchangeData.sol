@@ -49,8 +49,8 @@ library ExchangeData
         VERIFIED,       // = 2
 
         // A block's state will become FINALIZED when and only when this block is VERIFIED
-        // and all previous blocks in the chain have become FINAZLIED. The genesis block is
-        // FINAZLIED by default.
+        // and all previous blocks in the chain have become FINALIZED. The genesis block is
+        // FINALIZED by default.
         FINALIZED       // = 3
     }
 
@@ -63,7 +63,7 @@ library ExchangeData
         // wallet software are supposed to manage the corresponding private key for signing
         // orders and offchain requests.
         //
-        // We use EdDSA because it is more circuit friendly than ECDSA. In later versionsk
+        // We use EdDSA because it is more circuit friendly than ECDSA. In later versions
         // we may switch back to ECDSA, then we will not need such a dedicated tradig key-pair.
         //
         // We split the public key into two uint to make it more circuit friendly.

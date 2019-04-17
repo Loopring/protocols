@@ -105,6 +105,8 @@ export interface WithdrawalRequest {
 
   withdrawalIdx?: number;
   slotIdx?: number;
+
+  withdrawalFee?: BN;
 }
 
 export interface Withdrawal {
@@ -205,6 +207,8 @@ export interface DepositInfo {
   owner: string;
   token: string;
   amount: BN;
+  fee: BN;
+  timestamp: number;
   accountID: number;
   depositIdx: number;
 }
