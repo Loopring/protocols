@@ -146,5 +146,29 @@ contract("Exchange", (accounts: string[]) => {
       registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
       assert(registrationCost.eq(expectedCost), "token registration cost not as expected");
     });
+
+    it("LRC, ETH and WETH should be preregistered", async () => {
+      await createExchange(false);
+
+      // Make sure the exchange owner has enough LRC
+      const registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
+      await exchangeTestUtil.setBalanceAndApprove(exchangeTestUtil.exchangeOwner, "LRC", registrationCost);
+
+      // Try to register LRC
+      await expectThrow(
+        exchange.registerToken(exchangeTestUtil.getTokenAddress("LRC"), {from: exchangeTestUtil.exchangeOwner}),
+        "TOKEN_ALREADY_EXIST",
+      );
+      // Try to register ETH
+      await expectThrow(
+        exchange.registerToken(exchangeTestUtil.getTokenAddress("ETH"), {from: exchangeTestUtil.exchangeOwner}),
+        "TOKEN_ALREADY_EXIST",
+      );
+      // Try to register WETH
+      await expectThrow(
+        exchange.registerToken(exchangeTestUtil.getTokenAddress("WETH"), {from: exchangeTestUtil.exchangeOwner}),
+        "TOKEN_ALREADY_EXIST",
+      );
+    });
   });
 });

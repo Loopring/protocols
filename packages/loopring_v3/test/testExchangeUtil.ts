@@ -61,6 +61,8 @@ export class ExchangeTestUtil {
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public FEE_BLOCK_FINE_START_TIME: number;
+  public FEE_BLOCK_FINE_MAX_DURATION: number;
   public MAX_NUM_TOKENS: number;
 
   public BURNRATE_TIER1: BN;
@@ -152,6 +154,8 @@ export class ExchangeTestUtil {
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
     this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
     this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
+    this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
+    this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
     this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
@@ -495,6 +499,8 @@ export class ExchangeTestUtil {
       owner,
       token,
       amount,
+      fee: fees._depositFeeETH,
+      timestamp: (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp,
       accountID: items[0][0].toNumber(),
       depositIdx: items[0][1].toNumber(),
     };
@@ -554,7 +560,7 @@ export class ExchangeTestUtil {
     const walletAccountID = this.wallets[realmID][0].walletAccountID;
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
                               accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
-                              0, withdrawalIdx);
+                              0, withdrawalIdx, withdrawalFee);
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
 
@@ -601,9 +607,9 @@ export class ExchangeTestUtil {
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN,
                               walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
-                              withdrawalIdx?: number) {
+                              withdrawalIdx?: number, withdrawalFee?: BN) {
     withdrawalRequests.push({accountID, tokenID, amount, walletAccountID,
-                             feeTokenID, fee, walletSplitPercentage, withdrawalIdx});
+                             feeTokenID, fee, walletSplitPercentage, withdrawalIdx, withdrawalFee});
   }
 
   public sendRing(realmID: number, ring: RingInfo) {
@@ -1393,7 +1399,7 @@ export class ExchangeTestUtil {
 
     // Create the new exchange
     const tx = await this.loopringV3.createExchange(owner, onchainDataAvailability, {from: owner});
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {

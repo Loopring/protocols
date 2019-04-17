@@ -264,7 +264,7 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
     exchange = exchangeTestUtil.exchange;
   };
 
@@ -840,6 +840,103 @@ contract("Exchange", (accounts: string[]) => {
         exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
         "WITHDRAWALS_ALREADY_DISTRIBUTED",
       );
+    });
+
+    describe("exchange owner", () => {
+      it("should be able to disable the depositing of a token", async () => {
+        await createExchange();
+
+        const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+        const owner = exchangeTestUtil.testContext.orderOwners[0];
+        const tokenA = exchangeTestUtil.getTokenAddress("GTO");
+        const tokenB = exchangeTestUtil.getTokenAddress("REP");
+        const amount = new BN(web3.utils.toWei("321", "ether"));
+
+        // The correct deposit fee expected by the contract
+        const fees = await exchange.getFees();
+        const acountCreationFee = fees._accountCreationFeeETH;
+
+        // Make sure the owner has enough tokens
+        await exchangeTestUtil.setBalanceAndApprove(owner, tokenA, amount.mul(new BN(10)));
+        await exchangeTestUtil.setBalanceAndApprove(owner, tokenB, amount.mul(new BN(10)));
+
+        // Everything correct
+        await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+
+        // Disable token deposit for GTO
+        await exchange.disableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner});
+
+        // Try to disable it again
+        await expectThrow(
+          exchange.disableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner}),
+          "TOKEN_DEPOSIT_ALREADY_DISABLED",
+        );
+
+        // Try to deposit
+        await expectThrow(
+          exchange.deposit(tokenA, amount, {from: owner, value: fees._depositFeeETH}),
+          "TOKEN_DEPOSIT_DISABLED",
+        );
+
+        // Deposit another token
+        await exchange.deposit(tokenB, amount, {from: owner, value: fees._depositFeeETH});
+
+        // Enable it again
+        await exchange.enableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner});
+
+        // Try to enable it again
+        await expectThrow(
+          exchange.enableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner}),
+          "TOKEN_DEPOSIT_ALREADY_ENABLED",
+        );
+
+        // Try the deposit again
+        await exchange.deposit(tokenA, amount, {from: owner, value: fees._depositFeeETH});
+      });
+
+      it("should not be able to disable deposits for LRC/ETH/WETH", async () => {
+        await createExchange();
+
+        const owner = exchangeTestUtil.exchangeOwner;
+        // Try to disable ETH
+        await expectThrow(
+          exchange.disableTokenDeposit(exchangeTestUtil.getTokenAddress("ETH"), {from: owner}),
+          "ETHER_CANNOT_BE_DISABLED",
+        );
+        // Try to disable WETH
+        await expectThrow(
+          exchange.disableTokenDeposit(exchangeTestUtil.getTokenAddress("WETH"), {from: owner}),
+          "WETH_CANNOT_BE_DISABLED",
+        );
+        // Try to disable LRC
+        await expectThrow(
+          exchange.disableTokenDeposit(exchangeTestUtil.getTokenAddress("LRC"), {from: owner}),
+          "LRC_CANNOT_BE_DISABLED",
+        );
+      });
+    });
+
+    describe("anyone", () => {
+      it("should not be able to disable/enable the depositing of a token", async () => {
+        await createExchange();
+
+        const token = exchangeTestUtil.getTokenAddress("GTO");
+
+        // Try to disable the token
+        await expectThrow(
+          exchange.disableTokenDeposit(token),
+          "UNAUTHORIZED",
+        );
+
+        // Disable token deposit for GTO
+        await exchange.disableTokenDeposit(token, {from: exchangeTestUtil.exchangeOwner});
+
+        // Try to enable it again
+        await expectThrow(
+          exchange.enableTokenDeposit(token),
+          "UNAUTHORIZED",
+        );
+      });
     });
 
   });
