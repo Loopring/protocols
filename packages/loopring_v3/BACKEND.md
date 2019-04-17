@@ -8,7 +8,7 @@ All Merkle trees are currently stored in a sparse Merkle tree format. The Accoun
 
 To verify data is stored in the Merkle tree a [Merkle proof](https://medium.com/crypto-0-nite/merkle-proofs-explained-6dd429623dc5) is used. This is key to how the circuits work.
 
-The Merkle tree currently uses MiMC/e7r91 for all hashes. 
+The Merkle tree currently uses MiMC/e7r91 for all hashes.
 
 Helpful links:
 - A test implementation of a [sparse Merkle tree in Python](https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/operator/sparse_merkle_tree.py)
@@ -24,9 +24,9 @@ Helpful links:
 
  Note that MiMC works directly on field elements, data is not packed together as small as possible in a single bitstream.
 
-- Account leaf: `MiMC([publicKeyX, publicKeyY, nonce, balancesRoot], 0)`
-- Balance leaf: `MiMC([balance, tradeHistoryRoot], 0)`
-- TradeHistory leaf: `MiMC([filled, cancelled, orderID], 0)`
+- Account leaf: `MiMC([publicKeyX, publicKeyY, nonce, balancesRoot], 1)`
+- Balance leaf: `MiMC([balance, tradeHistoryRoot], 1)`
+- TradeHistory leaf: `MiMC([filled, cancelled, orderID], 1)`
 
 ### Non-leaf nodes
 
@@ -64,6 +64,71 @@ IVs[25] = 7286414555941977227951257572976885370489143210539802284740420664558593
 IVs[26] = 16932161189449419608528042274282099409408565503929504242784173714823499212410;
 IVs[27] = 16562533130736679030886586765487416082772837813468081467237161865787494093536;
 IVs[28] = 6037428193077828806710267464232314380014232668931818917272972397574634037180;
+```
+
+### Default hashes
+
+#### Trading History
+```
+TradeHistory leaf: 0x101c08baddce1162a9eecedb95724e61d738f1765a8565092a266e29cf55fccf
+= MiMC([0, 0, 0], 1)
+
+hash[0]: 0x1fb5afd6afc9a69db34b1b84ebce3c2faca1bf53eeb45c721e82d3eb47533adb
+hash[1]: 0xe657badeb10bedad4c62d67d80780fe16dd9f8a0649cc23cebd100f23761042
+hash[2]: 0x1ae22faaf2ca9ec385d9a9a68c08d8adf757c416acd54049bffb6914a6d20640
+hash[3]: 0x2c7c5a0aa17c0062366aded369cff7650eb475544247bbb71939db4b9c393e95
+hash[4]: 0xbaf7d8d70cc63a01fd78d1096840434847cb73b26971d2fe6135afc69c55d6f
+hash[5]: 0x1c384e244f70d17e2a203d2af0f07c1da99566f7b86af060a7b4ffeb034ad6be
+hash[6]: 0x148cd71daaae6f0b5e14e4f1f34f04a9a94c1aec2430625ae609549aa1cd3572
+hash[7]: 0x159aed844664c9e506ddcbdb89b600e886fa81f2ace1f33f550c17822b705146
+hash[8]: 0x1b64acbee6baee5473bc696e70124d8d4e9fc6a17fa9fa63a7d1b8046549148
+hash[9]: 0x2bd42844604b6fde8629bb29b4b55b4afa7d2e4271e6957cb93dddf5b99a97e4
+hash[10]: 0xe0b9177d265369cebada4983226d9a865926edba0b86fb537f45431d738f46b
+hash[11]: 0x2b094012990c8696cb5feda36c688f7b128732c8e966e96f34cb322c44854273
+hash[12]: 0xc7b25ac21f78ce888e550faed69b2cb1a4b802a369a812cc7d9b137e12ccc49
+hash[13] (root): 0x6a758cbc35092b45c88dbae5073a4e23f360e609358d4f5c10a656535523b5
+```
+
+#### Balances
+```
+Balance leaf: 0x278bc8958f6990b142721c8fdc3edab2b7d1eac70caf0d7c5e781017e0381d56
+= MiMC([0, 0x6a758cbc35092b45c88dbae5073a4e23f360e609358d4f5c10a656535523b5], 1)
+
+hash[0]: 0x24c571ee826cfc8274e3642b6b06cd2a1a40a7433bb27407da3f1e30477b9a4
+hash[1]: 0x11e5a142716cff32f358f04c649e5a49d6bbe156f5785453a921ce9fabb27bd2
+hash[2]: 0x25ffdceae62f2d9aff9172003a975da080b34f36c9d5662b9e3b55acad7f1157
+hash[3]: 0x3d5376b72fb6e57b0633f6e437f8c6f9e06674e4d775d1645c061f28abfd8e4
+hash[4]: 0x6dcb91737af1a7a6533ef32c2fc442141bb36036c381857582f74fb40ee87e1
+hash[5]: 0x2c83417340ba2197a4d32305dbfe2d4ad980a994ab69f7ac1610cd63859ff2e8
+hash[6]: 0x2c3ea061b73b4edd2bbea02cc6a2b24512c11f6d3b363ccf917bb1bf55c22788
+hash[7] (root): 0x2536e7e72380a3e82ef39b3dcf030980ff9fdef24e1249fbe94f18abf47f89bb
+```
+
+#### Accounts
+```
+Account leaf: 0x18594432270e9445306e567606f43eb575987c84a6b91f61038e2b6c5f424a0c
+= MiMC(["0", "0", 0, 0x278bc8958f6990b142721c8fdc3edab2b7d1eac70caf0d7c5e781017e0381d56], 1)
+
+hash[0]: 0x21b95d92a3767a01b6c4e6ec3971ba20e75b7191886b32adc6cffc270c1d9c65
+hash[1]: 0x12e9d196cdcb86268790e90919aeb846c9e6978962239f5f2ace96a381aaa732
+hash[2]: 0x18fa8da025543d9f3ae2a888cd815fe11c8efb4d5de7073c01ff6deec51b6572
+hash[3]: 0x11fd20e59522f42fa06807161608b438b118391a423658f2936bb356d2cc563b
+hash[4]: 0x2e134b528913fbb81ec64191569b6148c3337976b677779507de28bc76cbce8f
+hash[5]: 0x2a62758f4191b12f03272d7d38f208f46a15f232bce78da4b23c1c14de1b49dc
+hash[6]: 0x23175ab5489b507acacdc7b8e822c61cbda187d57fbbe321d86d19521183526a
+hash[7]: 0x261a9d5bb7bd15543833bd441566bcca94b71fa661bb550e6b0a250d542e497c
+hash[8]: 0x1562fa90059824704d859ed4186ee13a656c5854335fa00859a5ce468e2bce66
+hash[9]: 0x2e08fcdf168c91cbb7a10c62055a0e011135c29f45cb924243393e7667985451
+hash[10]: 0x707eb57844dd046a52d77461036dfb482412af43da85ad75c174cd587d2c1e6
+hash[11]: 0x1800d2c82d9c6b03a66c3c6dbe267b1de0e1ea4c34d298459df927d39c0ca894
+hash[12]: 0x240e5112593dbb9542d0526b958ce6b5142092887d21e8939f95cb8fdfa2d2b7
+hash[13]: 0x14b53f6b09fd23519908136250b9a2d3425b7d2041b64bb2dbe4f01ca93470ce
+hash[14]: 0x30307087a09f295313c97a98eaf62136ad3ef29353b790a4b651f68cb179a111
+hash[15]: 0x931beee96e926d7f9f896de3c6e41407c91c2f53feb798fa61986411056abb1
+hash[16]: 0xd402d1cb8e7e1037b2104a1fd93cf8c6506727ac3aff7d7821fe36fb56a6897
+hash[17]: 0x1ff79ff64a6c183df7a3818a8d7315ba48f13eb361d8068a55a1ed68e85b625a
+hash[18]: 0xeeab683f8afc66e410c66bbef6f4a0072e40464361b8f47c7227e72e8022ac1
+hash[19] (root): 0x6ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3
 ```
 
 ## Block file format
