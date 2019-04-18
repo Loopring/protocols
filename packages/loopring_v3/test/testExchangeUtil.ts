@@ -1503,6 +1503,11 @@ export class ExchangeTestUtil {
       contractAddress = this.exchange.address;
     }
     const Token = await this.getTokenContract(token);
+    if (owner !== this.testContext.deployer) {
+      // Burn complete existing balance
+      const existingBalance = await this.getOnchainBalance(owner, token);
+      await Token.transfer(this.zeroAddress, existingBalance, {from: owner});
+    }
     await Token.transfer(owner, amount, {from: this.testContext.deployer});
     await Token.approve(contractAddress, amount, {from: owner});
   }
@@ -1677,7 +1682,7 @@ export class ExchangeTestUtil {
       const accountBefore = latestState.accounts[withdrawal.accountID];
       const accountAfter = simulatorReport.realmAfter.accounts[withdrawal.accountID];
 
-      if (withdrawal.tokenID > 0) {
+      if (withdrawal.tokenID > 0 && withdrawal.accountID < latestState.accounts.length) {
         this.prettyPrintBalanceChange(
           withdrawal.accountID, withdrawal.tokenID,
           accountBefore.balances[withdrawal.tokenID].balance,

@@ -217,7 +217,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, new Array(18).fill(1));
           const bs = new pjs.Bitstream();
-          bs.addNumber(exchangeId + 1, 4);
+          bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           await expectThrow(
@@ -393,7 +393,7 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
-        it.only("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
+        it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
           await createExchange();
           // Prepare a ring
           const ring = await setupRandomRing();
@@ -574,13 +574,13 @@ contract("Exchange", (accounts: string[]) => {
           // Revert the block again, now correctly
           await revertBlockChecked(blocksA[0]);
 
-          // Submit some other work now first
-          await exchangeTestUtil.sendRing(exchangeId, ring);
-          await exchangeTestUtil.commitRings(exchangeId);
-
           // Now commit the deposits again
           const blockIndicesB = await exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits);
           assert(blockIndicesB.length === 1);
+
+          // Submit some other work
+          await exchangeTestUtil.sendRing(exchangeId, ring);
+          await exchangeTestUtil.commitRings(exchangeId);
 
           // Verify all blocks
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
@@ -709,8 +709,8 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
           // Commit and verify the deposits
-          await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
+          await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)

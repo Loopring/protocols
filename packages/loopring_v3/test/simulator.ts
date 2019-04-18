@@ -44,20 +44,24 @@ export class Simulator {
   public onchainWithdraw(withdrawal: WithdrawalRequest, shutdown: boolean, realm: Realm) {
     const newRealm = this.copyRealm(realm);
 
-    const account = newRealm.accounts[withdrawal.accountID];
+    // When a withdrawal is done before the deposit (account creation) we shouldn't
+    // do anything. Just leave everything as it is.
+    if (withdrawal.accountID < newRealm.accounts.length) {
+      const account = newRealm.accounts[withdrawal.accountID];
 
-    const balance = account.balances[withdrawal.tokenID].balance;
-    const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
+      const balance = account.balances[withdrawal.tokenID].balance;
+      const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
 
-    // Update balance
-    account.balances[withdrawal.tokenID].balance =
-      account.balances[withdrawal.tokenID].balance.sub(amountToWithdraw);
+      // Update balance
+      account.balances[withdrawal.tokenID].balance =
+        account.balances[withdrawal.tokenID].balance.sub(amountToWithdraw);
 
-    if (shutdown) {
-      account.publicKeyX = "0";
-      account.publicKeyY = "0";
-      account.nonce = 0;
-      account.balances[withdrawal.tokenID].tradeHistory = {};
+      if (shutdown) {
+        account.publicKeyX = "0";
+        account.publicKeyY = "0";
+        account.nonce = 0;
+        account.balances[withdrawal.tokenID].tradeHistory = {};
+      }
     }
 
     const simulatorReport: SimulatorReport = {
