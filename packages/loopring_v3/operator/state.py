@@ -897,26 +897,43 @@ class State(object):
         return self._accounts[str(accountID)]
 
     def onchainWithdraw(self, realmID, accountID, tokenID, amountRequested, shutdown):
-        # Calculate amount withdrawn
-        balance = int(self.getAccount(accountID).getBalance(tokenID))
-        amount = int(amountRequested) if (int(amountRequested) < balance) else balance
+        # When a withdrawal is done before the deposit (account creation) we shouldn't
+        # do anything. Just leave everything as it is.
+        if str(accountID) in self._accounts:
+            # Calculate amount withdrawn
+            balance = int(self.getAccount(accountID).getBalance(tokenID))
+            amount = int(amountRequested) if (int(amountRequested) < balance) else balance
 
-        # Update account
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(accountID))
-        proof = self._accountsTree.createProof(accountID)
+            # Update account
+            rootBefore = self._accountsTree._root
+            accountBefore = copyAccountInfo(self.getAccount(accountID))
+            proof = self._accountsTree.createProof(accountID)
 
-        balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amount, shutdown)
-        if shutdown:
-            self.getAccount(accountID).publicKeyX = str(0)
-            self.getAccount(accountID).publicKeyY = str(0)
-            self.getAccount(accountID).nonce = 0
+            balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amount, shutdown)
+            if shutdown:
+                self.getAccount(accountID).publicKeyX = str(0)
+                self.getAccount(accountID).publicKeyY = str(0)
+                self.getAccount(accountID).nonce = 0
 
-        self.updateAccountTree(accountID)
-        accountAfter = copyAccountInfo(self.getAccount(accountID))
-        rootAfter = self._accountsTree._root
-        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
+            self.updateAccountTree(accountID)
+            accountAfter = copyAccountInfo(self.getAccount(accountID))
+            rootAfter = self._accountsTree._root
+            accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+            ###
+        else:
+            # Dummy update
+            amount = 0
+
+            rootBefore = self._accountsTree._root
+            accountBefore = copyAccountInfo(getDefaultAccount())
+            proof = self._accountsTree.createProof(accountID)
+
+            balanceUpdate = getDefaultAccount().updateBalance(tokenID, 0, shutdown)
+
+            accountAfter = copyAccountInfo(getDefaultAccount())
+            rootAfter = self._accountsTree._root
+            accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+            ###
 
         withdrawal = OnchainWithdrawal(amountRequested, balanceUpdate, accountUpdate,
                                        accountID, tokenID, amount)

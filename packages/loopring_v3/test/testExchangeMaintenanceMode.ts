@@ -1,6 +1,7 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
+import { RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
@@ -69,7 +70,7 @@ contract("Exchange", (accounts: string[]) => {
         const fees = await exchange.getFees();
 
         const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-        const owner = exchangeTestUtil.testContext.orderOwners[0];
+        const owner = exchangeTestUtil.testContext.orderOwners[5];
         const amount = new BN(web3.utils.toWei("4567", "ether"));
         const token = exchangeTestUtil.getTokenAddress("WETH");
 
@@ -87,7 +88,7 @@ contract("Exchange", (accounts: string[]) => {
         // Try to purchase the downtime without enough LRC
         await expectThrow(
           exchange.purchaseDowntime(duration, {from: exchangeTestUtil.exchangeOwner}),
-          "BURNFROM_INSUFFICIENT_BALANCE",
+          // "BURNFROM_INSUFFICIENT_BALANCE",
         );
 
         // Make sure the exchange owner has enough LRC
@@ -143,6 +144,60 @@ contract("Exchange", (accounts: string[]) => {
         // Withdraw
         await exchange.withdraw(token, amount, {from: owner, value: fees._withdrawalFeeETH});
       });
+    });
+
+    it("should not be able to commit settlement blocks while in maintenance mode", async () => {
+      await createExchange();
+
+      // Setup a ring
+      const ring: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("10", "ether")),
+            amountF: new BN(web3.utils.toWei("1", "ether")),
+          },
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("5", "ether")),
+            amountB: new BN(web3.utils.toWei("45", "ether")),
+            amountF: new BN(web3.utils.toWei("3", "ether")),
+          },
+        expected: {
+          orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5", "ether")) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.commitDeposits(realmID);
+
+      const fees = await exchange.getFees();
+
+      const duration = 1000;
+
+      // Make sure the exchange owner has enough LRC
+      const maintenanceCost = await exchange.getDowntimeCostLRC(duration);
+      await exchangeTestUtil.setBalanceAndApprove(
+        exchangeTestUtil.exchangeOwner, "LRC", maintenanceCost.mul(new BN(10)),
+      );
+
+      // Purchase the downtime
+      await purchaseDowntimeChecked(duration, exchangeTestUtil.exchangeOwner);
+      await checkRemainingDowntime(duration);
+
+      // The operator shouldn't be able to commit any ring settlement blocks
+      // while in maitenance mode
+      await exchangeTestUtil.sendRing(realmID, ring);
+      await expectThrow(
+        exchangeTestUtil.commitRings(realmID),
+        "SETTLEMENT_SUSPENDED",
+      );
     });
 
     describe("anyone", () => {
