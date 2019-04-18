@@ -306,7 +306,7 @@ contract Exchange is IExchange, Ownable
         view
         returns (uint)
     {
-        return state.numBlocksFinalized;
+        return state.numBlocksFinalized - 1;
     }
 
     function commitBlock(
@@ -555,6 +555,7 @@ contract Exchange is IExchange, Ownable
         uint blockIdx
         )
         external
+        onlyOperator
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx);

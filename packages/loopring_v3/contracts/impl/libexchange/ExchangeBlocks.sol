@@ -57,7 +57,6 @@ library ExchangeBlocks
         commitBlockInternal(S, blockType, numElements, data);
     }
 
-
     function verifyBlock(
         ExchangeData.State storage S,
         uint blockIdx,
@@ -187,7 +186,6 @@ library ExchangeBlocks
             merkleRootAfter := mload(add(data, 68))
         }
         require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
-        require(merkleRootBefore != merkleRootAfter, "INVALID_STATE_UPDATE");
 
         uint32 numDepositRequestsCommitted = uint32(prevBlock.numDepositRequestsCommitted);
         uint32 numWithdrawalRequestsCommitted = uint32(prevBlock.numWithdrawalRequestsCommitted);
@@ -207,12 +205,10 @@ library ExchangeBlocks
         // Check if the operator is forced to commit a deposit or withdraw block
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
-        if (blockType != uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) &&
-            isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
-            revert("WITHDRAWAL_BLOCK_FORCED");
-        } else if (blockType != uint(ExchangeData.BlockType.DEPOSIT) &&
-            isDepositRequestForced(S, numDepositRequestsCommitted)) {
-            revert("DEPOSIT_BLOCK_FORCED");
+        if (isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
+            require(blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL), "WITHDRAWAL_BLOCK_FORCED");
+        } else if (isDepositRequestForced(S, numDepositRequestsCommitted)) {
+            require(blockType == uint(ExchangeData.BlockType.DEPOSIT), "DEPOSIT_BLOCK_FORCED");
         }
 
         if (blockType == uint(ExchangeData.BlockType.RING_SETTLEMENT)) {
@@ -258,8 +254,8 @@ library ExchangeBlocks
                 inputStartingHash := mload(add(data, 100))
                 inputEndingHash := mload(add(data, 132))
             }
-            require(inputStartingHash == startingHash, "INVALID_DEPOSIT_STARTING_HASH");
-            require(inputEndingHash == endingHash, "INVALID_DEPOSIT_ENDING_HASH");
+            require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
+            require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
 
             numDepositRequestsCommitted += uint32(count);
         } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
@@ -298,8 +294,8 @@ library ExchangeBlocks
                     inputStartingHash := mload(add(data, 100))
                     inputEndingHash := mload(add(data, 132))
                 }
-                require(inputStartingHash == startingHash, "INVALID_WITHDRAWAL_STARTING_HASH");
-                require(inputEndingHash == endingHash, "INVALID_WITHDRAWAL_ENDING_HASH");
+                require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
+                require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
 
             }
@@ -311,6 +307,7 @@ library ExchangeBlocks
             revert("UNSUPPORTED_BLOCK_TYPE");
         }
 
+        // Hash all the public data to a single value which is used as the input for the circuit
         bytes32 publicDataHash = sha256(data);
 
         // Only store the approved withdrawal data onchain

@@ -1,4 +1,3 @@
-import { BigNumber } from "bignumber.js";
 import BN = require("bn.js");
 import childProcess = require("child_process");
 import ethUtil = require("ethereumjs-util");
@@ -56,13 +55,17 @@ export class ExchangeTestUtil {
   public operators: Operator[] = [];
   public wallets: Wallet[][] = [];
 
+  public GENESIS_MERKLE_ROOT: BN = new BN("06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3", 16);
+
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
+  public MAX_AGE_REQUEST_UNTIL_FORCED: number;
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
   public FEE_BLOCK_FINE_START_TIME: number;
   public FEE_BLOCK_FINE_MAX_DURATION: number;
+  public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
   public MAX_NUM_TOKENS: number;
 
   public BURNRATE_TIER1: BN;
@@ -82,6 +85,8 @@ export class ExchangeTestUtil {
 
   public contracts = new Artifacts(artifacts);
 
+  public pendingBlocks: Block[][] = [];
+
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
@@ -89,8 +94,6 @@ export class ExchangeTestUtil {
   private pendingCancels: Cancel[][] = [];
 
   private pendingWithdrawals: Withdrawal[] = [];
-
-  private pendingBlocks: Block[][] = [];
 
   private orderIDGenerator: number = 0;
 
@@ -152,10 +155,12 @@ export class ExchangeTestUtil {
 
     const settings = (await this.exchange.getGlobalSettings());
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_FORCED = settings.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
     this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
     this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
     this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
     this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
+    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
     this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
     this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
@@ -832,8 +837,8 @@ export class ExchangeTestUtil {
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.realmID, 4);
-      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
-      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       bs.addBN(new BN(startingHash.slice(2), 16), 32);
       bs.addBN(new BN(endingHash.slice(2), 16), 32);
       bs.addNumber(startIndex, 4);
@@ -1028,8 +1033,8 @@ export class ExchangeTestUtil {
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.realmID, 4);
-      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
-      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       if (onchain) {
         bs.addBN(new BN(startingHash.slice(2), 16), 32);
         bs.addBN(new BN(endingHash.slice(2), 16), 32);
@@ -1219,8 +1224,8 @@ export class ExchangeTestUtil {
 
       const bs = new pjs.Bitstream();
       bs.addNumber(realmID, 4);
-      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
-      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       bs.addNumber(ringBlock.timestamp, 4);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
@@ -1317,8 +1322,8 @@ export class ExchangeTestUtil {
 
       const bs = new pjs.Bitstream();
       bs.addNumber(block.realmID, 4);
-      bs.addBigNumber(new BigNumber(block.merkleRootBefore, 10), 32);
-      bs.addBigNumber(new BigNumber(block.merkleRootAfter, 10), 32);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const cancel of cancels) {

@@ -207,7 +207,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitShutdownWithdrawalRequests(exchangeId);
 
-       // Try to withdraw before the block is finalized
+      // Try to withdraw before the block is finalized
       await expectThrow(
         exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "BLOCK_NOT_FINALIZED",

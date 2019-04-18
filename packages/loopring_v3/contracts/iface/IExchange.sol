@@ -309,6 +309,13 @@ contract IExchange
         view
         returns (uint);
 
+    /// @dev Get the number of finalized (i.e. irreversible) blocks.
+    /// @return The number of finalized blocks which is the index of the last finalized block.
+    function getNumBlocksFinalized()
+        external
+        view
+        returns (uint);
+
     /// @dev Commit a new block to the virtual blockchain without the proof.
     ///      This function is only callable by the exchange operator.
     ///
@@ -337,7 +344,10 @@ contract IExchange
     ///                - Token ID: 2 bytes
     ///                - Amount: 12 bytes
     ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
-    ///            - None
+    ///            - For every withdrawal:
+    ///                - Account ID: 3 bytes
+    ///                - Token ID: 2 bytes
+    ///                - Amount: 12 bytes
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - None
     ///
