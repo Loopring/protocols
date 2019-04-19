@@ -7,8 +7,6 @@ contract("Loopring", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let loopring: any;
 
-  const zeroAddress = "0x" + "00".repeat(20);
-
   const checkBurnRate = async (token: string, expectedBurnRate: BN) => {
     const tokenAddress = exchangeTestUtil.getTokenAddress(token);
     const burnRate = await loopring.getTokenBurnRate(tokenAddress);
@@ -167,7 +165,9 @@ contract("Loopring", (accounts: string[]) => {
         );
       }
     });
+  });
 
+  describe("Owner", () => {
     it("should be able to withdraw 'The Burn'", async () => {
       const user = exchangeTestUtil.testContext.orderOwners[0];
       const amountA = new BN(web3.utils.toWei("1.23", "ether"));
@@ -188,5 +188,93 @@ contract("Loopring", (accounts: string[]) => {
       await withdrawTheBurnChecked("WETH", recipient, amountB);
     });
 
+    it("should not be able to withdraw any LRC", async () => {
+      const user = exchangeTestUtil.testContext.orderOwners[0];
+      const amount = new BN(web3.utils.toWei("123.456", "ether"));
+      await exchangeTestUtil.setBalanceAndApprove(user, "LRC", amount, loopring.address);
+      // Transfer some funds to the contract that we can withdraw
+      const LRC = await exchangeTestUtil.getTokenContract("LRC");
+      await LRC.transfer(loopring.address, amount, {from: user});
+
+      // Withdraw
+      const recipient = exchangeTestUtil.testContext.orderOwners[1];
+      // LRC
+      await expectThrow(
+        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("LRC"), recipient,
+        {from: exchangeTestUtil.testContext.deployer}),
+        "LRC_ALREADY_BURNED",
+      );
+    });
+
+    it("should not be able to withdraw any LRC", async () => {
+      const user = exchangeTestUtil.testContext.orderOwners[0];
+      const amount = new BN(web3.utils.toWei("123.456", "ether"));
+      await exchangeTestUtil.setBalanceAndApprove(user, "LRC", amount, loopring.address);
+      // Transfer some funds to the contract that we can withdraw
+      const LRC = await exchangeTestUtil.getTokenContract("LRC");
+      await LRC.transfer(loopring.address, amount, {from: user});
+
+      // Withdraw
+      const recipient = exchangeTestUtil.testContext.orderOwners[1];
+      // LRC
+      await expectThrow(
+        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("LRC"), recipient,
+        {from: exchangeTestUtil.testContext.deployer}),
+        "LRC_ALREADY_BURNED",
+      );
+    });
+  });
+
+  describe("anyone", () => {
+    it("should not be able to withdraw 'The Burn'", async () => {
+      const user = exchangeTestUtil.testContext.orderOwners[0];
+      const amountA = new BN(web3.utils.toWei("1.23", "ether"));
+      const amountB = new BN(web3.utils.toWei("456", "ether"));
+      await exchangeTestUtil.setBalanceAndApprove(user, "WETH", amountB, loopring.address);
+      // Transfer some funds to the contract that we can withdraw
+      // ETH
+      await web3.eth.sendTransaction({from: user, to: loopring.address, value: amountA});
+      // WETH
+      const WETH = await exchangeTestUtil.getTokenContract("WETH");
+      await WETH.transfer(loopring.address, amountB, {from: user});
+
+      // Try to withdraw
+      const recipient = exchangeTestUtil.testContext.orderOwners[1];
+      // ETH
+      await expectThrow(
+        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("ETH"), recipient, {from: recipient}),
+        "UNAUTHORIZED",
+      );
+      // WETH
+      await expectThrow(
+        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("WETH"), recipient, {from: recipient}),
+        "UNAUTHORIZED",
+      );
+    });
+
+    it("should not be to burn the complete stake", async () => {
+      await expectThrow(
+        loopring.burnAllStake(exchangeTestUtil.exchangeId,
+        {from: exchangeTestUtil.testContext.deployer}),
+        "UNAUTHORIZED",
+      );
+    });
+
+    it("should not be to burn the stake", async () => {
+      await expectThrow(
+        loopring.burnStake(exchangeTestUtil.exchangeId, new BN(0),
+        {from: exchangeTestUtil.testContext.deployer}),
+        "UNAUTHORIZED",
+      );
+    });
+
+    it("should not be able to withdraw the stake", async () => {
+      const recipient = exchangeTestUtil.testContext.orderOwners[1];
+      await expectThrow(
+        loopring.withdrawStake(exchangeTestUtil.exchangeId, recipient, new BN(0),
+        {from: exchangeTestUtil.testContext.deployer}),
+        "UNAUTHORIZED",
+      );
+    });
   });
 });

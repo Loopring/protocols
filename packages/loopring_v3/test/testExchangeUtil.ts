@@ -1401,6 +1401,8 @@ export class ExchangeTestUtil {
       withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
     ) {
 
+    const operator = this.testContext.operators[0];
+
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
 
     // Send enough tokens to the owner so the Exchange can be created
@@ -1410,7 +1412,7 @@ export class ExchangeTestUtil {
     await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {from: owner});
 
     // Create the new exchange
-    const tx = await this.loopringV3.createExchange(owner, onchainDataAvailability, {from: owner});
+    const tx = await this.loopringV3.createExchange(operator, onchainDataAvailability, {from: owner});
     // pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
@@ -1422,7 +1424,7 @@ export class ExchangeTestUtil {
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
     this.exchangeOwner = owner;
-    this.exchangeOperator = owner;
+    this.exchangeOperator = operator;
     this.exchangeId = realmID;
     this.onchainDataAvailability = onchainDataAvailability;
 
