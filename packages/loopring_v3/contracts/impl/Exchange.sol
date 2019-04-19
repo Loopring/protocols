@@ -123,7 +123,23 @@ contract Exchange is IExchange, Ownable
         result = state.isInWithdrawalMode();
     }
 
+    function isShutdown()
+        external
+        view
+        returns (bool result)
+    {
+        result = state.isShutdown();
+    }
+
     // -- Accounts --
+    function getNumAccounts()
+        external
+        view
+        returns (uint)
+    {
+        return state.accounts.length;
+    }
+
     function getAccount(
         address owner
         )

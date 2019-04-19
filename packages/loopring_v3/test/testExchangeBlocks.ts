@@ -11,69 +11,6 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let loopring: any;
 
-  const doRandomDeposit = async (ownerIndex?: number) => {
-    // Change the deposit fee
-    const fees = await exchange.getFees();
-    await exchange.setFees(
-      fees._accountCreationFeeETH,
-      fees._accountUpdateFeeETH,
-      fees._depositFeeETH.mul(new BN(2)),
-      fees._withdrawalFeeETH,
-      {from: exchangeTestUtil.exchangeOwner},
-    );
-
-    const orderOwners = exchangeTestUtil.testContext.orderOwners;
-    ownerIndex = (ownerIndex !== undefined) ? ownerIndex : exchangeTestUtil.getRandomInt(orderOwners.length);
-    const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-    const owner = orderOwners[Number(ownerIndex)];
-    const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
-    const token = exchangeTestUtil.getTokenAddress("LRC");
-    return await exchangeTestUtil.deposit(exchangeId, owner,
-                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                          token, amount);
-  };
-
-  const doRandomOnchainWithdrawal = async (depositInfo: DepositInfo) => {
-    // Change the withdrawal fee
-    const fees = await exchange.getFees();
-    await exchange.setFees(
-      fees._accountCreationFeeETH,
-      fees._accountUpdateFeeETH,
-      fees._depositFeeETH,
-      fees._withdrawalFeeETH.mul(new BN(2)),
-      {from: exchangeTestUtil.exchangeOwner},
-    );
-
-    return await exchangeTestUtil.requestWithdrawalOnchain(
-      exchangeId,
-      depositInfo.accountID,
-      depositInfo.token,
-      new BN(Math.random() * 1000),
-      depositInfo.owner,
-    );
-  };
-
-  const doRandomOffchainWithdrawal = (depositInfo: DepositInfo) => {
-    exchangeTestUtil.requestWithdrawalOffchain(
-      exchangeId,
-      depositInfo.accountID,
-      depositInfo.token,
-      new BN(Math.random() * 1000),
-      "LRC",
-      new BN(0),
-      0,
-      exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
-    );
-  };
-
-  function shuffle(a: any[]) {
-    for (let i = a.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  }
-
   const revertBlockChecked = async (block: Block) => {
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
@@ -398,7 +335,7 @@ contract("Exchange", (accounts: string[]) => {
           // Prepare a ring
           const ring = await setupRandomRing();
           // Do a deposit
-          const deposit = await doRandomDeposit(5);
+          const deposit = await exchangeTestUtil.doRandomDeposit(5);
           // Wait
           await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED + 1);
           // Try to commit the rings
@@ -443,7 +380,7 @@ contract("Exchange", (accounts: string[]) => {
             blocks.push(block);
           }
           // Randomize the order in which the blocks are verified
-          shuffle(blocks);
+          exchangeTestUtil.shuffle(blocks);
           // Verify all blocks
           for (const block of blocks) {
             await exchangeTestUtil.verifyBlock(block.blockIdx, block.filename);
@@ -598,7 +535,7 @@ contract("Exchange", (accounts: string[]) => {
           const deposits: DepositInfo[] = [];
           let blockFee = new BN(0);
           for (let i = 0; i < numDeposits; i++) {
-            const deposit = await doRandomDeposit();
+            const deposit = await exchangeTestUtil.doRandomDeposit();
             deposits.push(deposit);
             blockFee = blockFee.add(deposit.fee);
           }
@@ -637,7 +574,7 @@ contract("Exchange", (accounts: string[]) => {
           const deposits: DepositInfo[] = [];
           let blockFee = new BN(0);
           for (let i = 0; i < numDeposits; i++) {
-            const deposit = await doRandomDeposit();
+            const deposit = await exchangeTestUtil.doRandomDeposit();
             deposits.push(deposit);
             blockFee = blockFee.add(deposit.fee);
           }
@@ -668,7 +605,7 @@ contract("Exchange", (accounts: string[]) => {
           const numDeposits = exchangeTestUtil.depositBlockSizes[0];
           let blockFee = new BN(0);
           for (let i = 0; i < numDeposits; i++) {
-            const deposit = await doRandomDeposit();
+            const deposit = await exchangeTestUtil.doRandomDeposit();
             blockFee = blockFee.add(deposit.fee);
           }
 
@@ -698,8 +635,8 @@ contract("Exchange", (accounts: string[]) => {
           const numWithdrawals = exchangeTestUtil.onchainWithdrawalBlockSizes[0];
           let blockFee = new BN(0);
           for (let i = 0; i < numWithdrawals; i++) {
-            const deposit = await doRandomDeposit();
-            const withdrawal = await doRandomOnchainWithdrawal(deposit);
+            const deposit = await exchangeTestUtil.doRandomDeposit();
+            const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
             blockFee = blockFee.add(withdrawal.withdrawalFee);
           }
 
@@ -729,8 +666,8 @@ contract("Exchange", (accounts: string[]) => {
           // Do some withdrawals
           const numWithdrawals = exchangeTestUtil.onchainWithdrawalBlockSizes[0];
           for (let i = 0; i < numWithdrawals; i++) {
-            const deposit = await doRandomDeposit();
-            await doRandomOffchainWithdrawal(deposit);
+            const deposit = await exchangeTestUtil.doRandomDeposit();
+            await exchangeTestUtil.doRandomOffchainWithdrawal(deposit);
           }
 
           // Wait a bit until the operator only gets half the block fee

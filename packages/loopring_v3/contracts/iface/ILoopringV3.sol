@@ -173,23 +173,13 @@ contract ILoopringV3
         external
         returns (uint stakedLRC);
 
-    /// @dev Withdraw all staked LRC for an exchange.
-    ///      This function is meant to be called only from within exchange contracts.
-    /// @param  exchangeId The id of the exchange
-    /// @return stakedLRC The amount of LRC withdrawn
-    function withdrawStake(
-        uint exchangeId
-        )
-        external
-        returns (uint stakedLRC);
-
     /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
     /// @return stakedLRC The amount of LRC withdrawn
-    function withdrawStakeTo(
+    function withdrawStake(
         uint exchangeId,
         address recipient,
         uint requestedAmount

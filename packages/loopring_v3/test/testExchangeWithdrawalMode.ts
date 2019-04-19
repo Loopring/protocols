@@ -9,8 +9,13 @@ contract("Exchange", (accounts: string[]) => {
   let loopring: any;
   let realmID = 0;
 
+  const checkWithdrawalMode = async (expectedInWithdrawalMode: boolean) => {
+    const inWithdrawalMode = await exchange.isInWithdrawalMode();
+    assert.equal(inWithdrawalMode, expectedInWithdrawalMode, "not in expected withdrawal mode state");
+  };
+
   const createExchange = async (bSetupTestState: boolean = true) => {
-    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
     exchange = exchangeTestUtil.exchange;
   };
 
@@ -41,6 +46,107 @@ contract("Exchange", (accounts: string[]) => {
 
   describe("Withdrawal Mode", function() {
     this.timeout(0);
+
+    it("should go into withdrawal mode when a deposit request isn't processed", async () => {
+      await createExchange(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2);
+      // Do a deposit
+      await exchangeTestUtil.doRandomDeposit();
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(20);
+      // We should be in withdrawal mode
+      await checkWithdrawalMode(true);
+    });
+
+    it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
+      await createExchange(true);
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // Do a deposit
+      const deposit = await exchangeTestUtil.doRandomDeposit();
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Do an on-chain withdrawal
+      await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(20);
+      // We should be in withdrawal mode
+      await checkWithdrawalMode(true);
+    });
+
+    it("should go into withdrawal mode when a block stays unverified (and is not reverted)", async () => {
+      await createExchange(false);
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Do a deposit
+      const deposit = await exchangeTestUtil.doRandomDeposit();
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(realmID);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE - 10);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(20);
+      // We should be in withdrawal mode
+      await checkWithdrawalMode(true);
+    });
+
+    it("should go into withdrawal mode when shutdown without reverting to initial state", async () => {
+      await createExchange(false);
+      // Do a deposit
+      const deposit = await exchangeTestUtil.doRandomDeposit();
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+
+      // Shut down the exchange
+      await exchange.shutdown({from: exchangeTestUtil.exchangeOwner});
+
+      // Calculate the time the exchange can stay in shutdown
+      const numAccounts = (await exchange.getNumAccounts()).toNumber();
+      const timeUntilWithdrawalMode = exchangeTestUtil.MAX_TIME_IN_SHUTDOWN_BASE +
+                                      exchangeTestUtil.MAX_TIME_IN_SHUTDOWN_DELTA * numAccounts;
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(timeUntilWithdrawalMode - 10);
+      // We shouldn't be in withdrawal mode yet
+      await checkWithdrawalMode(false);
+      // Wait
+      await exchangeTestUtil.advanceBlockTimestamp(20);
+      // We should be in withdrawal mode
+      await checkWithdrawalMode(true);
+    });
 
     it("ERC20: withdraw from merkle tree", async () => {
       await createExchange();

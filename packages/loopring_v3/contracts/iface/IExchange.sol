@@ -121,12 +121,28 @@ contract IExchange
         );
 
     // -- Mode --
+    /// @dev Whether the exchange is in withdrawal mode.
+    /// @return Returns true if the exchange is in withdrawal mode, else false
     function isInWithdrawalMode()
         external
         view
-        returns(bool);
+        returns (bool);
+
+    /// @dev Whether the exchange is shutdown.
+    /// @return Returns true if the exchange is shutdown, else false
+    function isShutdown()
+        external
+        view
+        returns (bool);
 
     // -- Accounts --
+
+    /// @dev Gets the number of accounts registered on this exchange.
+    /// @return The number of accounts registered
+    function getNumAccounts()
+        external
+        view
+        returns (uint);
 
     /// @dev Get the account information for a given address.
     /// @param  owner The owning address of the account

@@ -216,16 +216,6 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function withdrawStake(
-        uint exchangeId
-        )
-        external
-        returns (uint stakedLRC)
-    {
-        stakedLRC = getStake(exchangeId);
-        withdrawStakeTo(exchangeId, msg.sender, stakedLRC);
-    }
-
-    function withdrawStakeTo(
         uint exchangeId,
         address recipient,
         uint requestedAmount

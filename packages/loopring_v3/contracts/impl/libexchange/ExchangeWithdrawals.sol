@@ -389,7 +389,7 @@ library ExchangeWithdrawals
             uint amountToBurn = totalFine / 2;
             uint amountToDistributer = totalFine - amountToBurn;
             S.loopring.burnStake(S.id, amountToBurn);
-            S.loopring.withdrawStakeTo(S.id, msg.sender, amountToDistributer);
+            S.loopring.withdrawStake(S.id, msg.sender, amountToDistributer);
         }
 
         // Possible enhancement: allow withdrawing in parts

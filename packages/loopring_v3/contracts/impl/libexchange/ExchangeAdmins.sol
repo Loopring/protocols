@@ -176,6 +176,6 @@ library ExchangeAdmins
 
         // Withdraw the complete stake
         uint amount = S.loopring.getStake(S.id);
-        return S.loopring.withdrawStakeTo(S.id, recipient, amount);
+        return S.loopring.withdrawStake(S.id, recipient, amount);
     }
 }
