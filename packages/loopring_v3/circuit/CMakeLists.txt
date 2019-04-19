@@ -6,3 +6,7 @@ set(circuit_src_folder "../../../../loopring3-circuits")
 
 add_executable(dex_circuit "${circuit_src_folder}/main.cpp")
 target_link_libraries(dex_circuit ethsnarks_jubjub)
+
+add_library(circuit_service SHARED "${circuit_src_folder}/service.cpp")
+target_link_libraries(circuit_service ethsnarks_jubjub)
+
