@@ -60,9 +60,12 @@ export class ExchangeTestUtil {
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_AGE_REQUEST_UNTIL_FORCED: number;
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
+  public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
   public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public MAX_TIME_IN_SHUTDOWN_BASE: number;
+  public MAX_TIME_IN_SHUTDOWN_DELTA: number;
   public FEE_BLOCK_FINE_START_TIME: number;
   public FEE_BLOCK_FINE_MAX_DURATION: number;
   public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
@@ -157,7 +160,11 @@ export class ExchangeTestUtil {
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
     this.MAX_AGE_REQUEST_UNTIL_FORCED = settings.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
     this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
+    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE =
+      settings.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE.toNumber();
     this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_BASE = settings.MAX_TIME_IN_SHUTDOWN_BASE.toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_DELTA = settings.MAX_TIME_IN_SHUTDOWN_DELTA.toNumber();
     this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
     this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
     this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
@@ -1567,6 +1574,69 @@ export class ExchangeTestUtil {
       const Token = await this.contracts.DummyToken.at(token);
       return await Token.balanceOf(owner);
     }
+  }
+
+  public async doRandomDeposit(ownerIndex?: number) {
+    // Change the deposit fee
+    const fees = await this.exchange.getFees();
+    await this.exchange.setFees(
+      fees._accountCreationFeeETH,
+      fees._accountUpdateFeeETH,
+      fees._depositFeeETH.mul(new BN(2)),
+      fees._withdrawalFeeETH,
+      {from: this.exchangeOwner},
+    );
+
+    const orderOwners = this.testContext.orderOwners;
+    ownerIndex = (ownerIndex !== undefined) ? ownerIndex : this.getRandomInt(orderOwners.length);
+    const keyPair = this.getKeyPairEDDSA();
+    const owner = orderOwners[Number(ownerIndex)];
+    const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+    const token = this.getTokenAddress("LRC");
+    return await this.deposit(this.exchangeId, owner,
+                              keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                              token, amount);
+  }
+
+  public async doRandomOnchainWithdrawal(depositInfo: DepositInfo) {
+    // Change the withdrawal fee
+    const fees = await this.exchange.getFees();
+    await this.exchange.setFees(
+      fees._accountCreationFeeETH,
+      fees._accountUpdateFeeETH,
+      fees._depositFeeETH,
+      fees._withdrawalFeeETH.mul(new BN(2)),
+      {from: this.exchangeOwner},
+    );
+
+    return await this.requestWithdrawalOnchain(
+      this.exchangeId,
+      depositInfo.accountID,
+      depositInfo.token,
+      new BN(Math.random() * 1000),
+      depositInfo.owner,
+    );
+  }
+
+  public async doRandomOffchainWithdrawal(depositInfo: DepositInfo) {
+    this.requestWithdrawalOffchain(
+      this.exchangeId,
+      depositInfo.accountID,
+      depositInfo.token,
+      new BN(Math.random() * 1000),
+      "LRC",
+      new BN(0),
+      0,
+      this.wallets[this.exchangeId][0].walletAccountID,
+    );
+  }
+
+  public shuffle(a: any[]) {
+    for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
   }
 
   public compareStates(stateA: Realm, stateB: Realm) {

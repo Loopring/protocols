@@ -43,6 +43,24 @@ contract("Loopring", (accounts: string[]) => {
            "LRC supply needs to be reduced by upgradeAmount");
   };
 
+  const withdrawTheBurnChecked = async (token: string, recipient: string, expectedAmount: BN) => {
+    const tokenAddress = exchangeTestUtil.getTokenAddress(token);
+
+    const balanceRecipientBefore = await exchangeTestUtil.getOnchainBalance(recipient, tokenAddress);
+    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, tokenAddress);
+
+    await loopring.withdrawTheBurn(tokenAddress, recipient,
+                                   {from: exchangeTestUtil.testContext.deployer, gasPrice: 0});
+
+    const balanceRecipientAfter = await exchangeTestUtil.getOnchainBalance(recipient, tokenAddress);
+    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, tokenAddress);
+
+    assert(balanceRecipientAfter.eq(balanceRecipientBefore.add(expectedAmount)),
+           "Token balance of recipient should be increased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.sub(expectedAmount)),
+           "Token balance of contract should be decreased by amount");
+  };
+
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
@@ -148,6 +166,26 @@ contract("Loopring", (accounts: string[]) => {
           "BURN_RATE_FROZEN",
         );
       }
+    });
+
+    it("should be able to withdraw 'The Burn'", async () => {
+      const user = exchangeTestUtil.testContext.orderOwners[0];
+      const amountA = new BN(web3.utils.toWei("1.23", "ether"));
+      const amountB = new BN(web3.utils.toWei("456", "ether"));
+      await exchangeTestUtil.setBalanceAndApprove(user, "WETH", amountB, loopring.address);
+      // Transfer some funds to the contract that we can withdraw
+      // ETH
+      await web3.eth.sendTransaction({from: user, to: loopring.address, value: amountA});
+      // WETH
+      const WETH = await exchangeTestUtil.getTokenContract("WETH");
+      await WETH.transfer(loopring.address, amountB, {from: user});
+
+      // Withdraw
+      const recipient = exchangeTestUtil.testContext.orderOwners[1];
+      // ETH
+      await withdrawTheBurnChecked("ETH", recipient, amountA);
+      // WETH
+      await withdrawTheBurnChecked("WETH", recipient, amountB);
     });
 
   });
