@@ -1,6 +1,8 @@
 ROOT_DIR := $(shell dirname $(realpath $(MAKEFILE_LIST)))
 PYTHON=python3
 
+CMAKE_TYPE := cmake-release
+
 ifeq ($(OS),Windows_NT)
 	detected_OS := Windows
 	DLL_EXT := .dll
@@ -11,6 +13,7 @@ else
 		export LD_LIBRARY_PATH := /usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib:"$(LD_LIBRARY_PATH)"
 		export CPATH := /usr/local/opt/openssl/include:/usr/local/opt/gmp/include:/usr/local/opt/boost/include:"$(CPATH)"
 		export PKG_CONFIG_PATH := /usr/local/opt/openssl/lib/pkgconfig:"$(PKG_CONFIG_PATH)"
+		CMAKE_TYPE := cmake-debug
 	else
 		DLL_EXT := .so
 	endif
@@ -20,7 +23,7 @@ all: test
 
 test: build/circuit/dex_circuit
 
-build/circuit/dex_circuit: cmake-release
+build/circuit/dex_circuit: $(CMAKE_TYPE)
 	make -C build
 	mkdir -p keys
 
