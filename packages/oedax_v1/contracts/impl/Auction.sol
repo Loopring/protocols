@@ -18,12 +18,14 @@ pragma solidity 0.5.7;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IAuction.sol";
+import "../iface/IAuctionData.sol";
 import "../iface/ICurve.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 
+import "./libauction/AuctionBidAsk.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -31,6 +33,7 @@ contract Auction is IAuction
 {
     using MathUint          for uint;
     using MathUint          for uint32;
+    using AuctionBidAsk     for IAuctionData.State;
 
     modifier onlyOedax {
       require (msg.sender == address(state.oedax));
@@ -105,7 +108,7 @@ contract Auction is IAuction
         returns(
             uint  _amount,
             uint  _queued,
-            Info memory i
+            IAuctionData.Info memory i
         )
     {
          uint a = getSpendable(state.bidToken, amount);
@@ -126,10 +129,10 @@ contract Auction is IAuction
         return 0;
     }
 
-    function getInfo()
+    function getAuctionInfo()
         public
         view
-        returns (Info memory i)
+        returns (IAuctionData.Info memory i)
     {
         // i.askAmount = askAmount;
         // i.bidAmount = bidAmount;
@@ -197,14 +200,14 @@ contract Auction is IAuction
         returns(
             uint  _amount,
             uint  _queued,
-            Info memory i
+            IAuctionData.Info memory i
         )
     {
         // require(amount > 0, "zero amount");
         //  _amount = amount;
 
         // // calculate the current-state
-        // s = getInfo();
+        // s = getIAuctionData.Info();
 
         // if (s.additionalBidAmountAllowed < _amount) {
         //     _queued = _amount.sub(s.additionalBidAmountAllowed);
@@ -232,7 +235,7 @@ contract Auction is IAuction
         // }
 
         // // calculate the post-participation state
-        // s = getInfo();
+        // s = getIAuctionData.Info();
 
         // emit Bid(
         //     msg.sender,

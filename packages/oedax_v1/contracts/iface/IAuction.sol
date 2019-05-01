@@ -16,83 +16,13 @@
 */
 pragma solidity 0.5.7;
 
-
 import "../lib/Ownable.sol";
 
-import "./ICurve.sol";
-import "./IOedax.sol";
+import "./IAuctionData.sol";
 
 /// @title IAuction
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IAuction is Ownable
 {
-
-    struct Queued
-    {
-        address user;
-        uint    amount;
-    }
-
-    enum Status {PENDING, LIVE, CLOSED, SETTLED}
-
-    struct Info
-    {
-      Status status;
-      bool bounded;
-      uint actualPrice;
-      uint askPrice;
-      uint bidPrice;
-      uint askAmount;
-      uint bidAmount;
-      uint newAskShift;
-      uint newBidShift;
-      uint additionalAskAmountAllowed;
-      uint additionalBidAmountAllowed;
-      uint queuedAskAmount;
-      uint queuedBidAmount;
-      uint timeRemaining;
-    }
-
-    struct State
-    {
-      IOedax  oedax;
-      ICurve  curve;
-
-      uint    auctionId;
-      address askToken;
-      address bidToken;
-      uint    initialAskAmount;
-      uint    initialBidAmount;
-      uint    startTime;
-
-      uint32  P;
-      uint32  S;
-      uint8   M;
-      uint    T;
-
-      uint    askAmount;
-      uint    bidAmount;
-      uint    askShift;
-      uint    bidShift;
-
-      Queued[]  queue;
-      bool      queueIsBid;
-      uint      queueAmount;
-    }
-
-    State state;
-
-    event Bid(
-        address user,
-        uint    amount,
-        uint    amountQueued,
-        uint    time
-    );
-
-    event Ask(
-        address user,
-        uint    amount,
-        uint    amountQueued,
-        uint    time
-    );
+    IAuctionData.State state;
 }
