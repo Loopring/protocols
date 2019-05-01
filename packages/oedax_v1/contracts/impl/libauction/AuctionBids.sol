@@ -90,6 +90,9 @@ library AuctionBids
             s.dequeue(s.getQueueConsumption(_amount, s.queueAmount));
         }
 
+        s.bidAmount = s.bidAmount.add(_amount);
+        s.queueAmount = s.queueAmount.add(_queued);
+
         emit Bid(
             msg.sender,
             _amount,

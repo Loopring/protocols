@@ -56,6 +56,9 @@ library AuctionAsks
         uint _amount = amount;
         uint _queued;
 
+        s.askAmount = s.askAmount.add(_amount);
+        s.queueAmount = s.queueAmount.add(_queued);
+
         emit Ask(
             msg.sender,
             _amount,
