@@ -16,30 +16,32 @@
 */
 pragma solidity 0.5.7;
 
+import "../iface/ICurveRegistry.sol";
 
-/// @title ICurve
+import "../lib/NoDefaultFunc.sol";
+import "../lib/Ownable.sol";
+
+/// @title An Implementation of ICurveRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICurve
+contract CurveRegistry is ICurveRegistry, NoDefaultFunc, Ownable
 {
-    function getCurveValue(
-        uint32  P, // target price
-        uint32  S, // price scale
-        uint8   M, // price factor
-        uint    T,
-        uint  time
-        )
+    function registerCurve(address curve)
         public
-        view
-        returns (uint value);
+        onlyOwner
+    {
+        require(curveMap[curve] == 0, "already registered");
+        curves.push(curve);
+        curveMap[curve] = curves.length;
 
-    function getCurveTime(
-        uint32  P, // target price
-        uint32  S, // price scale
-        uint8   M, // price factor
-        uint    T,
-        uint    value
-        )
+        emit CurveRegistered(curves.length, curve);
+    }
+
+    function getCurveAddress(uint id)
         public
         view
-        returns (uint time);
+        returns (address)
+    {
+        require(id > 0 && id <= curves.length, "invalid id");
+        return curves[id - 1];
+    }
 }

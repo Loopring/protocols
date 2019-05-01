@@ -17,29 +17,23 @@
 pragma solidity 0.5.7;
 
 
-/// @title ICurve
+/// @title ICurveRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICurve
+contract ICurveRegistry
 {
-    function getCurveValue(
-        uint32  P, // target price
-        uint32  S, // price scale
-        uint8   M, // price factor
-        uint    T,
-        uint  time
-        )
-        public
-        view
-        returns (uint value);
+    address[] curves;
+    mapping(address => uint) curveMap;
 
-    function getCurveTime(
-        uint32  P, // target price
-        uint32  S, // price scale
-        uint8   M, // price factor
-        uint    T,
-        uint    value
-        )
+    event CurveRegistered(
+        uint    id,
+        address curve
+    );
+
+    function registerCurve(address curve)
+        public;
+
+    function getCurveAddress(uint id)
         public
         view
-        returns (uint time);
+        returns (address);
 }

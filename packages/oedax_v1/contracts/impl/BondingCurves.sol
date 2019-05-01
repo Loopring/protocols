@@ -34,8 +34,8 @@ library BondingCurves
         uint32  S, // price scale
         uint8   M, // price factor
         uint    T,
-        uint    amountAsk,
-        uint    amountBid,
+        uint    askAmount, // i.e., LRC
+        uint    bidAmount, // i.e., ETH
         uint    time,
         uint    askShift,
         uint    bidShift
@@ -53,8 +53,8 @@ library BondingCurves
             uint additionalAmountBidAllowed
         )
     {
-        if (amountAsk > 0) {
-            actualPrice = amountBid.mul(S) / amountAsk;
+        if (askAmount > 0) {
+            actualPrice = bidAmount.mul(S) / askAmount;
             bounded = actualPrice >= P / M && actualPrice <= P.mul(M);
         }
 
@@ -77,7 +77,7 @@ library BondingCurves
                 askPrice = actualPrice;
                 additionalAmountBidAllowed = 0;
             } else {
-              additionalAmountBidAllowed = (askPrice.mul(amountAsk) / S).sub(amountBid);
+              additionalAmountBidAllowed = (askPrice.mul(askAmount) / S).sub(bidAmount);
             }
 
             if (actualPrice < bidPrice) {
@@ -86,7 +86,7 @@ library BondingCurves
                 bidPrice = actualPrice;
                 additionalAmountAskAllowed = 0;
             } else {
-                additionalAmountAskAllowed = (bidPrice.mul(amountAsk) / S).sub(amountBid);
+                additionalAmountAskAllowed = (bidPrice.mul(askAmount) / S).sub(bidAmount);
             }
         }
     }
