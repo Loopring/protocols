@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-import "../iface/IBondingCurves.sol";
 import "../iface/ICurve.sol";
 
 import "../lib/MathUint.sol";
@@ -24,33 +23,21 @@ import "../lib/MathUint.sol";
 
 /// @title An Implementation of IBondingCurves.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract BondingCurves is IBondingCurves
+library BondingCurves
 {
     using MathUint  for uint;
 
-    ICurve    curve;
-
-    // -- Constructor --
-    constructor(
-        address _curveAddress
-        )
-        public
-    {
-      require (_curveAddress != address(0x0), "zero address");
-      curve = ICurve(_curveAddress);
-    }
-
-    // == Public Functions ==
     function getAskPriceAt(
-        uint  P, // target price
-        uint8 M, // price factor
-        uint  S, // price scale
-        uint  amountAsk,
-        uint  amountBid,
-        uint  time,
-        uint  shift
+        address curveAddress,
+        uint    P, // target price
+        uint8   M, // price factor
+        uint    S, // price scale
+        uint    amountAsk,
+        uint    amountBid,
+        uint    time,
+        uint    shift
         )
-        public
+        internal
         view
         returns (
             uint askPrice,
@@ -58,6 +45,7 @@ contract BondingCurves is IBondingCurves
             uint additionalAmountBidAllowed
         )
     {
+        ICurve curve = ICurve(curveAddress);
         uint t = time.sub(shift);
         newShift = shift;
         askPrice = curve.getCurveValue(P, M, S, t);
