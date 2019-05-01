@@ -49,11 +49,12 @@ library AuctionAsks
         internal
     {
         require(amount > 0, "zero amount");
+
+        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][false];
+        balance.total = balance.total.add(amount);
+
         uint _amount = amount;
         uint _queued;
-
-        // calculate the current-state
-        IAuctionData.Info memory i = s.getAuctionInfo();
 
         emit Ask(
             msg.sender,

@@ -50,7 +50,7 @@ library AuctionBids
     {
         require(amount > 0, "zero amount");
 
-        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][s.queueIsBid];
+        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][true];
         balance.total = balance.total.add(amount);
 
         uint _amount = amount;
@@ -89,9 +89,6 @@ library AuctionBids
             assert(_amount > 0);
             s.dequeue(s.getQueueConsumption(_amount, s.queueAmount));
         }
-
-        // calculate the post-participation state
-        i = s.getAuctionInfo();
 
         emit Bid(
             msg.sender,
