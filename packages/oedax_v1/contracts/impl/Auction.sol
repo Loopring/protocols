@@ -26,7 +26,9 @@ import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 
 import "./libauction/AuctionBalance.sol";
-import "./libauction/AuctionBidAsk.sol";
+import "./libauction/AuctionBids.sol";
+import "./libauction/AuctionAsks.sol";
+import "./libauction/AuctionInfo.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -35,7 +37,9 @@ contract Auction is IAuction
     using MathUint          for uint;
     using MathUint          for uint32;
     using AuctionBalance    for IAuctionData.State;
-    using AuctionBidAsk     for IAuctionData.State;
+    using AuctionBids       for IAuctionData.State;
+    using AuctionAsks       for IAuctionData.State;
+    using AuctionInfo       for IAuctionData.State;
 
     modifier onlyOedax {
       require (msg.sender == address(state.oedax));
@@ -97,9 +101,9 @@ contract Auction is IAuction
         payable
     {
         if (state.bidToken == address(0x0)) {
-            bidInternal(msg.value);
+            state.bid(msg.value);
         } else if (state.askToken == address(0x0)) {
-            // askInternal(msg.value);
+            state.ask(msg.value);
         } else {
             revert();
         }
@@ -117,18 +121,22 @@ contract Auction is IAuction
             state.bidToken,
             amount
         );
-        return bidInternal(a);
+        return state.bid(a);
     }
 
-    function getQueueConsumption(
-        uint amount,
-        uint amountInQueue
+    function ask(uint amount)
+        public
+        returns(
+            uint  _amount,
+            uint  _queued,
+            IAuctionData.Info memory i
         )
-        private
-        view
-        returns (uint)
     {
-        return 0;
+        uint a = state.depositToken(
+            state.askToken,
+            amount
+        );
+        return state.ask(a);
     }
 
     function getAuctionInfo()
@@ -151,58 +159,6 @@ contract Auction is IAuction
     }
 
     // == Internal & Private Functions ==
-    function bidInternal(uint amount)
-        internal
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
-    {
-        // require(amount > 0, "zero amount");
-        //  _amount = amount;
-
-        // // calculate the current-state
-        // s = getIAuctionData.Info();
-
-        // if (s.additionalBidAmountAllowed < _amount) {
-        //     _queued = _amount.sub(s.additionalBidAmountAllowed);
-        //     _amount = i.additionalBidAmountAllowed;
-        // }
-
-        // if (_queued > 0) {
-        //     if (queueAmount > 0) {
-        //         if (queueIsBid) {
-        //             // Before this BID, the queue is for BIDs
-        //             assert(_amount == 0);
-        //         } else {
-        //             // Before this BID, the queue is for ASKs, therefore we must have
-        //             // consumed all the pending ASKs in the queue.
-        //             assert(_amount > 0);
-        //             dequeue(queueAmount);
-        //         }
-        //     }
-        //     queueIsBid = true;
-        //     enqueue(_queued);
-        // } else {
-        //     assert(queueAmount == 0 || !queueIsBid);
-        //     assert(_amount > 0);
-        //     dequeue(getQueueConsumption(_amount, queueAmount));
-        // }
-
-        // // calculate the post-participation state
-        // s = getIAuctionData.Info();
-
-        // emit Bid(
-        //     msg.sender,
-        //     _amount,
-        //     _queued,
-        //     block.timestamp
-        // );
-    }
-
-    function dequeue(uint amount) private {}
-    function enqueue(uint amount) private {}
 
 
 
