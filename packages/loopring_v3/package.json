@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/Loopring/protocol.git"
+    "url": "git+http://github.com/Loopring/protocol.git"
   },
   "scripts": {
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
@@ -41,7 +41,7 @@
     "mocha": "^5.2.0",
     "node": "8.11.3",
     "npm": "^6.9.0",
-    "solium": "^1.2.3",
+    "solium": "^1.2.4",
     "tslint": "5.11.0",
     "types-bn": "0.0.1",
     "typescript": "3.1.6",

@@ -42,6 +42,10 @@ library ExchangeBlocks
         uint    indexed blockIdx
     );
 
+    event BlockVerified(
+        uint    indexed blockIdx
+    );
+
     event Revert(
         uint    indexed blockIdx
     );
@@ -111,6 +115,7 @@ library ExchangeBlocks
             }
         } else {
             specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
+            emit BlockVerified(blockIdx);
         }
     }
 
