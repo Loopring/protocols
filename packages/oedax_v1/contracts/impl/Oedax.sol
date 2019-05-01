@@ -16,11 +16,14 @@
 */
 pragma solidity 0.5.7;
 
+import "../iface/ICurveRegistry.sol";
 import "../iface/IOedax.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
+
+import "./Auction.sol";
 
 
 /// @title An Implementation of IOedax.
@@ -29,6 +32,10 @@ contract Oedax is IOedax, Ownable
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
+
+    address[] auctions;
+
+    ICurveRegistry curveRegistry;
 
     // -- Constructor --
     constructor(
@@ -39,6 +46,36 @@ contract Oedax is IOedax, Ownable
     }
 
     // == Public Functions ==
+    function createAuction(
+        uint    curveId,
+        address askToken,
+        address bidToken,
+        uint    initialAskAmount,
+        uint    initialBidAmount,
+        uint32  P, // target price
+        uint32  S, // price scale
+        uint8   M, // price factor
+        uint    T
+        )
+        public
+        returns (address auctionAddr)
+    {
+        uint auctionId = auctions.length + 1;
+
+        Auction auction = new Auction(
+            address(this),
+            auctionId,
+            curveRegistry.getCurve(curveId),
+            askToken,
+            bidToken,
+            initialAskAmount,
+            initialBidAmount,
+            P, S, M, T
+        );
+
+        auctionAddr = address(auction);
+        auctions.push(auctionAddr);
+    }
 
     // == Internal Functions ==
 

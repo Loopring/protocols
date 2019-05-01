@@ -81,7 +81,8 @@ library BondingCurves
             }
 
             if (actualPrice < bidPrice) {
-                uint t = curve.getCurveTime(P, S, M, T, P.mul(P) / S / actualPrice);
+                uint v = askAmount.mul(P).mul(P) / bidAmount;
+                uint t = curve.getCurveTime(P, S, M, T, v);
                 newAskShift = bidTime.add(bidShift).sub(t);
                 bidPrice = actualPrice;
                 additionalAmountAskAllowed = 0;

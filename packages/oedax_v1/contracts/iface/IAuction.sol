@@ -16,24 +16,21 @@
 */
 pragma solidity 0.5.7;
 
+import "./IOedax.sol";
 
-/// @title ICurveRegistry
+/// @title IAuction
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICurveRegistry
+contract IAuction
 {
-    address[] curves;
-    mapping(address => uint) curveMap;
-
-    event CurveRegistered(
-        uint    id,
-        address curve
-    );
-
-    function registerCurve(address curve)
-        public;
-
-    function getCurve(uint id)
-        public
-        view
-        returns (address);
+    IOedax  oedax;
+    uint    auctionId;
+    address curve;
+    address askToken;
+    address bidToken;
+    uint    initialAskAmount;
+    uint    initialBidAmount;
+    uint32  P; // target price
+    uint32  S; // price scale
+    uint8   M; // price factor
+    uint    T;
 }

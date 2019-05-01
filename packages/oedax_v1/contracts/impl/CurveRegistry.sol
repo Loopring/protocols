@@ -36,7 +36,7 @@ contract CurveRegistry is ICurveRegistry, NoDefaultFunc, Ownable
         emit CurveRegistered(curves.length, curve);
     }
 
-    function getCurveAddress(uint id)
+    function getCurve(uint id)
         public
         view
         returns (address)
