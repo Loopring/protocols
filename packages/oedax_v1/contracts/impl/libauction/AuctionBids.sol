@@ -77,7 +77,7 @@ library AuctionBids
                 }
             }
             s.queueIsBid = true;
-            s.enqueue(_queued);
+            s.enqueue(_queued, block.timestamp - s.startTime);
         } else {
             assert(s.queueAmount == 0 || !s.queueIsBid);
             assert(_amount > 0);

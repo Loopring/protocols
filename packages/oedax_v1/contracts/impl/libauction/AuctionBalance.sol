@@ -42,8 +42,8 @@ library AuctionBalance
             IAuctionData.Balance memory askBalance
         )
     {
-        bidBalance = s.balanceMap[user][s.bidToken];
-        askBalance = s.balanceMap[user][s.askToken];
+        bidBalance = s.balanceMap[user][true];
+        askBalance = s.balanceMap[user][false];
     }
 
    function depositToken(

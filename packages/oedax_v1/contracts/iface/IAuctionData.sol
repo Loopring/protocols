@@ -45,10 +45,12 @@ library IAuctionData
     {
         address user;
         uint    amount;
+        uint    time;
     }
 
     struct Balance
     {
+        uint totalWeight;
         uint total;
         uint queued;
     }
@@ -79,8 +81,8 @@ library IAuctionData
       bool      queueIsBid;
       uint      queueAmount;
 
-      // user => (token => balance)
-      mapping (address => mapping (address => Balance)) balanceMap;
+      // user => (isBid => balance)
+      mapping (address => mapping (bool => Balance)) balanceMap;
     }
 
     event Bid(

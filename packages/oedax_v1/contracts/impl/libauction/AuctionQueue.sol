@@ -23,15 +23,6 @@ import "../../lib/MathUint.sol";
 
 /// @title AuctionQueue.
 /// @author Daniel Wang  - <daniel@loopring.org>
-
-      // Queued[]  queue;
-      // bool      queueIsBid;
-      // uint      queueAmount;
-
-      // // user => (token => balance)
-      // mapping (address => mapping (address => Balance)) balanceMap;
-
-
 library AuctionQueue
 {
     using MathUint      for uint;
@@ -55,21 +46,25 @@ library AuctionQueue
         )
         internal
     {
+      s.queueAmount = s.queueAmount.sub(amount);
+
       uint amt = amount;
       uint idx = 0;
-      address token = s.queueIsBid ? s.bidToken : s.askToken;
 
       while(amt > 0) {
         IAuctionData.Queued storage item = s.queue[idx];
-        IAuctionData.Balance storage balance = s.balanceMap[item.user][token];
+        IAuctionData.Balance storage balance = s.balanceMap[item.user][s.queueIsBid];
 
         if (item.amount > amt) {
-          item.amount -= amt;
-          balance.queued -= amt;
+          balance.totalWeight = balance.totalWeight.add(item.time.mul(amt));
+          balance.queued = balance.queued.sub(amt);
+
+          item.amount = item.amount.sub(amt);
         } else {
-          amt -= item.amount;
-          balance.queued -= item.amount;
-          item.amount = 0;
+          balance.totalWeight = balance.totalWeight.add(item.time.mul(item.amount));
+          balance.queued = balance.queued.sub(item.amount);
+
+          amt = amt.sub(item.amount);
           idx += 1;
         }
       }
@@ -81,16 +76,21 @@ library AuctionQueue
         }
         s.queue.length = size;
       }
-
-      s.queueAmount -= amt;
     }
 
+    /// @dev enqueue a bid or a ask
+    /// Note that `queueIsBid` must be set to the right value before calling this method.
     function enqueue(
         IAuctionData.State storage s,
-        uint amount
+        uint amount,
+        uint time
         )
         internal
     {
-
+        s.queue.push(IAuctionData.Queued(
+            msg.sender,
+            amount,
+            time
+        ));
     }
 }
