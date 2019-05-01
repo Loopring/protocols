@@ -78,12 +78,69 @@ contract Auction is IAuction, Ownable
         // initTransfers();
     }
 
-    // == Public Functions ==
+    // == Public & External Functions ==
+    function bid(uint amount)
+        public
+        returns(
+            uint  _amount,
+            uint  _queued,
+            State memory s
+        )
+    {
+        s = getState();
+        _amount = getSpendable(bidToken, amount);
+        require(_amount > 0, "zero amount");
+
+        if (s.additionalBidAmountAllowed < _amount) {
+            _queued = _amount.sub(s.additionalBidAmountAllowed);
+            _amount = s.additionalBidAmountAllowed;
+        }
+
+        if (_queued > 0) {
+            // Now the queue is for sure the bid-queue.
+            if (queueIsBid) {
+                // Previously the queue is also bid-queue
+                enqueue(_queued);
+            } else {
+                // Previously this queue is a ask-queue, we must have
+                // consumed all of them
+                dequeue(queueAmount);
+                queueIsBid = true;
+                enqueue(_queued);
+            }
+
+        } else {
+            assert(_amount > 0);
+
+            // Previous queue's type stays the same
+             uint askConsumed = getQueueConsumption(
+                _amount,
+                s.queuedAskAmount
+            );
+        }
+
+        s = getState();
+    }
+
+
+    function getQueueConsumption(
+        uint amount,
+        uint amountInQueue
+        )
+        private
+        view
+        returns (uint)
+    {
+        return 0;
+    }
+
     function getState()
         public
         view
         returns (State memory s)
     {
+        s.askAmount = askAmount;
+        s.bidAmount = bidAmount;
         s.queuedAskAmount = queueIsBid ? 0 : queueAmount;
         s.queuedBidAmount = queueIsBid ? 0 : queueAmount;
 
@@ -96,10 +153,11 @@ contract Auction is IAuction, Ownable
 
         uint span;
 
+        // calculating asks
         span = block.timestamp.sub(startTime).sub(askShift);
         s.askPrice = curve.getCurveValue(P, S, M, T, span);
         s.newAskShift = askShift;
-        s.additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
+        s.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
 
         if (s.bounded) {
             if (s.actualPrice > s.askPrice) {
@@ -107,18 +165,19 @@ contract Auction is IAuction, Ownable
                     .add(askShift)
                     .sub(curve.getCurveTime(P, S, M, T, s.actualPrice ));
                 s.askPrice = s.actualPrice;
-                s.additionalAmountBidAllowed = 0;
+                s.additionalBidAmountAllowed = 0;
             } else {
-                s.additionalAmountBidAllowed = (
+                s.additionalBidAmountAllowed = (
                     askAmount.add(s.queuedAskAmount).mul(s.askPrice ) / S
                 ).sub(bidAmount);
             }
         }
 
+        // calculating bids
         span = block.timestamp.sub(startTime).sub(bidShift);
         s.bidPrice = P.mul(P) / S / curve.getCurveValue(P, S, M, T, span);
         s.newBidShift = bidShift;
-        s.additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
+        s.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
 
         if (s.bounded) {
             if (s.actualPrice < s.bidPrice) {
@@ -126,12 +185,32 @@ contract Auction is IAuction, Ownable
                     .add(bidShift)
                     .sub(curve.getCurveTime(P, S, M, T, askAmount.mul(P).mul(P) / bidAmount));
                 s.bidPrice = s.actualPrice;
-                s.additionalAmountAskAllowed = 0;
+                s.additionalAskAmountAllowed = 0;
             } else {
-                s.additionalAmountAskAllowed = (
+                s.additionalAskAmountAllowed = (
                     askAmount.add(s.queuedBidAmount).mul(s.bidPrice) / S
                 ).sub(bidAmount);
             }
         }
+
+        if (queueAmount > 0) {
+            require(queueIsBid || s.additionalAskAmountAllowed == 0);
+            require(!queueIsBid || s.additionalBidAmountAllowed == 0);
+        }
     }
+
+    // == Internal & Private Functions ==
+    function dequeue(uint amount) private {}
+    function enqueue(uint amount) private {}
+
+    function getSpendable(
+        address token,
+        uint    amount
+        )
+        private
+        returns (uint)
+    {
+        return 0;
+    }
+
 }

@@ -21,15 +21,6 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICurve
 {
-    struct Instance
-    {
-        ICurve  curve;
-        uint32  P; // target price
-        uint32  S; // price scale
-        uint8   M; // price factor
-        uint    T;
-    }
-
     function getCurveValue(
         uint32  P, // target price
         uint32  S, // price scale

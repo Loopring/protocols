@@ -39,10 +39,12 @@ contract IAuction
       uint actualPrice;
       uint askPrice;
       uint bidPrice;
+      uint askAmount;
+      uint bidAmount;
       uint newAskShift;
       uint newBidShift;
-      uint additionalAmountAskAllowed;
-      uint additionalAmountBidAllowed;
+      uint additionalAskAmountAllowed;
+      uint additionalBidAmountAllowed;
       uint queuedAskAmount;
       uint queuedBidAmount;
       uint timeRemaining;
