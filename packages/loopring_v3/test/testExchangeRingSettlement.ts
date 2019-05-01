@@ -11,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   let realmID = 0;
   const zeroAddress = "0x" + "00".repeat(20);
 
-  const bVerify = false;
+  const bVerify = true;
 
   const verify = async () => {
     if (bVerify) {
