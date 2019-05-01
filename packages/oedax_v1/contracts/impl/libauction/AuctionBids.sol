@@ -50,8 +50,7 @@ library AuctionBids
     {
         require(amount > 0, "zero amount");
 
-        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][true];
-        balance.total = balance.total.add(amount);
+
 
         uint _amount = amount;
         uint _queued;
@@ -63,12 +62,6 @@ library AuctionBids
             _queued = _amount.sub(i.additionalBidAmountAllowed);
             _amount = i.additionalBidAmountAllowed;
         }
-
-        balance.totalWeight = balance.totalWeight.add(
-            _amount.mul(block.timestamp - s.startTime)
-        );
-
-        balance.queued = balance.queued.add(_queued);
 
         if (_queued > 0) {
             if (s.queueAmount > 0) {
@@ -89,6 +82,14 @@ library AuctionBids
             assert(_amount > 0);
             s.dequeue(s.getQueueConsumption(_amount, s.queueAmount));
         }
+
+        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][true];
+
+        balance.inAuction = balance.inAuction.add(_amount);
+        balance.queued = balance.queued.add(_queued);
+        balance.totalWeight = balance.totalWeight.add(
+            _amount.mul(block.timestamp - s.startTime)
+        );
 
         s.bidAmount = s.bidAmount.add(_amount);
         s.queueAmount = s.queueAmount.add(_queued);

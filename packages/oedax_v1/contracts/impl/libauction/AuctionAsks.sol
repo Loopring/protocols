@@ -50,11 +50,17 @@ library AuctionAsks
     {
         require(amount > 0, "zero amount");
 
-        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][false];
-        balance.total = balance.total.add(amount);
 
         uint _amount = amount;
         uint _queued;
+
+        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][false];
+
+        balance.inAuction = balance.inAuction.add(_amount);
+        balance.queued = balance.queued.add(_queued);
+        balance.totalWeight = balance.totalWeight.add(
+            _amount.mul(block.timestamp - s.startTime)
+        );
 
         s.askAmount = s.askAmount.add(_amount);
         s.queueAmount = s.queueAmount.add(_queued);

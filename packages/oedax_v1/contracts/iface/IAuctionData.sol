@@ -51,7 +51,7 @@ library IAuctionData
     struct Balance
     {
         uint totalWeight;
-        uint total;
+        uint inAuction;
         uint queued;
     }
 
