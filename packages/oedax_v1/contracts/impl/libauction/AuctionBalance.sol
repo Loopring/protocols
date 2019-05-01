@@ -31,18 +31,17 @@ library AuctionBalance
 
     function depositToken(
         IAuctionData.State storage s,
+        address token,
         address user,
-        uint    amount,
-        bool    isBid
+        uint    amount
         )
         internal
     {
         require(amount > 0, "zero amount");
-        address tokenAddr = isBid ? s.bidToken : s.askToken;
-        assert(tokenAddr != address(0x0));
+        assert(token != address(0x0));
 
         require(
-            s.oedax.transferToken(tokenAddr, user, amount),
+            s.oedax.transferToken(token, user, amount),
             "token transfer failed"
         );
     }

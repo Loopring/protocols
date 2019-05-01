@@ -113,12 +113,13 @@ contract Auction is IAuction
             IAuctionData.Info memory i
         )
     {
-         uint a = getSpendable(state.bidToken, amount);
-         // TODO: do the transfer
+        require(state.bidToken != address(0x0), "ether");
 
-         return bidInternal(a);
+        uint a = getSpendable(state.bidToken, amount);
+        state.depositToken(state.bidToken, msg.sender, a);
+
+        return bidInternal(a);
     }
-
 
     function getQueueConsumption(
         uint amount,
@@ -137,6 +138,17 @@ contract Auction is IAuction
         returns (IAuctionData.Info memory)
     {
         return state.getAuctionInfo();
+    }
+
+    function getBalance(address user)
+        internal
+        view
+        returns (
+            IAuctionData.Balance memory bidBalance,
+            IAuctionData.Balance memory askBalance
+        )
+    {
+        return state.getBalance(user);
     }
 
     // == Internal & Private Functions ==
