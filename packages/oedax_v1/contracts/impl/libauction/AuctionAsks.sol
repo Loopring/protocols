@@ -52,6 +52,9 @@ library AuctionAsks
         uint _amount = amount;
         uint _queued;
 
+        // calculate the current-state
+        IAuctionData.Info memory i = s.getAuctionInfo();
+
         IAuctionData.Balance storage balance = s.balanceMap[msg.sender][false];
 
         balance.inAuction = balance.inAuction.add(_amount);
@@ -61,7 +64,9 @@ library AuctionAsks
         );
 
         s.askAmount = s.askAmount.add(_amount);
-        s.queueAmount = s.queueAmount.add(_queued);
+
+        s.bidShift = i.newBidShift;
+        s.askShift = i.newAskShift;
 
         emit Ask(
             msg.sender,

@@ -89,7 +89,9 @@ library AuctionBids
         );
 
         s.bidAmount = s.bidAmount.add(_amount);
-        s.queueAmount = s.queueAmount.add(_queued);
+
+        s.bidShift = i.newBidShift;
+        s.askShift = i.newAskShift;
 
         emit Bid(
             msg.sender,

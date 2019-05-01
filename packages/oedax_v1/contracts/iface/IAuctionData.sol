@@ -57,6 +57,7 @@ library IAuctionData
 
     struct State
     {
+      // The following files never change once initialized:
       IOedax  oedax;
       ICurve  curve;
 
@@ -72,6 +73,7 @@ library IAuctionData
       uint8   M;
       uint    T;
 
+      // The following fields WILL change on bids and asks.
       uint    askAmount;
       uint    bidAmount;
       uint    askShift;

@@ -48,6 +48,12 @@ library AuctionQueue
     {
       s.queueAmount = s.queueAmount.sub(amount);
 
+      if (s.queueIsBid) {
+        s.bidAmount = s.bidAmount.add(amount);
+      } else {
+        s.askAmount = s.askAmount.add(amount);
+      }
+
       uint _amount = amount;
       uint idx = 0;
 
@@ -87,6 +93,7 @@ library AuctionQueue
         )
         internal
     {
+        s.queueAmount = s.queueAmount.add(amount);
         s.queue.push(IAuctionData.Queued(
             msg.sender,
             amount,
