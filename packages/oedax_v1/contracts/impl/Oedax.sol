@@ -43,6 +43,12 @@ contract Oedax is IOedax, Ownable
 
     }
 
+
+    modifier onlyAuction {
+      require(auctionIdMap[msg.sender] != 0, "not an auction");
+      _;
+    }
+
     // == Public Functions ==
     function createAuction(
         uint    curveId,
@@ -78,6 +84,22 @@ contract Oedax is IOedax, Ownable
         creatorAuctions[msg.sender].push(auctionAddr);
 
         emit AuctionCreated(auctionId, auctionAddr);
+    }
+
+    function transferToken(
+        address token,
+        address user,
+        uint    amount
+        )
+        public
+        onlyAuction
+        returns (bool)
+    {
+        return token.safeTransferFrom(
+            user,
+            msg.sender,
+            amount
+        );
     }
 
     // == Internal Functions ==

@@ -24,5 +24,5 @@ import "./IAuctionData.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IAuction is Ownable
 {
-    IAuctionData.State state;
+    IAuctionData.State  state;
 }

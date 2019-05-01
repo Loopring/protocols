@@ -31,4 +31,13 @@ contract IOedax
         uint    auctionId,
         address auctionAddr
     );
+
+    function transferToken(
+        address token,
+        address user,
+        uint    amount
+        )
+        public
+        returns (bool success);
 }
+

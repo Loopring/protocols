@@ -25,6 +25,7 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 
+import "./libauction/AuctionBalance.sol";
 import "./libauction/AuctionBidAsk.sol";
 
 /// @title An Implementation of ICurve.
@@ -33,6 +34,7 @@ contract Auction is IAuction
 {
     using MathUint          for uint;
     using MathUint          for uint32;
+    using AuctionBalance    for IAuctionData.State;
     using AuctionBidAsk     for IAuctionData.State;
 
     modifier onlyOedax {
@@ -132,66 +134,9 @@ contract Auction is IAuction
     function getAuctionInfo()
         public
         view
-        returns (IAuctionData.Info memory i)
+        returns (IAuctionData.Info memory)
     {
-        // i.askAmount = askAmount;
-        // i.bidAmount = bidAmount;
-        // i.queuedAskAmount = queueIsBid ? 0 : queueAmount;
-        // i.queuedBidAmount = queueIsBid ? 0 : queueAmount;
-
-        // if (askAmount > 0) {
-        //     i.actualPrice  = bidAmount.mul(S) / askAmount;
-        //     i.bounded = i.actualPrice >= P / M && i.actualPrice <= P.mul(M);
-        // }
-
-        // require(s.bounded || (askShift == 0 && bidShift == 0), "unbound shift");
-
-        // uint span;
-
-        // // calculating asks
-        // span = block.timestamp.sub(startTime).sub(askShift);
-        // i.askPrice = curve.getCurveValue(P, S, M, T, span);
-        // i.newAskShift = askShift;
-        // i.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
-
-        // if (s.bounded) {
-        //     if (s.actualPrice > i.askPrice) {
-        //         i.newAskShift = span
-        //             .add(askShift)
-        //             .sub(curve.getCurveTime(P, S, M, T, i.actualPrice ));
-        //         i.askPrice = i.actualPrice;
-        //         i.additionalBidAmountAllowed = 0;
-        //     } else {
-        //         i.additionalBidAmountAllowed = (
-        //             askAmount.add(s.queuedAskAmount).mul(s.askPrice ) / S
-        //         ).sub(bidAmount);
-        //     }
-        // }
-
-        // // calculating bids
-        // span = block.timestamp.sub(startTime).sub(bidShift);
-        // i.bidPrice = P.mul(P) / S / curve.getCurveValue(P, S, M, T, span);
-        // i.newBidShift = bidShift;
-        // i.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
-
-        // if (s.bounded) {
-        //     if (s.actualPrice < i.bidPrice) {
-        //         i.newAskShift = span
-        //             .add(bidShift)
-        //             .sub(curve.getCurveTime(P, S, M, T, askAmount.mul(P).mul(P) / bidAmount));
-        //         i.bidPrice = i.actualPrice;
-        //         i.additionalAskAmountAllowed = 0;
-        //     } else {
-        //         i.additionalAskAmountAllowed = (
-        //             askAmount.add(s.queuedBidAmount).mul(s.bidPrice) / S
-        //         ).sub(bidAmount);
-        //     }
-        // }
-
-        // if (queueAmount > 0) {
-        //     require(queueIsBid || i.additionalAskAmountAllowed == 0);
-        //     require(!queueIsBid || i.additionalBidAmountAllowed == 0);
-        // }
+        return state.getAuctionInfo();
     }
 
     // == Internal & Private Functions ==
