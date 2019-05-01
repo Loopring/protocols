@@ -614,68 +614,65 @@ In the calculations below we use 68 gas/byte for our data-availability data. Ple
 ```
 - Operator account ID: 3 bytes
 - For every ring
-    - Ring-matcher account ID: 3 bytes
-    - Fee-recipient account ID: 3 bytes
-    - Token ID (fee to operator): 2 bytes
-    - Fee amount: 12 bytes
-    - Margin (paid by first order): 12 bytes
+    - Ring-matcher account ID: 2,5 bytes
+    - Fee-recipient account ID: 2,5 bytes
+    - Token ID (fee to operator): 1 bytes
+    - Fee amount: 2 bytes
+    - Margin (paid by first order): 3 bytes
     - For both Orders:
-        - Account ID: 3 bytes
-        - Wallet account ID: 3 bytes
-        - TokenS: 2 bytes
-        - TokenF: 2 bytes
-        - Order ID: 4 bytes
-        - FillS: 12 bytes
-        - FillF: 12 bytes
+        - Account ID: 2,5 bytes
+        - Wallet account ID: 2,5 bytes
+        - TokenS: 1 bytes
+        - TokenF: 1 bytes
+        - Order ID: 2,5 bytes
+        - FillS: 3 bytes
+        - FillF: 3 bytes
         - WalletSplitPercentage: 1 byte
         - WaiveFeePercentage: 1 byte
 ```
-=> **112 bytes/ring**
-=> Calldata cost: (32 + 2 * 40) * 68 = **7616 gas/ring**
-
-We can save some more bytes (e.g. on the large values of the margin and the fees, these can be packed much more efficiently) so we can probably get this down to ~80 bytes/ring.
+=> **46 bytes/ring**
+=> Calldata cost: (11 + 2 * 17,5) * 68 = **3128 gas/ring**
 
 #### Data-availability for order cancellations
 ```
 - Operator account ID: 3 bytes
 - For every cancel:
-    - Account ID: 3 bytes
-    - Token ID: 2 bytes
-    - Order ID: 4 bytes
-    - Wallet Account ID: 3 bytes
-    - Fee token ID: 2 bytes
-    - Fee amount: 12 bytes
+    - Account ID: 2,5 bytes
+    - Wallet Account ID: 2,5 bytes
+    - Token ID: 1 bytes
+    - Order ID: 3 bytes
+    - Fee token ID: 1 bytes
+    - Fee amount: 2 bytes
     - WalletSplitPercentage: 1 byte
 ```
-- => **27 bytes/cancel**
-- => Calldata cost: 27 * 68 = **1836 gas/cancel**
+- => **13 bytes/cancel**
+- => Calldata cost: 13 * 68 = **884 gas/cancel**
 
-This is already quite cheap, but can be greatly improved by packing the fee value better.
 
 #### Withdrawal data
 ```
 // Approved withdrawal data
 - For every withdrawal:
-    - Account ID: 3 bytes
-    - Token ID: 2 bytes
-    - Amount: 12 bytes
+    - Token ID: 1 bytes
+    - Account ID: 2,5 bytes
+    - Amount: 3,5 bytes
 
 // Data-availability
 - Operator account ID: 3 bytes
 - For every withdrawal:
     - Wallet account ID: 3 bytes
-    - Fee token ID: 2 bytes
-    - Fee amount: 12 bytes
+    - Fee token ID: 1 bytes
+    - Fee amount: 2 bytes
     - WalletSplitPercentage: 1 byte
 ```
-- => On-chain: **17 bytes/withdrawal**
-- => On-chain withdrawal calldata cost: 17 * 68 = **1156 gas/on-chain withdrawal**
-- => With data-availability: **35 bytes/withdrawal**
-- => With data-availability calldata cost: 35 * 68 = **2380 gas/off-chain withdrawal**
+- => On-chain: **7 bytes/withdrawal**
+- => On-chain withdrawal calldata cost: 7 * 68 = **476 gas/on-chain withdrawal**
+- => With data-availability: **14 bytes/withdrawal**
+- => With data-availability calldata cost: 14 * 68 = **952 gas/off-chain withdrawal**
 
 
 The approved withdrawal calldata also needs to be stored on-chain so that the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
-- => Data storage cost: (17 / 32) * 20,000 = **10,625 gas/withdrawal**
+- => Data storage cost: (7 / 32) * 20,000 = **4,375 gas/withdrawal**
 
 ## Throughput (Ring Settlements)
 

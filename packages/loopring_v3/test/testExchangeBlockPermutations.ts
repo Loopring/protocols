@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { DepositInfo, RingInfo } from "./types";
 
@@ -70,7 +71,7 @@ contract("Exchange", (accounts: string[]) => {
       exchangeId,
       depositInfo.accountID,
       exchangeTestUtil.getRandomInt(exchangeTestUtil.MAX_NUM_TOKENS),
-      exchangeTestUtil.getRandomInt(2 ** exchangeTestUtil.TREE_DEPTH_TRADING_HISTORY),
+      exchangeTestUtil.getRandomInt(2 ** constants.TREE_DEPTH_TRADING_HISTORY),
       exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
       1,
       new BN(0),

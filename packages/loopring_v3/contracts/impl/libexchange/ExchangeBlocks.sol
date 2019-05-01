@@ -243,7 +243,7 @@ library ExchangeBlocks
                         uint24(0),
                         uint256(0),
                         uint256(0),
-                        uint16(0),
+                        uint8(0),
                         uint96(0)
                     )
                 );
@@ -283,7 +283,7 @@ library ExchangeBlocks
                         abi.encodePacked(
                             endingHash,
                             uint24(0),
-                            uint16(0),
+                            uint8(0),
                             uint96(0)
                         )
                     );
@@ -317,7 +317,7 @@ library ExchangeBlocks
             if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
                 start += 32 + 32 + 4 + 4;
             }
-            uint length = (3 + 2 + 12) * numElements;
+            uint length = 7 * numElements;
             assembly {
                 data := add(data, start)
                 mstore(data, length)

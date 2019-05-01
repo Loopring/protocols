@@ -1,12 +1,11 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
+import { fromFloat } from "./float";
 import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
          Realm, RingInfo, RingSettlementSimulatorReport, SimulatorReport,
          TradeHistory, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
 
 export class Simulator {
-
-  public MAX_NUM_TOKENS = 2 ** 8;
-  public TREE_DEPTH_TRADING_HISTORY = 14;
 
   public deposit(deposit: Deposit, realm: Realm) {
     const newRealm = this.copyRealm(realm);
@@ -14,7 +13,7 @@ export class Simulator {
     if (deposit.accountID === realm.accounts.length) {
       // Make sure all tokens exist
       const balances: {[key: number]: Balance} = {};
-      for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
+      for (let i = 0; i < constants.MAX_NUM_TOKENS; i++) {
         balances[i] = {
           balance: new BN(0),
           tradeHistory: {},
@@ -74,14 +73,16 @@ export class Simulator {
   public offchainWithdraw(withdrawal: WithdrawalRequest, realm: Realm, operatorAccountID: number) {
     const newRealm = this.copyRealm(realm);
 
-    const feeToWallet = withdrawal.fee.mul(new BN(withdrawal.walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = withdrawal.fee.sub(feeToWallet);
+    const fee = fromFloat(withdrawal.fFee, constants.Float16Encoding);
+
+    const feeToWallet = fee.mul(new BN(withdrawal.walletSplitPercentage)).div(new BN(100));
+    const feeToOperator = fee.sub(feeToWallet);
 
     const account = newRealm.accounts[withdrawal.accountID];
 
     // Update balanceF
     account.balances[withdrawal.feeTokenID].balance =
-      account.balances[withdrawal.feeTokenID].balance.sub(withdrawal.fee);
+      account.balances[withdrawal.feeTokenID].balance.sub(fee);
 
     const balance = account.balances[withdrawal.tokenID].balance;
     const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
@@ -111,14 +112,16 @@ export class Simulator {
   public cancelOrder(cancel: Cancel, realm: Realm, operatorAccountID: number) {
     const newRealm = this.copyRealm(realm);
 
-    const feeToWallet = cancel.fee.mul(new BN(cancel.walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = cancel.fee.sub(feeToWallet);
+    const fee = fromFloat(cancel.fFee, constants.Float16Encoding);
+
+    const feeToWallet = fee.mul(new BN(cancel.walletSplitPercentage)).div(new BN(100));
+    const feeToOperator = fee.sub(feeToWallet);
 
     const account = newRealm.accounts[cancel.accountID];
 
     // Update balance
     account.balances[cancel.orderTokenID].balance =
-      account.balances[cancel.orderTokenID].balance.sub(cancel.fee);
+      account.balances[cancel.orderTokenID].balance.sub(fee);
     account.nonce++;
 
     // Update trade history
@@ -195,6 +198,8 @@ export class Simulator {
       margin = new BN(0);
     }
 
+    const ringFee = fromFloat(ring.fFee, constants.Float16Encoding);
+
     /*console.log("Simulator: ");
 
     console.log("fillAmountSA: " + fillAmountSA.toString(10));
@@ -239,7 +244,7 @@ export class Simulator {
 
     // Update trade history A
     {
-      const tradeHistorySlotA = orderA.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+      const tradeHistorySlotA = orderA.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
       const tradeHistoryA = accountA.balances[orderA.tokenIdS].tradeHistory[tradeHistorySlotA];
       tradeHistoryA.filled = (orderA.orderID > tradeHistoryA.orderID) ? new BN(0) : tradeHistoryA.filled;
       tradeHistoryA.filled = tradeHistoryA.filled.add(fillAmountSA);
@@ -248,7 +253,7 @@ export class Simulator {
     }
     // Update trade history B
     {
-      const tradeHistorySlotB = orderB.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+      const tradeHistorySlotB = orderB.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
       const tradeHistoryB = accountB.balances[orderB.tokenIdS].tradeHistory[tradeHistorySlotB];
       tradeHistoryB.filled = (orderB.orderID > tradeHistoryB.orderID) ? new BN(0) : tradeHistoryB.filled;
       tradeHistoryB.filled = tradeHistoryB.filled.add(fillAmountSB);
@@ -282,14 +287,14 @@ export class Simulator {
      ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
     // - Operator fee
     ringMatcher.balances[ring.tokenID].balance =
-     ringMatcher.balances[ring.tokenID].balance.sub(ring.fee);
+     ringMatcher.balances[ring.tokenID].balance.sub(ringFee);
     // Increase nonce
     ringMatcher.nonce++;
 
     // Update operator
     const operator = newRealm.accounts[operatorAccountID];
     operator.balances[ring.tokenID].balance =
-     operator.balances[ring.tokenID].balance.add(ring.fee);
+     operator.balances[ring.tokenID].balance.add(ringFee);
 
     // Check expected
     if (ring.expected) {
@@ -326,7 +331,7 @@ export class Simulator {
       token: ring.tokenID,
       from: ring.minerAccountID,
       to: operatorAccountID,
-      amount: ring.fee,
+      amount: ringFee,
       subPayments: [],
     };
 
@@ -409,7 +414,7 @@ export class Simulator {
   }
 
   private getMaxFillAmounts(order: OrderInfo, accountData: any) {
-    const tradeHistorySlot = order.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+    const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     if (!tradeHistory) {
       tradeHistory = {

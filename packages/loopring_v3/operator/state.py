@@ -1,7 +1,7 @@
 import sys
 import json
 import copy
-
+from collections import namedtuple
 
 from sparse_merkle_tree import SparseMerkleTree
 
@@ -14,6 +14,40 @@ from ethsnarks.merkletree import MerkleTree
 TREE_DEPTH_TRADING_HISTORY = 14
 TREE_DEPTH_ACCOUNTS = 20
 TREE_DEPTH_TOKENS = 8
+
+FloatEncoding = namedtuple("FloatEncoding", "numBitsExponent numBitsMantissa exponentBase")
+Float28Encoding = FloatEncoding(5, 23, 10)
+Float24Encoding = FloatEncoding(5, 19, 10)
+Float16Encoding = FloatEncoding(5, 11, 10)
+Float12Encoding = FloatEncoding(5,  7, 10)
+Float8Encoding = FloatEncoding(5,  3, 10)
+
+def toFloat(value, floatEncoding):
+    maxPower = (1 << floatEncoding.numBitsExponent) - 1
+    maxMantissa = (1 << floatEncoding.numBitsMantissa) - 1
+    maxExponent = floatEncoding.exponentBase ** maxPower
+    maxValue = maxMantissa * maxExponent
+    assert value <= maxValue, "value too large: "
+
+    exponent = 0
+    r = value // maxMantissa
+    d = 1
+    while r >= floatEncoding.exponentBase or d * maxMantissa < value:
+        r = r // floatEncoding.exponentBase
+        exponent += 1
+        d *= floatEncoding.exponentBase
+    mantissa = value // d
+
+    assert exponent <= maxExponent, "Exponent too large"
+    assert mantissa <= maxMantissa, "Mantissa too large"
+    f = (exponent << floatEncoding.numBitsMantissa) + mantissa
+    return f
+
+def fromFloat(f, floatEncoding):
+    exponent = f >> floatEncoding.numBitsMantissa
+    mantissa = f & ((1 << floatEncoding.numBitsMantissa) - 1)
+    value = mantissa * (floatEncoding.exponentBase ** exponent)
+    return value
 
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
@@ -95,7 +129,7 @@ class BalanceLeaf(object):
         self._tradingHistoryTree.update(address, leafAfter.hash())
         rootAfter = self._tradingHistoryTree._root
 
-        return TradeHistoryUpdateData(address, proof,
+        return TradeHistoryUpdateData(orderID, proof,
                                       rootBefore, rootAfter,
                                       leafBefore, leafAfter)
 
@@ -325,7 +359,7 @@ class Order(object):
 
     def message(self):
         msg_parts = [
-                        FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<32),
+                        FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<20),
                         FQ(int(self.accountID), 1<<20), FQ(int(self.walletAccountID), 1<<20),
                         FQ(int(self.dualAuthPublicKeyX), 1<<254), FQ(int(self.dualAuthPublicKeyY), 1<<254),
                         FQ(int(self.tokenS), 1<<8), FQ(int(self.tokenB), 1<<8), FQ(int(self.tokenF), 1<<8),
@@ -362,22 +396,23 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, nonce):
+    def __init__(self, orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fFee, nonce):
         self.orderA = orderA
         self.orderB = orderB
         self.minerAccountID = int(minerAccountID)
         self.feeRecipientAccountID = int(feeRecipientAccountID)
         self.tokenID = int(tokenID)
-        self.fee = str(fee)
+        self.fFee = int(fFee)
         self.nonce = int(nonce)
 
     def message(self):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.orderA.waiveFeePercentage), 1<<7), FQ(int(self.orderB.waiveFeePercentage), 1<<7),
-                        FQ(int(self.minerAccountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.fee), 1<<96),
+                        FQ(int(self.minerAccountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.fFee), 1<<16),
                         FQ(int(self.feeRecipientAccountID), 1<<20),
-                        FQ(int(self.nonce), 1<<32)
+                        FQ(int(self.nonce), 1<<32),
+                        FQ(int(0), 1<<2)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -450,19 +485,19 @@ class RingSettlement(object):
 class OnchainWithdrawal(object):
     def __init__(self,
                  amountRequested, balanceUpdate, accountUpdate,
-                 accountID, tokenID, amountWithdrawn):
+                 accountID, tokenID, fAmountWithdrawn):
         self.amountRequested = str(amountRequested)
         self.balanceUpdate = balanceUpdate
         self.accountUpdate = accountUpdate
         self.accountID = accountID
         self.tokenID = tokenID
-        self.amountWithdrawn = str(amountWithdrawn)
+        self.fAmountWithdrawn = int(fAmountWithdrawn)
 
 class OffchainWithdrawal(object):
     def __init__(self,
                  realmID,
-                 accountID, tokenID, amountRequested, amountWithdrawn,
-                 walletAccountID, feeTokenID, fee, walletSplitPercentage,
+                 accountID, tokenID, amountRequested, fAmountWithdrawn,
+                 walletAccountID, feeTokenID, fFee, walletSplitPercentage,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
                  balanceUpdateF_O,
@@ -472,11 +507,11 @@ class OffchainWithdrawal(object):
         self.accountID = accountID
         self.tokenID = tokenID
         self.amountRequested = str(amountRequested)
-        self.amountWithdrawn = str(amountWithdrawn)
+        self.fAmountWithdrawn = int(fAmountWithdrawn)
 
         self.walletAccountID = walletAccountID
         self.feeTokenID = feeTokenID
-        self.fee = str(fee)
+        self.fFee = int(fFee)
         self.walletSplitPercentage = walletSplitPercentage
 
         self.balanceUpdateF_A = balanceUpdateF_A
@@ -494,8 +529,8 @@ class OffchainWithdrawal(object):
         msg_parts = [FQ(int(self.realmID), 1<<32),
                      FQ(int(self.accountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.amountRequested), 1<<96),
                      FQ(int(self.walletAccountID), 1<<20), FQ(int(self.feeTokenID), 1<<8),
-                     FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
+                     FQ(int(self.fFee), 1<<16), FQ(int(self.walletSplitPercentage), 1<<7),
+                     FQ(int(self.nonce), 1<<32)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -511,7 +546,7 @@ class Cancellation(object):
                  walletPublicKey,
                  realmID,
                  accountID, orderTokenID, orderID, dualAuthorAccountID,
-                 operatorAccountID, feeTokenID, fee, walletSplitPercentage,
+                 operatorAccountID, feeTokenID, fFee, walletSplitPercentage,
                  nonce,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
@@ -527,7 +562,7 @@ class Cancellation(object):
         self.dualAuthorAccountID = dualAuthorAccountID
         self.operatorAccountID = operatorAccountID
         self.feeTokenID = feeTokenID
-        self.fee = str(fee)
+        self.fFee = int(fFee)
         self.walletSplitPercentage = walletSplitPercentage
         self.nonce = nonce
 
@@ -544,9 +579,9 @@ class Cancellation(object):
 
     def message(self):
         msg_parts = [FQ(int(self.realmID), 1<<32), FQ(int(self.accountID), 1<<20),
-                     FQ(int(self.orderTokenID), 1<<8), FQ(int(self.orderID), 1<<32), FQ(int(self.dualAuthorAccountID), 1<<20),
-                     FQ(int(self.feeTokenID), 1<<8), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
+                     FQ(int(self.orderTokenID), 1<<8), FQ(int(self.orderID), 1<<20), FQ(int(self.dualAuthorAccountID), 1<<20),
+                     FQ(int(self.feeTokenID), 1<<8), FQ(int(self.fFee), 1<<16), FQ(int(self.walletSplitPercentage), 1<<7),
+                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
         return PureEdDSA.to_bits(*msg_parts)
 
     def sign(self, k):
@@ -705,15 +740,28 @@ class State(object):
             fillAmountF_B = 0
             margin = 0
 
-        ring.fillS_A = str(fillAmountS_A)
-        ring.fillB_A = str(fillAmountB_A)
-        ring.fillF_A = str(fillAmountF_A)
+        ring.uFillS_A = str(fillAmountS_A)
+        ring.uFillF_A = str(fillAmountF_A)
+        ring.uFillS_B = str(fillAmountS_B)
+        ring.uFillF_B = str(fillAmountF_B)
+        ring.uMargin = str(margin)
 
-        ring.fillS_B = str(fillAmountS_B)
-        ring.fillB_B = str(fillAmountB_B)
-        ring.fillF_B = str(fillAmountF_B)
+        ring.fFillS_A = toFloat(int(ring.uFillS_A), Float24Encoding)
+        ring.fFillF_A = toFloat(int(ring.uFillF_A), Float24Encoding)
+        ring.fFillS_B = toFloat(int(ring.uFillS_B), Float24Encoding)
+        ring.fFillF_B = toFloat(int(ring.uFillF_B), Float24Encoding)
+        ring.fMargin = toFloat(int(ring.uMargin), Float24Encoding)
 
-        ring.margin = str(margin)
+        ring.fillS_A = str(fromFloat(ring.fFillS_A, Float24Encoding))
+        ring.fillF_A = str(fromFloat(ring.fFillF_A, Float24Encoding))
+        ring.fillS_B = str(fromFloat(ring.fFillS_B, Float24Encoding))
+        ring.fillF_B = str(fromFloat(ring.fFillF_B, Float24Encoding))
+        ring.margin = str(fromFloat(ring.fMargin, Float24Encoding))
+
+        fillB_A = int(ring.fillS_B)
+        fillB_B = int(ring.fillS_A) - int(ring.margin)
+
+        ringFee = fromFloat(ring.fFee, Float16Encoding)
 
         '''
         print("fillAmountS_A: " + str(fillAmountS_A))
@@ -724,6 +772,13 @@ class State(object):
         print("fillAmountF_B: " + str(fillAmountF_B))
         print("margin: " + str(margin))
         '''
+
+        print("ring.fillS_A: " + str(ring.fillS_A))
+        print("ring.fillF_A: " + str(ring.fillF_A))
+        print("ring.fillS_B: " + str(ring.fillS_B))
+        print("ring.fillF_B: " + str(ring.fillF_B))
+        print("ring.margin: " + str(ring.margin))
+        print("fillB_B: " + str(fillB_B))
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
@@ -751,7 +806,7 @@ class State(object):
             ring.orderA.tokenS, ring.orderA.orderID, -int(ring.fillS_A),
             filled_A + int(ring.fillS_A), cancelledToStore_A, orderIDToStore_A
         )
-        balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, int(ring.fillB_A))
+        balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, int(fillB_A))
         balanceUpdateF_A = accountA.updateBalance(ring.orderA.tokenF, -(walletFee_A + matchingFee_A))
 
         self.updateAccountTree(ring.orderA.accountID)
@@ -775,7 +830,7 @@ class State(object):
             ring.orderB.tokenS, ring.orderB.orderID, -int(ring.fillS_B),
             filled_B + int(ring.fillS_B), cancelledToStore_B, orderIDToStore_B
         )
-        balanceUpdateB_B = accountB.updateBalance(ring.orderB.tokenB, int(ring.fillB_B))
+        balanceUpdateB_B = accountB.updateBalance(ring.orderB.tokenB, int(fillB_B))
         balanceUpdateF_B = accountB.updateBalance(ring.orderB.tokenF, -(walletFee_B + matchingFee_B))
 
         self.updateAccountTree(ring.orderB.accountID)
@@ -831,7 +886,7 @@ class State(object):
         proof = self._accountsTree.createProof(ring.minerAccountID)
 
         balanceUpdateM_M = accountM.updateBalance(ring.orderA.tokenS, int(ring.margin))
-        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -int(ring.fee))
+        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -int(ringFee))
         accountM.nonce += 1
 
         self.updateAccountTree(ring.minerAccountID)
@@ -841,7 +896,7 @@ class State(object):
         ###
 
         # Operator payment
-        balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenID, int(ring.fee))
+        balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenID, int(ringFee))
         ###
 
         return RingSettlement(ring,
@@ -902,7 +957,10 @@ class State(object):
         if str(accountID) in self._accounts:
             # Calculate amount withdrawn
             balance = int(self.getAccount(accountID).getBalance(tokenID))
-            amount = int(amountRequested) if (int(amountRequested) < balance) else balance
+            uAmount = int(amountRequested) if (int(amountRequested) < balance) else balance
+
+            fAmount = toFloat(uAmount, Float28Encoding)
+            amount = fromFloat(fAmount, Float28Encoding)
 
             # Update account
             rootBefore = self._accountsTree._root
@@ -922,7 +980,7 @@ class State(object):
             ###
         else:
             # Dummy update
-            amount = 0
+            fAmount = 0
 
             rootBefore = self._accountsTree._root
             accountBefore = copyAccountInfo(getDefaultAccount())
@@ -936,12 +994,13 @@ class State(object):
             ###
 
         withdrawal = OnchainWithdrawal(amountRequested, balanceUpdate, accountUpdate,
-                                       accountID, tokenID, amount)
+                                       accountID, tokenID, fAmount)
         return withdrawal
 
     def offchainWithdraw(self,
                          realmID, accountID, tokenID, amountRequested,
-                         operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage):
+                         operatorAccountID, walletAccountID, feeTokenID, fFee, walletSplitPercentage):
+        fee = fromFloat(fFee, Float16Encoding)
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
         feeToOperator = int(fee) - feeToWallet
@@ -955,7 +1014,10 @@ class State(object):
         balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -fee)
 
         balance = int(self.getAccount(accountID).getBalance(tokenID))
-        amountWithdrawn = int(amountRequested) if (int(amountRequested) < balance) else balance
+        uAmountWithdrawn = int(amountRequested) if (int(amountRequested) < balance) else balance
+
+        fAmountWithdrawn = toFloat(uAmountWithdrawn, Float28Encoding)
+        amountWithdrawn = fromFloat(fAmountWithdrawn, Float28Encoding)
 
         balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
         self.getAccount(accountID).nonce += 1
@@ -984,8 +1046,8 @@ class State(object):
 
         account = self.getAccount(accountID)
         withdrawal = OffchainWithdrawal(realmID,
-                                        accountID, tokenID, amountRequested, amountWithdrawn,
-                                        walletAccountID, feeTokenID, fee, walletSplitPercentage,
+                                        accountID, tokenID, amountRequested, fAmountWithdrawn,
+                                        walletAccountID, feeTokenID, fFee, walletSplitPercentage,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         balanceUpdateF_W, accountUpdate_W,
                                         balanceUpdateF_O,
@@ -995,7 +1057,9 @@ class State(object):
 
     def cancelOrder(self,
                     realmID, accountID, orderTokenID, orderID, walletAccountID,
-                    operatorAccountID, feeTokenID, fee, walletSplitPercentage):
+                    operatorAccountID, feeTokenID, fFee, walletSplitPercentage):
+
+        fee = fromFloat(fFee, Float16Encoding)
 
         feeToWallet = int(fee) * walletSplitPercentage // 100
         feeToOperator = int(fee) - feeToWallet
@@ -1038,7 +1102,7 @@ class State(object):
                                     Point(int(walletAccount.publicKeyX), int(walletAccount.publicKeyY)),
                                     realmID,
                                     accountID, orderTokenID, orderID, walletAccountID,
-                                    operatorAccountID, feeTokenID, fee, walletSplitPercentage,
+                                    operatorAccountID, feeTokenID, fFee, walletSplitPercentage,
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     balanceUpdateF_W, accountUpdate_W,

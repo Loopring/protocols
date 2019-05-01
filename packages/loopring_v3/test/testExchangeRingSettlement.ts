@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
@@ -10,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   let realmID = 0;
   const zeroAddress = "0x" + "00".repeat(20);
 
-  const bVerify = true;
+  const bVerify = false;
 
   const verify = async () => {
     if (bVerify) {
@@ -1099,7 +1100,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[0],
-            orderID: orderID + 2 ** exchangeTestUtil.TREE_DEPTH_TRADING_HISTORY,
+            orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY,
           },
         orderB:
           {
@@ -1138,7 +1139,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[0],
-            orderID: orderID + 2 ** exchangeTestUtil.TREE_DEPTH_TRADING_HISTORY,
+            orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY,
           },
         orderB:
           {

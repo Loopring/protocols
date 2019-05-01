@@ -1,5 +1,6 @@
 import BN = require("bn.js");
 import { Artifacts } from "../util/Artifacts";
+import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
@@ -47,7 +48,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("110", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             amountF: new BN(web3.utils.toWei("100", "ether")),
-            orderID: 1,
+            orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1,
           },
         orderB:
           {
@@ -114,7 +115,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitCancels(exchangeId);
 
-      ring.orderA.orderID += 2 ** exchangeTestUtil.TREE_DEPTH_TRADING_HISTORY;
+      ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
 
       await exchangeTestUtil.commitRings(exchangeId);
 

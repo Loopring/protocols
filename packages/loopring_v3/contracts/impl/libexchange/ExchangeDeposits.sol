@@ -134,7 +134,7 @@ library ExchangeDeposits
                                       // In the circuit we always overwrite the public keys in
                                       // the Account leaf with the data given onchain.
                     account.pubKeyY,
-                    tokenID,
+                    uint8(tokenID),
                     amount
                 )
             ),
