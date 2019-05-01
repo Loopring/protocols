@@ -43,7 +43,6 @@ contract Oedax is IOedax, Ownable
 
     }
 
-
     modifier onlyAuction {
       require(auctionIdMap[msg.sender] != 0, "not an auction");
       _;

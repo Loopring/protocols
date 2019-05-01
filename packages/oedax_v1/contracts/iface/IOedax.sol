@@ -40,4 +40,3 @@ contract IOedax
         public
         returns (bool success);
 }
-

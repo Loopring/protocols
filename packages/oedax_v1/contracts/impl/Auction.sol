@@ -159,7 +159,4 @@ contract Auction is IAuction
     }
 
     // == Internal & Private Functions ==
-
-
-
 }
