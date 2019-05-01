@@ -23,6 +23,15 @@ import "../../lib/MathUint.sol";
 
 /// @title AuctionQueue.
 /// @author Daniel Wang  - <daniel@loopring.org>
+
+      // Queued[]  queue;
+      // bool      queueIsBid;
+      // uint      queueAmount;
+
+      // // user => (token => balance)
+      // mapping (address => mapping (address => Balance)) balanceMap;
+
+
 library AuctionQueue
 {
     using MathUint      for uint;
@@ -46,8 +55,36 @@ library AuctionQueue
         )
         internal
     {
+      uint amt = amount;
+      uint idx = 0;
+      address token = s.queueIsBid ? s.bidToken : s.askToken;
 
+      while(amt > 0) {
+        IAuctionData.Queued storage item = s.queue[idx];
+        IAuctionData.Balance storage balance = s.balanceMap[item.user][token];
+
+        if (item.amount > amt) {
+          item.amount -= amt;
+          balance.queued -= amt;
+        } else {
+          amt -= item.amount;
+          balance.queued -= item.amount;
+          item.amount = 0;
+          idx += 1;
+        }
+      }
+
+      if (idx > 0) {
+        uint size = s.queue.length - idx;
+        for (uint i = 0; i < size; i++) {
+          s.queue[i] = s.queue[i + idx];
+        }
+        s.queue.length = size;
+      }
+
+      s.queueAmount -= amt;
     }
+
     function enqueue(
         IAuctionData.State storage s,
         uint amount

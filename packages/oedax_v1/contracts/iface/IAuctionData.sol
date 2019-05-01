@@ -23,12 +23,6 @@ library IAuctionData
 {
     enum Status {PENDING, LIVE, CLOSED, SETTLED}
 
-    struct Queued
-    {
-        address user;
-        uint    amount;
-    }
-
     struct Info
     {
       Status status;
@@ -45,6 +39,12 @@ library IAuctionData
       uint queuedAskAmount;
       uint queuedBidAmount;
       uint timeRemaining;
+    }
+
+    struct Queued
+    {
+        address user;
+        uint    amount;
     }
 
     struct Balance
