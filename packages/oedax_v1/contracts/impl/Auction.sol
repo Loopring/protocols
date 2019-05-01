@@ -87,7 +87,9 @@ contract Auction is IAuction, Ownable
             State memory s
         )
     {
+        // calculate the precondition-state
         s = getState();
+
         _amount = getSpendable(bidToken, amount);
         require(_amount > 0, "zero amount");
 
@@ -97,28 +99,25 @@ contract Auction is IAuction, Ownable
         }
 
         if (_queued > 0) {
-            // Now the queue is for sure the bid-queue.
             if (queueIsBid) {
-                // Previously the queue is also bid-queue
+                // Before this BID, the queue is for BIDs
+                assert(_amount == 0);
                 enqueue(_queued);
             } else {
-                // Previously this queue is a ask-queue, we must have
-                // consumed all of them
+                // Before this BID, the queue is for ASKs, therefore we must have
+                // consumed all the pending ASKs in the queue.
+                assert(_amount > 0);
                 dequeue(queueAmount);
                 queueIsBid = true;
                 enqueue(_queued);
             }
-
         } else {
+            assert(queueAmount == 0 || !queueIsBid);
             assert(_amount > 0);
-
-            // Previous queue's type stays the same
-             uint askConsumed = getQueueConsumption(
-                _amount,
-                s.queuedAskAmount
-            );
+            dequeue(getQueueConsumption(_amount, queueAmount));
         }
 
+        // calculate the post-state
         s = getState();
     }
 
