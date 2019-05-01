@@ -113,11 +113,10 @@ contract Auction is IAuction
             IAuctionData.Info memory i
         )
     {
-        require(state.bidToken != address(0x0), "ether");
-
-        uint a = getSpendable(state.bidToken, amount);
-        state.depositToken(state.bidToken, msg.sender, a);
-
+        uint a = state.depositToken(
+            state.bidToken,
+            amount
+        );
         return bidInternal(a);
     }
 
@@ -205,20 +204,6 @@ contract Auction is IAuction
     function dequeue(uint amount) private {}
     function enqueue(uint amount) private {}
 
-    function getSpendable(
-        address tokenAddr,
-        uint    amount
-        )
-        private
-        view
-        returns (uint)
-    {
-        require(tokenAddr != address(0x0), "zero address");
 
-        ERC20 token = ERC20(tokenAddr);
-        return amount
-            .min(token.balanceOf(msg.sender))
-            .min(token.allowance(msg.sender, address(state.oedax)));
-    }
 
 }

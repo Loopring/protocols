@@ -29,20 +29,5 @@ library AuctionBalance
         askBalance = s.balanceMap[user][s.askToken];
     }
 
-    function depositToken(
-        IAuctionData.State storage s,
-        address token,
-        address user,
-        uint    amount
-        )
-        internal
-    {
-        require(amount > 0, "zero amount");
-        assert(token != address(0x0));
 
-        require(
-            s.oedax.transferToken(token, user, amount),
-            "token transfer failed"
-        );
-    }
 }
