@@ -47,45 +47,13 @@ library AuctionAsks
         uint amount
         )
         internal
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         require(amount > 0, "zero amount");
-         _amount = amount;
+        uint _amount = amount;
+        uint _queued;
 
         // calculate the current-state
-        i = s.getAuctionInfo();
-
-        // if (i.additionalBidAmountAllowed < _amount) {
-        //     _queued = _amount.sub(i.additionalBidAmountAllowed);
-        //     _amount = i.additionalBidAmountAllowed;
-        // }
-
-        // if (_queued > 0) {
-        //     if (s.queueAmount > 0) {
-        //         if (s.queueIsBid) {
-        //             // Before this BID, the queue is for BIDs
-        //             assert(_amount == 0);
-        //         } else {
-        //             // Before this BID, the queue is for ASKs, therefore we must have
-        //             // consumed all the pending ASKs in the queue.
-        //             assert(_amount > 0);
-        //             s.dequeue(s.queueAmount);
-        //         }
-        //     }
-        //     s.queueIsBid = true;
-        //     s.enqueue(_queued);
-        // } else {
-        //     assert(s.queueAmount == 0 || !s.queueIsBid);
-        //     assert(_amount > 0);
-        //     s.dequeue(s.getQueueConsumption(_amount, s.queueAmount));
-        // }
-
-        // calculate the post-participation state
-        i = s.getAuctionInfo();
+        IAuctionData.Info memory i = s.getAuctionInfo();
 
         emit Ask(
             msg.sender,

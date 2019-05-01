@@ -111,32 +111,22 @@ contract Auction is IAuction
 
     function bid(uint amount)
         public
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         uint a = state.depositToken(
             state.bidToken,
             amount
         );
-        return state.bid(a);
+        state.bid(a);
     }
 
     function ask(uint amount)
         public
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         uint a = state.depositToken(
             state.askToken,
             amount
         );
-        return state.ask(a);
+        state.ask(a);
     }
 
     function getAuctionInfo()

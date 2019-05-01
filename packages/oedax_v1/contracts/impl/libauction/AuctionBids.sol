@@ -47,22 +47,28 @@ library AuctionBids
         uint amount
         )
         internal
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         require(amount > 0, "zero amount");
-         _amount = amount;
+
+        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][s.queueIsBid];
+        balance.total = balance.total.add(amount);
+
+        uint _amount = amount;
+        uint _queued;
 
         // calculate the current-state
-        i = s.getAuctionInfo();
+        IAuctionData.Info memory i = s.getAuctionInfo();
 
         if (i.additionalBidAmountAllowed < _amount) {
             _queued = _amount.sub(i.additionalBidAmountAllowed);
             _amount = i.additionalBidAmountAllowed;
         }
+
+        balance.totalWeight = balance.totalWeight.add(
+            _amount.mul(block.timestamp - s.startTime)
+        );
+
+        balance.queued = balance.queued.add(_queued);
 
         if (_queued > 0) {
             if (s.queueAmount > 0) {

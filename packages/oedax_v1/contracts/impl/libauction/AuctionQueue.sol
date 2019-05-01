@@ -48,23 +48,23 @@ library AuctionQueue
     {
       s.queueAmount = s.queueAmount.sub(amount);
 
-      uint amt = amount;
+      uint _amount = amount;
       uint idx = 0;
 
-      while(amt > 0) {
+      while(_amount > 0) {
         IAuctionData.Queued storage item = s.queue[idx];
         IAuctionData.Balance storage balance = s.balanceMap[item.user][s.queueIsBid];
 
-        if (item.amount > amt) {
-          balance.totalWeight = balance.totalWeight.add(item.time.mul(amt));
-          balance.queued = balance.queued.sub(amt);
+        if (item.amount > _amount) {
+          balance.totalWeight = balance.totalWeight.add(item.time.mul(_amount));
+          balance.queued = balance.queued.sub(_amount);
 
-          item.amount = item.amount.sub(amt);
+          item.amount = item.amount.sub(_amount);
         } else {
           balance.totalWeight = balance.totalWeight.add(item.time.mul(item.amount));
           balance.queued = balance.queued.sub(item.amount);
 
-          amt = amt.sub(item.amount);
+          _amount = _amount.sub(item.amount);
           idx += 1;
         }
       }
