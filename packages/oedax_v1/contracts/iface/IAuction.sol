@@ -75,14 +75,14 @@ contract IAuction
     uint      queueAmount;
 
 
-    event NewBid(
+    event Bid(
         address user,
         uint    amount,
         uint    amountQueued,
         uint    time
     );
 
-    event NewAsk(
+    event Ask(
         address user,
         uint    amount,
         uint    amountQueued,

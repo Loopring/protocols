@@ -228,7 +228,7 @@ contract Auction is IAuction, Ownable
         // calculate the post-participation state
         s = getState();
 
-        emit NewBid(
+        emit Bid(
             msg.sender,
             _amount,
             _queued,
