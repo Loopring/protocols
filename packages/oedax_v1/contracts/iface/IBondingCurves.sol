@@ -21,21 +21,21 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IBondingCurves
 {
-    function getAskPriceAt(
-        uint  P,
-        uint8 M, // price factor
-        uint  amountAsk,
-        uint  amountBid,
-        uint  priceScale,
-        uint  time,
-        uint  shift
-        )
-        public
-        view
-        returns (
-            uint askPrice,
-            uint newShift
-        );
+    // function getAskPriceAt(
+    //     uint  P,
+    //     uint8 M, // price factor
+    //     uint  amountAsk,
+    //     uint  amountBid,
+    //     uint  priceScale,
+    //     uint  time,
+    //     uint  shift
+    //     )
+    //     public
+    //     view
+    //     returns (
+    //         uint askPrice,
+    //         uint newShift
+    //     );
 
     // function getBidPriceAt(
     //     uint  P,

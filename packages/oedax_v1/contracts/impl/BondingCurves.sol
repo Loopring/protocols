@@ -44,9 +44,9 @@ contract BondingCurves is IBondingCurves
     function getAskPriceAt(
         uint  P, // target price
         uint8 M, // price factor
+        uint  S, // price scale
         uint  amountAsk,
         uint  amountBid,
-        uint  priceScale,
         uint  time,
         uint  shift
         )
@@ -54,20 +54,33 @@ contract BondingCurves is IBondingCurves
         view
         returns (
             uint askPrice,
-            uint newShift
+            uint newShift,
+            uint additionalAmountBidAllowed
         )
     {
-        uint maxPrice = P.mul(M);
         uint t = time.sub(shift);
         newShift = shift;
-        askPrice = curve.getCurveValue(P, M, priceScale, t);
+        askPrice = curve.getCurveValue(P, M, S, t);
+        additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
 
-        if (amountAsk > 0) {
-          uint actualPrice = amountBid.mul(priceScale) / amountAsk;
-          if (actualPrice > askPrice && actualPrice < maxPrice ) {
-             uint _t = curve.getCurveTime(P, M, priceScale, actualPrice);
+        if (amountAsk == 0) {
+            // when the ask price is undefined, the price is not bounded yet.
+            require(shift == 0, "unbound shift");
+        } else {
+          // when the ask price is defined
+          uint actualPrice = amountBid.mul(S) / amountAsk;
+          if (actualPrice < P / M || actualPrice > P.mul(M)) {
+              // price not bounded yet
+              require(shift == 0, "unbound shift");
+          } else if (actualPrice > askPrice) {
+              // price bounded
+             uint _t = curve.getCurveTime(P, M, S, actualPrice);
              newShift = _t.sub(t).add(shift);
              askPrice = actualPrice;
+             additionalAmountBidAllowed = 0;
+          } else {
+            // actual price <= ask price
+            additionalAmountBidAllowed = (askPrice.mul(amountAsk) / S).sub(amountBid);
           }
         }
     }
@@ -77,7 +90,7 @@ contract BondingCurves is IBondingCurves
     //     uint8 M, // price factor
     //     uint  amountAsk,
     //     uint  amountBid,
-    //     uint  priceScale,
+    //     uint  S,
     //     uint  time,
     //     uint  shift
     //     )
