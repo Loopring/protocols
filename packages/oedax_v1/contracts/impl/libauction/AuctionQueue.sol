@@ -15,28 +15,45 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
+import "../../iface/IAuctionData.sol";
 
-/// @title IOedax
+import "../../lib/MathUint.sol";
+
+/// @title AuctionQueue.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IOedax
+library AuctionQueue
 {
-    address[] auctions;
-    // auction_address => auction_id
-    mapping (address => uint) auctionIdMap;
-    // auction_creator =>  list of his auctions
-    mapping (address => address[]) creatorAuctions;
+    using MathUint      for uint;
+    using MathUint      for uint32;
 
-    event AuctionCreated (
-        uint    auctionId,
-        address auctionAddr
-    );
-
-    function transferToken(
-        address token,
-        address user,
-        uint    amount
+    function getQueueConsumption(
+        IAuctionData.State storage s,
+        uint amount,
+        uint amountInQueue
         )
-        public
-        returns (bool success);
+        internal
+        view
+        returns (uint)
+    {
+        return 0;
+    }
+
+    function dequeue(
+        IAuctionData.State storage s,
+        uint amount
+        )
+        internal
+    {
+
+    }
+    function enqueue(
+        IAuctionData.State storage s,
+        uint amount
+        )
+        internal
+    {
+
+    }
 }

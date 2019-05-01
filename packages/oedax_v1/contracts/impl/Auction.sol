@@ -18,22 +18,31 @@ pragma solidity 0.5.7;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IAuction.sol";
+import "../iface/IAuctionData.sol";
 import "../iface/ICurve.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
-import "../lib/Ownable.sol";
+
+import "./libauction/AuctionBalance.sol";
+import "./libauction/AuctionBids.sol";
+import "./libauction/AuctionAsks.sol";
+import "./libauction/AuctionInfo.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Auction is IAuction, Ownable
+contract Auction is IAuction
 {
     using MathUint          for uint;
     using MathUint          for uint32;
+    using AuctionBalance    for IAuctionData.State;
+    using AuctionBids       for IAuctionData.State;
+    using AuctionAsks       for IAuctionData.State;
+    using AuctionInfo       for IAuctionData.State;
 
     modifier onlyOedax {
-      require (msg.sender == address(oedax));
+      require (msg.sender == address(state.oedax));
       _;
     }
 
@@ -65,17 +74,23 @@ contract Auction is IAuction, Ownable
         require(_T % 3600 == 0, "duration must be in hour");
         require(_T / 3600 > 0 && _T / 3600 <= 30 * 24, "invalid duration");
 
-        oedax = IOedax(oedax);
-        curve = ICurve(_curve);
-
         owner = msg.sender; // creator
-        auctionId = _auctionId;
-        askToken = _askToken;
-        bidToken = _bidToken;
-        askAmount = initialAskAmount = _initialAskAmount;
-        bidAmount = initialBidAmount = _initialBidAmount;
-        startTime = block.timestamp;
-        (P, S, M, T) = (_P, _S, _M, _T);
+
+        state.oedax = IOedax(_oedax);
+        state.curve = ICurve(_curve);
+
+        state.auctionId = _auctionId;
+        state.askToken = _askToken;
+        state.bidToken = _bidToken;
+        state.initialAskAmount = _initialAskAmount;
+        state.askAmount = _initialAskAmount;
+        state.initialBidAmount = _initialBidAmount;
+        state.bidAmount = _initialBidAmount;
+        state.startTime = block.timestamp;
+        state.P = _P;
+        state.S = _S;
+        state.M = _M;
+        state.T = _T ;
         // initTransfers();
     }
 
@@ -85,10 +100,10 @@ contract Auction is IAuction, Ownable
         external
         payable
     {
-        if (bidToken == address(0x0)) {
-            bidInternal(msg.value);
-        } else if (askToken == address(0x0)) {
-            // askInternal(msg.value);
+        if (state.bidToken == address(0x0)) {
+            state.bid(msg.value);
+        } else if (state.askToken == address(0x0)) {
+            state.ask(msg.value);
         } else {
             revert();
         }
@@ -99,160 +114,49 @@ contract Auction is IAuction, Ownable
         returns(
             uint  _amount,
             uint  _queued,
-            State memory s
+            IAuctionData.Info memory i
         )
     {
-         uint a = getSpendable(bidToken, amount);
-         // TODO: do the transfer
-
-         return bidInternal(a);
+        uint a = state.depositToken(
+            state.bidToken,
+            amount
+        );
+        return state.bid(a);
     }
 
-
-    function getQueueConsumption(
-        uint amount,
-        uint amountInQueue
-        )
-        private
-        view
-        returns (uint)
-    {
-        return 0;
-    }
-
-    function getState()
+    function ask(uint amount)
         public
-        view
-        returns (State memory s)
-    {
-        s.askAmount = askAmount;
-        s.bidAmount = bidAmount;
-        s.queuedAskAmount = queueIsBid ? 0 : queueAmount;
-        s.queuedBidAmount = queueIsBid ? 0 : queueAmount;
-
-        if (askAmount > 0) {
-            s.actualPrice  = bidAmount.mul(S) / askAmount;
-            s.bounded = s.actualPrice >= P / M && s.actualPrice <= P.mul(M);
-        }
-
-        require(s.bounded || (askShift == 0 && bidShift == 0), "unbound shift");
-
-        uint span;
-
-        // calculating asks
-        span = block.timestamp.sub(startTime).sub(askShift);
-        s.askPrice = curve.getCurveValue(P, S, M, T, span);
-        s.newAskShift = askShift;
-        s.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
-
-        if (s.bounded) {
-            if (s.actualPrice > s.askPrice) {
-                s.newAskShift = span
-                    .add(askShift)
-                    .sub(curve.getCurveTime(P, S, M, T, s.actualPrice ));
-                s.askPrice = s.actualPrice;
-                s.additionalBidAmountAllowed = 0;
-            } else {
-                s.additionalBidAmountAllowed = (
-                    askAmount.add(s.queuedAskAmount).mul(s.askPrice ) / S
-                ).sub(bidAmount);
-            }
-        }
-
-        // calculating bids
-        span = block.timestamp.sub(startTime).sub(bidShift);
-        s.bidPrice = P.mul(P) / S / curve.getCurveValue(P, S, M, T, span);
-        s.newBidShift = bidShift;
-        s.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
-
-        if (s.bounded) {
-            if (s.actualPrice < s.bidPrice) {
-                s.newAskShift = span
-                    .add(bidShift)
-                    .sub(curve.getCurveTime(P, S, M, T, askAmount.mul(P).mul(P) / bidAmount));
-                s.bidPrice = s.actualPrice;
-                s.additionalAskAmountAllowed = 0;
-            } else {
-                s.additionalAskAmountAllowed = (
-                    askAmount.add(s.queuedBidAmount).mul(s.bidPrice) / S
-                ).sub(bidAmount);
-            }
-        }
-
-        if (queueAmount > 0) {
-            require(queueIsBid || s.additionalAskAmountAllowed == 0);
-            require(!queueIsBid || s.additionalBidAmountAllowed == 0);
-        }
-    }
-
-    // == Internal & Private Functions ==
-    function bidInternal(uint amount)
-        internal
         returns(
             uint  _amount,
             uint  _queued,
-            State memory s
+            IAuctionData.Info memory i
         )
     {
-        require(amount > 0, "zero amount");
-         _amount = amount;
-
-        // calculate the current-state
-        s = getState();
-
-        if (s.additionalBidAmountAllowed < _amount) {
-            _queued = _amount.sub(s.additionalBidAmountAllowed);
-            _amount = s.additionalBidAmountAllowed;
-        }
-
-        if (_queued > 0) {
-            if (queueAmount > 0) {
-                if (queueIsBid) {
-                    // Before this BID, the queue is for BIDs
-                    assert(_amount == 0);
-                } else {
-                    // Before this BID, the queue is for ASKs, therefore we must have
-                    // consumed all the pending ASKs in the queue.
-                    assert(_amount > 0);
-                    dequeue(queueAmount);
-                }
-            }
-            queueIsBid = true;
-            enqueue(_queued);
-        } else {
-            assert(queueAmount == 0 || !queueIsBid);
-            assert(_amount > 0);
-            dequeue(getQueueConsumption(_amount, queueAmount));
-        }
-
-        // calculate the post-participation state
-        s = getState();
-
-        emit Bid(
-            msg.sender,
-            _amount,
-            _queued,
-            block.timestamp
+        uint a = state.depositToken(
+            state.askToken,
+            amount
         );
+        return state.ask(a);
     }
 
-    function dequeue(uint amount) private {}
-    function enqueue(uint amount) private {}
-
-    function getSpendable(
-        address tokenAddr,
-        uint    amount
-        )
-        private
+    function getAuctionInfo()
+        public
         view
-        returns (uint)
+        returns (IAuctionData.Info memory)
     {
-        require(tokenAddr != address(0x0), "zero address");
-
-        ERC20 token = ERC20(tokenAddr);
-        return amount
-            .min(token.balanceOf(msg.sender))
-            .min(token.allowance(msg.sender, address(oedax)));
+        return state.getAuctionInfo();
     }
 
+    function getBalance(address user)
+        internal
+        view
+        returns (
+            IAuctionData.Balance memory bidBalance,
+            IAuctionData.Balance memory askBalance
+        )
+    {
+        return state.getBalance(user);
+    }
+
+    // == Internal & Private Functions ==
 }
