@@ -49,8 +49,6 @@ library AuctionAsks
         internal
     {
         require(amount > 0, "zero amount");
-
-
         uint _amount = amount;
         uint _queued;
 
