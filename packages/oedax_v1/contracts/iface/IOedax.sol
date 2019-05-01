@@ -21,4 +21,14 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IOedax
 {
+    address[] auctions;
+    // auction_address => auction_id
+    mapping (address => uint) auctionIdMap;
+    // auction_creator =>  list of his auctions
+    mapping (address => address[]) creatorAuctions;
+
+    event AuctionCreated (
+        uint    auctionId,
+        address auctionAddr
+    );
 }

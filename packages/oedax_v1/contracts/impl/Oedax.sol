@@ -33,8 +33,6 @@ contract Oedax is IOedax, Ownable
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    address[] auctions;
-
     ICurveRegistry curveRegistry;
 
     // -- Constructor --
@@ -74,7 +72,12 @@ contract Oedax is IOedax, Ownable
         );
 
         auctionAddr = address(auction);
+
+        auctionIdMap[auctionAddr] = auctionId;
         auctions.push(auctionAddr);
+        creatorAuctions[msg.sender].push(auctionAddr);
+
+        emit AuctionCreated(auctionId, auctionAddr);
     }
 
     // == Internal Functions ==

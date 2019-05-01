@@ -16,21 +16,59 @@
 */
 pragma solidity 0.5.7;
 
+import "./ICurve.sol";
 import "./IOedax.sol";
 
 /// @title IAuction
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IAuction
 {
+
+    struct Queued
+    {
+        address user;
+        uint    amount;
+    }
+
+    enum Status {PENDING, LIVE, CLOSED, SETTLED}
+
+    struct State
+    {
+      Status status;
+      bool bounded;
+      uint actualPrice;
+      uint askPrice;
+      uint bidPrice;
+      uint newAskShift;
+      uint newBidShift;
+      uint additionalAmountAskAllowed;
+      uint additionalAmountBidAllowed;
+      uint queuedAskAmount;
+      uint queuedBidAmount;
+      uint timeRemaining;
+    }
+
     IOedax  oedax;
+    ICurve  curve;
+
     uint    auctionId;
-    address curve;
     address askToken;
     address bidToken;
     uint    initialAskAmount;
     uint    initialBidAmount;
-    uint32  P; // target price
-    uint32  S; // price scale
-    uint8   M; // price factor
+    uint    startTime;
+
+    uint32  P;
+    uint32  S;
+    uint8   M;
     uint    T;
+
+    uint    askAmount;
+    uint    bidAmount;
+    uint    askShift;
+    uint    bidShift;
+
+    Queued[]  queue;
+    bool      queueIsBid;
+    uint      queueAmount;
 }

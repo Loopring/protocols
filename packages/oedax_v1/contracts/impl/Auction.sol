@@ -15,17 +15,20 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 import "../iface/IAuction.sol";
+import "../iface/ICurve.sol";
 
 import "../lib/MathUint.sol";
-
+import "../lib/Ownable.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Auction is IAuction
+contract Auction is IAuction, Ownable
 {
-    using MathUint for uint32;
+    using MathUint      for uint;
+    using MathUint      for uint32;
 
     modifier onlyOedax {
       require (msg.sender == address(oedax));
@@ -62,20 +65,73 @@ contract Auction is IAuction
         require(_T / 3600 > 0 && _T / 3600 <= 30 * 24, "invalid duration");
 
         oedax = IOedax(oedax);
+        curve = ICurve(_curve);
+
+        owner = msg.sender; // creator
         auctionId = _auctionId;
-        curve = _curve;
         askToken = _askToken;
         bidToken = _bidToken;
-        initialAskAmount = _initialAskAmount;
-        initialBidAmount = _initialBidAmount;
-        P = _P;
-        S = _S;
-        M =_M;
-        T = _T;
+        askAmount = initialAskAmount = _initialAskAmount;
+        bidAmount = initialBidAmount = _initialBidAmount;
+        startTime = block.timestamp;
+        (P, S, M, T) = (_P, _S, _M, _T);
+        // initTransfers();
     }
 
     // == Public Functions ==
+    function getState()
+        public
+        view
+        returns (State memory s)
+    {
+        s.queuedAskAmount = queueIsBid ? 0 : queueAmount;
+        s.queuedBidAmount = queueIsBid ? 0 : queueAmount;
 
-    // == Internal Functions ==
+        if (askAmount > 0) {
+            s.actualPrice  = bidAmount.mul(S) / askAmount;
+            s.bounded = s.actualPrice >= P / M && s.actualPrice <= P.mul(M);
+        }
 
+        require(s.bounded || (askShift == 0 && bidShift == 0), "unbound shift");
+
+        uint span;
+
+        span = block.timestamp.sub(startTime).sub(askShift);
+        s.askPrice = curve.getCurveValue(P, S, M, T, span);
+        s.newAskShift = askShift;
+        s.additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
+
+        if (s.bounded) {
+            if (s.actualPrice > s.askPrice) {
+                s.newAskShift = span
+                    .add(askShift)
+                    .sub(curve.getCurveTime(P, S, M, T, s.actualPrice ));
+                s.askPrice = s.actualPrice;
+                s.additionalAmountBidAllowed = 0;
+            } else {
+                s.additionalAmountBidAllowed = (
+                    askAmount.add(s.queuedAskAmount).mul(s.askPrice ) / S
+                ).sub(bidAmount);
+            }
+        }
+
+        span = block.timestamp.sub(startTime).sub(bidShift);
+        s.bidPrice = P.mul(P) / S / curve.getCurveValue(P, S, M, T, span);
+        s.newBidShift = bidShift;
+        s.additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
+
+        if (s.bounded) {
+            if (s.actualPrice < s.bidPrice) {
+                s.newAskShift = span
+                    .add(bidShift)
+                    .sub(curve.getCurveTime(P, S, M, T, askAmount.mul(P).mul(P) / bidAmount));
+                s.bidPrice = s.actualPrice;
+                s.additionalAmountAskAllowed = 0;
+            } else {
+                s.additionalAmountAskAllowed = (
+                    askAmount.add(s.queuedBidAmount).mul(s.bidPrice) / S
+                ).sub(bidAmount);
+            }
+        }
+    }
 }
