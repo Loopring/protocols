@@ -20,6 +20,8 @@ pragma experimental ABIEncoderV2;
 import "../iface/IAuction.sol";
 import "../iface/ICurve.sol";
 
+import "../lib/ERC20SafeTransfer.sol";
+import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/Ownable.sol";
 
@@ -27,8 +29,8 @@ import "../lib/Ownable.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Auction is IAuction, Ownable
 {
-    using MathUint      for uint;
-    using MathUint      for uint32;
+    using MathUint          for uint;
+    using MathUint          for uint32;
 
     modifier onlyOedax {
       require (msg.sender == address(oedax));
@@ -55,8 +57,7 @@ contract Auction is IAuction, Ownable
         require(_oedax != address(0x0));
         require(_auctionId > 0);
         require(_curve != address(0x0));
-        require(_askToken != address(0x0));
-        require(_bidToken != address(0x0));
+        require(_askToken != address(0x0) || _bidToken != address(0x0));
 
         require(_P > 0);
         require(_M > 0);
@@ -79,6 +80,20 @@ contract Auction is IAuction, Ownable
     }
 
     // == Public & External Functions ==
+
+    function()
+        external
+        payable
+    {
+        if (bidToken == address(0x0)) {
+            bidInternal(msg.value);
+        } else if (askToken == address(0x0)) {
+            // askInternal(msg.value);
+        } else {
+            revert();
+        }
+    }
+
     function bid(uint amount)
         public
         returns(
@@ -87,38 +102,10 @@ contract Auction is IAuction, Ownable
             State memory s
         )
     {
-        // calculate the precondition-state
-        s = getState();
+         uint a = getSpendable(bidToken, amount);
+         // TODO: do the transfer
 
-        _amount = getSpendable(bidToken, amount);
-        require(_amount > 0, "zero amount");
-
-        if (s.additionalBidAmountAllowed < _amount) {
-            _queued = _amount.sub(s.additionalBidAmountAllowed);
-            _amount = s.additionalBidAmountAllowed;
-        }
-
-        if (_queued > 0) {
-            if (queueIsBid) {
-                // Before this BID, the queue is for BIDs
-                assert(_amount == 0);
-                enqueue(_queued);
-            } else {
-                // Before this BID, the queue is for ASKs, therefore we must have
-                // consumed all the pending ASKs in the queue.
-                assert(_amount > 0);
-                dequeue(queueAmount);
-                queueIsBid = true;
-                enqueue(_queued);
-            }
-        } else {
-            assert(queueAmount == 0 || !queueIsBid);
-            assert(_amount > 0);
-            dequeue(getQueueConsumption(_amount, queueAmount));
-        }
-
-        // calculate the post-state
-        s = getState();
+         return bidInternal(a);
     }
 
 
@@ -199,17 +186,73 @@ contract Auction is IAuction, Ownable
     }
 
     // == Internal & Private Functions ==
+    function bidInternal(uint amount)
+        internal
+        returns(
+            uint  _amount,
+            uint  _queued,
+            State memory s
+        )
+    {
+        require(amount > 0, "zero amount");
+         _amount = amount;
+
+        // calculate the current-state
+        s = getState();
+
+        if (s.additionalBidAmountAllowed < _amount) {
+            _queued = _amount.sub(s.additionalBidAmountAllowed);
+            _amount = s.additionalBidAmountAllowed;
+        }
+
+        if (_queued > 0) {
+            if (queueAmount > 0) {
+                if (queueIsBid) {
+                    // Before this BID, the queue is for BIDs
+                    assert(_amount == 0);
+                } else {
+                    // Before this BID, the queue is for ASKs, therefore we must have
+                    // consumed all the pending ASKs in the queue.
+                    assert(_amount > 0);
+                    dequeue(queueAmount);
+                }
+            }
+            queueIsBid = true;
+            enqueue(_queued);
+        } else {
+            assert(queueAmount == 0 || !queueIsBid);
+            assert(_amount > 0);
+            dequeue(getQueueConsumption(_amount, queueAmount));
+        }
+
+        // calculate the post-participation state
+        s = getState();
+
+        emit NewBid(
+            msg.sender,
+            _amount,
+            _queued,
+            block.timestamp
+        );
+    }
+
     function dequeue(uint amount) private {}
     function enqueue(uint amount) private {}
 
     function getSpendable(
-        address token,
+        address tokenAddr,
         uint    amount
         )
         private
+        view
         returns (uint)
     {
-        return 0;
+        require(tokenAddr != address(0x0), "zero address");
+
+        ERC20 token = ERC20(tokenAddr);
+        return amount
+            .min(token.balanceOf(msg.sender))
+            .min(token.allowance(msg.sender, address(oedax)));
     }
 
 }

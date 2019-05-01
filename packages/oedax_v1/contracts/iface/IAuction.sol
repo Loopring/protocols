@@ -73,4 +73,19 @@ contract IAuction
     Queued[]  queue;
     bool      queueIsBid;
     uint      queueAmount;
+
+
+    event NewBid(
+        address user,
+        uint    amount,
+        uint    amountQueued,
+        uint    time
+    );
+
+    event NewAsk(
+        address user,
+        uint    amount,
+        uint    amountQueued,
+        uint    time
+    );
 }
