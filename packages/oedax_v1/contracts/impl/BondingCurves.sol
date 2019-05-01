@@ -26,95 +26,68 @@ import "../lib/MathUint.sol";
 library BondingCurves
 {
     using MathUint  for uint;
+    using MathUint  for uint32;
 
-    function getAskPriceAt(
+    function calculateBonding(
         ICurve  curve,
-        uint    P, // target price
+        uint32  P, // target price
+        uint32  S, // price scale
         uint8   M, // price factor
-        uint    S, // price scale
+        uint    T,
         uint    amountAsk,
         uint    amountBid,
         uint    time,
-        uint    shift
+        uint    askShift,
+        uint    bidShift
         )
         internal
         view
         returns (
+            bool bounded,
+            uint actualPrice,
             uint askPrice,
-            uint newShift,
+            uint bidPrice,
+            uint newAskShift,
+            uint newBidShift,
+            uint additionalAmountAskAllowed,
             uint additionalAmountBidAllowed
         )
     {
-        uint t = time.sub(shift);
-        newShift = shift;
-        askPrice = curve.getCurveValue(P, M, S, t);
+        if (amountAsk > 0) {
+            actualPrice = amountBid.mul(S) / amountAsk;
+            bounded = actualPrice >= P / M && actualPrice <= P.mul(M);
+        }
+
+        require(bounded || (askShift == 0 && bidShift == 0), "unbound shift");
+
+        uint askTime = askShift > 0 ? time.sub(askShift) : time;
+        newAskShift = askShift;
+        askPrice = curve.getCurveValue(P, S, M, T, askTime);
         additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
 
-        if (amountAsk == 0) {
-            // when the ask price is undefined, the price is not bounded yet.
-            require(shift == 0, "unbound shift");
-        } else {
-          // when the ask price is defined
-          uint actualPrice = amountBid.mul(S) / amountAsk;
-          if (actualPrice < P / M || actualPrice > P.mul(M)) {
-              // price not bounded yet
-              require(shift == 0, "unbound shift");
-          } else if (actualPrice > askPrice) {
-              // price not bounded yet
-              uint _t = curve.getCurveTime(P, M, S, actualPrice);
-              newShift = _t.sub(t).add(shift);
-              askPrice = actualPrice;
-              additionalAmountBidAllowed = 0;
-          } else {
-            // actual price <= ask price
-            additionalAmountBidAllowed = (askPrice.mul(amountAsk) / S).sub(amountBid);
-          }
-        }
-    }
+        uint bidTime = bidShift > 0 ? time.sub(bidShift) : time;
+        newBidShift = bidShift;
+        bidPrice = P.mul(P) / S / curve.getCurveValue(P, S, M, T, bidTime);
+        additionalAmountBidAllowed = ~uint256(0); // = uint.MAX
 
-    function getBidPriceAt(
-        ICurve  curve,
-        uint    P, // target price
-        uint8   M, // price factor
-        uint    S, // price scale
-        uint    amountAsk,
-        uint    amountBid,
-        uint    time,
-        uint    shift
-        )
-        internal
-        view
-        returns (
-            uint bidPrice,
-            uint newShift,
-            uint additionalAmountAskAllowed
-        )
-    {
-        uint t = time.sub(shift);
-        newShift = shift;
-        bidPrice = P.mul(P) / S / curve.getCurveValue(P, M, S, t);
-        additionalAmountAskAllowed = ~uint256(0); // = uint.MAX
+        if (bounded) {
+            if (actualPrice > askPrice) {
+                uint t = curve.getCurveTime(P, S, M, T, actualPrice);
+                newAskShift = askTime.add(askShift).sub(t);
+                askPrice = actualPrice;
+                additionalAmountBidAllowed = 0;
+            } else {
+              additionalAmountBidAllowed = (askPrice.mul(amountAsk) / S).sub(amountBid);
+            }
 
-        if (amountAsk == 0) {
-            // when the ask price is undefined, the price is not bounded yet.
-            require(shift == 0, "unbound shift");
-        } else {
-          // when the ask price is defined
-          uint actualPrice = amountBid.mul(S) / amountAsk;
-          if (actualPrice < P / M || actualPrice > P.mul(M)) {
-              // price not bounded yet
-              require(shift == 0, "unbound shift");
-          } else if (actualPrice < bidPrice) {
-              // price not bounded yet
-              uint value = P.mul(P) / S / actualPrice;
-              uint _t = curve.getCurveTime(P, M, S, value);
-              newShift = _t.sub(t).add(shift);
-              bidPrice = actualPrice;
-              additionalAmountAskAllowed = 0;
-          } else {
-            // actual price <= ask price
-            additionalAmountAskAllowed = (bidPrice.mul(amountAsk) / S).sub(amountBid);
-          }
+            if (actualPrice < bidPrice) {
+                uint t = curve.getCurveTime(P, S, M, T, P.mul(P) / S / actualPrice);
+                newAskShift = bidTime.add(bidShift).sub(t);
+                bidPrice = actualPrice;
+                additionalAmountAskAllowed = 0;
+            } else {
+                additionalAmountAskAllowed = (bidPrice.mul(amountAsk) / S).sub(amountBid);
+            }
         }
     }
 

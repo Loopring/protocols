@@ -24,9 +24,10 @@ contract ICurve
     // @dev Returns the ask price at a given time
 
     function getCurveValue(
-        uint  P,
-        uint8 M, // price factor
-        uint  priceScale,
+        uint32  P, // target price
+        uint32  S, // price scale
+        uint8   M, // price factor
+        uint    T,
         uint  time
         )
         public
@@ -34,10 +35,11 @@ contract ICurve
         returns (uint value);
 
     function getCurveTime(
-        uint  P,
-        uint8 M, // price factor
-        uint  priceScale,
-        uint  value
+        uint32  P, // target price
+        uint32  S, // price scale
+        uint8   M, // price factor
+        uint    T,
+        uint    value
         )
         public
         view
