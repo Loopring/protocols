@@ -16,19 +16,16 @@
 */
 pragma solidity 0.5.7;
 
-import "../iface/IOedax.sol";
+import "../iface/ICurve.sol";
 
-import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
-import "../lib/Ownable.sol";
 
 
-/// @title An Implementation of IOedax.
+/// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Oedax is IOedax, Ownable
+contract DefaultCurve is ICurve
 {
     using MathUint          for uint;
-    using ERC20SafeTransfer for address;
 
     // -- Constructor --
     constructor(
