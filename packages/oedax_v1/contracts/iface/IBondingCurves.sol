@@ -17,29 +17,39 @@
 pragma solidity 0.5.7;
 
 
-/// @title ICurve
+/// @title IBondingCurves
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICurve
+contract IBondingCurves
 {
-    // @dev Returns the ask price at a given time
-
-    function getCurveValue(
+    function getAskPriceAt(
         uint  P,
         uint8 M, // price factor
+        uint  amountAsk,
+        uint  amountBid,
         uint  priceScale,
-        uint  time
+        uint  time,
+        uint  shift
         )
         public
         view
-        returns (uint value);
+        returns (
+            uint askPrice,
+            uint newShift
+        );
 
-    function getCurveTime(
-        uint  P,
-        uint8 M, // price factor
-        uint  priceScale,
-        uint  value
-        )
-        public
-        view
-        returns (uint time);
+    // function getBidPriceAt(
+    //     uint  P,
+    //     uint8 M, // price factor
+    //     uint  amountAsk,
+    //     uint  amountBid,
+    //     uint  priceScale,
+    //     uint  time,
+    //     uint  shift
+    //     )
+    //     public
+    //     view
+    //     returns (
+    //         uint bidPrice,
+    //         uint newShift
+    //     );
 }

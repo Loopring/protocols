@@ -56,4 +56,26 @@ library MathUint
         c = a + b;
         require(c >= a, "ADD_OVERFLOW");
     }
+
+    function min(
+        uint a,
+        uint b
+        )
+        internal
+        pure
+        returns (uint c)
+    {
+        c = (a > b) ? b : a;
+    }
+
+    function max(
+        uint a,
+        uint b
+        )
+        internal
+        pure
+        returns (uint c)
+    {
+        c = (a > b) ? a : b;
+    }
 }
