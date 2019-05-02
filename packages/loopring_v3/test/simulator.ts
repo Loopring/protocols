@@ -49,12 +49,18 @@ export class Simulator {
       const account = newRealm.accounts[withdrawal.accountID];
 
       const balance = account.balances[withdrawal.tokenID].balance;
-      const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
+      const amountToWithdrawMin = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
+      const amountToWithdraw = (shutdown) ? balance : amountToWithdrawMin;
       const amountWithdrawn = roundToFloatValue(amountToWithdraw, constants.Float28Encoding);
+
+      let amountToSubtract = amountWithdrawn;
+      if (shutdown) {
+        amountToSubtract = amountToWithdraw;
+      }
 
       // Update balance
       account.balances[withdrawal.tokenID].balance =
-        account.balances[withdrawal.tokenID].balance.sub(amountWithdrawn);
+        account.balances[withdrawal.tokenID].balance.sub(amountToSubtract);
 
       if (shutdown) {
         account.publicKeyX = "0";

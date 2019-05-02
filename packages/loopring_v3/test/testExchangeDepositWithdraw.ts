@@ -724,7 +724,7 @@ contract("Exchange", (accounts: string[]) => {
         const orderOwners = exchangeTestUtil.testContext.orderOwners;
         const keyPair = exchangeTestUtil.getKeyPairEDDSA();
         const owner = orderOwners[i];
-        const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+        const amount = exchangeTestUtil.getRandomAmount();
         const token = exchangeTestUtil.getTokenAddress("LRC");
         const deposit = await exchangeTestUtil.deposit(realmID, owner,
                                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -801,7 +801,7 @@ contract("Exchange", (accounts: string[]) => {
         const orderOwners = exchangeTestUtil.testContext.orderOwners;
         const keyPair = exchangeTestUtil.getKeyPairEDDSA();
         const owner = orderOwners[i];
-        const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+        const amount = exchangeTestUtil.getRandomAmount();
         const token = exchangeTestUtil.getTokenAddress("LRC");
         const deposit = await exchangeTestUtil.deposit(realmID, owner,
                                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,

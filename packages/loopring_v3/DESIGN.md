@@ -690,8 +690,6 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 - Verifying a proof + some state updates/querying: ~600,000 gas
 - => (8,000,000 - 600,000) / 3,128 = **2365 rings/Ethereum block = ~160 rings/second**
 
-These numbers can be improved by packing the data more tightly.
-
 ### Constraints Limit
 
 We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently.

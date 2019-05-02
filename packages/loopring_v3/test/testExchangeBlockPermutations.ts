@@ -15,18 +15,18 @@ contract("Exchange", (accounts: string[]) => {
           realmID: exchangeId,
           tokenS: "WETH",
           tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("" + Math.random() % 100, "ether")),
-          amountB: new BN(web3.utils.toWei("" + Math.random() % 100, "ether")),
-          amountF: new BN(web3.utils.toWei("" + Math.random() % 100, "ether")),
+          amountS: exchangeTestUtil.getRandomAmount(),
+          amountB: exchangeTestUtil.getRandomAmount(),
+          amountF: exchangeTestUtil.getRandomAmount(),
         },
       orderB:
         {
           realmID: exchangeId,
           tokenS: "GTO",
           tokenB: "WETH",
-          amountS: new BN(web3.utils.toWei("" + Math.random() % 100, "ether")),
-          amountB: new BN(web3.utils.toWei("" + Math.random() % 100, "ether")),
-          amountF: new BN(web3.utils.toWei("" + Math.random() % 100, "ether")),
+          amountS: exchangeTestUtil.getRandomAmount(),
+          amountB: exchangeTestUtil.getRandomAmount(),
+          amountF: exchangeTestUtil.getRandomAmount(),
         },
     };
     return ring;
@@ -36,7 +36,7 @@ contract("Exchange", (accounts: string[]) => {
     const orderOwners = exchangeTestUtil.testContext.orderOwners;
     const keyPair = exchangeTestUtil.getKeyPairEDDSA();
     const owner = orderOwners[Number(exchangeTestUtil.getRandomInt(orderOwners.length))];
-    const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+    const amount = new BN(web3.utils.toWei("" + exchangeTestUtil.getRandomInt(100000000) / 1000, "ether"));
     const token = exchangeTestUtil.getTokenAddress("LRC");
     return await exchangeTestUtil.deposit(exchangeId, owner,
                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -48,7 +48,7 @@ contract("Exchange", (accounts: string[]) => {
       exchangeId,
       depositInfo.accountID,
       depositInfo.token,
-      new BN(Math.random() * 1000),
+      exchangeTestUtil.getRandomAmount(),
       depositInfo.owner,
     );
   };
@@ -58,7 +58,7 @@ contract("Exchange", (accounts: string[]) => {
       exchangeId,
       depositInfo.accountID,
       depositInfo.token,
-      new BN(Math.random() * 1000),
+      exchangeTestUtil.getRandomAmount(),
       "LRC",
       new BN(0),
       0,

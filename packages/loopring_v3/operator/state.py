@@ -914,17 +914,23 @@ class State(object):
         if str(accountID) in self._accounts:
             # Calculate amount withdrawn
             balance = int(self.getAccount(accountID).getBalance(tokenID))
-            uAmount = int(amountRequested) if (int(amountRequested) < balance) else balance
+            uAmountMin = int(amountRequested) if (int(amountRequested) < balance) else balance
+
+            # Withdraw the complete balance in shutdown
+            uAmount = balance if shutdown else uAmountMin
 
             fAmount = toFloat(uAmount, Float28Encoding)
             amount = fromFloat(fAmount, Float28Encoding)
+
+            # Make sure no 'dust' remains after a withdrawal in shutdown
+            amountToSubtract = uAmount if shutdown else amount
 
             # Update account
             rootBefore = self._accountsTree._root
             accountBefore = copyAccountInfo(self.getAccount(accountID))
             proof = self._accountsTree.createProof(accountID)
 
-            balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amount, shutdown)
+            balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amountToSubtract, shutdown)
             if shutdown:
                 self.getAccount(accountID).publicKeyX = str(0)
                 self.getAccount(accountID).publicKeyY = str(0)

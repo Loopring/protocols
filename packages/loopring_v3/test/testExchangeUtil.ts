@@ -1596,7 +1596,7 @@ export class ExchangeTestUtil {
     ownerIndex = (ownerIndex !== undefined) ? ownerIndex : this.getRandomInt(orderOwners.length);
     const keyPair = this.getKeyPairEDDSA();
     const owner = orderOwners[Number(ownerIndex)];
-    const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+    const amount = this.getRandomAmount();
     const token = this.getTokenAddress("LRC");
     return await this.deposit(this.exchangeId, owner,
                               keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -1618,7 +1618,7 @@ export class ExchangeTestUtil {
       this.exchangeId,
       depositInfo.accountID,
       depositInfo.token,
-      new BN(Math.random() * 1000),
+      this.getRandomAmount(),
       depositInfo.owner,
     );
   }
@@ -1628,7 +1628,7 @@ export class ExchangeTestUtil {
       this.exchangeId,
       depositInfo.accountID,
       depositInfo.token,
-      new BN(Math.random() * 1000),
+      this.getRandomAmount(),
       "LRC",
       new BN(0),
       0,
@@ -1842,6 +1842,10 @@ export class ExchangeTestUtil {
 
   public getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
+  }
+
+  public getRandomAmount() {
+    return new BN(web3.utils.toWei("" + this.getRandomInt(100000000) / 1000));
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
