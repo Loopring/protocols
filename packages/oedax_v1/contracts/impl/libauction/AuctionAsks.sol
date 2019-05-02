@@ -50,7 +50,7 @@ library AuctionAsks
     {
         require(amount > 0, "zero amount");
         uint _amount = amount;
-        uint _queued;
+        uint _quesued;
 
         // calculate the current-state
         IAuctionData.Info memory i = s.getAuctionInfo();
@@ -65,8 +65,15 @@ library AuctionAsks
 
         s.askAmount = s.askAmount.add(_amount);
 
-        s.bidShift = i.newBidShift;
-        s.askShift = i.newAskShift;
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(s.bidShift);
+        }
+
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(s.askShift);
+        }
 
         emit Ask(
             msg.sender,

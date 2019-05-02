@@ -90,8 +90,15 @@ library AuctionBids
 
         s.bidAmount = s.bidAmount.add(_amount);
 
-        s.bidShift = i.newBidShift;
-        s.askShift = i.newAskShift;
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(s.bidShift);
+        }
+
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(s.askShift);
+        }
 
         emit Bid(
             msg.sender,
