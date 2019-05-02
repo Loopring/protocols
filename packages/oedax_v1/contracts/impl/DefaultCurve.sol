@@ -23,19 +23,22 @@ import "../lib/NoDefaultFunc.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
+
+/// @dev A curve variation from `(1-x)/(1+x)`.
+///
+/// Let P0 and P1 be the min and max price, T be the duration,
+/// let e = P1 - P0, and A be the curve parameter to control its shape:
+/// then we have:
+///   y = f(x) = (e(T-x)/(A*x+T))+P0
+/// and
+///   x = f(y) = T*e/(A*y+e-A*P0))
+
 contract DefaultCurve is ICurve, NoDefaultFunc
 {
     using MathUint          for uint;
     using MathUint          for uint64;
-    string name = "default";
 
-
-    // Let P0 and P1 be the min and max prixe, and e = P1 - P0,
-    // and  use A as the curve parameter to control
-    // it shape, then we use this curve:
-    // ```y = f(x) = (e(T-x)/(A*x+T))+P0```
-    // and
-    // ```x = f(y) = T*e/(A*y+e-A*P0))```
+    string name = "(1-x)/(1+x)";
 
     uint A = 3; // If A is 0, then the curve is a stright line.
 

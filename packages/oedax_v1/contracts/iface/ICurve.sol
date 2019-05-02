@@ -20,6 +20,8 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICurve
 {
+    string name;
+
     function getCurveValue(
         uint64  P0, // min price
         uint64  P1, // max factor
