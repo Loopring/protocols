@@ -25,7 +25,6 @@ import "../lib/Ownable.sol";
 
 import "./Auction.sol";
 
-
 /// @title An Implementation of IOedax.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Oedax is IOedax, Ownable
@@ -36,8 +35,7 @@ contract Oedax is IOedax, Ownable
     ICurveRegistry curveRegistry;
 
     // -- Constructor --
-    constructor(
-        )
+    constructor()
         public
     {
 
@@ -61,6 +59,7 @@ contract Oedax is IOedax, Ownable
         uint    T
         )
         public
+        payable
         returns (address auctionAddr)
     {
         uint auctionId = auctions.length + 1;
@@ -83,6 +82,18 @@ contract Oedax is IOedax, Ownable
         creatorAuctions[msg.sender].push(auctionAddr);
 
         emit AuctionCreated(auctionId, auctionAddr);
+    }
+
+    function logParticipation(
+        address user
+        )
+        public
+        onlyAuction
+    {
+        if (!particationMap[user][msg.sender]) {
+            particationMap[user][msg.sender] = true;
+            userAuctions[user].push(msg.sender);
+        }
     }
 
     function transferToken(

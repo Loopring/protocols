@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-
 /// @title ICurveRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICurveRegistry

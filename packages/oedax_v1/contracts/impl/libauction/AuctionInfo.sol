@@ -17,12 +17,10 @@
 pragma solidity 0.5.7;
 pragma experimental ABIEncoderV2;
 
-// import "../../lib/BurnableERC20.sol";
-// import "../../lib/ERC20SafeTransfer.sol";
+import "../../iface/IAuctionData.sol";
+
 import "../../lib/MathUint.sol";
 import "../../lib/ERC20.sol";
-
-import "../../iface/IAuctionData.sol";
 
 /// @title AuctionInfo.
 /// @author Daniel Wang  - <daniel@loopring.org>

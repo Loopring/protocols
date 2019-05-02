@@ -23,12 +23,6 @@ library IAuctionData
 {
     enum Status {PENDING, LIVE, CLOSED, SETTLED}
 
-    struct Queued
-    {
-        address user;
-        uint    amount;
-    }
-
     struct Info
     {
       Status status;
@@ -47,14 +41,23 @@ library IAuctionData
       uint timeRemaining;
     }
 
+    struct Queued
+    {
+        address user;
+        uint    amount;
+        uint    time;
+    }
+
     struct Balance
     {
-        uint total;
+        uint totalWeight;
+        uint inAuction;
         uint queued;
     }
 
     struct State
     {
+      // The following files never change once initialized:
       IOedax  oedax;
       ICurve  curve;
 
@@ -70,17 +73,22 @@ library IAuctionData
       uint8   M;
       uint    T;
 
+      // The following fields WILL change on bids and asks.
       uint    askAmount;
       uint    bidAmount;
+
       uint    askShift;
       uint    bidShift;
+
+      uint[]  askShifts;
+      uint[]  bidShifts;
 
       Queued[]  queue;
       bool      queueIsBid;
       uint      queueAmount;
 
-      // user => (token => balance)
-      mapping (address => mapping (address => Balance)) balanceMap;
+      // user => (isBid => balance)
+      mapping (address => mapping (bool => Balance)) balanceMap;
     }
 
     event Bid(

@@ -30,8 +30,7 @@ library AuctionQueue
 
     function getQueueConsumption(
         IAuctionData.State storage s,
-        uint amount,
-        uint amountInQueue
+        uint amount
         )
         internal
         view
@@ -46,14 +45,58 @@ library AuctionQueue
         )
         internal
     {
+      s.queueAmount = s.queueAmount.sub(amount);
 
+      if (s.queueIsBid) {
+        s.bidAmount = s.bidAmount.add(amount);
+      } else {
+        s.askAmount = s.askAmount.add(amount);
+      }
+
+      uint _amount = amount;
+      uint idx = 0;
+
+      while(_amount > 0) {
+        IAuctionData.Queued storage item = s.queue[idx];
+        IAuctionData.Balance storage balance = s.balanceMap[item.user][s.queueIsBid];
+
+        if (item.amount > _amount) {
+          balance.totalWeight = balance.totalWeight.add(item.time.mul(_amount));
+          balance.queued = balance.queued.sub(_amount);
+
+          item.amount = item.amount.sub(_amount);
+        } else {
+          balance.totalWeight = balance.totalWeight.add(item.time.mul(item.amount));
+          balance.queued = balance.queued.sub(item.amount);
+
+          _amount = _amount.sub(item.amount);
+          idx += 1;
+        }
+      }
+
+      if (idx > 0) {
+        uint size = s.queue.length - idx;
+        for (uint i = 0; i < size; i++) {
+          s.queue[i] = s.queue[i + idx];
+        }
+        s.queue.length = size;
+      }
     }
+
+    /// @dev enqueue a bid or a ask
+    /// Note that `queueIsBid` must be set to the right value before calling this method.
     function enqueue(
         IAuctionData.State storage s,
-        uint amount
+        uint amount,
+        uint time
         )
         internal
     {
-
+        s.queueAmount = s.queueAmount.add(amount);
+        s.queue.push(IAuctionData.Queued(
+            msg.sender,
+            amount,
+            time
+        ));
     }
 }

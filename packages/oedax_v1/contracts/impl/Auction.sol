@@ -71,7 +71,7 @@ contract Auction is IAuction
         require(_P > 0);
         require(_M > 0);
         require(_P / _M > 0, "zero min price");
-        require(_T % 3600 == 0, "duration must be in hour");
+        require(_T % 3600 == 0, "hour is the min unit");
         require(_T / 3600 > 0 && _T / 3600 <= 30 * 24, "invalid duration");
 
         owner = msg.sender; // creator
@@ -111,32 +111,22 @@ contract Auction is IAuction
 
     function bid(uint amount)
         public
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         uint a = state.depositToken(
             state.bidToken,
             amount
         );
-        return state.bid(a);
+        state.bid(a);
     }
 
     function ask(uint amount)
         public
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         uint a = state.depositToken(
             state.askToken,
             amount
         );
-        return state.ask(a);
+        state.ask(a);
     }
 
     function getAuctionInfo()

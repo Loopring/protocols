@@ -20,12 +20,12 @@ import "../iface/ICurve.sol";
 
 import "../lib/MathUint.sol";
 
-
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract DefaultCurve is ICurve
 {
     using MathUint          for uint;
+    string name = "default";
 
     // -- Constructor --
     constructor(

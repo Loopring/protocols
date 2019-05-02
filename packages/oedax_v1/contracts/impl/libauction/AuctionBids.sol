@@ -47,17 +47,16 @@ library AuctionBids
         uint amount
         )
         internal
-        returns(
-            uint  _amount,
-            uint  _queued,
-            IAuctionData.Info memory i
-        )
     {
         require(amount > 0, "zero amount");
-         _amount = amount;
+        s.oedax.logParticipation(msg.sender);
+
+        uint _amount = amount;
+        uint _queued;
+        uint time = block.timestamp - s.startTime;
 
         // calculate the current-state
-        i = s.getAuctionInfo();
+        IAuctionData.Info memory i = s.getAuctionInfo();
 
         if (i.additionalBidAmountAllowed < _amount) {
             _queued = _amount.sub(i.additionalBidAmountAllowed);
@@ -77,15 +76,32 @@ library AuctionBids
                 }
             }
             s.queueIsBid = true;
-            s.enqueue(_queued);
+            s.enqueue(_queued, time);
         } else {
             assert(s.queueAmount == 0 || !s.queueIsBid);
             assert(_amount > 0);
-            s.dequeue(s.getQueueConsumption(_amount, s.queueAmount));
+            s.dequeue(s.getQueueConsumption(_amount));
         }
 
-        // calculate the post-participation state
-        i = s.getAuctionInfo();
+        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][true];
+
+        balance.inAuction = balance.inAuction.add(_amount);
+        balance.queued = balance.queued.add(_queued);
+        balance.totalWeight = balance.totalWeight.add(_amount.mul(time));
+
+        s.bidAmount = s.bidAmount.add(_amount);
+
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(time);
+            s.bidShifts.push(s.bidShift);
+        }
+
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(time);
+            s.askShifts.push(s.askShift);
+        }
 
         emit Bid(
             msg.sender,
@@ -94,6 +110,4 @@ library AuctionBids
             block.timestamp
         );
     }
-
-
 }
