@@ -30,8 +30,7 @@ library AuctionQueue
 
     function getQueueConsumption(
         IAuctionData.State storage s,
-        uint amount,
-        uint amountInQueue
+        uint amount
         )
         internal
         view

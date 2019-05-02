@@ -78,7 +78,7 @@ library AuctionBids
         } else {
             assert(s.queueAmount == 0 || !s.queueIsBid);
             assert(_amount > 0);
-            s.dequeue(s.getQueueConsumption(_amount, s.queueAmount));
+            s.dequeue(s.getQueueConsumption(_amount));
         }
 
         IAuctionData.Balance storage balance = s.balanceMap[msg.sender][true];
