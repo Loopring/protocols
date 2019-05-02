@@ -62,7 +62,7 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         view
         returns (uint y)
     {
-       require(x >= 0 && x <= T, "invalid x");
+        require(x >= 0 && x <= T, "invalid x");
         uint e = P1 - P0;
         y = (T.sub(x).mul(e) / mu.mul(x).add(T)).add(P0);
     }
