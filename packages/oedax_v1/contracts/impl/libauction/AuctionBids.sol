@@ -51,6 +51,7 @@ library AuctionBids
         require(amount > 0, "zero amount");
         uint _amount = amount;
         uint _queued;
+        uint time = block.timestamp - s.startTime;
 
         // calculate the current-state
         IAuctionData.Info memory i = s.getAuctionInfo();
@@ -73,7 +74,7 @@ library AuctionBids
                 }
             }
             s.queueIsBid = true;
-            s.enqueue(_queued, block.timestamp - s.startTime);
+            s.enqueue(_queued, time);
         } else {
             assert(s.queueAmount == 0 || !s.queueIsBid);
             assert(_amount > 0);
@@ -84,20 +85,20 @@ library AuctionBids
 
         balance.inAuction = balance.inAuction.add(_amount);
         balance.queued = balance.queued.add(_queued);
-        balance.totalWeight = balance.totalWeight.add(
-            _amount.mul(block.timestamp - s.startTime)
-        );
+        balance.totalWeight = balance.totalWeight.add(_amount.mul(time));
 
         s.bidAmount = s.bidAmount.add(_amount);
 
         if (s.bidShift != i.newBidShift) {
             s.bidShift = i.newBidShift;
-            // s.bidShifts.push(s.bidShift);
+            s.bidShifts.push(time);
+            s.bidShifts.push(s.bidShift);
         }
 
         if (s.askShift != i.newAskShift) {
             s.askShift = i.newAskShift;
-            // s.askShifts.push(s.askShift);
+            s.askShifts.push(time);
+            s.askShifts.push(s.askShift);
         }
 
         emit Bid(
@@ -107,6 +108,4 @@ library AuctionBids
             block.timestamp
         );
     }
-
-
 }

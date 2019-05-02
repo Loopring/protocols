@@ -80,8 +80,8 @@ library IAuctionData
       uint    askShift;
       uint    bidShift;
 
-      // uint[]  askShifts;
-      // uint[]  bidShifts;
+      uint[]  askShifts;
+      uint[]  bidShifts;
 
       Queued[]  queue;
       bool      queueIsBid;
