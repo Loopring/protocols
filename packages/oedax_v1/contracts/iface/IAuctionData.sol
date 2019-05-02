@@ -41,18 +41,22 @@ library IAuctionData
       uint timeRemaining;
     }
 
-    struct Queued
+    struct QueueItem
     {
         address user;
-        uint    amount;
-        uint    time;
+        uint    queued;
+        uint    weight;
     }
 
-    struct Balance
+    struct Account
     {
-        uint totalWeight;
-        uint inAuction;
-        uint queued;
+        uint bidAccepted;
+        uint bidQueued;
+        uint bidFeeShare;
+
+        uint askAccepted;
+        uint askQueued;
+        uint askFeeShare;
     }
 
     struct State
@@ -83,25 +87,25 @@ library IAuctionData
       uint[]  askShifts;
       uint[]  bidShifts;
 
-      Queued[]  queue;
+      QueueItem[]  queue;
       bool      queueIsBid;
       uint      queueAmount;
 
-      // user => (isBid => balance)
-      mapping (address => mapping (bool => Balance)) balanceMap;
+      // user => account)
+      mapping (address => Account) accounts;
     }
 
     event Bid(
         address user,
         uint    amount,
-        uint    amountQueued,
+        uint    amountQueueItem,
         uint    time
     );
 
     event Ask(
         address user,
         uint    amount,
-        uint    amountQueued,
+        uint    amountQueueItem,
         uint    time
     );
 }

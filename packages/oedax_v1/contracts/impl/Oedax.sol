@@ -93,6 +93,7 @@ contract Oedax is IOedax, Ownable
         if (!particationMap[user][msg.sender]) {
             particationMap[user][msg.sender] = true;
             userAuctions[user].push(msg.sender);
+            auctionUsers[msg.sender].push(user);
         }
     }
 

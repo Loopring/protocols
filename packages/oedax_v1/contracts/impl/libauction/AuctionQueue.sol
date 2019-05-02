@@ -36,6 +36,7 @@ library AuctionQueue
         view
         returns (uint)
     {
+        // TODO
         return 0;
     }
 
@@ -45,32 +46,32 @@ library AuctionQueue
         )
         internal
     {
-      s.queueAmount = s.queueAmount.sub(amount);
-
-      if (s.queueIsBid) {
-        s.bidAmount = s.bidAmount.add(amount);
-      } else {
-        s.askAmount = s.askAmount.add(amount);
-      }
-
       uint _amount = amount;
       uint idx = 0;
+      uint dequeued;
 
       while(_amount > 0) {
-        IAuctionData.Queued storage item = s.queue[idx];
-        IAuctionData.Balance storage balance = s.balanceMap[item.user][s.queueIsBid];
+        IAuctionData.QueueItem storage item = s.queue[idx];
+        IAuctionData.Account storage account = s.accounts[item.user];
 
-        if (item.amount > _amount) {
-          balance.totalWeight = balance.totalWeight.add(item.time.mul(_amount));
-          balance.queued = balance.queued.sub(_amount);
-
-          item.amount = item.amount.sub(_amount);
+        if (item.queued > _amount) {
+          dequeued = _amount;
         } else {
-          balance.totalWeight = balance.totalWeight.add(item.time.mul(item.amount));
-          balance.queued = balance.queued.sub(item.amount);
-
-          _amount = _amount.sub(item.amount);
+          dequeued = item.queued;
           idx += 1;
+        }
+
+        item.queued = item.queued.sub(dequeued);
+        _amount = _amount.sub(dequeued);
+
+        if (s.queueIsBid) {
+            account.bidAccepted = account.bidAccepted.add(dequeued);
+            account.bidQueued = account.bidQueued.sub(dequeued);
+            account.bidFeeShare = account.bidFeeShare.add(dequeued.mul(item.weight));
+        } else {
+            account.askAccepted = account.askAccepted.add(dequeued);
+            account.askQueued = account.askQueued.sub(dequeued);
+            account.askFeeShare = account.askFeeShare.add(dequeued.mul(item.weight));
         }
       }
 
@@ -81,6 +82,14 @@ library AuctionQueue
         }
         s.queue.length = size;
       }
+
+      s.queueAmount = s.queueAmount.sub(amount);
+
+      if (s.queueIsBid) {
+        s.bidAmount = s.bidAmount.add(amount);
+      } else {
+        s.askAmount = s.askAmount.add(amount);
+      }
     }
 
     /// @dev enqueue a bid or a ask
@@ -88,15 +97,24 @@ library AuctionQueue
     function enqueue(
         IAuctionData.State storage s,
         uint amount,
-        uint time
+        uint weight
         )
         internal
     {
-        s.queueAmount = s.queueAmount.add(amount);
-        s.queue.push(IAuctionData.Queued(
+        IAuctionData.Account storage account = s.accounts[msg.sender];
+
+        if (s.queueIsBid) {
+            account.bidQueued = account.bidQueued.add(amount);
+        } else {
+            account.askQueued = account.askQueued.add(amount);
+        }
+
+        s.queue.push(IAuctionData.QueueItem(
             msg.sender,
             amount,
-            time
+            weight
         ));
+
+        s.queueAmount = s.queueAmount.add(amount);
     }
 }

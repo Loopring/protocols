@@ -22,7 +22,7 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/MathUint.sol";
 
 import "./AuctionInfo.sol";
-import "./AuctionBalance.sol";
+import "./AuctionAccount.sol";
 import "./AuctionQueue.sol";
 
 /// @title AuctionAsks.
@@ -32,13 +32,13 @@ library AuctionAsks
     using MathUint          for uint;
     using MathUint          for uint32;
     using AuctionInfo       for IAuctionData.State;
-    using AuctionBalance    for IAuctionData.State;
+    using AuctionAccount    for IAuctionData.State;
     using AuctionQueue      for IAuctionData.State;
 
     event Ask(
         address user,
         uint    amount,
-        uint    amountQueued,
+        uint    amountQueueItem,
         uint    time
     );
 
@@ -48,40 +48,6 @@ library AuctionAsks
         )
         internal
     {
-        require(amount > 0, "zero amount");
-        s.oedax.logParticipation(msg.sender);
 
-        uint _amount = amount;
-        uint _queued;
-        uint time = block.timestamp - s.startTime;
-
-        // calculate the current-state
-        IAuctionData.Info memory i = s.getAuctionInfo();
-        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][false];
-
-        balance.inAuction = balance.inAuction.add(_amount);
-        balance.queued = balance.queued.add(_queued);
-        balance.totalWeight = balance.totalWeight.add(_amount.mul(time));
-
-        s.askAmount = s.askAmount.add(_amount);
-
-        if (s.bidShift != i.newBidShift) {
-            s.bidShift = i.newBidShift;
-            s.bidShifts.push(time);
-            s.bidShifts.push(s.bidShift);
-        }
-
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(time);
-            s.askShifts.push(s.askShift);
-        }
-
-        emit Ask(
-            msg.sender,
-            _amount,
-            _queued,
-            block.timestamp
-        );
     }
 }

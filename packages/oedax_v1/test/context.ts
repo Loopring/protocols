@@ -16,7 +16,7 @@ export class Context {
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;
 
-    const ABIPath = "ABI/version30/";
+    const ABIPath = "ABI/version10/";
     const erc20Abi = fs.readFileSync(ABIPath + "ERC20.abi", "ascii");
 
     if (!web3) {

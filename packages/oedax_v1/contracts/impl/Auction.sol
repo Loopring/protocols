@@ -25,7 +25,7 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 
-import "./libauction/AuctionBalance.sol";
+import "./libauction/AuctionAccount.sol";
 import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionAsks.sol";
 import "./libauction/AuctionInfo.sol";
@@ -36,7 +36,7 @@ contract Auction is IAuction
 {
     using MathUint          for uint;
     using MathUint          for uint32;
-    using AuctionBalance    for IAuctionData.State;
+    using AuctionAccount    for IAuctionData.State;
     using AuctionBids       for IAuctionData.State;
     using AuctionAsks       for IAuctionData.State;
     using AuctionInfo       for IAuctionData.State;
@@ -100,33 +100,23 @@ contract Auction is IAuction
         external
         payable
     {
-        if (state.bidToken == address(0x0)) {
-            state.bid(msg.value);
-        } else if (state.askToken == address(0x0)) {
-            state.ask(msg.value);
-        } else {
-            revert();
-        }
+        if (state.bidToken == address(0x0)) state.bid(msg.value);
+        else if (state.askToken == address(0x0)) state.ask(msg.value);
+        else revert();
     }
 
     function bid(uint amount)
         public
     {
-        uint a = state.depositToken(
-            state.bidToken,
-            amount
-        );
-        state.bid(a);
+        uint _amount = state.depositToken(state.bidToken, amount);
+        state.bid(_amount);
     }
 
     function ask(uint amount)
         public
     {
-        uint a = state.depositToken(
-            state.askToken,
-            amount
-        );
-        state.ask(a);
+        uint _amount = state.depositToken(state.askToken, amount);
+        state.ask(_amount);
     }
 
     function getAuctionInfo()
@@ -137,15 +127,14 @@ contract Auction is IAuction
         return state.getAuctionInfo();
     }
 
-    function getBalance(address user)
+    function getAccount(address user)
         internal
         view
         returns (
-            IAuctionData.Balance memory bidBalance,
-            IAuctionData.Balance memory askBalance
+            IAuctionData.Account storage
         )
     {
-        return state.getBalance(user);
+        return state.getAccount(user);
     }
 
     // == Internal & Private Functions ==
