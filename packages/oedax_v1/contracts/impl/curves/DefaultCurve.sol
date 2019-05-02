@@ -16,10 +16,10 @@
 */
 pragma solidity 0.5.7;
 
-import "../iface/ICurve.sol";
+import "../../iface/ICurve.sol";
 
-import "../lib/MathUint.sol";
-import "../lib/NoDefaultFunc.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/NoDefaultFunc.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
