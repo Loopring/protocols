@@ -37,9 +37,9 @@ library AuctionBids
 
     event Bid(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
-        uint    _t
+        uint    accepted,
+        uint    queued,
+        uint    time
     );
 
     function bid(
@@ -93,7 +93,6 @@ library AuctionBids
         IAuctionData.Account storage account = s.accounts[msg.sender];
 
         account.bidAccepted = account.bidAccepted.add(accepted);
-        account.bidQueued = account.bidQueued.add(queued);
         account.bidFeeShare = account.bidFeeShare.add(accepted.mul(weight));
 
         s.bidAmount = s.bidAmount.add(accepted);

@@ -21,23 +21,30 @@ import "./IOedax.sol";
 
 library IAuctionData
 {
-    enum Status {PENDING, LIVE, CLOSED, SETTLED}
-
     struct Info
     {
-      Status status;
-      bool bounded;
+      bool isBounded;
+      bool isClosed;
+
+      bool canSettle;
+      bool isSettled;
+
       uint actualPrice;
       uint askPrice;
       uint bidPrice;
+
       uint askAmount;
       uint bidAmount;
+
       uint newAskShift;
       uint newBidShift;
+
       uint additionalAskAmountAllowed;
       uint additionalBidAmountAllowed;
+
       uint queuedAskAmount;
       uint queuedBidAmount;
+
       uint timeRemaining;
     }
 
@@ -97,15 +104,15 @@ library IAuctionData
 
     event Bid(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
+        uint    accepted,
+        uint    queued,
         uint    time
     );
 
     event Ask(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
+        uint    accepted,
+        uint    queued,
         uint    time
     );
 }

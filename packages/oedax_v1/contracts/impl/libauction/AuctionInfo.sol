@@ -43,10 +43,10 @@ library AuctionInfo
 
         if (s.askAmount > 0) {
             i.actualPrice  = s.bidAmount.mul(s.S) / s.askAmount;
-            i.bounded = i.actualPrice >= s.P / s.M && i.actualPrice <= s.P.mul(s.M);
+            i.isBounded = i.actualPrice >= s.P / s.M && i.actualPrice <= s.P.mul(s.M);
         }
 
-        require(i.bounded || (s.askShift == 0 && s.bidShift == 0), "unbound shift");
+        require(i.isBounded || (s.askShift == 0 && s.bidShift == 0), "unbound shift");
 
         uint span;
 
@@ -56,7 +56,7 @@ library AuctionInfo
         i.newAskShift = s.askShift;
         i.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
 
-        if (i.bounded) {
+        if (i.isBounded) {
             if (i.actualPrice > i.askPrice) {
                 i.newAskShift = span
                     .add(s.askShift)
@@ -79,7 +79,7 @@ library AuctionInfo
         i.newBidShift = s.bidShift;
         i.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
 
-        if (i.bounded) {
+        if (i.isBounded) {
             if (i.actualPrice < i.bidPrice) {
                 i.newAskShift = span
                     .add(s.bidShift)
