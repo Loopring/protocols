@@ -48,7 +48,7 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         )
         public
     {
-        mu = _mu; // allow it to be 0.
+        mu = _mu; // 0 will make the curve a stright line.
         name = _name;
     }
 
@@ -62,7 +62,7 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         view
         returns (uint y)
     {
-       require(x >=0 && x <= T, "invalid x");
+       require(x >= 0 && x <= T, "invalid x");
         uint e = P1 - P0;
         y = (T.sub(x).mul(e) / mu.mul(x).add(T)).add(P0);
     }
