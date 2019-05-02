@@ -24,23 +24,33 @@ import "../../lib/NoDefaultFunc.sol";
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
 
-/// @dev A curve variation from `(1-x)/(1+x)`.
+/// @dev A curve variation from `(1-x)/(1+a*x)`.
 ///
 /// Let P0 and P1 be the min and max price, T be the duration,
 /// let e = P1 - P0, and A be the curve parameter to control its shape:
 /// then we have:
-///   y = f(x) = (e(T-x)/(A*x+T))+P0
+///   y = f(x) = (T-x)*e/(A*x+T)+P0
 /// and
-///   x = f(y) = T*e/(A*y+e-A*P0))
+///   x = f(y) = (e-y+P0)*T/(A*(y-P0)+e), and if we let m = y-P0, then
+///   x = f(y) = (e-m)*T/(A*m+e)
 
 contract DefaultCurve is ICurve, NoDefaultFunc
 {
-    using MathUint          for uint;
-    using MathUint          for uint64;
+    using MathUint for uint;
+    using MathUint for uint64;
 
-    string name = "(1-x)/(1+x)";
+    uint64 A;  // 0 to 10 is a good number
 
-    uint A = 3; // If A is 0, then the curve is a stright line.
+    // -- Constructor --
+    constructor(
+        uint64        _A,
+        string memory _name
+        )
+        public
+    {
+        A = _A; // allow it to be 0.
+        name = name;
+    }
 
     function getCurveValue(
         uint64  P0, // min price
@@ -52,8 +62,9 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         view
         returns (uint y)
     {
+       require(x >=0 && x <= T, "invalid x");
         uint e = P1 - P0;
-        y = (e.mul(T.sub(x)) / A.mul(x).add(T)).add(P0);
+        y = (T.sub(x).mul(e) / A.mul(x).add(T)).add(P0);
     }
 
     function getCurveTime(
@@ -66,8 +77,10 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         view
         returns (uint x)
     {
+        require(y >= P0 && y <= P1, "invalid y");
+        uint m = y - P0;
         uint e = P1 - P0;
-        x = T.mul(e) / A.mul(y).add(e).sub(A.mul(P0));
+        x = e.sub(m).mul(T) / A.mul(m).add(e);
     }
 
 }
