@@ -50,7 +50,7 @@ library AuctionAsks
     {
         require(amount > 0, "zero amount");
         uint _amount = amount;
-        uint _quesued;
+        uint _queued;
 
         // calculate the current-state
         IAuctionData.Info memory i = s.getAuctionInfo();
