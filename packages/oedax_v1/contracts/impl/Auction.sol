@@ -69,9 +69,7 @@ contract Auction is IAuction
         require(_P > 0);
         require(_M > 1);
 
-        uint minPrice = _P / _M;
-        uint maxPrice = _P.mul(_M);
-        require(minPrice > 0 && maxPrice > minPrice, "invalid price settings");
+        require(uint64(_P / _M) < _P && uint64(_P.mul(_M)) > _P, "overflow");
 
         owner = msg.sender; // creator
 
@@ -89,7 +87,6 @@ contract Auction is IAuction
     }
 
     // == Public & External Functions ==
-
     function()
         external
         payable
