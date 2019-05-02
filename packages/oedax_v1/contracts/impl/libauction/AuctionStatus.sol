@@ -36,6 +36,9 @@ library AuctionStatus
         view
         returns (IAuctionData.Status memory i)
     {
+        uint64 P0 = uint64(s.P.mul(s.M));
+        uint64 P1 = uint64(s.P / s.M);
+
         i.askAmount = s.askAmount;
         i.bidAmount = s.bidAmount;
         i.queuedAskAmount = s.queueIsBid ? 0 : s.queueAmount;
@@ -43,7 +46,7 @@ library AuctionStatus
 
         if (s.askAmount > 0) {
             i.actualPrice  = s.bidAmount.mul(s.S) / s.askAmount;
-            i.isBounded = i.actualPrice >= s.P0 && i.actualPrice <= s.P1;
+            i.isBounded = i.actualPrice >= P0 && i.actualPrice <= P1;
         }
 
         require(i.isBounded || (s.askShift == 0 && s.bidShift == 0), "unbound shift");
@@ -54,14 +57,14 @@ library AuctionStatus
         // calculating asks
         span = time.sub(s.askShift);
 
-        i.askPrice = s.curve.getCurveValue(s.P0, s.P1, s.T, span);
+        i.askPrice = s.curve.getCurveValue(P0, P1, s.T, span);
         i.newAskShift = s.askShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice > i.askPrice) {
                 i.newAskShift = time.sub(
-                    s.curve.getCurveTime(s.P0, s.P1, s.T, i.actualPrice)
+                    s.curve.getCurveTime(P0, P1, s.T, i.actualPrice)
                 );
 
                 i.askPrice = i.actualPrice;
@@ -75,14 +78,14 @@ library AuctionStatus
 
         // calculating bids
         span = time.sub(s.bidShift);
-        i.bidPrice = s.P.mul(s.P) / s.curve.getCurveValue(s.P0, s.P1, s.T, span);
+        i.bidPrice = s.P.mul(s.P) / s.curve.getCurveValue(P0, P1, s.T, span);
         i.newBidShift = s.bidShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice < i.bidPrice) {
                 i.newAskShift = time.sub(
-                    s.curve.getCurveTime(s.P, s.M, s.T, s.P.mul(s.P) / i.actualPrice)
+                    s.curve.getCurveTime(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice)
                 );
 
                 i.bidPrice = i.actualPrice;
