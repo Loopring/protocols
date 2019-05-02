@@ -37,7 +37,7 @@ library AuctionStatus
         returns (uint price)
     {
         assert(s.askAmount > 0);
-        price = s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount.mul(s.bidBaseUnit);
+        price = s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
         assert(price <= s.S);
     }
 
