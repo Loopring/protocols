@@ -92,12 +92,12 @@ library AuctionBids
 
         if (s.bidShift != i.newBidShift) {
             s.bidShift = i.newBidShift;
-            s.bidShifts.push(s.bidShift);
+            // s.bidShifts.push(s.bidShift);
         }
 
         if (s.askShift != i.newAskShift) {
             s.askShift = i.newAskShift;
-            s.askShifts.push(s.askShift);
+            // s.askShifts.push(s.askShift);
         }
 
         emit Bid(

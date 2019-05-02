@@ -76,11 +76,12 @@ library IAuctionData
       // The following fields WILL change on bids and asks.
       uint    askAmount;
       uint    bidAmount;
+
       uint    askShift;
       uint    bidShift;
 
-      uint[]  askShifts;
-      uint[]  bidShifts;
+      // uint[]  askShifts;
+      // uint[]  bidShifts;
 
       Queued[]  queue;
       bool      queueIsBid;
