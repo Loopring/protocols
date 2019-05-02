@@ -22,15 +22,42 @@ pragma solidity 0.5.7;
 contract IOedax
 {
     address[] auctions;
+
     // auction_address => auction_id
     mapping (address => uint) auctionIdMap;
     // auction_creator =>  list of his auctions
     mapping (address => address[]) creatorAuctions;
 
+    // user_address => auction_address => participated?
+    mapping (address => mapping (address => bool)) particationMap;
+
+    // user_address => list_of_auctions_participated;
+    mapping (address => address[]) userAuctions;
+
     event AuctionCreated (
         uint    auctionId,
         address auctionAddr
     );
+
+    function createAuction(
+        uint    curveId,
+        address askToken,
+        address bidToken,
+        uint    initialAskAmount,
+        uint    initialBidAmount,
+        uint32  P, // target price
+        uint32  S, // price scale
+        uint8   M, // price factor
+        uint    T
+        )
+        public
+        payable
+        returns (address auction);
+
+    function logParticipation(
+        address user
+        )
+        public;
 
     function transferToken(
         address token,

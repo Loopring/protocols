@@ -49,6 +49,8 @@ library AuctionAsks
         internal
     {
         require(amount > 0, "zero amount");
+        s.oedax.logParticipation(msg.sender);
+
         uint _amount = amount;
         uint _queued;
         uint time = block.timestamp - s.startTime;
