@@ -25,8 +25,8 @@ import "../../lib/MathUint.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionQueue
 {
-    using MathUint      for uint;
-    using MathUint      for uint32;
+    using MathUint for uint;
+    using MathUint for uint64;
 
     function getQueueConsumption(
         IAuctionData.State storage s,

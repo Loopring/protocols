@@ -19,11 +19,10 @@ pragma solidity 0.5.7;
 import "../iface/ICurveRegistry.sol";
 
 import "../lib/NoDefaultFunc.sol";
-import "../lib/Ownable.sol";
 
 /// @title An Implementation of ICurveRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract CurveRegistry is ICurveRegistry, NoDefaultFunc, Ownable
+contract CurveRegistry is ICurveRegistry, NoDefaultFunc
 {
     function registerCurve(address curve)
         public

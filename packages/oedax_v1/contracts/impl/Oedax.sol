@@ -21,24 +21,35 @@ import "../iface/IOedax.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
-import "../lib/Ownable.sol";
+import "../lib/NoDefaultFunc.sol";
 
 import "./Auction.sol";
 
 /// @title An Implementation of IOedax.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Oedax is IOedax, Ownable
+contract Oedax is IOedax, NoDefaultFunc
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
     ICurveRegistry curveRegistry;
 
+    uint16 settleGracePeriod;
+    uint16 minDuration;
+    uint16 maxDuration;
+
     // -- Constructor --
-    constructor()
+    constructor(
+        address _curveRegistry
+        )
         public
     {
+        require(_curveRegistry != address(0x0), "zero address");
+        owner = msg.sender;
+        curveRegistry = ICurveRegistry(_curveRegistry);
 
+        // set ETH to the highest rank.
+        setTokenRank(address(0x0), ~uint32(0));
     }
 
     modifier onlyAuction {
@@ -47,14 +58,42 @@ contract Oedax is IOedax, Ownable
     }
 
     // == Public Functions ==
+    function updateSettings(
+        uint16 _settleGracePeriodMinutes,
+        uint16 _minDurationMinutes,
+        uint16 _maxDurationMinutes
+        )
+        external
+        onlyOwner
+    {
+        require(_settleGracePeriodMinutes > 0, "zero value");
+        require(_minDurationMinutes > 0, "zero value");
+        require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
+
+        settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
+        minDuration = _minDurationMinutes * 1 minutes;
+        maxDuration = _maxDurationMinutes * 1 minutes;
+
+        emit SettingsUpdated();
+    }
+
+    function setTokenRank(
+        address token,
+        uint32  rank
+        )
+        public
+        onlyOwner
+    {
+        tokenRankMap[token] = rank;
+        emit TokenRankUpdated(token, rank);
+    }
+
     function createAuction(
         uint    curveId,
         address askToken,
         address bidToken,
-        uint    initialAskAmount,
-        uint    initialBidAmount,
-        uint32  P, // target price
-        uint32  S, // price scale
+        uint64  P, // target price
+        uint64  S, // price scale
         uint8   M, // price factor
         uint    T
         )
@@ -62,6 +101,12 @@ contract Oedax is IOedax, Ownable
         payable
         returns (address auctionAddr)
     {
+        require(T >= minDuration && T <= maxDuration, "invalid duration");
+        require(
+            tokenRankMap[bidToken] > tokenRankMap[askToken],
+            "bid (quote) token must have a higher rank than ask (base) token"
+        );
+
         uint auctionId = auctions.length + 1;
 
         Auction auction = new Auction(
@@ -70,8 +115,6 @@ contract Oedax is IOedax, Ownable
             curveRegistry.getCurve(curveId),
             askToken,
             bidToken,
-            initialAskAmount,
-            initialBidAmount,
             P, S, M, T
         );
 
@@ -112,7 +155,4 @@ contract Oedax is IOedax, Ownable
             amount
         );
     }
-
-    // == Internal Functions ==
-
 }

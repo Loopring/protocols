@@ -22,19 +22,19 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ERC20.sol";
 
-/// @title AuctionInfo.
+/// @title AuctionStatus.
 /// @author Daniel Wang  - <daniel@loopring.org>
-library AuctionInfo
+library AuctionStatus
 {
     using MathUint for uint;
-    using MathUint for uint32;
+    using MathUint for uint64;
 
-    function getAuctionInfo(
+    function getAuctionStatus(
             IAuctionData.State storage s
         )
         internal
         view
-        returns (IAuctionData.Info memory i)
+        returns (IAuctionData.Status memory i)
     {
         i.askAmount = s.askAmount;
         i.bidAmount = s.bidAmount;
@@ -54,7 +54,7 @@ library AuctionInfo
         span = block.timestamp.sub(s.startTime).sub(s.askShift);
         i.askPrice = s.curve.getCurveValue(s.P, s.S, s.M, s.T, span);
         i.newAskShift = s.askShift;
-        i.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
+        i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice > i.askPrice) {
@@ -65,9 +65,9 @@ library AuctionInfo
                         i.actualPrice
                     ));
                 i.askPrice = i.actualPrice;
-                i.additionalBidAmountAllowed = 0;
+                i.bidAllowed = 0;
             } else {
-                i.additionalBidAmountAllowed = (
+                i.bidAllowed = (
                     s.askAmount.add(i.queuedAskAmount).mul(i.askPrice ) / s.S
                 ).sub(s.bidAmount);
             }
@@ -77,7 +77,7 @@ library AuctionInfo
         span = block.timestamp.sub(s.startTime).sub(s.bidShift);
         i.bidPrice = s.P.mul(s.P) / s.S / s.curve.getCurveValue(s.P, s.S, s.M, s.T, span);
         i.newBidShift = s.bidShift;
-        i.additionalBidAmountAllowed = ~uint256(0); // = uint.MAX
+        i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice < i.bidPrice) {
@@ -88,17 +88,17 @@ library AuctionInfo
                         s.askAmount.mul(s.P).mul(s.P) / s.bidAmount
                     ));
                 i.bidPrice = i.actualPrice;
-                i.additionalAskAmountAllowed = 0;
+                i.askAllowed = 0;
             } else {
-                i.additionalAskAmountAllowed = (
+                i.askAllowed = (
                     s.askAmount.add(i.queuedBidAmount).mul(i.bidPrice) / s.S
                 ).sub(s.bidAmount);
             }
         }
 
         if (s.queueAmount > 0) {
-            require(s.queueIsBid || i.additionalAskAmountAllowed == 0);
-            require(!s.queueIsBid || i.additionalBidAmountAllowed == 0);
+            require(s.queueIsBid || i.askAllowed == 0);
+            require(!s.queueIsBid || i.bidAllowed == 0);
         }
     }
 }
