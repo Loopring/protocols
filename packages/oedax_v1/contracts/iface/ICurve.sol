@@ -21,8 +21,8 @@ pragma solidity 0.5.7;
 contract ICurve
 {
     function getCurveValue(
-        uint32  P, // target price
-        uint32  S, // price scale
+        uint64  P, // target price
+        uint64  S, // price scale
         uint8   M, // price factor
         uint    T,
         uint    time
@@ -32,8 +32,8 @@ contract ICurve
         returns (uint value);
 
     function getCurveTime(
-        uint32  P, // target price
-        uint32  S, // price scale
+        uint64  P, // target price
+        uint64  S, // price scale
         uint8   M, // price factor
         uint    T,
         uint    value

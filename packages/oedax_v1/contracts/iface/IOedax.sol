@@ -16,9 +16,11 @@
 */
 pragma solidity 0.5.7;
 
+import "../lib/Ownable.sol";
+
 /// @title IOedax
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IOedax
+contract IOedax is Ownable
 {
     address[] auctions;
 
@@ -36,19 +38,40 @@ contract IOedax
     // auction_address => list_of_auction_users
     mapping (address => address[]) auctionUsers;
 
+    mapping (address => uint32) tokenRankMap;
+
+    event SettingsUpdated(
+    );
+
+    event TokenRankUpdated(
+        address token,
+        uint32  rank
+    );
+
     event AuctionCreated (
         uint    auctionId,
         address auctionAddr
     );
 
+    function updateSettings(
+        uint16 _settleGracePeriodMinutes,
+        uint16 _minDurationMinutes,
+        uint16 _maxDurationMinutes
+        )
+        external;
+
+    function setTokenRank(
+        address token,
+        uint32  rank
+        )
+        public;
+
     function createAuction(
         uint    curveId,
         address askToken,
         address bidToken,
-        uint    initialAskAmount,
-        uint    initialBidAmount,
-        uint32  P, // target price
-        uint32  S, // price scale
+        uint64  P, // target price
+        uint64  S, // price scale
         uint8   M, // price factor
         uint    T
         )

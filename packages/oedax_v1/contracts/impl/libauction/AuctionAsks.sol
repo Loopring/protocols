@@ -21,7 +21,7 @@ import "../../iface/IAuctionData.sol";
 
 import "../../lib/MathUint.sol";
 
-import "./AuctionInfo.sol";
+import "./AuctionStatus.sol";
 import "./AuctionAccount.sol";
 import "./AuctionQueue.sol";
 
@@ -30,15 +30,15 @@ import "./AuctionQueue.sol";
 library AuctionAsks
 {
     using MathUint          for uint;
-    using MathUint          for uint32;
-    using AuctionInfo       for IAuctionData.State;
+    using MathUint          for uint64;
+    using AuctionStatus     for IAuctionData.State;
     using AuctionAccount    for IAuctionData.State;
     using AuctionQueue      for IAuctionData.State;
 
     event Ask(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
+        uint    accepted,
+        uint    queued,
         uint    time
     );
 
@@ -48,6 +48,72 @@ library AuctionAsks
         )
         internal
     {
+        require(amount > 0, "zero amount");
+        s.oedax.logParticipation(msg.sender);
 
+        uint time = block.timestamp - s.startTime;
+        uint weight = s.T > time? s.T - time : 0;
+        uint accepted;
+        uint queued;
+
+        // calculate the current-state
+        IAuctionData.Status memory i = s.getAuctionStatus();
+
+        if (amount > i.askAllowed) {
+            // Part of the amount will be put in the queue.
+            accepted = i.askAllowed;
+            queued = amount - i.askAllowed;
+
+            if (s.queueAmount > 0) {
+                if (!s.queueIsBid) {
+                    // Before this ASK, the queue is for ASKs
+                    assert(accepted == 0);
+                } else {
+                    // Before this ASK, the queue is for ASKs, therefore we must have
+                    // consumed all the pending ASKs in the queue.
+                    assert(accepted > 0);
+                    s.dequeue(s.queueAmount);
+                }
+            }
+            s.queueIsBid = false;
+            s.enqueue(queued, weight);
+        } else {
+            // All amount are accepted into the auction.
+            accepted = amount;
+            queued = 0;
+
+            uint consumed = s.getQueueConsumption(accepted);
+            if (consumed > 0) {
+                assert(s.queueIsBid == true);
+                s.dequeue(consumed);
+            }
+        }
+
+        // Update the book keeping
+        IAuctionData.Account storage account = s.accounts[msg.sender];
+
+        account.askAccepted = account.askAccepted.add(accepted);
+        account.askFeeShare = account.askFeeShare.add(accepted.mul(weight));
+
+        s.askAmount = s.askAmount.add(accepted);
+
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(time);
+            s.askShifts.push(s.askShift);
+        }
+
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(time);
+            s.askShifts.push(s.askShift);
+        }
+
+        emit Ask(
+            msg.sender,
+            accepted,
+            queued,
+            block.timestamp
+        );
     }
 }

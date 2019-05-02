@@ -28,18 +28,18 @@ import "../lib/MathUint.sol";
 import "./libauction/AuctionAccount.sol";
 import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionAsks.sol";
-import "./libauction/AuctionInfo.sol";
+import "./libauction/AuctionStatus.sol";
 
 /// @title An Implementation of ICurve.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Auction is IAuction
 {
     using MathUint          for uint;
-    using MathUint          for uint32;
+    using MathUint          for uint64;
     using AuctionAccount    for IAuctionData.State;
     using AuctionBids       for IAuctionData.State;
     using AuctionAsks       for IAuctionData.State;
-    using AuctionInfo       for IAuctionData.State;
+    using AuctionStatus     for IAuctionData.State;
 
     modifier onlyOedax {
       require (msg.sender == address(state.oedax));
@@ -53,12 +53,10 @@ contract Auction is IAuction
         address _curve,
         address _askToken,
         address _bidToken,
-        uint    _initialAskAmount,
-        uint    _initialBidAmount,
-        uint32  _P, // target price
-        uint32  _S, // price scale
+        uint64  _P, // target price
+        uint64  _S, // price scale
         uint8   _M, // price factor
-        uint    _T
+        uint    _T  // auction duration
         )
         public
     {
@@ -69,10 +67,11 @@ contract Auction is IAuction
         require(_askToken != address(0x0) || _bidToken != address(0x0));
 
         require(_P > 0);
-        require(_M > 0);
-        require(_P / _M > 0, "zero min price");
-        require(_T % 3600 == 0, "hour is the min unit");
-        require(_T / 3600 > 0 && _T / 3600 <= 30 * 24, "invalid duration");
+        require(_M > 1);
+
+        uint minPrice = _P / _M;
+        uint maxPrice = _P.mul(_M);
+        require(minPrice > 0 && maxPrice > minPrice, "invalid price settings");
 
         owner = msg.sender; // creator
 
@@ -82,16 +81,11 @@ contract Auction is IAuction
         state.auctionId = _auctionId;
         state.askToken = _askToken;
         state.bidToken = _bidToken;
-        state.initialAskAmount = _initialAskAmount;
-        state.askAmount = _initialAskAmount;
-        state.initialBidAmount = _initialBidAmount;
-        state.bidAmount = _initialBidAmount;
         state.startTime = block.timestamp;
         state.P = _P;
         state.S = _S;
         state.M = _M;
         state.T = _T ;
-        // initTransfers();
     }
 
     // == Public & External Functions ==
@@ -100,9 +94,13 @@ contract Auction is IAuction
         external
         payable
     {
-        if (state.bidToken == address(0x0)) state.bid(msg.value);
-        else if (state.askToken == address(0x0)) state.ask(msg.value);
-        else revert();
+        if (state.bidToken == address(0x0)) {
+            state.bid(msg.value);
+        } else if (state.askToken == address(0x0)) {
+            state.ask(msg.value);
+        } else {
+            revert();
+        }
     }
 
     function bid(uint amount)
@@ -119,12 +117,12 @@ contract Auction is IAuction
         state.ask(_amount);
     }
 
-    function getAuctionInfo()
+    function getAuctionStatus()
         public
         view
-        returns (IAuctionData.Info memory)
+        returns (IAuctionData.Status memory)
     {
-        return state.getAuctionInfo();
+        return state.getAuctionStatus();
     }
 
     function getAccount(address user)

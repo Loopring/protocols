@@ -21,7 +21,7 @@ import "../../iface/IAuctionData.sol";
 
 import "../../lib/MathUint.sol";
 
-import "./AuctionInfo.sol";
+import "./AuctionStatus.sol";
 import "./AuctionAccount.sol";
 import "./AuctionQueue.sol";
 
@@ -30,16 +30,16 @@ import "./AuctionQueue.sol";
 library AuctionBids
 {
     using MathUint          for uint;
-    using MathUint          for uint32;
-    using AuctionInfo       for IAuctionData.State;
+    using MathUint          for uint64;
+    using AuctionStatus     for IAuctionData.State;
     using AuctionAccount    for IAuctionData.State;
     using AuctionQueue      for IAuctionData.State;
 
     event Bid(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
-        uint    _t
+        uint    accepted,
+        uint    queued,
+        uint    time
     );
 
     function bid(
@@ -57,12 +57,12 @@ library AuctionBids
         uint queued;
 
         // calculate the current-state
-        IAuctionData.Info memory i = s.getAuctionInfo();
+        IAuctionData.Status memory i = s.getAuctionStatus();
 
-        if (amount > i.additionalBidAmountAllowed) {
+        if (amount > i.bidAllowed) {
             // Part of the amount will be put in the queue.
-            accepted = i.additionalBidAmountAllowed;
-            queued = amount - i.additionalBidAmountAllowed;
+            accepted = i.bidAllowed;
+            queued = amount - i.bidAllowed;
 
             if (s.queueAmount > 0) {
                 if (s.queueIsBid) {
@@ -93,7 +93,6 @@ library AuctionBids
         IAuctionData.Account storage account = s.accounts[msg.sender];
 
         account.bidAccepted = account.bidAccepted.add(accepted);
-        account.bidQueued = account.bidQueued.add(queued);
         account.bidFeeShare = account.bidFeeShare.add(accepted.mul(weight));
 
         s.bidAmount = s.bidAmount.add(accepted);

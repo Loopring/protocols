@@ -2,9 +2,9 @@
 
 ## Modules
 
-- [ ] ledger book keeping
-- [ ] queue management
-- [ ] support asks
+- [x] ledger book keeping
+- [x] queue management
+- [x] support asks
 - [ ] settlement and send back token/ether
 - [ ] calculate time remaining
 - [ ] curve implementation

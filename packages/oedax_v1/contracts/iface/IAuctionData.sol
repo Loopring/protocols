@@ -21,24 +21,31 @@ import "./IOedax.sol";
 
 library IAuctionData
 {
-    enum Status {PENDING, LIVE, CLOSED, SETTLED}
-
-    struct Info
+    struct Status
     {
-      Status status;
-      bool bounded;
-      uint actualPrice;
-      uint askPrice;
-      uint bidPrice;
-      uint askAmount;
-      uint bidAmount;
-      uint newAskShift;
-      uint newBidShift;
-      uint additionalAskAmountAllowed;
-      uint additionalBidAmountAllowed;
-      uint queuedAskAmount;
-      uint queuedBidAmount;
-      uint timeRemaining;
+      bool    isBounded;
+      bool    isClosed;
+
+      bool    canSettle;
+      bool    isSettled;
+
+      uint    actualPrice;
+      uint    askPrice;
+      uint    bidPrice;
+
+      uint    askAmount;
+      uint    bidAmount;
+
+      uint    newAskShift;
+      uint    newBidShift;
+
+      uint    askAllowed;
+      uint    bidAllowed;
+
+      uint    queuedAskAmount;
+      uint    queuedBidAmount;
+
+      uint    timeRemaining;
     }
 
     struct QueueItem
@@ -50,62 +57,60 @@ library IAuctionData
 
     struct Account
     {
-        uint bidAccepted;
-        uint bidQueued;
-        uint bidFeeShare;
+        uint    bidAccepted;
+        uint    bidQueued;
+        uint    bidFeeShare;
 
-        uint askAccepted;
-        uint askQueued;
-        uint askFeeShare;
+        uint    askAccepted;
+        uint    askQueued;
+        uint    askFeeShare;
     }
 
     struct State
     {
-      // The following files never change once initialized:
-      IOedax  oedax;
-      ICurve  curve;
+        // The following files never change once initialized:
+        IOedax  oedax;
+        ICurve  curve;
 
-      uint    auctionId;
-      address askToken;
-      address bidToken;
-      uint    initialAskAmount;
-      uint    initialBidAmount;
-      uint    startTime;
+        uint    auctionId;
+        address askToken;
+        address bidToken;
+        uint    startTime;
 
-      uint32  P;
-      uint32  S;
-      uint8   M;
-      uint    T;
+        uint64  P;
+        uint64  S;
+        uint8   M;
+        uint    T;
 
-      // The following fields WILL change on bids and asks.
-      uint    askAmount;
-      uint    bidAmount;
+        // The following fields WILL change on bids and asks.
+        uint    askAmount;
+        uint    bidAmount;
 
-      uint    askShift;
-      uint    bidShift;
+        uint    askShift;
+        uint    bidShift;
 
-      uint[]  askShifts;
-      uint[]  bidShifts;
+        uint[]  askShifts;
+        uint[]  bidShifts;
 
-      QueueItem[]  queue;
-      bool      queueIsBid;
-      uint      queueAmount;
+        QueueItem[] queue;
+        bool        queueIsBid;
+        uint        queueAmount;
 
-      // user => account)
-      mapping (address => Account) accounts;
+        // user => account)
+        mapping (address => Account) accounts;
     }
 
     event Bid(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
+        uint    accepted,
+        uint    queued,
         uint    time
     );
 
     event Ask(
         address user,
-        uint    amount,
-        uint    amountQueueItem,
+        uint    accepted,
+        uint    queued,
         uint    time
     );
 }

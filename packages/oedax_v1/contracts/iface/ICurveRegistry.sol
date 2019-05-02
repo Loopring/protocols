@@ -16,9 +16,11 @@
 */
 pragma solidity 0.5.7;
 
+import "../lib/Ownable.sol";
+
 /// @title ICurveRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ICurveRegistry
+contract ICurveRegistry is Ownable
 {
     address[] curves;
     mapping(address => uint) curveMap;
