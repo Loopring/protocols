@@ -69,15 +69,13 @@ library AuctionStatus
         // calculating asks
         span = time.sub(s.askShift);
 
-        i.askPrice = s.curve.getCurveValue(P0, P1, s.T, span);
+        i.askPrice = s.curve.xToY(P0, P1, s.T, span);
         i.newAskShift = s.askShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice > i.askPrice) {
-                i.newAskShift = time.sub(
-                    s.curve.getCurveTime(P0, P1, s.T, i.actualPrice)
-                );
+                i.newAskShift = time.sub(s.curve.yToX(P0, P1, s.T, i.actualPrice));
 
                 i.askPrice = i.actualPrice;
                 i.bidAllowed = 0;
@@ -90,15 +88,13 @@ library AuctionStatus
 
         // calculating bids
         span = time.sub(s.bidShift);
-        i.bidPrice = s.P.mul(s.P) / s.curve.getCurveValue(P0, P1, s.T, span);
+        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, span);
         i.newBidShift = s.bidShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice < i.bidPrice) {
-                i.newAskShift = time.sub(
-                    s.curve.getCurveTime(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice)
-                );
+                i.newAskShift = time.sub(s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice));
 
                 i.bidPrice = i.actualPrice;
                 i.askAllowed = 0;

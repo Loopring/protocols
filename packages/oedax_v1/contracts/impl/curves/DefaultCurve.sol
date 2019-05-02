@@ -52,7 +52,7 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         name = _name;
     }
 
-    function getCurveValue(
+    function xToY(
         uint64  P0, // min price
         uint64  P1, // max factor
         uint    T,
