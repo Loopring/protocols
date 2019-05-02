@@ -25,7 +25,7 @@ import "../lib/NoDefaultFunc.sol";
 contract CurveRegistry is ICurveRegistry, NoDefaultFunc
 {
     function registerCurve(address curve)
-        public
+        external
         onlyOwner
     {
         require(curveMap[curve] == 0, "already registered");
@@ -36,7 +36,7 @@ contract CurveRegistry is ICurveRegistry, NoDefaultFunc
     }
 
     function getCurve(uint id)
-        public
+        external
         view
         returns (address)
     {

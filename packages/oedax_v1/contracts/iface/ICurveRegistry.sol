@@ -31,10 +31,10 @@ contract ICurveRegistry is Ownable
     );
 
     function registerCurve(address curve)
-        public;
+        external;
 
     function getCurve(uint id)
-        public
+        external
         view
         returns (address);
 }

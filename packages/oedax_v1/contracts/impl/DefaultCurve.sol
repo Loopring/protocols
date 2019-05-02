@@ -26,18 +26,51 @@ import "../lib/NoDefaultFunc.sol";
 contract DefaultCurve is ICurve, NoDefaultFunc
 {
     using MathUint          for uint;
+    using MathUint          for uint64;
     string name = "default";
 
-    // -- Constructor --
-    constructor(
+
+    // Let c = P*M, d = P/M, and e = c-d,
+    // and  use A as the curve parameter to control
+    // it shape, then we use this curve:
+    // ```y = f(x) = ((c-d)(T-x)/(A*x+T))+d```
+    // and
+    // ```x = f(y) = T*(c-d)/(A*y+c-d-A*d))```
+
+    uint A = 3; // If A is 0, then the curve is a stright line.
+
+    function getCurveValue(
+        uint64  P, // target price
+        uint8   M, // price factor
+        uint    T,
+        uint    x
         )
         public
+        view
+        returns (uint y)
     {
-
+        uint c = P.mul(M);
+        uint d = P / M;
+        assert(c > d);
+        uint e = c - d;
+        y = (e.mul(T.sub(x)) / A.mul(x).add(T)).add(d);
     }
 
-    // == Public Functions ==
-
-    // == Internal Functions ==
+    function getCurveTime(
+        uint64  P, // target price
+        uint8   M, // price factor
+        uint    T,
+        uint    y
+        )
+        public
+        view
+        returns (uint x)
+    {
+        uint c = P.mul(M);
+        uint d = P / M;
+        assert(c > d);
+        uint e = c - d;
+        x = T.mul(e)/ A.mul(y).add(e).sub(A.mul(d));
+    }
 
 }

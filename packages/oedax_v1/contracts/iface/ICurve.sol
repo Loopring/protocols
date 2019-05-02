@@ -22,23 +22,21 @@ contract ICurve
 {
     function getCurveValue(
         uint64  P, // target price
-        uint64  S, // price scale
         uint8   M, // price factor
         uint    T,
         uint    time
         )
-        public
+        external
         view
         returns (uint value);
 
     function getCurveTime(
         uint64  P, // target price
-        uint64  S, // price scale
         uint8   M, // price factor
         uint    T,
         uint    value
         )
-        public
+        external
         view
         returns (uint time);
 }
