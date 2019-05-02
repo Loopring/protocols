@@ -30,18 +30,18 @@ contract DefaultCurve is ICurve, NoDefaultFunc
     string name = "default";
 
 
-    // Let c = P*M, d = P/M, and e = c-d,
+    // Let P0 and P1 be the min and max prixe, and e = P1 - P0,
     // and  use A as the curve parameter to control
     // it shape, then we use this curve:
-    // ```y = f(x) = ((c-d)(T-x)/(A*x+T))+d```
+    // ```y = f(x) = (e(T-x)/(A*x+T))+P0```
     // and
-    // ```x = f(y) = T*(c-d)/(A*y+c-d-A*d))```
+    // ```x = f(y) = T*e/(A*y+e-A*P0))```
 
     uint A = 3; // If A is 0, then the curve is a stright line.
 
     function getCurveValue(
-        uint64  P, // target price
-        uint8   M, // price factor
+        uint64  P0, // min price
+        uint64  P1, // max factor
         uint    T,
         uint    x
         )
@@ -49,16 +49,13 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         view
         returns (uint y)
     {
-        uint c = P.mul(M);
-        uint d = P / M;
-        assert(c > d);
-        uint e = c - d;
-        y = (e.mul(T.sub(x)) / A.mul(x).add(T)).add(d);
+        uint e = P1 - P0;
+        y = (e.mul(T.sub(x)) / A.mul(x).add(T)).add(P0);
     }
 
     function getCurveTime(
-        uint64  P, // target price
-        uint8   M, // price factor
+        uint64  P0, // min price
+        uint64  P1, // max factor
         uint    T,
         uint    y
         )
@@ -66,11 +63,8 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         view
         returns (uint x)
     {
-        uint c = P.mul(M);
-        uint d = P / M;
-        assert(c > d);
-        uint e = c - d;
-        x = T.mul(e)/ A.mul(y).add(e).sub(A.mul(d));
+        uint e = P1 - P0;
+        x = T.mul(e) / A.mul(y).add(e).sub(A.mul(P0));
     }
 
 }

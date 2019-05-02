@@ -43,62 +43,61 @@ library AuctionStatus
 
         if (s.askAmount > 0) {
             i.actualPrice  = s.bidAmount.mul(s.S) / s.askAmount;
-            i.isBounded = i.actualPrice >= s.P / s.M && i.actualPrice <= s.P.mul(s.M);
+            i.isBounded = i.actualPrice >= s.P0 && i.actualPrice <= s.P1;
         }
 
         require(i.isBounded || (s.askShift == 0 && s.bidShift == 0), "unbound shift");
 
+        uint time = block.timestamp.sub(s.startTime);
         uint span;
 
         // calculating asks
-        span = block.timestamp.sub(s.startTime).sub(s.askShift);
-        i.askPrice = s.curve.getCurveValue(s.P, s.M, s.T, span);
+        span = time.sub(s.askShift);
+
+        i.askPrice = s.curve.getCurveValue(s.P0, s.P1, s.T, span);
         i.newAskShift = s.askShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice > i.askPrice) {
-                i.newAskShift = span
-                    .add(s.askShift)
-                    .sub(s.curve.getCurveTime(
-                        s.P, s.M, s.T,
-                        i.actualPrice
-                    ));
+                i.newAskShift = time.sub(
+                    s.curve.getCurveTime(s.P0, s.P1, s.T, i.actualPrice)
+                );
+
                 i.askPrice = i.actualPrice;
                 i.bidAllowed = 0;
             } else {
                 i.bidAllowed = (
-                    s.askAmount.add(i.queuedAskAmount).mul(i.askPrice ) / s.S
+                    s.askAmount.add(i.queuedAskAmount).mul(i.askPrice) / s.S
                 ).sub(s.bidAmount);
             }
         }
 
         // calculating bids
-        span = block.timestamp.sub(s.startTime).sub(s.bidShift);
-        i.bidPrice = s.P.mul(s.P) / s.curve.getCurveValue(s.P, s.M, s.T, span);
+        span = time.sub(s.bidShift);
+        i.bidPrice = s.P.mul(s.P) / s.curve.getCurveValue(s.P0, s.P1, s.T, span);
         i.newBidShift = s.bidShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice < i.bidPrice) {
-                i.newAskShift = span
-                    .add(s.bidShift)
-                    .sub(s.curve.getCurveTime(
-                        s.P, s.M, s.T,
-                        s.askAmount.mul(s.P).mul(s.P) / s.bidAmount
-                    ));
+                i.newAskShift = time.sub(
+                    s.curve.getCurveTime(s.P, s.M, s.T, s.P.mul(s.P) / i.actualPrice)
+                );
+
                 i.bidPrice = i.actualPrice;
                 i.askAllowed = 0;
             } else {
                 i.askAllowed = (
-                    s.askAmount.add(i.queuedBidAmount).mul(i.bidPrice) / s.S
-                ).sub(s.bidAmount);
+                    s.bidAmount.add(i.queuedBidAmount).mul(s.S) / i.bidPrice
+                ).sub(s.askAmount);
             }
         }
 
-        if (s.queueAmount > 0) {
-            require(s.queueIsBid || i.askAllowed == 0);
-            require(!s.queueIsBid || i.bidAllowed == 0);
-        }
+        assert(
+            s.queueAmount == 0 ||
+            s.queueIsBid && i.bidAllowed == 0 ||
+            !s.queueIsBid && i.askAllowed == 0
+        );
     }
 }

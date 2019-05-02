@@ -81,6 +81,8 @@ library IAuctionData
         uint64  S;
         uint8   M;
         uint    T;
+        uint64  P0; // min price
+        uint64  P1; // max price
 
         // The following fields WILL change on bids and asks.
         uint    askAmount;
