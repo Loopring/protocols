@@ -50,12 +50,13 @@ library IAuctionData
 
     struct Account
     {
-        uint bidFeeShare;
         uint bidAccepted;
         uint bidQueued;
-        uint askFeeShare;
+        uint bidFeeShare;
+
         uint askAccepted;
         uint askQueued;
+        uint askFeeShare;
     }
 
     struct State

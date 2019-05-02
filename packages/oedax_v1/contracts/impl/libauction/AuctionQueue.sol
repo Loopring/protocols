@@ -65,11 +65,13 @@ library AuctionQueue
         _amount = _amount.sub(dequeued);
 
         if (s.queueIsBid) {
-            account.bidFeeShare = account.bidFeeShare.add(dequeued.mul(item.weight));
+            account.bidAccepted = account.bidAccepted.add(dequeued);
             account.bidQueued = account.bidQueued.sub(dequeued);
+            account.bidFeeShare = account.bidFeeShare.add(dequeued.mul(item.weight));
         } else {
-            account.askFeeShare = account.askFeeShare.add(dequeued.mul(item.weight));
+            account.askAccepted = account.askAccepted.add(dequeued);
             account.askQueued = account.askQueued.sub(dequeued);
+            account.askFeeShare = account.askFeeShare.add(dequeued.mul(item.weight));
         }
       }
 
@@ -99,11 +101,20 @@ library AuctionQueue
         )
         internal
     {
-        s.queueAmount = s.queueAmount.add(amount);
+        IAuctionData.Account storage account = s.accounts[msg.sender];
+
+        if (s.queueIsBid) {
+            account.bidQueued = account.bidQueued.add(amount);
+        } else {
+            account.askQueued = account.askQueued.add(amount);
+        }
+
         s.queue.push(IAuctionData.QueueItem(
             msg.sender,
             amount,
             weight
         ));
+
+        s.queueAmount = s.queueAmount.add(amount);
     }
 }
