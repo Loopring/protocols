@@ -1,5 +1,7 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
+import { roundToFloatValue} from "./float";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { DepositInfo, RingInfo } from "./types";
 
@@ -219,10 +221,12 @@ contract("Exchange", (accounts: string[]) => {
     for (const deposit of deposits) {
       balanceOwnerAfter.push(await exchangeTestUtil.getOnchainBalance(deposit.owner, deposit.token));
       const tokenID = await exchangeTestUtil.getTokenID(deposit.token);
-      balancesContractExpected[tokenID] = balancesContractExpected[tokenID].sub(deposit.amount);
+      const amountWithdrawn = roundToFloatValue(deposit.amount, constants.Float28Encoding);
+      balancesContractExpected[tokenID] = balancesContractExpected[tokenID].sub(amountWithdrawn);
     }
     for (let i = 0; i < deposits.length; i++) {
-      assert(balanceOwnerAfter[i].eq(balanceOwnerBefore[i].add(deposits[i].amount)),
+      const amountWithdrawn = roundToFloatValue(deposits[i].amount, constants.Float28Encoding);
+      assert(balanceOwnerAfter[i].eq(balanceOwnerBefore[i].add(amountWithdrawn)),
            "Token balance of owner should be increased by amountToOwner");
     }
     // Check balances contract

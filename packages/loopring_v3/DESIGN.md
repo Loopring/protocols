@@ -511,7 +511,7 @@ If the order never left the DEX and the user trusts the DEX then the order can s
 
 ## Trading History
 
-Every account has a trading history tree with 2^14 leafs **for every token**. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 32-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically canceled. If `order.orderID == tradeHistory.orderID` we use the trading history stored in the leaf. This allows the account to create 2^32 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
+Every account has a trading history tree with 2^14 leafs **for every token**. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 20-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID`. If `order.orderID < tradeHistory.orderID` the order is automatically canceled. If `order.orderID == tradeHistory.orderID` we use the trading history stored in the leaf. This allows the account to create 2^20 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
 
 While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities.
 
@@ -607,7 +607,7 @@ From the yellow paper:
 - 4 gas is paid for every zero byte of data or code for a transaction
 - 68 gas is paid for every non-zero byte of data or code for a transaction
 
-In the calculations below we use 68 gas/byte for our data-availability data. Please note that these numbers are **worst-case** numbers. We currently don't pack the data-availability data very tightly so there will be a lot of zeros. The gas cost in practice will be significantly lower (up to ~30% lower).
+In the calculations below we use 68 gas/byte for our data-availability data.
 
 #### Data-availability for ring settlements
 
@@ -688,7 +688,7 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 ### On-chain Data-availability Limit
 
 - Verifying a proof + some state updates/querying: ~600,000 gas
-- => (8,000,000 - 600,000) / 7,616 = **971 rings/Ethereum block = ~65 rings/second (worst-case)**
+- => (8,000,000 - 600,000) / 3,128 = **2365 rings/Ethereum block = ~160 rings/second**
 
 These numbers can be improved by packing the data more tightly.
 
@@ -696,8 +696,8 @@ These numbers can be improved by packing the data more tightly.
 
 We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently.
 
-Currently, our **most expensive** ring settlement circuit with data-availability support uses ~525,000 constraints/ring:
-- 256,000,000 / ~525,000 = ~500 rings/block
+Currently, our **most expensive** ring settlement circuit with data-availability support uses ~500,000 constraints/ring:
+- 256,000,000 / ~500,000 = ~500 rings/block
 
 Our **most expensive** ring settlement circuit without data-availability support uses ~475,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
 - 256,000,000 / ~475,000 = ~550 rings/block
@@ -706,10 +706,8 @@ Our **most expensive** ring settlement circuit without data-availability support
 
 In a single block, we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so multiple blocks can be committed if needed.
 
-Using 2 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
-- => (8,000,000 - 600,000 * 2) / 7,616 = ~900 rings/Ethereum block = **~60 rings/second (worst-case)**
-
-Note again that these are worst-case numbers. The data will contain a lot of zeros which will make it possible to commit more than 2 blocks/Ethereum block. In practice we expect this number to be closer to **~80 rings/second (expected)**
+Using 4 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
+- => (8,000,000 - 600,000 * 4) / 3,128 = ~1800 rings/Ethereum block = **~120 rings/second**
 
 Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can verify in a single Ethereum block:
 - => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
@@ -724,10 +722,10 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 |  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
 | :----- |:-------------: |:---------------:| :-------------:|
-|Trades per Ethereum Block| ~26      | ~900 - ~1200 |      ~7000|
-| Trades per Second | ~2      | ~60 - ~80        |           ~450 |
-| Cost per Trade | ~300,000 gas | ~8890 - ~6670 gas | ~1150 gas|
-| Cost in USD per Trade <br> (1ETH=164USD) | ~0.1 | ~0.003* | ~0.0004* |
+|Trades per Ethereum Block | ~26      | ~1800 |      ~7000|
+| Trades per Second | ~2      | ~120        |           ~450 |
+| Cost per Trade | ~300,000 gas | ~4450 gas | ~1150 gas|
+| Cost in USD per Trade <br> (1ETH=164USD) | ~0.1 | ~0.0015* | ~0.0004* |
 
 * *Cost in USD per Trade* in the table does not cover off-chain proof generation.
 

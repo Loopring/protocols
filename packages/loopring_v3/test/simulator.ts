@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import * as constants from "./constants";
-import { fromFloat } from "./float";
+import { fromFloat, roundToFloatValue, toFloat } from "./float";
 import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
          Realm, RingInfo, RingSettlementSimulatorReport, SimulatorReport,
          TradeHistory, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
@@ -50,10 +50,11 @@ export class Simulator {
 
       const balance = account.balances[withdrawal.tokenID].balance;
       const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
+      const amountWithdrawn = roundToFloatValue(amountToWithdraw, constants.Float28Encoding);
 
       // Update balance
       account.balances[withdrawal.tokenID].balance =
-        account.balances[withdrawal.tokenID].balance.sub(amountToWithdraw);
+        account.balances[withdrawal.tokenID].balance.sub(amountWithdrawn);
 
       if (shutdown) {
         account.publicKeyX = "0";
@@ -73,7 +74,7 @@ export class Simulator {
   public offchainWithdraw(withdrawal: WithdrawalRequest, realm: Realm, operatorAccountID: number) {
     const newRealm = this.copyRealm(realm);
 
-    const fee = fromFloat(withdrawal.fFee, constants.Float16Encoding);
+    const fee = roundToFloatValue(withdrawal.fee, constants.Float16Encoding);
 
     const feeToWallet = fee.mul(new BN(withdrawal.walletSplitPercentage)).div(new BN(100));
     const feeToOperator = fee.sub(feeToWallet);
@@ -86,10 +87,11 @@ export class Simulator {
 
     const balance = account.balances[withdrawal.tokenID].balance;
     const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
+    const amountWithdrawn = roundToFloatValue(amountToWithdraw, constants.Float28Encoding);
 
     // Update balance
     account.balances[withdrawal.tokenID].balance =
-      account.balances[withdrawal.tokenID].balance.sub(amountToWithdraw);
+      account.balances[withdrawal.tokenID].balance.sub(amountWithdrawn);
     account.nonce++;
 
     // Update wallet
@@ -112,7 +114,7 @@ export class Simulator {
   public cancelOrder(cancel: Cancel, realm: Realm, operatorAccountID: number) {
     const newRealm = this.copyRealm(realm);
 
-    const fee = fromFloat(cancel.fFee, constants.Float16Encoding);
+    const fee = roundToFloatValue(cancel.fee, constants.Float16Encoding);
 
     const feeToWallet = fee.mul(new BN(cancel.walletSplitPercentage)).div(new BN(100));
     const feeToOperator = fee.sub(feeToWallet);
@@ -198,7 +200,16 @@ export class Simulator {
       margin = new BN(0);
     }
 
-    const ringFee = fromFloat(ring.fFee, constants.Float16Encoding);
+    fillAmountSA = roundToFloatValue(fillAmountSA, constants.Float24Encoding);
+    fillAmountFA = roundToFloatValue(fillAmountFA, constants.Float24Encoding);
+    fillAmountSB = roundToFloatValue(fillAmountSB, constants.Float24Encoding);
+    fillAmountFB = roundToFloatValue(fillAmountFB, constants.Float24Encoding);
+    margin = roundToFloatValue(margin, constants.Float24Encoding);
+
+    fillAmountBA = fillAmountSB;
+    fillAmountBB = fillAmountSA.sub(margin);
+
+    const ringFee = roundToFloatValue(ring.fee, constants.Float16Encoding);
 
     /*console.log("Simulator: ");
 

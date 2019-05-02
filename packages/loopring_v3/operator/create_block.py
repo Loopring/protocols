@@ -101,11 +101,11 @@ def ringFromJSON(jRing, state):
     minerAccountID = int(jRing["minerAccountID"])
     feeRecipientAccountID = int(jRing["feeRecipientAccountID"])
     tokenID = int(jRing["tokenID"])
-    fFee = int(jRing["fFee"])
+    fee = int(jRing["fee"])
 
     minerAccount = state.getAccount(minerAccountID)
 
-    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fFee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, minerAccount.nonce)
 
     ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
 
@@ -206,11 +206,11 @@ def createOffchainWithdrawalBlock(state, data):
         amount = int(withdrawalInfo["amount"])
         walletAccountID = int(withdrawalInfo["walletAccountID"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
-        fFee = int(withdrawalInfo["fFee"])
+        fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
         withdrawal = state.offchainWithdraw(block.realmID, accountID, tokenID, amount,
-                                            block.operatorAccountID, walletAccountID, feeTokenID, fFee, walletSplitPercentage)
+                                            block.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
         block.withdrawals.append(withdrawal)
 
     # Operator payment
@@ -241,11 +241,11 @@ def createOrderCancellationBlock(state, data):
         orderID = int(cancelInfo["orderID"])
         walletAccountID = int(cancelInfo["walletAccountID"])
         feeTokenID = int(cancelInfo["feeTokenID"])
-        fFee = int(cancelInfo["fFee"])
+        fee = int(cancelInfo["fee"])
         walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
         block.cancels.append(state.cancelOrder(block.realmID, accountID, orderTokenID, orderID,
-                                               walletAccountID, block.operatorAccountID, feeTokenID, fFee, walletSplitPercentage))
+                                               walletAccountID, block.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
 
     # Operator payment
     proof = state._accountsTree.createProof(block.operatorAccountID)

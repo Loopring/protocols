@@ -290,7 +290,7 @@ export class ExchangeTestUtil {
     ring.minerAccountID = this.minerAccountID[ring.orderA.realmID];
     ring.feeRecipientAccountID = this.feeRecipientAccountID[ring.orderA.realmID];
     ring.tokenID = ring.tokenID ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
-    ring.fFee = ring.fFee ? ring.fFee : toFloat(new BN(web3.utils.toWei("1", "ether")), constants.Float16Encoding);
+    ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     if (bSetupOrderA) {
       await this.setupOrder(ring.orderA, this.orderIDGenerator++);
     }
@@ -533,10 +533,9 @@ export class ExchangeTestUtil {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
-    const fFee = toFloat(fee, constants.Float16Encoding);
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[realmID], accountID, tokenID, amount,
-                              walletAccountID, feeTokenID, fFee, walletSplitPercentage);
+                              walletAccountID, feeTokenID, fee, walletSplitPercentage);
     return this.pendingOffchainWithdrawalRequests[realmID][this.pendingOffchainWithdrawalRequests[realmID].length - 1];
   }
 
@@ -572,7 +571,7 @@ export class ExchangeTestUtil {
 
     const walletAccountID = this.wallets[realmID][0].walletAccountID;
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
-                              accountID, tokenID, amount, walletAccountID, tokenID, 0,
+                              accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
                               0, withdrawalIdx, withdrawalFee);
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
@@ -584,7 +583,7 @@ export class ExchangeTestUtil {
     const tokenID = this.tokenAddressToIDMap.get(token);
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
-                              accountID, tokenID, amount, 0, tokenID, 0,
+                              accountID, tokenID, amount, 0, tokenID, new BN(0),
                               0, 0);
     return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
   }
@@ -596,17 +595,16 @@ export class ExchangeTestUtil {
   }
 
   public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
-                   walletAccountID: number, feeTokenID: number, fFee: number, walletSplitPercentage: number) {
-    cancels.push({accountID, orderTokenID, orderID, walletAccountID, feeTokenID, fFee, walletSplitPercentage});
+                   walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+    cancels.push({accountID, orderTokenID, orderID, walletAccountID, feeTokenID, fee, walletSplitPercentage});
   }
 
   public cancelOrderID(realmID: number, accountID: number,
                        orderTokenID: number, orderID: number,
                        walletAccountID: number,
                        feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    const fFee = toFloat(fee, constants.Float16Encoding);
     this.addCancel(this.pendingCancels[realmID], accountID, orderTokenID, orderID, walletAccountID,
-                                                 feeTokenID, fFee, walletSplitPercentage);
+                                                 feeTokenID, fee, walletSplitPercentage);
   }
 
   public cancelOrder(order: OrderInfo, feeToken: string, fee: BN) {
@@ -620,10 +618,10 @@ export class ExchangeTestUtil {
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
                               accountID: number, tokenID: number, amount: BN,
-                              walletAccountID: number, feeTokenID: number, fFee: number, walletSplitPercentage: number,
+                              walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
                               withdrawalIdx?: number, withdrawalFee?: BN) {
     withdrawalRequests.push({accountID, tokenID, amount, walletAccountID,
-                             feeTokenID, fFee, walletSplitPercentage, withdrawalIdx, withdrawalFee});
+                             feeTokenID, fee, walletSplitPercentage, withdrawalIdx, withdrawalFee});
   }
 
   public sendRing(realmID: number, ring: RingInfo) {
@@ -985,7 +983,7 @@ export class ExchangeTestUtil {
             amount: new BN(0),
             walletAccountID: onchain ? 0 : this.wallets[realmID][0].walletAccountID,
             feeTokenID: 1,
-            fFee: 0,
+            fee: new BN(0),
             walletSplitPercentage: 0,
           };
           withdrawals.push(dummyWithdrawalRequest);
@@ -1060,7 +1058,7 @@ export class ExchangeTestUtil {
         for (const withdrawal of block.withdrawals) {
           bs.addNumber(withdrawal.walletAccountID, 3);
           bs.addNumber(withdrawal.feeTokenID, 1);
-          bs.addNumber(withdrawal.fFee, 2);
+          bs.addNumber(toFloat(new BN(withdrawal.fee), constants.Float16Encoding), 2);
           bs.addNumber(withdrawal.walletSplitPercentage, 1);
         }
       }
@@ -1198,7 +1196,7 @@ export class ExchangeTestUtil {
             minerAccountID: this.minerAccountID[realmID],
             feeRecipientAccountID: this.feeRecipientAccountID[realmID],
             tokenID: 0,
-            fFee: toFloat(new BN(0), constants.Float16Encoding),
+            fee: new BN(0),
           };
           rings.push(dummyRing);
         }
@@ -1245,7 +1243,7 @@ export class ExchangeTestUtil {
 
           bs.addNumber((ring.minerAccountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + ring.feeRecipientAccountID, 5);
           bs.addNumber(ring.tokenID, 1);
-          bs.addNumber(ring.fFee, 2);
+          bs.addNumber(toFloat(new BN(ring.fee), constants.Float16Encoding), 2);
           bs.addNumber(ring.fMargin, 3);
 
           bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
@@ -1301,7 +1299,7 @@ export class ExchangeTestUtil {
             orderID: 0,
             walletAccountID,
             feeTokenID: 1,
-            fFee: 0,
+            fee: new BN(0),
             walletSplitPercentage: 0,
           };
           cancels.push(dummyCancel);
@@ -1340,13 +1338,11 @@ export class ExchangeTestUtil {
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const cancel of cancels) {
-          console.log("cancel.orderID: " + cancel.orderID);
-          bs.addNumber(cancel.accountID, 3);
-          bs.addNumber(cancel.walletAccountID, 3);
+          bs.addNumber((cancel.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + cancel.walletAccountID, 5);
           bs.addNumber(cancel.orderTokenID, 1);
           bs.addNumber(cancel.orderID, 3);
           bs.addNumber(cancel.feeTokenID, 1);
-          bs.addNumber(cancel.fFee, 2);
+          bs.addNumber(toFloat(cancel.fee, constants.Float16Encoding), 2);
           bs.addNumber(cancel.walletSplitPercentage, 1);
         }
       }

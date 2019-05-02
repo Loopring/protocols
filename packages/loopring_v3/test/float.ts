@@ -7,7 +7,6 @@ export interface FloatEncoding {
 }
 
 export function toFloat(value: BN, encoding: FloatEncoding) {
-  console.log(encoding);
   const maxExponent = (1 << encoding.numBitsExponent) - 1;
   const maxMantissa = (1 << encoding.numBitsMantissa) - 1;
   const maxExponentValue = new BN(encoding.exponentBase).pow(new BN(maxExponent));
@@ -35,4 +34,10 @@ export function fromFloat(f: number, encoding: FloatEncoding) {
   const mantissa = f & ((1 << encoding.numBitsMantissa) - 1);
   const value = new BN(mantissa).mul(new BN(encoding.exponentBase).pow(new BN(exponent)));
   return value;
+}
+
+export function roundToFloatValue(value: BN, encoding: FloatEncoding) {
+  const f = toFloat(value, encoding);
+  const floatValue = fromFloat(f, encoding);
+  return floatValue;
 }

@@ -252,8 +252,9 @@ library ExchangeWithdrawals
         // Get the withdraw data of the given slot
         // TODO(brecht): optimize SLOAD/SSTORE of bytes in storage
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = 7 * (slotIdx + 1);
-        require(offset < withdrawals.length, "INVALID_SLOT_IDX");
+        uint numBytesPerWithdrawal = 7;
+        uint offset = numBytesPerWithdrawal * (slotIdx + 1);
+        require(offset <= withdrawals.length, "INVALID_SLOT_IDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
@@ -268,7 +269,7 @@ library ExchangeWithdrawals
 
         if (amount > 0) {
             // Set everything to 0 so it cannot be withdrawn anymore
-            data = data & uint(~((1 << (7 * 8)) - 1));
+            data = data & uint(~((1 << (numBytesPerWithdrawal * 8)) - 1));
             assembly {
                 mstore(add(withdrawals, offset), data)
             }

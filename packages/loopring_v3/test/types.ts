@@ -60,7 +60,7 @@ export interface RingInfo {
   minerAccountID?: number;
   feeRecipientAccountID?: number;
   tokenID?: number;
-  fFee?: number;
+  fee?: BN;
 
   expected?: RingExpectation;
 }
@@ -100,7 +100,7 @@ export interface WithdrawalRequest {
 
   walletAccountID: number;
   feeTokenID: number;
-  fFee: number;
+  fee: BN;
   walletSplitPercentage: number;
 
   withdrawalIdx?: number;
@@ -133,7 +133,7 @@ export interface Cancel {
   orderID: number;
   walletAccountID: number;
   feeTokenID: number;
-  fFee: number;
+  fee: BN;
   walletSplitPercentage: number;
 }
 
