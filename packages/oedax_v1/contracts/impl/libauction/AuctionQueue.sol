@@ -36,6 +36,7 @@ library AuctionQueue
         view
         returns (uint)
     {
+        // TODO
         return 0;
     }
 
