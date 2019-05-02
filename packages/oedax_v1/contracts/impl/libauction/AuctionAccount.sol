@@ -24,24 +24,22 @@ import "../../lib/ERC20.sol";
 
 /// @title AuctionBids.
 /// @author Daniel Wang  - <daniel@loopring.org>
-library AuctionBalance
+library AuctionAccount
 {
     using MathUint for uint;
     using MathUint for uint32;
 
-    function getBalance(
+    function getAccount(
         IAuctionData.State storage s,
         address user
         )
         internal
         view
         returns (
-            IAuctionData.Balance memory bidBalance,
-            IAuctionData.Balance memory askBalance
+            IAuctionData.Account storage
         )
     {
-        bidBalance = s.balanceMap[user][true];
-        askBalance = s.balanceMap[user][false];
+        return s.accounts[user];
     }
 
    function depositToken(

@@ -22,7 +22,7 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/MathUint.sol";
 
 import "./AuctionInfo.sol";
-import "./AuctionBalance.sol";
+import "./AuctionAccount.sol";
 import "./AuctionQueue.sol";
 
 /// @title AuctionAsks.
@@ -32,14 +32,14 @@ library AuctionBids
     using MathUint          for uint;
     using MathUint          for uint32;
     using AuctionInfo       for IAuctionData.State;
-    using AuctionBalance    for IAuctionData.State;
+    using AuctionAccount    for IAuctionData.State;
     using AuctionQueue      for IAuctionData.State;
 
     event Bid(
         address user,
         uint    amount,
-        uint    amountQueued,
-        uint    time
+        uint    amountQueueItem,
+        uint    _t
     );
 
     function bid(
@@ -51,45 +51,52 @@ library AuctionBids
         require(amount > 0, "zero amount");
         s.oedax.logParticipation(msg.sender);
 
-        uint _amount = amount;
-        uint _queued;
         uint time = block.timestamp - s.startTime;
+        uint weight = s.T > time? s.T - time : 0;
+        uint accepted;
+        uint queued;
 
         // calculate the current-state
         IAuctionData.Info memory i = s.getAuctionInfo();
 
-        if (i.additionalBidAmountAllowed < _amount) {
-            _queued = _amount.sub(i.additionalBidAmountAllowed);
-            _amount = i.additionalBidAmountAllowed;
-        }
+        if (amount > i.additionalBidAmountAllowed) {
+            // Part of the amount will be put in the queue.
+            accepted = i.additionalBidAmountAllowed;
+            queued = amount - i.additionalBidAmountAllowed;
 
-        if (_queued > 0) {
             if (s.queueAmount > 0) {
                 if (s.queueIsBid) {
                     // Before this BID, the queue is for BIDs
-                    assert(_amount == 0);
+                    assert(accepted == 0);
                 } else {
                     // Before this BID, the queue is for ASKs, therefore we must have
                     // consumed all the pending ASKs in the queue.
-                    assert(_amount > 0);
+                    assert(accepted > 0);
                     s.dequeue(s.queueAmount);
                 }
             }
             s.queueIsBid = true;
-            s.enqueue(_queued, time);
+            s.enqueue(queued, weight);
         } else {
-            assert(s.queueAmount == 0 || !s.queueIsBid);
-            assert(_amount > 0);
-            s.dequeue(s.getQueueConsumption(_amount));
+            // All amount are accepted into the auction.
+            accepted = amount;
+            queued = 0;
+
+            uint consumed = s.getQueueConsumption(accepted);
+            if (consumed > 0) {
+                assert(s.queueIsBid == false);
+                s.dequeue(consumed);
+            }
         }
 
-        IAuctionData.Balance storage balance = s.balanceMap[msg.sender][true];
+        // Update the book keeping
+        IAuctionData.Account storage account = s.accounts[msg.sender];
 
-        balance.inAuction = balance.inAuction.add(_amount);
-        balance.queued = balance.queued.add(_queued);
-        balance.totalWeight = balance.totalWeight.add(_amount.mul(time));
+        account.bidAccepted = account.bidAccepted.add(accepted);
+        account.bidQueued = account.bidQueued.add(queued);
+        account.bidFeeShare = account.bidFeeShare.add(accepted.mul(weight));
 
-        s.bidAmount = s.bidAmount.add(_amount);
+        s.bidAmount = s.bidAmount.add(accepted);
 
         if (s.bidShift != i.newBidShift) {
             s.bidShift = i.newBidShift;
@@ -105,8 +112,8 @@ library AuctionBids
 
         emit Bid(
             msg.sender,
-            _amount,
-            _queued,
+            accepted,
+            queued,
             block.timestamp
         );
     }

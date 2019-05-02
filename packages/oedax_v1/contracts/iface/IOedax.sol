@@ -30,8 +30,11 @@ contract IOedax
     // user_address => auction_address => participated?
     mapping (address => mapping (address => bool)) particationMap;
 
-    // user_address => list_of_auctions_participated;
+    // user_address => list_of_auctions_participated
     mapping (address => address[]) userAuctions;
+
+    // auction_address => list_of_auction_users
+    mapping (address => address[]) auctionUsers;
 
     event AuctionCreated (
         uint    auctionId,
