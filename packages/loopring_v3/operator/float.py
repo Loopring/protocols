@@ -2,7 +2,6 @@ from collections import namedtuple
 
 FloatEncoding = namedtuple("FloatEncoding", "numBitsExponent numBitsMantissa exponentBase")
 Float28Encoding = FloatEncoding(5, 23, 10)
-Float25Encoding = FloatEncoding(5, 20, 10)
 Float24Encoding = FloatEncoding(5, 19, 10)
 Float16Encoding = FloatEncoding(5, 11, 10)
 Float12Encoding = FloatEncoding(5,  7, 10)
