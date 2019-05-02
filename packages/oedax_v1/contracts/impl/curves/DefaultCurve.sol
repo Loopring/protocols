@@ -21,7 +21,7 @@ import "../../iface/ICurve.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
-/// @title An Implementation of ICurve.
+/// @title DefaultCurve
 /// @author Daniel Wang  - <daniel@loopring.org>
 
 /// @dev A curve variation from `(1-x)/(1+μ*x)`.
