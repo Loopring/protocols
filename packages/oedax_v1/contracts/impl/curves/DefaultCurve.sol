@@ -39,7 +39,7 @@ contract DefaultCurve is ICurve, NoDefaultFunc
     using MathUint for uint;
     using MathUint for uint64;
 
-    uint64 mu;  // 0 to 10 is a good number
+    uint64 mu; // 0 to 10 are reasonable
 
     // -- Constructor --
     constructor(
@@ -48,7 +48,7 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         )
         public
     {
-        mu = _mu; // 0 will make the curve a stright line.
+        mu = _mu;
         name = _name;
     }
 
