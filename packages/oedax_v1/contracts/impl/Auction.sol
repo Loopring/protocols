@@ -71,7 +71,7 @@ contract Auction is IAuction
         require(_P > 0);
         require(_M > 0);
         require(_P / _M > 0, "zero min price");
-        require(_T % 3600 == 0, "duration must be in hour");
+        require(_T % 3600 == 0, "hour is the min unit");
         require(_T / 3600 > 0 && _T / 3600 <= 30 * 24, "invalid duration");
 
         owner = msg.sender; // creator

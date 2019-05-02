@@ -25,7 +25,6 @@ import "../lib/Ownable.sol";
 
 import "./Auction.sol";
 
-
 /// @title An Implementation of IOedax.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Oedax is IOedax, Ownable

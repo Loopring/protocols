@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-
 /// @title IOedax
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IOedax
