@@ -84,6 +84,13 @@ contract Auction is IAuction
         state.S = _S;
         state.M = _M;
         state.T = _T ;
+
+        state.askBaseUnit = uint(10) ** ERC20(_askToken).decimals();
+        state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
+
+        // verify against overflow
+        _S.mul(ERC20(_askToken).totalSupply())
+        .mul(ERC20(_bidToken).totalSupply());
     }
 
     // == Public & External Functions ==
@@ -131,6 +138,4 @@ contract Auction is IAuction
     {
         return state.getAccount(user);
     }
-
-    // == Internal & Private Functions ==
 }

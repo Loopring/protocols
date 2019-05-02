@@ -29,6 +29,18 @@ library AuctionStatus
     using MathUint for uint;
     using MathUint for uint64;
 
+    function actualPrice(
+            IAuctionData.State storage s
+        )
+        internal
+        view
+        returns (uint price)
+    {
+        assert(s.askAmount > 0);
+        price = s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount.mul(s.bidBaseUnit);
+        assert(price <= s.S);
+    }
+
     function getAuctionStatus(
             IAuctionData.State storage s
         )
@@ -45,7 +57,7 @@ library AuctionStatus
         i.queuedBidAmount = s.queueIsBid ?  s.queueAmount: 0;
 
         if (s.askAmount > 0) {
-            i.actualPrice  = s.bidAmount.mul(s.S) / s.askAmount;
+            i.actualPrice  = actualPrice(s);
             i.isBounded = i.actualPrice >= P0 && i.actualPrice <= P1;
         }
 

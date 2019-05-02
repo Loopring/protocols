@@ -22,6 +22,11 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ERC20
 {
+    function decimals()
+        public
+        view
+        returns (uint8);
+
     function totalSupply()
         public
         view

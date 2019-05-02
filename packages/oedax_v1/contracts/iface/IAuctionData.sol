@@ -73,8 +73,13 @@ library IAuctionData
         ICurve  curve;
 
         uint    auctionId;
+
         address askToken;
         address bidToken;
+
+        uint    askBaseUnit;
+        uint    bidBaseUnit;
+
         uint    startTime;
 
         uint64  P;
