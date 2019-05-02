@@ -29,7 +29,7 @@ contract ERC20Token is ERC20
 
     string  public name;
     string  public symbol;
-    uint8   public decimals;
+    uint8   public decimals_;
     uint    public totalSupply_;
 
     mapping (address => uint256) balances;
@@ -62,7 +62,7 @@ contract ERC20Token is ERC20
 
         name = _name;
         symbol = _symbol;
-        decimals = _decimals;
+        decimals_ = _decimals;
         totalSupply_ = _totalSupply;
 
         balances[_firstHolder] = totalSupply_;
@@ -84,6 +84,17 @@ contract ERC20Token is ERC20
         returns (uint256)
     {
         return totalSupply_;
+    }
+
+    /**
+    * @dev number of decimals
+    */
+    function decimals()
+        public
+        view
+        returns (uint8)
+    {
+        return decimals_;
     }
 
     /**
