@@ -34,10 +34,10 @@ library AuctionStatus
         )
         internal
         view
-        returns (uint price)
+        returns (uint)
     {
         assert(s.askAmount > 0);
-        price = s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
+        return s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
     }
 
     function getAuctionStatus(
