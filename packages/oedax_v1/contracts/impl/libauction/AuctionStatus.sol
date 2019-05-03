@@ -39,7 +39,6 @@ library AuctionStatus
         return s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
     }
 
-    // TODO: calculate time remaining
     function getAuctionStatus(
             IAuctionData.State storage s
         )

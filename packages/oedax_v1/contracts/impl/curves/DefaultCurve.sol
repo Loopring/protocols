@@ -22,7 +22,7 @@ import "../../iface/ICurve.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
-/// @title DefaultCurve
+/// @title FractionalLinearCurve
 /// @author Daniel Wang  - <daniel@loopring.org>
 
 /// @dev A curve variation from `(1-x)/(1+μ*x)`.
@@ -35,7 +35,7 @@ import "../../lib/NoDefaultFunc.sol";
 ///   x = f(y) = (e-y+P0)*T/(μ*(y-P0)+e), and if we let m = y-P0, then
 ///   x = f(y) = (e-m)*T/(μ*m+e)
 
-contract DefaultCurve is ICurve, NoDefaultFunc
+contract FractionalLinearCurve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
