@@ -81,7 +81,7 @@ library AuctionBids
             accepted = amount;
             queued = 0;
 
-            uint consumed = s.getQueueConsumption(accepted);
+            uint consumed = s.calcAmountToDequeue(accepted);
             if (consumed > 0) {
                 assert(s.queueIsBid == false);
                 s.dequeue(consumed);

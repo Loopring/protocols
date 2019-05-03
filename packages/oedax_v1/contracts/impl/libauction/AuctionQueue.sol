@@ -27,7 +27,7 @@ library AuctionQueue
 {
     using MathUint for uint;
 
-    function getQueueConsumption(
+    function calcAmountToDequeue(
         IAuctionData.State storage s,
         uint amount
         )
