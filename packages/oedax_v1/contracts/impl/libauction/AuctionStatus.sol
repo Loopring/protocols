@@ -115,7 +115,7 @@ library AuctionStatus
 
         // Calculate when the auction will probably end.
         x = i.isBounded ? i.actualPrice : s.P;  // where the ask price merge
-        y = s.P.mul(s.P) / x;                   // where the ask price merge
+        y = s.P.mul(s.P) / x;                   // where the bid price merge
 
         i.timeRemaining = MathUint.max(
             s.curve.yToX(P0, P1, s.T, x) + i.newAskShift,
