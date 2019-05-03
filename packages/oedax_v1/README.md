@@ -10,3 +10,4 @@
 - [x] curve implementation
 - [ ] get list of auctions
 - [ ] test framework
+- [ ] smart curve implementation (remove curve registry)
