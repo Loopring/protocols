@@ -85,7 +85,7 @@ library IAuctionData
         uint    P; // target price
         uint    S; // price base， P/S is the float value of the target price.
         uint    M; // price factor
-        uint    T; // max duration
+        uint    T; // auction max duration
 
         // The following fields WILL change on bids and asks.
         uint    askAmount;

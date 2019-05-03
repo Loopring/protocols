@@ -89,13 +89,18 @@ contract Oedax is IOedax, NoDefaultFunc
         emit TokenRankUpdated(token, rank);
     }
 
+    /// @dev Create a new auction
+    /// @param P Numerator part of the target price `p`.
+    /// @param S Denominator part of the target price `p`.
+    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
+    /// @param T The maximum auction duration.
     function createAuction(
         uint    curveId,
         address askToken,
         address bidToken,
-        uint64  P, // target price
-        uint64  S, // price base
-        uint8   M, // price factor
+        uint64  P,
+        uint64  S,
+        uint8   M,
         uint    T
         )
         public
