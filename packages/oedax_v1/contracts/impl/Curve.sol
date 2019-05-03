@@ -17,12 +17,12 @@
 pragma solidity 0.5.7;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/ICurve.sol";
+import "..//iface/ICurve.sol";
 
-import "../../lib/MathUint.sol";
-import "../../lib/NoDefaultFunc.sol";
+import "../lib/MathUint.sol";
+import "../lib/NoDefaultFunc.sol";
 
-/// @title FractionalLinearCurve
+/// @title Curve
 /// @author Daniel Wang  - <daniel@loopring.org>
 ///
 /// Let P0 and P1 be the min and max price, T be the duration,
@@ -33,22 +33,17 @@ import "../../lib/NoDefaultFunc.sol";
 ///   x = f(y) = (e-y+P0)*T/(μ*(y-P0)+e), and if we let m = y-P0, then
 ///   x = f(y) = (e-m)*T/(μ*m+e)
 
-contract FractionalLinearCurve is ICurve, NoDefaultFunc
+contract Curve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
-    string name;
     uint   mu; // 0 to 10 are reasonable
 
     // -- Constructor --
-    constructor(
-        uint64        _mu,
-        string memory _name
-        )
+    constructor(uint64 _mu)
         public
     {
         mu = _mu;
-        name = _name;
     }
 
     function xToY(

@@ -35,7 +35,8 @@ library AuctionSettlement
         internal
     {
 
-        calcBalanceAndClear(s);
+        calcBalancesAndMakeTransfers(s);
+
         s.oedax.logTrade(
             s.auctionId,
             s.askToken,
@@ -45,23 +46,26 @@ library AuctionSettlement
         );
     }
 
-    function calcBalanceAndClear(
+    function calcBalancesAndMakeTransfers(
         IAuctionData.State storage s
         )
         private
     {
         uint size = s.users.length;
-        uint[] memory bips = calcUserFeeRewardBips(s);
+        uint[] memory bips = calcPerUserRewardBips(s);
 
-        uint bidFeeReward = s.bidAmount.mul(s.takerFeeBips) / 10000;
+        uint makerRewardBips = s.oedax.makerRewardBips();
+        uint protocolFeeBips = s.oedax.protocolFeeBips();
+
+        uint bidFeeReward = s.bidAmount.mul(makerRewardBips) / 10000;
         uint bidSettlement = s.bidAmount
             .sub(bidFeeReward)
-            .sub(s.bidAmount.mul(s.protocolFeeBips) / 10000);
+            .sub(s.bidAmount.mul(protocolFeeBips) / 10000);
 
-        uint askFeeReward = s.askAmount.mul(s.takerFeeBips) / 10000;
+        uint askFeeReward = s.askAmount.mul(makerRewardBips) / 10000;
         uint askSettlement = s.askAmount
             .sub(askFeeReward)
-            .sub(s.askAmount.mul(s.protocolFeeBips) / 10000);
+            .sub(s.askAmount.mul(protocolFeeBips) / 10000);
 
         for (uint i = 0; i < size; i++) {
             address payable user = s.users[i];
@@ -85,7 +89,7 @@ library AuctionSettlement
         }
     }
 
-    function calcUserFeeRewardBips(
+    function calcPerUserRewardBips(
         IAuctionData.State storage s
         )
         private

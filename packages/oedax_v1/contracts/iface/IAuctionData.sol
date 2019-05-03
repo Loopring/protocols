@@ -94,10 +94,6 @@ library IAuctionData
         uint    M; // price factor
         uint    T; // auction max duration
 
-
-        uint    protocolFeeBips;
-        uint    takerFeeBips;
-
         // The following fields WILL change on bids and asks.
         uint    askAmount;
         uint    bidAmount;

@@ -50,7 +50,6 @@ contract Auction is IAuction
     // -- Constructor --
     /// @param _oedax The address of the Oedax contract.
     /// @param _auctionId The auction's non-zero id.
-    /// @param _curve The address of the price curve.
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
     /// @param _P Numerator part of the target price `p`.
@@ -60,7 +59,6 @@ contract Auction is IAuction
     constructor(
         address _oedax,
         uint    _auctionId,
-        address _curve,
         address _askToken,
         address _bidToken,
         uint64  _P,
@@ -73,7 +71,6 @@ contract Auction is IAuction
 
         require(_oedax != address(0x0));
         require(_auctionId > 0);
-        require(_curve != address(0x0));
         require(_askToken != address(0x0) || _bidToken != address(0x0));
 
         require(_P > 0);
@@ -83,7 +80,7 @@ contract Auction is IAuction
         owner = msg.sender; // creator
 
         state.oedax = IOedax(_oedax);
-        state.curve = ICurve(_curve);
+        state.curve = ICurve(state.oedax.curveAddress());
 
         state.auctionId = _auctionId;
         state.askToken = _askToken;

@@ -28,7 +28,7 @@ contract IOedax is Ownable
 
     event TokenRankUpdated(
         address token,
-        uint32  rank
+        uint    rank
     );
 
     event AuctionCreated (
@@ -54,9 +54,16 @@ contract IOedax is Ownable
 
     // == Constants & Variables ==
 
-    uint64 public constant PRICE_BASE = 10000000000; // 12 digits
+    uint64      public constant PRICE_BASE = 10000000000; // 12 digits
 
-    address[] public auctions;
+    address     public curveAddress;
+    uint16      public settleGracePeriod;
+    uint16      public minDuration;
+    uint16      public maxDuration;
+    uint16      public protocolFeeBips;
+    uint16      public makerRewardBips;
+    uint        public creationFeeEther;
+    address[]   public auctions;
 
     // auction_address => auction_id
     mapping (address => uint) public auctionIdMap;
@@ -69,7 +76,7 @@ contract IOedax is Ownable
     // user_address => list_of_auctions_participated
     mapping (address => address[]) public userAuctions;
 
-    mapping (address => uint32) public tokenRankMap;
+    mapping (address => uint) public tokenRankMap;
 
     // price history
     // bid_token => ask_token => list_of_trade_history
@@ -80,7 +87,10 @@ contract IOedax is Ownable
     function updateSettings(
         uint16 _settleGracePeriodMinutes,
         uint16 _minDurationMinutes,
-        uint16 _maxDurationMinutes
+        uint16 _maxDurationMinutes,
+        uint16 _protocolFeeBips,
+        uint16 _makerRewardBips,
+        uint   _creationFeeEther
         )
         external;
 
@@ -92,12 +102,11 @@ contract IOedax is Ownable
     /// @param rank The ask (base) token. Prices are in form of 'bids/asks'.
     function setTokenRank(
         address token,
-        uint32  rank
+        uint    rank
         )
         public;
 
     /// @dev Create a new auction
-    /// @param curveId The non-zero id of the price curve.
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
     /// @param P Numerator part of the target price `p`.
@@ -105,7 +114,6 @@ contract IOedax is Ownable
     /// @param T The maximum auction duration.
     /// @return auction Auction address.
     function createAuction(
-        uint    curveId,
         address askToken,
         address bidToken,
         uint64  P,
@@ -114,7 +122,7 @@ contract IOedax is Ownable
         )
         public
         payable
-        returns (address auction);
+        returns (address payable auctionAddr);
 
     function logParticipation(
         address user
