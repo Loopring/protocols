@@ -22,6 +22,40 @@ import "../lib/Ownable.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IOedax is Ownable
 {
+    // == Events ==
+    event SettingsUpdated(
+    );
+
+    event TokenRankUpdated(
+        address token,
+        uint32  rank
+    );
+
+    event AuctionCreated (
+        uint    auctionId,
+        address auctionAddr
+    );
+
+    event Trade(
+        uint    auctionId,
+        address askToken,
+        address bidToken,
+        uint    askAmount,
+        uint    bidAmount
+    );
+
+    // == Structs ==
+    struct TradeHistory {
+        uint auctionId;
+        uint bidAmount;
+        uint askAmount;
+        uint time;
+    }
+
+    // == Constants & Variables ==
+
+    uint64 constant PRICE_BASE = 10000000000; // 12 digits
+
     address[] auctions;
 
     // auction_address => auction_id
@@ -40,19 +74,12 @@ contract IOedax is Ownable
 
     mapping (address => uint32) tokenRankMap;
 
-    event SettingsUpdated(
-    );
+    // price history
+    // bid_token => ask_token => list_of_trade_history
+    mapping (address => mapping(address => TradeHistory[])) tradeHistory;
 
-    event TokenRankUpdated(
-        address token,
-        uint32  rank
-    );
 
-    event AuctionCreated (
-        uint    auctionId,
-        address auctionAddr
-    );
-
+    // == Functions ==
     function updateSettings(
         uint16 _settleGracePeriodMinutes,
         uint16 _minDurationMinutes,
@@ -77,7 +104,6 @@ contract IOedax is Ownable
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
     /// @param P Numerator part of the target price `p`.
-    /// @param S Denominator part of the target price `p`.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param T The maximum auction duration.
     /// @return auction Auction address.
@@ -86,7 +112,6 @@ contract IOedax is Ownable
         address askToken,
         address bidToken,
         uint64  P,
-        uint64  S,
         uint8   M,
         uint    T
         )
@@ -96,6 +121,15 @@ contract IOedax is Ownable
 
     function logParticipation(
         address user
+        )
+        public;
+
+    function logTrade(
+        uint    auctionId,
+        address askToken,
+        address bidToken,
+        uint    askAmount,
+        uint    bidAmount
         )
         public;
 

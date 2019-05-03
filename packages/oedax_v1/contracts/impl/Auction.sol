@@ -76,6 +76,7 @@ contract Auction is IAuction
 
         require(_P > 0);
         require(_M > 1);
+        require(_S >= 100000 && _S <= 1000000000000000000 /*18 digits*/);
 
         owner = msg.sender; // creator
 
