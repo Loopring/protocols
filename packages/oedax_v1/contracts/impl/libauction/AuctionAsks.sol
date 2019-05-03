@@ -54,6 +54,7 @@ library AuctionAsks
         uint weight = s.T > time? s.T - time : 0;
         uint accepted;
         uint queued;
+        uint dequeued;
 
         // calculate the current-state
         IAuctionData.Status memory i = s.getAuctionStatus();
@@ -64,7 +65,7 @@ library AuctionAsks
             queued = amount - i.askAllowed;
 
             if (s.queueAmount > 0) {
-                if (!s.queueIsBid) {
+                if (!s.queueIsBidding) {
                     // Before this ASK, the queue is for ASKs
                     assert(accepted == 0);
                 } else {
@@ -74,17 +75,16 @@ library AuctionAsks
                     s.dequeue(s.queueAmount);
                 }
             }
-            s.queueIsBid = false;
+            s.queueIsBidding = false;
             s.enqueue(queued, weight);
         } else {
             // All amount are accepted into the auction.
             accepted = amount;
             queued = 0;
-
-            uint consumed = s.getQueueConsumption(accepted);
-            if (consumed > 0) {
-                assert(s.queueIsBid == true);
-                s.dequeue(consumed);
+            dequeued = (accepted.mul(i.actualPrice) / s.S).min(s.queueAmount);
+            if (dequeued > 0) {
+                assert(s.queueIsBidding == true);
+                s.dequeue(dequeued);
             }
         }
 

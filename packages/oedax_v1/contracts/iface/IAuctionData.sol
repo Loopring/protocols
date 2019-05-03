@@ -82,10 +82,10 @@ library IAuctionData
 
         uint    startTime;
 
-        uint    P;
-        uint    S;
-        uint    M;
-        uint    T;
+        uint    P; // target price
+        uint    S; // price base， P/S is the float value of the target price.
+        uint    M; // price factor
+        uint    T; // auction max duration
 
         // The following fields WILL change on bids and asks.
         uint    askAmount;
@@ -98,7 +98,7 @@ library IAuctionData
         uint[]  bidShifts;
 
         QueueItem[] queue;
-        bool        queueIsBid;
+        bool        queueIsBidding;
         uint        queueAmount;
 
         // user => account)

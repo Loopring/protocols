@@ -46,16 +46,25 @@ contract Auction is IAuction
     }
 
     // -- Constructor --
+    /// @param _oedax The address of the Oedax contract.
+    /// @param _auctionId The auction's non-zero id.
+    /// @param _curve The address of the price curve.
+    /// @param _askToken The ask (base) token.
+    /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
+    /// @param _P Numerator part of the target price `p`.
+    /// @param _S Denominator part of the target price `p`.
+    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
+    /// @param _T The maximum auction duration.
     constructor(
         address _oedax,
         uint    _auctionId,
         address _curve,
         address _askToken,
         address _bidToken,
-        uint64  _P, // target price
-        uint64  _S, // price scale
-        uint8   _M, // price factor
-        uint    _T  // auction duration
+        uint64  _P,
+        uint64  _S,
+        uint8   _M,
+        uint    _T
         )
         public
     {

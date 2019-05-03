@@ -27,18 +27,6 @@ library AuctionQueue
 {
     using MathUint for uint;
 
-    function getQueueConsumption(
-        IAuctionData.State storage s,
-        uint amount
-        )
-        internal
-        view
-        returns (uint)
-    {
-        // TODO
-        return 0;
-    }
-
     function dequeue(
         IAuctionData.State storage s,
         uint amount
@@ -63,7 +51,7 @@ library AuctionQueue
         item.queued = item.queued.sub(dequeued);
         _amount = _amount.sub(dequeued);
 
-        if (s.queueIsBid) {
+        if (s.queueIsBidding) {
             account.bidAccepted = account.bidAccepted.add(dequeued);
             account.bidQueued = account.bidQueued.sub(dequeued);
             account.bidFeeShare = account.bidFeeShare.add(dequeued.mul(item.weight));
@@ -84,7 +72,7 @@ library AuctionQueue
 
       s.queueAmount = s.queueAmount.sub(amount);
 
-      if (s.queueIsBid) {
+      if (s.queueIsBidding) {
         s.bidAmount = s.bidAmount.add(amount);
       } else {
         s.askAmount = s.askAmount.add(amount);
@@ -92,7 +80,7 @@ library AuctionQueue
     }
 
     /// @dev enqueue a bid or a ask
-    /// Note that `queueIsBid` must be set to the right value before calling this method.
+    /// Note that `queueIsBidding` must be set to the right value before calling this method.
     function enqueue(
         IAuctionData.State storage s,
         uint amount,
@@ -102,7 +90,7 @@ library AuctionQueue
     {
         IAuctionData.Account storage account = s.accounts[msg.sender];
 
-        if (s.queueIsBid) {
+        if (s.queueIsBidding) {
             account.bidQueued = account.bidQueued.add(amount);
         } else {
             account.askQueued = account.askQueued.add(amount);

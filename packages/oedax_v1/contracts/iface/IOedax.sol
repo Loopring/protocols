@@ -60,19 +60,34 @@ contract IOedax is Ownable
         )
         external;
 
+    /// @dev Set a token's rank. By default, all token has id 0.
+    /// We require the rank of an auction's bid token must be higher
+    /// than the rank of its ask token. In Oedax, Ether (address 0x0) has
+    /// the highest rank.
+    /// @param token The non-zero id of the price curve.
+    /// @param rank The ask (base) token. Prices are in form of 'bids/asks'.
     function setTokenRank(
         address token,
         uint32  rank
         )
         public;
 
+    /// @dev Create a new auction
+    /// @param curveId The non-zero id of the price curve.
+    /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
+    /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
+    /// @param P Numerator part of the target price `p`.
+    /// @param S Denominator part of the target price `p`.
+    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
+    /// @param T The maximum auction duration.
+    /// @return auction Auction address.
     function createAuction(
         uint    curveId,
         address askToken,
         address bidToken,
-        uint64  P, // target price
-        uint64  S, // price scale
-        uint8   M, // price factor
+        uint64  P,
+        uint64  S,
+        uint8   M,
         uint    T
         )
         public
