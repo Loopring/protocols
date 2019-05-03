@@ -66,6 +66,13 @@ library IAuctionData
         uint    askFeeShare;
     }
 
+    struct Queue
+    {
+        QueueItem[] items;
+        bool        isBidding;
+        uint        amount;
+    }
+
     struct State
     {
         // The following files never change once initialized:
@@ -87,6 +94,10 @@ library IAuctionData
         uint    M; // price factor
         uint    T; // auction max duration
 
+
+        uint    protocolFeeBips;
+        uint    takerFeeBips;
+
         // The following fields WILL change on bids and asks.
         uint    askAmount;
         uint    bidAmount;
@@ -97,12 +108,11 @@ library IAuctionData
         uint[]  askShifts;
         uint[]  bidShifts;
 
-        QueueItem[] queue;
-        bool        queueIsBidding;
-        uint        queueAmount;
+        Queue   Q;
 
         // user => account)
         mapping (address => Account) accounts;
+        address payable[] users;
     }
 
     event Bid(

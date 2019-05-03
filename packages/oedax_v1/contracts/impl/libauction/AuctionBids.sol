@@ -48,7 +48,9 @@ library AuctionBids
         internal
     {
         require(amount > 0, "zero amount");
-        s.oedax.logParticipation(msg.sender);
+        if(s.oedax.logParticipation(msg.sender)) {
+            s.users.push(msg.sender);
+        }
 
         uint time = block.timestamp - s.startTime;
         uint weight = s.T > time? s.T - time : 0;
@@ -64,26 +66,26 @@ library AuctionBids
             accepted = i.bidAllowed;
             queued = amount - i.bidAllowed;
 
-            if (s.queueAmount > 0) {
-                if (s.queueIsBidding) {
+            if (s.Q.amount > 0) {
+                if (s.Q.isBidding) {
                     // Before this BID, the queue is for BIDs
                     assert(accepted == 0);
                 } else {
                     // Before this BID, the queue is for ASKs, therefore we must have
                     // consumed all the pending ASKs in the queue.
                     assert(accepted > 0);
-                    s.dequeue(s.queueAmount);
+                    s.dequeue(s.Q.amount);
                 }
             }
-            s.queueIsBidding = true;
+            s.Q.isBidding = true;
             s.enqueue(queued, weight);
         } else {
             // All amount are accepted into the auction.
             accepted = amount;
             queued = 0;
-            dequeued = (accepted.mul(s.S) / i.actualPrice).min(s.queueAmount);
+            dequeued = (accepted.mul(s.S) / i.actualPrice).min(s.Q.amount);
             if (dequeued > 0) {
-                assert(s.queueIsBidding == false);
+                assert(s.Q.isBidding == false);
                 s.dequeue(dequeued);
             }
         }

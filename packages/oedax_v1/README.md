@@ -6,7 +6,7 @@
 - [x] queue management
 - [x] support asks
 - [ ] settlement and send back token/ether
-- [ ] calculate time remaining
-- [ ] curve implementation
+- [x] calculate time remaining
+- [x] curve implementation
 - [ ] get list of auctions
 - [ ] test framework

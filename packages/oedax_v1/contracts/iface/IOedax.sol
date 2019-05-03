@@ -22,24 +22,7 @@ import "../lib/Ownable.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IOedax is Ownable
 {
-    address[] auctions;
-
-    // auction_address => auction_id
-    mapping (address => uint) auctionIdMap;
-    // auction_creator =>  list of his auctions
-    mapping (address => address[]) creatorAuctions;
-
-    // user_address => auction_address => participated?
-    mapping (address => mapping (address => bool)) particationMap;
-
-    // user_address => list_of_auctions_participated
-    mapping (address => address[]) userAuctions;
-
-    // auction_address => list_of_auction_users
-    mapping (address => address[]) auctionUsers;
-
-    mapping (address => uint32) tokenRankMap;
-
+    // == Events ==
     event SettingsUpdated(
     );
 
@@ -53,6 +36,47 @@ contract IOedax is Ownable
         address auctionAddr
     );
 
+    event Trade(
+        uint    auctionId,
+        address askToken,
+        address bidToken,
+        uint    askAmount,
+        uint    bidAmount
+    );
+
+    // == Structs ==
+    struct TradeHistory {
+        uint auctionId;
+        uint bidAmount;
+        uint askAmount;
+        uint time;
+    }
+
+    // == Constants & Variables ==
+
+    uint64 public constant PRICE_BASE = 10000000000; // 12 digits
+
+    address[] public auctions;
+
+    // auction_address => auction_id
+    mapping (address => uint) public auctionIdMap;
+    // auction_creator =>  list of his auctions
+    mapping (address => address[]) public creatorAuctions;
+
+    // user_address => auction_address => participated?
+    mapping (address => mapping (address => bool)) public particationMap;
+
+    // user_address => list_of_auctions_participated
+    mapping (address => address[]) public userAuctions;
+
+    mapping (address => uint32) public tokenRankMap;
+
+    // price history
+    // bid_token => ask_token => list_of_trade_history
+    mapping (address => mapping(address => TradeHistory[])) public tradeHistory;
+
+
+    // == Functions ==
     function updateSettings(
         uint16 _settleGracePeriodMinutes,
         uint16 _minDurationMinutes,
@@ -77,7 +101,6 @@ contract IOedax is Ownable
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
     /// @param P Numerator part of the target price `p`.
-    /// @param S Denominator part of the target price `p`.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param T The maximum auction duration.
     /// @return auction Auction address.
@@ -86,7 +109,6 @@ contract IOedax is Ownable
         address askToken,
         address bidToken,
         uint64  P,
-        uint64  S,
         uint8   M,
         uint    T
         )
@@ -96,6 +118,16 @@ contract IOedax is Ownable
 
     function logParticipation(
         address user
+        )
+        public
+        returns (bool isNewUser);
+
+    function logTrade(
+        uint    auctionId,
+        address askToken,
+        address bidToken,
+        uint    askAmount,
+        uint    bidAmount
         )
         public;
 

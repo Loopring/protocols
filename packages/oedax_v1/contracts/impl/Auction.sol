@@ -28,6 +28,7 @@ import "../lib/MathUint.sol";
 import "./libauction/AuctionAccount.sol";
 import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionAsks.sol";
+import "./libauction/AuctionSettlement.sol";
 import "./libauction/AuctionStatus.sol";
 
 /// @title An Implementation of ICurve.
@@ -38,6 +39,7 @@ contract Auction is IAuction
     using AuctionAccount    for IAuctionData.State;
     using AuctionBids       for IAuctionData.State;
     using AuctionAsks       for IAuctionData.State;
+    using AuctionSettlement for IAuctionData.State;
     using AuctionStatus     for IAuctionData.State;
 
     modifier onlyOedax {
@@ -76,6 +78,7 @@ contract Auction is IAuction
 
         require(_P > 0);
         require(_M > 1);
+        require(_S >= 100000 && _S <= 1000000000000000000 /*18 digits*/);
 
         owner = msg.sender; // creator
 

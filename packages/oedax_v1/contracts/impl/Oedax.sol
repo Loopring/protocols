@@ -91,7 +91,6 @@ contract Oedax is IOedax, NoDefaultFunc
 
     /// @dev Create a new auction
     /// @param P Numerator part of the target price `p`.
-    /// @param S Denominator part of the target price `p`.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param T The maximum auction duration.
     function createAuction(
@@ -99,7 +98,6 @@ contract Oedax is IOedax, NoDefaultFunc
         address askToken,
         address bidToken,
         uint64  P,
-        uint64  S,
         uint8   M,
         uint    T
         )
@@ -121,7 +119,7 @@ contract Oedax is IOedax, NoDefaultFunc
             curveRegistry.getCurve(curveId),
             askToken,
             bidToken,
-            P, S, M, T
+            P, PRICE_BASE, M, T
         );
 
         auctionAddr = address(auction);
@@ -138,12 +136,42 @@ contract Oedax is IOedax, NoDefaultFunc
         )
         public
         onlyAuction
+        returns (bool isNewUser)
     {
-        if (!particationMap[user][msg.sender]) {
+        isNewUser = !particationMap[user][msg.sender];
+        if (isNewUser) {
             particationMap[user][msg.sender] = true;
             userAuctions[user].push(msg.sender);
-            auctionUsers[msg.sender].push(user);
         }
+    }
+
+    function logTrade(
+        uint    auctionId,
+        address askToken,
+        address bidToken,
+        uint    askAmount,
+        uint    bidAmount
+        )
+        public
+        onlyAuction
+    {
+        assert(auctionId > 0 && askAmount > 0 && bidAmount > 0);
+
+        TradeHistory memory ts = TradeHistory(
+            auctionId,
+            askAmount,
+            bidAmount,
+            block.timestamp
+        );
+        tradeHistory[bidToken][askToken].push(ts);
+
+        emit Trade(
+            auctionId,
+            askToken,
+            bidToken,
+            askAmount,
+            bidAmount
+        );
     }
 
     function transferToken(
