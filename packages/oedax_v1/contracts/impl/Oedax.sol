@@ -128,7 +128,6 @@ contract Oedax is IOedax, NoDefaultFunc
 
         // Transfer the Ether to the target auction
         auctionAddr.transfer(creationFeeEther);
-
         uint surplus = msg.value - creationFeeEther;
         if (surplus > 0) {
             msg.sender.transfer(surplus);

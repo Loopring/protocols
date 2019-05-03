@@ -107,7 +107,6 @@ contract IOedax is Ownable
         public;
 
     /// @dev Create a new auction
-    /// @param curve Address of the price curve.
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
     /// @param P Numerator part of the target price `p`.
@@ -115,7 +114,6 @@ contract IOedax is Ownable
     /// @param T The maximum auction duration.
     /// @return auction Auction address.
     function createAuction(
-        address curve,
         address askToken,
         address bidToken,
         uint64  P,
