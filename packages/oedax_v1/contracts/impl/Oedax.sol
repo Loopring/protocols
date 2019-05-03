@@ -136,11 +136,12 @@ contract Oedax is IOedax, NoDefaultFunc
         )
         public
         onlyAuction
+        returns (bool isNewUser)
     {
-        if (!particationMap[user][msg.sender]) {
+        isNewUser = !particationMap[user][msg.sender];
+        if (isNewUser) {
             particationMap[user][msg.sender] = true;
             userAuctions[user].push(msg.sender);
-            auctionUsers[msg.sender].push(user);
         }
     }
 

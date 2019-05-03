@@ -66,6 +66,13 @@ library IAuctionData
         uint    askFeeShare;
     }
 
+    struct Queue
+    {
+        QueueItem[] items;
+        bool        isBidding;
+        uint        amount;
+    }
+
     struct State
     {
         // The following files never change once initialized:
@@ -97,12 +104,11 @@ library IAuctionData
         uint[]  askShifts;
         uint[]  bidShifts;
 
-        QueueItem[] queue;
-        bool        queueIsBidding;
-        uint        queueAmount;
+        Queue   Q;
 
         // user => account)
         mapping (address => Account) accounts;
+        address[] users;
     }
 
     event Bid(

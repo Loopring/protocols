@@ -38,7 +38,7 @@ library AuctionQueue
       uint dequeued;
 
       while(_amount > 0) {
-        IAuctionData.QueueItem storage item = s.queue[idx];
+        IAuctionData.QueueItem storage item = s.Q.items[idx];
         IAuctionData.Account storage account = s.accounts[item.user];
 
         if (item.queued > _amount) {
@@ -51,7 +51,7 @@ library AuctionQueue
         item.queued = item.queued.sub(dequeued);
         _amount = _amount.sub(dequeued);
 
-        if (s.queueIsBidding) {
+        if (s.Q.isBidding) {
             account.bidAccepted = account.bidAccepted.add(dequeued);
             account.bidQueued = account.bidQueued.sub(dequeued);
             account.bidFeeShare = account.bidFeeShare.add(dequeued.mul(item.weight));
@@ -63,16 +63,16 @@ library AuctionQueue
       }
 
       if (idx > 0) {
-        uint size = s.queue.length - idx;
+        uint size = s.Q.items.length - idx;
         for (uint i = 0; i < size; i++) {
-          s.queue[i] = s.queue[i + idx];
+          s.Q.items[i] = s.Q.items[i + idx];
         }
-        s.queue.length = size;
+        s.Q.items.length = size;
       }
 
-      s.queueAmount = s.queueAmount.sub(amount);
+      s.Q.amount = s.Q.amount.sub(amount);
 
-      if (s.queueIsBidding) {
+      if (s.Q.isBidding) {
         s.bidAmount = s.bidAmount.add(amount);
       } else {
         s.askAmount = s.askAmount.add(amount);
@@ -90,18 +90,18 @@ library AuctionQueue
     {
         IAuctionData.Account storage account = s.accounts[msg.sender];
 
-        if (s.queueIsBidding) {
+        if (s.Q.isBidding) {
             account.bidQueued = account.bidQueued.add(amount);
         } else {
             account.askQueued = account.askQueued.add(amount);
         }
 
-        s.queue.push(IAuctionData.QueueItem(
+        s.Q.items.push(IAuctionData.QueueItem(
             msg.sender,
             amount,
             weight
         ));
 
-        s.queueAmount = s.queueAmount.add(amount);
+        s.Q.amount = s.Q.amount.add(amount);
     }
 }

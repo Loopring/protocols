@@ -54,29 +54,26 @@ contract IOedax is Ownable
 
     // == Constants & Variables ==
 
-    uint64 constant PRICE_BASE = 10000000000; // 12 digits
+    uint64 public constant PRICE_BASE = 10000000000; // 12 digits
 
-    address[] auctions;
+    address[] public auctions;
 
     // auction_address => auction_id
-    mapping (address => uint) auctionIdMap;
+    mapping (address => uint) public auctionIdMap;
     // auction_creator =>  list of his auctions
-    mapping (address => address[]) creatorAuctions;
+    mapping (address => address[]) public creatorAuctions;
 
     // user_address => auction_address => participated?
-    mapping (address => mapping (address => bool)) particationMap;
+    mapping (address => mapping (address => bool)) public particationMap;
 
     // user_address => list_of_auctions_participated
-    mapping (address => address[]) userAuctions;
+    mapping (address => address[]) public userAuctions;
 
-    // auction_address => list_of_auction_users
-    mapping (address => address[]) auctionUsers;
-
-    mapping (address => uint32) tokenRankMap;
+    mapping (address => uint32) public tokenRankMap;
 
     // price history
     // bid_token => ask_token => list_of_trade_history
-    mapping (address => mapping(address => TradeHistory[])) tradeHistory;
+    mapping (address => mapping(address => TradeHistory[])) public tradeHistory;
 
 
     // == Functions ==
@@ -122,7 +119,8 @@ contract IOedax is Ownable
     function logParticipation(
         address user
         )
-        public;
+        public
+        returns (bool isNewUser);
 
     function logTrade(
         uint    auctionId,
