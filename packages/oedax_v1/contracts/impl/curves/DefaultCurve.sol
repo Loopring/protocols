@@ -24,8 +24,6 @@ import "../../lib/NoDefaultFunc.sol";
 
 /// @title FractionalLinearCurve
 /// @author Daniel Wang  - <daniel@loopring.org>
-
-/// @dev A curve variation from `(1-x)/(1+μ*x)`.
 ///
 /// Let P0 and P1 be the min and max price, T be the duration,
 /// let e = P1 - P0, and μ be the curve parameter to control its shape:
