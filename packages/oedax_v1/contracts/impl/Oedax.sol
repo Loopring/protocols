@@ -94,7 +94,7 @@ contract Oedax is IOedax, NoDefaultFunc
         address askToken,
         address bidToken,
         uint64  P, // target price
-        uint64  S, // price scale
+        uint64  S, // price base
         uint8   M, // price factor
         uint    T
         )

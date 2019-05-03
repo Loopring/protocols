@@ -51,8 +51,8 @@ library AuctionStatus
 
         i.askAmount = s.askAmount;
         i.bidAmount = s.bidAmount;
-        i.queuedAskAmount = s.queueIsBid ? 0 : s.queueAmount;
-        i.queuedBidAmount = s.queueIsBid ?  s.queueAmount: 0;
+        i.queuedAskAmount = s.queueIsBidding ? 0 : s.queueAmount;
+        i.queuedBidAmount = s.queueIsBidding ?  s.queueAmount: 0;
 
         if (s.askAmount > 0) {
             i.actualPrice  = actualPrice(s);
@@ -108,8 +108,8 @@ library AuctionStatus
 
         assert(
             s.queueAmount == 0 ||
-            s.queueIsBid && i.bidAllowed == 0 ||
-            !s.queueIsBid && i.askAllowed == 0
+            s.queueIsBidding && i.bidAllowed == 0 ||
+            !s.queueIsBidding && i.askAllowed == 0
         );
 
         // Calculate when the auction will probably end.

@@ -53,7 +53,7 @@ contract Auction is IAuction
         address _askToken,
         address _bidToken,
         uint64  _P, // target price
-        uint64  _S, // price scale
+        uint64  _S, // price base
         uint8   _M, // price factor
         uint    _T  // auction duration
         )

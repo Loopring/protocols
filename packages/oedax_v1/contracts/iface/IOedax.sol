@@ -71,9 +71,9 @@ contract IOedax is Ownable
         address askToken,
         address bidToken,
         uint64  P, // target price
-        uint64  S, // price scale
+        uint64  S, // price base
         uint8   M, // price factor
-        uint    T
+        uint    T  // max duration
         )
         public
         payable

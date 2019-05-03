@@ -64,7 +64,7 @@ library AuctionBids
             queued = amount - i.bidAllowed;
 
             if (s.queueAmount > 0) {
-                if (s.queueIsBid) {
+                if (s.queueIsBidding) {
                     // Before this BID, the queue is for BIDs
                     assert(accepted == 0);
                 } else {
@@ -74,7 +74,7 @@ library AuctionBids
                     s.dequeue(s.queueAmount);
                 }
             }
-            s.queueIsBid = true;
+            s.queueIsBidding = true;
             s.enqueue(queued, weight);
         } else {
             // All amount are accepted into the auction.
@@ -83,7 +83,7 @@ library AuctionBids
 
             uint consumed = s.calcAmountToDequeue(accepted);
             if (consumed > 0) {
-                assert(s.queueIsBid == false);
+                assert(s.queueIsBidding == false);
                 s.dequeue(consumed);
             }
         }
