@@ -22,18 +22,25 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
+import "./AuctionStatus.sol";
+
 /// @title AuctionSettlement
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionSettlement
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
+    using AuctionStatus     for IAuctionData.State;
 
     function settle(
         IAuctionData.State storage s
         )
         internal
     {
+        // calculate the current-state
+        IAuctionData.Status memory i = s.getAuctionStatus();
+
+        require(i.canSettle, "unable to settle");
 
         calcBalancesAndMakeTransfers(s);
 
