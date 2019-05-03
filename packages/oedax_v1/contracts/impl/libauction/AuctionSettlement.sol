@@ -29,16 +29,13 @@ library AuctionSettlement
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    struct Tuple {
-        uint bid;
-        uint ask;
-    }
-
     function settle(
         IAuctionData.State storage s
         )
         internal
     {
+
+        calcBalanceAndClear(s);
         s.oedax.logTrade(
             s.auctionId,
             s.askToken,
@@ -48,7 +45,7 @@ library AuctionSettlement
         );
     }
 
-    function calcUserFinalBalances(
+    function calcBalanceAndClear(
         IAuctionData.State storage s
         )
         private
@@ -88,20 +85,6 @@ library AuctionSettlement
         }
     }
 
-    function withdrawToken(
-        address token,
-        address payable to,
-        uint    amount
-        )
-        private
-    {
-        if (token == address(0x0)) {
-            to.transfer(amount);
-        } else {
-            require(token.safeTransfer(to, amount));
-        }
-    }
-
     function calcUserFeeRewardBips(
         IAuctionData.State storage s
         )
@@ -128,4 +111,19 @@ library AuctionSettlement
           bips[i] /= total;
       }
     }
+
+    function withdrawToken(
+        address token,
+        address payable to,
+        uint    amount
+        )
+        private
+    {
+        if (token == address(0x0)) {
+            to.transfer(amount);
+        } else {
+            require(token.safeTransfer(to, amount));
+        }
+    }
+
 }
