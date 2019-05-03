@@ -35,7 +35,7 @@ library AuctionSettlement
         internal
     {
 
-        calcBalanceAndClear(s);
+        calcBalancesAndMakeTransfers(s);
 
         s.oedax.logTrade(
             s.auctionId,
@@ -46,7 +46,7 @@ library AuctionSettlement
         );
     }
 
-    function calcBalanceAndClear(
+    function calcBalancesAndMakeTransfers(
         IAuctionData.State storage s
         )
         private
