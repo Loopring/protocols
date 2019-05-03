@@ -37,8 +37,6 @@ contract Curve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
-    // 0 to 10 are reasonable, mu == 1 means the shortest duration for the
-    // auction is 1/3 of the T.
     uint public constant mu = 1;
 
     function xToY(
