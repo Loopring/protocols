@@ -26,7 +26,7 @@ import "../../lib/ERC20.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionAccount
 {
-    using MathUint for uint;
+    using MathUint  for uint;
 
     function getAccount(
         IAuctionData.State storage s,

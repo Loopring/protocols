@@ -20,12 +20,19 @@ pragma experimental ABIEncoderV2;
 import "../../iface/IAuctionData.sol";
 
 import "../../lib/MathUint.sol";
+import "../../lib/ERC20SafeTransfer.sol";
 
-/// @title AuctionQueue.
+/// @title AuctionSettlement
 /// @author Daniel Wang  - <daniel@loopring.org>
-library AuctionQueue
+library AuctionSettlement
 {
-    using MathUint for uint;
+    using MathUint          for uint;
+    using ERC20SafeTransfer for address;
+
+    struct Tuple {
+        uint bid;
+        uint ask;
+    }
 
     function settle(
         IAuctionData.State storage s
@@ -39,5 +46,86 @@ library AuctionQueue
             s.askAmount,
             s.bidAmount
         );
+    }
+
+    function calcUserFinalBalances(
+        IAuctionData.State storage s
+        )
+        private
+    {
+        uint size = s.users.length;
+        uint[] memory bips = calcUserFeeRewardBips(s);
+
+        uint bidFeeReward = s.bidAmount.mul(s.takerFeeBips) / 10000;
+        uint bidSettlement = s.bidAmount
+            .sub(bidFeeReward)
+            .sub(s.bidAmount.mul(s.protocolFeeBips) / 10000);
+
+        uint askFeeReward = s.askAmount.mul(s.takerFeeBips) / 10000;
+        uint askSettlement = s.askAmount
+            .sub(askFeeReward)
+            .sub(s.askAmount.mul(s.protocolFeeBips) / 10000);
+
+        for (uint i = 0; i < size; i++) {
+            address payable user = s.users[i];
+            IAuctionData.Account storage account = s.accounts[user];
+
+            withdrawToken(
+                s.askToken,
+                user,
+                account.askQueued
+                    .add(account.bidAccepted.mul(askSettlement) / s.bidAmount)
+                    .add(askFeeReward.mul(bips[i]) / 10000)
+            );
+
+            withdrawToken(
+                s.bidToken,
+                user,
+                account.bidQueued
+                    .add(account.askAccepted.mul(bidSettlement) / s.askAmount)
+                    .add(bidFeeReward.mul(bips[i]) / 10000)
+            );
+        }
+    }
+
+    function withdrawToken(
+        address token,
+        address payable to,
+        uint    amount
+        )
+        private
+    {
+        if (token == address(0x0)) {
+            to.transfer(amount);
+        } else {
+            require(token.safeTransfer(to, amount));
+        }
+    }
+
+    function calcUserFeeRewardBips(
+        IAuctionData.State storage s
+        )
+        private
+        view
+        returns (uint[] memory bips)
+    {
+      uint size = s.users.length;
+      uint total;
+      bips = new uint[](size);
+
+      uint i;
+      for (i = 0; i < size; i++) {
+          IAuctionData.Account storage account = s.accounts[s.users[i]];
+          bips[i] = (account.bidFeeShare / s.bidAmount)
+              .add(account.askFeeShare / s.askAmount);
+
+          total = total.add(bips[i]);
+      }
+
+      total /= 10000;
+
+      for (i = 0; i < size; i++) {
+          bips[i] /= total;
+      }
     }
 }

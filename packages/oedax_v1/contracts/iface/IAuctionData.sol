@@ -94,6 +94,10 @@ library IAuctionData
         uint    M; // price factor
         uint    T; // auction max duration
 
+
+        uint    protocolFeeBips;
+        uint    takerFeeBips;
+
         // The following fields WILL change on bids and asks.
         uint    askAmount;
         uint    bidAmount;
@@ -108,7 +112,7 @@ library IAuctionData
 
         // user => account)
         mapping (address => Account) accounts;
-        address[] users;
+        address payable[] users;
     }
 
     event Bid(
