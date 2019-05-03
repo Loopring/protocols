@@ -27,18 +27,6 @@ library AuctionQueue
 {
     using MathUint for uint;
 
-    function calcAmountToDequeue(
-        IAuctionData.State storage s,
-        uint amount
-        )
-        internal
-        view
-        returns (uint)
-    {
-        // TODO
-        return 0;
-    }
-
     function dequeue(
         IAuctionData.State storage s,
         uint amount
