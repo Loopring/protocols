@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 import "../../iface/ICurve.sol";
 
@@ -37,9 +38,9 @@ import "../../lib/NoDefaultFunc.sol";
 contract DefaultCurve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
-    using MathUint for uint64;
 
-    uint64 mu; // 0 to 10 are reasonable
+    string name;
+    uint   mu; // 0 to 10 are reasonable
 
     // -- Constructor --
     constructor(
@@ -53,10 +54,10 @@ contract DefaultCurve is ICurve, NoDefaultFunc
     }
 
     function xToY(
-        uint64  P0, // min price
-        uint64  P1, // max factor
-        uint    T,
-        uint    x
+        uint P0, // min price
+        uint P1, // max factor
+        uint T,
+        uint x
         )
         public
         view
@@ -67,11 +68,11 @@ contract DefaultCurve is ICurve, NoDefaultFunc
         y = (T.sub(x).mul(e) / mu.mul(x).add(T)).add(P0);
     }
 
-    function getCurveTime(
-        uint64  P0, // min price
-        uint64  P1, // max factor
-        uint    T,
-        uint    y
+    function yToX(
+        uint P0, // min price
+        uint P1, // max factor
+        uint T,
+        uint y
         )
         public
         view

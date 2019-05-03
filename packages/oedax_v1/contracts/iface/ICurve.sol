@@ -20,23 +20,21 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICurve
 {
-    string name;
-
-    function getCurveValue(
-        uint64  P0, // min price
-        uint64  P1, // max factor
-        uint    T,
-        uint    time
+    function xToY(
+        uint P0, // min price
+        uint P1, // max factor
+        uint T,
+        uint time
         )
         external
         view
         returns (uint value);
 
-    function getCurveTime(
-        uint64  P0, // min price
-        uint64  P1, // max factor
-        uint    T,
-        uint    value
+    function yToX(
+        uint P0, // min price
+        uint P1, // max factor
+        uint T,
+        uint value
         )
         external
         view

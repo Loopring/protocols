@@ -26,7 +26,6 @@ import "../../lib/MathUint.sol";
 library AuctionQueue
 {
     using MathUint for uint;
-    using MathUint for uint64;
 
     function getQueueConsumption(
         IAuctionData.State storage s,

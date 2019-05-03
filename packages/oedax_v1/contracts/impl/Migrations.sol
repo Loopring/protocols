@@ -15,11 +15,12 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 contract Migrations
 {
     address public owner;
-    uint public last_completed_migration;
+    uint    public last_completed_migration;
 
     modifier restricted()
     {

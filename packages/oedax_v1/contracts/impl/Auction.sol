@@ -35,7 +35,6 @@ import "./libauction/AuctionStatus.sol";
 contract Auction is IAuction
 {
     using MathUint          for uint;
-    using MathUint          for uint64;
     using AuctionAccount    for IAuctionData.State;
     using AuctionBids       for IAuctionData.State;
     using AuctionAsks       for IAuctionData.State;
@@ -69,8 +68,6 @@ contract Auction is IAuction
         require(_P > 0);
         require(_M > 1);
 
-        require(uint64(_P / _M) < _P && uint64(_P.mul(_M)) > _P, "overflow");
-
         owner = msg.sender; // creator
 
         state.oedax = IOedax(_oedax);
@@ -85,12 +82,16 @@ contract Auction is IAuction
         state.M = _M;
         state.T = _T ;
 
+        require(state.P / state.M < state.P);
+        require(state.P.mul(state.M) > state.P);
+
         state.askBaseUnit = uint(10) ** ERC20(_askToken).decimals();
         state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
 
         // verify against overflow
-        _S.mul(ERC20(_askToken).totalSupply())
-        .mul(ERC20(_bidToken).totalSupply());
+        state.S
+            .mul(ERC20(_askToken).totalSupply())
+            .mul(ERC20(_bidToken).totalSupply());
     }
 
     // == Public & External Functions ==

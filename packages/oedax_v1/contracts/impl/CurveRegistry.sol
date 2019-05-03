@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 import "../iface/ICurveRegistry.sol";
 

@@ -82,9 +82,9 @@ library IAuctionData
 
         uint    startTime;
 
-        uint64  P;
-        uint64  S;
-        uint8   M;
+        uint    P;
+        uint    S;
+        uint    M;
         uint    T;
 
         // The following fields WILL change on bids and asks.

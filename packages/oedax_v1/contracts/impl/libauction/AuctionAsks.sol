@@ -30,7 +30,6 @@ import "./AuctionQueue.sol";
 library AuctionAsks
 {
     using MathUint          for uint;
-    using MathUint          for uint64;
     using AuctionStatus     for IAuctionData.State;
     using AuctionAccount    for IAuctionData.State;
     using AuctionQueue      for IAuctionData.State;

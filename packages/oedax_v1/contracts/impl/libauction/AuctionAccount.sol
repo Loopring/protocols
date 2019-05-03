@@ -27,7 +27,6 @@ import "../../lib/ERC20.sol";
 library AuctionAccount
 {
     using MathUint for uint;
-    using MathUint for uint64;
 
     function getAccount(
         IAuctionData.State storage s,

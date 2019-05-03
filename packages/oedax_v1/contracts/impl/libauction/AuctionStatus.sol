@@ -27,7 +27,6 @@ import "../../lib/ERC20.sol";
 library AuctionStatus
 {
     using MathUint for uint;
-    using MathUint for uint64;
 
     function actualPrice(
             IAuctionData.State storage s
@@ -40,6 +39,7 @@ library AuctionStatus
         return s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
     }
 
+    // TODO: calculate time remaining
     function getAuctionStatus(
             IAuctionData.State storage s
         )
@@ -47,8 +47,8 @@ library AuctionStatus
         view
         returns (IAuctionData.Status memory i)
     {
-        uint64 P0 = uint64(s.P.mul(s.M));
-        uint64 P1 = uint64(s.P / s.M);
+        uint P0 = s.P.mul(s.M);
+        uint P1 = s.P / s.M;
 
         i.askAmount = s.askAmount;
         i.bidAmount = s.bidAmount;
@@ -63,18 +63,20 @@ library AuctionStatus
         require(i.isBounded || (s.askShift == 0 && s.bidShift == 0), "unbound shift");
 
         uint time = block.timestamp.sub(s.startTime);
-        uint span;
+        uint x;
+        uint y;
 
         // calculating asks
-        span = time.sub(s.askShift);
+        x = time.sub(s.askShift);
 
-        i.askPrice = s.curve.xToY(P0, P1, s.T, span);
+        i.askPrice = s.curve.xToY(P0, P1, s.T, x);
         i.newAskShift = s.askShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice > i.askPrice) {
-                i.newAskShift = time.sub(s.curve.yToX(P0, P1, s.T, i.actualPrice));
+                y = s.curve.yToX(P0, P1, s.T, i.actualPrice);
+                i.newAskShift = time.sub(y);
 
                 i.askPrice = i.actualPrice;
                 i.bidAllowed = 0;
@@ -86,14 +88,15 @@ library AuctionStatus
         }
 
         // calculating bids
-        span = time.sub(s.bidShift);
-        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, span);
+        x = time.sub(s.bidShift);
+        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, x);
         i.newBidShift = s.bidShift;
         i.bidAllowed = ~uint256(0); // = uint.MAX
 
         if (i.isBounded) {
             if (i.actualPrice < i.bidPrice) {
-                i.newAskShift = time.sub(s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice));
+                y = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice);
+                i.newAskShift = time.sub(y);
 
                 i.bidPrice = i.actualPrice;
                 i.askAllowed = 0;
@@ -109,5 +112,15 @@ library AuctionStatus
             s.queueIsBid && i.bidAllowed == 0 ||
             !s.queueIsBid && i.askAllowed == 0
         );
+
+        // Calculate when the auction will probably end.
+        x = i.isBounded ? i.actualPrice : s.P;  // where the ask price merge
+        y = s.P.mul(s.P) / x;                   // where the ask price merge
+
+        i.timeRemaining = MathUint.max(
+            s.curve.yToX(P0, P1, s.T, x) + i.newAskShift,
+            s.curve.yToX(P0, P1, s.T, y) + i.newBidShift
+        ) - time;
+
     }
 }
