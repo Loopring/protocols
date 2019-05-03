@@ -17,7 +17,6 @@
 pragma solidity 0.5.7;
 pragma experimental ABIEncoderV2;
 
-import "../iface/ICurveRegistry.sol";
 import "../iface/IOedax.sol";
 
 import "../lib/ERC20SafeTransfer.sol";
@@ -33,18 +32,10 @@ contract Oedax is IOedax, NoDefaultFunc
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
-    ICurveRegistry curveRegistry;
-
     // -- Constructor --
-    constructor(
-        address _curveRegistry
-        )
+    constructor()
         public
     {
-        require(_curveRegistry != address(0x0), "zero address");
-        owner = msg.sender;
-        curveRegistry = ICurveRegistry(_curveRegistry);
-
         // set ETH to the highest rank.
         setTokenRank(address(0x0), 1 << 255);
     }
@@ -56,24 +47,27 @@ contract Oedax is IOedax, NoDefaultFunc
 
     // == Public Functions ==
     function updateSettings(
-        uint16 _settleGracePeriodMinutes,
-        uint16 _minDurationMinutes,
-        uint16 _maxDurationMinutes,
-        uint16 _protocolFeeBips,
-        uint16 _makerRewardBips,
-        uint   _creationFeeEther
+        address _curve,
+        uint16  _settleGracePeriodMinutes,
+        uint16  _minDurationMinutes,
+        uint16  _maxDurationMinutes,
+        uint16  _protocolFeeBips,
+        uint16  _makerRewardBips,
+        uint    _creationFeeEther
         )
         external
         onlyOwner
     {
+        require(_curve != address(0x0), "zero address");
         require(_settleGracePeriodMinutes > 0, "zero value");
         require(_minDurationMinutes > 0, "zero value");
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
         require(_protocolFeeBips <= 250, "value too large");
         require(_makerRewardBips <= 250, "value too large");
-
         require(_creationFeeEther > 0, "zero value");
+
+        curveAddress = _curve;
 
         settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
         minDuration = _minDurationMinutes * 1 minutes;
@@ -102,7 +96,6 @@ contract Oedax is IOedax, NoDefaultFunc
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param T The maximum auction duration.
     function createAuction(
-        uint    curveId,
         address askToken,
         address bidToken,
         uint64  P,
@@ -114,6 +107,7 @@ contract Oedax is IOedax, NoDefaultFunc
         returns (address payable auctionAddr)
     {
         require(msg.value >= creationFeeEther, "insuffcient ETH fee");
+        require(curveAddress != address(0x0), "empty curve");
         require(T >= minDuration && T <= maxDuration, "invalid duration");
         require(
             tokenRankMap[bidToken] > tokenRankMap[askToken],
@@ -125,7 +119,6 @@ contract Oedax is IOedax, NoDefaultFunc
         Auction auction = new Auction(
             address(this),
             auctionId,
-            curveRegistry.getCurve(curveId),
             askToken,
             bidToken,
             P, PRICE_BASE, M, T

@@ -56,6 +56,7 @@ contract IOedax is Ownable
 
     uint64      public constant PRICE_BASE = 10000000000; // 12 digits
 
+    address     public curveAddress;
     uint16      public settleGracePeriod;
     uint16      public minDuration;
     uint16      public maxDuration;
@@ -106,7 +107,7 @@ contract IOedax is Ownable
         public;
 
     /// @dev Create a new auction
-    /// @param curveId The non-zero id of the price curve.
+    /// @param curve Address of the price curve.
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
     /// @param P Numerator part of the target price `p`.
@@ -114,7 +115,7 @@ contract IOedax is Ownable
     /// @param T The maximum auction duration.
     /// @return auction Auction address.
     function createAuction(
-        uint    curveId,
+        address curve,
         address askToken,
         address bidToken,
         uint64  P,
