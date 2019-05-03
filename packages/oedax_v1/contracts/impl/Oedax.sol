@@ -35,10 +35,6 @@ contract Oedax is IOedax, NoDefaultFunc
 
     ICurveRegistry curveRegistry;
 
-    uint16 settleGracePeriod;
-    uint16 minDuration;
-    uint16 maxDuration;
-
     // -- Constructor --
     constructor(
         address _curveRegistry
@@ -50,7 +46,7 @@ contract Oedax is IOedax, NoDefaultFunc
         curveRegistry = ICurveRegistry(_curveRegistry);
 
         // set ETH to the highest rank.
-        setTokenRank(address(0x0), ~uint32(0));
+        setTokenRank(address(0x0), 1 << 255);
     }
 
     modifier onlyAuction {
@@ -62,7 +58,10 @@ contract Oedax is IOedax, NoDefaultFunc
     function updateSettings(
         uint16 _settleGracePeriodMinutes,
         uint16 _minDurationMinutes,
-        uint16 _maxDurationMinutes
+        uint16 _maxDurationMinutes,
+        uint16 _protocolFeeBips,
+        uint16 _makerRewardBips,
+        uint   _creationFeeEther
         )
         external
         onlyOwner
@@ -71,16 +70,25 @@ contract Oedax is IOedax, NoDefaultFunc
         require(_minDurationMinutes > 0, "zero value");
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
+        require(_protocolFeeBips <= 250, "value too large");
+        require(_makerRewardBips <= 250, "value too large");
+
+        require(_creationFeeEther > 0, "zero value");
+
         settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
         minDuration = _minDurationMinutes * 1 minutes;
         maxDuration = _maxDurationMinutes * 1 minutes;
+
+        protocolFeeBips = _protocolFeeBips;
+        makerRewardBips = _makerRewardBips;
+        creationFeeEther = _creationFeeEther * 1 ether;
 
         emit SettingsUpdated();
     }
 
     function setTokenRank(
         address token,
-        uint32  rank
+        uint    rank
         )
         public
         onlyOwner
@@ -103,8 +111,9 @@ contract Oedax is IOedax, NoDefaultFunc
         )
         public
         payable
-        returns (address auctionAddr)
+        returns (address payable auctionAddr)
     {
+        require(msg.value >= creationFeeEther, "insuffcient ETH fee");
         require(T >= minDuration && T <= maxDuration, "invalid duration");
         require(
             tokenRankMap[bidToken] > tokenRankMap[askToken],
@@ -123,6 +132,14 @@ contract Oedax is IOedax, NoDefaultFunc
         );
 
         auctionAddr = address(auction);
+
+        // Transfer the Ether to the target auction
+        auctionAddr.transfer(creationFeeEther);
+
+        uint surplus = msg.value - creationFeeEther;
+        if (surplus > 0) {
+            msg.sender.transfer(surplus);
+        }
 
         auctionIdMap[auctionAddr] = auctionId;
         auctions.push(auctionAddr);

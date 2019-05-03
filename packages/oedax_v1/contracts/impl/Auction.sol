@@ -86,6 +86,7 @@ contract Auction is IAuction
         state.curve = ICurve(_curve);
 
         state.auctionId = _auctionId;
+
         state.askToken = _askToken;
         state.bidToken = _bidToken;
         state.startTime = block.timestamp;
