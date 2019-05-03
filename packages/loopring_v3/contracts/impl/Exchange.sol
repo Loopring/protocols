@@ -17,6 +17,7 @@
 pragma solidity 0.5.7;
 
 import "../lib/Ownable.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IExchange.sol";
 
@@ -35,7 +36,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, Ownable
+contract Exchange is IExchange, Ownable, ReentrancyGuard
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
@@ -160,6 +161,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         payable
+        nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew
@@ -175,6 +177,7 @@ contract Exchange is IExchange, Ownable
     function createFeeRecipientAccount()
         external
         payable
+        nonReentrant
         returns (uint24 accountID)
     {
         accountID = state.createFeeRecipientAccount();
@@ -236,6 +239,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -266,6 +270,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -275,6 +280,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -293,6 +299,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
         returns (uint)
     {
         return state.withdrawStake(recipient);
@@ -300,6 +307,7 @@ contract Exchange is IExchange, Ownable
 
     function burnStake()
         external
+        nonReentrant
     {
         // Always allow burning the stake when the exchange gets into withdrawal mode for now
         if(state.isInWithdrawalMode()) {
@@ -332,6 +340,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOperator
+        nonReentrant
     {
         state.commitBlock(blockType, numElements, data);
     }
@@ -342,6 +351,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOperator
+        nonReentrant
     {
         state.verifyBlock(blockIdx, proof);
     }
@@ -351,6 +361,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOperator
+        nonReentrant
     {
         state.revertBlock(blockIdx);
     }
@@ -394,6 +405,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         payable
+        nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew
@@ -425,6 +437,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         payable
+        nonReentrant
     {
         state.depositTo(
             false, // allowFeeRecipientAccount
@@ -442,6 +455,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         payable
+        nonReentrant
     {
         state.depositTo(
             false, // allowFeeRecipientAccount
@@ -491,6 +505,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         payable
+        nonReentrant
     {
         state.withdraw(token, amount);
     }
@@ -506,6 +521,7 @@ contract Exchange is IExchange, Ownable
         uint256[8] calldata balancePath
         )
         external
+        nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             msg.sender,
@@ -533,6 +549,7 @@ contract Exchange is IExchange, Ownable
         uint256[8] calldata balancePath
         )
         external
+        nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             owner,
@@ -551,6 +568,7 @@ contract Exchange is IExchange, Ownable
         uint depositIdx
         )
         external
+        nonReentrant
     {
         state.withdrawFromDepositRequest(depositIdx);
     }
@@ -560,6 +578,7 @@ contract Exchange is IExchange, Ownable
         uint slotIdx
         )
         external
+        nonReentrant
     {
         state.withdrawFromApprovedWithdrawal(
             blockIdx,
@@ -572,6 +591,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOperator
+        nonReentrant
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx);
@@ -581,6 +601,7 @@ contract Exchange is IExchange, Ownable
         uint blockIdx
         )
         external
+        nonReentrant
     {
         state.distributeWithdrawals(blockIdx);
     }
@@ -591,6 +612,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
         returns (address payable oldOperator)
     {
         oldOperator = state.setOperator(_operator);
@@ -604,6 +626,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
     {
         state.setFees(
             _accountCreationFeeETH,
@@ -634,6 +657,7 @@ contract Exchange is IExchange, Ownable
         )
         external
         onlyOwner
+        nonReentrant
     {
         state.purchaseDowntime(durationSeconds);
     }
@@ -659,11 +683,13 @@ contract Exchange is IExchange, Ownable
     function shutdown()
         external
         onlyOwner
+        nonReentrant
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
         require(!state.isShutdown(), "ALREADY_SHUTDOWN");
         state.shutdownStartTime = now;
+        emit Shutdown(state.shutdownStartTime);
         return true;
     }
 

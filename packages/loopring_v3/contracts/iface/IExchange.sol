@@ -58,6 +58,10 @@ contract IExchange
         uint            withdrawalFeeETH
     );
 
+    event Shutdown(
+        uint            timestamp
+    );
+
     event BlockCommitted(
         uint    indexed blockIdx,
         bytes32 indexed publicDataHash
