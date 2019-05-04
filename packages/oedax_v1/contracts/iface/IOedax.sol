@@ -128,7 +128,7 @@ contract IOedax is Ownable
         payable
         returns (address payable auctionAddr);
 
-    function logParticipation(
+    function logParticipant(
         address user
         )
         external

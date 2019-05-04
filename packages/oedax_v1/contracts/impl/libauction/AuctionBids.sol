@@ -47,12 +47,12 @@ library AuctionBids
         internal
     {
         require(amount > 0, "zero amount");
-        if(s.oedax.logParticipation(msg.sender)) {
+        if (s.oedax.logParticipant(msg.sender)) {
             s.users.push(msg.sender);
         }
 
-        uint time = block.timestamp - s.startTime;
-        uint weight = s.T > time? s.T - time : 0;
+        uint elapsed = block.timestamp - s.startTime;
+        uint weight = s.T.sub(elapsed);
         uint accepted;
         uint queued;
         uint dequeued;
@@ -90,22 +90,21 @@ library AuctionBids
         }
 
         // Update the book keeping
-        IAuctionData.Account storage account = s.accounts[msg.sender];
+        IAuctionData.Account storage a = s.accounts[msg.sender];
 
-        account.bidAccepted = account.bidAccepted.add(accepted);
-        account.bidFeeRebateWeight = account.bidFeeRebateWeight.add(accepted.mul(weight));
-
+        a.bidAccepted = a.bidAccepted.add(accepted);
+        a.bidFeeRebateWeight = a.bidFeeRebateWeight.add(accepted.mul(weight));
         s.bidAmount = s.bidAmount.add(accepted);
 
         if (s.bidTimePush != i.newBidTimePush) {
             s.bidTimePush = i.newBidTimePush;
-            s.bidTimePushs.push(time);
+            s.bidTimePushs.push(elapsed);
             s.bidTimePushs.push(s.bidTimePush);
         }
 
         if (s.askTimePush != i.newAskTimePush) {
             s.askTimePush = i.newAskTimePush;
-            s.askTimePushs.push(time);
+            s.askTimePushs.push(elapsed);
             s.askTimePushs.push(s.askTimePush);
         }
 
