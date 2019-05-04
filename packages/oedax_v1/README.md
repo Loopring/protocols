@@ -8,7 +8,7 @@
 - [x] settlement and send back token/ether
 - [x] curve implementation
 - [x] remove curve registry
-- [ ] calculate closing time
+- [x] calculate closing time
 - [ ] check price range and overflow
 - [ ] get list of auctions
 - [ ] test framework
