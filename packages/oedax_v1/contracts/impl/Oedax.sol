@@ -142,7 +142,7 @@ contract Oedax is IOedax, NoDefaultFunc
         emit AuctionCreated(auctionId, auctionAddr);
     }
 
-    function logParticipation(
+    function logParticipant(
         address user
         )
         external

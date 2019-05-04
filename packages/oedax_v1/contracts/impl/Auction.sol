@@ -170,8 +170,8 @@ contract Auction is IAuction
          askAllowed = i.askAllowed;
          bidAllowed = i.bidAllowed;
 
-         if (state.settledAt == 0) {
-            timeRemaining = i.closingAt > block.timestamp ? i.closingAt - block.timestamp : 0;
+         if (state.settlementTime == 0) {
+            timeRemaining = i.duration > block.timestamp ? i.duration - block.timestamp : 0;
          }
     }
 

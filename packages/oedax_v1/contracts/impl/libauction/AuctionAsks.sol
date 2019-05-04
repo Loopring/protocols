@@ -47,12 +47,12 @@ library AuctionAsks
         internal
     {
         require(amount > 0, "zero amount");
-        if(s.oedax.logParticipation(msg.sender)) {
+        if (s.oedax.logParticipant(msg.sender)) {
             s.users.push(msg.sender);
         }
 
-        uint time = block.timestamp - s.startTime;
-        uint weight = s.T > time? s.T - time : 0;
+        uint elapsed = block.timestamp - s.startTime;
+        uint weight = s.T.sub(elapsed);
         uint accepted;
         uint queued;
         uint dequeued;
@@ -70,7 +70,7 @@ library AuctionAsks
                     // Before this ASK, the queue is for ASKs
                     assert(accepted == 0);
                 } else {
-                    // Before this ASK, the queue is for ASKs, therefore we must have
+                    // Before this ASK, the queue is for BIDS, therefore we must have
                     // consumed all the pending ASKs in the queue.
                     assert(accepted > 0);
                     s.dequeue(s.Q.amount);
@@ -90,22 +90,21 @@ library AuctionAsks
         }
 
         // Update the book keeping
-        IAuctionData.Account storage account = s.accounts[msg.sender];
+        IAuctionData.Account storage a = s.accounts[msg.sender];
 
-        account.askAccepted = account.askAccepted.add(accepted);
-        account.askFeeRebateWeight = account.askFeeRebateWeight.add(accepted.mul(weight));
-
+        a.askAccepted = a.askAccepted.add(accepted);
+        a.askFeeRebateWeight = a.askFeeRebateWeight.add(accepted.mul(weight));
         s.askAmount = s.askAmount.add(accepted);
 
         if (s.askShift != i.newAskShift) {
             s.askShift = i.newAskShift;
-            s.askShifts.push(time);
+            s.askShifts.push(elapsed);
             s.askShifts.push(s.askShift);
         }
 
         if (s.askShift != i.newAskShift) {
             s.askShift = i.newAskShift;
-            s.askShifts.push(time);
+            s.askShifts.push(elapsed);
             s.askShifts.push(s.askShift);
         }
 

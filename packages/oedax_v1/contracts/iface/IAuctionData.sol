@@ -24,7 +24,7 @@ library IAuctionData
     struct Status
     {
       bool    isBounded;
-      uint    closingAt;
+      uint    duration;
 
       uint    actualPrice;
       uint    askPrice;
@@ -94,8 +94,8 @@ library IAuctionData
 
         // -- The following fields WILL change on bids and asks.
 
-        uint    closedAt;
-        uint    settledAt;
+        uint    closeTime;
+        uint    settlementTime;
 
         uint    askAmount;
         uint    bidAmount;

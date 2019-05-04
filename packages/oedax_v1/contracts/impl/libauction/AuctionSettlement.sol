@@ -55,26 +55,25 @@ library AuctionSettlement
         )
         internal
     {
-        require(s.settledAt == 0, "auction already settled");
+        require(s.settlementTime == 0, "auction already settled");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
-        require(block.timestamp >= i.closingAt, "auction still open");
+        require(block.timestamp >= s.startTime + i.duration, "auction still open");
 
         // update state
-        s.settledAt = block.timestamp;
-        s.closedAt = i.closingAt;
+        s.closeTime = s.startTime + i.duration;
+        s.settlementTime = block.timestamp;
 
-        uint timeSinceClose = block.timestamp - i.closingAt;
+        uint settlementDelay = s.settlementTime - s.closeTime;
 
         require(
-            timeSinceClose > s.oedax.settleGracePeriod() ||
-            msg.sender == owner,
+            settlementDelay > s.oedax.settleGracePeriod() || msg.sender == owner,
             "unauthorized"
         );
 
         payUsers(s);
 
-        paySettler(s, timeSinceClose);
+        paySettler(s, settlementDelay);
 
         collectFees(s, s.oedax.feeRecipient());
 
@@ -122,24 +121,22 @@ library AuctionSettlement
 
     function paySettler(
         IAuctionData.State storage s,
-        uint timeSinceClose
+        uint settlementDelay
         )
         private
     {
         uint gracePeriod = s.oedax.settleGracePeriod();
+        uint rebate = s.fees.creationFeeEther;
 
-        uint rebate = 0;//.s.fees.creationFeeEther();
-
-        if (timeSinceClose >= gracePeriod) {
+        if (settlementDelay >= gracePeriod) {
             rebate /= 2;
-        } else if (timeSinceClose > gracePeriod / 2) {
-            uint bips = 15000 - timeSinceClose.mul(10000) / gracePeriod;
+        } else if (settlementDelay >= gracePeriod / 2) {
+            uint bips = 15000 - settlementDelay.mul(10000) / gracePeriod;
             rebate = rebate.mul(bips) / 10000;
         }
 
-        if (rebate > 0) {
-            msg.sender.transfer(rebate);
-        }
+        assert(rebate > 0);
+        msg.sender.transfer(rebate);
     }
 
     function payUsers(
