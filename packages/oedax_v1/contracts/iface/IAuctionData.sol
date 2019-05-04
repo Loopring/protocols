@@ -87,7 +87,7 @@ library IAuctionData
 
         uint    startTime;
 
-        uint    P;  // target price
+        uint    Pn;  // target price
         uint    S;  // price base， P/S is the float value of the target price.
         uint    M;  // price factor
         uint    T;  // auction max duration

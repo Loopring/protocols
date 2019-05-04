@@ -51,7 +51,7 @@ contract Auction is IAuction
     /// @param _auctionId The auction's non-zero id.
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
-    /// @param _P Numerator part of the target price `p`.
+    /// @param _Pn Numerator part of the target price `p`.
     /// @param _S Denominator part of the target price `p`.
     /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param _T The maximum auction duration.
@@ -60,7 +60,7 @@ contract Auction is IAuction
         uint    _auctionId,
         address _askToken,
         address _bidToken,
-        uint64  _P,
+        uint64  _Pn,
         uint64  _S,
         uint8   _M,
         uint    _T
@@ -72,7 +72,7 @@ contract Auction is IAuction
         require(_auctionId > 0);
         require(_askToken != address(0x0) || _bidToken != address(0x0));
 
-        require(_P > 0);
+        require(_Pn > 0);
         require(_M > 1);
         require(_S >= 100000 && _S <= 1000000000000000000 /*18 digits*/);
 
@@ -91,13 +91,13 @@ contract Auction is IAuction
         state.askToken = _askToken;
         state.bidToken = _bidToken;
         state.startTime = block.timestamp;
-        state.P = _P;
+        state.Pn = _Pn;
         state.S = _S;
         state.M = _M;
         state.T = _T ;
 
-        require(state.P / state.M < state.P);
-        require(state.P.mul(state.M) > state.P);
+        require(state.Pn / state.M < state.Pn);
+        require(state.Pn.mul(state.M) > state.Pn);
 
         state.askBaseUnit = uint(10) ** ERC20(_askToken).decimals();
         state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
