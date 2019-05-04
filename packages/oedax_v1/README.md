@@ -6,9 +6,12 @@
 - [x] queue management
 - [x] support asks
 - [x] settlement and send back token/ether
-- [ ] calculate closing time
 - [x] curve implementation
+- [x] remove curve registry
+- [ ] calculate closing time
 - [ ] check price range and overflow
 - [ ] get list of auctions
 - [ ] test framework
-- [ ] smart curve implementation (remove curve registry)
+
+## Future work
+- [ ] smart curve implementation
