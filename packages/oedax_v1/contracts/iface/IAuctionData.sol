@@ -24,7 +24,7 @@ library IAuctionData
     struct Status
     {
       bool    isBounded;
-      uint    timeRemaining;
+      uint    closingAt;
 
       uint    actualPrice;
       uint    askPrice;
@@ -62,6 +62,13 @@ library IAuctionData
         uint        amount;
     }
 
+    struct Fees
+    {
+        uint16  protocolFeeBips;
+        uint16  makerRewardBips;
+        uint    creationFeeEther;
+    }
+
     struct State
     {
         // -- The following files never change once initialized:
@@ -69,6 +76,8 @@ library IAuctionData
         ICurve  curve;
 
         uint    auctionId;
+
+        Fees    fees;
 
         address askToken;
         address bidToken;
@@ -85,7 +94,8 @@ library IAuctionData
 
         // -- The following fields WILL change on bids and asks.
 
-        bool    hasSettled;
+        uint    closedAt;
+        uint    settledAt;
 
         uint    askAmount;
         uint    bidAmount;

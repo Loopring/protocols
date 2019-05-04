@@ -19,6 +19,7 @@ pragma solidity 0.5.7;
 import "../../iface/IAuctionData.sol";
 
 import "../../lib/MathUint.sol";
+import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
 import "./AuctionStatus.sol";
@@ -27,24 +28,74 @@ import "./AuctionStatus.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionSettlement
 {
+    event Trade(
+        address user,
+        int     askAmount,
+        int     bidAmount
+    );
+
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
     using AuctionStatus     for IAuctionData.State;
 
     function settle(
-        IAuctionData.State storage s
+        IAuctionData.State storage s,
+        address payable owner
         )
         internal
     {
-        require(!s.hasSettled, "settled already");
+        require(s.settledAt == 0, "auction already settled");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
-        require(i.timeRemaining == 0, "still open");
+        require(block.timestamp >= i.closingAt, "auction still open");
 
-        calcBalancesAndMakeTransfers(s);
+        // update state
+        s.settledAt = block.timestamp;
+        s.closedAt = i.closingAt;
 
-        s.hasSettled = true;
+        uint timeSinceClose = block.timestamp - i.closingAt;
+        uint gracePeriod = s.oedax.settleGracePeriod();
+        address payable feeRecipient = s.oedax.feeRecipient();
 
+        require(timeSinceClose > gracePeriod || msg.sender == owner);
+
+        uint creationFeeRebate = calcCreationFeeRebate(
+            timeSinceClose,
+            gracePeriod,
+            s.fees.creationFeeEther);
+
+        if (creationFeeRebate > 0) {
+            msg.sender.transfer(creationFeeRebate);
+        }
+
+        calcBalancesAndPayParticipants(s);
+
+        // transfer remaining Ether to fee recipient
+        withdrawToken(
+            feeRecipient,
+            address(0x0),
+            address(this).balance
+        );
+
+         // transfer remaining ask token to fee recipient
+        if (s.askToken != address(0x0)) {
+            withdrawToken(
+                feeRecipient,
+                s.askToken,
+                ERC20(s.askToken).balanceOf(address(this))
+            );
+        }
+
+         // transfer remaining bid token to fee recipient
+        if (s.bidToken != address(0x0)) {
+            withdrawToken(
+                feeRecipient,
+                s.bidToken,
+                ERC20(s.bidToken).balanceOf(address(this))
+            );
+        }
+
+        // omit an event
         s.oedax.logTrade(
             s.auctionId,
             s.askToken,
@@ -54,50 +105,65 @@ library AuctionSettlement
         );
     }
 
-    function calcBalancesAndMakeTransfers(
+    function calcCreationFeeRebate(
+        uint timeSinceClose,
+        uint gracePeriod,
+        uint creationFeeEther
+        )
+        private
+        pure
+        returns (uint rebate)
+    {
+        if (timeSinceClose >= gracePeriod) {
+            return creationFeeEther / 2;
+        } else if (timeSinceClose <= gracePeriod / 2) {
+            return creationFeeEther;
+        } else {
+            uint bips = 15000 - timeSinceClose.mul(10000) / gracePeriod;
+            return creationFeeEther.mul(bips) / 10000;
+        }
+    }
+
+    function calcBalancesAndPayParticipants(
         IAuctionData.State storage s
         )
         private
     {
         uint size = s.users.length;
-        uint[] memory bips = calcPerUserRewardBips(s);
+        uint[] memory bips = calcUserRewardBips(s);
 
-        uint makerRewardBips = s.oedax.makerRewardBips();
-        uint protocolFeeBips = s.oedax.protocolFeeBips();
-
-        uint bidFeeReward = s.bidAmount.mul(makerRewardBips) / 10000;
-        uint bidSettlement = s.bidAmount
-            .sub(bidFeeReward)
-            .sub(s.bidAmount.mul(protocolFeeBips) / 10000);
-
-        uint askFeeReward = s.askAmount.mul(makerRewardBips) / 10000;
+        uint askMakerReward = s.askAmount.mul(s.fees.makerRewardBips) / 10000;
         uint askSettlement = s.askAmount
-            .sub(askFeeReward)
-            .sub(s.askAmount.mul(protocolFeeBips) / 10000);
+            .sub(askMakerReward)
+            .sub(s.askAmount.mul(s.fees.protocolFeeBips) / 10000);
+
+        uint bidMakerReward = s.bidAmount.mul(s.fees.makerRewardBips) / 10000;
+        uint bidSettlement = s.bidAmount
+            .sub(bidMakerReward)
+            .sub(s.bidAmount.mul(s.fees.protocolFeeBips) / 10000);
+
 
         for (uint i = 0; i < size; i++) {
             address payable user = s.users[i];
             IAuctionData.Account storage account = s.accounts[user];
 
-            withdrawToken(
+            withdrawTokens(
+                user,
                 s.askToken,
-                user,
-                account.askQueued
-                    .add(account.bidAccepted.mul(askSettlement) / s.bidAmount)
-                    .add(askFeeReward.mul(bips[i]) / 10000)
-            );
-
-            withdrawToken(
+                account.askAccepted,
+                askSettlement.mul(account.bidAccepted) / s.bidAmount,
+                account.askQueued,
+                askMakerReward.mul(bips[i]) / 10000,
                 s.bidToken,
-                user,
-                account.bidQueued
-                    .add(account.askAccepted.mul(bidSettlement) / s.askAmount)
-                    .add(bidFeeReward.mul(bips[i]) / 10000)
+                account.bidAccepted,
+                bidSettlement.mul(account.askAccepted) / s.askAmount,
+                account.bidQueued,
+                bidMakerReward.mul(bips[i]) / 10000
             );
         }
     }
 
-    function calcPerUserRewardBips(
+    function calcUserRewardBips(
         IAuctionData.State storage s
         )
         private
@@ -124,17 +190,53 @@ library AuctionSettlement
       }
     }
 
+    function withdrawTokens(
+        address payable target,
+        address askToken,
+        uint    askPaid,
+        uint    askReceived,
+        uint    askReturend,
+        uint    askReward,
+        address bidToken,
+        uint    bidPaid,
+        uint    bidReceived,
+        uint    bidReturend,
+        uint    bidReward
+        )
+        private
+    {
+        withdrawToken(
+            target,
+            askToken,
+            askReceived.add(askReturend).add(askReward)
+        );
+
+        withdrawToken(
+            target,
+            bidToken,
+            bidReceived.add(bidReturend).add(bidReward)
+        );
+
+        emit Trade(
+            target,
+            int(askReceived.add(askReward)) - int(askPaid),
+            int(bidReceived.add(bidReward)) - int(bidPaid)
+        );
+    }
+
     function withdrawToken(
+        address payable target,
         address token,
-        address payable to,
         uint    amount
         )
         private
     {
-        if (token == address(0x0)) {
-            to.transfer(amount);
-        } else {
-            require(token.safeTransfer(to, amount));
+        if(amount > 0) {
+            if (token == address(0x0)) {
+                target.transfer(amount);
+            } else {
+                require(token.safeTransfer(target, amount));
+            }
         }
     }
 

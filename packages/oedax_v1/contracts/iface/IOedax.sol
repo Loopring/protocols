@@ -56,6 +56,8 @@ contract IOedax is Ownable
 
     uint64      public constant PRICE_BASE = 10000000000; // 12 digits
 
+    address payable public feeRecipient;
+
     address     public curveAddress;
     uint16      public settleGracePeriod;
     uint16      public minDuration;
@@ -85,12 +87,14 @@ contract IOedax is Ownable
 
     // == Functions ==
     function updateSettings(
-        uint16 _settleGracePeriodMinutes,
-        uint16 _minDurationMinutes,
-        uint16 _maxDurationMinutes,
-        uint16 _protocolFeeBips,
-        uint16 _makerRewardBips,
-        uint   _creationFeeEther
+        address payable _feeRecipient,
+        address _curve,
+        uint16  _settleGracePeriodMinutes,
+        uint16  _minDurationMinutes,
+        uint16  _maxDurationMinutes,
+        uint16  _protocolFeeBips,
+        uint16  _makerRewardBips,
+        uint    _creationFeeEther
         )
         external;
 

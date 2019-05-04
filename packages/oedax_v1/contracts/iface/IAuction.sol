@@ -24,6 +24,12 @@ import "./IAuctionData.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IAuction is Ownable
 {
+    event Trade(
+        address user,
+        int     askAmount,
+        int     bidAmount
+    );
+
     IAuctionData.State  state;
 
     function bid(uint amount)

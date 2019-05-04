@@ -46,6 +46,7 @@ contract Oedax is IOedax, NoDefaultFunc
 
     // == Public Functions ==
     function updateSettings(
+        address payable _feeRecipient,
         address _curve,
         uint16  _settleGracePeriodMinutes,
         uint16  _minDurationMinutes,
@@ -57,6 +58,7 @@ contract Oedax is IOedax, NoDefaultFunc
         external
         onlyOwner
     {
+        require(_feeRecipient != address(0x0), "zero address");
         require(_curve != address(0x0), "zero address");
         require(_settleGracePeriodMinutes > 0, "zero value");
         require(_minDurationMinutes > 0, "zero value");
@@ -67,6 +69,7 @@ contract Oedax is IOedax, NoDefaultFunc
         require(_creationFeeEther > 0, "zero value");
 
         curveAddress = _curve;
+        feeRecipient = _feeRecipient;
 
         settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
         minDuration = _minDurationMinutes * 1 minutes;
