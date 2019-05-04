@@ -52,7 +52,7 @@ contract Auction is IAuction
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
     /// @param _Pn Numerator part of the target price `p`.
-    /// @param _S Denominator part of the target price `p`.
+    /// @param _Pd Denominator part of the target price `p`.
     /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param _T The maximum auction duration.
     constructor(
@@ -61,7 +61,7 @@ contract Auction is IAuction
         address _askToken,
         address _bidToken,
         uint64  _Pn,
-        uint64  _S,
+        uint64  _Pd,
         uint8   _M,
         uint    _T
         )
@@ -74,7 +74,7 @@ contract Auction is IAuction
 
         require(_Pn > 0);
         require(_M > 1);
-        require(_S >= 100000 && _S <= 1000000000000000000 /*18 digits*/);
+        require(_Pd >= 100000 && _Pd <= 1000000000000000000 /*18 digits*/);
 
         owner = msg.sender; // creator
 
@@ -92,7 +92,7 @@ contract Auction is IAuction
         state.bidToken = _bidToken;
         state.startTime = block.timestamp;
         state.Pn = _Pn;
-        state.S = _S;
+        state.Pd = _Pd;
         state.M = _M;
         state.T = _T ;
 
@@ -109,7 +109,7 @@ contract Auction is IAuction
         require(askTotalSupply > 0, "unsupported ask token");
         require(bidTotalSupply > 0, "unsupported bid token");
 
-        state.S
+        state.Pd
             .mul(uint(askTotalSupply))
             .mul(uint(bidTotalSupply));
     }

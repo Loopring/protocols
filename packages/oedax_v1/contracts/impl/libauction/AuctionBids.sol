@@ -82,7 +82,7 @@ library AuctionBids
             // All amount are accepted into the auction.
             accepted = amount;
             queued = 0;
-            dequeued = (accepted.mul(s.S) / i.actualPrice).min(s.Q.amount);
+            dequeued = (accepted.mul(s.Pd) / i.actualPrice).min(s.Q.amount);
             if (dequeued > 0) {
                 assert(s.Q.isBidding == false);
                 s.dequeue(dequeued);

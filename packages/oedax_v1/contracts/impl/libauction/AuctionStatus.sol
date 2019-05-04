@@ -35,7 +35,7 @@ library AuctionStatus
         returns (uint)
     {
         assert(s.askAmount > 0);
-        return s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
+        return s.Pd.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
     }
 
     function getAuctionStatus(
@@ -91,7 +91,7 @@ library AuctionStatus
                         i.askPrice = s.curve.xToY(P0, P1, s.T, elapsed - s.askShift);
                         i.bidAllowed = (s.askAmount
                             .add(s.Q.isBidding ? 0 : s.Q.amount) // the asks-queued
-                            .mul(i.askPrice) / s.S
+                            .mul(i.askPrice) / s.Pd
                         ).sub(s.bidAmount);
                     } else {
                         // The ask-curve has already crossed the actual price line
@@ -103,7 +103,7 @@ library AuctionStatus
                         i.bidPrice = s.Pn.mul(s.Pn) / s.curve.xToY(P0, P1, s.T, elapsed - s.bidShift);
                         i.askAllowed = (s.bidAmount
                             .add(s.Q.isBidding ? s.Q.amount : 0) // the bids-queued
-                            .mul(s.S) / i.bidPrice
+                            .mul(s.Pd) / i.bidPrice
                         ).sub(s.askAmount);
                     } else {
                         // The bid-curve has already crossed the actual price line
