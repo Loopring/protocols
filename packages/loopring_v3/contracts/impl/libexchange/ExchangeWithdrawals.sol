@@ -135,7 +135,7 @@ library ExchangeWithdrawals
                 abi.encodePacked(
                     prevRequest.accumulatedHash,
                     accountID,
-                    tokenID,
+                    uint8(tokenID),
                     amount
                 )
             ),
@@ -252,23 +252,24 @@ library ExchangeWithdrawals
         // Get the withdraw data of the given slot
         // TODO(brecht): optimize SLOAD/SSTORE of bytes in storage
         bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint offset = (3 + 2 + 12) * (slotIdx + 1);
-        require(offset < withdrawals.length + 32, "INVALID_SLOT_IDX");
+        uint numBytesPerWithdrawal = 7;
+        uint offset = numBytesPerWithdrawal * (slotIdx + 1);
+        require(offset <= withdrawals.length, "INVALID_SLOT_IDX");
         uint data;
         assembly {
             data := mload(add(withdrawals, offset))
         }
 
         // Extract the data
-        uint24 accountID = uint24((data / 0x10000000000000000000000000000) & 0xFFFFFF);
-        uint16 tokenID = uint16((data / 0x1000000000000000000000000) & 0xFFFF);
-        uint amount = data & 0xFFFFFFFFFFFFFFFFFFFFFFFF;
+        uint16 tokenID = uint16((data >> 48) & 0xFF);
+        uint24 accountID = uint24((data >> 28) & 0xFFFFF);
+        uint amount = (data & 0xFFFFFFF).decodeFloat();
 
         ExchangeData.Account storage account = S.accounts[accountID];
 
         if (amount > 0) {
             // Set everything to 0 so it cannot be withdrawn anymore
-            data = data & 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0000000000000000000000000000000000;
+            data = data & uint(~((1 << (numBytesPerWithdrawal * 8)) - 1));
             assembly {
                 mstore(add(withdrawals, offset), data)
             }

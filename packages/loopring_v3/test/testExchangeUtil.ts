@@ -7,7 +7,9 @@ import * as pjs from "protocol2-js";
 import { SHA256 } from "sha2";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
+import * as constants from "./constants";
 import { Context } from "./context";
+import { toFloat } from "./float";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, Balance, Block, BlockType, Cancel, CancelBlock,
@@ -28,8 +30,6 @@ function replacer(name: any, val: any) {
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
-
-  public TREE_DEPTH_TRADING_HISTORY = 14;
 
   public ringSettlementBlockSizes = [1, 2];
   public depositBlockSizes = [4, 8];
@@ -658,6 +658,7 @@ export class ExchangeTestUtil {
   public async commitBlock(operator: Operator, blockType: BlockType, numElements: number,
                            data: string, filename: string) {
     const bitstream = new pjs.Bitstream(data);
+    console.log("[EVM]PublicData: " + bitstream.getData());
     const realmID = bitstream.extractUint32(0);
 
     // Make sure the keys are generated
@@ -815,7 +816,7 @@ export class ExchangeTestUtil {
         hashData.addNumber(deposit.accountID, 3);
         hashData.addBN(new BN(deposit.publicKeyX, 10), 32);
         hashData.addBN(new BN(deposit.publicKeyY, 10), 32);
-        hashData.addNumber(deposit.tokenID, 2);
+        hashData.addNumber(deposit.tokenID, 1);
         hashData.addBN(deposit.amount, 12);
         endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
       }
@@ -1004,7 +1005,7 @@ export class ExchangeTestUtil {
         const hashData = new pjs.Bitstream();
         hashData.addHex(endingHash);
         hashData.addNumber(withdrawal.accountID, 3);
-        hashData.addNumber(withdrawal.tokenID, 2);
+        hashData.addNumber(withdrawal.tokenID, 1);
         hashData.addBN(withdrawal.amount, 12);
         endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
       }
@@ -1049,16 +1050,15 @@ export class ExchangeTestUtil {
         bs.addNumber(block.count, 4);
       }
       for (const withdrawal of block.withdrawals) {
-        bs.addNumber(withdrawal.accountID, 3);
-        bs.addNumber(withdrawal.tokenID, 2);
-        bs.addBN(web3.utils.toBN(withdrawal.amountWithdrawn), 12);
+        bs.addNumber(withdrawal.tokenID, 1);
+        bs.addNumber((withdrawal.accountID * (2 ** 28)) + withdrawal.fAmountWithdrawn, 6);
       }
       if (!onchain && block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const withdrawal of block.withdrawals) {
           bs.addNumber(withdrawal.walletAccountID, 3);
-          bs.addNumber(withdrawal.feeTokenID, 2);
-          bs.addBN(web3.utils.toBN(withdrawal.fee), 12);
+          bs.addNumber(withdrawal.feeTokenID, 1);
+          bs.addNumber(toFloat(new BN(withdrawal.fee), constants.Float16Encoding), 2);
           bs.addNumber(withdrawal.walletSplitPercentage, 1);
         }
       }
@@ -1241,24 +1241,28 @@ export class ExchangeTestUtil {
           const orderA = ringSettlement.ring.orderA;
           const orderB = ringSettlement.ring.orderB;
 
-          bs.addNumber(ring.minerAccountID, 3);
-          bs.addNumber(ring.feeRecipientAccountID, 3);
-          bs.addNumber(ring.tokenID, 2);
-          bs.addBN(new BN(ring.fee, 10), 12);
-          bs.addBN(new BN(ring.margin, 10), 12);
-          let index = 0;
-          for (const order of [orderA, orderB]) {
-            bs.addNumber(order.accountID, 3);
-            bs.addNumber(order.walletAccountID, 3);
-            bs.addNumber(order.tokenS, 2);
-            bs.addNumber(order.tokenF, 2);
-            bs.addNumber(order.orderID, 4);
-            bs.addBN(new BN(index === 0 ? ring.fillS_A : ring.fillS_B, 10), 12);
-            bs.addBN(new BN(index === 0 ? ring.fillF_A : ring.fillF_B, 10), 12);
-            bs.addNumber(order.walletSplitPercentage, 1);
-            bs.addNumber(order.waiveFeePercentage, 1);
-            index++;
-          }
+          bs.addNumber((ring.minerAccountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + ring.feeRecipientAccountID, 5);
+          bs.addNumber(ring.tokenID, 1);
+          bs.addNumber(toFloat(new BN(ring.fee), constants.Float16Encoding), 2);
+          bs.addNumber(ring.fMargin, 3);
+
+          bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
+
+          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderA.walletAccountID, 5);
+          bs.addNumber(orderA.tokenS, 1);
+          bs.addNumber(orderA.tokenF, 1);
+          bs.addNumber(ring.fFillS_A, 3);
+          bs.addNumber(ring.fFillF_A, 3);
+          bs.addNumber(orderA.walletSplitPercentage, 1);
+          bs.addNumber(orderA.waiveFeePercentage, 1);
+
+          bs.addNumber((orderB.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.walletAccountID, 5);
+          bs.addNumber(orderB.tokenS, 1);
+          bs.addNumber(orderB.tokenF, 1);
+          bs.addNumber(ring.fFillS_B, 3);
+          bs.addNumber(ring.fFillF_B, 3);
+          bs.addNumber(orderB.walletSplitPercentage, 1);
+          bs.addNumber(orderB.waiveFeePercentage, 1);
         }
       }
 
@@ -1334,12 +1338,11 @@ export class ExchangeTestUtil {
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const cancel of cancels) {
-          bs.addNumber(cancel.accountID, 3);
-          bs.addNumber(cancel.orderTokenID, 2);
-          bs.addNumber(cancel.orderID, 4);
-          bs.addNumber(cancel.walletAccountID, 3);
-          bs.addNumber(cancel.feeTokenID, 2);
-          bs.addBN(cancel.fee, 12);
+          bs.addNumber((cancel.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + cancel.walletAccountID, 5);
+          bs.addNumber(cancel.orderTokenID, 1);
+          bs.addNumber(cancel.orderID, 3);
+          bs.addNumber(cancel.feeTokenID, 1);
+          bs.addNumber(toFloat(cancel.fee, constants.Float16Encoding), 2);
           bs.addNumber(cancel.walletSplitPercentage, 1);
         }
       }
@@ -1593,7 +1596,7 @@ export class ExchangeTestUtil {
     ownerIndex = (ownerIndex !== undefined) ? ownerIndex : this.getRandomInt(orderOwners.length);
     const keyPair = this.getKeyPairEDDSA();
     const owner = orderOwners[Number(ownerIndex)];
-    const amount = new BN(web3.utils.toWei("" + Math.random() * 1000, "ether"));
+    const amount = this.getRandomAmount();
     const token = this.getTokenAddress("LRC");
     return await this.deposit(this.exchangeId, owner,
                               keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
@@ -1615,7 +1618,7 @@ export class ExchangeTestUtil {
       this.exchangeId,
       depositInfo.accountID,
       depositInfo.token,
-      new BN(Math.random() * 1000),
+      this.getRandomAmount(),
       depositInfo.owner,
     );
   }
@@ -1625,7 +1628,7 @@ export class ExchangeTestUtil {
       this.exchangeId,
       depositInfo.accountID,
       depositInfo.token,
-      new BN(Math.random() * 1000),
+      this.getRandomAmount(),
       "LRC",
       new BN(0),
       0,
@@ -1825,7 +1828,7 @@ export class ExchangeTestUtil {
     }
     for (const order of orders) {
       // Make sure the trading history for the orders exists
-      const tradeHistorySlot = order.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+      const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
       if (!state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[tradeHistorySlot]) {
         state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[tradeHistorySlot] = {
           filled: new BN(0),
@@ -1839,6 +1842,10 @@ export class ExchangeTestUtil {
 
   public getRandomInt(max: number) {
     return Math.floor(Math.random() * max);
+  }
+
+  public getRandomAmount() {
+    return new BN(web3.utils.toWei("" + this.getRandomInt(100000000) / 1000));
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
@@ -2018,7 +2025,7 @@ export class ExchangeTestUtil {
   }
 
   private logFilledAmountOrder(description: string, accountBefore: Account, accountAfter: Account, order: OrderInfo) {
-    const tradeHistorySlot = order.orderID % (2 ** this.TREE_DEPTH_TRADING_HISTORY);
+    const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     const before = accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const after = accountAfter.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.amountS);

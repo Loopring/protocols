@@ -356,14 +356,14 @@ contract IExchange
     ///            - Start index (in withdrawal chain): 4 bytes
     ///            - Number of withdrawals processed: 4 bytes
     ///            - For every withdrawal:
-    ///                - Account ID: 3 bytes
-    ///                - Token ID: 2 bytes
-    ///                - Amount: 12 bytes
+    ///                - Token ID: 1 bytes
+    ///                - Account ID: 2,5 bytes
+    ///                - Amount: 3,5 bytes
     ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
     ///            - For every withdrawal:
-    ///                - Account ID: 3 bytes
-    ///                - Token ID: 2 bytes
-    ///                - Amount: 12 bytes
+    ///                - Token ID: 1 bytes
+    ///                - Account ID: 2,5 bytes
+    ///                - Amount: 3,5 bytes
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - None
     ///
@@ -374,19 +374,20 @@ contract IExchange
     ///        For RING_SETTLEMENT blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
-    ///                - Ring-matcher account ID: 3 bytes
-    ///                - Fee-recipient account ID: 3 bytes
-    ///                - Token ID (fee to operator): 2 bytes
-    ///                - Fee amount: 12 bytes
-    ///                - Margin (paid by first order): 12 bytes
+    ///                - Ring-matcher account ID: 2,5 bytes
+    ///                - Fee-recipient account ID: 2,5 bytes
+    ///                - Token ID (fee to operator): 1 bytes
+    ///                - Fee amount: 2 bytes
+    ///                - Margin (paid by first order): 3 bytes
+    ///                - OrderA.orderID: 2,5 bytes
+    ///                - OrderB.orderID: 2,5 bytes
     ///                - For both Orders:
-    ///                    - Account ID: 3 bytes
-    ///                    - Wallet account ID: 3 bytes
-    ///                    - TokenS: 2 bytes
-    ///                    - TokenF: 2 bytes
-    ///                    - Order ID: 4 bytes
-    ///                    - FillS: 12 bytes
-    ///                    - FillF: 12 bytes
+    ///                    - Account ID: 2,5 bytes
+    ///                    - Wallet account ID: 2,5 bytes
+    ///                    - TokenS: 1 bytes
+    ///                    - TokenF: 1 bytes
+    ///                    - FillS: 3 bytes
+    ///                    - FillF: 3 bytes
     ///                    - WalletSplitPercentage: 1 byte
     ///                    - WaiveFeePercentage: 1 byte
     ///        For DEPOSIT blocks add the following data:
@@ -397,18 +398,18 @@ contract IExchange
     ///            - Operator account ID: 3 bytes
     ///            - For every withdrawal:
     ///                - Wallet account ID: 3 bytes
-    ///                - Fee token ID: 2 bytes
-    ///                - Fee amount: 12 bytes
+    ///                - Fee token ID: 1 bytes
+    ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every cancel:
-    ///                - Account ID: 3 bytes
-    ///                - Token ID: 2 bytes
-    ///                - Order ID: 4 bytes
-    ///                - Wallet Account ID: 3 bytes
-    ///                - Fee token ID: 2 bytes
-    ///                - Fee amount: 12 bytes
+    ///                - Account ID: 2,5 bytes
+    ///                - Wallet Account ID: 2,5 bytes
+    ///                - Token ID: 1 bytes
+    ///                - Order ID: 3 bytes
+    ///                - Fee token ID: 1 bytes
+    ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
     function commitBlock(
         uint8  blockType,

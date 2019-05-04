@@ -255,15 +255,6 @@ class Ring
     orderA: Order,
     orderB: Order,
 
-    # Expected fill amounts, will be recalculated in the circuit
-    fillS_A: string,
-    fillB_A: string,
-    fillF_A: string,
-    fillS_B: string,
-    fillB_B: string,
-    fillF_B: string,
-    margin: string,
-
     minerAccountID: number,
     feeRecipientAccountID: number,
     tokenID: number,
