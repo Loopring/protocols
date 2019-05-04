@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "../../iface/IAuctionData.sol";
 
@@ -48,78 +47,103 @@ library AuctionStatus
     {
         uint P0 = s.P.mul(s.M);
         uint P1 = s.P / s.M;
+        assert(P0 > 0 && P1 > P0);
 
-        i.askAmount = s.askAmount;
-        i.bidAmount = s.bidAmount;
-        i.queuedAskAmount = s.Q.isBidding ? 0 : s.Q.amount;
-        i.queuedBidAmount = s.Q.isBidding ?  s.Q.amount: 0;
+        // uint time = block.timestamp;
+        uint x = block.timestamp.sub(s.startTime);
 
         if (s.askAmount > 0) {
             i.actualPrice  = actualPrice(s);
             i.isBounded = i.actualPrice >= P0 && i.actualPrice <= P1;
         }
 
-        require(i.isBounded || (s.askShift == 0 && s.bidShift == 0), "unbound shift");
+        i.askPrice = s.curve.xToY(P0, P1, s.T, x - s.askShift);
+        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, x - s.bidShift);
 
-        uint time = block.timestamp.sub(s.startTime);
-        uint x;
-        uint y;
+        if (!i.isBounded) {
+            assert(s.askShift == 0 && s.bidShift == 0);
 
-        // calculating asks
-        x = time.sub(s.askShift);
-
-        i.askPrice = s.curve.xToY(P0, P1, s.T, x);
-        i.newAskShift = s.askShift;
-        i.bidAllowed = ~uint256(0); // = uint.MAX
-
-        if (i.isBounded) {
-            if (i.actualPrice > i.askPrice) {
-                y = s.curve.yToX(P0, P1, s.T, i.actualPrice);
-                i.newAskShift = time.sub(y);
-
+            if (s.settledAt > 0) {
+                // case 1) prie unbounded and settled
+                i.askPrice = s.P;
+                i.bidPrice = s.P;
+                // assert(i.closingAt == 0);
+                // assert(i.actualPrice == 0);
+                // assert(i.askAllowed ==0);
+                // assert(i.bidAllowed == 0);
+                // assert(i.newAskShift == 0);
+                // assert(i.newBidShift == 0);
+            } else {
+                // case 2) unbounded and to be settled
+                i.closingAt = s.curve.yToX(P0, P1, s.T, s.P); // the earliest end time
+                if (i.closingAt > block.timestamp) {
+                    // the auction is still open
+                    i.askAllowed = ~uint256(0); // = uint.MAX
+                    i.bidAllowed = ~uint256(0); // = uint.MAX
+                    // assert(i.actualPrice == 0);
+                    // assert(i.newAskShift == 0);
+                    // assert(i.newBidShift == 0);
+                }
+            }
+        } else {
+            if (s.settledAt > 0) {
+                // case 3) price bounded and settled
                 i.askPrice = i.actualPrice;
-                i.bidAllowed = 0;
-            } else {
-                i.bidAllowed = (
-                    s.askAmount.add(i.queuedAskAmount).mul(i.askPrice) / s.S
-                ).sub(s.bidAmount);
-            }
-        }
-
-        // calculating bids
-        x = time.sub(s.bidShift);
-        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, x);
-        i.newBidShift = s.bidShift;
-        i.bidAllowed = ~uint256(0); // = uint.MAX
-
-        if (i.isBounded) {
-            if (i.actualPrice < i.bidPrice) {
-                y = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice);
-                i.newAskShift = time.sub(y);
-
                 i.bidPrice = i.actualPrice;
-                i.askAllowed = 0;
+                // assert(i.closingAt == 0);
+                // assert(i.actualPrice == 0);
+                // assert(i.askAllowed ==0);
+                // assert(i.bidAllowed == 0);
+                // assert(i.newAskShift == 0);
+                // assert(i.newBidShift == 0);
             } else {
-                i.askAllowed = (
-                    s.bidAmount.add(i.queuedBidAmount).mul(s.S) / i.bidPrice
-                ).sub(s.askAmount);
+                // case 4) price bounded and but unsettled
+                i.newAskShift = s.askShift;
+                i.newBidShift = s.bidShift;
+
+                // calculating asks
+                if (i.askPrice < i.actualPrice) {
+                    i.askPrice = i.actualPrice;
+
+                    // The ask-curve is bounded by the actual price line,
+                    // we need to calculate the new ask-shift
+                    i.closingAt = s.curve.yToX(P0, P1, s.T, i.actualPrice);
+                    i.newAskShift = x.sub(i.closingAt);
+
+                    // assert(i.bidAllowed == 0);
+                } else if (i.askPrice > i.actualPrice) {
+                    // There is still room for new bids to be accepted
+                    i.bidAllowed = (s.askAmount
+                        .add(s.Q.isBidding ? 0: s.Q.amount) // the ask-queued
+                        .mul(i.askPrice) / s.S
+                    ).sub(s.bidAmount);
+
+                    // there are still extra time for the ask-curve to drop
+                    i.closingAt = s.curve.yToX(P0, P1, s.T, i.actualPrice) + s.askShift;
+                }
+
+                // calculating bids
+                if (i.bidPrice > i.actualPrice) {
+                    i.bidPrice = i.actualPrice;
+
+                    // The bid-curve is bounded by the actual price line,
+                    // we need to calculate the new bid-shift
+                    i.closingAt = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice);
+                    i.newBidShift = x.sub(i.closingAt);
+
+                    // assert(i.askAllowed = 0);
+                } else if (i.bidPrice < i.actualPrice) {
+                    // There is still room for new asks to be accepted
+                    i.askAllowed = (s.bidAmount.add(
+                        s.Q.isBidding ? s.Q.amount: 0
+                        ).mul(s.S) / i.bidPrice).sub(s.askAmount);
+
+                    // there are still extra time for the ask-curve to rise
+                    i.closingAt = i.closingAt.max(
+                        s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice) + s.bidShift
+                    );
+                }
             }
         }
-
-        assert(
-            s.Q.amount == 0 ||
-            s.Q.isBidding && i.bidAllowed == 0 ||
-            !s.Q.isBidding && i.askAllowed == 0
-        );
-
-        // Calculate when the auction will probably end.
-        x = i.isBounded ? i.actualPrice : s.P;                  // where the ask price merge
-        y = i.isBounded ? s.P.mul(s.P) / i.actualPrice : s.P;   // where the bid price merge
-
-        i.timeRemaining = MathUint.max(
-            s.curve.yToX(P0, P1, s.T, x) + i.newAskShift,
-            s.curve.yToX(P0, P1, s.T, y) + i.newBidShift
-        ) - time;
-
     }
 }

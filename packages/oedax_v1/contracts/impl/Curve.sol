@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "..//iface/ICurve.sol";
 
@@ -37,14 +36,7 @@ contract Curve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
-    uint   mu; // 0 to 10 are reasonable
-
-    // -- Constructor --
-    constructor(uint64 _mu)
-        public
-    {
-        mu = _mu;
-    }
+    uint public constant mu = 1;
 
     function xToY(
         uint P0, // min price

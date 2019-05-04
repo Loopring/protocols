@@ -24,28 +24,17 @@ library IAuctionData
     struct Status
     {
       bool    isBounded;
-      bool    isClosed;
-
-      bool    canSettle;
-      bool    isSettled;
+      uint    closingAt;
 
       uint    actualPrice;
       uint    askPrice;
       uint    bidPrice;
-
-      uint    askAmount;
-      uint    bidAmount;
 
       uint    newAskShift;
       uint    newBidShift;
 
       uint    askAllowed;
       uint    bidAllowed;
-
-      uint    queuedAskAmount;
-      uint    queuedBidAmount;
-
-      uint    timeRemaining;
     }
 
     struct QueueItem
@@ -59,11 +48,11 @@ library IAuctionData
     {
         uint    bidAccepted;
         uint    bidQueued;
-        uint    bidFeeShare;
+        uint    bidFeeRebateWeight;
 
         uint    askAccepted;
         uint    askQueued;
-        uint    askFeeShare;
+        uint    askFeeRebateWeight;
     }
 
     struct Queue
@@ -73,13 +62,22 @@ library IAuctionData
         uint        amount;
     }
 
+    struct Fees
+    {
+        uint16  protocolFeeBips;
+        uint16  takerFeeBips;
+        uint    creationFeeEther;
+    }
+
     struct State
     {
-        // The following files never change once initialized:
+        // -- The following files never change once initialized:
         IOedax  oedax;
         ICurve  curve;
 
         uint    auctionId;
+
+        Fees    fees;
 
         address askToken;
         address bidToken;
@@ -89,12 +87,16 @@ library IAuctionData
 
         uint    startTime;
 
-        uint    P; // target price
-        uint    S; // price base， P/S is the float value of the target price.
-        uint    M; // price factor
-        uint    T; // auction max duration
+        uint    P;  // target price
+        uint    S;  // price base， P/S is the float value of the target price.
+        uint    M;  // price factor
+        uint    T;  // auction max duration
 
-        // The following fields WILL change on bids and asks.
+        // -- The following fields WILL change on bids and asks.
+
+        uint    closedAt;
+        uint    settledAt;
+
         uint    askAmount;
         uint    bidAmount;
 

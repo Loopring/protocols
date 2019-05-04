@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "../iface/IAuction.sol";
 import "../iface/IAuctionData.sol";
@@ -82,6 +81,12 @@ contract Auction is IAuction
         state.oedax = IOedax(_oedax);
         state.curve = ICurve(state.oedax.curveAddress());
 
+        state.fees = IAuctionData.Fees(
+            state.oedax.protocolFeeBips(),
+            state.oedax.takerFeeBips(),
+            state.oedax.creationFeeEther()
+        );
+
         state.auctionId = _auctionId;
         state.askToken = _askToken;
         state.bidToken = _bidToken;
@@ -98,9 +103,15 @@ contract Auction is IAuction
         state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
 
         // verify against overflow
+        int askTotalSupply = int(ERC20(_askToken).totalSupply());
+        int bidTotalSupply = int(ERC20(_bidToken).totalSupply());
+
+        require(askTotalSupply > 0, "unsupported ask token");
+        require(bidTotalSupply > 0, "unsupported bid token");
+
         state.S
-            .mul(ERC20(_askToken).totalSupply())
-            .mul(ERC20(_bidToken).totalSupply());
+            .mul(uint(askTotalSupply))
+            .mul(uint(bidTotalSupply));
     }
 
     // == Public & External Functions ==
@@ -118,25 +129,50 @@ contract Auction is IAuction
     }
 
     function bid(uint amount)
-        public
+        external
     {
         uint _amount = state.depositToken(state.bidToken, amount);
         state.bid(_amount);
     }
 
     function ask(uint amount)
-        public
+        external
     {
         uint _amount = state.depositToken(state.askToken, amount);
         state.ask(_amount);
     }
 
-    function getAuctionStatus()
-        public
-        view
-        returns (IAuctionData.Status memory)
+    function settle()
+        external
     {
-        return state.getAuctionStatus();
+        state.settle(owner);
+    }
+
+    function getStatus()
+        external
+        view
+        returns (
+            bool isBounded,
+            uint timeRemaining,
+            uint actualPrice,
+            uint askPrice,
+            uint bidPrice,
+            uint askAllowed,
+            uint bidAllowed
+        )
+    {
+         IAuctionData.Status memory i = state.getAuctionStatus();
+
+         isBounded = i.isBounded;
+         actualPrice = i.actualPrice;
+         askPrice = i.askPrice;
+         bidPrice = i.bidPrice;
+         askAllowed = i.askAllowed;
+         bidAllowed = i.bidAllowed;
+
+         if (state.settledAt == 0) {
+            timeRemaining = i.closingAt > block.timestamp ? i.closingAt - block.timestamp : 0;
+         }
     }
 
     function getAccount(address user)

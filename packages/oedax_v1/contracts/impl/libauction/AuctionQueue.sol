@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "../../iface/IAuctionData.sol";
 
@@ -54,11 +53,11 @@ library AuctionQueue
         if (s.Q.isBidding) {
             account.bidAccepted = account.bidAccepted.add(dequeued);
             account.bidQueued = account.bidQueued.sub(dequeued);
-            account.bidFeeShare = account.bidFeeShare.add(dequeued.mul(item.weight));
+            account.bidFeeRebateWeight = account.bidFeeRebateWeight.add(dequeued.mul(item.weight));
         } else {
             account.askAccepted = account.askAccepted.add(dequeued);
             account.askQueued = account.askQueued.sub(dequeued);
-            account.askFeeShare = account.askFeeShare.add(dequeued.mul(item.weight));
+            account.askFeeRebateWeight = account.askFeeRebateWeight.add(dequeued.mul(item.weight));
         }
       }
 

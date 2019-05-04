@@ -36,7 +36,7 @@ contract IOedax is Ownable
         address auctionAddr
     );
 
-    event Trade(
+    event AuctionSettled(
         uint    auctionId,
         address askToken,
         address bidToken,
@@ -56,12 +56,14 @@ contract IOedax is Ownable
 
     uint64      public constant PRICE_BASE = 10000000000; // 12 digits
 
+    address payable public feeRecipient;
+
     address     public curveAddress;
     uint16      public settleGracePeriod;
     uint16      public minDuration;
     uint16      public maxDuration;
     uint16      public protocolFeeBips;
-    uint16      public makerRewardBips;
+    uint16      public takerFeeBips;
     uint        public creationFeeEther;
     address[]   public auctions;
 
@@ -85,12 +87,14 @@ contract IOedax is Ownable
 
     // == Functions ==
     function updateSettings(
-        uint16 _settleGracePeriodMinutes,
-        uint16 _minDurationMinutes,
-        uint16 _maxDurationMinutes,
-        uint16 _protocolFeeBips,
-        uint16 _makerRewardBips,
-        uint   _creationFeeEther
+        address payable _feeRecipient,
+        address _curve,
+        uint16  _settleGracePeriodMinutes,
+        uint16  _minDurationMinutes,
+        uint16  _maxDurationMinutes,
+        uint16  _protocolFeeBips,
+        uint16  _takerFeeBips,
+        uint    _creationFeeEther
         )
         external;
 
@@ -120,30 +124,30 @@ contract IOedax is Ownable
         uint8   M,
         uint    T
         )
-        public
+        external
         payable
         returns (address payable auctionAddr);
 
     function logParticipation(
         address user
         )
-        public
+        external
         returns (bool isNewUser);
 
-    function logTrade(
+    function logSettlement(
         uint    auctionId,
         address askToken,
         address bidToken,
         uint    askAmount,
         uint    bidAmount
         )
-        public;
+        external;
 
-    function transferToken(
+    function depositToken(
         address token,
         address user,
         uint    amount
         )
-        public
+        external
         returns (bool success);
 }

@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "../../iface/IAuctionData.sol";
 
@@ -94,7 +93,7 @@ library AuctionAsks
         IAuctionData.Account storage account = s.accounts[msg.sender];
 
         account.askAccepted = account.askAccepted.add(accepted);
-        account.askFeeShare = account.askFeeShare.add(accepted.mul(weight));
+        account.askFeeRebateWeight = account.askFeeRebateWeight.add(accepted.mul(weight));
 
         s.askAmount = s.askAmount.add(accepted);
 
