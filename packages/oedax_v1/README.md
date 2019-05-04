@@ -6,7 +6,7 @@
 - [x] queue management
 - [x] support asks
 - [x] settlement and send back token/ether
-- [x] calculate time remaining
+- [ ] calculate closing time
 - [x] curve implementation
 - [ ] check price range and overflow
 - [ ] get list of auctions
