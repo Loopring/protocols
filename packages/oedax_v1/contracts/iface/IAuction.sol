@@ -38,6 +38,9 @@ contract IAuction is Ownable
     function ask(uint amount)
         external;
 
+    function settle()
+      external;
+
     function getStatus()
         external
         view

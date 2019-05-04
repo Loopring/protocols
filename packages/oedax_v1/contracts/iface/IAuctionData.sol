@@ -48,11 +48,11 @@ library IAuctionData
     {
         uint    bidAccepted;
         uint    bidQueued;
-        uint    bidFeeShare;
+        uint    bidFeeRebateWeight;
 
         uint    askAccepted;
         uint    askQueued;
-        uint    askFeeShare;
+        uint    askFeeRebateWeight;
     }
 
     struct Queue
@@ -65,7 +65,7 @@ library IAuctionData
     struct Fees
     {
         uint16  protocolFeeBips;
-        uint16  makerRewardBips;
+        uint16  takerFeeBips;
         uint    creationFeeEther;
     }
 

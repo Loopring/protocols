@@ -83,7 +83,7 @@ contract Auction is IAuction
 
         state.fees = IAuctionData.Fees(
             state.oedax.protocolFeeBips(),
-            state.oedax.makerRewardBips(),
+            state.oedax.takerFeeBips(),
             state.oedax.creationFeeEther()
         );
 
@@ -140,6 +140,12 @@ contract Auction is IAuction
     {
         uint _amount = state.depositToken(state.askToken, amount);
         state.ask(_amount);
+    }
+
+    function settle()
+        external
+    {
+        state.settle(owner);
     }
 
     function getStatus()

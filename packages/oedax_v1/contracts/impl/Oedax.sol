@@ -52,7 +52,7 @@ contract Oedax is IOedax, NoDefaultFunc
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
-        uint16  _makerRewardBips,
+        uint16  _takerFeeBips,
         uint    _creationFeeEther
         )
         external
@@ -65,7 +65,7 @@ contract Oedax is IOedax, NoDefaultFunc
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
         require(_protocolFeeBips <= 250, "value too large");
-        require(_makerRewardBips <= 250, "value too large");
+        require(_takerFeeBips <= 250, "value too large");
         require(_creationFeeEther > 0, "zero value");
 
         curveAddress = _curve;
@@ -76,7 +76,7 @@ contract Oedax is IOedax, NoDefaultFunc
         maxDuration = _maxDurationMinutes * 1 minutes;
 
         protocolFeeBips = _protocolFeeBips;
-        makerRewardBips = _makerRewardBips;
+        takerFeeBips = _takerFeeBips;
         creationFeeEther = _creationFeeEther * 1 ether;
 
         emit SettingsUpdated();
@@ -156,7 +156,7 @@ contract Oedax is IOedax, NoDefaultFunc
         }
     }
 
-    function logTrade(
+    function logSettlement(
         uint    auctionId,
         address askToken,
         address bidToken,
@@ -176,7 +176,7 @@ contract Oedax is IOedax, NoDefaultFunc
         );
         tradeHistory[bidToken][askToken].push(ts);
 
-        emit Trade(
+        emit AuctionSettled(
             auctionId,
             askToken,
             bidToken,
