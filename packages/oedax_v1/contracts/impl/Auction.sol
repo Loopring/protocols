@@ -118,25 +118,41 @@ contract Auction is IAuction
     }
 
     function bid(uint amount)
-        public
+        external
     {
         uint _amount = state.depositToken(state.bidToken, amount);
         state.bid(_amount);
     }
 
     function ask(uint amount)
-        public
+        external
     {
         uint _amount = state.depositToken(state.askToken, amount);
         state.ask(_amount);
     }
 
-    function getAuctionStatus()
-        public
+    function getStatus()
+        external
         view
-        returns (IAuctionData.Status memory)
+        returns (
+            bool isBounded,
+            uint timeRemaining,
+            uint actualPrice,
+            uint askPrice,
+            uint bidPrice,
+            uint askAllowed,
+            uint bidAllowed
+        )
     {
-        return state.getAuctionStatus();
+         IAuctionData.Status memory i = state.getAuctionStatus();
+
+         isBounded = i.isBounded;
+         timeRemaining = i.timeRemaining;
+         actualPrice = i.actualPrice;
+         askPrice = i.askPrice;
+         bidPrice = i.bidPrice;
+         askAllowed = i.askAllowed;
+         bidAllowed = i.bidAllowed;
     }
 
     function getAccount(address user)

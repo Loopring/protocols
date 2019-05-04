@@ -37,12 +37,14 @@ library AuctionSettlement
         )
         internal
     {
-        // calculate the current-state
-        IAuctionData.Status memory i = s.getAuctionStatus();
+        require(!s.hasSettled, "settled already");
 
-        require(i.canSettle, "unable to settle");
+        IAuctionData.Status memory i = s.getAuctionStatus();
+        require(i.timeRemaining == 0, "still open");
 
         calcBalancesAndMakeTransfers(s);
+
+        s.hasSettled = true;
 
         s.oedax.logTrade(
             s.auctionId,

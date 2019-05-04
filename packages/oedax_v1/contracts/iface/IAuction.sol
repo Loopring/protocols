@@ -25,4 +25,23 @@ import "./IAuctionData.sol";
 contract IAuction is Ownable
 {
     IAuctionData.State  state;
+
+    function bid(uint amount)
+        external;
+
+    function ask(uint amount)
+        external;
+
+    function getStatus()
+        external
+        view
+        returns (
+            bool isBounded,
+            uint timeRemaining,
+            uint actualPrice,
+            uint askPrice,
+            uint bidPrice,
+            uint askAllowed,
+            uint bidAllowed
+        );
 }
