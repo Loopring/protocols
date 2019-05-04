@@ -245,35 +245,72 @@ library ExchangeWithdrawals
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
+        require(slotIdx < withdrawBlock.numElements, "INVALID_SLOT_IDX");
 
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
-        // Get the withdraw data of the given slot
-        // TODO(brecht): optimize SLOAD/SSTORE of bytes in storage
-        bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint numBytesPerWithdrawal = 7;
-        uint offset = numBytesPerWithdrawal * (slotIdx + 1);
-        require(offset <= withdrawals.length, "INVALID_SLOT_IDX");
-        uint data;
-        assembly {
-            data := mload(add(withdrawals, offset))
+        // Get the withdrawal data from storage for the given slot
+        uint[] memory slice = new uint[](2);
+        uint slot1 = (7 * slotIdx) / 32;
+        uint offset = (7 * (slotIdx + 1)) - (slot1 * 32);
+        uint sc = 0;
+        uint data = 0;
+        // Short byte arrays (length <= 31) are stored differently in storage
+        if (withdrawBlock.withdrawals.length >= 32) {
+            bytes storage withdrawals = withdrawBlock.withdrawals;
+            uint dataSlot1 = 0;
+            uint dataSlot2 = 0;
+            assembly {
+                // keccak hash to get the contents of the array
+                mstore(0x0, withdrawals_slot)
+                sc := keccak256(0x0, 0x20)
+                dataSlot1 := sload(add(sc, slot1))
+                dataSlot2 := sload(add(sc, add(slot1, 1)))
+            }
+            slice[0] = dataSlot1;
+            slice[1] = dataSlot2;
+
+            // Get the data from the bytes array in memory
+            assembly {
+                data := mload(add(slice, offset))
+            }
+        } else {
+            bytes memory mWithdrawals = withdrawBlock.withdrawals;
+            assembly {
+                data := mload(add(mWithdrawals, offset))
+            }
         }
 
-        // Extract the data
+        // Extract the withdrawal data
         uint16 tokenID = uint16((data >> 48) & 0xFF);
         uint24 accountID = uint24((data >> 28) & 0xFFFFF);
         uint amount = (data & 0xFFFFFFF).decodeFloat();
 
-        ExchangeData.Account storage account = S.accounts[accountID];
-
         if (amount > 0) {
-            // Set everything to 0 so it cannot be withdrawn anymore
-            data = data & uint(~((1 << (numBytesPerWithdrawal * 8)) - 1));
-            assembly {
-                mstore(add(withdrawals, offset), data)
+            // Set everything to 0 for this withdrawal so it cannot be used anymore
+            data = data & uint(~((1 << (7 * 8)) - 1));
+
+            // Update the data in storage
+            if (withdrawBlock.withdrawals.length >= 32) {
+                assembly {
+                    mstore(add(slice, offset), data)
+                }
+                uint dataSlot1 = slice[0];
+                uint dataSlot2 = slice[1];
+                assembly {
+                    sstore(add(sc, slot1), dataSlot1)
+                    sstore(add(sc, add(slot1, 1)), dataSlot2)
+                }
+            } else {
+                bytes memory mWithdrawals = withdrawBlock.withdrawals;
+                assembly {
+                    mstore(add(mWithdrawals, offset), data)
+                }
+                withdrawBlock.withdrawals = mWithdrawals;
             }
-            withdrawBlock.withdrawals = withdrawals;
+
+            ExchangeData.Account storage account = S.accounts[accountID];
 
             // Transfer the tokens
             withdrawAndBurn(
@@ -292,7 +329,6 @@ library ExchangeWithdrawals
             );
         }
     }
-
 
     function withdrawBlockFee(
         ExchangeData.State storage S,
@@ -373,7 +409,7 @@ library ExchangeWithdrawals
         require(numWithdrawals > 0, "INVALID_NUM_WITHDRAWALS");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
-        // Check if this is a withdraw block
+        // Check if this is a withdrawal block
         require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
                 withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL), "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
