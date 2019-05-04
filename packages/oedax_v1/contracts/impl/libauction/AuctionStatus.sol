@@ -49,7 +49,7 @@ library AuctionStatus
         uint P1 = s.P / s.M;
         assert(P0 > 0 && P1 > P0);
 
-        uint time = block.timestamp.sub(s.startTime);
+        uint elapsed = block.timestamp - s.startTime;
 
         if (s.askAmount > 0) {
             i.actualPrice  = actualPrice(s);
@@ -57,18 +57,18 @@ library AuctionStatus
         }
 
         if (!i.isBounded) {
-            assert(s.askShift == 0 && s.bidShift == 0);
+            assert(s.askTimePush == 0 && s.bidTimePush == 0);
             i.askPrice = s.P;
             i.bidPrice = s.P;
 
             if (s.settlementTime == 0) {
                 // price unbounded and not settled yet
-                i.duration = s.curve.yToX(P0, P1, s.T, s.P); // the earliest end time
+                i.duration = s.curve.yToX(P0, P1, s.T, s.P); // the earliest end elapsed
 
-                if (i.duration > time) {
+                if (i.duration > elapsed) {
                     // the auction is open
-                    i.askPrice = s.curve.xToY(P0, P1, s.T, time);
-                    i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, time);
+                    i.askPrice = s.curve.xToY(P0, P1, s.T, elapsed);
+                    i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, elapsed);
 
                     i.askAllowed = ~uint256(0); // = uint.MAX
                     i.bidAllowed = ~uint256(0); // = uint.MAX
@@ -80,33 +80,34 @@ library AuctionStatus
 
             if (s.settlementTime == 0) {
                 // price bounded and not settled yet
-                uint askCrossTime = s.curve.yToX(P0, P1, s.T, i.actualPrice) + s.askShift;
-                uint bidCrossTime = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice) + s.bidShift;
+                uint askCrossTime = s.curve.yToX(P0, P1, s.T, i.actualPrice) + s.askTimePush;
+                uint bidCrossTime = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice) + s.bidTimePush;
                 i.duration = askCrossTime.max(bidCrossTime);
 
-                if (i.duration > time) {
+                if (i.duration > elapsed) {
                     // the auction is open
-                    if (askCrossTime > time) {
+                    if (askCrossTime > elapsed) {
                         // The ask-curve has not crossed the actual price line
-                        i.askPrice = s.curve.xToY(P0, P1, s.T, time - s.askShift);
+                        i.askPrice = s.curve.xToY(P0, P1, s.T, elapsed - s.askTimePush);
                         i.bidAllowed = (s.askAmount
-                            .add(s.Q.isBidding ? 0: s.Q.amount) // the ask-queued
+                            .add(s.Q.isBidding ? 0 : s.Q.amount) // the asks-queued
                             .mul(i.askPrice) / s.S
                         ).sub(s.bidAmount);
                     } else {
                         // The ask-curve has already crossed the actual price line
-                        i.newAskShift = time + s.askShift - askCrossTime;
+                        i.newAskTimePush = s.askTimePush + elapsed - askCrossTime;
                     }
 
-                    if (bidCrossTime > time) {
+                    if (bidCrossTime > elapsed) {
                         // The bid-curve has not cross the actual price line
-                        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, time - s.bidShift);
-                        i.askAllowed = (s.bidAmount.add(
-                            s.Q.isBidding ? s.Q.amount: 0
-                            ).mul(s.S) / i.bidPrice).sub(s.askAmount);
+                        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, elapsed - s.bidTimePush);
+                        i.askAllowed = (s.bidAmount
+                            .add(s.Q.isBidding ? s.Q.amount : 0) // the bids-queued
+                            .mul(s.S) / i.bidPrice
+                        ).sub(s.askAmount);
                     } else {
                         // The bid-curve has already crossed the actual price line
-                        i.newBidShift = time + s.bidShift - bidCrossTime;
+                        i.newBidTimePush = s.bidTimePush + elapsed - bidCrossTime;
                     }
                 }
             }

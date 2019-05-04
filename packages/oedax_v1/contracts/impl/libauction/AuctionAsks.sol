@@ -97,16 +97,16 @@ library AuctionAsks
 
         s.askAmount = s.askAmount.add(accepted);
 
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(time);
-            s.askShifts.push(s.askShift);
+        if (s.askTimePush != i.newAskTimePush) {
+            s.askTimePush = i.newAskTimePush;
+            s.askTimePushs.push(time);
+            s.askTimePushs.push(s.askTimePush);
         }
 
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(time);
-            s.askShifts.push(s.askShift);
+        if (s.askTimePush != i.newAskTimePush) {
+            s.askTimePush = i.newAskTimePush;
+            s.askTimePushs.push(time);
+            s.askTimePushs.push(s.askTimePush);
         }
 
         emit Ask(

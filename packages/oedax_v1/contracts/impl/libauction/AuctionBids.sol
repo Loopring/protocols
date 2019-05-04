@@ -97,16 +97,16 @@ library AuctionBids
 
         s.bidAmount = s.bidAmount.add(accepted);
 
-        if (s.bidShift != i.newBidShift) {
-            s.bidShift = i.newBidShift;
-            s.bidShifts.push(time);
-            s.bidShifts.push(s.bidShift);
+        if (s.bidTimePush != i.newBidTimePush) {
+            s.bidTimePush = i.newBidTimePush;
+            s.bidTimePushs.push(time);
+            s.bidTimePushs.push(s.bidTimePush);
         }
 
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(time);
-            s.askShifts.push(s.askShift);
+        if (s.askTimePush != i.newAskTimePush) {
+            s.askTimePush = i.newAskTimePush;
+            s.askTimePushs.push(time);
+            s.askTimePushs.push(s.askTimePush);
         }
 
         emit Bid(
