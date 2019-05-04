@@ -96,16 +96,16 @@ library AuctionAsks
         a.askFeeRebateWeight = a.askFeeRebateWeight.add(accepted.mul(weight));
         s.askAmount = s.askAmount.add(accepted);
 
-        if (s.askTimePush != i.newAskTimePush) {
-            s.askTimePush = i.newAskTimePush;
-            s.askTimePushs.push(elapsed);
-            s.askTimePushs.push(s.askTimePush);
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(elapsed);
+            s.askShifts.push(s.askShift);
         }
 
-        if (s.askTimePush != i.newAskTimePush) {
-            s.askTimePush = i.newAskTimePush;
-            s.askTimePushs.push(elapsed);
-            s.askTimePushs.push(s.askTimePush);
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(elapsed);
+            s.askShifts.push(s.askShift);
         }
 
         emit Ask(

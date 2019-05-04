@@ -96,16 +96,16 @@ library AuctionBids
         a.bidFeeRebateWeight = a.bidFeeRebateWeight.add(accepted.mul(weight));
         s.bidAmount = s.bidAmount.add(accepted);
 
-        if (s.bidTimePush != i.newBidTimePush) {
-            s.bidTimePush = i.newBidTimePush;
-            s.bidTimePushs.push(elapsed);
-            s.bidTimePushs.push(s.bidTimePush);
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(elapsed);
+            s.bidShifts.push(s.bidShift);
         }
 
-        if (s.askTimePush != i.newAskTimePush) {
-            s.askTimePush = i.newAskTimePush;
-            s.askTimePushs.push(elapsed);
-            s.askTimePushs.push(s.askTimePush);
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(elapsed);
+            s.askShifts.push(s.askShift);
         }
 
         emit Bid(

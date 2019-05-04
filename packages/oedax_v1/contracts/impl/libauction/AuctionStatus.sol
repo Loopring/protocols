@@ -57,7 +57,7 @@ library AuctionStatus
         }
 
         if (!i.isBounded) {
-            assert(s.askTimePush == 0 && s.bidTimePush == 0);
+            assert(s.askShift == 0 && s.bidShift == 0);
             i.askPrice = s.P;
             i.bidPrice = s.P;
 
@@ -80,34 +80,34 @@ library AuctionStatus
 
             if (s.settlementTime == 0) {
                 // price bounded and not settled yet
-                uint askCrossTime = s.curve.yToX(P0, P1, s.T, i.actualPrice) + s.askTimePush;
-                uint bidCrossTime = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice) + s.bidTimePush;
+                uint askCrossTime = s.curve.yToX(P0, P1, s.T, i.actualPrice) + s.askShift;
+                uint bidCrossTime = s.curve.yToX(P0, P1, s.T, s.P.mul(s.P) / i.actualPrice) + s.bidShift;
                 i.duration = askCrossTime.max(bidCrossTime);
 
                 if (i.duration > elapsed) {
                     // the auction is open
                     if (askCrossTime > elapsed) {
                         // The ask-curve has not crossed the actual price line
-                        i.askPrice = s.curve.xToY(P0, P1, s.T, elapsed - s.askTimePush);
+                        i.askPrice = s.curve.xToY(P0, P1, s.T, elapsed - s.askShift);
                         i.bidAllowed = (s.askAmount
                             .add(s.Q.isBidding ? 0 : s.Q.amount) // the asks-queued
                             .mul(i.askPrice) / s.S
                         ).sub(s.bidAmount);
                     } else {
                         // The ask-curve has already crossed the actual price line
-                        i.newAskTimePush = s.askTimePush + elapsed - askCrossTime;
+                        i.newAskShift = s.askShift + elapsed - askCrossTime;
                     }
 
                     if (bidCrossTime > elapsed) {
                         // The bid-curve has not cross the actual price line
-                        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, elapsed - s.bidTimePush);
+                        i.bidPrice = s.P.mul(s.P) / s.curve.xToY(P0, P1, s.T, elapsed - s.bidShift);
                         i.askAllowed = (s.bidAmount
                             .add(s.Q.isBidding ? s.Q.amount : 0) // the bids-queued
                             .mul(s.S) / i.bidPrice
                         ).sub(s.askAmount);
                     } else {
                         // The bid-curve has already crossed the actual price line
-                        i.newBidTimePush = s.bidTimePush + elapsed - bidCrossTime;
+                        i.newBidShift = s.bidShift + elapsed - bidCrossTime;
                     }
                 }
             }

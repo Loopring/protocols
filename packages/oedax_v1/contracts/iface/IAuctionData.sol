@@ -30,8 +30,8 @@ library IAuctionData
       uint    askPrice;
       uint    bidPrice;
 
-      uint    newAskTimePush;
-      uint    newBidTimePush;
+      uint    newAskShift;
+      uint    newBidShift;
 
       uint    askAllowed;
       uint    bidAllowed;
@@ -100,11 +100,11 @@ library IAuctionData
         uint    askAmount;
         uint    bidAmount;
 
-        uint    askTimePush;
-        uint    bidTimePush;
+        uint    askShift;
+        uint    bidShift;
 
-        uint[]  askTimePushs;
-        uint[]  bidTimePushs;
+        uint[]  askShifts;
+        uint[]  bidShifts;
 
         Queue   Q;
 
