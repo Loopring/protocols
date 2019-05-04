@@ -183,7 +183,7 @@ contract("Exchange", (accounts: string[]) => {
                               owner, new BN(0), bBurn);
   };
 
-  const distributeWithdrawalsChecked = async (blockIdx: number, deposits: DepositInfo[],
+  const distributeWithdrawalsChecked = async (blockIdx: number, numWithdrawals: number, deposits: DepositInfo[],
                                               from: string, tooLate: boolean = false) => {
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
     // Balances owners
@@ -213,7 +213,7 @@ contract("Exchange", (accounts: string[]) => {
     const lrcSupplyBefore = await LRC.totalSupply();
 
     // Distribute the withdrawals
-    const tx = await exchange.distributeWithdrawals(blockIdx, {from});
+    const tx = await exchange.distributeWithdrawals(blockIdx, numWithdrawals, {from});
     console.log("\x1b[46m%s\x1b[0m", "[DistributeWithdrawals] Gas used: " + tx.receipt.gasUsed);
 
     // Check balances owners
@@ -750,19 +750,19 @@ contract("Exchange", (accounts: string[]) => {
 
       // Incorrect block index
       await expectThrow(
-        exchange.distributeWithdrawals(123456, {from: exchangeTestUtil.exchangeOperator}),
+        exchange.distributeWithdrawals(123456, deposits.length, {from: exchangeTestUtil.exchangeOperator}),
         "INVALID_BLOCK_IDX",
       );
 
       // Block without any withdrawals
       await expectThrow(
-        exchange.distributeWithdrawals(blockIdx, {from: exchangeTestUtil.exchangeOperator}),
+        exchange.distributeWithdrawals(blockIdx, deposits.length, {from: exchangeTestUtil.exchangeOperator}),
         "INVALID_BLOCK_TYPE",
       );
 
       // Block not finalized yet
       await expectThrow(
-        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.exchangeOperator}),
+        exchange.distributeWithdrawals(blockIdx + 1, deposits.length, {from: exchangeTestUtil.exchangeOperator}),
         "BLOCK_NOT_FINALIZED",
       );
 
@@ -770,16 +770,22 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to call from a non-operator address
       await expectThrow(
-        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
+        exchange.distributeWithdrawals(blockIdx + 1, deposits.length, {from: exchangeTestUtil.testContext.deployer}),
         "UNAUTHORIZED",
       );
 
+      // Try to do no withdrawals
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, 0, {from: exchangeTestUtil.testContext.deployer}),
+        "INVALID_NUM_WITHDRAWALS",
+      );
+
       // Distribute the withdrawals
-      await distributeWithdrawalsChecked(blockIdx + 1, deposits, exchangeTestUtil.exchangeOperator);
+      await distributeWithdrawalsChecked(blockIdx + 1, deposits.length, deposits, exchangeTestUtil.exchangeOperator);
 
       // Try to distribute again
       await expectThrow(
-        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.exchangeOperator}),
+        exchange.distributeWithdrawals(blockIdx + 1, deposits.length, {from: exchangeTestUtil.exchangeOperator}),
         "WITHDRAWALS_ALREADY_DISTRIBUTED",
       );
     });
@@ -829,7 +835,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to call from a non-operator address
       await expectThrow(
-        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
+        exchange.distributeWithdrawals(blockIdx + 1, deposits.length, {from: exchangeTestUtil.testContext.deployer}),
         "UNAUTHORIZED",
       );
 
@@ -837,11 +843,80 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
 
       // Distribute the withdrawals
-      await distributeWithdrawalsChecked(blockIdx + 1, deposits, exchangeTestUtil.testContext.deployer, true);
+      await distributeWithdrawalsChecked(
+        blockIdx + 1, deposits.length, deposits, exchangeTestUtil.testContext.deployer, true,
+      );
 
       // Try to distribute again
       await expectThrow(
-        exchange.distributeWithdrawals(blockIdx + 1, {from: exchangeTestUtil.testContext.deployer}),
+        exchange.distributeWithdrawals(blockIdx + 1, deposits.length, {from: exchangeTestUtil.testContext.deployer}),
+        "WITHDRAWALS_ALREADY_DISTRIBUTED",
+      );
+    });
+
+    it("Distribute withdrawals in multiple parts", async () => {
+      await createExchange();
+
+      // Deposit some LRC to stake for the exchange
+      const depositer = exchangeTestUtil.testContext.operators[2];
+      const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+      await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
+
+      await loopring.depositStake(realmID, stakeAmount, {from: depositer});
+
+      // Do deposits to fill a complete block
+      const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[1];
+      const deposits: DepositInfo[] = [];
+      for (let i = 0; i < blockSize; i++) {
+        const orderOwners = exchangeTestUtil.testContext.orderOwners;
+        const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+        const owner = orderOwners[i];
+        const amount = exchangeTestUtil.getRandomAmount();
+        const token = exchangeTestUtil.getTokenAddress("LRC");
+        const deposit = await exchangeTestUtil.deposit(realmID, owner,
+                                                       keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                       token, amount);
+        deposits.push(deposit);
+      }
+      await exchangeTestUtil.commitDeposits(realmID);
+
+      for (const deposit of deposits) {
+        exchangeTestUtil.requestWithdrawalOffchain(
+          realmID,
+          deposit.accountID,
+          deposit.token,
+          deposit.amount,
+          "LRC",
+          new BN(0),
+          0,
+          exchangeTestUtil.wallets[realmID][0].walletAccountID,
+        );
+      }
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(realmID);
+
+      assert(blockSize === 8, "Unexpected blocksize");
+      const slice1 = deposits.slice(0, 2);
+      const slice2 = deposits.slice(2, 3);
+      const slice3 = deposits.slice(3, 5);
+      const slice4 = deposits.slice(5, 8);
+
+      // Distribute the withdrawals in multiple parts
+      await distributeWithdrawalsChecked(blockIdx + 1, slice1.length, slice1, exchangeTestUtil.exchangeOperator);
+      await distributeWithdrawalsChecked(blockIdx + 1, slice2.length, slice2, exchangeTestUtil.exchangeOperator);
+
+      // Wait the max time only the operator can do it
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
+
+      // Continue distributing the withdrawals in multiple parts
+      const randomAddress = exchangeTestUtil.testContext.deployer;
+      await distributeWithdrawalsChecked(blockIdx + 1, slice3.length, slice3, randomAddress, true);
+      await distributeWithdrawalsChecked(blockIdx + 1, slice4.length + 8, slice4, randomAddress, true);
+
+      // Try to distribute again
+      await expectThrow(
+        exchange.distributeWithdrawals(blockIdx + 1, 1, {from: randomAddress}),
         "WITHDRAWALS_ALREADY_DISTRIBUTED",
       );
     });

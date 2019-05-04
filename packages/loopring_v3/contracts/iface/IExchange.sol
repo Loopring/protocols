@@ -760,9 +760,20 @@ contract IExchange
     ///
     ///      Only withdrawals processed in finalized blocks can be distributed.
     ///
+    ///      The withdrawals can be done in multiple transactions because the token transfers
+    ///      are more expensive than committing and proving a block, so it's possible more
+    ///      withdrawals requests are processed in a block than can be distributed
+    ///      in an Ethereum block.
+    ///
     /// @param  blockIdx The block index to distribute the funds from the withdrawal requests for
+    /// @param  numWithdrawals The number of withdrawals to distribute. Can be lower than the
+    ///         number of withdrawal requests processed in the block. Withdrawals are distributed
+    ///         in the same order the withdrawal requests were processed in the block.
+    ///         If the withdrawals are done in multiple parts we always start from the
+    ///         first withdrawal that was not yet distributed.
     function distributeWithdrawals(
-        uint blockIdx
+        uint blockIdx,
+        uint numWithdrawals
         )
         external;
 

@@ -364,11 +364,13 @@ library ExchangeWithdrawals
 
     function distributeWithdrawals(
         ExchangeData.State storage S,
-        uint blockIdx
+        uint blockIdx,
+        uint numWithdrawals
         )
         public
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+        require(numWithdrawals > 0, "INVALID_NUM_WITHDRAWALS");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
         // Check if this is a withdraw block
@@ -376,8 +378,16 @@ library ExchangeWithdrawals
                 withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL), "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
-        // Check if the witdrawals were already completely distributed
+        // Check if the withdrawals were already completely distributed
         require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.numElements, "WITHDRAWALS_ALREADY_DISTRIBUTED");
+
+        // Calculate the range of withdrawals we'll do
+        uint start = withdrawBlock.numWithdrawalsDistributed;
+        uint end = start.add(numWithdrawals);
+        if (end > withdrawBlock.numElements) {
+            end = withdrawBlock.numElements;
+        }
+        uint numToWithdraw = end.sub(start);
 
         // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
         // anyone can do it and get paid a part of the operator stake
@@ -385,7 +395,7 @@ library ExchangeWithdrawals
             require(msg.sender == S.operator, "UNAUTHORIZED");
         } else {
             // We use the stake of the exchange to punish withdrawals that are distributed too late
-            uint totalFine = S.loopring.withdrawalFineLRC().mul(withdrawBlock.numElements);
+            uint totalFine = S.loopring.withdrawalFineLRC().mul(numToWithdraw);
             // Burn 50% of the fine, reward the distributer the rest
             uint amountToBurn = totalFine / 2;
             uint amountToDistributer = totalFine - amountToBurn;
@@ -393,12 +403,12 @@ library ExchangeWithdrawals
             S.loopring.withdrawStake(S.id, msg.sender, amountToDistributer);
         }
 
-        // Possible enhancement: allow withdrawing in parts
-        for (uint i = 0; i < withdrawBlock.numElements; i++) {
+        // Do the withdrawals
+        for (uint i = start; i < end; i++) {
             withdrawFromApprovedWithdrawal(S, blockIdx, i);
         }
 
-        withdrawBlock.numWithdrawalsDistributed = withdrawBlock.numElements;
+        withdrawBlock.numWithdrawalsDistributed = uint16(end);
     }
 
 

@@ -130,9 +130,9 @@ library ExchangeData
         // in this data.
         // For every withdrawal (there are numElements withdrawals),
         // stored sequentially after each other:
-        //    - Account ID: 3 bytes
-        //    - Token ID: 2 bytes
-        //    - Amount: 12 bytes
+        //    - Token ID: 1 bytes
+        //    - Account ID: 2,5 bytes
+        //    - Amount: 3,5 bytes
         bytes  withdrawals;
     }
 
