@@ -17,7 +17,7 @@
 pragma solidity 0.5.7;
 
 
-/// @title Ownable
+/// @title ReentrancyGuard
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Exposes a modifier that guards a function against reentrancy
 contract ReentrancyGuard

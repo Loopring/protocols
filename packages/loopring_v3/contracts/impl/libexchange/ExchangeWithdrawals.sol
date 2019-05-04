@@ -253,6 +253,7 @@ library ExchangeWithdrawals
         // Get the withdrawal data from storage for the given slot
         uint[] memory slice = new uint[](2);
         uint slot1 = (7 * slotIdx) / 32;
+        uint slot2 = slot1 + 1;
         uint offset = (7 * (slotIdx + 1)) - (slot1 * 32);
         uint sc = 0;
         uint data = 0;
@@ -266,12 +267,12 @@ library ExchangeWithdrawals
                 mstore(0x0, withdrawals_slot)
                 sc := keccak256(0x0, 0x20)
                 dataSlot1 := sload(add(sc, slot1))
-                dataSlot2 := sload(add(sc, add(slot1, 1)))
+                dataSlot2 := sload(add(sc, slot2))
             }
+            // Stitch the data together so we can extract the data in a single uint
+            // (withdrawal data is at the LSBs)
             slice[0] = dataSlot1;
             slice[1] = dataSlot2;
-
-            // Get the data from the bytes array in memory
             assembly {
                 data := mload(add(slice, offset))
             }
@@ -300,7 +301,7 @@ library ExchangeWithdrawals
                 uint dataSlot2 = slice[1];
                 assembly {
                     sstore(add(sc, slot1), dataSlot1)
-                    sstore(add(sc, add(slot1, 1)), dataSlot2)
+                    sstore(add(sc, slot2), dataSlot2)
                 }
             } else {
                 bytes memory mWithdrawals = withdrawBlock.withdrawals;
