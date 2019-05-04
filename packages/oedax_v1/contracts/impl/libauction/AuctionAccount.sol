@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "../../iface/IAuctionData.sol";
 
@@ -59,7 +58,7 @@ library AuctionAccount
         require(_amount > 0, "zero amount");
 
         require(
-            s.oedax.transferToken(token, msg.sender, _amount),
+            s.oedax.depositToken(token, msg.sender, _amount),
             "token transfer failed"
         );
     }

@@ -120,14 +120,14 @@ contract IOedax is Ownable
         uint8   M,
         uint    T
         )
-        public
+        external
         payable
         returns (address payable auctionAddr);
 
     function logParticipation(
         address user
         )
-        public
+        external
         returns (bool isNewUser);
 
     function logTrade(
@@ -137,13 +137,13 @@ contract IOedax is Ownable
         uint    askAmount,
         uint    bidAmount
         )
-        public;
+        external;
 
-    function transferToken(
+    function depositToken(
         address token,
         address user,
         uint    amount
         )
-        public
+        external
         returns (bool success);
 }

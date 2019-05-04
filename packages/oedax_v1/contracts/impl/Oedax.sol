@@ -15,7 +15,6 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
-pragma experimental ABIEncoderV2;
 
 import "../iface/IOedax.sol";
 
@@ -143,7 +142,7 @@ contract Oedax is IOedax, NoDefaultFunc
     function logParticipation(
         address user
         )
-        public
+        external
         onlyAuction
         returns (bool isNewUser)
     {
@@ -161,7 +160,7 @@ contract Oedax is IOedax, NoDefaultFunc
         uint    askAmount,
         uint    bidAmount
         )
-        public
+        external
         onlyAuction
     {
         assert(auctionId > 0 && askAmount > 0 && bidAmount > 0);
@@ -183,12 +182,12 @@ contract Oedax is IOedax, NoDefaultFunc
         );
     }
 
-    function transferToken(
+    function depositToken(
         address token,
         address user,
         uint    amount
         )
-        public
+        external
         onlyAuction
         returns (bool)
     {
