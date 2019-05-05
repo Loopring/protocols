@@ -19,7 +19,6 @@ pragma solidity 0.5.7;
 import "./ERC20.sol";
 import "./MathUint.sol";
 
-
 /// @title ERC20 Token Implementation
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>

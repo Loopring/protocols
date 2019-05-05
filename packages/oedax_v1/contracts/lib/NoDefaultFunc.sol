@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-
 /// @title NoDefaultFunc
 /// @dev Disable default functions.
 contract NoDefaultFunc

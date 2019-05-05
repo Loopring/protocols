@@ -18,7 +18,6 @@ pragma solidity 0.5.7;
 
 import "./Ownable.sol";
 
-
 /// @title Claimable
 /// @dev Extension for the Ownable contract, where the ownership needs
 ///      to be claimed. This allows the new owner to accept the transfer.

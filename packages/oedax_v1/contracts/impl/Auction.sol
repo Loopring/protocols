@@ -20,13 +20,13 @@ import "../iface/IAuction.sol";
 import "../iface/IAuctionData.sol";
 import "../iface/ICurve.sol";
 
-import "../lib/ERC20SafeTransfer.sol";
 import "../lib/ERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
 import "./libauction/AuctionAccount.sol";
-import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionAsks.sol";
+import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionSettlement.sol";
 import "./libauction/AuctionStatus.sol";
 
@@ -83,7 +83,7 @@ contract Auction is IAuction
         state.fees = IAuctionData.Fees(
             state.oedax.protocolFeeBips(),
             state.oedax.takerFeeBips(),
-            state.oedax.creationFeeEther()
+            state.oedax.creatorEtherStake()
         );
 
         state.auctionId = _auctionId;
@@ -106,7 +106,6 @@ contract Auction is IAuction
         safeCheckTokenSupply(_bidToken);
     }
 
-
     // == Public & External Functions ==
     function()
         external
@@ -123,16 +122,24 @@ contract Auction is IAuction
 
     function bid(uint amount)
         external
+        returns (
+            uint accepted,
+            uint queued
+        )
     {
-        uint _amount = state.depositToken(state.bidToken, amount);
-        state.bid(_amount);
+        uint transfered = state.depositToken(state.bidToken, amount);
+        (accepted, queued) = state.bid(transfered);
     }
 
     function ask(uint amount)
         external
+        returns (
+            uint accepted,
+            uint queued
+        )
     {
-        uint _amount = state.depositToken(state.askToken, amount);
-        state.ask(_amount);
+        uint transfered = state.depositToken(state.askToken, amount);
+        (accepted, queued) = state.ask(transfered);
     }
 
     function settle()
@@ -164,9 +171,12 @@ contract Auction is IAuction
          bidAllowed = i.bidAllowed;
 
          if (state.settlementTime == 0) {
-            timeRemaining = i.duration > block.timestamp ? i.duration - block.timestamp : 0;
+            uint elpased = block.timestamp - state.startTime;
+            timeRemaining = i.duration > elpased ? i.duration - elpased : 0;
          }
     }
+
+    // == Internal & Private Functions ==
 
     function getAccount(address user)
         internal
@@ -178,7 +188,6 @@ contract Auction is IAuction
         return state.getAccount(user);
     }
 
-    // == Internal & Private Functions ==
     function safeCheckTokenSupply(address token)
         private
         view

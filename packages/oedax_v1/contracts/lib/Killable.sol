@@ -18,7 +18,6 @@ pragma solidity 0.5.7;
 
 import "../lib/Claimable.sol";
 
-
 /// @title Killable
 /// @dev The Killable contract allows the contract owner to suspend, resume or kill the contract
 contract Killable is Claimable

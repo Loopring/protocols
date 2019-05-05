@@ -18,7 +18,6 @@ pragma solidity 0.5.7;
 
 import "./ERC20.sol";
 
-
 /// @title Burnable ERC20 Token Interface
 contract BurnableERC20 is ERC20
 {

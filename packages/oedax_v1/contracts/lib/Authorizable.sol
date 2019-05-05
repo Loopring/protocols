@@ -18,7 +18,6 @@ pragma solidity 0.5.7;
 
 import "../lib/Claimable.sol";
 
-
 /// @title Authorizable
 /// @dev The Authorizable contract allows a contract to be used by other contracts
 ///      by authorizing it by the contract owner.

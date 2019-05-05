@@ -18,9 +18,9 @@ pragma solidity 0.5.7;
 
 import "../../iface/IAuctionData.sol";
 
-import "../../lib/MathUint.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
 
 import "./AuctionStatus.sol";
 
@@ -126,7 +126,7 @@ library AuctionSettlement
         private
     {
         uint gracePeriod = s.oedax.settleGracePeriod();
-        uint rebate = s.fees.creationFeeEther;
+        uint rebate = s.fees.creatorEtherStake;
 
         if (settlementDelay >= gracePeriod) {
             rebate /= 2;

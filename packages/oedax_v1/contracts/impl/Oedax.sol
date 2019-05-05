@@ -53,7 +53,7 @@ contract Oedax is IOedax, NoDefaultFunc
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
         uint16  _takerFeeBips,
-        uint    _creationFeeEther
+        uint    _creatorEtherStake
         )
         external
         onlyOwner
@@ -66,7 +66,7 @@ contract Oedax is IOedax, NoDefaultFunc
 
         require(_protocolFeeBips <= 250, "value too large");
         require(_takerFeeBips <= 250, "value too large");
-        require(_creationFeeEther > 0, "zero value");
+        require(_creatorEtherStake > 0, "zero value");
 
         curveAddress = _curve;
         feeRecipient = _feeRecipient;
@@ -77,7 +77,7 @@ contract Oedax is IOedax, NoDefaultFunc
 
         protocolFeeBips = _protocolFeeBips;
         takerFeeBips = _takerFeeBips;
-        creationFeeEther = _creationFeeEther * 1 ether;
+        creatorEtherStake = _creatorEtherStake * 1 ether;
 
         emit SettingsUpdated();
     }
@@ -105,7 +105,7 @@ contract Oedax is IOedax, NoDefaultFunc
         payable
         returns (address payable auctionAddr)
     {
-        require(msg.value >= creationFeeEther, "insuffcient ETH fee");
+        require(msg.value >= creatorEtherStake, "insuffcient ETH fee");
         require(curveAddress != address(0x0), "empty curve");
         require(T >= minDuration && T <= maxDuration, "invalid duration");
         require(
@@ -126,8 +126,8 @@ contract Oedax is IOedax, NoDefaultFunc
         auctionAddr = address(auction);
 
         // Transfer the Ether to the target auction
-        auctionAddr.transfer(creationFeeEther);
-        uint surplus = msg.value - creationFeeEther;
+        auctionAddr.transfer(creatorEtherStake);
+        uint surplus = msg.value - creatorEtherStake;
         if (surplus > 0) {
             msg.sender.transfer(surplus);
         }

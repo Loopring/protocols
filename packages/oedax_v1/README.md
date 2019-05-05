@@ -10,6 +10,7 @@
 - [x] remove curve registry
 - [x] calculate closing time
 - [x] check price range and overflow
+- [x] api ducmentation
 - [ ] get list of auctions
 - [ ] test framework
 

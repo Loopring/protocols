@@ -61,7 +61,7 @@ contract IOedax is Ownable
     uint16      public maxDuration;
     uint16      public protocolFeeBips;
     uint16      public takerFeeBips;
-    uint        public creationFeeEther;
+    uint        public creatorEtherStake;
     address[]   public auctions;
 
     // auction_address => auction_id
@@ -82,6 +82,19 @@ contract IOedax is Ownable
     mapping (address => mapping(address => TradeHistory[])) public tradeHistory;
 
     // == Functions ==
+    /// @dev Update Oedax global settings.
+    ///      Note that unlike other settings, `_settleGracePeriodMinutes` will also
+    ///      affect existing ongoing auctions.
+    ///      Only Oedax owner can invoke this method.
+    /// @param _feeRecipient The address to collect all fees
+    /// @param _curve The address of price curve contract
+    /// @param  _settleGracePeriodMinutes The time window in which only aucton owner
+    ///         can settle the auction.
+    /// @param _minDurationMinutes The minimum auction duration
+    /// @param _maxDurationMinutes The maximum auction duration
+    /// @param _protocolFeeBips The bips (0.01%) of bid/ask tokens to pay the protocol
+    /// @param _takerFeeBips The bips of bid/ask tokens to use as maker rebates
+    /// @param _creatorEtherStake The amount of Ether auction creators must stake
     function updateSettings(
         address payable _feeRecipient,
         address _curve,
@@ -90,21 +103,26 @@ contract IOedax is Ownable
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
         uint16  _takerFeeBips,
-        uint    _creationFeeEther
+        uint    _creatorEtherStake
         )
-        external;
+        external
+        // onlyOwner
+        ;
 
     /// @dev Set a token's rank. By default, all token has id 0.
-    /// We require the rank of an auction's bid token must be higher
-    /// than the rank of its ask token. In Oedax, Ether (address 0x0) has
-    /// the highest rank.
+    ///     We require the rank of an auction's bid token must be higher
+    ///     than the rank of its ask token. In Oedax, Ether (address 0x0) has
+    ///     the highest rank.
+    ///     Only Oedax owner can invoke this method.
     /// @param token The non-zero id of the price curve.
     /// @param rank The ask (base) token. Prices are in form of 'bids/asks'.
     function setTokenRank(
         address token,
         uint    rank
         )
-        public;
+        public
+        // onlyOwner
+        ;
 
     /// @dev Create a new auction
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
@@ -113,7 +131,7 @@ contract IOedax is Ownable
     /// @param S Price precision -- (_P / 10**_S) is the float vaule of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param T The maximum auction duration.
-    /// @return auction Auction address.
+    /// @return auctionAddr Auction address.
     function createAuction(
         address askToken,
         address bidToken,
@@ -122,16 +140,27 @@ contract IOedax is Ownable
         uint8   M,
         uint    T
         )
-        external
+        public
         payable
         returns (address payable auctionAddr);
 
+    /// @dev Used by an auction to log a unique user.
+    /// @param user The address of the user
+    /// @return isNewUser True if this is the first time this user join the auction,
+    ///         false otherwise.
     function logParticipant(
         address user
         )
         external
+        // onlyAuction
         returns (bool isNewUser);
 
+    /// @dev Used by an auction to log its settlement.
+    /// @param auctionId The auction's id
+    /// @param askToken The address of the ask token
+    /// @param bidToken The address of the bid token
+    /// @param askAmount The total amount of ask tokens
+    /// @param bidAmount The total amount of bid tokens
     function logSettlement(
         uint    auctionId,
         address askToken,
@@ -139,13 +168,21 @@ contract IOedax is Ownable
         uint    askAmount,
         uint    bidAmount
         )
-        external;
+        external
+        // onlyAuction
+        ;
 
+    /// @dev Used by an auction to deposit ERC20 tokens.
+    /// @param token The address of the ERC20 token
+    /// @param user  The source address
+    /// @param amount The amount of tokens to be transfered
+    /// @return success True if the transfer is successful, false otherwise.
     function depositToken(
         address token,
         address user,
         uint    amount
         )
         external
-        returns (bool success);
+        // onlyAuction
+        returns (bool);
 }

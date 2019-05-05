@@ -20,23 +20,35 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICurve
 {
+    /// @dev Calculate the y value for the given x.
+    /// @param P0 The minimum y value
+    /// @param P1 The maximum y value
+    /// @param T  The maximum x value
+    /// @param x The x
+    /// @return y The y
     function xToY(
         uint P0, // min price
         uint P1, // max factor
         uint T,
-        uint time
+        uint x
         )
         external
         view
-        returns (uint value);
+        returns (uint y);
 
+    /// @dev Calculate the x value for the given y.
+    /// @param P0 The minimum y value
+    /// @param P1 The maximum y value
+    /// @param T  The maximum x value
+    /// @param y The y
+    /// @return x The x
     function yToX(
         uint P0, // min price
         uint P1, // max factor
         uint T,
-        uint value
+        uint y
         )
         external
         view
-        returns (uint time);
+        returns (uint x);
 }

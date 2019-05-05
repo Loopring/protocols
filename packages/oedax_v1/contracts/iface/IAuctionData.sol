@@ -66,7 +66,7 @@ library IAuctionData
     {
         uint16  protocolFeeBips;
         uint16  takerFeeBips;
-        uint    creationFeeEther;
+        uint    creatorEtherStake;
     }
 
     struct State

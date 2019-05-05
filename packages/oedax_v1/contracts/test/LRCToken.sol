@@ -16,8 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-
-
 /**
  * @title ERC20Basic
  * @dev Simpler version of ERC20 interface
