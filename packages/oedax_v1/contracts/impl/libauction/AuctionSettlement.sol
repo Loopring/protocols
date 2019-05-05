@@ -51,7 +51,7 @@ library AuctionSettlement
 
     function settle(
         IAuctionData.State storage s,
-        address owner
+        address payable owner
         )
         internal
     {
@@ -63,18 +63,22 @@ library AuctionSettlement
         // update state
         s.closeTime = s.startTime + i.duration;
         s.settlementTime = block.timestamp;
+        uint rebate = s.fees.creatorEtherStake;
 
-        uint settlementDelay = s.settlementTime - s.closeTime;
+        if (i.isBounded) {
+            settleTrades(s);
+        } else{
+            rebate /= 2;
+            returnDeposits(s);
+        }
 
-        require(
-            settlementDelay > s.oedax.settleGracePeriod() || msg.sender == owner,
-            "unauthorized"
-        );
+        if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
+            owner.transfer(rebate);
+        } else {
+            msg.sender.transfer(rebate / 2);
+        }
 
-        payUsers(s);
-
-        paySettler(s, settlementDelay);
-
+        // collect everything remaining in this contract as protocol fees.
         collectFees(s, s.oedax.feeRecipient());
 
         // omit an event
@@ -93,14 +97,7 @@ library AuctionSettlement
         )
         private
     {
-       // collect remaining Ether to fee recipient
-        payToken(
-            feeRecipient,
-            address(0x0),
-            address(this).balance
-        );
-
-         // collect remaining ask token to fee recipient
+        // collect remaining ask token to fee recipient
         if (s.askToken != address(0x0)) {
             payToken(
                 feeRecipient,
@@ -117,29 +114,30 @@ library AuctionSettlement
                 ERC20(s.bidToken).balanceOf(address(this))
             );
         }
+
+        // collect remaining Ether to fee recipient
+        payToken(
+            feeRecipient,
+            address(0x0),
+            address(this).balance
+        );
     }
 
-    function paySettler(
-        IAuctionData.State storage s,
-        uint settlementDelay
+    function returnDeposits(
+        IAuctionData.State storage s
         )
         private
     {
-        uint gracePeriod = s.oedax.settleGracePeriod();
-        uint rebate = s.fees.creatorEtherStake;
+        for (uint i = 0; i < s.users.length; i++) {
+            address payable user = s.users[i];
+            IAuctionData.Account storage a = s.accounts[user];
 
-        if (settlementDelay >= gracePeriod) {
-            rebate /= 2;
-        } else if (settlementDelay >= gracePeriod / 2) {
-            uint bips = 15000 - settlementDelay.mul(10000) / gracePeriod;
-            rebate = rebate.mul(bips) / 10000;
+            payToken(user, s.askToken, a.askAccepted.add(a.askQueued));
+            payToken(user, s.bidToken, a.bidAccepted.add(a.bidQueued));
         }
-
-        assert(rebate > 0);
-        msg.sender.transfer(rebate);
     }
 
-    function payUsers(
+    function settleTrades(
         IAuctionData.State storage s
         )
         private

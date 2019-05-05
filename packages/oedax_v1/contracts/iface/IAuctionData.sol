@@ -74,6 +74,7 @@ library IAuctionData
         // -- The following files never change once initialized:
         IOedax  oedax;
         ICurve  curve;
+        uint    C;  // the curve param C
 
         uint    auctionId;
 

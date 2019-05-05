@@ -54,7 +54,8 @@ contract Auction is IAuction
     /// @param _P Numerator part of the target price `p`.
     /// @param _S Price precision -- (_P / 10**_S) is the float vaule of the target price.
     /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
-    /// @param _T The maximum auction duration.
+    /// @param _T1 The maximum auction duration in second.
+    /// @param _T2 The maximum auction duration in second.
     constructor(
         address _oedax,
         uint    _auctionId,
@@ -63,7 +64,8 @@ contract Auction is IAuction
         uint64  _P,
         uint64  _S,
         uint8   _M,
-        uint    _T
+        uint    _T1,
+        uint    _T2
         )
         public
     {
@@ -75,10 +77,13 @@ contract Auction is IAuction
         require(_P > 0 && _P <= uint(10) ** 20);
         require(_M > 1 && _M <= 100);
 
+        require(_T1 > 0 && _T1 < _T2);
+
         owner = msg.sender; // creator
 
         state.oedax = IOedax(_oedax);
         state.curve = ICurve(state.oedax.curveAddress());
+        state.C = state.curve.getParamC(_M, _T1, _T2);
 
         state.fees = IAuctionData.Fees(
             state.oedax.protocolFeeBips(),
@@ -93,7 +98,7 @@ contract Auction is IAuction
         state.P = _P;
         state.S = uint(10) ** _S;
         state.M = _M;
-        state.T = _T ;
+        state.T = _T2;
 
         require(state.P / state.M < state.P);
         require(state.P.mul(state.M) > state.P);
@@ -145,7 +150,8 @@ contract Auction is IAuction
     function settle()
         external
     {
-        state.settle(owner);
+        address payable _owner = address(uint160(owner));
+        state.settle(_owner);
     }
 
     function getStatus()
