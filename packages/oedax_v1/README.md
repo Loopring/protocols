@@ -9,7 +9,7 @@
 - [x] curve implementation
 - [x] remove curve registry
 - [x] calculate closing time
-- [ ] check price range and overflow
+- [x] check price range and overflow
 - [ ] get list of auctions
 - [ ] test framework
 
