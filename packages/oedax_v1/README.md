@@ -1,6 +1,6 @@
 # Oedax
 
-## Modules
+## Implementation
 
 - [x] ledger book keeping
 - [x] queue management
@@ -11,8 +11,14 @@
 - [x] calculate closing time
 - [x] check price range and overflow
 - [x] api ducmentation
-- [ ] get list of auctions
-- [ ] test framework
+
+## Testing
+- [ ] price not bounded, no bids/asks
+- [ ] price not bounded, price too big or too small
+- [ ] price bounded, empty queue, ask price == actual price
+- [ ] price bounded, empty queue, bid price == actual price
+- [ ] price bounded, bid queue not empty, ask price == actual price
+- [ ] price bounded, ask queue not empty, bid price == actual price
 
 ## Future work
 - [ ] smart curve implementation
