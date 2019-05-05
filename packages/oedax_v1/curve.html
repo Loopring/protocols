@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Oedax Curve</title>
+    <script src="https://unpkg.com/mathjs@5.9.0/dist/math.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-1.35.2.min.js"></script>
+    <style>
+    input[type=text] {
+        width: 300px;
+    }
+
+    input {
+        padding: 6px;
+    }
+
+    body,
+    html,
+    input {
+        font-family: sans-serif;
+        font-size: 11pt;
+
+    }
+
+    form {
+        margin: 20px 0;
+    }
+
+    #plot {
+        width: 80%;
+        height: 800px;
+    }
+    </style>
+</head>
+
+<body>
+    <form id="form">
+        <label id="ac"></label></br>
+        <label id="bc"></label></br>
+        <input id="C" /></br>
+    </form>
+    <div id="plot"></div>
+    <script>
+    String.prototype.format = function() {
+        a = this;
+        for (k in arguments) {
+            a = a.replace("{" + k + "}", arguments[k])
+        }
+        return a
+    }
+
+    function draw() {
+        try {
+            // compile the expression once
+            // const expression = document.getElementById('eq').value
+            const M = 3;
+            const T = 86400;
+            const P = 5000;
+            const C = 3; //document.getElementById('C').value.toInt();
+
+            // (T-x)*(P*M-P/M)/(C*x+T)+P/M
+
+            var expression = "({0}-x)*({1}-{2})/({3}*x+{4})+{5}".format(T, P * M, P / M, C, T, P / M)
+            var expr = math.compile(expression)
+            document.getElementById('ac').innerHTML = "ask curve: " + expression;
+
+
+            const S_xValues = math.range(0, T, 1).toArray()
+            const S_yValues = S_xValues.map(function(x) {
+                return expr.eval({ x: x })
+            })
+
+            // render the plot using plotly
+            const S_trace = {
+                x: S_xValues,
+                y: S_yValues,
+                type: 'scatter'
+            }
+
+
+            expression = "{0}*{1}/({2})".format(P, P, expression);
+            expr = math.compile(expression)
+            document.getElementById('bc').innerHTML = "ask curve: " + expression;
+
+            // evaluate the expression repeatedly for different values of x
+
+            const B_xValues = math.range(0, T, 1).toArray()
+            const B_yValues = B_xValues.map(function(x) {
+                return expr.eval({ x: x })
+            })
+
+            // render the plot using plotly
+            const B_trace = {
+                x: B_xValues,
+                y: B_yValues,
+                type: 'scatter'
+            }
+            const data = [S_trace, B_trace]
+            Plotly.newPlot('plot', data)
+        } catch (err) {
+            console.error(err)
+            alert(err)
+        }
+    }
+
+    document.getElementById('form').onsubmit = function(event) {
+        event.preventDefault()
+        draw()
+    }
+
+    draw()
+    </script>
+</body>
+
+</html>
