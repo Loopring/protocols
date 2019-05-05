@@ -2,10 +2,9 @@
 
 ## Compile
 
-run `npm run compile` or `npm run watch`.
+run `npm run compile` or `npm run watch` for continuous build.
 
 ## Implementation
-
 - [x] ledger book keeping
 - [x] queue management
 - [x] support asks
@@ -15,9 +14,7 @@ run `npm run compile` or `npm run watch`.
 - [x] calculate closing time
 - [x] check price range and overflow
 - [x] api ducmentation
-
-### Optimization
-- [ ] smart curve (auto shape adjustment based on min-auction duration and max-auction duration)
+- [x] smart curve (auto shape adjustment based on min-auction duration and max-auction duration)
 
 ## Testing
 - [ ] price not bounded, no bids/asks
