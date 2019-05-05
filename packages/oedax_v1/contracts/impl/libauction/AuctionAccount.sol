@@ -27,20 +27,7 @@ library AuctionAccount
 {
     using MathUint  for uint;
 
-    function getAccount(
-        IAuctionData.State storage s,
-        address user
-        )
-        internal
-        view
-        returns (
-            IAuctionData.Account storage
-        )
-    {
-        return s.accounts[user];
-    }
-
-   function depositToken(
+    function depositToken(
         IAuctionData.State storage s,
         address token,
         uint    amount
