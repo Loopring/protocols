@@ -1,5 +1,9 @@
 # Oedax
 
+## Compile
+
+run `npm run compile` or `npm run watch`.
+
 ## Implementation
 
 - [x] ledger book keeping
