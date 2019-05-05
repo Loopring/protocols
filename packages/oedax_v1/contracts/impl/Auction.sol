@@ -79,6 +79,7 @@ contract Auction is IAuction
 
         state.oedax = IOedax(_oedax);
         state.curve = ICurve(state.oedax.curveAddress());
+        state.C = state.curve.getParamC(_M, 0, _T);
 
         state.fees = IAuctionData.Fees(
             state.oedax.protocolFeeBips(),
@@ -145,7 +146,8 @@ contract Auction is IAuction
     function settle()
         external
     {
-        state.settle(owner);
+        address payable _owner = address(uint160(owner));
+        state.settle(_owner);
     }
 
     function getStatus()

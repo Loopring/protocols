@@ -51,7 +51,7 @@ library AuctionSettlement
 
     function settle(
         IAuctionData.State storage s,
-        address owner
+        address payable owner
         )
         internal
     {
@@ -64,16 +64,17 @@ library AuctionSettlement
         s.closeTime = s.startTime + i.duration;
         s.settlementTime = block.timestamp;
 
-        uint settlementDelay = s.settlementTime - s.closeTime;
+        if (i.isBounded) {
+            settleTrades(s);
+        } else{
+            returnDeposits(s);
+        }
 
-        require(
-            settlementDelay > s.oedax.settleGracePeriod() || msg.sender == owner,
-            "unauthorized"
-        );
-
-        payUsers(s);
-
-        paySettler(s, settlementDelay);
+        if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
+            owner.transfer(s.fees.creatorEtherStake);
+        } else {
+            msg.sender.transfer(s.fees.creatorEtherStake / 2);
+        }
 
         collectFees(s, s.oedax.feeRecipient());
 
@@ -119,27 +120,21 @@ library AuctionSettlement
         }
     }
 
-    function paySettler(
-        IAuctionData.State storage s,
-        uint settlementDelay
+    function returnDeposits(
+        IAuctionData.State storage s
         )
         private
     {
-        uint gracePeriod = s.oedax.settleGracePeriod();
-        uint rebate = s.fees.creatorEtherStake;
+        for (uint i = 0; i < s.users.length; i++) {
+            address payable user = s.users[i];
+            IAuctionData.Account storage a = s.accounts[user];
 
-        if (settlementDelay >= gracePeriod) {
-            rebate /= 2;
-        } else if (settlementDelay >= gracePeriod / 2) {
-            uint bips = 15000 - settlementDelay.mul(10000) / gracePeriod;
-            rebate = rebate.mul(bips) / 10000;
+            payToken(user, s.askToken, a.askAccepted.add(a.askQueued));
+            payToken(user, s.bidToken, a.bidAccepted.add(a.bidQueued));
         }
-
-        assert(rebate > 0);
-        msg.sender.transfer(rebate);
     }
 
-    function payUsers(
+    function settleTrades(
         IAuctionData.State storage s
         )
         private
