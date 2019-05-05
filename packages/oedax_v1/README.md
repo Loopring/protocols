@@ -2,7 +2,10 @@
 
 ## Compile
 
-run `npm run compile` or `npm run watch` for continuous build.
+Run `npm run compile` or `npm run watch` for continuous build.
+
+## Learn more about Oedax Curves
+Please visit https://loopring.github.io/protocols.
 
 ## Implementation
 - [x] ledger book keeping
