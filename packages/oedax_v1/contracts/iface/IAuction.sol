@@ -56,13 +56,12 @@ contract IAuction is Ownable
         );
 
     /// @dev Settles the auction.
-    /// After the auction ends and before `settleGracePeriod`, only the owner of the
-    /// auction can call this method to trigger final token transfers. After `settleGracePeriod`
-    /// anyone can also call this method to trigger the settlement and earn up to 50%
-    /// of the Ether staked by the auction's owner.
-    ///
-    /// For the owner to get all its Ether stake, he/she needs to call this method before
-    /// `settleGracePeriod/2`, otherwise he will gradually lose some Ether to the protocol.
+    /// After the auction ends, everyone can settle the auction by calling this method.
+    /// If the price is not bounded by curves, 50% of Ether stake will be charged by the
+    /// protocol as fee, the rest will be used as a rebate.
+    /// If the settlement happends inside of the settleGracePeriod window, all rebate will
+    /// sent back to the owner, otherwise, the 50% of the rebate will be sent to the settler,
+    /// the rest will be charged as fees.
     function settle()
         external;
 

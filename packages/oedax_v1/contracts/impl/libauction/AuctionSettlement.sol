@@ -63,21 +63,22 @@ library AuctionSettlement
         // update state
         s.closeTime = s.startTime + i.duration;
         s.settlementTime = block.timestamp;
+        uint rebate = s.fees.creatorEtherStake;
 
         if (i.isBounded) {
             settleTrades(s);
         } else{
+            rebate /= 2;
             returnDeposits(s);
         }
 
         if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
-            owner.transfer(s.fees.creatorEtherStake);
+            owner.transfer(rebate);
         } else {
-            // Give 50% of owner stake to the settler.
-            // The rest will be collected as fees.
-            msg.sender.transfer(s.fees.creatorEtherStake / 2);
+            msg.sender.transfer(rebate / 2);
         }
 
+        // collect everything remaining in this contract as protocol fees.
         collectFees(s, s.oedax.feeRecipient());
 
         // omit an event
