@@ -178,16 +178,6 @@ contract Auction is IAuction
 
     // == Internal & Private Functions ==
 
-    function getAccount(address user)
-        internal
-        view
-        returns (
-            IAuctionData.Account storage
-        )
-    {
-        return state.getAccount(user);
-    }
-
     function safeCheckTokenSupply(address token)
         private
         view
