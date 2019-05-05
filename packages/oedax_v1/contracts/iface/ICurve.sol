@@ -20,6 +20,19 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ICurve
 {
+    /// @dev Calculate curve parameter C
+    /// @param M Price factor
+    /// @param T0 The shortest auction duration
+    /// @param T  The longest auction duration
+    function getParamC(
+        uint M,
+        uint T0,
+        uint T
+        )
+        external
+        pure
+        returns (uint C);
+
     /// @dev Calculate the y value for the given x.
     /// @param C The curve parameter
     /// @param P0 The minimum y value
@@ -35,7 +48,7 @@ contract ICurve
         uint x
         )
         external
-        view
+        pure
         returns (uint y);
 
     /// @dev Calculate the x value for the given y.
@@ -53,19 +66,6 @@ contract ICurve
         uint y
         )
         external
-        view
-        returns (uint x);
-
-    /// @dev Calculate curve parameter C
-    /// @param M Price factor
-    /// @param T0 The shortest auction duration
-    /// @param T  The longest auction duration
-    function getParamC(
-        uint M,
-        uint T0,
-        uint T
-        )
-        external
         pure
-        returns (uint C);
+        returns (uint x);
 }

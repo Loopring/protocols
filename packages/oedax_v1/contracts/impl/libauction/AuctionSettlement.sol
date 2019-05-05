@@ -73,6 +73,8 @@ library AuctionSettlement
         if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
             owner.transfer(s.fees.creatorEtherStake);
         } else {
+            // Give 50% of owner stake to the settler.
+            // The rest will be collected as fees.
             msg.sender.transfer(s.fees.creatorEtherStake / 2);
         }
 
@@ -94,14 +96,7 @@ library AuctionSettlement
         )
         private
     {
-       // collect remaining Ether to fee recipient
-        payToken(
-            feeRecipient,
-            address(0x0),
-            address(this).balance
-        );
-
-         // collect remaining ask token to fee recipient
+        // collect remaining ask token to fee recipient
         if (s.askToken != address(0x0)) {
             payToken(
                 feeRecipient,
@@ -118,6 +113,13 @@ library AuctionSettlement
                 ERC20(s.bidToken).balanceOf(address(this))
             );
         }
+
+        // collect remaining Ether to fee recipient
+        payToken(
+            feeRecipient,
+            address(0x0),
+            address(this).balance
+        );
     }
 
     function returnDeposits(

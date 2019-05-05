@@ -99,7 +99,8 @@ contract Oedax is IOedax, NoDefaultFunc
         uint64  P,
         uint64  S,
         uint8   M,
-        uint    T
+        uint    T1,
+        uint    T2
         )
         public
         payable
@@ -107,7 +108,7 @@ contract Oedax is IOedax, NoDefaultFunc
     {
         require(msg.value >= creatorEtherStake, "insuffcient ETH fee");
         require(curveAddress != address(0x0), "empty curve");
-        require(T >= minDuration && T <= maxDuration, "invalid duration");
+        require(T2 >= minDuration && T2 <= maxDuration, "invalid duration");
         require(
             tokenRankMap[bidToken] > tokenRankMap[askToken],
             "bid (quote) token must have a higher rank than ask (base) token"
@@ -120,7 +121,7 @@ contract Oedax is IOedax, NoDefaultFunc
             auctionId,
             askToken,
             bidToken,
-            P, S, M, T
+            P, S, M, T1, T2
         );
 
         auctionAddr = address(auction);

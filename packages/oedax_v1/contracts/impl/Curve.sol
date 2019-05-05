@@ -36,6 +36,20 @@ contract Curve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
+    function getParamC(
+        uint M,
+        uint T0,
+        uint T
+        )
+        external
+        pure
+        returns (uint C)
+    {
+      require(T0.mul(M.add(1)) <= M.mul(T), "T0/T must <= M/(M+1)");
+
+      C = (M.mul(T) / T0).sub(M).sub(1);
+    }
+
     function xToY(
         uint C,
         uint P0,
@@ -44,7 +58,7 @@ contract Curve is ICurve, NoDefaultFunc
         uint x
         )
         public
-        view
+        pure
         returns (uint y)
     {
         require(x >= 0 && x <= T, "invalid x");
@@ -60,26 +74,12 @@ contract Curve is ICurve, NoDefaultFunc
         uint y
         )
         public
-        view
+        pure
         returns (uint x)
     {
         require(y >= P0 && y <= P1, "invalid y");
         uint m = y - P0;
         uint e = P1 - P0;
         x = e.sub(m).mul(T) / C.mul(m).add(e);
-    }
-
-    function getParamC(
-        uint M,
-        uint T0,
-        uint T
-        )
-        external
-        pure
-        returns (uint C)
-    {
-      require(T0.mul(M.add(1)) <= M.mul(T), "T0/T must <= M/(M+1)");
-
-      C = (M.mul(T) / T0).sub(M).sub(1);
     }
 }

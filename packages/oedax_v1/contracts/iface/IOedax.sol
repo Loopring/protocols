@@ -130,7 +130,8 @@ contract IOedax is Ownable
     /// @param P Numerator part of the target price `p`.
     /// @param S Price precision -- (_P / 10**_S) is the float vaule of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
-    /// @param T The maximum auction duration.
+    /// @param T1 The maximum auction duration in second.
+    /// @param T2 The maximum auction duration in second.
     /// @return auctionAddr Auction address.
     function createAuction(
         address askToken,
@@ -138,7 +139,8 @@ contract IOedax is Ownable
         uint64  P,
         uint64  S,
         uint8   M,
-        uint    T
+        uint    T1,
+        uint    T2
         )
         public
         payable
