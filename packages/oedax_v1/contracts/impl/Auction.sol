@@ -52,7 +52,7 @@ contract Auction is IAuction
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
     /// @param _P Numerator part of the target price `p`.
-    /// @param _S Denominator part of the target price `p`.
+    /// @param _S Price precision -- (_P / 10**_S) is the float vaule of the target price.
     /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param _T The maximum auction duration.
     constructor(
@@ -67,14 +67,13 @@ contract Auction is IAuction
         )
         public
     {
-
         require(_oedax != address(0x0));
         require(_auctionId > 0);
         require(_askToken != address(0x0) || _bidToken != address(0x0));
 
-        require(_P > 0);
-        require(_M > 1);
-        require(_S >= 100000 && _S <= 1000000000000000000 /*18 digits*/);
+        require(_S >= 5 && _S <= 10);
+        require(_P > 0 && _P <= uint(10) ** 20);
+        require(_M > 1 && _M <= 100);
 
         owner = msg.sender; // creator
 
@@ -92,7 +91,7 @@ contract Auction is IAuction
         state.bidToken = _bidToken;
         state.startTime = block.timestamp;
         state.P = _P;
-        state.S = _S;
+        state.S = uint(10) ** _S;
         state.M = _M;
         state.T = _T ;
 
@@ -103,16 +102,10 @@ contract Auction is IAuction
         state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
 
         // verify against overflow
-        int askTotalSupply = int(ERC20(_askToken).totalSupply());
-        int bidTotalSupply = int(ERC20(_bidToken).totalSupply());
-
-        require(askTotalSupply > 0, "unsupported ask token");
-        require(bidTotalSupply > 0, "unsupported bid token");
-
-        state.S
-            .mul(uint(askTotalSupply))
-            .mul(uint(bidTotalSupply));
+        safeCheckTokenSupply(_askToken);
+        safeCheckTokenSupply(_bidToken);
     }
+
 
     // == Public & External Functions ==
     function()
@@ -183,5 +176,15 @@ contract Auction is IAuction
         )
     {
         return state.getAccount(user);
+    }
+
+    // == Internal & Private Functions ==
+    function safeCheckTokenSupply(address token)
+        private
+        view
+    {
+        uint totalSupply = ERC20(token).totalSupply();
+        totalSupply.mul(state.S).mul(state.S);
+        totalSupply.mul(uint(10) ** 20); // max price numerator
     }
 }

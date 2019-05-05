@@ -52,10 +52,7 @@ contract IOedax is Ownable
         uint time;
     }
 
-    // == Constants & Variables ==
-
-    uint64      public constant PRICE_BASE = 10000000000; // 12 digits
-
+    // == Variables ==
     address payable public feeRecipient;
 
     address     public curveAddress;
@@ -83,7 +80,6 @@ contract IOedax is Ownable
     // price history
     // bid_token => ask_token => list_of_trade_history
     mapping (address => mapping(address => TradeHistory[])) public tradeHistory;
-
 
     // == Functions ==
     function updateSettings(
@@ -114,6 +110,7 @@ contract IOedax is Ownable
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
     /// @param P Numerator part of the target price `p`.
+    /// @param S Price precision -- (_P / 10**_S) is the float vaule of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
     /// @param T The maximum auction duration.
     /// @return auction Auction address.
@@ -121,6 +118,7 @@ contract IOedax is Ownable
         address askToken,
         address bidToken,
         uint64  P,
+        uint64  S,
         uint8   M,
         uint    T
         )
