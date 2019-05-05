@@ -20,9 +20,9 @@ import "../../iface/IAuctionData.sol";
 
 import "../../lib/MathUint.sol";
 
-import "./AuctionStatus.sol";
 import "./AuctionAccount.sol";
 import "./AuctionQueue.sol";
+import "./AuctionStatus.sol";
 
 /// @title AuctionAsks.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -45,6 +45,10 @@ library AuctionBids
         uint amount
         )
         internal
+        returns (
+            uint accepted,
+            uint queued
+        )
     {
         require(amount > 0, "zero amount");
         if (s.oedax.logParticipant(msg.sender)) {
@@ -53,8 +57,6 @@ library AuctionBids
 
         uint elapsed = block.timestamp - s.startTime;
         uint weight = s.T.sub(elapsed);
-        uint accepted;
-        uint queued;
         uint dequeued;
 
         // calculate the current-state

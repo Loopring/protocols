@@ -25,22 +25,22 @@ import "../lib/NoDefaultFunc.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 ///
 /// Let P0 and P1 be the min and max price, T be the duration,
-/// let e = P1 - P0, and μ be the curve parameter to control its shape:
+/// let e = P1 - P0, and c be the curve parameter to control its shape:
 /// then we have:
-///   y = f(x) = (T-x)*e/(μ*x+T)+P0
+///   y = f(x) = (T-x)*e/(c*x+T)+P0
 /// and
-///   x = f(y) = (e-y+P0)*T/(μ*(y-P0)+e), and if we let m = y-P0, then
-///   x = f(y) = (e-m)*T/(μ*m+e)
+///   x = f(y) = (e-y+P0)*T/(c*(y-P0)+e), and if we let m = y-P0, then
+///   x = f(y) = (e-m)*T/(c*m+e)
 
 contract Curve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
-    uint public constant mu = 1;
+    uint public constant c = 1;
 
     function xToY(
-        uint P0, // min price
-        uint P1, // max factor
+        uint P0,
+        uint P1,
         uint T,
         uint x
         )
@@ -50,12 +50,12 @@ contract Curve is ICurve, NoDefaultFunc
     {
         require(x >= 0 && x <= T, "invalid x");
         uint e = P1 - P0;
-        y = (T.sub(x).mul(e) / mu.mul(x).add(T)).add(P0);
+        y = (T.sub(x).mul(e) / c.mul(x).add(T)).add(P0);
     }
 
     function yToX(
-        uint P0, // min price
-        uint P1, // max factor
+        uint P0,
+        uint P1,
         uint T,
         uint y
         )
@@ -66,6 +66,6 @@ contract Curve is ICurve, NoDefaultFunc
         require(y >= P0 && y <= P1, "invalid y");
         uint m = y - P0;
         uint e = P1 - P0;
-        x = e.sub(m).mul(T) / mu.mul(m).add(e);
+        x = e.sub(m).mul(T) / c.mul(m).add(e);
     }
 }

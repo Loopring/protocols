@@ -18,7 +18,6 @@ pragma solidity 0.5.7;
 
 import "./LRCToken.sol";
 
-
 /// @author Kongliang Zhong - <kongliang@loopring.org>
 contract DummyToken is LRCToken {
 

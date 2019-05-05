@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-
 /// @title Utility Functions for uint
 /// @author Daniel Wang - <daniel@loopring.org>
 library MathUint
