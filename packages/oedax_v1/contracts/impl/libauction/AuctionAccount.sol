@@ -38,6 +38,9 @@ library AuctionAccount
         assert(token != address(0x0));
 
         ERC20 erc20 = ERC20(token);
+        // Q: Should the amount that can be transferred be calculated here?
+        //    From a user's perspective it may make more sense to simply fail the transaction
+        //    than bidding less than expected (the UI will probably check for this anyway)
         _amount = amount
             .min(erc20.balanceOf(msg.sender))
             .min(erc20.allowance(msg.sender, address(s.oedax)));

@@ -116,6 +116,8 @@ contract Oedax is IOedax, NoDefaultFunc
 
         uint auctionId = auctions.length + 1;
 
+        // Q: Creating a new Auction contract for every auction is pretty expensive.
+        //    Probably around ~4M gas.
         Auction auction = new Auction(
             address(this),
             auctionId,

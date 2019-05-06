@@ -104,6 +104,7 @@ library AuctionAsks
             s.askShifts.push(s.askShift);
         }
 
+        // Q: Unnecessary? (same as above, can never be true here)
         if (s.askShift != i.newAskShift) {
             s.askShift = i.newAskShift;
             s.askShifts.push(elapsed);

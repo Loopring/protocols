@@ -49,6 +49,8 @@ library AuctionSettlement
     using ERC20SafeTransfer for address;
     using AuctionStatus     for IAuctionData.State;
 
+    // Q: This can be a very expensive function that can easily cost more gas
+    //    than the Ethereum block limit
     function settle(
         IAuctionData.State storage s,
         address payable owner
@@ -81,7 +83,11 @@ library AuctionSettlement
         // collect everything remaining in this contract as protocol fees.
         collectFees(s, s.oedax.feeRecipient());
 
-        // omit an event
+        // emit an event
+        // Q: logSettlement has the following check:
+        //    assert(auctionId > 0 && askAmount > 0 && bidAmount > 0);
+        //    It seems like if askAmount == 0 or bidAmount == 0 (which I think is a valid state)
+        //    settle() will fail which curretnly locks all funds deposited to this contract
         s.oedax.logSettlement(
             s.auctionId,
             s.askToken,
@@ -128,6 +134,11 @@ library AuctionSettlement
         )
         private
     {
+        // Q: I don't think we can this without without risking
+        //    that the gas cost > gas limit of Ethereum/block
+        //    (this loop contains expensive token transfers)
+        //    It should be possible to do this in parts (either by the user itself or someone else)
+        //    Another option is limiting the number of users, but that doesn't seem like a good idea
         for (uint i = 0; i < s.users.length; i++) {
             address payable user = s.users[i];
             IAuctionData.Account storage a = s.accounts[user];
@@ -157,6 +168,11 @@ library AuctionSettlement
         address payable user;
         Trading memory t = Trading(0, 0, 0, 0, 0, 0, 0, 0);
 
+        // Q: I don't think we can this without without risking
+        //    that the gas cost > gas limit of Ethereum/block
+        //    (this loop contains expensive token transfers)
+        //    It should be possible to do this in parts (either by the user itself or someone else)
+        //    Another option is limiting the number of users, but that doesn't seem like a good idea
         for (uint i = 0; i < s.users.length; i++) {
             user = s.users[i];
             IAuctionData.Account storage a = s.accounts[user];

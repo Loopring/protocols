@@ -132,8 +132,9 @@ contract Auction is IAuction
             uint queued
         )
     {
-        uint transfered = state.depositToken(state.bidToken, amount);
-        (accepted, queued) = state.bid(transfered);
+        // Q: Check if auction is closed here first?
+        uint transferred = state.depositToken(state.bidToken, amount);
+        (accepted, queued) = state.bid(transferred);
     }
 
     function ask(uint amount)
@@ -143,8 +144,9 @@ contract Auction is IAuction
             uint queued
         )
     {
-        uint transfered = state.depositToken(state.askToken, amount);
-        (accepted, queued) = state.ask(transfered);
+        // Q: Check if auction is closed here first?
+        uint transferred = state.depositToken(state.askToken, amount);
+        (accepted, queued) = state.ask(transferred);
     }
 
     function settle()
@@ -177,8 +179,8 @@ contract Auction is IAuction
          bidAllowed = i.bidAllowed;
 
          if (state.settlementTime == 0) {
-            uint elpased = block.timestamp - state.startTime;
-            timeRemaining = i.duration > elpased ? i.duration - elpased : 0;
+            uint elapsed = block.timestamp - state.startTime;
+            timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
          }
     }
 
