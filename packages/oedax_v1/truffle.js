@@ -77,6 +77,6 @@ module.exports = {
       gas: 6700000
     }
   },
-  test_directory: 'transpiled/test',
-  migrations_directory: 'transpiled/migrations',
+  test_directory: './test',
+  migrations_directory: './migrations',
 };
