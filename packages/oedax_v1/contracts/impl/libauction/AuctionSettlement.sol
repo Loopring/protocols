@@ -87,7 +87,7 @@ library AuctionSettlement
         // Q: logSettlement has the following check:
         //    assert(auctionId > 0 && askAmount > 0 && bidAmount > 0);
         //    It seems like if askAmount == 0 or bidAmount == 0 (which I think is a valid state)
-        //    settle() will fail which curretnly locks all funds deposited to this contract
+        //    settle() will fail which currently locks all funds deposited to this contract
         s.oedax.logSettlement(
             s.auctionId,
             s.askToken,
@@ -134,10 +134,10 @@ library AuctionSettlement
         )
         private
     {
-        // Q: I don't think we can this without without risking
+        // Q: I don't think we can do this without risking
         //    that the gas cost > gas limit of Ethereum/block
         //    (this loop contains expensive token transfers)
-        //    It should be possible to do this in parts (either by the user itself or someone else)
+        //    It should be possible to do this in parts (either by the user himself or someone else)
         //    Another option is limiting the number of users, but that doesn't seem like a good idea
         for (uint i = 0; i < s.users.length; i++) {
             address payable user = s.users[i];
@@ -168,21 +168,23 @@ library AuctionSettlement
         address payable user;
         Trading memory t = Trading(0, 0, 0, 0, 0, 0, 0, 0);
 
-        // Q: I don't think we can this without without risking
+        // Q: I don't think we can do this without risking
         //    that the gas cost > gas limit of Ethereum/block
         //    (this loop contains expensive token transfers)
-        //    It should be possible to do this in parts (either by the user itself or someone else)
+        //    It should be possible to do this in parts (either by the user himself or someone else)
         //    Another option is limiting the number of users, but that doesn't seem like a good idea
         for (uint i = 0; i < s.users.length; i++) {
             user = s.users[i];
             IAuctionData.Account storage a = s.accounts[user];
 
             t.askPaid = a.askAccepted;
+            // Q: I think s.bidAmount can be 0 here
             t.askReceived =  askSettlement.mul(a.bidAccepted) / s.bidAmount;
             t.askReturend = a.askQueued;
             t.askFeeRebate = askTakerFee.mul(bips[i]) / 10000;
 
             t.bidPaid = a.bidAccepted;
+            // Q: I think s.askAmount can be 0 here
             t.bidReceived =  bidSettlement.mul(a.askAccepted) / s.askAmount;
             t.bidReturend = a.bidQueued;
             t.bidFeeRebate = bidTakerFee.mul(bips[i]) / 10000;
@@ -206,6 +208,7 @@ library AuctionSettlement
       for (i = 0; i < size; i++) {
           IAuctionData.Account storage a = s.accounts[s.users[i]];
 
+           // Q: I think s.bidAmount or s.askAmount can be 0 here
           bips[i] = (a.bidFeeRebateWeight / s.bidAmount)
               .add(a.askFeeRebateWeight / s.askAmount);
 
@@ -213,6 +216,7 @@ library AuctionSettlement
       }
 
       total /= 10000;
+      // Q: If users.length == 0 total could be 0
       assert(total > 0);
 
       for (i = 0; i < size; i++) {
