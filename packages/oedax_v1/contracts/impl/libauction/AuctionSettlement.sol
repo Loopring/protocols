@@ -215,6 +215,7 @@ library AuctionSettlement
           total = total.add(bips[i]);
       }
 
+      // Q: Maybe we should round up here to make sure sum(bips) <= total
       total /= 10000;
       // Q: If users.length == 0 total could be 0
       assert(total > 0);

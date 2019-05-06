@@ -47,12 +47,14 @@ library AuctionStatus
     {
         uint P0 = s.P.mul(s.M);
         uint P1 = s.P / s.M;
+        // Q: Isn't P0 > P1?
         assert(P0 > 0 && P1 > P0);
 
         uint elapsed = block.timestamp - s.startTime;
 
         if (s.askAmount > 0) {
             i.actualPrice  = actualPrice(s);
+            // Q: See above, maybe P0 and P1 are switched?
             i.isBounded = i.actualPrice >= P0 && i.actualPrice <= P1;
         }
 
