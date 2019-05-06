@@ -36,6 +36,12 @@ library AuctionQueue
       uint idx = 0;
       uint dequeued;
 
+      // Q: Potentially very expensive or even dangerous.
+      //    Even a single loop here is quite expensive, and as a user bidding/asking you could be
+      //    paying the gas cost to update someone else's bids/asks.
+      //    Security problem: Someone can fill the queue with a lot of (small) entries making this cost more
+      //    than the Ethereum block limit. This way someone could probably stop anyone else from
+      //    bidding/asking in this auction.
       while(_amount > 0) {
         IAuctionData.QueueItem storage item = s.Q.items[idx];
         IAuctionData.Account storage account = s.accounts[item.user];
@@ -61,6 +67,8 @@ library AuctionQueue
         }
       }
 
+      // Q: It's probably cheaper to just use and update a start index instead of
+      //    modifying the complete array.
       if (idx > 0) {
         uint size = s.Q.items.length - idx;
         for (uint i = 0; i < size; i++) {
