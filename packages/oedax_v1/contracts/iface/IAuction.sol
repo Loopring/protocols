@@ -71,7 +71,7 @@ contract IAuction is Ownable
     /// @return timeRemaining The time (in seconds) remained for the auction to end.
     /// @return actualPrice The actual price. If the auction has been settled, this value is 0.
     /// @return askPrice The current ask price.
-    /// @return bidPrixce The current bid price.
+    /// @return bidPrice The current bid price.
     /// @return askAllowed The max amount of ask tokens that can be accepted.
     /// @return bidAllowed The max amount of bid tokens that can be accepted.
     function getStatus()

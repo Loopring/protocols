@@ -70,6 +70,7 @@ library AuctionStatus
                 if (i.duration > elapsed) {
                     // the auction is open
                     i.askPrice = xToY(s, elapsed);
+                    // Q: i.askPrice == xToY(s, elapsed), so just reuse i.askPrice here?
                     i.bidPrice = s.P.mul(s.P) / xToY(s, elapsed);
 
                     i.askAllowed = ~uint256(0); // = uint.MAX
@@ -77,6 +78,8 @@ library AuctionStatus
                 }
             }
         } else {
+            // Q: if s.askAmount == 0, i.actualPrice == 0 here, is that always correct?
+            //    (these are not always updated below)
             i.askPrice = i.actualPrice;
             i.bidPrice = i.actualPrice;
 
@@ -124,6 +127,7 @@ library AuctionStatus
         view
         returns (uint y)
     {
+        // Q: I think P0 and P1 switched here as well
         y = s.curve.xToY(s.C, s.P.mul(s.M), s.P / s.M, s.T, x);
     }
 
@@ -135,6 +139,7 @@ library AuctionStatus
         view
         returns (uint x)
     {
+        // Q: I think P0 and P1 switched here as well
         x = s.curve.yToX(s.C, s.P.mul(s.M), s.P / s.M, s.T, y);
     }
 }
