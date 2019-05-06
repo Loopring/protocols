@@ -116,12 +116,12 @@ contract Auction is IAuction
         external
         payable
     {
-        if (state.bidToken == address(0x0)) {
+        if (msg.value > 0 && state.bidToken == address(0x0)) {
             state.bid(msg.value);
-        } else if (state.askToken == address(0x0)) {
+        } else if (msg.value > 0 && state.askToken == address(0x0)) {
             state.ask(msg.value);
         } else {
-            revert();
+            settle();
         }
     }
 
@@ -148,7 +148,7 @@ contract Auction is IAuction
     }
 
     function settle()
-        external
+        public
     {
         address payable _owner = address(uint160(owner));
         state.settle(_owner);

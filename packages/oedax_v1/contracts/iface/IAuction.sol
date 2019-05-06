@@ -63,7 +63,7 @@ contract IAuction is Ownable
     /// sent back to the owner, otherwise, the 50% of the rebate will be sent to the settler,
     /// the rest will be charged as fees.
     function settle()
-        external;
+        public;
 
     /// @dev Calculate the auciton's status on the fly.
     /// @return isBounded If the auction's actual price has already been bounded by the
