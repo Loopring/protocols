@@ -36,7 +36,7 @@ contract IAuction is Ownable
     /// @dev Join the auciton by placing a BID.
     /// @param amount The amount of bidToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted by queued in the waiting list.
+    /// @return queued The amount of token not accepted but queued in the waiting list.
     function bid(uint amount)
         external
         returns (
@@ -47,7 +47,7 @@ contract IAuction is Ownable
     /// @dev Join the auciton by placing an ASK.
     /// @param amount The amount of askToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted by queued in the waiting list.
+    /// @return queued The amount of token not accepted but queued in the waiting list.
     function ask(uint amount)
         external
         returns (
@@ -59,7 +59,7 @@ contract IAuction is Ownable
     /// After the auction ends, everyone can settle the auction by calling this method.
     /// If the price is not bounded by curves, 50% of Ether stake will be charged by the
     /// protocol as fee, the rest will be used as a rebate.
-    /// If the settlement happends inside of the settleGracePeriod window, all rebate will
+    /// If the settlement happens inside of the settleGracePeriod window, all rebate will
     /// sent back to the owner, otherwise, the 50% of the rebate will be sent to the settler,
     /// the rest will be charged as fees.
     function settle()
