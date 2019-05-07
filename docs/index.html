@@ -57,25 +57,13 @@
                 </div>
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon1">T2 (max auction duration)</span>
+                        <span class="input-group-text" id="basic-addon1">T (auction duration)</span>
                     </div>
                     <input type="text" id="T" class="form-control" placeholder="86400" value="86400">
                 </div>
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon1">T1 (min auction duration)</span>
-                    </div>
-                    <input disabled type="text" id="T1" class="form-control" placeholder="43200" value="43200">
-                </div>
-                <!--        <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon1">C (the curve param)</span>
-                    </div>
-                    <input type="text" id="C" class="form-control" placeholder="0" value="0">
-                </div> -->
-                <div class="input-group mb-3">
-                    <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon1">T1/T2</span>
+                        <span class="input-group-text" id="basic-addon1">Actual Price Range</span>
                     </div>
                     <input type="range" class="form-control" id="R" value="50">
                 </div>
@@ -84,14 +72,6 @@
         </div>
         <div class="d-block p-4">
             <div id="plot"></div>
-            <div class="container bg-light">
-                <div class="d-block p-1">
-                    <label>Ask Price Function: <pre class="text-primary" id="askCurve"></pre></label>
-                </div>
-                <div class="d-block p-1">
-                    <label>Bid Price Function: <pre class="text-primary" id="bidCurve"></pre></label>
-                </div>
-            </div>
         </div>
     </div>
     <div class="d-block p-4">
@@ -99,14 +79,6 @@
     <div class="d-block p-4">
     </div>
     <script>
-    String.prototype.format = function() {
-        a = this;
-        for (k in arguments) {
-            a = a.replace("{" + k + "}", arguments[k])
-        }
-        return a
-    }
-
     function draw() {
         try {
             // compile the expression once
@@ -114,26 +86,15 @@
             var M = parseInt(document.getElementById('M').value);
             var T = parseInt(document.getElementById('T').value);
             var R = parseInt(document.getElementById('R').value);
+            var p = P / M + (P * M - P / M) * R / 100;
 
-            document.getElementById('T1').value = "" + (T * R / 100);
-
-            var C = M * 100 / R - M - 1;
-
-
-            function xToY(x) {
-                return (T - x) * (P * M - P / M) / (C * x + T) + P / M;
+            function xToY(Y, X, x) {
+                return Y * (X - x) / (X + x);
             }
-
-            function yToX(y) {
-                return y;
-            }
-
-            var expression = "f(x)=({0}-x)*({1}-{2})/({3}*x+{4})+{5}".format(T, P * M, P / M, C, T, P / M)
-            document.getElementById('askCurve').innerHTML = expression;
 
 
             const S_xValues = math.range(0, T, 1).toArray()
-            const S_yValues = S_xValues.map(function(x) { return xToY(x); })
+            const S_yValues = S_xValues.map(function(x) { return xToY(P * M - p, T, x) + p; })
 
             // render the plot using plotly
             const S_trace = {
@@ -143,22 +104,29 @@
                 type: 'scatter'
             }
 
-            expression = "f'(x)={0}*{1}/({2})".format(P, P, expression);
-            document.getElementById('bidCurve').innerHTML = expression;
 
-            // evaluate the expression repeatedly for different values of x
+            //  const B_xValues = math.range(0, T, 1).toArray()
+            // const B_yValues = B_xValues.map(function(x) { return xToY(p-P/M, T, T-x)+P/M; })
+            // // render the plot using plotly
+            // const B_trace = {
+            //     x: B_xValues,
+            //     y: B_yValues,
+            //     name: 'Bid Price Curve1',
+            //     type: 'scatter'
+            // }
 
-            const B_xValues = math.range(0, T, 1).toArray()
-            const B_yValues = B_xValues.map(function(x) { return P * P / xToY(x); })
+
+            const C_xValues = math.range(0, T, 1).toArray()
+            const C_yValues = C_xValues.map(function(x) { return p - xToY(p-P/M, T, x); })
 
             // render the plot using plotly
-            const B_trace = {
-                x: B_xValues,
-                y: B_yValues,
+            const C_trace = {
+                x: C_xValues,
+                y: C_yValues,
                 name: 'Bid Price Curve',
                 type: 'scatter'
             }
-            const data = [S_trace, B_trace]
+            const data = [S_trace, C_trace];
             Plotly.newPlot('plot', data)
         } catch (err) {
             console.error(err)
@@ -170,7 +138,6 @@
         event.preventDefault()
         draw()
     }
-
     document.getElementById('R').onchange = function(event) {
         event.preventDefault()
         draw()

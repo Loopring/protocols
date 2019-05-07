@@ -58,10 +58,9 @@ library AuctionSettlement
         require(s.settlementTime == 0, "auction already settled");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
-        require(block.timestamp >= s.startTime + i.duration, "auction still open");
+        require(i.timeRemaining == 0, "auction still open");
 
         // update state
-        s.closeTime = s.startTime + i.duration;
         s.settlementTime = block.timestamp;
         uint rebate = s.fees.creatorEtherStake;
 
@@ -72,7 +71,7 @@ library AuctionSettlement
             returnDeposits(s);
         }
 
-        if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
+        if (block.timestamp - s.startTime - s.T <= s.oedax.settleGracePeriod()) {
             owner.transfer(rebate);
         } else {
             msg.sender.transfer(rebate / 2);

@@ -51,6 +51,11 @@ library AuctionAsks
         )
     {
         require(amount > 0, "zero amount");
+
+        // calculate the current-state
+        IAuctionData.Status memory i = s.getAuctionStatus();
+        require (i.timeRemaining > 0, "auction ended");
+
         if (s.oedax.logParticipant(msg.sender)) {
             s.users.push(msg.sender);
         }
@@ -58,9 +63,6 @@ library AuctionAsks
         uint elapsed = block.timestamp - s.startTime;
         uint weight = s.T.sub(elapsed);
         uint dequeued;
-
-        // calculate the current-state
-        IAuctionData.Status memory i = s.getAuctionStatus();
 
         if (amount > i.askAllowed) {
             // Part of the amount will be put in the queue.
@@ -97,18 +99,6 @@ library AuctionAsks
         a.askAccepted = a.askAccepted.add(accepted);
         a.askFeeRebateWeight = a.askFeeRebateWeight.add(accepted.mul(weight));
         s.askAmount = s.askAmount.add(accepted);
-
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(elapsed);
-            s.askShifts.push(s.askShift);
-        }
-
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(elapsed);
-            s.askShifts.push(s.askShift);
-        }
 
         emit Ask(
             msg.sender,
