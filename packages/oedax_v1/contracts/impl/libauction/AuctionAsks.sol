@@ -98,10 +98,10 @@ library AuctionAsks
         a.askFeeRebateWeight = a.askFeeRebateWeight.add(accepted.mul(weight));
         s.askAmount = s.askAmount.add(accepted);
 
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(elapsed);
-            s.askShifts.push(s.askShift);
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(elapsed);
+            s.bidShifts.push(s.bidShift);
         }
 
         if (s.askShift != i.newAskShift) {
