@@ -24,11 +24,15 @@ library IAuctionData
     struct Status
     {
       bool    isBounded;
-      uint    timeRemaining;
+      uint    duration;
 
       uint    actualPrice;
       uint    askPrice;
       uint    bidPrice;
+
+      uint    newAskShift;
+      uint    newBidShift;
+
       uint    askAllowed;
       uint    bidAllowed;
     }
@@ -67,30 +71,45 @@ library IAuctionData
 
     struct State
     {
-        // -- The following fields never change once initialized:
+        // -- The following files never change once initialized:
         IOedax  oedax;
         ICurve  curve;
-        Fees    fees;
+        uint    C;  // the curve param C
 
         uint    auctionId;
+
+        Fees    fees;
+
         address askToken;
         address bidToken;
+
         uint    askBaseUnit;
         uint    bidBaseUnit;
+
         uint    startTime;
 
-        uint    P;
-        uint    S;
-        uint    M;
-        uint    T;
+        uint    P;  // target price
+        uint    S;  // price base， P/S is the float value of the target price.
+        uint    M;  // price factor
+        uint    T;  // auction max duration
 
         // -- The following fields WILL change on bids and asks.
-        Queue   Q;
+
+        uint    closeTime;
         uint    settlementTime;
+
         uint    askAmount;
         uint    bidAmount;
 
-        // user => account
+        uint    askShift;
+        uint    bidShift;
+
+        uint[]  askShifts;
+        uint[]  bidShifts;
+
+        Queue   Q;
+
+        // user => account)
         mapping (address => Account) accounts;
         address payable[] users;
     }
