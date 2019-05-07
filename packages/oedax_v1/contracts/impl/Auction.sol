@@ -118,6 +118,8 @@ contract Auction is IAuction
     {
         // Q: Check if auction is closed here first?
         //    Otherwise deposited funds could remain stuck.
+        // Q: Maybe a bit strange this doesn't go through bid/ask and
+        //    thus doesn't return (accepted, queued)
         if (msg.value > 0 && state.bidToken == address(0x0)) {
             state.bid(msg.value);
         } else if (msg.value > 0 && state.askToken == address(0x0)) {
