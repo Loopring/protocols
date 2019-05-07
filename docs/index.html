@@ -57,13 +57,13 @@
                 </div>
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon1">T2 (max auction duration)</span>
+                        <span class="input-group-text" id="basic-addon1">T (auction duration)</span>
                     </div>
                     <input type="text" id="T" class="form-control" placeholder="86400" value="86400">
                 </div>
                 <div class="input-group mb-3">
                     <div class="input-group-prepend">
-                        <span class="input-group-text" id="basic-addon1">T1/T2</span>
+                        <span class="input-group-text" id="basic-addon1">Actual Price Range</span>
                     </div>
                     <input type="range" class="form-control" id="R" value="50">
                 </div>
@@ -106,7 +106,7 @@
 
 
             const B_xValues = math.range(0, T, 1).toArray()
-            const B_yValues = B_xValues.map(function(x) { return p - xToY(p, T, x); })
+            const B_yValues = B_xValues.map(function(x) { return p - xToY(p-P/M, T, x); })
 
             // render the plot using plotly
             const B_trace = {
