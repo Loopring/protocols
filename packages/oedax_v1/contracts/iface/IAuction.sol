@@ -61,6 +61,14 @@ contract IAuction is Ownable
     function settle()
         public;
 
+    function withdraw()
+        external;
+
+    function withdrawFor(
+        address payable[] calldata users
+        )
+        external;
+
     /// @dev Calculate the auction's status on the fly.
     /// @return isBounded If the auction's actual price has already been bounded by the
     ///         bid and ask curves.

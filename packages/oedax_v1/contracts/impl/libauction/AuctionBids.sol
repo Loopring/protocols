@@ -66,7 +66,9 @@ library AuctionBids
         uint elapsed = block.timestamp - s.startTime;
 
         a.bidAmount = a.bidAmount.add(accepted);
-        a.bidRebateWeight = a.bidRebateWeight.add(accepted.mul(s.T.sub(elapsed)));
+        uint extraRebateWeight = accepted.mul(s.T.sub(elapsed));
+        a.bidRebateWeight = a.bidRebateWeight.add(extraRebateWeight);
+        s.totalBidRebateWeight = s.totalBidRebateWeight.add(extraRebateWeight);
 
         s.bidAmount = s.bidAmount.add(accepted);
 

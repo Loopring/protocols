@@ -92,6 +92,9 @@ library IAuctionData
         uint[]  askShifts;
         uint[]  bidShifts;
 
+        uint    totalBidRebateWeight;
+        uint    totalAskRebateWeight;
+
         // user => account)
         mapping (address => Account) accounts;
         address payable[] users;

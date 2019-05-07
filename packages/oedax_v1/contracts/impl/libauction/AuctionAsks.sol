@@ -67,7 +67,9 @@ library AuctionAsks
         uint elapsed = block.timestamp - s.startTime;
 
         a.askAmount = a.askAmount.add(accepted);
-        a.askRebateWeight = a.askRebateWeight.add(accepted.mul(s.T.sub(elapsed)));
+        uint extraRebateWeight = accepted.mul(s.T.sub(elapsed));
+        a.askRebateWeight = a.askRebateWeight.add(extraRebateWeight);
+        s.totalAskRebateWeight = s.totalAskRebateWeight.add(extraRebateWeight);
 
         s.askAmount = s.askAmount.add(accepted);
 

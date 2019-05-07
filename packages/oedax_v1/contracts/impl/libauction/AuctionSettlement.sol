@@ -63,11 +63,8 @@ library AuctionSettlement
         s.settlementTime = block.timestamp;
         uint rebate = s.fees.creatorEtherStake;
 
-        if (i.isBounded) {
-            settleTrades(s);
-        } else{
+        if (!i.isBounded) {
             rebate /= 2;
-            returnDeposits(s);
         }
 
         if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
@@ -77,6 +74,7 @@ library AuctionSettlement
         }
 
         // collect everything remaining in this contract as protocol fees.
+        // TODO: Fix this
         collectFees(s, s.oedax.feeRecipient());
 
         // omit an event
@@ -87,6 +85,22 @@ library AuctionSettlement
             s.askAmount,
             s.bidAmount
         );
+    }
+
+    function withdrawFor(
+        IAuctionData.State storage s,
+        IAuctionData.Status memory i,
+        address payable user
+        )
+        internal
+    {
+        require(s.settlementTime > 0, "auction needs to be settled");
+
+        if (i.isBounded) {
+            settleTrade(s, user);
+        } else{
+            returnDeposit(s, user);
+        }
     }
 
     function collectFees(
@@ -121,26 +135,25 @@ library AuctionSettlement
         );
     }
 
-    function returnDeposits(
-        IAuctionData.State storage s
+    function returnDeposit(
+        IAuctionData.State storage s,
+        address payable user
         )
         private
     {
-        for (uint i = 0; i < s.users.length; i++) {
-            address payable user = s.users[i];
-            IAuctionData.Account storage a = s.accounts[user];
+        IAuctionData.Account storage a = s.accounts[user];
 
-            payToken(user, s.askToken, a.askAmount);
-            payToken(user, s.bidToken, a.bidAmount);
-        }
+        payToken(user, s.askToken, a.askAmount);
+        payToken(user, s.bidToken, a.bidAmount);
     }
 
-    function settleTrades(
-        IAuctionData.State storage s
+    function settleTrade(
+        IAuctionData.State storage s,
+        address payable user
         )
         private
     {
-        uint[] memory bips = calcUserFeeRebateBips(s);
+        uint bips = calcUserFeeRebateBips(s, user);
 
         uint askTakerFee = s.askAmount.mul(s.fees.takerFeeBips) / 10000;
         uint askSettlement = s.askAmount
@@ -152,52 +165,41 @@ library AuctionSettlement
             .sub(bidTakerFee)
             .sub(s.bidAmount.mul(s.fees.protocolFeeBips) / 10000);
 
-        address payable user;
         Trading memory t = Trading(0, 0, 0, 0, 0, 0);
 
-        for (uint i = 0; i < s.users.length; i++) {
-            user = s.users[i];
-            IAuctionData.Account storage a = s.accounts[user];
+        IAuctionData.Account storage a = s.accounts[msg.sender];
 
-            t.askPaid = a.askAmount;
-            t.askReceived =  askSettlement.mul(a.bidAmount) / s.bidAmount;
-            t.askFeeRebate = askTakerFee.mul(bips[i]) / 10000;
+        t.askPaid = a.askAmount;
+        t.askReceived = askSettlement.mul(a.bidAmount) / s.bidAmount;
+        t.askFeeRebate = askTakerFee.mul(bips) / 10000;
 
-            t.bidPaid = a.bidAmount;
-            t.bidReceived =  bidSettlement.mul(a.askAmount) / s.askAmount;
-            t.bidFeeRebate = bidTakerFee.mul(bips[i]) / 10000;
+        t.bidPaid = a.bidAmount;
+        t.bidReceived = bidSettlement.mul(a.askAmount) / s.askAmount;
+        t.bidFeeRebate = bidTakerFee.mul(bips) / 10000;
 
-            payUser(s.askToken, s.bidToken, user, t);
-        }
+        payUser(s.askToken, s.bidToken, msg.sender, t);
     }
 
     function calcUserFeeRebateBips(
-        IAuctionData.State storage s
+        IAuctionData.State storage s,
+        address user
         )
         private
         view
-        returns (uint[] memory bips)
+        returns (uint bips)
     {
-      uint size = s.users.length;
-      uint total;
-      bips = new uint[](size);
+        IAuctionData.Account storage a = s.accounts[user];
 
-      uint i;
-      for (i = 0; i < size; i++) {
-          IAuctionData.Account storage a = s.accounts[s.users[i]];
+        uint total = (s.totalBidRebateWeight / s.bidAmount)
+            .add(s.totalAskRebateWeight / s.askAmount);
 
-          bips[i] = (a.bidRebateWeight / s.bidAmount)
-              .add(a.askRebateWeight / s.askAmount);
+        bips = (a.bidRebateWeight / s.bidAmount)
+            .add(a.askRebateWeight / s.askAmount);
 
-          total = total.add(bips[i]);
-      }
+        total /= 10000;
+        assert(total > 0);
 
-      total /= 10000;
-      assert(total > 0);
-
-      for (i = 0; i < size; i++) {
-          bips[i] /= total;
-      }
+        bips /= total;
     }
 
     function payUser(
@@ -230,7 +232,7 @@ library AuctionSettlement
             if (token == address(0x0)) {
                 target.transfer(amount);
             } else {
-                require(token.safeTransfer(target, amount));
+                require(token.safeTransfer(target, amount), "TRANSFER_FAILED");
             }
         }
     }

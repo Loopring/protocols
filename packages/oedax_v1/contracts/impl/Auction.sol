@@ -156,6 +156,24 @@ contract Auction is IAuction
         state.settle(_owner);
     }
 
+    function withdraw()
+        external
+    {
+        IAuctionData.Status memory i = state.getAuctionStatus();
+        state.withdrawFor(i, msg.sender);
+    }
+
+    function withdrawFor(
+        address payable[] calldata users
+        )
+        external
+    {
+        IAuctionData.Status memory i = state.getAuctionStatus();
+        for (uint j = 0; j < users.length; j++) {
+            state.withdrawFor(i, users[j]);
+        }
+    }
+
     function getStatus()
         external
         view
