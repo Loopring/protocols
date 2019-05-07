@@ -118,41 +118,35 @@ contract Auction is IAuction
         external
         payable
     {
-        if (msg.value == 0) {
-            settle();
-        } else if (staked) {
-            if (state.bidToken == address(0x0)) {
+        if (!staked) {
+            require(msg.sender == owner, "not owner");
+            require(msg.value > 0, "zero value");
+            staked = true;
+        } else {
+            if (msg.value == 0) {
+                settle();
+            } else if (state.bidToken == address(0x0)) {
                 state.bid(msg.value);
             } else if (state.askToken == address(0x0)) {
                 state.ask(msg.value);
             } else {
                 revert();
             }
-        } else {
-            staked = true;
         }
     }
 
     function bid(uint amount)
         external
-        returns (
-            uint accepted,
-            uint queued
-        )
+        returns (uint accepted)
     {
-        uint transferred = state.depositToken(state.bidToken, amount);
-        (accepted, queued) = state.bid(transferred);
+        return state.bid(state.depositToken(state.bidToken, amount));
     }
 
     function ask(uint amount)
         external
-        returns (
-            uint accepted,
-            uint queued
-        )
+        returns (uint accepted)
     {
-        uint transferred = state.depositToken(state.askToken, amount);
-        (accepted, queued) = state.ask(transferred);
+        return state.ask(state.depositToken(state.askToken, amount));
     }
 
     function settle()
@@ -185,8 +179,8 @@ contract Auction is IAuction
          bidAllowed = i.bidAllowed;
 
          if (state.settlementTime == 0) {
-            uint elpased = block.timestamp - state.startTime;
-            timeRemaining = i.duration > elpased ? i.duration - elpased : 0;
+            uint elapsed = block.timestamp - state.startTime;
+            timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
          }
     }
 

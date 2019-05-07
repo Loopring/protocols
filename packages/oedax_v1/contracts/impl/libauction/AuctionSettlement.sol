@@ -37,11 +37,9 @@ library AuctionSettlement
     struct Trading {
         uint    askPaid;
         uint    askReceived;
-        uint    askReturend;
         uint    askFeeRebate;
         uint    bidPaid;
         uint    bidReceived;
-        uint    bidReturend;
         uint    bidFeeRebate;
     }
 
@@ -132,8 +130,8 @@ library AuctionSettlement
             address payable user = s.users[i];
             IAuctionData.Account storage a = s.accounts[user];
 
-            payToken(user, s.askToken, a.askAccepted.add(a.askQueued));
-            payToken(user, s.bidToken, a.bidAccepted.add(a.bidQueued));
+            payToken(user, s.askToken, a.askAmount);
+            payToken(user, s.bidToken, a.bidAmount);
         }
     }
 
@@ -155,20 +153,18 @@ library AuctionSettlement
             .sub(s.bidAmount.mul(s.fees.protocolFeeBips) / 10000);
 
         address payable user;
-        Trading memory t = Trading(0, 0, 0, 0, 0, 0, 0, 0);
+        Trading memory t = Trading(0, 0, 0, 0, 0, 0);
 
         for (uint i = 0; i < s.users.length; i++) {
             user = s.users[i];
             IAuctionData.Account storage a = s.accounts[user];
 
-            t.askPaid = a.askAccepted;
-            t.askReceived =  askSettlement.mul(a.bidAccepted) / s.bidAmount;
-            t.askReturend = a.askQueued;
+            t.askPaid = a.askAmount;
+            t.askReceived =  askSettlement.mul(a.bidAmount) / s.bidAmount;
             t.askFeeRebate = askTakerFee.mul(bips[i]) / 10000;
 
-            t.bidPaid = a.bidAccepted;
-            t.bidReceived =  bidSettlement.mul(a.askAccepted) / s.askAmount;
-            t.bidReturend = a.bidQueued;
+            t.bidPaid = a.bidAmount;
+            t.bidReceived =  bidSettlement.mul(a.askAmount) / s.askAmount;
             t.bidFeeRebate = bidTakerFee.mul(bips[i]) / 10000;
 
             payUser(s.askToken, s.bidToken, user, t);
@@ -190,8 +186,8 @@ library AuctionSettlement
       for (i = 0; i < size; i++) {
           IAuctionData.Account storage a = s.accounts[s.users[i]];
 
-          bips[i] = (a.bidFeeRebateWeight / s.bidAmount)
-              .add(a.askFeeRebateWeight / s.askAmount);
+          bips[i] = (a.bidRebateWeight / s.bidAmount)
+              .add(a.askRebateWeight / s.askAmount);
 
           total = total.add(bips[i]);
       }
@@ -212,17 +208,9 @@ library AuctionSettlement
         )
         private
     {
-        payToken(
-            user,
-            askToken,
-            t.askReceived.add(t.askReturend).add(t.askFeeRebate)
-        );
+        payToken(user, askToken, t.askReceived.add(t.askFeeRebate));
 
-        payToken(
-            user,
-            bidToken,
-            t.bidReceived.add(t.bidReturend).add(t.bidFeeRebate)
-        );
+        payToken(user, bidToken, t.bidReceived.add(t.bidFeeRebate));
 
         emit Trade(
             user,
@@ -236,7 +224,7 @@ library AuctionSettlement
         address         token,
         uint            amount
         )
-        private
+        public
     {
         if(amount > 0) {
             if (token == address(0x0)) {

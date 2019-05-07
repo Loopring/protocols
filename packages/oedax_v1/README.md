@@ -16,7 +16,6 @@ Please visit https://loopring.github.io/protocols.
 
 ## Implementation
 - [x] ledger book keeping
-- [x] queue management
 - [x] support asks
 - [x] settlement and send back token/ether
 - [x] curve implementation
