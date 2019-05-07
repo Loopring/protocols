@@ -94,9 +94,9 @@ library Verifier
     */
     function Verify(
         uint256[14] memory in_vk,
-        uint256[] memory vk_gammaABC,
+        uint256[4] memory vk_gammaABC,
         uint256[8] memory in_proof,
-        uint256[] memory proof_inputs
+        uint256[1] memory proof_inputs
         )
         internal
         view

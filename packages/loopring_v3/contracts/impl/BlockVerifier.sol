@@ -34,18 +34,18 @@ contract BlockVerifier is IBlockVerifier, Ownable
         uint8 blockType,
         bool onchainDataAvailability,
         uint16 numElements,
-        uint256[18] calldata _vk
+        uint256[18] calldata vk
         )
         external
         onlyOwner
     {
-        // While _vk[0] could be 0, we don't allow it so we can use this to easily check
+        // While vk[0] could be 0, we don't allow it so we can use this to easily check
         // if the verification key is set
-        require(_vk[0] != 0, "INVALID_DATA");
+        require(vk[0] != 0, "INVALID_DATA");
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
         for (uint i = 0; i < 18; i++) {
-            verificationKeys[onchainDataAvailability][blockType][numElements][i] = _vk[i];
+            verificationKeys[onchainDataAvailability][blockType][numElements][i] = vk[i];
         }
     }
 
@@ -73,20 +73,15 @@ contract BlockVerifier is IBlockVerifier, Ownable
         view
         returns (bool)
     {
-        uint256[] memory publicInputs = new uint256[](1);
-        publicInputs[0] = uint256(publicDataHash);
-
-        uint256[14] memory _vk;
-        uint256[] memory _vk_gammaABC = new uint[](4);
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        uint256[18] storage verificationKey = verificationKeys[dataAvailability][blockType][numElements];
-        for (uint i = 0; i < 14; i++) {
-            _vk[i] = verificationKey[i];
-        }
-        _vk_gammaABC[0] = verificationKey[14];
-        _vk_gammaABC[1] = verificationKey[15];
-        _vk_gammaABC[2] = verificationKey[16];
-        _vk_gammaABC[3] = verificationKey[17];
+        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][numElements];
+
+        uint256[14] memory _vk = [
+            vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
+            vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
+        ];
+        uint256[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
+        uint256[1] memory publicInputs = [uint256(publicDataHash)];
 
         return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
     }
