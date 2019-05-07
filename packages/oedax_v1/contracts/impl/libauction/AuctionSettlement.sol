@@ -67,6 +67,12 @@ library AuctionSettlement
         s.settlementTime = block.timestamp;
         uint rebate = s.fees.creatorEtherStake;
 
+        // Q: The creator is punished for not making sure the auction is bounded
+        //    by not returning his complete stake,
+        //    but could a person with bad intentions (and a lot of money) bring the auction
+        //    in such a state very early that the creator does not have enough tokens to make
+        //    the auction bounded? Depending on where the protocol fees go this may even be
+        //    profitable to sabotage auctions.
         if (i.isBounded) {
             settleTrades(s);
         } else{

@@ -116,6 +116,8 @@ contract Auction is IAuction
         external
         payable
     {
+        // Q: Check if auction is closed here first?
+        //    Otherwise deposited funds could remain stuck.
         if (msg.value > 0 && state.bidToken == address(0x0)) {
             state.bid(msg.value);
         } else if (msg.value > 0 && state.askToken == address(0x0)) {
@@ -133,6 +135,7 @@ contract Auction is IAuction
         )
     {
         // Q: Check if auction is closed here first?
+        //    Otherwise deposited funds could remain stuck.
         uint transferred = state.depositToken(state.bidToken, amount);
         (accepted, queued) = state.bid(transferred);
     }
@@ -145,6 +148,7 @@ contract Auction is IAuction
         )
     {
         // Q: Check if auction is closed here first?
+        //    Otherwise deposited funds could remain stuck.
         uint transferred = state.depositToken(state.askToken, amount);
         (accepted, queued) = state.ask(transferred);
     }

@@ -35,6 +35,7 @@ library AuctionStatus
         returns (uint)
     {
         assert(s.askAmount > 0);
+        // Q: Should this be s.S.mul(s.bidAmount).mul(s.bidBaseUnit) / s.askAmount / s.askBaseUnit;?
         return s.S.mul(s.bidAmount).mul(s.askBaseUnit) / s.askAmount / s.bidBaseUnit;
     }
 
@@ -47,7 +48,7 @@ library AuctionStatus
     {
         uint P0 = s.P.mul(s.M);
         uint P1 = s.P / s.M;
-        // Q: Isn't P0 > P1?
+        // Q: Isn't P0 > P1? I think these are switched.
         assert(P0 > 0 && P1 > P0);
 
         uint elapsed = block.timestamp - s.startTime;
@@ -86,6 +87,7 @@ library AuctionStatus
             if (s.settlementTime == 0) {
                 // price bounded and not settled yet
                 uint askCrossTime = yToX(s, i.actualPrice) + s.askShift;
+                // Q: i.actualPrice could be 0 here
                 uint bidCrossTime = yToX(s, s.P.mul(s.P) / i.actualPrice) + s.bidShift;
                 i.duration = askCrossTime.max(bidCrossTime);
 
