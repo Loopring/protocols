@@ -61,21 +61,21 @@ library AuctionSettlement
         // update state
         s.closeTime = s.startTime + i.duration;
         s.settlementTime = block.timestamp;
-        uint rebate = s.fees.creatorEtherStake;
+        uint rebatePaid = s.fees.creatorEtherStake;
 
         if (!i.isBounded) {
-            rebate /= 2;
+            rebatePaid /= 2;
         }
 
         if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
-            owner.transfer(rebate);
+            owner.transfer(rebatePaid);
         } else {
-            msg.sender.transfer(rebate / 2);
+            rebatePaid /= 2;
+            msg.sender.transfer(rebatePaid);
         }
 
-        // collect everything remaining in this contract as protocol fees.
-        // TODO: Fix this
-        collectFees(s, s.oedax.feeRecipient());
+        // Collect the protocol fees
+        collectProtocolFees(s, s.oedax.feeRecipient(), s.fees.creatorEtherStake.sub(rebatePaid));
 
         // omit an event
         s.oedax.logSettlement(
@@ -101,37 +101,48 @@ library AuctionSettlement
         } else{
             returnDeposit(s, user);
         }
+
+        IAuctionData.Account storage a = s.accounts[user];
+        if (a.withdrawFee > 0) {
+            // Reward the withdrawer
+            msg.sender.transfer(a.withdrawFee);
+        }
+
+        // Make sure the user can't withdraw again
+        // Setting these to 0 again also rebates some gas to the withdrawer.
+        a.bidAmount = 0;
+        a.bidRebateWeight = 0;
+        a.askAmount = 0;
+        a.askRebateWeight = 0;
+        a.withdrawFee = 0;
     }
 
-    function collectFees(
+    function collectProtocolFees(
         IAuctionData.State storage s,
-        address payable feeRecipient
+        address payable feeRecipient,
+        uint rebate
         )
         private
     {
-        // collect remaining ask token to fee recipient
-        if (s.askToken != address(0x0)) {
-            payToken(
-                feeRecipient,
-                s.askToken,
-                ERC20(s.askToken).balanceOf(address(this))
-            );
-        }
+        uint askProtocolFee = s.askAmount.mul(s.fees.protocolFeeBips) / 10000;
+        uint bidProtocolFee = s.bidAmount.mul(s.fees.protocolFeeBips) / 10000;
 
-         // collect remaining bid token to fee recipient
-        if (s.bidToken != address(0x0)) {
-            payToken(
-                feeRecipient,
-                s.bidToken,
-                ERC20(s.bidToken).balanceOf(address(this))
-            );
-        }
+        payToken(
+            feeRecipient,
+            s.askToken,
+            askProtocolFee
+        );
 
-        // collect remaining Ether to fee recipient
+        payToken(
+            feeRecipient,
+            s.bidToken,
+            bidProtocolFee
+        );
+
         payToken(
             feeRecipient,
             address(0x0),
-            address(this).balance
+            rebate
         );
     }
 

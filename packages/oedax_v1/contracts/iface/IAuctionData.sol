@@ -45,6 +45,8 @@ library IAuctionData
 
         uint    askAmount;
         uint    askRebateWeight;
+
+        uint    withdrawFee;
     }
 
     struct Fees
