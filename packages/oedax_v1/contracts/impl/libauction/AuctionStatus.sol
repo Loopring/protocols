@@ -79,15 +79,12 @@ library AuctionStatus
                 }
             }
         } else {
-            // Q: if s.askAmount == 0, i.actualPrice == 0 here, is that always correct?
-            //    (these are not always updated below)
             i.askPrice = i.actualPrice;
             i.bidPrice = i.actualPrice;
 
             if (s.settlementTime == 0) {
                 // price bounded and not settled yet
                 uint askCrossTime = yToX(s, i.actualPrice) + s.askShift;
-                // Q: i.actualPrice could be 0 here
                 uint bidCrossTime = yToX(s, s.P.mul(s.P) / i.actualPrice) + s.bidShift;
                 i.duration = askCrossTime.max(bidCrossTime);
 
