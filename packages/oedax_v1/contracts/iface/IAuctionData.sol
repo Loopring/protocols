@@ -67,7 +67,7 @@ library IAuctionData
 
     struct State
     {
-        // -- The following files never change once initialized:
+        // -- The following fields never change once initialized:
         IOedax  oedax;
         ICurve  curve;
         Fees    fees;

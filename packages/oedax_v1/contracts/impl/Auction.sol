@@ -52,8 +52,8 @@ contract Auction is IAuction
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
     /// @param _P Numerator part of the target price `p`.
-    /// @param _S Price precision -- (_P / 10**_S) is the float vaule of the target price.
-    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
+    /// @param _S Price precision -- (_P / 10**_S) is the float value of the target price.
+    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
     /// @param _T The maximum auction duration in second.
     constructor(
         address _oedax,
@@ -117,8 +117,8 @@ contract Auction is IAuction
             uint queued
         )
     {
-        uint transfered = state.depositToken(state.bidToken, amount);
-        (accepted, queued) = state.bid(transfered);
+        uint transferred = state.depositToken(state.bidToken, amount);
+        (accepted, queued) = state.bid(transferred);
     }
 
     function ask(uint amount)
@@ -128,8 +128,8 @@ contract Auction is IAuction
             uint queued
         )
     {
-        uint transfered = state.depositToken(state.askToken, amount);
-        (accepted, queued) = state.ask(transfered);
+        uint transferred = state.depositToken(state.askToken, amount);
+        (accepted, queued) = state.ask(transferred);
     }
 
     function settle()
