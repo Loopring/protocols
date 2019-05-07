@@ -98,11 +98,10 @@ library AuctionAsks
         a.askFeeRebateWeight = a.askFeeRebateWeight.add(accepted.mul(weight));
         s.askAmount = s.askAmount.add(accepted);
 
-        // Q: Does this need to be if (s.bidShift != i.newBidShift) and so on?
-        if (s.askShift != i.newAskShift) {
-            s.askShift = i.newAskShift;
-            s.askShifts.push(elapsed);
-            s.askShifts.push(s.askShift);
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(elapsed);
+            s.bidShifts.push(s.bidShift);
         }
 
         // Q: Duplicate of the above (probably need to be bidShift/askShift)

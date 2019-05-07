@@ -41,6 +41,8 @@ contract Auction is IAuction
     using AuctionSettlement for IAuctionData.State;
     using AuctionStatus     for IAuctionData.State;
 
+    bool staked;
+
     modifier onlyOedax {
       require (msg.sender == address(state.oedax));
       _;
@@ -52,8 +54,8 @@ contract Auction is IAuction
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
     /// @param _P Numerator part of the target price `p`.
-    /// @param _S Price precision -- (_P / 10**_S) is the float vaule of the target price.
-    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
+    /// @param _S Price precision -- (_P / 10**_S) is the float value of the target price.
+    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
     /// @param _T1 The maximum auction duration in second.
     /// @param _T2 The maximum auction duration in second.
     constructor(
@@ -120,12 +122,18 @@ contract Auction is IAuction
         //    Otherwise deposited funds could remain stuck.
         // Q: Maybe a bit strange this doesn't go through bid/ask and
         //    thus doesn't return (accepted, queued)
-        if (msg.value > 0 && state.bidToken == address(0x0)) {
-            state.bid(msg.value);
-        } else if (msg.value > 0 && state.askToken == address(0x0)) {
-            state.ask(msg.value);
-        } else {
+        if (msg.value == 0) {
             settle();
+        } else if (staked) {
+            if (state.bidToken == address(0x0)) {
+                state.bid(msg.value);
+            } else if (state.askToken == address(0x0)) {
+                state.ask(msg.value);
+            } else {
+                revert();
+            }
+        } else {
+            staked = true;
         }
     }
 

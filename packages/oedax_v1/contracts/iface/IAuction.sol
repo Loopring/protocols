@@ -36,7 +36,7 @@ contract IAuction is Ownable
     /// @dev Join the auciton by placing a BID.
     /// @param amount The amount of bidToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted by queued in the waiting list.
+    /// @return queued The amount of token not accepted but queued in the waiting list.
     function bid(uint amount)
         external
         returns (
