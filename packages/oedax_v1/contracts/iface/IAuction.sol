@@ -33,7 +33,7 @@ contract IAuction is Ownable
 
     IAuctionData.State  state;
 
-    /// @dev Join the auciton by placing a BID.
+    /// @dev Join the auction by placing a BID.
     /// @param amount The amount of bidToken.
     /// @return accepted The amount of token accepted by the auction.
     /// @return queued The amount of token not accepted but queued in the waiting list.
@@ -44,7 +44,7 @@ contract IAuction is Ownable
             uint queued
         );
 
-    /// @dev Join the auciton by placing an ASK.
+    /// @dev Join the auction by placing an ASK.
     /// @param amount The amount of askToken.
     /// @return accepted The amount of token accepted by the auction.
     /// @return queued The amount of token not accepted but queued in the waiting list.
@@ -59,19 +59,19 @@ contract IAuction is Ownable
     /// After the auction ends, everyone can settle the auction by calling this method.
     /// If the price is not bounded by curves, 50% of Ether stake will be charged by the
     /// protocol as fee, the rest will be used as a rebate.
-    /// If the settlement happens inside of the settleGracePeriod window, all rebate will
+    /// If the settlement happens inside of the settleGracePeriod window, all rebate will be
     /// sent back to the owner, otherwise, the 50% of the rebate will be sent to the settler,
     /// the rest will be charged as fees.
     function settle()
         public;
 
-    /// @dev Calculate the auciton's status on the fly.
+    /// @dev Calculate the auction's status on the fly.
     /// @return isBounded If the auction's actual price has already been bounded by the
     ///         bid and ask curves.
     /// @return timeRemaining The time (in seconds) remained for the auction to end.
     /// @return actualPrice The autual price. If the auction has been settled, this value is 0.
     /// @return askPrice The current ask price.
-    /// @return bkdPrixce The current bid price.
+    /// @return bidPrice The current bid price.
     /// @return askAllowed The max amount of ask tokens that can be accepted.
     /// @return bidAllowed The max amount of bid tokens that can be accepted.
     function getStatus()
