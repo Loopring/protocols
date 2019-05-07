@@ -1,7 +1,7 @@
 const Curve = artifacts.require("Curve");
 const Oedax = artifacts.require("Oedax");
 
-contract("Curve", async (accounts) => {
+contract("Oedax", async (accounts) => {
   let curve;
   let oedax;
 
