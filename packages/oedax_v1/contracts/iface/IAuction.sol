@@ -36,23 +36,19 @@ contract IAuction is Ownable
     /// @dev Join the auction by placing a BID.
     /// @param amount The amount of bidToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted but queued in the waiting list.
     function bid(uint amount)
         external
         returns (
-            uint accepted,
-            uint queued
+            uint accepted
         );
 
     /// @dev Join the auction by placing an ASK.
     /// @param amount The amount of askToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted but queued in the waiting list.
     function ask(uint amount)
         external
         returns (
-            uint accepted,
-            uint queued
+            uint accepted
         );
 
     /// @dev Settles the auction.
@@ -69,7 +65,7 @@ contract IAuction is Ownable
     /// @return isBounded If the auction's actual price has already been bounded by the
     ///         bid and ask curves.
     /// @return timeRemaining The time (in seconds) remained for the auction to end.
-    /// @return actualPrice The autual price. If the auction has been settled, this value is 0.
+    /// @return actualPrice The actual price. If the auction has been settled, this value is 0.
     /// @return askPrice The current ask price.
     /// @return bidPrice The current bid price.
     /// @return askAllowed The max amount of ask tokens that can be accepted.

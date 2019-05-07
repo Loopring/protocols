@@ -89,10 +89,7 @@ library AuctionStatus
                     if (askCrossTime > elapsed) {
                         // The ask-curve has not crossed the actual price line
                         i.askPrice = xToY(s, elapsed - s.askShift);
-                        i.bidAllowed = (s.askAmount
-                            .add(s.Q.isBidding ? 0 : s.Q.amount) // the asks-queued
-                            .mul(i.askPrice) / s.S
-                        ).sub(s.bidAmount);
+                        i.bidAllowed = (s.askAmount.mul(i.askPrice) / s.S).sub(s.bidAmount);
                     } else {
                         // The ask-curve has already crossed the actual price line
                         i.newAskShift = s.askShift + elapsed - askCrossTime;
@@ -101,10 +98,7 @@ library AuctionStatus
                     if (bidCrossTime > elapsed) {
                         // The bid-curve has not cross the actual price line
                         i.bidPrice = s.P.mul(s.P) / xToY(s, elapsed - s.bidShift);
-                        i.askAllowed = (s.bidAmount
-                            .add(s.Q.isBidding ? s.Q.amount : 0) // the bids-queued
-                            .mul(s.S) / i.bidPrice
-                        ).sub(s.askAmount);
+                        i.askAllowed = (s.bidAmount.mul(s.S) / i.bidPrice).sub(s.askAmount);
                     } else {
                         // The bid-curve has already crossed the actual price line
                         i.newBidShift = s.bidShift + elapsed - bidCrossTime;
