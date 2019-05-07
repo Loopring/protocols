@@ -29,6 +29,7 @@ import "./Auction.sol";
 contract Oedax is IOedax, NoDefaultFunc
 {
     using MathUint          for uint;
+    using MathUint          for uint64;
     using ERC20SafeTransfer for address;
 
     // -- Constructor --
@@ -99,16 +100,21 @@ contract Oedax is IOedax, NoDefaultFunc
         uint64  P,
         uint64  S,
         uint8   M,
-        uint    T1,
-        uint    T2
+        uint    T
         )
         public
         payable
         returns (address payable auctionAddr)
     {
-        require(msg.value >= creatorEtherStake, "insuffcient ETH fee");
+        require(askToken != bidToken, "same token");
+        require(S >= 5 && S <= 10);
+        require(P > 0 && P <= uint(10) ** 20);
+        require(M > 1 && M <= 20);
+        require(P.mul(M) > P / M);
+        require(T >= minDuration && T <= maxDuration, "invalid duration");
+
         require(curveAddress != address(0x0), "empty curve");
-        require(T2 >= minDuration && T2 <= maxDuration, "invalid duration");
+        require(msg.value >= creatorEtherStake, "insuffcient ETH fee");
         require(
             tokenRankMap[bidToken] > tokenRankMap[askToken],
             "bid (quote) token must have a higher rank than ask (base) token"
@@ -121,7 +127,7 @@ contract Oedax is IOedax, NoDefaultFunc
             auctionId,
             askToken,
             bidToken,
-            P, S, M, T1, T2
+            P, S, M, T
         );
 
         auctionAddr = address(auction);

@@ -23,63 +23,21 @@ import "../lib/NoDefaultFunc.sol";
 
 /// @title Curve
 /// @author Daniel Wang  - <daniel@loopring.org>
-///
-/// Let P0 and P1 be the min and max price, T be the duration,
-/// let e = P1 - P0, and C be the curve parameter to control its shape:
-/// then we have:
-///   y = f(x) = (T-x)*e/(C*x+T)+P0
-/// and
-///   x = f(y) = (e-y+P0)*T/(C*(y-P0)+e), and if we let m = y-P0, then
-///   x = f(y) = (e-m)*T/(C*m+e)
-
+/// @dev The `y=Y(X-x)/(X+x)` curve.
 contract Curve is ICurve, NoDefaultFunc
 {
     using MathUint for uint;
 
-    function getParamC(
-        uint M,
-        uint T0,
-        uint T
+    function xToY(
+        uint Y,
+        uint X,
+        uint x
         )
         external
         pure
-        returns (uint C)
-    {
-      require(T0.mul(M.add(1)) <= M.mul(T), "T0/T must <= M/(M+1)");
-
-      C = (M.mul(T) / T0).sub(M).sub(1);
-    }
-
-    function xToY(
-        uint C,
-        uint P0,
-        uint P1,
-        uint T,
-        uint x
-        )
-        public
-        pure
         returns (uint y)
     {
-        require(x >= 0 && x <= T, "invalid x");
-        uint e = P1 - P0;
-        y = (T.sub(x).mul(e) / C.mul(x).add(T)).add(P0);
-    }
-
-    function yToX(
-        uint C,
-        uint P0,
-        uint P1,
-        uint T,
-        uint y
-        )
-        public
-        pure
-        returns (uint x)
-    {
-        require(y >= P0 && y <= P1, "invalid y");
-        uint m = y - P0;
-        uint e = P1 - P0;
-        x = e.sub(m).mul(T) / C.mul(m).add(e);
+        require(x >= 0 && x <= X, "invalid x");
+        y = X.sub(x).mul(Y) / X.add(x);
     }
 }
