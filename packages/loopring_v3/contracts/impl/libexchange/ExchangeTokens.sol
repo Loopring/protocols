@@ -83,8 +83,8 @@ library ExchangeTokens
 
         ExchangeData.Token memory token = ExchangeData.Token(tokenAddress, false);
         S.tokens.push(token);
-        tokenID = uint16(S.tokens.length);
-        S.tokenToTokenId[tokenAddress] = tokenID;
+        tokenID = uint16(S.tokens.length - 1);
+        S.tokenToTokenId[tokenAddress] = tokenID + 1;
 
         emit TokenRegistered(tokenAddress, tokenID);
     }
@@ -99,6 +99,7 @@ library ExchangeTokens
     {
         tokenID = S.tokenToTokenId[tokenAddress];
         require(tokenID != 0, "TOKEN_NOT_FOUND");
+        tokenID = tokenID - 1;
     }
 
     function getTokenAddress(
@@ -109,8 +110,8 @@ library ExchangeTokens
         view
         returns (address)
     {
-        require(tokenID != 0 && tokenID <= S.tokens.length, "INVALID_TOKEN_ID");
-        return S.tokens[tokenID - 1].token;
+        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
+        return S.tokens[tokenID].token;
     }
 
     function disableTokenDeposit(
@@ -126,7 +127,7 @@ library ExchangeTokens
         require(tokenAddress != S.loopring.lrcAddress(), "LRC_CANNOT_BE_DISABLED");
 
         uint16 tokenID = getTokenID(S, tokenAddress);
-        ExchangeData.Token storage token = S.tokens[tokenID - 1];
+        ExchangeData.Token storage token = S.tokens[tokenID];
         require(!token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_DISABLED");
         token.depositDisabled = true;
     }
@@ -139,7 +140,7 @@ library ExchangeTokens
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         uint16 tokenID = getTokenID(S, tokenAddress);
-        ExchangeData.Token storage token = S.tokens[tokenID - 1];
+        ExchangeData.Token storage token = S.tokens[tokenID];
         require(token.depositDisabled, "TOKEN_DEPOSIT_ALREADY_ENABLED");
         token.depositDisabled = false;
     }
