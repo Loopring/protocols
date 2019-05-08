@@ -41,6 +41,8 @@ contract Auction is IAuction
     using AuctionSettlement for IAuctionData.State;
     using AuctionStatus     for IAuctionData.State;
 
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
+
     bool staked;
 
     modifier onlyOedax {
@@ -53,6 +55,8 @@ contract Auction is IAuction
     /// @param _auctionId The auction's non-zero id.
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
+    /// @param _minAskAmount The minimum amount that can be used in an ask.
+    /// @param _minBidAmount The minimum amount that can be used in a bid.
     /// @param _P Numerator part of the target price `p`.
     /// @param _S Price precision -- (_P / 10**_S) is the float value of the target price.
     /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
@@ -183,14 +187,12 @@ contract Auction is IAuction
     {
         require(state.settlementTime > 0, "auction needs to be settled");
 
-        // TODO: find a safe value
-        uint maxWithdrawCostInGas = 50000;
-
         IAuctionData.Status memory i = state.getAuctionStatus();
 
+        uint gasLimit = MIN_GAS_TO_DISTRIBUTE_TOKENS;
         uint j = state.numDistributed;
         uint numUsers = state.users.length;
-        while (j < numUsers && gasleft() > maxWithdrawCostInGas) {
+        while (j < numUsers && gasleft() >= gasLimit) {
             state.withdrawFor(i, state.users[j]);
             j++;
         }
