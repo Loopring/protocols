@@ -57,9 +57,12 @@ contract IOedax is Ownable
 
     address     public curveAddress;
     uint16      public settleGracePeriod;
+    uint16      public distributeGracePeriodBase;
+    uint16      public distributeGracePeriodPerUser;
     uint16      public minDuration;
     uint16      public maxDuration;
     uint16      public protocolFeeBips;
+    uint16      public ownerFeeBips;
     uint16      public takerFeeBips;
     uint        public creatorEtherStake;
     address[]   public auctions;
@@ -88,7 +91,7 @@ contract IOedax is Ownable
     ///      Only Oedax owner can invoke this method.
     /// @param _feeRecipient The address to collect all fees
     /// @param _curve The address of price curve contract
-    /// @param  _settleGracePeriodMinutes The time window in which only aucton owner
+    /// @param  _settleGracePeriodMinutes The time window in which only auction owner
     ///         can settle the auction.
     /// @param _minDurationMinutes The minimum auction duration
     /// @param _maxDurationMinutes The maximum auction duration
@@ -99,9 +102,12 @@ contract IOedax is Ownable
         address payable _feeRecipient,
         address _curve,
         uint16  _settleGracePeriodMinutes,
+        uint16  _distributeGracePeriodBaseMinutes,
+        uint16  _distributeGracePeriodPerUserSeconds,
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
+        uint16  _ownerFeeBips,
         uint16  _takerFeeBips,
         uint    _creatorEtherStake
         )

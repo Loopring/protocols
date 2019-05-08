@@ -46,6 +46,7 @@ library AuctionAsks
         returns (uint accepted)
     {
         require(amount > 0, "zero amount");
+        require(amount >= s.minAskAmount, "ask amount too small");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
         require(i.askAllowed > 0, "not allowed");
@@ -67,7 +68,9 @@ library AuctionAsks
         uint elapsed = block.timestamp - s.startTime;
 
         a.askAmount = a.askAmount.add(accepted);
-        a.askRebateWeight = a.askRebateWeight.add(accepted.mul(s.T.sub(elapsed)));
+        uint extraRebateWeight = accepted.mul(s.T.sub(elapsed));
+        a.askRebateWeight = a.askRebateWeight.add(extraRebateWeight);
+        s.totalAskRebateWeight = s.totalAskRebateWeight.add(extraRebateWeight);
 
         s.askAmount = s.askAmount.add(accepted);
 

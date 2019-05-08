@@ -46,6 +46,7 @@ library AuctionBids
         returns (uint accepted)
     {
         require(amount > 0, "zero amount");
+        require(amount >= s.minBidAmount, "bid amount too small");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
         require(i.bidAllowed > 0, "not allowed");
@@ -66,7 +67,9 @@ library AuctionBids
         uint elapsed = block.timestamp - s.startTime;
 
         a.bidAmount = a.bidAmount.add(accepted);
-        a.bidRebateWeight = a.bidRebateWeight.add(accepted.mul(s.T.sub(elapsed)));
+        uint extraRebateWeight = accepted.mul(s.T.sub(elapsed));
+        a.bidRebateWeight = a.bidRebateWeight.add(extraRebateWeight);
+        s.totalBidRebateWeight = s.totalBidRebateWeight.add(extraRebateWeight);
 
         s.bidAmount = s.bidAmount.add(accepted);
 
