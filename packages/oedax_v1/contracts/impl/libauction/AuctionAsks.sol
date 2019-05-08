@@ -21,10 +21,10 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/MathUint.sol";
 
 import "./AuctionAccount.sol";
-import "./AuctionStatus.sol";
 import "./AuctionSettlement.sol";
+import "./AuctionStatus.sol";
 
-/// @title AuctionAsks.
+/// @title AuctionAsks
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionAsks
 {

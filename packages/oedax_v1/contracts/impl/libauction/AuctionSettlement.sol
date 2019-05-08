@@ -26,6 +26,7 @@ import "./AuctionStatus.sol";
 
 /// @title AuctionSettlement
 /// @author Daniel Wang  - <daniel@loopring.org>
+/// @author Brecht Devos - <brecht@loopring.org>
 library AuctionSettlement
 {
     event Trade(

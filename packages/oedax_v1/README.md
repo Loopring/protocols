@@ -24,6 +24,10 @@ Please visit https://loopring.github.io/protocols.
 - [x] check price range and overflow
 - [x] api ducmentation
 - [x] smart curve (auto shape adjustment based on min-auction duration and max-auction duration)
+- [ ] hackathon - ABI generation
+- [ ] hackathon - Testing Foo/Bar token (auto claiming)
+- [ ] some auction history
+= [ ] some tests?
 
 ## Testing
 - [ ] price not bounded, no bids/asks
