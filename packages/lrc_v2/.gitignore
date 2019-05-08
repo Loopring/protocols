@@ -1,6 +1,5 @@
 node_modules/
 build/
-utils/
 transpiled/    
 .DS_Store
 .node-*
