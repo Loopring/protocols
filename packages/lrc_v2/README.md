@@ -25,7 +25,7 @@
 ```    
 ### New LRC Token Contract Address  
 ```
-    0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD
+    0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD (lrctoken.eth)
 ```    
 
 
@@ -35,7 +35,7 @@
 ```    
 ### New LRCFoundationIceboxContract Address  
 ```
-    0x527f4fB6563d6aFD30EFEdb9C57C7D7DF2f5CdfC    
+    0x527f4fB6563d6aFD30EFEdb9C57C7D7DF2f5CdfC (icebox.lrctoken.eth)
 ```    
 
 
@@ -45,6 +45,6 @@
 ```    
 ### New LRCLongTermHoldingContract Address  
 ```
-    0xC8Fcc48D1454a83589169294470549A2e1713DeC    
+    0xC8Fcc48D1454a83589169294470549A2e1713DeC (longterm.lrctoken.eth)
 ```    
 
