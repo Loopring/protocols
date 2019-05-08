@@ -655,7 +655,7 @@ export class ExchangeTestUtil {
     return [nextBlockIdx, outputFilename];
   }
 
-  public async commitBlock(operator: Operator, blockType: BlockType, numElements: number,
+  public async commitBlock(operator: Operator, blockType: BlockType, blockSize: number,
                            data: string, filename: string) {
     const bitstream = new pjs.Bitstream(data);
     console.log("[EVM]PublicData: " + bitstream.getData());
@@ -669,7 +669,7 @@ export class ExchangeTestUtil {
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
     const tx = await this.exchange.commitBlock(
       web3.utils.toBN(blockType),
-      web3.utils.toBN(numElements),
+      web3.utils.toBN(blockSize),
       web3.utils.hexToBytes(data),
       {from: this.exchangeOperator},
     );

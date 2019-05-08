@@ -33,7 +33,7 @@ contract BlockVerifier is IBlockVerifier, Ownable
     function setVerifyingKey(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements,
+        uint16 blockSize,
         uint256[18] calldata vk
         )
         external
@@ -45,27 +45,27 @@ contract BlockVerifier is IBlockVerifier, Ownable
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
         for (uint i = 0; i < 18; i++) {
-            verificationKeys[onchainDataAvailability][blockType][numElements][i] = vk[i];
+            verificationKeys[onchainDataAvailability][blockType][blockSize][i] = vk[i];
         }
     }
 
     function canVerify(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements
+        uint16 blockSize
         )
         external
         view
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        return verificationKeys[dataAvailability][blockType][numElements][0] != 0;
+        return verificationKeys[dataAvailability][blockType][blockSize][0] != 0;
     }
 
     function verifyProof(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements,
+        uint16 blockSize,
         bytes32 publicDataHash,
         uint256[8] calldata proof
         )
@@ -74,7 +74,7 @@ contract BlockVerifier is IBlockVerifier, Ownable
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][numElements];
+        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][blockSize];
 
         uint256[14] memory _vk = [
             vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],

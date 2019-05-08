@@ -245,7 +245,7 @@ library ExchangeWithdrawals
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
-        require(slotIdx < withdrawBlock.numElements, "INVALID_SLOT_IDX");
+        require(slotIdx < withdrawBlock.blockSize, "INVALID_SLOT_IDX");
 
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
@@ -411,12 +411,12 @@ library ExchangeWithdrawals
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
         // Check if this is a withdrawal block
-        require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
-                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL), "INVALID_BLOCK_TYPE");
+        require(withdrawBlock.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
+                withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL, "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
         // Check if the withdrawals were already completely distributed
-        require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.numElements, "WITHDRAWALS_ALREADY_DISTRIBUTED");
+        require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.blockSize, "WITHDRAWALS_ALREADY_DISTRIBUTED");
 
         // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
         // anyone can do it and get paid a part of the operator stake
@@ -428,8 +428,8 @@ library ExchangeWithdrawals
         // Calculate the range of withdrawals we'll do
         uint start = withdrawBlock.numWithdrawalsDistributed;
         uint end = start.add(maxNumWithdrawals);
-        if (end > withdrawBlock.numElements) {
-            end = withdrawBlock.numElements;
+        if (end > withdrawBlock.blockSize) {
+            end = withdrawBlock.blockSize;
         }
 
         // Do the withdrawals

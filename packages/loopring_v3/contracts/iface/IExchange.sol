@@ -336,11 +336,42 @@ contract IExchange
         view
         returns (uint);
 
+    /// @dev Returns the block data for the specified block index.
+    /// @param  blockIdx The block index
+    /// @return merkleRoot The merkle root
+    /// @return publicDataHash The hash of all public data. Used as public input for the ZKP.
+    /// @return blockState The current state of the block
+    /// @return blockType The type of work done in the block
+    /// @return blockSize The number of requests handled in the block
+    /// @return timestamp The time the block was committed on-chain
+    /// @return blockState The current state of the block
+    /// @return numDepositRequestsCommitted The total number of deposit requests committed
+    /// @return numWithdrawalRequestsCommitted The total number of withdrawal requests committed
+    /// @return blockFeeWithdrawn True if the block fee has been withdrawn, else false
+    /// @return numWithdrawalsDistributed The number of withdrawals that have been done for this block
+    function getBlock(
+        uint blockIdx
+        )
+        external
+        view
+        returns (
+            bytes32 merkleRoot,
+            bytes32 publicDataHash,
+            uint8   blockState,
+            uint8   blockType,
+            uint16  blockSize,
+            uint32  timestamp,
+            uint32  numDepositRequestsCommitted,
+            uint32  numWithdrawalRequestsCommitted,
+            bool    blockFeeWithdrawn,
+            uint16  numWithdrawalsDistributed
+        );
+
     /// @dev Commit a new block to the virtual blockchain without the proof.
     ///      This function is only callable by the exchange operator.
     ///
     /// @param blockType The type of the new block
-    /// @param numElements The number of onchain or offchain requests/settlements
+    /// @param blockSize The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
     /// @param data The data for this block -
     ///        For all block types:
@@ -417,7 +448,7 @@ contract IExchange
     ///                - WalletSplitPercentage: 1 byte
     function commitBlock(
         uint8  blockType,
-        uint16 numElements,
+        uint16 blockSize,
         bytes  calldata data
         )
         external;

@@ -333,16 +333,49 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         return state.numBlocksFinalized - 1;
     }
 
+    function getBlock(
+        uint blockIdx
+        )
+        external
+        view
+        returns (
+            bytes32 merkleRoot,
+            bytes32 publicDataHash,
+            uint8   blockState,
+            uint8   blockType,
+            uint16  blockSize,
+            uint32  timestamp,
+            uint32  numDepositRequestsCommitted,
+            uint32  numWithdrawalRequestsCommitted,
+            bool    blockFeeWithdrawn,
+            uint16  numWithdrawalsDistributed
+        )
+    {
+        require(blockIdx < state.blocks.length, "INVALID_BLOCK_IDX");
+        ExchangeData.Block storage specifiedBlock = state.blocks[blockIdx];
+
+        merkleRoot = specifiedBlock.merkleRoot;
+        publicDataHash = specifiedBlock.publicDataHash;
+        blockState = uint8(specifiedBlock.state);
+        blockType = uint8(specifiedBlock.blockType);
+        blockSize = specifiedBlock.blockSize;
+        timestamp = specifiedBlock.timestamp;
+        numDepositRequestsCommitted = specifiedBlock.numDepositRequestsCommitted;
+        numWithdrawalRequestsCommitted = specifiedBlock.numWithdrawalRequestsCommitted;
+        blockFeeWithdrawn = specifiedBlock.blockFeeWithdrawn;
+        numWithdrawalsDistributed = specifiedBlock.numWithdrawalsDistributed;
+    }
+
     function commitBlock(
         uint8 blockType,
-        uint16 numElements,
+        uint16 blockSize,
         bytes calldata data
         )
         external
         onlyOperator
         nonReentrant
     {
-        state.commitBlock(blockType, numElements, data);
+        state.commitBlock(blockType, blockSize, data);
     }
 
     function verifyBlock(

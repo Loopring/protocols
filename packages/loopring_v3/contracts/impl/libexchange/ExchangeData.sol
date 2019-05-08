@@ -99,13 +99,13 @@ library ExchangeData
 
         // The type of the block (i.e. what kind of requests were processed).
         // See @BlockType for more information.
-        uint8  blockType;
+        BlockType blockType;
 
         // The number of requests processed in the block. Only a limited number of permutations
         // are available for each block type (because each will need a different circuit
         // and thus different verification key onchain). Use IBlockVerifier.canVerify to find out if
         // the block is supported.
-        uint16 numElements;
+        uint16 blockSize;
 
         // The time the block was created.
         uint32 timestamp;
@@ -128,7 +128,7 @@ library ExchangeData
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
         // in this data.
-        // For every withdrawal (there are numElements withdrawals),
+        // For every withdrawal (there are 'blockSize' withdrawals),
         // stored sequentially after each other:
         //    - Token ID: 1 bytes
         //    - Account ID: 2,5 bytes

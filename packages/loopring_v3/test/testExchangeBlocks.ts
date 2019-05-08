@@ -263,7 +263,7 @@ contract("Exchange", (accounts: string[]) => {
                 "INVALID_REQUEST_RANGE",
               );
             }
-            // count > numElements
+            // count > blockSize
             {
               const bs = new pjs.Bitstream();
               bs.addNumber(exchangeId, 4);

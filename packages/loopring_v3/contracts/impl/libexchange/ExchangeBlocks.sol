@@ -53,12 +53,12 @@ library ExchangeBlocks
     function commitBlock(
         ExchangeData.State storage S,
         uint8 blockType,
-        uint16 numElements,
+        uint16 blockSize,
         bytes memory data
         )
         internal  // inline call
     {
-        commitBlockInternal(S, blockType, numElements, data);
+        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, data);
     }
 
     function verifyBlock(
@@ -66,7 +66,7 @@ library ExchangeBlocks
         uint blockIdx,
         uint256[8] memory proof
         )
-        internal  // inline call
+        public
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -86,9 +86,9 @@ library ExchangeBlocks
 
         require(
             S.blockVerifier.verifyProof(
-                specifiedBlock.blockType,
+                uint8(specifiedBlock.blockType),
                 S.onchainDataAvailability,
-                specifiedBlock.numElements,
+                specifiedBlock.blockSize,
                 specifiedBlock.publicDataHash,
                 proof
             ),
@@ -154,11 +154,11 @@ library ExchangeBlocks
     // == Internal Functions ==
     function commitBlockInternal(
         ExchangeData.State storage S,
-        uint8 blockType,
-        uint16 numElements,
+        ExchangeData.BlockType blockType,
+        uint16 blockSize,
         bytes memory data   // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
-                            // `numElements` instead of the actual user requests processed
+                            // `blockSize` instead of the actual user requests processed
                             // in this block. This is fine because 0-bytes consume fewer gas.
         )
         private
@@ -169,7 +169,7 @@ library ExchangeBlocks
         // TODO: Check if this exchange has a minimal amount of LRC staked?
 
         require(
-            S.blockVerifier.canVerify(blockType, S.onchainDataAvailability, numElements),
+            S.blockVerifier.canVerify(uint8(blockType), S.onchainDataAvailability, blockSize),
             "CANNOT_VERIFY_BLOCK"
         );
 
@@ -201,9 +201,9 @@ library ExchangeBlocks
         //   count == 0)
         if (S.isShutdown()) {
             if (numDepositRequestsCommitted < S.depositChain.length) {
-                require(blockType == uint(ExchangeData.BlockType.DEPOSIT), "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
+                require(blockType == ExchangeData.BlockType.DEPOSIT, "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
             } else {
-                require(blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL), "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
+                require(blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
             }
         }
 
@@ -211,12 +211,12 @@ library ExchangeBlocks
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
         if (isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
-            require(blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL), "WITHDRAWAL_BLOCK_FORCED");
+            require(blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL, "WITHDRAWAL_BLOCK_FORCED");
         } else if (isDepositRequestForced(S, numDepositRequestsCommitted)) {
-            require(blockType == uint(ExchangeData.BlockType.DEPOSIT), "DEPOSIT_BLOCK_FORCED");
+            require(blockType == ExchangeData.BlockType.DEPOSIT, "DEPOSIT_BLOCK_FORCED");
         }
 
-        if (blockType == uint(ExchangeData.BlockType.RING_SETTLEMENT)) {
+        if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
             require(now >= S.disableUserRequestsUntil, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             assembly {
@@ -227,7 +227,7 @@ library ExchangeBlocks
                 inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
                 "INVALID_TIMESTAMP"
             );
-        } else if (blockType == uint(ExchangeData.BlockType.DEPOSIT)) {
+        } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
             uint startIdx = 0;
             uint count = 0;
             assembly {
@@ -235,13 +235,13 @@ library ExchangeBlocks
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
             require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
-            require (count <= numElements, "INVALID_REQUEST_RANGE");
+            require (count <= blockSize, "INVALID_REQUEST_RANGE");
             require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
 
             bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = count; i < numElements; i++) {
+            for (uint i = count; i < blockSize; i++) {
                 endingHash = sha256(
                     abi.encodePacked(
                         endingHash,
@@ -263,7 +263,7 @@ library ExchangeBlocks
             require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
 
             numDepositRequestsCommitted += uint32(count);
-        } else if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
+        } else if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
             uint startIdx = 0;
             uint count = 0;
             assembly {
@@ -271,7 +271,7 @@ library ExchangeBlocks
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
             require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
-            require (count <= numElements, "INVALID_REQUEST_RANGE");
+            require (count <= blockSize, "INVALID_REQUEST_RANGE");
             require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
 
             if (S.isShutdown()) {
@@ -283,7 +283,7 @@ library ExchangeBlocks
                 bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
                 bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
                 // Pad the block so it's full
-                for (uint i = count; i < numElements; i++) {
+                for (uint i = count; i < blockSize; i++) {
                     endingHash = sha256(
                         abi.encodePacked(
                             endingHash,
@@ -304,9 +304,9 @@ library ExchangeBlocks
                 numWithdrawalRequestsCommitted += uint32(count);
 
             }
-        } else if (blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
+        } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             // Do nothing
-        } else if (blockType == uint(ExchangeData.BlockType.ORDER_CANCELLATION)) {
+        } else if (blockType == ExchangeData.BlockType.ORDER_CANCELLATION) {
             // Do nothing
         } else {
             revert("UNSUPPORTED_BLOCK_TYPE");
@@ -316,13 +316,13 @@ library ExchangeBlocks
         bytes32 publicDataHash = sha256(data);
 
         // Only store the approved withdrawal data onchain
-        if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
-            blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) {
+        if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
+            blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             uint start = 4 + 32 + 32;
-            if (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL)) {
+            if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
                 start += 32 + 32 + 4 + 4;
             }
-            uint length = 7 * numElements;
+            uint length = 7 * blockSize;
             assembly {
                 data := add(data, start)
                 mstore(data, length)
@@ -335,14 +335,14 @@ library ExchangeBlocks
             publicDataHash,
             ExchangeData.BlockState.COMMITTED,
             blockType,
-            numElements,
+            blockSize,
             uint32(now),
             numDepositRequestsCommitted,
             numWithdrawalRequestsCommitted,
             false,
             0,
-            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
-             blockType == uint(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL)) ? data : new bytes(0)
+            (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
+             blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) ? data : new bytes(0)
         );
 
         S.blocks.push(newBlock);
