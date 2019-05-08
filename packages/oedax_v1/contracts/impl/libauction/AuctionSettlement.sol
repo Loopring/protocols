@@ -48,8 +48,7 @@ library AuctionSettlement
     using AuctionStatus     for IAuctionData.State;
 
     function settle(
-        IAuctionData.State storage s,
-        address payable owner
+        IAuctionData.State storage s
         )
         internal
     {
@@ -61,21 +60,9 @@ library AuctionSettlement
         // update state
         s.closeTime = s.startTime + i.duration;
         s.settlementTime = block.timestamp;
-        uint rebatePaid = s.fees.creatorEtherStake;
-
-        if (!i.isBounded) {
-            rebatePaid /= 2;
-        }
-
-        if (block.timestamp - s.closeTime <= s.oedax.settleGracePeriod()) {
-            owner.transfer(rebatePaid);
-        } else {
-            rebatePaid /= 2;
-            msg.sender.transfer(rebatePaid);
-        }
 
         // Collect the protocol fees
-        collectProtocolFees(s, s.oedax.feeRecipient(), s.fees.creatorEtherStake.sub(rebatePaid));
+        collectProtocolFees(s, s.oedax.feeRecipient());
 
         // omit an event
         s.oedax.logSettlement(
@@ -85,6 +72,55 @@ library AuctionSettlement
             s.askAmount,
             s.bidAmount
         );
+    }
+
+    function withdrawOwnerStakeAndFees(
+        IAuctionData.State storage s,
+        address payable owner
+        )
+        internal
+    {
+        require(s.distributedTime > 0, "all tokens for all users need to be distributed");
+
+        uint amountStakeReturned = s.fees.creatorEtherStake;
+        address payable ownerFeeRecipient = owner;
+
+        IAuctionData.Status memory i = s.getAuctionStatus();
+        if (!i.isBounded) {
+            amountStakeReturned /= 2;
+        }
+        if (s.settlementTime - s.closeTime > s.oedax.settleGracePeriod()) {
+            amountStakeReturned /= 2;
+        }
+        uint maxTimeAllowedToDistribute = s.users.length.mul(s.oedax.distributeGracePeriodPerUser())
+            .add(s.oedax.distributeGracePeriodBase());
+        if (s.distributedTime - s.settlementTime > maxTimeAllowedToDistribute) {
+            amountStakeReturned = 0;
+            // Reward msg.sender with the owner fees
+            ownerFeeRecipient = msg.sender;
+        }
+
+        // Stake to the owner
+        payToken(
+            owner,
+            address(0x0),
+            amountStakeReturned
+        );
+
+        // Stake to the protocol pool
+        payToken(
+            s.oedax.feeRecipient(),
+            address(0x0),
+            s.fees.creatorEtherStake.sub(amountStakeReturned)
+        );
+
+        // Collect the owner fees
+        collectOwnerFees(s, ownerFeeRecipient);
+
+        // Make sure the above fees cannot be withdrawn agains by cleaning up the state
+        s.askAmount = 0;
+        s.bidAmount = 0;
+        s.fees.creatorEtherStake = 0;
     }
 
     function withdrawFor(
@@ -102,25 +138,18 @@ library AuctionSettlement
             returnDeposit(s, user);
         }
 
-        IAuctionData.Account storage a = s.accounts[user];
-        if (a.withdrawFee > 0) {
-            // Reward the withdrawer
-            msg.sender.transfer(a.withdrawFee);
-        }
-
         // Make sure the user can't withdraw again
         // Setting these to 0 again also rebates some gas to the withdrawer.
+        IAuctionData.Account storage a = s.accounts[user];
         a.bidAmount = 0;
         a.bidRebateWeight = 0;
         a.askAmount = 0;
         a.askRebateWeight = 0;
-        a.withdrawFee = 0;
     }
 
     function collectProtocolFees(
         IAuctionData.State storage s,
-        address payable feeRecipient,
-        uint rebate
+        address payable feeRecipient
         )
         private
     {
@@ -138,11 +167,27 @@ library AuctionSettlement
             s.bidToken,
             bidProtocolFee
         );
+    }
+
+    function collectOwnerFees(
+        IAuctionData.State storage s,
+        address payable feeRecipient
+        )
+        private
+    {
+        uint askOwnerFee = s.askAmount.mul(s.fees.ownerFeeBips) / 10000;
+        uint bidOwnerFee = s.bidAmount.mul(s.fees.ownerFeeBips) / 10000;
 
         payToken(
             feeRecipient,
-            address(0x0),
-            rebate
+            s.askToken,
+            askOwnerFee
+        );
+
+        payToken(
+            feeRecipient,
+            s.bidToken,
+            bidOwnerFee
         );
     }
 
@@ -166,13 +211,17 @@ library AuctionSettlement
     {
         uint bips = calcUserFeeRebateBips(s, user);
 
+        uint askOwnerFee = s.askAmount.mul(s.fees.ownerFeeBips) / 10000;
         uint askTakerFee = s.askAmount.mul(s.fees.takerFeeBips) / 10000;
         uint askSettlement = s.askAmount
+            .sub(askOwnerFee)
             .sub(askTakerFee)
             .sub(s.askAmount.mul(s.fees.protocolFeeBips) / 10000);
 
+        uint bidOwnerFee = s.bidAmount.mul(s.fees.ownerFeeBips) / 10000;
         uint bidTakerFee = s.bidAmount.mul(s.fees.takerFeeBips) / 10000;
         uint bidSettlement = s.bidAmount
+            .sub(bidOwnerFee)
             .sub(bidTakerFee)
             .sub(s.bidAmount.mul(s.fees.protocolFeeBips) / 10000);
 

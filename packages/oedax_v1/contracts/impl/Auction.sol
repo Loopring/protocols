@@ -63,6 +63,8 @@ contract Auction is IAuction
         uint    _auctionId,
         address _askToken,
         address _bidToken,
+        uint    _minAskAmount,
+        uint    _minBidAmount,
         uint64  _P,
         uint64  _S,
         uint8   _M,
@@ -89,6 +91,7 @@ contract Auction is IAuction
 
         state.fees = IAuctionData.Fees(
             state.oedax.protocolFeeBips(),
+            state.oedax.ownerFeeBips(),
             state.oedax.takerFeeBips(),
             state.oedax.creatorEtherStake()
         );
@@ -96,6 +99,8 @@ contract Auction is IAuction
         state.auctionId = _auctionId;
         state.askToken = _askToken;
         state.bidToken = _bidToken;
+        state.minAskAmount = _minAskAmount;
+        state.minBidAmount = _minBidAmount;
         state.startTime = block.timestamp;
         state.P = _P;
         state.S = uint(10) ** _S;
@@ -152,8 +157,7 @@ contract Auction is IAuction
     function settle()
         public
     {
-        address payable _owner = address(uint160(owner));
-        state.settle(_owner);
+        state.settle();
     }
 
     function withdraw()
@@ -172,6 +176,40 @@ contract Auction is IAuction
         for (uint j = 0; j < users.length; j++) {
             state.withdrawFor(i, users[j]);
         }
+    }
+
+    function distributeTokens()
+        external
+    {
+        require(state.settlementTime > 0, "auction needs to be settled");
+
+        // TODO: find a safe value
+        uint maxWithdrawCostInGas = 50000;
+
+        IAuctionData.Status memory i = state.getAuctionStatus();
+
+        uint j = state.numDistributed;
+        uint numUsers = state.users.length;
+        while (j < numUsers && gasleft() > maxWithdrawCostInGas) {
+            state.withdrawFor(i, state.users[j]);
+            j++;
+        }
+        state.numDistributed = j;
+        if (state.numDistributed == numUsers) {
+            state.distributedTime = block.timestamp;
+        }
+
+        // TODO: If too late for the owner we could reward msg.sender here with a
+        //       part of the stake or owner fees (proportionally to numWithdrawn/users.length)
+        //       May not be worth it because this is not a scenario that will be common,
+        //       users can always just withdraw their tokens with withdraw()
+    }
+
+    function withdrawOwnerStakeAndFees()
+        external
+    {
+        address payable _owner = address(uint160(owner));
+        state.withdrawOwnerStakeAndFees(_owner);
     }
 
     function getStatus()

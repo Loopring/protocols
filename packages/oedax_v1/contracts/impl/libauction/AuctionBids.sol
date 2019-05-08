@@ -46,6 +46,7 @@ library AuctionBids
         returns (uint accepted)
     {
         require(amount > 0, "zero amount");
+        require(amount >= s.minBidAmount, "bid amount too small");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
         require(i.bidAllowed > 0, "not allowed");

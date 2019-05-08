@@ -45,13 +45,12 @@ library IAuctionData
 
         uint    askAmount;
         uint    askRebateWeight;
-
-        uint    withdrawFee;
     }
 
     struct Fees
     {
         uint16  protocolFeeBips;
+        uint16  ownerFeeBips;
         uint16  takerFeeBips;
         uint    creatorEtherStake;
     }
@@ -73,6 +72,9 @@ library IAuctionData
         uint    askBaseUnit;
         uint    bidBaseUnit;
 
+        uint    minAskAmount;
+        uint    minBidAmount;
+
         uint    startTime;
 
         uint    P;  // target price
@@ -84,6 +86,7 @@ library IAuctionData
 
         uint    closeTime;
         uint    settlementTime;
+        uint    distributedTime;
 
         uint    askAmount;
         uint    bidAmount;
@@ -100,6 +103,8 @@ library IAuctionData
         // user => account)
         mapping (address => Account) accounts;
         address payable[] users;
+
+        uint numDistributed;
     }
 
     event Bid(

@@ -49,9 +49,12 @@ contract Oedax is IOedax, NoDefaultFunc
         address payable _feeRecipient,
         address _curve,
         uint16  _settleGracePeriodMinutes,
+        uint16  _distributeGracePeriodBaseMinutes,
+        uint16  _distributeGracePeriodPerUserSeconds,
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
+        uint16  _ownerFeeBips,
         uint16  _takerFeeBips,
         uint    _creatorEtherStake
         )
@@ -61,10 +64,13 @@ contract Oedax is IOedax, NoDefaultFunc
         require(_feeRecipient != address(0x0), "zero address");
         require(_curve != address(0x0), "zero address");
         require(_settleGracePeriodMinutes > 0, "zero value");
+        require(_distributeGracePeriodBaseMinutes > 0, "zero value");
+        require(_distributeGracePeriodPerUserSeconds > 0, "zero value");
         require(_minDurationMinutes > 0, "zero value");
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
         require(_protocolFeeBips <= 250, "value too large");
+        require(_ownerFeeBips <= 250, "value too large");
         require(_takerFeeBips <= 250, "value too large");
         require(_creatorEtherStake > 0, "zero value");
 
@@ -72,6 +78,8 @@ contract Oedax is IOedax, NoDefaultFunc
         feeRecipient = _feeRecipient;
 
         settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
+        distributeGracePeriodBase = _distributeGracePeriodBaseMinutes * 1 minutes;
+        distributeGracePeriodPerUser = _distributeGracePeriodPerUserSeconds;
         minDuration = _minDurationMinutes * 1 minutes;
         maxDuration = _maxDurationMinutes * 1 minutes;
 
@@ -96,6 +104,8 @@ contract Oedax is IOedax, NoDefaultFunc
     function createAuction(
         address askToken,
         address bidToken,
+        uint    minAskAmount,
+        uint    minBidAmount,
         uint64  P,
         uint64  S,
         uint8   M,
@@ -121,6 +131,8 @@ contract Oedax is IOedax, NoDefaultFunc
             auctionId,
             askToken,
             bidToken,
+            minAskAmount,
+            minBidAmount,
             P, S, M, T1, T2
         );
 

@@ -69,6 +69,12 @@ contract IAuction is Ownable
         )
         external;
 
+    function distributeTokens()
+        external;
+
+    function withdrawOwnerStakeAndFees()
+        external;
+
     /// @dev Calculate the auction's status on the fly.
     /// @return isBounded If the auction's actual price has already been bounded by the
     ///         bid and ask curves.
