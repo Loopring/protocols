@@ -30,8 +30,9 @@ import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionSettlement.sol";
 import "./libauction/AuctionStatus.sol";
 
-/// @title An Implementation of ICurve.
+/// @title Implementation of IAuction.
 /// @author Daniel Wang  - <daniel@loopring.org>
+/// @author Brecht Devos - <brecht@loopring.org>
 contract Auction is IAuction
 {
     using MathUint          for uint;

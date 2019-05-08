@@ -24,7 +24,7 @@ import "../lib/NoDefaultFunc.sol";
 
 import "./Auction.sol";
 
-/// @title An Implementation of IOedax.
+/// @title Implementation of IOedax.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Oedax is IOedax, NoDefaultFunc
 {

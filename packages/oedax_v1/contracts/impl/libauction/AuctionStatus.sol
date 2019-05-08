@@ -21,7 +21,7 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 
-/// @title AuctionStatus.
+/// @title AuctionStatus
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionStatus
 {

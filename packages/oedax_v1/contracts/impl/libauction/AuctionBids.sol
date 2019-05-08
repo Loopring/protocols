@@ -24,7 +24,7 @@ import "./AuctionAccount.sol";
 import "./AuctionSettlement.sol";
 import "./AuctionStatus.sol";
 
-/// @title AuctionAsks.
+/// @title AuctionBids
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionBids
 {
