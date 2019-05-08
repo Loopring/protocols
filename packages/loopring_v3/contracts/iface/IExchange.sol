@@ -764,16 +764,21 @@ contract IExchange
     ///      are more expensive than committing and proving a block, so it's possible more
     ///      withdrawals requests are processed in a block than can be distributed
     ///      in an Ethereum block.
+    ///      This function will automatically stop distributing the withdrawals when the amount
+    ///      of gas left is less than MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS.
+    ///      So there are 2 ways to  limit the number of withdrawals:
+    ///          - using the maxNumWithdrawals parameter
+    ///          - limiting the amount of gas in the transaction
     ///
     /// @param  blockIdx The block index to distribute the funds from the withdrawal requests for
-    /// @param  numWithdrawals The number of withdrawals to distribute. Can be lower than the
+    /// @param  maxNumWithdrawals The max number of withdrawals to distribute. Can be lower than the
     ///         number of withdrawal requests processed in the block. Withdrawals are distributed
     ///         in the same order the withdrawal requests were processed in the block.
     ///         If the withdrawals are done in multiple parts we always start from the
     ///         first withdrawal that was not yet distributed.
     function distributeWithdrawals(
         uint blockIdx,
-        uint numWithdrawals
+        uint maxNumWithdrawals
         )
         external;
 

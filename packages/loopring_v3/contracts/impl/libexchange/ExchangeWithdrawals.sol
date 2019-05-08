@@ -402,12 +402,12 @@ library ExchangeWithdrawals
     function distributeWithdrawals(
         ExchangeData.State storage S,
         uint blockIdx,
-        uint numWithdrawals
+        uint maxNumWithdrawals
         )
         public
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-        require(numWithdrawals > 0, "INVALID_NUM_WITHDRAWALS");
+        require(maxNumWithdrawals > 0, "INVALID_MAX_NUM_WITHDRAWALS");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
         // Check if this is a withdrawal block
@@ -418,34 +418,40 @@ library ExchangeWithdrawals
         // Check if the withdrawals were already completely distributed
         require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.numElements, "WITHDRAWALS_ALREADY_DISTRIBUTED");
 
+        // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
+        // anyone can do it and get paid a part of the operator stake
+        bool bOnlyOperator = now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS();
+        if (bOnlyOperator) {
+            require(msg.sender == S.operator, "UNAUTHORIZED");
+        }
+
         // Calculate the range of withdrawals we'll do
         uint start = withdrawBlock.numWithdrawalsDistributed;
-        uint end = start.add(numWithdrawals);
+        uint end = start.add(maxNumWithdrawals);
         if (end > withdrawBlock.numElements) {
             end = withdrawBlock.numElements;
         }
-        uint numToWithdraw = end.sub(start);
 
-        // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
-        // anyone can do it and get paid a part of the operator stake
-        if (now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()) {
-            require(msg.sender == S.operator, "UNAUTHORIZED");
-        } else {
+        // Do the withdrawals
+        uint gasLimit = ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS();
+        uint totalNumWithdrawn = start;
+        while (totalNumWithdrawn < end && gasleft() >= gasLimit) {
+            withdrawFromApprovedWithdrawal(S, blockIdx, totalNumWithdrawn);
+            totalNumWithdrawn++;
+        }
+        withdrawBlock.numWithdrawalsDistributed = uint16(totalNumWithdrawn);
+
+        // Fine the exchange if the withdrawals are done too late
+        if (!bOnlyOperator) {
             // We use the stake of the exchange to punish withdrawals that are distributed too late
-            uint totalFine = S.loopring.withdrawalFineLRC().mul(numToWithdraw);
+            uint numWithdrawn = totalNumWithdrawn.sub(start);
+            uint totalFine = S.loopring.withdrawalFineLRC().mul(numWithdrawn);
             // Burn 50% of the fine, reward the distributer the rest
             uint amountToBurn = totalFine / 2;
             uint amountToDistributer = totalFine - amountToBurn;
             S.loopring.burnStake(S.id, amountToBurn);
             S.loopring.withdrawStake(S.id, msg.sender, amountToDistributer);
         }
-
-        // Do the withdrawals
-        for (uint i = start; i < end; i++) {
-            withdrawFromApprovedWithdrawal(S, blockIdx, i);
-        }
-
-        withdrawBlock.numWithdrawalsDistributed = uint16(end);
     }
 
 

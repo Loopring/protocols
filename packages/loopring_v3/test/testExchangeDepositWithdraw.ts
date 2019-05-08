@@ -777,7 +777,7 @@ contract("Exchange", (accounts: string[]) => {
       // Try to do no withdrawals
       await expectThrow(
         exchange.distributeWithdrawals(blockIdx + 1, 0, {from: exchangeTestUtil.testContext.deployer}),
-        "INVALID_NUM_WITHDRAWALS",
+        "INVALID_MAX_NUM_WITHDRAWALS",
       );
 
       // Distribute the withdrawals

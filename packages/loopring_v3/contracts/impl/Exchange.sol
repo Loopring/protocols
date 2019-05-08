@@ -599,12 +599,12 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
 
     function distributeWithdrawals(
         uint blockIdx,
-        uint numWithdrawals
+        uint maxNumWithdrawals
         )
         external
         nonReentrant
     {
-        state.distributeWithdrawals(blockIdx, numWithdrawals);
+        state.distributeWithdrawals(blockIdx, maxNumWithdrawals);
     }
 
     // -- Admins --

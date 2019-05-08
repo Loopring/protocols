@@ -168,6 +168,7 @@ library ExchangeData
     function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
+    function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
