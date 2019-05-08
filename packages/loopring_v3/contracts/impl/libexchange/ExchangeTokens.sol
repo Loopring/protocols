@@ -93,7 +93,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        public
+        internal
         view
         returns (uint16 tokenID)
     {
@@ -106,7 +106,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         uint16 tokenID
         )
-        public
+        internal
         view
         returns (address)
     {
