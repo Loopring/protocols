@@ -243,7 +243,7 @@ library AuctionSettlement
             if (token == address(0x0)) {
                 target.transfer(amount);
             } else {
-                require(token.safeTransfer(target, amount), "TRANSFER_FAILED");
+                require(token.safeTransfer(target, amount), "transfer failed");
             }
         }
     }
