@@ -49,6 +49,7 @@ library AuctionBids
         require(amount >= s.minBidAmount, "bid amount too small");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
+        require(s.isAuctionOpen(i), "auction needs to be open");
         require(i.bidAllowed > 0, "not allowed");
 
         if (amount > i.bidAllowed) {

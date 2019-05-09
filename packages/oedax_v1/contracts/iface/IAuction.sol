@@ -53,10 +53,21 @@ contract IAuction is Ownable
 
     /// @dev Settles the auction.
     /// After the auction ends, everyone can settle the auction by calling this method.
-    /// If the price is not bounded by curves, 50% of Ether stake will be charged by the
-    /// protocol as fee, the rest will be used as a rebate.
-    /// If the settlement happens outside of the settleGracePeriod window another
-    /// 50% of the Ether stake will be charged by the protocol as fee.
+    ///
+    /// The following is done when settling an auction:
+    ///     - All tokens are distributed to the users
+    ///     - All fees are distributed to the fee recipients
+    ///
+    /// If the price is not bounded by the curves, 50% of the Ether stake will be charged
+    /// by the protocol as fee.
+    ///
+    /// The auction owner is also responsible for distributing the tokens to the users in
+    /// 'settleGracePeriodBase + numUsers * settleGracePeriodPerUser' seconds. If he fails
+    /// to do so the auction owner wil lose his complete stake and all his trading fees.
+    /// 75% of the stake will be charged by the protocol as fee and 25% of the Ether stake
+    /// will be sent to the caller of this function when the fees are distributed (which is
+    /// done after all tokens are distributed to the users). The caller of the function
+    /// will also receive the owner's trading fees.
     function settle()
         public;
 
@@ -75,21 +86,6 @@ contract IAuction is Ownable
     function withdrawFor(
         address payable[] calldata users
         )
-        external;
-
-    /// @dev Distributes the tokens to the users. Can only be called when the auction has settled.
-    ///      The auction owner is responsible for distributing the tokens to the users in
-    ///      distributeGracePeriodBase + numUsers * distributeGracePeriodPerUser seconds. If he fails
-    ///      to do so 100% of the Ether stake will be charged by the protocol and
-    ///      he loses all his trading fees.
-    function distributeTokens()
-        external;
-
-    /// @dev Withdraws the Ether stake and owner trading fees. Can only be called when all tokens are distributed.
-    ///      Normally the Ether stake and the trading fees are sent to the owner,
-    ///      but when the tokens were distributed too late the owner loses his complete stake
-    ///      and his trading fees go to the caller of this function.
-    function withdrawOwnerStakeAndFees()
         external;
 
     /// @dev Calculate the auction's status on the fly.

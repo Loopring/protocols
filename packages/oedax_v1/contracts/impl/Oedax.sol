@@ -48,9 +48,8 @@ contract Oedax is IOedax, NoDefaultFunc
     function updateSettings(
         address payable _feeRecipient,
         address _curve,
-        uint16  _settleGracePeriodMinutes,
-        uint16  _distributeGracePeriodBaseMinutes,
-        uint16  _distributeGracePeriodPerUserSeconds,
+        uint16  _settleGracePeriodBaseMinutes,
+        uint16  _settleGracePeriodPerUserSeconds,
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
@@ -63,9 +62,8 @@ contract Oedax is IOedax, NoDefaultFunc
     {
         require(_feeRecipient != address(0x0), "zero address");
         require(_curve != address(0x0), "zero address");
-        require(_settleGracePeriodMinutes > 0, "zero value");
-        require(_distributeGracePeriodBaseMinutes > 0, "zero value");
-        require(_distributeGracePeriodPerUserSeconds > 0, "zero value");
+        require(_settleGracePeriodBaseMinutes > 0, "zero value");
+        require(_settleGracePeriodPerUserSeconds > 0, "zero value");
         require(_minDurationMinutes > 0, "zero value");
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
@@ -77,9 +75,8 @@ contract Oedax is IOedax, NoDefaultFunc
         curveAddress = _curve;
         feeRecipient = _feeRecipient;
 
-        settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
-        distributeGracePeriodBase = _distributeGracePeriodBaseMinutes * 1 minutes;
-        distributeGracePeriodPerUser = _distributeGracePeriodPerUserSeconds;
+        settleGracePeriodBase = _settleGracePeriodBaseMinutes * 1 minutes;
+        settleGracePeriodPerUser = _settleGracePeriodPerUserSeconds;
         minDuration = _minDurationMinutes * 1 minutes;
         maxDuration = _maxDurationMinutes * 1 minutes;
 

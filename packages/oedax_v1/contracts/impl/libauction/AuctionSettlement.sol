@@ -48,80 +48,34 @@ library AuctionSettlement
     using ERC20SafeTransfer for address;
     using AuctionStatus     for IAuctionData.State;
 
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
+    uint32 public constant MIN_GAS_TO_WITHDRAW_OWNER_FUNDS = 100000;
+
     function settle(
-        IAuctionData.State storage s
-        )
-        internal
-    {
-        require(s.settlementTime == 0, "auction already settled");
-
-        IAuctionData.Status memory i = s.getAuctionStatus();
-        require(block.timestamp >= s.startTime + i.duration, "auction still open");
-
-        // update state
-        s.closeTime = s.startTime + i.duration;
-        s.settlementTime = block.timestamp;
-
-        // Collect the protocol fees
-        collectProtocolFees(s, s.oedax.feeRecipient());
-
-        // omit an event
-        s.oedax.logSettlement(
-            s.auctionId,
-            s.askToken,
-            s.bidToken,
-            s.askAmount,
-            s.bidAmount
-        );
-    }
-
-    function withdrawOwnerStakeAndFees(
         IAuctionData.State storage s,
         address payable owner
         )
         internal
     {
-        require(s.distributedTime > 0, "all tokens for all users need to be distributed");
-
-        uint amountStakeReturned = s.fees.creatorEtherStake;
-        address payable ownerFeeRecipient = owner;
-
         IAuctionData.Status memory i = s.getAuctionStatus();
-        if (!i.isBounded) {
-            amountStakeReturned /= 2;
+        require(!s.isAuctionOpen(i), "auction needs to be closed");
+
+        bool bHasDistributedTokens = false;
+        // First all tokens for all users need to be distributed
+        if (s.numDistributed < s.users.length) {
+            distributeTokens(s, i);
+            bHasDistributedTokens = true;
         }
-        if (s.settlementTime - s.closeTime > s.oedax.settleGracePeriod()) {
-            amountStakeReturned /= 2;
+        // Once all users have received their tokens we will distribute the fees
+        if (s.numDistributed == s.users.length) {
+            // If the caller also distributed tokens for users in this transaction
+            // we check here if we still have enough gas to distribute the fees.
+            // If not then it's the responsibility of the caller to set a correct gas limit.
+            if (!bHasDistributedTokens || gasleft() >= MIN_GAS_TO_WITHDRAW_OWNER_FUNDS) {
+                address payable _owner = address(uint160(owner));
+                distributeFees(s, i, _owner);
+            }
         }
-        uint maxTimeAllowedToDistribute = s.users.length.mul(s.oedax.distributeGracePeriodPerUser())
-            .add(s.oedax.distributeGracePeriodBase());
-        if (s.distributedTime - s.settlementTime > maxTimeAllowedToDistribute) {
-            amountStakeReturned = 0;
-            // Reward msg.sender with the owner fees
-            ownerFeeRecipient = msg.sender;
-        }
-
-        // Stake to the owner
-        payToken(
-            owner,
-            address(0x0),
-            amountStakeReturned
-        );
-
-        // Stake to the protocol pool
-        payToken(
-            s.oedax.feeRecipient(),
-            address(0x0),
-            s.fees.creatorEtherStake.sub(amountStakeReturned)
-        );
-
-        // Collect the owner fees
-        collectOwnerFees(s, ownerFeeRecipient);
-
-        // Make sure the above fees cannot be withdrawn agains by cleaning up the state
-        s.askAmount = 0;
-        s.bidAmount = 0;
-        s.fees.creatorEtherStake = 0;
     }
 
     function withdrawFor(
@@ -131,7 +85,7 @@ library AuctionSettlement
         )
         internal
     {
-        require(s.settlementTime > 0, "auction needs to be settled");
+        require(!s.isAuctionOpen(i), "auction needs to be closed");
 
         if (i.isBounded) {
             settleTrade(s, user);
@@ -148,47 +102,114 @@ library AuctionSettlement
         a.askRebateWeight = 0;
     }
 
-    function collectProtocolFees(
+    function distributeFees(
         IAuctionData.State storage s,
-        address payable feeRecipient
+        IAuctionData.Status memory i,
+        address payable owner
         )
         private
     {
-        uint askProtocolFee = s.askAmount.mul(s.fees.protocolFeeBips) / 10000;
-        uint bidProtocolFee = s.bidAmount.mul(s.fees.protocolFeeBips) / 10000;
+        address payable ownerFeeRecipient = owner;
+        uint amountStakeToOwner = s.fees.creatorEtherStake;
+        uint amountStakeToCaller = 0;
 
+        uint closeTime = s.startTime + i.duration;
+        uint maxGracePeriod = s.users.length.mul(s.oedax.settleGracePeriodPerUser())
+            .add(s.oedax.settleGracePeriodBase());
+        if (block.timestamp.sub(closeTime) > maxGracePeriod) {
+            amountStakeToOwner = 0;
+            // Reward msg.sender with half the stake and the owner fees
+            amountStakeToCaller = s.fees.creatorEtherStake / 4;
+            ownerFeeRecipient = msg.sender;
+        }
+
+        // Punish the auction owner for not making sure the auction is bounded
+        if (!i.isBounded) {
+            amountStakeToOwner /= 2;
+        }
+
+        // Stake to the owner
         payToken(
-            feeRecipient,
-            s.askToken,
-            askProtocolFee
+            owner,
+            address(0x0),
+            amountStakeToOwner
+        );
+        // Stake to the caller
+        payToken(
+            msg.sender,
+            address(0x0),
+            amountStakeToCaller
+        );
+        // Stake to the protocol pool
+        payToken(
+            s.oedax.feeRecipient(),
+            address(0x0),
+            s.fees.creatorEtherStake.sub(amountStakeToOwner).sub(amountStakeToCaller)
         );
 
-        payToken(
-            feeRecipient,
-            s.bidToken,
-            bidProtocolFee
-        );
+        // Collect the owner trading fees
+        collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
+        // Collect the protocol fees
+        collectTradingFees(s, s.fees.protocolFeeBips, s.oedax.feeRecipient());
+
+        // Only emit an event once
+        if (s.fees.creatorEtherStake > 0) {
+            s.oedax.logSettlement(
+                s.auctionId,
+                s.askToken,
+                s.bidToken,
+                s.askAmount,
+                s.bidAmount
+            );
+        }
+
+        // Make sure the fees above cannot be withdrawn again by cleaning up the state
+        s.askAmount = 0;
+        s.bidAmount = 0;
+        s.fees.creatorEtherStake = 0;
     }
 
-    function collectOwnerFees(
+    function distributeTokens(
         IAuctionData.State storage s,
+        IAuctionData.Status memory i
+        )
+        private
+    {
+        uint gasLimit = MIN_GAS_TO_DISTRIBUTE_TOKENS;
+        uint j = s.numDistributed;
+        uint numUsers = s.users.length;
+        while (j < numUsers && gasleft() >= gasLimit) {
+            withdrawFor(s, i, s.users[j]);
+            j++;
+        }
+        s.numDistributed = j;
+
+        // TODO: If too late for the owner we could reward msg.sender here with a
+        //       part of the stake or owner fees (proportionally to numWithdrawn/users.length)
+        //       May not be worth it because this is not a scenario that will be common,
+        //       users can always just withdraw their tokens with withdraw()
+    }
+
+    function collectTradingFees(
+        IAuctionData.State storage s,
+        uint feeBips,
         address payable feeRecipient
         )
         private
     {
-        uint askOwnerFee = s.askAmount.mul(s.fees.ownerFeeBips) / 10000;
-        uint bidOwnerFee = s.bidAmount.mul(s.fees.ownerFeeBips) / 10000;
+        uint askFee = s.askAmount.mul(feeBips) / 10000;
+        uint bidFee = s.bidAmount.mul(feeBips) / 10000;
 
         payToken(
             feeRecipient,
             s.askToken,
-            askOwnerFee
+            askFee
         );
 
         payToken(
             feeRecipient,
             s.bidToken,
-            bidOwnerFee
+            bidFee
         );
     }
 
