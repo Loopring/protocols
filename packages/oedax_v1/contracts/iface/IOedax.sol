@@ -142,6 +142,8 @@ contract IOedax is Ownable
     function createAuction(
         address askToken,
         address bidToken,
+        uint    minAskAmount,
+        uint    minBidAmount,
         uint64  P,
         uint64  S,
         uint8   M,
