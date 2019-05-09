@@ -84,6 +84,7 @@ contract Oedax is IOedax, NoDefaultFunc
         maxDuration = _maxDurationMinutes * 1 minutes;
 
         protocolFeeBips = _protocolFeeBips;
+        ownerFeeBips = _ownerFeeBips;
         takerFeeBips = _takerFeeBips;
         creatorEtherStake = _creatorEtherStake * 1 ether;
 

@@ -287,7 +287,7 @@ library AuctionSettlement
         address         token,
         uint            amount
         )
-        public
+        internal
     {
         if(amount > 0) {
             if (token == address(0x0)) {
