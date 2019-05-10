@@ -45,8 +45,8 @@ library AuctionStatus
         view
         returns (IAuctionData.Status memory i)
     {
-        uint P0 = s.P.mul(s.M);
-        uint P1 = s.P / s.M;
+        uint P0 = s.P / s.M;
+        uint P1 = s.P.mul(s.M);
         assert(P0 > 0 && P1 > P0);
 
         uint elapsed = block.timestamp - s.startTime;
@@ -123,7 +123,7 @@ library AuctionStatus
         view
         returns (uint y)
     {
-        y = s.curve.xToY(s.C, s.P.mul(s.M), s.P / s.M, s.T, x);
+        y = s.curve.xToY(s.C, s.P / s.M, s.P.mul(s.M), s.T, x);
     }
 
     function yToX(
@@ -134,6 +134,6 @@ library AuctionStatus
         view
         returns (uint x)
     {
-        x = s.curve.yToX(s.C, s.P.mul(s.M), s.P / s.M, s.T, y);
+        x = s.curve.yToX(s.C, s.P / s.M, s.P.mul(s.M), s.T, y);
     }
 }
