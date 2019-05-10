@@ -76,15 +76,15 @@ contract Auction is IAuction
         )
         public
     {
-        require(_oedax != address(0x0));
-        require(_auctionId > 0);
-        require(_askToken != address(0x0) || _bidToken != address(0x0));
+        require(_oedax != address(0x0), "invalid oedax address");
+        require(_auctionId > 0, "invalid auction id");
+        require(_askToken != address(0x0) || _bidToken != address(0x0), "invalid token address");
 
-        require(_S >= 5 && _S <= 10);
-        require(_P > 0 && _P <= uint(10) ** 20);
-        require(_M > 1 && _M <= 100);
+        require(_S >= 5 && _S <= 10, "invalid price precision");
+        require(_P > 0 && _P <= uint(10 ** 20), "invalid target price");
+        require(_M > 1 && _M <= 100, "invalid price factor");
 
-        require(_T1 > 0 && _T1 < _T2);
+        require(_T1 > 0 && _T1 < _T2, "invalid duration value");
 
         owner = msg.sender; // creator
 
@@ -110,8 +110,8 @@ contract Auction is IAuction
         state.M = _M;
         state.T = _T2;
 
-        require(state.P / state.M < state.P);
-        require(state.P.mul(state.M) > state.P);
+        require(state.P / state.M < state.P, "invalid price or factor - div");
+        require(state.P.mul(state.M) > state.P, "invalid price or factor - mul");
 
         state.askBaseUnit = uint(10) ** ERC20(_askToken).decimals();
         state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
@@ -121,6 +121,8 @@ contract Auction is IAuction
         safeCheckTokenSupply(_bidToken);
     }
 
+    event Log1(address addr, uint val);
+
     // == Public & External Functions ==
     function()
         external
@@ -129,7 +131,8 @@ contract Auction is IAuction
         if (!staked) {
             require(msg.sender == owner, "not owner");
             require(msg.value > 0, "zero value");
-            staked = true;
+            emit Log1(msg.sender, msg.value);
+            /* staked = true; */
         } else {
             if (msg.value == 0) {
                 settle();
