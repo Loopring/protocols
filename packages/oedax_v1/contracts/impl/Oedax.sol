@@ -137,15 +137,17 @@ contract Oedax is IOedax, NoDefaultFunc
         auctionAddr = address(auction);
 
         // Transfer the Ether to the target auction
-        auctionAddr.transfer(creatorEtherStake);
-        /* uint surplus = msg.value - creatorEtherStake; */
-        /* if (surplus > 0) { */
-        /*     msg.sender.transfer(surplus); */
-        /* } */
+        (bool success, bytes memory data) = auctionAddr.call.value(creatorEtherStake)("");
+        require(success, "call to auction failed");
 
-        /* auctionIdMap[auctionAddr] = auctionId; */
-        /* auctions.push(auctionAddr); */
-        /* creatorAuctions[msg.sender].push(auctionAddr); */
+        uint surplus = msg.value - creatorEtherStake;
+        if (surplus > 0) {
+            msg.sender.transfer(surplus);
+        }
+
+        auctionIdMap[auctionAddr] = auctionId;
+        auctions.push(auctionAddr);
+        creatorAuctions[msg.sender].push(auctionAddr);
 
         emit AuctionCreated(auctionId, auctionAddr);
     }

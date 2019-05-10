@@ -124,7 +124,7 @@ contract Auction is IAuction
     event Log1(address addr, uint val);
 
     // == Public & External Functions ==
-    function()
+    function ()
         external
         payable
     {
@@ -132,7 +132,7 @@ contract Auction is IAuction
             require(msg.sender == owner, "not owner");
             require(msg.value > 0, "zero value");
             emit Log1(msg.sender, msg.value);
-            /* staked = true; */
+            staked = true;
         } else {
             if (msg.value == 0) {
                 settle();

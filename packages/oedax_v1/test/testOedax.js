@@ -52,7 +52,7 @@ contract("Oedax", async (accounts) => {
     const minAskAmount = 100e18;
     const minBidAmount = 10e18;
 
-    const blockBefore = web3.eth.blockNumber;
+    const blockBefore = await web3.eth.getBlockNumber();
 
     await oedax.setTokenRank(fooToken.address, numToBN(10), {from: deployer});
     await oedax.setTokenRank(barToken.address, numToBN(100), {from: deployer});
@@ -72,18 +72,19 @@ contract("Oedax", async (accounts) => {
         value: 1e18
       }
     );
-    // const blockAfter = web3.eth.blockNumber;
+
+    const blockAfter = await web3.eth.getBlockNumber();
     // console.log("blockBefore:", blockBefore, "; blockAfter:", blockAfter);
 
-    // const auctionCreationEvent = await oedax.getPastEvents(
-    //   "AuctionCreated",
-    //   {
-    //     fromBlock: blockBefore,
-    //     toBlock: blockAfter
-    //   }
-    // );
-
+    const auctionCreationEvent = await oedax.getPastEvents(
+      "AuctionCreated",
+      {
+        fromBlock: blockBefore,
+        toBlock: blockAfter
+      }
+    );
     // console.log("auctionCreationEvent:", auctionCreationEvent);
+
   });
 
 });
