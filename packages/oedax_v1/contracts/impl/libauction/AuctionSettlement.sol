@@ -26,6 +26,7 @@ import "./AuctionStatus.sol";
 
 /// @title AuctionSettlement
 /// @author Daniel Wang  - <daniel@loopring.org>
+/// @author Brecht Devos - <brecht@loopring.org>
 library AuctionSettlement
 {
     event Trade(
@@ -37,11 +38,9 @@ library AuctionSettlement
     struct Trading {
         uint    askPaid;
         uint    askReceived;
-        uint    askReturend;
         uint    askFeeRebate;
         uint    bidPaid;
         uint    bidReceived;
-        uint    bidReturend;
         uint    bidFeeRebate;
     }
 
@@ -49,158 +48,240 @@ library AuctionSettlement
     using ERC20SafeTransfer for address;
     using AuctionStatus     for IAuctionData.State;
 
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_FEES = 100000;
+
     function settle(
         IAuctionData.State storage s,
         address payable owner
         )
         internal
     {
-        require(s.settlementTime == 0, "auction already settled");
-
         IAuctionData.Status memory i = s.getAuctionStatus();
-        require(i.timeRemaining == 0, "auction still open");
+        require(!s.isAuctionOpen(i), "auction needs to be closed");
 
-        // update state
-        s.settlementTime = block.timestamp;
-        uint rebate = s.fees.creatorEtherStake;
-
-        if (i.isBounded) {
-            settleTrades(s);
-        } else{
-            rebate /= 2;
-            returnDeposits(s);
+        bool bHasDistributedTokens = false;
+        // First all tokens for all users need to be distributed
+        if (s.numDistributed < s.users.length) {
+            distributeTokens(s, i);
+            bHasDistributedTokens = true;
         }
-
-        if (block.timestamp - s.startTime - s.T <= s.oedax.settleGracePeriod()) {
-            owner.transfer(rebate);
-        } else {
-            msg.sender.transfer(rebate / 2);
+        // Once all users have received their tokens we will distribute the fees
+        if (s.numDistributed == s.users.length) {
+            // If the caller also distributed tokens for users in this transaction
+            // we check here if we still have enough gas to distribute the fees.
+            // If not then it's the responsibility of the caller to set a correct gas limit.
+            if (!bHasDistributedTokens || gasleft() >= MIN_GAS_TO_DISTRIBUTE_FEES) {
+                address payable _owner = address(uint160(owner));
+                distributeFees(s, i, _owner);
+            }
         }
-
-        // collect everything remaining in this contract as protocol fees.
-        collectFees(s, s.oedax.feeRecipient());
-
-        // omit an event
-        s.oedax.logSettlement(
-            s.auctionId,
-            s.askToken,
-            s.bidToken,
-            s.askAmount,
-            s.bidAmount
-        );
     }
 
-    function collectFees(
+    function withdrawFor(
         IAuctionData.State storage s,
+        IAuctionData.Status memory i,
+        address payable user
+        )
+        internal
+    {
+        require(!s.isAuctionOpen(i), "auction needs to be closed");
+
+        if (i.isBounded) {
+            settleTrade(s, user);
+        } else{
+            returnDeposit(s, user);
+        }
+
+        // Make sure the user can't withdraw again
+        // Setting these to 0 again also rebates some gas to the withdrawer.
+        IAuctionData.Account storage a = s.accounts[user];
+        a.bidAmount = 0;
+        a.bidRebateWeight = 0;
+        a.askAmount = 0;
+        a.askRebateWeight = 0;
+    }
+
+    function distributeFees(
+        IAuctionData.State storage s,
+        IAuctionData.Status memory i,
+        address payable owner
+        )
+        private
+    {
+        address payable ownerFeeRecipient = owner;
+        uint amountStakeToOwner = s.fees.creatorEtherStake;
+        uint amountStakeToCaller = 0;
+
+        uint closeTime = s.startTime + i.duration;
+        uint maxGracePeriod = s.users.length.mul(s.oedax.settleGracePeriodPerUser())
+            .add(s.oedax.settleGracePeriodBase());
+        if (block.timestamp.sub(closeTime) > maxGracePeriod) {
+            amountStakeToOwner = 0;
+            // Reward msg.sender with 25% of the stake and the owner fees
+            amountStakeToCaller = s.fees.creatorEtherStake / 4;
+            ownerFeeRecipient = msg.sender;
+        }
+
+        // Punish the auction owner for not making sure the auction is bounded
+        if (!i.isBounded) {
+            amountStakeToOwner /= 2;
+        }
+
+        // Stake to the owner
+        payToken(
+            owner,
+            address(0x0),
+            amountStakeToOwner
+        );
+        // Stake to the caller
+        payToken(
+            msg.sender,
+            address(0x0),
+            amountStakeToCaller
+        );
+        // Stake to the protocol pool
+        payToken(
+            s.oedax.feeRecipient(),
+            address(0x0),
+            s.fees.creatorEtherStake.sub(amountStakeToOwner).sub(amountStakeToCaller)
+        );
+
+        // Collect the owner trading fees
+        collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
+        // Collect the protocol fees
+        collectTradingFees(s, s.fees.protocolFeeBips, s.oedax.feeRecipient());
+
+        // Only emit an event once
+        if (s.fees.creatorEtherStake > 0) {
+            s.oedax.logSettlement(
+                s.auctionId,
+                s.askToken,
+                s.bidToken,
+                s.askAmount,
+                s.bidAmount
+            );
+        }
+
+        // Make sure the fees above cannot be withdrawn again by cleaning up the state
+        s.askAmount = 0;
+        s.bidAmount = 0;
+        s.fees.creatorEtherStake = 0;
+    }
+
+    function distributeTokens(
+        IAuctionData.State storage s,
+        IAuctionData.Status memory i
+        )
+        private
+    {
+        uint gasLimit = MIN_GAS_TO_DISTRIBUTE_TOKENS;
+        uint j = s.numDistributed;
+        uint numUsers = s.users.length;
+        while (j < numUsers && gasleft() >= gasLimit) {
+            withdrawFor(s, i, s.users[j]);
+            j++;
+        }
+        s.numDistributed = j;
+
+        // TODO: If too late for the owner we could reward msg.sender here with a
+        //       part of the stake or owner fees (proportionally to numWithdrawn/users.length)
+        //       May not be worth it because this is not a scenario that will be common,
+        //       users can always just withdraw their tokens with withdraw()
+    }
+
+    function collectTradingFees(
+        IAuctionData.State storage s,
+        uint feeBips,
         address payable feeRecipient
         )
         private
     {
-        // collect remaining ask token to fee recipient
-        if (s.askToken != address(0x0)) {
-            payToken(
-                feeRecipient,
-                s.askToken,
-                ERC20(s.askToken).balanceOf(address(this))
-            );
-        }
+        uint askFee = s.askAmount.mul(feeBips) / 10000;
+        uint bidFee = s.bidAmount.mul(feeBips) / 10000;
 
-         // collect remaining bid token to fee recipient
-        if (s.bidToken != address(0x0)) {
-            payToken(
-                feeRecipient,
-                s.bidToken,
-                ERC20(s.bidToken).balanceOf(address(this))
-            );
-        }
-
-        // collect remaining Ether to fee recipient
         payToken(
             feeRecipient,
-            address(0x0),
-            address(this).balance
+            s.askToken,
+            askFee
+        );
+
+        payToken(
+            feeRecipient,
+            s.bidToken,
+            bidFee
         );
     }
 
-    function returnDeposits(
-        IAuctionData.State storage s
+    function returnDeposit(
+        IAuctionData.State storage s,
+        address payable user
         )
         private
     {
-        for (uint i = 0; i < s.users.length; i++) {
-            address payable user = s.users[i];
-            IAuctionData.Account storage a = s.accounts[user];
+        IAuctionData.Account storage a = s.accounts[user];
 
-            payToken(user, s.askToken, a.askAccepted.add(a.askQueued));
-            payToken(user, s.bidToken, a.bidAccepted.add(a.bidQueued));
-        }
+        payToken(user, s.askToken, a.askAmount);
+        payToken(user, s.bidToken, a.bidAmount);
     }
 
-    function settleTrades(
-        IAuctionData.State storage s
+    function settleTrade(
+        IAuctionData.State storage s,
+        address payable user
         )
         private
     {
-        uint[] memory bips = calcUserFeeRebateBips(s);
+        uint bips = calcUserFeeRebateBips(s, user);
 
+        uint askOwnerFee = s.askAmount.mul(s.fees.ownerFeeBips) / 10000;
         uint askTakerFee = s.askAmount.mul(s.fees.takerFeeBips) / 10000;
         uint askSettlement = s.askAmount
+            .sub(askOwnerFee)
             .sub(askTakerFee)
             .sub(s.askAmount.mul(s.fees.protocolFeeBips) / 10000);
 
+        uint bidOwnerFee = s.bidAmount.mul(s.fees.ownerFeeBips) / 10000;
         uint bidTakerFee = s.bidAmount.mul(s.fees.takerFeeBips) / 10000;
         uint bidSettlement = s.bidAmount
+            .sub(bidOwnerFee)
             .sub(bidTakerFee)
             .sub(s.bidAmount.mul(s.fees.protocolFeeBips) / 10000);
 
-        address payable user;
-        Trading memory t = Trading(0, 0, 0, 0, 0, 0, 0, 0);
+        Trading memory t = Trading(0, 0, 0, 0, 0, 0);
 
-        for (uint i = 0; i < s.users.length; i++) {
-            user = s.users[i];
-            IAuctionData.Account storage a = s.accounts[user];
+        IAuctionData.Account storage a = s.accounts[msg.sender];
 
-            t.askPaid = a.askAccepted;
-            t.askReceived =  askSettlement.mul(a.bidAccepted) / s.bidAmount;
-            t.askReturend = a.askQueued;
-            t.askFeeRebate = askTakerFee.mul(bips[i]) / 10000;
+        t.askPaid = a.askAmount;
+        t.askReceived = askSettlement.mul(a.bidAmount) / s.bidAmount;
+        t.askFeeRebate = askTakerFee.mul(bips) / 10000;
 
-            t.bidPaid = a.bidAccepted;
-            t.bidReceived =  bidSettlement.mul(a.askAccepted) / s.askAmount;
-            t.bidReturend = a.bidQueued;
-            t.bidFeeRebate = bidTakerFee.mul(bips[i]) / 10000;
+        t.bidPaid = a.bidAmount;
+        t.bidReceived = bidSettlement.mul(a.askAmount) / s.askAmount;
+        t.bidFeeRebate = bidTakerFee.mul(bips) / 10000;
 
-            payUser(s.askToken, s.bidToken, user, t);
-        }
+        payUser(s.askToken, s.bidToken, msg.sender, t);
     }
 
     function calcUserFeeRebateBips(
-        IAuctionData.State storage s
+        IAuctionData.State storage s,
+        address user
         )
         private
         view
-        returns (uint[] memory bips)
+        returns (uint bips)
     {
-      uint size = s.users.length;
-      uint total;
-      bips = new uint[](size);
+        IAuctionData.Account storage a = s.accounts[user];
 
-      uint i;
-      for (i = 0; i < size; i++) {
-          IAuctionData.Account storage a = s.accounts[s.users[i]];
+        uint total = (s.totalBidRebateWeight / s.bidAmount)
+            .add(s.totalAskRebateWeight / s.askAmount);
 
-          bips[i] = (a.bidFeeRebateWeight / s.bidAmount)
-              .add(a.askFeeRebateWeight / s.askAmount);
+        bips = (a.bidRebateWeight / s.bidAmount)
+            .add(a.askRebateWeight / s.askAmount);
 
-          total = total.add(bips[i]);
-      }
+        total /= 10000;
+        assert(total > 0);
 
-      total /= 10000;
-      assert(total > 0);
-
-      for (i = 0; i < size; i++) {
-          bips[i] /= total;
-      }
+        bips /= total;
     }
 
     function payUser(
@@ -211,17 +292,9 @@ library AuctionSettlement
         )
         private
     {
-        payToken(
-            user,
-            askToken,
-            t.askReceived.add(t.askReturend).add(t.askFeeRebate)
-        );
+        payToken(user, askToken, t.askReceived.add(t.askFeeRebate));
 
-        payToken(
-            user,
-            bidToken,
-            t.bidReceived.add(t.bidReturend).add(t.bidFeeRebate)
-        );
+        payToken(user, bidToken, t.bidReceived.add(t.bidFeeRebate));
 
         emit Trade(
             user,
@@ -235,13 +308,13 @@ library AuctionSettlement
         address         token,
         uint            amount
         )
-        private
+        internal
     {
         if(amount > 0) {
             if (token == address(0x0)) {
                 target.transfer(amount);
             } else {
-                require(token.safeTransfer(target, amount));
+                require(token.safeTransfer(target, amount), "transfer failed");
             }
         }
     }

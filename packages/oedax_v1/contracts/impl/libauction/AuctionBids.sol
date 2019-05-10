@@ -21,22 +21,20 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/MathUint.sol";
 
 import "./AuctionAccount.sol";
-import "./AuctionQueue.sol";
+import "./AuctionSettlement.sol";
 import "./AuctionStatus.sol";
 
-/// @title AuctionAsks.
+/// @title AuctionBids
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionBids
 {
     using MathUint          for uint;
     using AuctionStatus     for IAuctionData.State;
     using AuctionAccount    for IAuctionData.State;
-    using AuctionQueue      for IAuctionData.State;
 
     event Bid(
         address user,
         uint    accepted,
-        uint    queued,
         uint    time
     );
 
@@ -45,65 +43,52 @@ library AuctionBids
         uint amount
         )
         internal
-        returns (
-            uint accepted,
-            uint queued
-        )
+        returns (uint accepted)
     {
         require(amount > 0, "zero amount");
+        require(amount >= s.minBidAmount, "bid amount too small");
 
-        // calculate the current-state
         IAuctionData.Status memory i = s.getAuctionStatus();
-        require (i.timeRemaining > 0, "aution ended");
+        require(s.isAuctionOpen(i), "auction needs to be open");
+        require(i.bidAllowed > 0, "not allowed");
+
+        if (amount > i.bidAllowed) {
+            accepted = i.bidAllowed;
+            AuctionSettlement.payToken(msg.sender, s.bidToken, amount - i.bidAllowed);
+        } else {
+            accepted = amount;
+        }
 
         if (s.oedax.logParticipant(msg.sender)) {
             s.users.push(msg.sender);
         }
 
-        uint elapsed = block.timestamp - s.startTime;
-        uint weight = s.T.sub(elapsed);
-        uint dequeued;
-
-        if (amount > i.bidAllowed) {
-            // Part of the amount will be put in the queue.
-            accepted = i.bidAllowed;
-            queued = amount - i.bidAllowed;
-
-            if (s.Q.amount > 0) {
-                if (s.Q.isBidding) {
-                    // Before this BID, the queue is for BIDs
-                    assert(accepted == 0);
-                } else {
-                    // Before this BID, the queue is for ASKs, therefore we must have
-                    // consumed all the pending ASKs in the queue.
-                    assert(accepted > 0);
-                    s.dequeue(s.Q.amount);
-                }
-            }
-            s.Q.isBidding = true;
-            s.enqueue(queued, weight);
-        } else {
-            // All amount are accepted into the auction.
-            accepted = amount;
-            queued = 0;
-            dequeued = (accepted.mul(s.S) / i.actualPrice).min(s.Q.amount);
-            if (dequeued > 0) {
-                assert(s.Q.isBidding == false);
-                s.dequeue(dequeued);
-            }
-        }
-
         // Update the book keeping
         IAuctionData.Account storage a = s.accounts[msg.sender];
+        uint elapsed = block.timestamp - s.startTime;
 
-        a.bidAccepted = a.bidAccepted.add(accepted);
-        a.bidFeeRebateWeight = a.bidFeeRebateWeight.add(accepted.mul(weight));
+        a.bidAmount = a.bidAmount.add(accepted);
+        uint extraRebateWeight = accepted.mul(s.T.sub(elapsed));
+        a.bidRebateWeight = a.bidRebateWeight.add(extraRebateWeight);
+        s.totalBidRebateWeight = s.totalBidRebateWeight.add(extraRebateWeight);
+
         s.bidAmount = s.bidAmount.add(accepted);
+
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(elapsed);
+            s.bidShifts.push(s.bidShift);
+        }
+
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(elapsed);
+            s.askShifts.push(s.askShift);
+        }
 
         emit Bid(
             msg.sender,
             accepted,
-            queued,
             block.timestamp
         );
     }

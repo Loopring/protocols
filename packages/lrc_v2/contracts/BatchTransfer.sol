@@ -1,4 +1,4 @@
-pragma solidity 0.5.7;
+pragma solidity 0.5.2;
 
 contract Transferable {
     function transfer(address to, uint256 value) public returns (bool);

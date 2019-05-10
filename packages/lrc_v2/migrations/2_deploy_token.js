@@ -1,5 +1,5 @@
-var LRC_v2 = artifacts.require("./LRC_v2.sol");
+var LRCToken = artifacts.require("./NewLRCToken.sol");
 
 module.exports = function(deployer) {
-  deployer.deploy(LRC_v2);
+  deployer.deploy(LRCToken);
 };

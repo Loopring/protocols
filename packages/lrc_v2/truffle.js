@@ -9,7 +9,7 @@ module.exports = {
           enabled: true
         }
       },
-      version: "0.5.7"
+      version: "0.5.2"
     }
   },
 

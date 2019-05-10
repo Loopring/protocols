@@ -56,10 +56,12 @@ contract IOedax is Ownable
     address payable public feeRecipient;
 
     address     public curveAddress;
-    uint16      public settleGracePeriod;
+    uint16      public settleGracePeriodBase;
+    uint16      public settleGracePeriodPerUser;
     uint16      public minDuration;
     uint16      public maxDuration;
     uint16      public protocolFeeBips;
+    uint16      public ownerFeeBips;
     uint16      public takerFeeBips;
     uint        public creatorEtherStake;
     address[]   public auctions;
@@ -88,8 +90,10 @@ contract IOedax is Ownable
     ///      Only Oedax owner can invoke this method.
     /// @param _feeRecipient The address to collect all fees
     /// @param _curve The address of price curve contract
-    /// @param  _settleGracePeriodMinutes The time window in which only aucton owner
-    ///         can settle the auction.
+    /// @param  _settleGracePeriodBaseMinutes The base time window in which
+    ///          the auction owner needs to settle the auction.
+    /// @param  _settleGracePeriodPerUserSeconds The delta time window in which
+    ///          the auction owner needs to settle the auction.
     /// @param _minDurationMinutes The minimum auction duration
     /// @param _maxDurationMinutes The maximum auction duration
     /// @param _protocolFeeBips The bips (0.01%) of bid/ask tokens to pay the protocol
@@ -98,10 +102,12 @@ contract IOedax is Ownable
     function updateSettings(
         address payable _feeRecipient,
         address _curve,
-        uint16  _settleGracePeriodMinutes,
+        uint16  _settleGracePeriodBaseMinutes,
+        uint16  _settleGracePeriodPerUserSeconds,
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
+        uint16  _ownerFeeBips,
         uint16  _takerFeeBips,
         uint    _creatorEtherStake
         )
@@ -127,18 +133,24 @@ contract IOedax is Ownable
     /// @dev Create a new auction
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
+    /// @param minAskAmount The minimum ask amount.
+    /// @param minBidAmount The minimum bid amount.
     /// @param P Numerator part of the target price `p`.
     /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T The auction duration in second.
+    /// @param T1 The maximum auction duration in second.
+    /// @param T2 The maximum auction duration in second.
     /// @return auctionAddr Auction address.
     function createAuction(
         address askToken,
         address bidToken,
+        uint    minAskAmount,
+        uint    minBidAmount,
         uint64  P,
         uint64  S,
         uint8   M,
-        uint    T
+        uint    T1,
+        uint    T2
         )
         public
         payable

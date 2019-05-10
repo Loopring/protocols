@@ -24,43 +24,33 @@ library IAuctionData
     struct Status
     {
       bool    isBounded;
-      uint    timeRemaining;
+      uint    duration;
 
       uint    actualPrice;
       uint    askPrice;
       uint    bidPrice;
+
+      uint    newAskShift;
+      uint    newBidShift;
+
       uint    askAllowed;
       uint    bidAllowed;
     }
 
-    struct QueueItem
-    {
-        address user;
-        uint    queued;
-        uint    weight;
-    }
 
     struct Account
     {
-        uint    bidAccepted;
-        uint    bidQueued;
-        uint    bidFeeRebateWeight;
+        uint    bidAmount;
+        uint    bidRebateWeight;
 
-        uint    askAccepted;
-        uint    askQueued;
-        uint    askFeeRebateWeight;
-    }
-
-    struct Queue
-    {
-        QueueItem[] items;
-        bool        isBidding;
-        uint        amount;
+        uint    askAmount;
+        uint    askRebateWeight;
     }
 
     struct Fees
     {
         uint16  protocolFeeBips;
+        uint16  ownerFeeBips;
         uint16  takerFeeBips;
         uint    creatorEtherStake;
     }
@@ -70,42 +60,58 @@ library IAuctionData
         // -- The following fields never change once initialized:
         IOedax  oedax;
         ICurve  curve;
-        Fees    fees;
+        uint    C;  // the curve param C
 
         uint    auctionId;
+
+        Fees    fees;
+
         address askToken;
         address bidToken;
+
         uint    askBaseUnit;
         uint    bidBaseUnit;
+
+        uint    minAskAmount;
+        uint    minBidAmount;
+
         uint    startTime;
 
-        uint    P;
-        uint    S;
-        uint    M;
-        uint    T;
+        uint    P;  // target price
+        uint    S;  // price base， P/S is the float value of the target price.
+        uint    M;  // price factor
+        uint    T;  // auction max duration
 
         // -- The following fields WILL change on bids and asks.
-        Queue   Q;
-        uint    settlementTime;
+
         uint    askAmount;
         uint    bidAmount;
 
-        // user => account
+        uint    askShift;
+        uint    bidShift;
+
+        uint[]  askShifts;
+        uint[]  bidShifts;
+
+        uint    totalBidRebateWeight;
+        uint    totalAskRebateWeight;
+
+        // user => account)
         mapping (address => Account) accounts;
         address payable[] users;
+
+        uint numDistributed;
     }
 
     event Bid(
         address user,
         uint    accepted,
-        uint    queued,
         uint    time
     );
 
     event Ask(
         address user,
         uint    accepted,
-        uint    queued,
         uint    time
     );
 }

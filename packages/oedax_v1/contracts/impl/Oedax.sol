@@ -24,12 +24,11 @@ import "../lib/NoDefaultFunc.sol";
 
 import "./Auction.sol";
 
-/// @title An Implementation of IOedax.
+/// @title Implementation of IOedax.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Oedax is IOedax, NoDefaultFunc
 {
     using MathUint          for uint;
-    using MathUint          for uint64;
     using ERC20SafeTransfer for address;
 
     // -- Constructor --
@@ -49,10 +48,12 @@ contract Oedax is IOedax, NoDefaultFunc
     function updateSettings(
         address payable _feeRecipient,
         address _curve,
-        uint16  _settleGracePeriodMinutes,
+        uint16  _settleGracePeriodBaseMinutes,
+        uint16  _settleGracePeriodPerUserSeconds,
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
+        uint16  _ownerFeeBips,
         uint16  _takerFeeBips,
         uint    _creatorEtherStake
         )
@@ -61,22 +62,26 @@ contract Oedax is IOedax, NoDefaultFunc
     {
         require(_feeRecipient != address(0x0), "zero address");
         require(_curve != address(0x0), "zero address");
-        require(_settleGracePeriodMinutes > 0, "zero value");
+        require(_settleGracePeriodBaseMinutes > 0, "zero value");
+        require(_settleGracePeriodPerUserSeconds > 0, "zero value");
         require(_minDurationMinutes > 0, "zero value");
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
         require(_protocolFeeBips <= 250, "value too large");
+        require(_ownerFeeBips <= 250, "value too large");
         require(_takerFeeBips <= 250, "value too large");
         require(_creatorEtherStake > 0, "zero value");
 
         curveAddress = _curve;
         feeRecipient = _feeRecipient;
 
-        settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
+        settleGracePeriodBase = _settleGracePeriodBaseMinutes * 1 minutes;
+        settleGracePeriodPerUser = _settleGracePeriodPerUserSeconds;
         minDuration = _minDurationMinutes * 1 minutes;
         maxDuration = _maxDurationMinutes * 1 minutes;
 
         protocolFeeBips = _protocolFeeBips;
+        ownerFeeBips = _ownerFeeBips;
         takerFeeBips = _takerFeeBips;
         creatorEtherStake = _creatorEtherStake * 1 ether;
 
@@ -97,24 +102,21 @@ contract Oedax is IOedax, NoDefaultFunc
     function createAuction(
         address askToken,
         address bidToken,
+        uint    minAskAmount,
+        uint    minBidAmount,
         uint64  P,
         uint64  S,
         uint8   M,
-        uint    T
+        uint    T1,
+        uint    T2
         )
         public
         payable
         returns (address payable auctionAddr)
     {
-        require(askToken != bidToken, "same token");
-        require(S >= 5 && S <= 10);
-        require(P > 0 && P <= uint(10) ** 20);
-        require(M > 1 && M <= 20);
-        require(P.mul(M) > P / M);
-        require(T >= minDuration && T <= maxDuration, "invalid duration");
-
-        require(curveAddress != address(0x0), "empty curve");
         require(msg.value >= creatorEtherStake, "insuffcient ETH fee");
+        require(curveAddress != address(0x0), "empty curve");
+        require(T2 >= minDuration && T2 <= maxDuration, "invalid duration");
         require(
             tokenRankMap[bidToken] > tokenRankMap[askToken],
             "bid (quote) token must have a higher rank than ask (base) token"
@@ -127,7 +129,9 @@ contract Oedax is IOedax, NoDefaultFunc
             auctionId,
             askToken,
             bidToken,
-            P, S, M, T
+            minAskAmount,
+            minBidAmount,
+            P, S, M, T1, T2
         );
 
         auctionAddr = address(auction);
