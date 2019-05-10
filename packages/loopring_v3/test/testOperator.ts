@@ -1,29 +1,21 @@
 import BN = require("bn.js");
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo } from "./types";
+import { Block, Deposit, Operator, OrderInfo, RingInfo, Wallet } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let exchangeId = 0;
+  let operator: any;
 
-  // let operator: any;
+  const numSubOperators = 4;
+  let subOperators: Operator[] = [];
 
-  before( async () => {
-    exchangeTestUtil = new ExchangeTestUtil();
-    await exchangeTestUtil.initialize(accounts);
-  });
-
-  const createExchange = async (bSetupTestState: boolean = true) => {
-    exchangeId = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
-    exchange = exchangeTestUtil.exchange;
-  };
-
-  before( async () => {
-    exchangeTestUtil = new ExchangeTestUtil();
-    await exchangeTestUtil.initialize(accounts);
-  });
+  interface TestDepositBlock {
+    block: Block;
+    deposits: Deposit[];
+  }
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
@@ -32,46 +24,130 @@ contract("Exchange", (accounts: string[]) => {
 
   beforeEach(async () => {
     exchangeId = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    exchange = exchangeTestUtil.exchange;
+    operator = await exchangeTestUtil.contracts.Operator.new(exchange.address);
+    await exchangeTestUtil.setOperatorContract(operator);
+
+    subOperators = [];
+    for (let i = 0; i < numSubOperators; i++) {
+      const subOperator = await exchangeTestUtil.createOperator(
+        exchangeId, exchangeTestUtil.testContext.operators[i],
+      );
+      subOperators.push(subOperator);
+    }
+
+    await exchangeTestUtil.commitDeposits(exchangeId);
+    await exchangeTestUtil.verifyPendingBlocks(exchangeId);
   });
+
+  const commitDepositBlock = async () => {
+    await exchangeTestUtil.doRandomDeposit(exchangeId);
+    const pendingDeposits = exchangeTestUtil.getPendingDeposits(exchangeId);
+    const blocks = await exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits);
+    assert(blocks.length === 1);
+    const block: TestDepositBlock = {
+      block: blocks[0],
+      deposits: pendingDeposits,
+    };
+    return block;
+  };
+
+  const commitWithdrawalBlock = async (deposits: Deposit[]) => {
+    for (const deposit of deposits) {
+      exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeId,
+        deposit.accountID,
+        exchangeTestUtil.getTokenAddressFromID(deposit.tokenID),
+        deposit.amount,
+        "LRC",
+        new BN(0),
+        0,
+        exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
+      );
+    }
+    await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);
+  };
+
+  const getActiveOperator = async () => {
+    // Write your active operator selection logic here
+    return subOperators[exchangeTestUtil.getRandomInt(subOperators.length)];
+  };
 
   describe("Operator", function() {
     this.timeout(0);
 
-    it("Sample test", async () => {
-      // operator = await exchangeTestUtil.contracts.Operator.new(exchange.address);
-      // await exchange.setOperator(operator.address, {from: exchangeTestUtil.exchangeOwner});
+    it("Commit and Verify", async () => {
+      for (let i = 0; i < 8; i++) {
+        // Commit a deposit block
+        await exchangeTestUtil.setActiveOperator(await getActiveOperator());
+        const block = await commitDepositBlock();
+        // Wait a bit
+        await exchangeTestUtil.advanceBlockTimestamp(100);
+      }
+      // Verify all blocks
+      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+    });
 
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID: exchangeId,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        orderB:
-          {
-            realmID: exchangeId,
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("5", "ether")),
-            amountB: new BN(web3.utils.toWei("45", "ether")),
-            amountF: new BN(web3.utils.toWei("3", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5", "ether")) },
-          orderB: { filledFraction: 1.0 },
-        },
-      };
+    it("Distribute withdrawals", async () => {
+      // Distribution on time
+      {
+        // Commit a deposit block
+        const activeOperator = await getActiveOperator();
+        await exchangeTestUtil.setActiveOperator(activeOperator);
+        const blockA = await commitDepositBlock();
+        await commitWithdrawalBlock(blockA.deposits);
+        // Verify all blocks
+        await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+        // Distribute the withdrawals on time
+        await operator.distributeWithdrawals(
+          blockA.block.blockIdx + 1, blockA.deposits.length, {from: activeOperator.owner},
+        );
+      }
 
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeId, ring);
+      // Wait a bit
+      await exchangeTestUtil.advanceBlockTimestamp(1000);
 
-      await exchangeTestUtil.commitDeposits(exchangeId);
-      await exchangeTestUtil.commitRings(exchangeId);
+      // Distribution too late
+      {
+        // Commit another deposit block
+        const activeOperator = await getActiveOperator();
+        await exchangeTestUtil.setActiveOperator(activeOperator);
+        const blockB = await commitDepositBlock();
+        await commitWithdrawalBlock(blockB.deposits);
+        // Verify all blocks
+        await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+        // Distribute the withdrawals too late
+        await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
+        // This call can also happen directly on the Exchange contract
+        await operator.distributeWithdrawals(
+          blockB.block.blockIdx + 1, blockB.deposits.length, {from: activeOperator.owner},
+        );
+      }
+    });
 
+    it("Withdraw block fee", async () => {
+      // Commit a deposit block
+      const activeOperator = await getActiveOperator();
+      await exchangeTestUtil.setActiveOperator(activeOperator);
+      const blockA = await commitDepositBlock();
+      // Verify all blocks
+      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      // Withdraw the block fee
+      await operator.withdrawBlockFee(blockA.block.blockIdx, {from: activeOperator.owner});
+    });
+
+    it("Revert", async () => {
+      const activeOperator = await getActiveOperator();
+      await exchangeTestUtil.setActiveOperator(activeOperator);
+      // Commit a deposit block
+      const blockA = await commitDepositBlock();
+      // Wait until we can't submit the proof anymore
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1);
+      // Revert the block
+      await exchangeTestUtil.revertBlock(blockA.block.blockIdx);
+      // Now commit the deposits again
+      await exchangeTestUtil.commitDeposits(exchangeId, blockA.deposits);
+      // Verify all blocks
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 

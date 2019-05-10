@@ -761,15 +761,17 @@ contract IExchange
     /// @dev Allows the operator to withdraw the fees he earned by processing the
     ///      deposit and onchain withdrawal requests.
     ///
-    ///      Can be called by anyone. The funds will be sent to the operator.
+    ///      This function is only callable by the exchange operator.
     ///
     ///      The block fee can only be withdrawn from finalized blocks
     ///      (i.e. blocks that can never be reverted).
     ///
     /// @param  blockIdx The block index to withdraw the funds for
+    /// @param  feeRecipient The address that receives the block fee
     /// @return feeAmount The amount of ETH earned in the block and sent to the operator
     function withdrawBlockFee(
-        uint blockIdx
+        uint blockIdx,
+        address payable feeRecipient
         )
         external
         returns (uint feeAmount);

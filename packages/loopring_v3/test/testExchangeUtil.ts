@@ -49,6 +49,9 @@ export class ExchangeTestUtil {
   public exchangeOperator: string;
   public exchangeId: number;
 
+  public operator: any;
+  public activeOperator: Operator;
+
   public minerAccountID: number[] = [];
   public feeRecipientAccountID: number[] = [];
 
@@ -667,7 +670,9 @@ export class ExchangeTestUtil {
     // const activeOperator = await this.getActiveOperator(realmID);
     // assert.equal(activeOperator.operatorID, operator.operatorID);
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
-    const tx = await this.exchange.commitBlock(
+
+    const operatorContract = this.operator ? this.operator : this.exchange;
+    const tx = await operatorContract.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.toBN(blockSize),
       web3.utils.hexToBytes(data),
@@ -739,7 +744,8 @@ export class ExchangeTestUtil {
     // console.log(proof);
     // console.log(this.flattenProof(proof));
 
-    const tx = await this.exchange.verifyBlock(
+    const operatorContract = this.operator ? this.operator : this.exchange;
+    const tx = await operatorContract.verifyBlock(
       web3.utils.toBN(blockIdx),
       proofFlattened,
       {from: this.exchangeOperator},
@@ -948,7 +954,16 @@ export class ExchangeTestUtil {
   }
 
   public async getActiveOperator(realmID: number) {
-    return this.operators[realmID];
+    return this.activeOperator ? this.activeOperator : this.operators[realmID];
+  }
+
+  public async setOperatorContract(operator: any) {
+    await this.exchange.setOperator(operator.address, {from: this.exchangeOwner});
+    this.operator = operator;
+  }
+
+  public async setActiveOperator(operator: Operator) {
+    this.activeOperator = operator;
   }
 
   public async commitWithdrawalRequests(onchain: boolean, realmID: number, shutdown: boolean = false) {
@@ -1463,7 +1478,8 @@ export class ExchangeTestUtil {
   }
 
   public async revertBlock(blockIdx: number) {
-    await this.exchange.revertBlock(
+    const operatorContract = this.operator ? this.operator : this.exchange;
+    await operatorContract.revertBlock(
       web3.utils.toBN(blockIdx),
       {from: this.exchangeOperator},
     );

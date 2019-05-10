@@ -333,7 +333,8 @@ library ExchangeWithdrawals
 
     function withdrawBlockFee(
         ExchangeData.State storage S,
-        uint blockIdx
+        uint blockIdx,
+        address payable feeRecipient
         )
         public
         returns (uint feeAmountToOperator)
@@ -393,7 +394,7 @@ library ExchangeWithdrawals
         }
         // Transfer the fee to the operator
         if (feeAmountToOperator > 0) {
-            S.operator.transfer(feeAmountToOperator);
+            feeRecipient.transfer(feeAmountToOperator);
         }
 
         emit BlockFeeWithdrawn(blockIdx, feeAmount);

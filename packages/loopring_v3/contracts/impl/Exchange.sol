@@ -620,14 +620,15 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     }
 
     function withdrawBlockFee(
-        uint blockIdx
+        uint blockIdx,
+        address payable feeRecipient
         )
         external
         onlyOperator
         nonReentrant
         returns (uint feeAmount)
     {
-        feeAmount = state.withdrawBlockFee(blockIdx);
+        feeAmount = state.withdrawBlockFee(blockIdx, feeRecipient);
     }
 
     function distributeWithdrawals(

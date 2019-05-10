@@ -40,7 +40,7 @@ contract("Exchange", (accounts: string[]) => {
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
     const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, token);
 
-    await exchange.withdrawBlockFee(blockIdx, {from: operator, gasPrice: 0});
+    await exchange.withdrawBlockFee(blockIdx, operator, {from: operator, gasPrice: 0});
 
     const balanceOperatorAfter = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
@@ -544,7 +544,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Try to withdraw before the block is finalized
           await expectThrow(
-            exchange.withdrawBlockFee(blockIdx, {from: exchangeTestUtil.exchangeOperator}),
+            exchange.withdrawBlockFee(blockIdx, exchangeTestUtil.exchangeOperator,
+              {from: exchangeTestUtil.exchangeOperator}),
             "BLOCK_NOT_FINALIZED",
           );
 
@@ -559,7 +560,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Try to withdraw again
           await expectThrow(
-            exchange.withdrawBlockFee(blockIdx, {from: exchangeTestUtil.exchangeOperator}),
+            exchange.withdrawBlockFee(blockIdx, exchangeTestUtil.exchangeOperator,
+              {from: exchangeTestUtil.exchangeOperator}),
             "FEE_WITHDRAWN_ALREADY",
           );
         });
@@ -683,7 +685,8 @@ contract("Exchange", (accounts: string[]) => {
           // Try to withdraw a block fee from a  block type doesn't have any
           const blockIdx = await exchange.getBlockHeight();
           await expectThrow(
-            exchange.withdrawBlockFee(blockIdx, {from: exchangeTestUtil.exchangeOperator}),
+            exchange.withdrawBlockFee(blockIdx, exchangeTestUtil.exchangeOperator,
+            {from: exchangeTestUtil.exchangeOperator}),
             "BLOCK_HAS_NO_OPERATOR_FEE",
           );
         });
@@ -726,7 +729,7 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
         // Try to verify a block
         await expectThrow(
-          exchange.withdrawBlockFee(1,
+          exchange.withdrawBlockFee(1, exchangeTestUtil.exchangeOperator,
             {from: exchangeTestUtil.testContext.orderOwners[0]}),
           "UNAUTHORIZED",
         );

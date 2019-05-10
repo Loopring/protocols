@@ -63,7 +63,8 @@ contract Operator {
         )
         external
     {
-        uint feeAmount = exchange.withdrawBlockFee(blockIdx);
+        /*uint feeAmount = */
+        exchange.withdrawBlockFee(blockIdx, msg.sender);
     }
 
     function distributeWithdrawals(
