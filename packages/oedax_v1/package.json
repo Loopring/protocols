@@ -36,7 +36,7 @@
     "chai": "^4.2.0",
     "copyfiles": "^2.1.0",
     "dirty-chai": "^2.0.1",
-    "ganache-cli": "6.2.4",
+    "ganache-cli": "6.4.3",
     "mocha": "^5.2.0",
     "node": "8.11.3",
     "npm": "^6.9.0",
@@ -72,7 +72,7 @@
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "solidity-coverage": "^0.5.11",
-    "truffle": "5.0.0",
+    "truffle": "5.0.17",
     "truffle-hdwallet-provider": "web3-one"
   }
 }
