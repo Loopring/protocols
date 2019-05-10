@@ -54,6 +54,9 @@ contract IAuction is Ownable
     /// @dev Settles the auction.
     /// After the auction ends, everyone can settle the auction by calling this method.
     ///
+    /// It may be necessary to call this function multiple times depending on how much gas
+    /// is sent for this transaction and how many users need to have their tokens distributed.
+    ///
     /// The following is done when settling an auction:
     ///     - All tokens are distributed to the users
     ///     - All fees are distributed to the fee recipients

@@ -195,14 +195,14 @@ contract Auction is IAuction
             uint bidAllowed
         )
     {
-         IAuctionData.Status memory i = state.getAuctionStatus();
+        IAuctionData.Status memory i = state.getAuctionStatus();
 
-         isBounded = i.isBounded;
-         actualPrice = i.actualPrice;
-         askPrice = i.askPrice;
-         bidPrice = i.bidPrice;
-         askAllowed = i.askAllowed;
-         bidAllowed = i.bidAllowed;
+        isBounded = i.isBounded;
+        actualPrice = i.actualPrice;
+        askPrice = i.askPrice;
+        bidPrice = i.bidPrice;
+        askAllowed = i.askAllowed;
+        bidAllowed = i.bidAllowed;
 
         uint elapsed = block.timestamp - state.startTime;
         timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;

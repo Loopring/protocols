@@ -93,7 +93,7 @@ contract IOedax is Ownable
     /// @param  _settleGracePeriodBaseMinutes The base time window in which
     ///          the auction owner needs to settle the auction.
     /// @param  _settleGracePeriodPerUserSeconds The delta time window in which
-    ///          only auction owner needs to settle the auction.
+    ///          the auction owner needs to settle the auction.
     /// @param _minDurationMinutes The minimum auction duration
     /// @param _maxDurationMinutes The maximum auction duration
     /// @param _protocolFeeBips The bips (0.01%) of bid/ask tokens to pay the protocol

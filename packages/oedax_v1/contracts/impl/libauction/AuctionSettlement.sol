@@ -49,7 +49,7 @@ library AuctionSettlement
     using AuctionStatus     for IAuctionData.State;
 
     uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
-    uint32 public constant MIN_GAS_TO_WITHDRAW_OWNER_FUNDS = 100000;
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_FEES = 100000;
 
     function settle(
         IAuctionData.State storage s,
@@ -71,7 +71,7 @@ library AuctionSettlement
             // If the caller also distributed tokens for users in this transaction
             // we check here if we still have enough gas to distribute the fees.
             // If not then it's the responsibility of the caller to set a correct gas limit.
-            if (!bHasDistributedTokens || gasleft() >= MIN_GAS_TO_WITHDRAW_OWNER_FUNDS) {
+            if (!bHasDistributedTokens || gasleft() >= MIN_GAS_TO_DISTRIBUTE_FEES) {
                 address payable _owner = address(uint160(owner));
                 distributeFees(s, i, _owner);
             }
@@ -118,7 +118,7 @@ library AuctionSettlement
             .add(s.oedax.settleGracePeriodBase());
         if (block.timestamp.sub(closeTime) > maxGracePeriod) {
             amountStakeToOwner = 0;
-            // Reward msg.sender with half the stake and the owner fees
+            // Reward msg.sender with 25% of the stake and the owner fees
             amountStakeToCaller = s.fees.creatorEtherStake / 4;
             ownerFeeRecipient = msg.sender;
         }
