@@ -18,12 +18,12 @@ pragma solidity 0.5.7;
 
 import "../DummyToken.sol";
 
-contract INDA is DummyToken {
+contract FOO is DummyToken {
 
     constructor() DummyToken(
-        "INDIVISIBLE_A",
-        "INDA",
-        0,
+        "FOO_TEST",
+        "FOO",
+        18,
         10 ** 27
     ) public
     {

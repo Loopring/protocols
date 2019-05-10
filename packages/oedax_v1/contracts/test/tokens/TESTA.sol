@@ -18,12 +18,12 @@ pragma solidity 0.5.7;
 
 import "../DummyToken.sol";
 
-contract RDN is DummyToken {
+contract TESTA is DummyToken {
 
     constructor() DummyToken(
-        "RDN_TEST",
-        "RDN",
-        18,
+        "TEST_A",
+        "TESTA",
+        0,
         10 ** 27
     ) public
     {

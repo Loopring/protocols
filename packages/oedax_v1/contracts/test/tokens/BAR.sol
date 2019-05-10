@@ -18,12 +18,12 @@ pragma solidity 0.5.7;
 
 import "../DummyToken.sol";
 
-contract INDB is DummyToken {
+contract BAR is DummyToken {
 
     constructor() DummyToken(
-        "INDIVISIBLE_B",
-        "INDB",
-        0,
+        "BAR_TEST",
+        "BAR",
+        18,
         10 ** 27
     ) public
     {
