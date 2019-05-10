@@ -42,8 +42,6 @@ contract Auction is IAuction
     using AuctionSettlement for IAuctionData.State;
     using AuctionStatus     for IAuctionData.State;
 
-    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
-
     bool staked;
 
     modifier onlyOedax {
@@ -162,7 +160,8 @@ contract Auction is IAuction
     function settle()
         public
     {
-        state.settle();
+        address payable _owner = address(uint160(owner));
+        state.settle(_owner);
     }
 
     function withdraw()
@@ -183,38 +182,6 @@ contract Auction is IAuction
         }
     }
 
-    function distributeTokens()
-        external
-    {
-        require(state.settlementTime > 0, "auction needs to be settled");
-
-        IAuctionData.Status memory i = state.getAuctionStatus();
-
-        uint gasLimit = MIN_GAS_TO_DISTRIBUTE_TOKENS;
-        uint j = state.numDistributed;
-        uint numUsers = state.users.length;
-        while (j < numUsers && gasleft() >= gasLimit) {
-            state.withdrawFor(i, state.users[j]);
-            j++;
-        }
-        state.numDistributed = j;
-        if (state.numDistributed == numUsers) {
-            state.distributedTime = block.timestamp;
-        }
-
-        // TODO: If too late for the owner we could reward msg.sender here with a
-        //       part of the stake or owner fees (proportionally to numWithdrawn/users.length)
-        //       May not be worth it because this is not a scenario that will be common,
-        //       users can always just withdraw their tokens with withdraw()
-    }
-
-    function withdrawOwnerStakeAndFees()
-        external
-    {
-        address payable _owner = address(uint160(owner));
-        state.withdrawOwnerStakeAndFees(_owner);
-    }
-
     function getStatus()
         external
         view
@@ -228,19 +195,17 @@ contract Auction is IAuction
             uint bidAllowed
         )
     {
-         IAuctionData.Status memory i = state.getAuctionStatus();
+        IAuctionData.Status memory i = state.getAuctionStatus();
 
-         isBounded = i.isBounded;
-         actualPrice = i.actualPrice;
-         askPrice = i.askPrice;
-         bidPrice = i.bidPrice;
-         askAllowed = i.askAllowed;
-         bidAllowed = i.bidAllowed;
+        isBounded = i.isBounded;
+        actualPrice = i.actualPrice;
+        askPrice = i.askPrice;
+        bidPrice = i.bidPrice;
+        askAllowed = i.askAllowed;
+        bidAllowed = i.bidAllowed;
 
-         if (state.settlementTime == 0) {
-            uint elapsed = block.timestamp - state.startTime;
-            timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
-         }
+        uint elapsed = block.timestamp - state.startTime;
+        timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
     }
 
     // == Internal & Private Functions ==

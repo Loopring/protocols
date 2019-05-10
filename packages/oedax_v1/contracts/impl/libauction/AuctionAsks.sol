@@ -49,6 +49,7 @@ library AuctionAsks
         require(amount >= s.minAskAmount, "ask amount too small");
 
         IAuctionData.Status memory i = s.getAuctionStatus();
+        require(s.isAuctionOpen(i), "auction needs to be open");
         require(i.askAllowed > 0, "not allowed");
 
         if (amount > i.askAllowed) {

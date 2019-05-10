@@ -84,10 +84,6 @@ library IAuctionData
 
         // -- The following fields WILL change on bids and asks.
 
-        uint    closeTime;
-        uint    settlementTime;
-        uint    distributedTime;
-
         uint    askAmount;
         uint    bidAmount;
 
