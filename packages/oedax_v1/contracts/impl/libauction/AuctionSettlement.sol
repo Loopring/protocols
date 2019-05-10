@@ -60,18 +60,18 @@ library AuctionSettlement
         IAuctionData.Status memory i = s.getAuctionStatus();
         require(!s.isAuctionOpen(i), "auction needs to be closed");
 
-        bool bHasDistributedTokens = false;
+        bool hasTokensBeenDistributed = false;
         // First all tokens for all users need to be distributed
         if (s.numDistributed < s.users.length) {
             distributeTokens(s, i);
-            bHasDistributedTokens = true;
+            hasTokensBeenDistributed = true;
         }
         // Once all users have received their tokens we will distribute the fees
         if (s.numDistributed == s.users.length) {
             // If the caller also distributed tokens for users in this transaction
             // we check here if we still have enough gas to distribute the fees.
             // If not then it's the responsibility of the caller to set a correct gas limit.
-            if (!bHasDistributedTokens || gasleft() >= MIN_GAS_TO_DISTRIBUTE_FEES) {
+            if (!hasTokensBeenDistributed || gasleft() >= MIN_GAS_TO_DISTRIBUTE_FEES) {
                 address payable _owner = address(uint160(owner));
                 distributeFees(s, i, _owner);
             }
@@ -88,9 +88,9 @@ library AuctionSettlement
         require(!s.isAuctionOpen(i), "auction needs to be closed");
 
         if (i.isBounded) {
-            settleTrade(s, user);
+            withdrawSettledTrade(s, user);
         } else{
-            returnDeposit(s, user);
+            withdrawOriginalDeposit(s, user);
         }
 
         // Make sure the user can't withdraw again
@@ -213,7 +213,7 @@ library AuctionSettlement
         );
     }
 
-    function returnDeposit(
+    function withdrawOriginalDeposit(
         IAuctionData.State storage s,
         address payable user
         )
@@ -225,7 +225,7 @@ library AuctionSettlement
         payToken(user, s.bidToken, a.bidAmount);
     }
 
-    function settleTrade(
+    function withdrawSettledTrade(
         IAuctionData.State storage s,
         address payable user
         )

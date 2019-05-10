@@ -67,7 +67,7 @@ library AuctionStatus
             if (i.duration > elapsed) {
                 // the auction is open
                 i.askPrice = xToY(s, elapsed);
-                i.bidPrice = s.P.mul(s.P) / xToY(s, elapsed);
+                i.bidPrice = s.P.mul(s.P) / i.askPrice;
 
                 i.askAllowed = ~uint256(0); // = uint.MAX
                 i.bidAllowed = ~uint256(0); // = uint.MAX
