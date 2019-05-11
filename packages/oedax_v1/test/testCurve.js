@@ -13,8 +13,10 @@ contract("Curve", async (accounts) => {
   });
 
   it("should query curve info", async () => {
-    const paramC = await curve.getParamC(10, 10, 100);
-    assert.equal(paramC, 89, "calc paramC error");
+    const result = await curve.xToY(10, 10, 100, 3600, 10);
+    assert.equal(result, 97, "calc xToY error");
+
+    console.log(timestamp);
   });
 
 });
