@@ -48,48 +48,48 @@ library AuctionBids
         require(amount > 0, "zero amount");
         require(amount >= s.minBidAmount, "bid amount too small");
 
-        /* IAuctionData.Status memory i = s.getAuctionStatus(); */
-        /* require(s.isAuctionOpen(i), "auction needs to be open"); */
-        /* require(i.bidAllowed > 0, "not allowed"); */
+        IAuctionData.Status memory i = s.getAuctionStatus();
+        require(s.isAuctionOpen(i), "auction needs to be open");
+        require(i.bidAllowed > 0, "not allowed");
 
-        /* if (amount > i.bidAllowed) { */
-        /*     accepted = i.bidAllowed; */
-        /*     AuctionSettlement.payToken(msg.sender, s.bidToken, amount - i.bidAllowed); */
-        /* } else { */
-        /*     accepted = amount; */
-        /* } */
+        if (amount > i.bidAllowed) {
+            accepted = i.bidAllowed;
+            AuctionSettlement.payToken(msg.sender, s.bidToken, amount - i.bidAllowed);
+        } else {
+            accepted = amount;
+        }
 
-        /* if (s.oedax.logParticipant(msg.sender)) { */
-        /*     s.users.push(msg.sender); */
-        /* } */
+        if (s.oedax.logParticipant(msg.sender)) {
+            s.users.push(msg.sender);
+        }
 
-        /* // Update the book keeping */
-        /* IAuctionData.Account storage a = s.accounts[msg.sender]; */
-        /* uint elapsed = block.timestamp - s.startTime; */
+        // Update the book keeping
+        IAuctionData.Account storage a = s.accounts[msg.sender];
+        uint elapsed = block.timestamp - s.startTime;
 
-        /* a.bidAmount = a.bidAmount.add(accepted); */
-        /* uint extraRebateWeight = accepted.mul(s.T.sub(elapsed)); */
-        /* a.bidRebateWeight = a.bidRebateWeight.add(extraRebateWeight); */
-        /* s.totalBidRebateWeight = s.totalBidRebateWeight.add(extraRebateWeight); */
+        a.bidAmount = a.bidAmount.add(accepted);
+        uint extraRebateWeight = accepted.mul(s.T.sub(elapsed));
+        a.bidRebateWeight = a.bidRebateWeight.add(extraRebateWeight);
+        s.totalBidRebateWeight = s.totalBidRebateWeight.add(extraRebateWeight);
 
-        /* s.bidAmount = s.bidAmount.add(accepted); */
+        s.bidAmount = s.bidAmount.add(accepted);
 
-        /* if (s.bidShift != i.newBidShift) { */
-        /*     s.bidShift = i.newBidShift; */
-        /*     s.bidShifts.push(elapsed); */
-        /*     s.bidShifts.push(s.bidShift); */
-        /* } */
+        if (s.bidShift != i.newBidShift) {
+            s.bidShift = i.newBidShift;
+            s.bidShifts.push(elapsed);
+            s.bidShifts.push(s.bidShift);
+        }
 
-        /* if (s.askShift != i.newAskShift) { */
-        /*     s.askShift = i.newAskShift; */
-        /*     s.askShifts.push(elapsed); */
-        /*     s.askShifts.push(s.askShift); */
-        /* } */
+        if (s.askShift != i.newAskShift) {
+            s.askShift = i.newAskShift;
+            s.askShifts.push(elapsed);
+            s.askShifts.push(s.askShift);
+        }
 
-        /* emit Bid( */
-        /*     msg.sender, */
-        /*     accepted, */
-        /*     block.timestamp */
-        /* ); */
+        emit Bid(
+            msg.sender,
+            accepted,
+            block.timestamp
+        );
     }
 }
