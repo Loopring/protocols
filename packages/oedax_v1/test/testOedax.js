@@ -2,10 +2,10 @@ const Curve = artifacts.require("Curve");
 const Oedax = artifacts.require("Oedax");
 const FOO = artifacts.require("FOO");
 const BAR = artifacts.require("BAR");
+  
 
 contract("Oedax", async (accounts) => {
   const deployer = accounts[0];
-
   let curve;
   let oedax;
   let fooToken;
