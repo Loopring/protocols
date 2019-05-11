@@ -24,7 +24,7 @@ import "../lib/NoDefaultFunc.sol";
 
 import "./Auction.sol";
 
-/// @title An Implementation of IOedax.
+/// @title Implementation of IOedax.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Oedax is IOedax, NoDefaultFunc
 {
@@ -48,10 +48,12 @@ contract Oedax is IOedax, NoDefaultFunc
     function updateSettings(
         address payable _feeRecipient,
         address _curve,
-        uint16  _settleGracePeriodMinutes,
+        uint16  _settleGracePeriodBaseMinutes,
+        uint16  _settleGracePeriodPerUserSeconds,
         uint16  _minDurationMinutes,
         uint16  _maxDurationMinutes,
         uint16  _protocolFeeBips,
+        uint16  _ownerFeeBips,
         uint16  _takerFeeBips,
         uint    _creatorEtherStake
         )
@@ -60,22 +62,26 @@ contract Oedax is IOedax, NoDefaultFunc
     {
         require(_feeRecipient != address(0x0), "zero address");
         require(_curve != address(0x0), "zero address");
-        require(_settleGracePeriodMinutes > 0, "zero value");
+        require(_settleGracePeriodBaseMinutes > 0, "zero value");
+        require(_settleGracePeriodPerUserSeconds > 0, "zero value");
         require(_minDurationMinutes > 0, "zero value");
         require(_maxDurationMinutes > _minDurationMinutes, "invalid value");
 
         require(_protocolFeeBips <= 250, "value too large");
+        require(_ownerFeeBips <= 250, "value too large");
         require(_takerFeeBips <= 250, "value too large");
         require(_creatorEtherStake > 0, "zero value");
 
         curveAddress = _curve;
         feeRecipient = _feeRecipient;
 
-        settleGracePeriod = _settleGracePeriodMinutes * 1 minutes;
+        settleGracePeriodBase = _settleGracePeriodBaseMinutes * 1 minutes;
+        settleGracePeriodPerUser = _settleGracePeriodPerUserSeconds;
         minDuration = _minDurationMinutes * 1 minutes;
         maxDuration = _maxDurationMinutes * 1 minutes;
 
         protocolFeeBips = _protocolFeeBips;
+        ownerFeeBips = _ownerFeeBips;
         takerFeeBips = _takerFeeBips;
         creatorEtherStake = _creatorEtherStake * 1 ether;
 
@@ -96,6 +102,8 @@ contract Oedax is IOedax, NoDefaultFunc
     function createAuction(
         address askToken,
         address bidToken,
+        uint    minAskAmount,
+        uint    minBidAmount,
         uint64  P,
         uint64  S,
         uint8   M,
@@ -121,13 +129,17 @@ contract Oedax is IOedax, NoDefaultFunc
             auctionId,
             askToken,
             bidToken,
+            minAskAmount,
+            minBidAmount,
             P, S, M, T1, T2
         );
 
         auctionAddr = address(auction);
 
         // Transfer the Ether to the target auction
-        auctionAddr.transfer(creatorEtherStake);
+        (bool success, /*bytes memory data*/) = auctionAddr.call.value(creatorEtherStake)("");
+        require(success, "call to auction failed");
+
         uint surplus = msg.value - creatorEtherStake;
         if (surplus > 0) {
             msg.sender.transfer(surplus);

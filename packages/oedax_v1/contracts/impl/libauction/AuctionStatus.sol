@@ -21,7 +21,7 @@ import "../../iface/IAuctionData.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 
-/// @title AuctionStatus.
+/// @title AuctionStatus
 /// @author Daniel Wang  - <daniel@loopring.org>
 library AuctionStatus
 {
@@ -45,8 +45,8 @@ library AuctionStatus
         view
         returns (IAuctionData.Status memory i)
     {
-        uint P0 = s.P.mul(s.M);
-        uint P1 = s.P / s.M;
+        uint P0 = s.P / s.M;
+        uint P1 = s.P.mul(s.M);
         assert(P0 > 0 && P1 > P0);
 
         uint elapsed = block.timestamp - s.startTime;
@@ -61,57 +61,58 @@ library AuctionStatus
             i.askPrice = s.P;
             i.bidPrice = s.P;
 
-            if (s.settlementTime == 0) {
-                // price unbounded and not settled yet
-                i.duration = yToX(s, s.P); // the earliest end elapsed
+            // price unbounded
+            i.duration = yToX(s, s.P); // the earliest end elapsed
 
-                if (i.duration > elapsed) {
-                    // the auction is open
-                    i.askPrice = xToY(s, elapsed);
-                    i.bidPrice = s.P.mul(s.P) / xToY(s, elapsed);
+            if (i.duration > elapsed) {
+                // the auction is open
+                i.askPrice = xToY(s, elapsed);
+                i.bidPrice = s.P.mul(s.P) / i.askPrice;
 
-                    i.askAllowed = ~uint256(0); // = uint.MAX
-                    i.bidAllowed = ~uint256(0); // = uint.MAX
-                }
+                i.askAllowed = ~uint256(0); // = uint.MAX
+                i.bidAllowed = ~uint256(0); // = uint.MAX
             }
         } else {
             i.askPrice = i.actualPrice;
             i.bidPrice = i.actualPrice;
 
-            if (s.settlementTime == 0) {
-                // price bounded and not settled yet
-                uint askCrossTime = yToX(s, i.actualPrice) + s.askShift;
-                uint bidCrossTime = yToX(s, s.P.mul(s.P) / i.actualPrice) + s.bidShift;
-                i.duration = askCrossTime.max(bidCrossTime);
+            // price bounded
+            uint askCrossTime = yToX(s, i.actualPrice) + s.askShift;
+            uint bidCrossTime = yToX(s, s.P.mul(s.P) / i.actualPrice) + s.bidShift;
+            i.duration = askCrossTime.max(bidCrossTime);
 
-                if (i.duration > elapsed) {
-                    // the auction is open
-                    if (askCrossTime > elapsed) {
-                        // The ask-curve has not crossed the actual price line
-                        i.askPrice = xToY(s, elapsed - s.askShift);
-                        i.bidAllowed = (s.askAmount
-                            .add(s.Q.isBidding ? 0 : s.Q.amount) // the asks-queued
-                            .mul(i.askPrice) / s.S
-                        ).sub(s.bidAmount);
-                    } else {
-                        // The ask-curve has already crossed the actual price line
-                        i.newAskShift = s.askShift + elapsed - askCrossTime;
-                    }
+            if (i.duration > elapsed) {
+                // the auction is open
+                if (askCrossTime > elapsed) {
+                    // The ask-curve has not crossed the actual price line
+                    i.askPrice = xToY(s, elapsed - s.askShift);
+                    i.bidAllowed = (s.askAmount.mul(i.askPrice) / s.S).sub(s.bidAmount);
+                } else {
+                    // The ask-curve has already crossed the actual price line
+                    i.newAskShift = s.askShift + elapsed - askCrossTime;
+                }
 
-                    if (bidCrossTime > elapsed) {
-                        // The bid-curve has not cross the actual price line
-                        i.bidPrice = s.P.mul(s.P) / xToY(s, elapsed - s.bidShift);
-                        i.askAllowed = (s.bidAmount
-                            .add(s.Q.isBidding ? s.Q.amount : 0) // the bids-queued
-                            .mul(s.S) / i.bidPrice
-                        ).sub(s.askAmount);
-                    } else {
-                        // The bid-curve has already crossed the actual price line
-                        i.newBidShift = s.bidShift + elapsed - bidCrossTime;
-                    }
+                if (bidCrossTime > elapsed) {
+                    // The bid-curve has not cross the actual price line
+                    i.bidPrice = s.P.mul(s.P) / xToY(s, elapsed - s.bidShift);
+                    i.askAllowed = (s.bidAmount.mul(s.S) / i.bidPrice).sub(s.askAmount);
+                } else {
+                    // The bid-curve has already crossed the actual price line
+                    i.newBidShift = s.bidShift + elapsed - bidCrossTime;
                 }
             }
         }
+    }
+
+    function isAuctionOpen(
+        IAuctionData.State storage s,
+        IAuctionData.Status memory i
+        )
+        internal
+        view
+        returns (bool)
+    {
+        return block.timestamp < s.startTime + i.duration;
     }
 
     function xToY(
@@ -122,7 +123,7 @@ library AuctionStatus
         view
         returns (uint y)
     {
-        y = s.curve.xToY(s.C, s.P.mul(s.M), s.P / s.M, s.T, x);
+        y = s.curve.xToY(s.C, s.P / s.M, s.P.mul(s.M), s.T, x);
     }
 
     function yToX(
@@ -133,6 +134,6 @@ library AuctionStatus
         view
         returns (uint x)
     {
-        x = s.curve.yToX(s.C, s.P.mul(s.M), s.P / s.M, s.T, y);
+        x = s.curve.yToX(s.C, s.P / s.M, s.P.mul(s.M), s.T, y);
     }
 }

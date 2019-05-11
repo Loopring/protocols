@@ -30,8 +30,9 @@ import "./libauction/AuctionBids.sol";
 import "./libauction/AuctionSettlement.sol";
 import "./libauction/AuctionStatus.sol";
 
-/// @title An Implementation of ICurve.
+/// @title Implementation of IAuction.
 /// @author Daniel Wang  - <daniel@loopring.org>
+/// @author Brecht Devos - <brecht@loopring.org>
 contract Auction is IAuction
 {
     using MathUint          for uint;
@@ -40,6 +41,8 @@ contract Auction is IAuction
     using AuctionAsks       for IAuctionData.State;
     using AuctionSettlement for IAuctionData.State;
     using AuctionStatus     for IAuctionData.State;
+
+    bool staked;
 
     modifier onlyOedax {
       require (msg.sender == address(state.oedax));
@@ -51,9 +54,11 @@ contract Auction is IAuction
     /// @param _auctionId The auction's non-zero id.
     /// @param _askToken The ask (base) token.
     /// @param _bidToken The bid (quote) token. Prices are in form of 'bids/asks'.
+    /// @param _minAskAmount The minimum amount that can be used in an ask.
+    /// @param _minBidAmount The minimum amount that can be used in a bid.
     /// @param _P Numerator part of the target price `p`.
-    /// @param _S Price precision -- (_P / 10**_S) is the float vaule of the target price.
-    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimam price.
+    /// @param _S Price precision -- (_P / 10**_S) is the float value of the target price.
+    /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
     /// @param _T1 The maximum auction duration in second.
     /// @param _T2 The maximum auction duration in second.
     constructor(
@@ -61,6 +66,8 @@ contract Auction is IAuction
         uint    _auctionId,
         address _askToken,
         address _bidToken,
+        uint    _minAskAmount,
+        uint    _minBidAmount,
         uint64  _P,
         uint64  _S,
         uint8   _M,
@@ -69,15 +76,15 @@ contract Auction is IAuction
         )
         public
     {
-        require(_oedax != address(0x0));
-        require(_auctionId > 0);
-        require(_askToken != address(0x0) || _bidToken != address(0x0));
+        require(_oedax != address(0x0), "invalid oedax address");
+        require(_auctionId > 0, "invalid auction id");
+        require(_askToken != address(0x0) || _bidToken != address(0x0), "invalid token address");
 
-        require(_S >= 5 && _S <= 10);
-        require(_P > 0 && _P <= uint(10) ** 20);
-        require(_M > 1 && _M <= 100);
+        require(_S >= 5 && _S <= 10, "invalid price precision");
+        require(_P > 0 && _P <= uint(10 ** 20), "invalid target price");
+        require(_M > 1 && _M <= 100, "invalid price factor");
 
-        require(_T1 > 0 && _T1 < _T2);
+        require(_T1 > 0 && _T1 < _T2, "invalid duration value");
 
         owner = msg.sender; // creator
 
@@ -87,6 +94,7 @@ contract Auction is IAuction
 
         state.fees = IAuctionData.Fees(
             state.oedax.protocolFeeBips(),
+            state.oedax.ownerFeeBips(),
             state.oedax.takerFeeBips(),
             state.oedax.creatorEtherStake()
         );
@@ -94,14 +102,16 @@ contract Auction is IAuction
         state.auctionId = _auctionId;
         state.askToken = _askToken;
         state.bidToken = _bidToken;
+        state.minAskAmount = _minAskAmount;
+        state.minBidAmount = _minBidAmount;
         state.startTime = block.timestamp;
         state.P = _P;
         state.S = uint(10) ** _S;
         state.M = _M;
         state.T = _T2;
 
-        require(state.P / state.M < state.P);
-        require(state.P.mul(state.M) > state.P);
+        require(state.P / state.M < state.P, "invalid price or factor - div");
+        require(state.P.mul(state.M) > state.P, "invalid price or factor - mul");
 
         state.askBaseUnit = uint(10) ** ERC20(_askToken).decimals();
         state.bidBaseUnit = uint(10) ** ERC20(_bidToken).decimals();
@@ -111,40 +121,43 @@ contract Auction is IAuction
         safeCheckTokenSupply(_bidToken);
     }
 
+    event Log1(address addr, uint val);
+
     // == Public & External Functions ==
-    function()
+    function ()
         external
         payable
     {
-        if (msg.value > 0 && state.bidToken == address(0x0)) {
-            state.bid(msg.value);
-        } else if (msg.value > 0 && state.askToken == address(0x0)) {
-            state.ask(msg.value);
+        if (!staked) {
+            require(msg.sender == owner, "not owner");
+            require(msg.value > 0, "zero value");
+            emit Log1(msg.sender, msg.value);
+            staked = true;
         } else {
-            settle();
+            if (msg.value == 0) {
+                settle();
+            } else if (state.bidToken == address(0x0)) {
+                state.bid(msg.value);
+            } else if (state.askToken == address(0x0)) {
+                state.ask(msg.value);
+            } else {
+                revert();
+            }
         }
     }
 
     function bid(uint amount)
         external
-        returns (
-            uint accepted,
-            uint queued
-        )
+        returns (uint accepted)
     {
-        uint transfered = state.depositToken(state.bidToken, amount);
-        (accepted, queued) = state.bid(transfered);
+        return state.bid(state.depositToken(state.bidToken, amount));
     }
 
     function ask(uint amount)
         external
-        returns (
-            uint accepted,
-            uint queued
-        )
+        returns (uint accepted)
     {
-        uint transfered = state.depositToken(state.askToken, amount);
-        (accepted, queued) = state.ask(transfered);
+        return state.ask(state.depositToken(state.askToken, amount));
     }
 
     function settle()
@@ -152,6 +165,24 @@ contract Auction is IAuction
     {
         address payable _owner = address(uint160(owner));
         state.settle(_owner);
+    }
+
+    function withdraw()
+        external
+    {
+        IAuctionData.Status memory i = state.getAuctionStatus();
+        state.withdrawFor(i, msg.sender);
+    }
+
+    function withdrawFor(
+        address payable[] calldata users
+        )
+        external
+    {
+        IAuctionData.Status memory i = state.getAuctionStatus();
+        for (uint j = 0; j < users.length; j++) {
+            state.withdrawFor(i, users[j]);
+        }
     }
 
     function getStatus()
@@ -167,19 +198,17 @@ contract Auction is IAuction
             uint bidAllowed
         )
     {
-         IAuctionData.Status memory i = state.getAuctionStatus();
+        IAuctionData.Status memory i = state.getAuctionStatus();
 
-         isBounded = i.isBounded;
-         actualPrice = i.actualPrice;
-         askPrice = i.askPrice;
-         bidPrice = i.bidPrice;
-         askAllowed = i.askAllowed;
-         bidAllowed = i.bidAllowed;
+        isBounded = i.isBounded;
+        actualPrice = i.actualPrice;
+        askPrice = i.askPrice;
+        bidPrice = i.bidPrice;
+        askAllowed = i.askAllowed;
+        bidAllowed = i.bidAllowed;
 
-         if (state.settlementTime == 0) {
-            uint elpased = block.timestamp - state.startTime;
-            timeRemaining = i.duration > elpased ? i.duration - elpased : 0;
-         }
+        uint elapsed = block.timestamp - state.startTime;
+        timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
     }
 
     // == Internal & Private Functions ==

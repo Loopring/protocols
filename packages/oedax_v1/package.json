@@ -11,15 +11,13 @@
     "url": "git+http://github.com/Loopring/protocol.git"
   },
   "scripts": {
-    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
-    "pretest": "tslint --project .",
-    "test": "npm run transpile && truffle test",
+    "test": "truffle test",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
-    "testdocker": "npm run transpile && truffle test --network docker",
+    "testdocker": "truffle test --network docker",
     "compile": "truffle compile",
     "watch": "watch 'npm run compile' ./contracts",
     "build": "./install && yarn run compile",
-    "migrate": "npm run transpile && truffle migrate",
+    "migrate": "truffle compile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
     "ganache": "./ganache.sh",
     "coverage": "./node_modules/.bin/solidity-coverage",
@@ -38,7 +36,7 @@
     "chai": "^4.2.0",
     "copyfiles": "^2.1.0",
     "dirty-chai": "^2.0.1",
-    "ganache-cli": "6.2.4",
+    "ganache-cli": "6.4.3",
     "mocha": "^5.2.0",
     "node": "8.11.3",
     "npm": "^6.9.0",
@@ -74,7 +72,8 @@
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "solidity-coverage": "^0.5.11",
-    "truffle": "5.0.0",
-    "truffle-hdwallet-provider": "web3-one"
+    "truffle": "5.0.17",
+    "truffle-hdwallet-provider": "web3-one",
+    "web3": "^1.0.0-beta.55"
   }
 }

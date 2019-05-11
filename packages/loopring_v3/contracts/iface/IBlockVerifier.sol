@@ -22,6 +22,14 @@ pragma solidity 0.5.7;
 contract IBlockVerifier
 {
 
+    function setVerifyingKey(
+        uint8 blockType,
+        bool onchainDataAvailability,
+        uint16 numElements,
+        uint256[18] calldata _vk
+        )
+        external;
+
     /// @dev Checks if a block with the given parameters can be verified.
     ///      Every block permutation needs its own circuit and thus its own set of
     ///      verification keys. Only a limited number of blocks sizes per block

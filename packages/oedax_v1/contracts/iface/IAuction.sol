@@ -33,45 +33,71 @@ contract IAuction is Ownable
 
     IAuctionData.State  state;
 
-    /// @dev Join the auciton by placing a BID.
+    /// @dev Join the auction by placing a BID.
     /// @param amount The amount of bidToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted by queued in the waiting list.
     function bid(uint amount)
         external
         returns (
-            uint accepted,
-            uint queued
+            uint accepted
         );
 
-    /// @dev Join the auciton by placing an ASK.
+    /// @dev Join the auction by placing an ASK.
     /// @param amount The amount of askToken.
     /// @return accepted The amount of token accepted by the auction.
-    /// @return queued The amount of token not accepted by queued in the waiting list.
     function ask(uint amount)
         external
         returns (
-            uint accepted,
-            uint queued
+            uint accepted
         );
 
     /// @dev Settles the auction.
     /// After the auction ends, everyone can settle the auction by calling this method.
-    /// If the price is not bounded by curves, 50% of Ether stake will be charged by the
-    /// protocol as fee, the rest will be used as a rebate.
-    /// If the settlement happends inside of the settleGracePeriod window, all rebate will
-    /// sent back to the owner, otherwise, the 50% of the rebate will be sent to the settler,
-    /// the rest will be charged as fees.
+    ///
+    /// It may be necessary to call this function multiple times depending on how much gas
+    /// is sent for this transaction and how many users need to have their tokens distributed.
+    ///
+    /// The following is done when settling an auction:
+    ///     - All tokens are distributed to the users
+    ///     - All fees are distributed to the fee recipients
+    ///
+    /// If the price is not bounded by the curves, 50% of the Ether stake will be charged
+    /// by the protocol as fee.
+    ///
+    /// The auction owner is also responsible for distributing the tokens to the users in
+    /// 'settleGracePeriodBase + numUsers * settleGracePeriodPerUser' seconds. If he fails
+    /// to do so the auction owner wil lose his complete stake and all his trading fees.
+    /// 75% of the stake will be charged by the protocol as fee and 25% of the Ether stake
+    /// will be sent to the caller of this function when the fees are distributed (which is
+    /// done after all tokens are distributed to the users). The caller of the function
+    /// will also receive the owner's trading fees.
     function settle()
         public;
 
-    /// @dev Calculate the auciton's status on the fly.
+    /// @dev Withdraws the tokens for the caller. Can only be called when the auction has settled.
+    ///      There should be no need for users to call this function because the tokens will be
+    ///      automatically distributed by the auction owner. But this function can be used if that
+    ///      doesn't happen or the users wants access to their tokens as soon as possible.
+    function withdraw()
+        external;
+
+    /// @dev Withdraws the tokens for the specified users. Can only be called when the auction has settled.
+    ///      There should be no need for users to call this function because the tokens will be
+    ///      automatically distributed by the auction owner. But this function can be used if that
+    ///      doesn't happen or the users wants access to their tokens as soon as possible.
+    /// @param users The users to withdraw the tokens for.
+    function withdrawFor(
+        address payable[] calldata users
+        )
+        external;
+
+    /// @dev Calculate the auction's status on the fly.
     /// @return isBounded If the auction's actual price has already been bounded by the
     ///         bid and ask curves.
     /// @return timeRemaining The time (in seconds) remained for the auction to end.
-    /// @return actualPrice The autual price. If the auction has been settled, this value is 0.
+    /// @return actualPrice The actual price. If the auction has been settled, this value is 0.
     /// @return askPrice The current ask price.
-    /// @return bkdPrixce The current bid price.
+    /// @return bidPrice The current bid price.
     /// @return askAllowed The max amount of ask tokens that can be accepted.
     /// @return bidAllowed The max amount of bid tokens that can be accepted.
     function getStatus()

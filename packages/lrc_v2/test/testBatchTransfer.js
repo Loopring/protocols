@@ -1,5 +1,5 @@
 const BatchTransfer = artifacts.require("./BatchTransfer");
-const LrcToken = artifacts.require("LRC_v2");
+const LrcToken = artifacts.require("NewLRCToken");
 
 contract("BatchTransfer", async (accounts) => {
   let lrcToken;

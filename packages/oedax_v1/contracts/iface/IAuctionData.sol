@@ -37,41 +37,27 @@ library IAuctionData
       uint    bidAllowed;
     }
 
-    struct QueueItem
-    {
-        address user;
-        uint    queued;
-        uint    weight;
-    }
 
     struct Account
     {
-        uint    bidAccepted;
-        uint    bidQueued;
-        uint    bidFeeRebateWeight;
+        uint    bidAmount;
+        uint    bidRebateWeight;
 
-        uint    askAccepted;
-        uint    askQueued;
-        uint    askFeeRebateWeight;
-    }
-
-    struct Queue
-    {
-        QueueItem[] items;
-        bool        isBidding;
-        uint        amount;
+        uint    askAmount;
+        uint    askRebateWeight;
     }
 
     struct Fees
     {
         uint16  protocolFeeBips;
+        uint16  ownerFeeBips;
         uint16  takerFeeBips;
         uint    creatorEtherStake;
     }
 
     struct State
     {
-        // -- The following files never change once initialized:
+        // -- The following fields never change once initialized:
         IOedax  oedax;
         ICurve  curve;
         uint    C;  // the curve param C
@@ -86,6 +72,9 @@ library IAuctionData
         uint    askBaseUnit;
         uint    bidBaseUnit;
 
+        uint    minAskAmount;
+        uint    minBidAmount;
+
         uint    startTime;
 
         uint    P;  // target price
@@ -94,9 +83,6 @@ library IAuctionData
         uint    T;  // auction max duration
 
         // -- The following fields WILL change on bids and asks.
-
-        uint    closeTime;
-        uint    settlementTime;
 
         uint    askAmount;
         uint    bidAmount;
@@ -107,24 +93,25 @@ library IAuctionData
         uint[]  askShifts;
         uint[]  bidShifts;
 
-        Queue   Q;
+        uint    totalBidRebateWeight;
+        uint    totalAskRebateWeight;
 
         // user => account)
         mapping (address => Account) accounts;
         address payable[] users;
+
+        uint numDistributed;
     }
 
     event Bid(
         address user,
         uint    accepted,
-        uint    queued,
         uint    time
     );
 
     event Ask(
         address user,
         uint    accepted,
-        uint    queued,
         uint    time
     );
 }

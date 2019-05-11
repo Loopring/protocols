@@ -21,7 +21,7 @@ import "..//iface/ICurve.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
 
-/// @title Curve
+/// @title Implementation of IAuction.
 /// @author Daniel Wang  - <daniel@loopring.org>
 ///
 /// Let P0 and P1 be the min and max price, T be the duration,
