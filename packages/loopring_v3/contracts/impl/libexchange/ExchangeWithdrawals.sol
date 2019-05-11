@@ -245,35 +245,73 @@ library ExchangeWithdrawals
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
+        require(slotIdx < withdrawBlock.blockSize, "INVALID_SLOT_IDX");
 
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
 
-        // Get the withdraw data of the given slot
-        // TODO(brecht): optimize SLOAD/SSTORE of bytes in storage
-        bytes memory withdrawals = withdrawBlock.withdrawals;
-        uint numBytesPerWithdrawal = 7;
-        uint offset = numBytesPerWithdrawal * (slotIdx + 1);
-        require(offset <= withdrawals.length, "INVALID_SLOT_IDX");
-        uint data;
-        assembly {
-            data := mload(add(withdrawals, offset))
+        // Get the withdrawal data from storage for the given slot
+        uint[] memory slice = new uint[](2);
+        uint slot1 = (7 * slotIdx) / 32;
+        uint slot2 = slot1 + 1;
+        uint offset = (7 * (slotIdx + 1)) - (slot1 * 32);
+        uint sc = 0;
+        uint data = 0;
+        // Short byte arrays (length <= 31) are stored differently in storage
+        if (withdrawBlock.withdrawals.length >= 32) {
+            bytes storage withdrawals = withdrawBlock.withdrawals;
+            uint dataSlot1 = 0;
+            uint dataSlot2 = 0;
+            assembly {
+                // keccak hash to get the contents of the array
+                mstore(0x0, withdrawals_slot)
+                sc := keccak256(0x0, 0x20)
+                dataSlot1 := sload(add(sc, slot1))
+                dataSlot2 := sload(add(sc, slot2))
+            }
+            // Stitch the data together so we can extract the data in a single uint
+            // (withdrawal data is at the LSBs)
+            slice[0] = dataSlot1;
+            slice[1] = dataSlot2;
+            assembly {
+                data := mload(add(slice, offset))
+            }
+        } else {
+            bytes memory mWithdrawals = withdrawBlock.withdrawals;
+            assembly {
+                data := mload(add(mWithdrawals, offset))
+            }
         }
 
-        // Extract the data
+        // Extract the withdrawal data
         uint16 tokenID = uint16((data >> 48) & 0xFF);
         uint24 accountID = uint24((data >> 28) & 0xFFFFF);
         uint amount = (data & 0xFFFFFFF).decodeFloat();
 
-        ExchangeData.Account storage account = S.accounts[accountID];
-
         if (amount > 0) {
-            // Set everything to 0 so it cannot be withdrawn anymore
-            data = data & uint(~((1 << (numBytesPerWithdrawal * 8)) - 1));
-            assembly {
-                mstore(add(withdrawals, offset), data)
+            // Set everything to 0 for this withdrawal so it cannot be used anymore
+            data = data & uint(~((1 << (7 * 8)) - 1));
+
+            // Update the data in storage
+            if (withdrawBlock.withdrawals.length >= 32) {
+                assembly {
+                    mstore(add(slice, offset), data)
+                }
+                uint dataSlot1 = slice[0];
+                uint dataSlot2 = slice[1];
+                assembly {
+                    sstore(add(sc, slot1), dataSlot1)
+                    sstore(add(sc, slot2), dataSlot2)
+                }
+            } else {
+                bytes memory mWithdrawals = withdrawBlock.withdrawals;
+                assembly {
+                    mstore(add(mWithdrawals, offset), data)
+                }
+                withdrawBlock.withdrawals = mWithdrawals;
             }
-            withdrawBlock.withdrawals = withdrawals;
+
+            ExchangeData.Account storage account = S.accounts[accountID];
 
             // Transfer the tokens
             withdrawAndBurn(
@@ -293,10 +331,10 @@ library ExchangeWithdrawals
         }
     }
 
-
     function withdrawBlockFee(
         ExchangeData.State storage S,
-        uint blockIdx
+        uint blockIdx,
+        address payable feeRecipient
         )
         public
         returns (uint feeAmountToOperator)
@@ -356,7 +394,7 @@ library ExchangeWithdrawals
         }
         // Transfer the fee to the operator
         if (feeAmountToOperator > 0) {
-            S.operator.transfer(feeAmountToOperator);
+            feeRecipient.transfer(feeAmountToOperator);
         }
 
         emit BlockFeeWithdrawn(blockIdx, feeAmount);
@@ -364,41 +402,57 @@ library ExchangeWithdrawals
 
     function distributeWithdrawals(
         ExchangeData.State storage S,
-        uint blockIdx
+        uint blockIdx,
+        uint maxNumWithdrawals
         )
         public
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+        require(maxNumWithdrawals > 0, "INVALID_MAX_NUM_WITHDRAWALS");
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
-        // Check if this is a withdraw block
-        require(withdrawBlock.blockType == uint8(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) ||
-                withdrawBlock.blockType == uint8(ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL), "INVALID_BLOCK_TYPE");
+        // Check if this is a withdrawal block
+        require(withdrawBlock.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
+                withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL, "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
         require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
-        // Check if the witdrawals were already completely distributed
-        require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.numElements, "WITHDRAWALS_ALREADY_DISTRIBUTED");
+        // Check if the withdrawals were already completely distributed
+        require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.blockSize, "WITHDRAWALS_ALREADY_DISTRIBUTED");
 
         // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
         // anyone can do it and get paid a part of the operator stake
-        if (now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()) {
+        bool bOnlyOperator = now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS();
+        if (bOnlyOperator) {
             require(msg.sender == S.operator, "UNAUTHORIZED");
-        } else {
+        }
+
+        // Calculate the range of withdrawals we'll do
+        uint start = withdrawBlock.numWithdrawalsDistributed;
+        uint end = start.add(maxNumWithdrawals);
+        if (end > withdrawBlock.blockSize) {
+            end = withdrawBlock.blockSize;
+        }
+
+        // Do the withdrawals
+        uint gasLimit = ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS();
+        uint totalNumWithdrawn = start;
+        while (totalNumWithdrawn < end && gasleft() >= gasLimit) {
+            withdrawFromApprovedWithdrawal(S, blockIdx, totalNumWithdrawn);
+            totalNumWithdrawn++;
+        }
+        withdrawBlock.numWithdrawalsDistributed = uint16(totalNumWithdrawn);
+
+        // Fine the exchange if the withdrawals are done too late
+        if (!bOnlyOperator) {
             // We use the stake of the exchange to punish withdrawals that are distributed too late
-            uint totalFine = S.loopring.withdrawalFineLRC().mul(withdrawBlock.numElements);
+            uint numWithdrawn = totalNumWithdrawn.sub(start);
+            uint totalFine = S.loopring.withdrawalFineLRC().mul(numWithdrawn);
             // Burn 50% of the fine, reward the distributer the rest
             uint amountToBurn = totalFine / 2;
             uint amountToDistributer = totalFine - amountToBurn;
             S.loopring.burnStake(S.id, amountToBurn);
             S.loopring.withdrawStake(S.id, msg.sender, amountToDistributer);
         }
-
-        // Possible enhancement: allow withdrawing in parts
-        for (uint i = 0; i < withdrawBlock.numElements; i++) {
-            withdrawFromApprovedWithdrawal(S, blockIdx, i);
-        }
-
-        withdrawBlock.numWithdrawalsDistributed = withdrawBlock.numElements;
     }
 
 

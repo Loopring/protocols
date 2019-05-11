@@ -21,12 +21,18 @@ pragma solidity 0.5.7;
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IBlockVerifier
 {
-
+    /// @dev Sets or updates the verifying key for the given block type
+    ///      and permutation.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param vk The verification key
     function setVerifyingKey(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements,
-        uint256[18] calldata _vk
+        uint16 blockSize,
+        uint256[18] calldata vk
         )
         external;
 
@@ -37,12 +43,12 @@ contract IBlockVerifier
     /// @param blockType The type of the block See @BlockType
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
-    /// @param numElements The number of requests handled in the block
+    /// @param blockSize The number of requests handled in the block
     /// @return True if the block can be verified, false otherwise
     function canVerify(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements
+        uint16 blockSize
         )
         external
         view
@@ -54,14 +60,14 @@ contract IBlockVerifier
     /// @param blockType The type of block See @BlockType
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
-    /// @param numElements The number of requests handled in the block
+    /// @param blockSize The number of requests handled in the block
     /// @param publicDataHash The hash of all the public data
     /// @param proof The ZK proof that the block is correct
     /// @return True if the block is valid, false otherwise
     function verifyProof(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements,
+        uint16 blockSize,
         bytes32 publicDataHash,
         uint256[8] calldata proof
         )

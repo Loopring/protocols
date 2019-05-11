@@ -60,7 +60,7 @@ library ExchangeGenesis
             0x06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3,
             0x0,
             ExchangeData.BlockState.FINALIZED,
-            0xFF,
+            ExchangeData.BlockType(0),
             0,
             uint32(now),
             1,

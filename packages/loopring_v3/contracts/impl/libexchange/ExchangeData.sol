@@ -99,13 +99,13 @@ library ExchangeData
 
         // The type of the block (i.e. what kind of requests were processed).
         // See @BlockType for more information.
-        uint8  blockType;
+        BlockType blockType;
 
         // The number of requests processed in the block. Only a limited number of permutations
         // are available for each block type (because each will need a different circuit
         // and thus different verification key onchain). Use IBlockVerifier.canVerify to find out if
         // the block is supported.
-        uint16 numElements;
+        uint16 blockSize;
 
         // The time the block was created.
         uint32 timestamp;
@@ -128,11 +128,11 @@ library ExchangeData
         // The approved withdrawal data. Needs to be stored onchain so this data is available
         // once the block is finalized and the funds can be withdrawn using the info stored
         // in this data.
-        // For every withdrawal (there are numElements withdrawals),
+        // For every withdrawal (there are 'blockSize' withdrawals),
         // stored sequentially after each other:
-        //    - Account ID: 3 bytes
-        //    - Token ID: 2 bytes
-        //    - Amount: 12 bytes
+        //    - Token ID: 1 bytes
+        //    - Account ID: 2,5 bytes
+        //    - Amount: 3,5 bytes
         bytes  withdrawals;
     }
 
@@ -168,6 +168,7 @@ library ExchangeData
     function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
+    function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State

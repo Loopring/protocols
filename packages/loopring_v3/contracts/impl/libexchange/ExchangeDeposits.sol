@@ -103,7 +103,7 @@ library ExchangeDeposits
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
-        ExchangeData.Token storage token = S.tokens[tokenID - 1];
+        ExchangeData.Token storage token = S.tokens[tokenID];
         require(!token.depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
         uint24 accountID = S.getAccountID(recipient);

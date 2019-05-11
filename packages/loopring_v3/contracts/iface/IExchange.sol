@@ -58,6 +58,10 @@ contract IExchange
         uint            withdrawalFeeETH
     );
 
+    event Shutdown(
+        uint            timestamp
+    );
+
     event BlockCommitted(
         uint    indexed blockIdx,
         bytes32 indexed publicDataHash
@@ -332,11 +336,42 @@ contract IExchange
         view
         returns (uint);
 
+    /// @dev Returns the block data for the specified block index.
+    /// @param  blockIdx The block index
+    /// @return merkleRoot The merkle root
+    /// @return publicDataHash The hash of all public data. Used as public input for the ZKP.
+    /// @return blockState The current state of the block
+    /// @return blockType The type of work done in the block
+    /// @return blockSize The number of requests handled in the block
+    /// @return timestamp The time the block was committed on-chain
+    /// @return blockState The current state of the block
+    /// @return numDepositRequestsCommitted The total number of deposit requests committed
+    /// @return numWithdrawalRequestsCommitted The total number of withdrawal requests committed
+    /// @return blockFeeWithdrawn True if the block fee has been withdrawn, else false
+    /// @return numWithdrawalsDistributed The number of withdrawals that have been done for this block
+    function getBlock(
+        uint blockIdx
+        )
+        external
+        view
+        returns (
+            bytes32 merkleRoot,
+            bytes32 publicDataHash,
+            uint8   blockState,
+            uint8   blockType,
+            uint16  blockSize,
+            uint32  timestamp,
+            uint32  numDepositRequestsCommitted,
+            uint32  numWithdrawalRequestsCommitted,
+            bool    blockFeeWithdrawn,
+            uint16  numWithdrawalsDistributed
+        );
+
     /// @dev Commit a new block to the virtual blockchain without the proof.
     ///      This function is only callable by the exchange operator.
     ///
     /// @param blockType The type of the new block
-    /// @param numElements The number of onchain or offchain requests/settlements
+    /// @param blockSize The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
     /// @param data The data for this block -
     ///        For all block types:
@@ -413,7 +448,7 @@ contract IExchange
     ///                - WalletSplitPercentage: 1 byte
     function commitBlock(
         uint8  blockType,
-        uint16 numElements,
+        uint16 blockSize,
         bytes  calldata data
         )
         external;
@@ -726,15 +761,17 @@ contract IExchange
     /// @dev Allows the operator to withdraw the fees he earned by processing the
     ///      deposit and onchain withdrawal requests.
     ///
-    ///      Can be called by anyone. The funds will be sent to the operator.
+    ///      This function is only callable by the exchange operator.
     ///
     ///      The block fee can only be withdrawn from finalized blocks
     ///      (i.e. blocks that can never be reverted).
     ///
     /// @param  blockIdx The block index to withdraw the funds for
+    /// @param  feeRecipient The address that receives the block fee
     /// @return feeAmount The amount of ETH earned in the block and sent to the operator
     function withdrawBlockFee(
-        uint blockIdx
+        uint blockIdx,
+        address payable feeRecipient
         )
         external
         returns (uint feeAmount);
@@ -756,9 +793,25 @@ contract IExchange
     ///
     ///      Only withdrawals processed in finalized blocks can be distributed.
     ///
+    ///      The withdrawals can be done in multiple transactions because the token transfers
+    ///      are more expensive than committing and proving a block, so it's possible more
+    ///      withdrawals requests are processed in a block than can be distributed
+    ///      in an Ethereum block.
+    ///      This function will automatically stop distributing the withdrawals when the amount
+    ///      of gas left is less than MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS.
+    ///      So there are 2 ways to  limit the number of withdrawals:
+    ///          - using the maxNumWithdrawals parameter
+    ///          - limiting the amount of gas in the transaction
+    ///
     /// @param  blockIdx The block index to distribute the funds from the withdrawal requests for
+    /// @param  maxNumWithdrawals The max number of withdrawals to distribute. Can be lower than the
+    ///         number of withdrawal requests processed in the block. Withdrawals are distributed
+    ///         in the same order the withdrawal requests were processed in the block.
+    ///         If the withdrawals are done in multiple parts we always start from the
+    ///         first withdrawal that was not yet distributed.
     function distributeWithdrawals(
-        uint blockIdx
+        uint blockIdx,
+        uint maxNumWithdrawals
         )
         external;
 
