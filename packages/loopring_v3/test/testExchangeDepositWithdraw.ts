@@ -12,16 +12,27 @@ contract("Exchange", (accounts: string[]) => {
   let loopring: any;
   let realmID = 0;
 
+  const getAccountChecked = async (owner: string, accountID: number,  keyPair: any) => {
+    const accountsData = await exchange.getAccount(owner);
+    assert.equal(accountsData.accountID.toNumber(), accountID, "AccountID needs to match");
+    assert.equal(accountsData.pubKeyX.toString(10), keyPair.publicKeyX, "pubKeyX needs to match");
+    assert.equal(accountsData.pubKeyY.toString(10), keyPair.publicKeyY, "pubKeyY needs to match");
+  };
+
   const createOrUpdateAccountChecked = async (keyPair: any, owner: string, fee: BN) => {
     const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
+    const numAccountsBefore = (await exchange.getNumAccounts()).toNumber();
 
     await exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY,
       {from: owner, value: fee, gasPrice: 0});
 
     const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
+    const numAccountsAfter = (await exchange.getNumAccounts()).toNumber();
 
     assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter,
            "Number of available deposit slots should stay the same");
+    assert.equal(numAccountsBefore + 1, numAccountsAfter,
+           "Number of accounts should be increased by 1");
 
     // Get the AccountCreated event
     const eventArr: any = await exchangeTestUtil.getEventsFromContract(
@@ -32,6 +43,10 @@ contract("Exchange", (accounts: string[]) => {
     });
     assert.equal(items.length, 1, "A single AccountCreated event should have been emitted");
     const accountID = items[0][0].toNumber();
+
+    // Check the account info onchain
+    await getAccountChecked(owner, accountID, keyPair);
+
     return accountID;
   };
 
@@ -123,6 +138,9 @@ contract("Exchange", (accounts: string[]) => {
     });
     assert.equal(items.length, 1, "A single Deposit event should have been emitted");
     assert.equal(items[0][0].toNumber(), accountID, "Deposit accountID should match");
+
+    // Check the account info onchain
+    await getAccountChecked(owner, accountID, keyPair);
   };
 
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
