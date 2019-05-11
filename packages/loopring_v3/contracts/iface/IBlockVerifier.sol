@@ -21,12 +21,18 @@ pragma solidity 0.5.7;
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IBlockVerifier
 {
-
+    /// @dev Sets or updates the verifying key for the given block type
+    ///      and permutation.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param vk The verification key
     function setVerifyingKey(
         uint8 blockType,
         bool onchainDataAvailability,
-        uint16 numElements,
-        uint256[18] calldata _vk
+        uint16 blockSize,
+        uint256[18] calldata vk
         )
         external;
 
