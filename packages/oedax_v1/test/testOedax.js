@@ -2,8 +2,7 @@ const Curve = artifacts.require("Curve");
 const Oedax = artifacts.require("Oedax");
 const FOO = artifacts.require("FOO");
 const BAR = artifacts.require("BAR");
-
-const auctionABI = '[{"constant":false,"inputs":[],"name":"settle","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"bid","outputs":[{"name":"accepted","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"getStatus","outputs":[{"name":"isBounded","type":"bool"},{"name":"timeRemaining","type":"uint256"},{"name":"actualPrice","type":"uint256"},{"name":"askPrice","type":"uint256"},{"name":"bidPrice","type":"uint256"},{"name":"askAllowed","type":"uint256"},{"name":"bidAllowed","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"users","type":"address[]"}],"name":"withdrawFor","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"ask","outputs":[{"name":"accepted","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"user","type":"address"},{"indexed":false,"name":"askAmount","type":"int256"},{"indexed":false,"name":"bidAmount","type":"int256"}],"name":"Trade","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"}]';
+const Auction = artifacts.require("Auction");
 
 contract("Oedax", async (accounts) => {
   const deployer = accounts[0];
@@ -64,8 +63,8 @@ contract("Oedax", async (accounts) => {
       numToBN(10),
       numToBN(5),
       numToBN(2),
-      numToBN(60),
-      numToBN(120),
+      numToBN(60),  // T1: 60 seconds
+      numToBN(120), // T2: 120 seconds.
       {
         from: deployer,
         value: 1e18
@@ -83,18 +82,15 @@ contract("Oedax", async (accounts) => {
     // console.log("auctionCreationEvent:", auctionCreationEvent);
 
     const auctionAddr = auctionCreationEvent[0].returnValues.auctionAddr;
-    console.log("auctionAddr:", auctionAddr);
-    console.log("oedax addr:", oedax.address);
-    const auctionInstance = new web3.eth.Contract(JSON.parse(auctionABI), auctionAddr);
+    // console.log("auctionAddr:", auctionAddr);
+    const auctionInstance = new web3.eth.Contract(Auction.abi, auctionAddr);
 
     // console.log("auctionInstance:", auctionInstance);
 
     const asker =  accounts[5];
     const bidder = accounts[6];
-
     await fooToken.setBalance(asker, numToBN(1000e18));
     await barToken.setBalance(bidder, numToBN(10000e18));
-
     await fooToken.approve(oedax.address, numToBN(1000e18), {from: asker});
     await barToken.approve(oedax.address, numToBN(10000e18), {from: bidder});
 
@@ -102,10 +98,23 @@ contract("Oedax", async (accounts) => {
     await auctionInstance.methods.bid(numToBN(100e18).toString(10)).send(
       {
         from: bidder,
-        gas: 6700000
+        gas: 6000000
       }
     );
     const blockAfter2 = await web3.eth.getBlockNumber();
+    const bidEvent = await auctionInstance.getPastEvents(
+      "Bid",
+      {
+        fromBlock: blockBefore2,
+        toBlock: blockAfter2
+      }
+    );
+
+    // console.log("bidEvent:", bidEvent);
+    const bidInEvent = bidEvent[0].returnValues.user;
+    const accepted = bidEvent[0].returnValues.accepted;
+    assert.equal(bidder, bidInEvent, "bid address not correct");
+    assert.equal(numToBN(100e18), accepted);
 
   });
 

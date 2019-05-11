@@ -121,8 +121,6 @@ contract Auction is IAuction
         safeCheckTokenSupply(_bidToken);
     }
 
-    event Log1(address addr, uint val);
-
     // == Public & External Functions ==
     function ()
         external
@@ -131,7 +129,6 @@ contract Auction is IAuction
         if (!staked) {
             require(msg.sender == owner, "not owner");
             require(msg.value > 0, "zero value");
-            emit Log1(msg.sender, msg.value);
             staked = true;
         } else {
             if (msg.value == 0) {

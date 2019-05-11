@@ -31,6 +31,12 @@ contract IAuction is Ownable
         int     bidAmount
     );
 
+    event Bid(
+        address user,
+        uint    accepted,
+        uint    time
+    );
+
     IAuctionData.State  state;
 
     /// @dev Join the auction by placing a BID.
