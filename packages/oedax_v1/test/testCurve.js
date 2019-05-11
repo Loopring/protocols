@@ -13,8 +13,10 @@ contract("Curve", async (accounts) => {
   });
 
   it("should query curve info", async () => {
-    const result = await curve.xToY(10, 10, 5);
-    assert.equal(result, 3, "calc xToY error");
+    const result = await curve.xToY(10, 10, 100, 3600, 10);
+    assert.equal(result, 97, "calc xToY error");
+
+    console.log(timestamp);
   });
 
 });
