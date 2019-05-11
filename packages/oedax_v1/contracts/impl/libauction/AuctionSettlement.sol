@@ -116,6 +116,7 @@ library AuctionSettlement
         uint closeTime = s.startTime + i.duration;
         uint maxGracePeriod = s.users.length.mul(s.oedax.settleGracePeriodPerUser())
             .add(s.oedax.settleGracePeriodBase());
+
         if (block.timestamp.sub(closeTime) > maxGracePeriod) {
             amountStakeToOwner = 0;
             // Reward msg.sender with 25% of the stake and the owner fees
