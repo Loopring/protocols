@@ -142,14 +142,15 @@ library AuctionSettlement
             amountStakeToCaller
         );
 
-        if (i.isBounded) {
-            // Stake to the protocol pool
-            payToken(
-                s.oedax.feeRecipient(),
-                address(0x0),
-                s.fees.creatorEtherStake.sub(amountStakeToOwner).sub(amountStakeToCaller)
-            );
 
+        // Stake to the protocol pool
+        payToken(
+            s.oedax.feeRecipient(),
+            address(0x0),
+            s.fees.creatorEtherStake.sub(amountStakeToOwner).sub(amountStakeToCaller)
+        );
+        
+        if (i.isBounded) {
             // Collect the owner trading fees
             collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
             // Collect the protocol fees
