@@ -315,7 +315,8 @@ library ExchangeBlocks
         // Hash all the public data to a single value which is used as the input for the circuit
         bytes32 publicDataHash = sha256(data);
 
-        // Only store the approved withdrawal data onchain
+        // Store the approved withdrawal data onchain
+        bytes memory withdrawals = new bytes(0);
         if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
             blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             uint start = 4 + 32 + 32;
@@ -324,8 +325,8 @@ library ExchangeBlocks
             }
             uint length = 7 * blockSize;
             assembly {
-                data := add(data, start)
-                mstore(data, length)
+                withdrawals := add(data, start)
+                mstore(withdrawals, length)
             }
         }
 
@@ -341,8 +342,7 @@ library ExchangeBlocks
             numWithdrawalRequestsCommitted,
             false,
             0,
-            (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-             blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) ? data : new bytes(0)
+            withdrawals
         );
 
         S.blocks.push(newBlock);
