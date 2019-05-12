@@ -210,4 +210,11 @@ contract Oedax is IOedax, NoDefaultFunc
             amount
         );
     }
+
+    function ()
+        external
+        payable
+    {
+
+    }
 }
