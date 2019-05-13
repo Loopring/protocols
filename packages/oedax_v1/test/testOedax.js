@@ -116,6 +116,14 @@ contract("Oedax", async (accounts) => {
     assert.equal(bidder, bidInEvent, "bid address not correct");
     assert.equal(numToBN(100e18), accepted);
 
+    await auctionInstance.methods.ask(numToBN(100e18).toString(10)).send(
+      {
+        from: bidder,
+        gas: 6000000
+      }
+    );
+
+
   });
 
 });
