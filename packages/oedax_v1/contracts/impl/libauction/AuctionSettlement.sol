@@ -141,17 +141,21 @@ library AuctionSettlement
             address(0x0),
             amountStakeToCaller
         );
+
+
         // Stake to the protocol pool
         payToken(
             s.oedax.feeRecipient(),
             address(0x0),
             s.fees.creatorEtherStake.sub(amountStakeToOwner).sub(amountStakeToCaller)
         );
-
-        // Collect the owner trading fees
-        collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
-        // Collect the protocol fees
-        collectTradingFees(s, s.fees.protocolFeeBips, s.oedax.feeRecipient());
+        
+        if (i.isBounded) {
+            // Collect the owner trading fees
+            collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
+            // Collect the protocol fees
+            collectTradingFees(s, s.fees.protocolFeeBips, s.oedax.feeRecipient());
+        }   
 
         // Only emit an event once
         if (s.fees.creatorEtherStake > 0) {
