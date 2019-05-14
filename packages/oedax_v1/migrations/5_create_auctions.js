@@ -28,10 +28,13 @@ module.exports = function(deployer, network, accounts) {
       20,
       1,              // minDurationMinutes
       1000,           // maxDurationMinutes
-      15,
-      25,
-      35,
-      1               // creatorEtherStake
+      1,
+      1,
+      1,
+      1,              // creatorEtherStake
+      {
+        from: accounts[0]
+      }
     );
 
     await oedax.setTokenRank(FOO.address, numToBN(100), {from: accounts[0]});
@@ -39,8 +42,8 @@ module.exports = function(deployer, network, accounts) {
     const auction1 = await oedax.createAuction(
       FOO.address,  // askToken
       BAR.address,  // bidToken
-      numToBN(10e18), // minAskAmount
-      numToBN(5e18), // minBidAmount
+      numToBN(1e18), // minAskAmount
+      numToBN(1e18), // minBidAmount
       numToBN(10),  // P
       numToBN(5),   // S
       numToBN(2),   // M
@@ -55,7 +58,7 @@ module.exports = function(deployer, network, accounts) {
     const auction2 = await oedax.createAuction(
       FOO.address,
       BAR.address,
-      numToBN(100e18),
+      numToBN(1e18),
       numToBN(1e18),
       numToBN(100),
       numToBN(5),
