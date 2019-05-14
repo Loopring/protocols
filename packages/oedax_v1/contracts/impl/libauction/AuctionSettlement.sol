@@ -254,7 +254,7 @@ library AuctionSettlement
 
         Trading memory t = Trading(0, 0, 0, 0, 0, 0);
 
-        IAuctionData.Account storage a = s.accounts[msg.sender];
+        IAuctionData.Account storage a = s.accounts[user];
 
         t.askPaid = a.askAmount;
         t.askReceived = askSettlement.mul(a.bidAmount) / s.bidAmount;
@@ -264,7 +264,7 @@ library AuctionSettlement
         t.bidReceived = bidSettlement.mul(a.askAmount) / s.askAmount;
         t.bidFeeRebate = bidTakerFee.mul(bips) / 10000;
 
-        payUser(s.askToken, s.bidToken, msg.sender, t);
+        payUser(s.askToken, s.bidToken, user, t);
     }
 
     function calcUserFeeRebateBips(
@@ -284,7 +284,11 @@ library AuctionSettlement
             .add(a.askRebateWeight / s.askAmount);
 
         total /= 10000;
-        assert(total > 0);
+        
+        // some times total will be smaller than 10000 
+        if (total == 0) {
+            total = 1;
+        }
 
         bips /= total;
     }
