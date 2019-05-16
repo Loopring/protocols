@@ -94,17 +94,6 @@ library ExchangeAccounts
             updateAccount(S, pubKeyX, pubKeyY, returnFeeSurplus);
     }
 
-    function createFeeRecipientAccount(
-        ExchangeData.State storage S
-        )
-        public
-        returns (uint24 accountID)
-    {
-        require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
-        // use `1` for both pubKeyX and pubKeyY for fee recipient accounts.
-        accountID = createAccount(S, 1, 1, false);
-    }
-
     function createAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
@@ -171,8 +160,6 @@ library ExchangeAccounts
         accountID = S.ownerToAccountId[msg.sender];
         ExchangeData.Account storage account = S.accounts[accountID];
 
-        require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
-
         account.pubKeyX = pubKeyX;
         account.pubKeyY = pubKeyY;
 
@@ -225,15 +212,5 @@ library ExchangeAccounts
             accountMerkleProof,
             balanceMerkleProof
         );
-    }
-
-    function isFeeRecipientAccount(
-        ExchangeData.Account storage account
-        )
-        internal
-        view
-        returns (bool)
-    {
-        return account.pubKeyX == 1 && account.pubKeyY == 1;
     }
 }

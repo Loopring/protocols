@@ -12,10 +12,8 @@ export interface OrderInfo {
   owner?: string;
   tokenS?: string;
   tokenB?: string;
-  tokenF?: string;
   amountS: BN;
   amountB: BN;
-  amountF?: BN;
 
   realmID?: number;
   accountID?: number;
@@ -28,17 +26,17 @@ export interface OrderInfo {
 
   tokenIdS?: number;
   tokenIdB?: number;
-  tokenIdF?: number;
 
   allOrNone?: boolean;
   validSince?: number;
   validUntil?: number;
+  feeBips?: number;
+  rebateBips?: number;
   walletSplitPercentage?: number;
   waiveFeePercentage?: number;
 
   balanceS?: BN;
   balanceB?: BN;
-  balanceF?: BN;
 
   [key: string]: any;
 }
@@ -58,7 +56,6 @@ export interface RingInfo {
   orderB: OrderInfo;
 
   minerAccountID?: number;
-  feeRecipientAccountID?: number;
   tokenID?: number;
   fee?: BN;
 
@@ -67,6 +64,8 @@ export interface RingInfo {
 
 export interface RingBlock {
   rings: RingInfo[];
+  protocolTakerFeeBips?: number;
+  protocolMakerFeeBips?: number;
 
   onchainDataAvailability?: boolean;
   timestamp?: number;

@@ -50,28 +50,6 @@ contract("Exchange", (accounts: string[]) => {
     return accountID;
   };
 
-  const createFeeRecipientAccountChecked = async (owner: string, fee: BN) => {
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
-
-    await exchange.createFeeRecipientAccount({from: owner, value: fee, gasPrice: 0});
-
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
-
-    assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter + 1,
-           "Number of available deposit slots should have been decreased by 1");
-
-    // Get the AccountCreated event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-      exchange, "AccountCreated", web3.eth.blockNumber,
-    );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.id];
-    });
-    assert.equal(items.length, 1, "A single AccountCreated event should have been emitted");
-    const accountID = items[0][0].toNumber();
-    return accountID;
-  };
-
   const depositChecked = async (accountID: number, token: string, amount: BN,
                                 owner: string, depositFee: BN) => {
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
@@ -329,7 +307,7 @@ contract("Exchange", (accounts: string[]) => {
       assert(accountID > 0);
     });
 
-    it("ERC20: Deposit", async () => {
+    it.only("ERC20: Deposit", async () => {
       await createExchange();
 
       let keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -428,40 +406,6 @@ contract("Exchange", (accounts: string[]) => {
 
       // Everything correct
       await depositChecked(accountID, token, amount, owner, depositFee);
-    });
-
-    it("Fee recipient account", async () => {
-      await createExchange(false);
-
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const owner = exchangeTestUtil.testContext.orderOwners[0];
-      let amount = new BN(0);
-      const token = exchangeTestUtil.getTokenAddress("ETH");
-
-      // The correct deposit fee expected by the contract
-      const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
-      const depositFee = fees._depositFeeETH;
-      const updateFee = fees._accountUpdateFeeETH;
-
-      // Everything correct
-      const totalFee = acountCreationFee.add(depositFee);
-      const accountID = await createFeeRecipientAccountChecked(owner, totalFee);
-
-      // Try to change the type of the account
-      await expectThrow(
-        exchange.createOrUpdateAccount(
-          keyPair.publicKeyX, keyPair.publicKeyY, {from: owner, value: updateFee},
-        ),
-        "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED",
-      );
-
-      // Try to deposit to the account
-      amount = new BN(web3.utils.toWei("3", "ether"));
-      await expectThrow(
-        exchange.deposit(token, amount, {from: owner, value: depositFee}),
-        "INVALID_ACCOUNT_TYPE",
-      );
     });
 
     it("Onchain withdrawal request", async () => {

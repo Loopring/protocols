@@ -55,10 +55,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
-        tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
-        tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
-        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);
-
         updateSettingsInternal(
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
@@ -242,81 +238,15 @@ contract LoopringV3 is ILoopringV3, Ownable
         emit StakeWithdrawn(exchangeId, amount);
     }
 
-    function getTokenBurnRate(
-        address _token
-        )
-        public
-        view
-        returns (uint16 burnRate)
-    {
-        Token storage token = tokens[_token];
-        if (token.tierValidUntil < now) {
-            burnRate = BURNRATE_TIER4;
-        } else if (token.tier == 1) {
-            burnRate = BURNRATE_TIER1;
-        } else if (token.tier == 2) {
-            burnRate = BURNRATE_TIER2;
-        } else if (token.tier == 3) {
-            burnRate = BURNRATE_TIER3;
-        } else {
-            burnRate = BURNRATE_TIER4;
-        }
-    }
-
-    function getLRCCostToBuydownTokenBurnRate(
-        address _token
-        )
-        public
-        view
-        returns (
-            uint amountLRC,
-            uint8 currentTier
-        )
-    {
-        require(_token != address(0), "BURN_RATE_FROZEN");
-        require(_token != lrcAddress, "BURN_RATE_FROZEN");
-        require(_token != wethAddress, "BURN_RATE_FROZEN");
-
-        Token storage token = tokens[_token];
-
-        currentTier = 4;
-        if (token.tier != 0 && token.tierValidUntil > now) {
-            currentTier = token.tier;
-        }
-
-        // Can't upgrade to a higher level than tier 1
-        require(currentTier > 1, "BURN_RATE_MINIMIZED");
-        uint totalSupply = BurnableERC20(lrcAddress).totalSupply();
-        amountLRC = totalSupply.mul(tierUpgradeCostBips) / 10000;
-    }
-
-    function buydownTokenBurnRate(
-        address _token
+    function getProtocolFees(
+        uint exchangeId
         )
         external
-        returns (
-            uint amountBurned,
-            uint8 currentTier
-        )
+        view
+        returns (uint8 takerFeeBips, uint8 makerFeeBips)
     {
-        (amountBurned, currentTier) = getLRCCostToBuydownTokenBurnRate(_token);
-
-        // Burn tierUpgradeCostBips of total LRC supply
-        require(BurnableERC20(lrcAddress).burnFrom(msg.sender, amountBurned), "BURN_FAILURE");
-        currentTier -= 1;
-
-        // Upgrade tier
-        Token storage token = tokens[_token];
-        token.tokenAddress = _token;
-        token.tier = currentTier;
-
-        if (token.tierValidUntil < now) {
-            token.tierValidUntil = now + TIER_UPGRADE_DURATION;
-        } else {
-            token.tierValidUntil += TIER_UPGRADE_DURATION;
-        }
-
-        emit TokenBurnRateDown(_token, token.tier, now);
+        takerFeeBips = 50;
+        makerFeeBips = 25;
     }
 
     function withdrawTheBurn(
@@ -360,7 +290,6 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
-        tierUpgradeCostBips = _tierUpgradeCostBips;
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
         withdrawalFineLRC = _withdrawalFineLRC;

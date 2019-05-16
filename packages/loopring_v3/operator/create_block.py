@@ -68,15 +68,14 @@ def orderFromJSON(jOrder, state):
     dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
-    tokenF = int(jOrder["tokenIdF"])
     amountS = int(jOrder["amountS"])
     amountB = int(jOrder["amountB"])
-    amountF = int(jOrder["amountF"])
     allOrNone = int(jOrder["allOrNone"])
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
+    feeBips = int(jOrder["feeBips"])
+    rebateBips = int(jOrder["rebateBips"])
     walletSplitPercentage = int(jOrder["walletSplitPercentage"])
-    waiveFeePercentage = int(jOrder["waiveFeePercentage"])
 
     account = state.getAccount(accountID)
     walletAccount = state.getAccount(walletAccountID)
@@ -85,10 +84,10 @@ def orderFromJSON(jOrder, state):
                   Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
                   Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
                   realmID, orderID, accountID, walletAccountID,
-                  tokenS, tokenB, tokenF,
-                  amountS, amountB, amountF,
+                  tokenS, tokenB,
+                  amountS, amountB,
                   allOrNone, validSince, validUntil,
-                  walletSplitPercentage, waiveFeePercentage)
+                  feeBips, rebateBips, walletSplitPercentage)
 
     order.sign(FQ(int(account.secretKey)))
 
@@ -99,13 +98,12 @@ def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
     minerAccountID = int(jRing["minerAccountID"])
-    feeRecipientAccountID = int(jRing["feeRecipientAccountID"])
     tokenID = int(jRing["tokenID"])
     fee = int(jRing["fee"])
 
     minerAccount = state.getAccount(minerAccountID)
 
-    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, minerAccountID, tokenID, fee, minerAccount.nonce)
 
     ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
 
@@ -117,25 +115,35 @@ def createRingSettlementBlock(state, data):
     block.realmID = state.realmID
     block.merkleRootBefore = str(state.getRoot())
     block.timestamp = int(data["timestamp"])
+    block.protocolTakerFeeBips = int(data["protocolTakerFeeBips"])
+    block.protocolMakerFeeBips = int(data["protocolMakerFeeBips"])
     block.operatorAccountID = int(data["operatorAccountID"])
 
-    context = Context(block.operatorAccountID, block.timestamp)
+    context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
-    # Operator payment
+    # Protocol fee payment / Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
+    accountBefore_P = copyAccountInfo(state.getAccount(0))
+    accountBefore_O = copyAccountInfo(state.getAccount(block.operatorAccountID))
 
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, state)
         ringSettlement = state.settleRing(context, ring)
         block.ringSettlements.append(ringSettlement)
 
+    # Protocol fee payment
+    proof = state._accountsTree.createProof(0)
+    state.updateAccountTree(0)
+    accountAfter = copyAccountInfo(state.getAccount(0))
+    rootAfter = state._accountsTree._root
+    block.accountUpdate_P = AccountUpdateData(0, proof, rootBefore, rootAfter, accountBefore_P, accountAfter)
+
     # Operator payment
     proof = state._accountsTree.createProof(block.operatorAccountID)
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
-    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore_O, accountAfter)
 
     block.merkleRootAfter = str(state.getRoot())
     return block

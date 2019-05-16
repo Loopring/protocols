@@ -22,14 +22,6 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3
 {
-    // == Structs ==
-    struct Token
-    {
-        address tokenAddress;
-        uint8   tier;
-        uint    tierValidUntil;
-    }
-
     // == Events ==
     event ExchangeCreated(
         uint    indexed exchangeId,
@@ -58,21 +50,6 @@ contract ILoopringV3
         uint            time
     );
 
-    event TokenBurnRateDown(
-        address indexed token,
-        uint    indexed tier,
-        uint            time
-    );
-
-    // == Constants ==
-    // Burn rates (in bips -- 100bips == 1%)
-    uint16 public constant BURNRATE_TIER1 =  250; // 2.5%
-    uint16 public constant BURNRATE_TIER2 = 1500; //  15%
-    uint16 public constant BURNRATE_TIER3 = 3000; //  30%
-    uint16 public constant BURNRATE_TIER4 = 5000; //  50%
-
-    uint   public constant TIER_UPGRADE_DURATION  = 365 days;
-
     // == Public Variables ==
     address[] public exchanges;
 
@@ -89,11 +66,6 @@ contract ILoopringV3
     uint    public withdrawalFineLRC            = 0;
     uint    public tokenRegistrationFeeLRCBase  = 0;
     uint    public tokenRegistrationFeeLRCDelta = 0;
-
-    // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
-    uint16  public  tierUpgradeCostBips  =  1; // 0.01% or 130K LRC
-
-    mapping (address => Token) public tokens;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
@@ -187,55 +159,16 @@ contract ILoopringV3
         public
         returns (uint amount);
 
-    /// @dev Get the burn rate for a given ERC20 token or Ether
-    /// @param  token The address of the token. Use 0x0 for Ether.
-    /// @return burnRate The burn rate in terms of bips.
-    function getTokenBurnRate(
-        address token
-        )
-        public
-        view
-        returns (uint16 burnRate);
-
-    /// @dev Get the amount of LRC to burn for lowering a token's burn rate for 365 days.
-    /// @param  token The address of the token. Use 0x0 for Ether
-    /// @return amountLRC The amount of LRC to burn
-    /// @return currentTier The current tier of the token
-    function getLRCCostToBuydownTokenBurnRate(
-        address token
-        )
-        public
-        view
-        returns (
-            uint amountLRC,
-            uint8 currentTier
-        );
-
-    /// @dev Burn LRC to lower a token's burn rate for 365 days.
-    ///      Initially all ERC20 tokens' burn rates are at tier-4, with the exception
-    ///      that LRC's burn rate is at tier-1, and WETH's burn rate is at tier-3. Ether's burn
-    ///      rate is also at tier-3.
-    ///
-    ///      The amount of LRC required to lower the burn rate to the next level
-    ///      is governed by `tierUpgradeCostBips`. If `tierUpgradeCostBips` is P,
-    ///      a total of `137,495 * P` LRC is required.
-    ///
-    ///      Calling this function more than once will extend the burn rate period.
-    ///      For example, if the token's current burn rate at tier-3 and the burn rate
-    ///      is expiering (restoring to tier-4) in 30 days, a successfull call of this
-    ///      function will extend the tier-2 period to 395 (365+30) days.
-    ///
-    /// @param  token The address of the token. Use 0x0 for Ether
-    /// @return amountBurned The amount of LRC burned
-    /// @return currentTier The current tier of the token after the buydown
-    function buydownTokenBurnRate(
-        address token
+    /// @dev Get the protocol fees for an exchange.
+    /// @param exchangeId The id of the exchange
+    /// @return takerFeeBips The protocol taker fee
+    /// @return makerFeeBips The protocol maker fee
+    function getProtocolFees(
+        uint exchangeId
         )
         external
-        returns (
-            uint amountBurned,
-            uint8 currentTier
-        );
+        view
+        returns (uint8 takerFeeBips, uint8 makerFeeBips);
 
     /// @dev Withdraw all non-LRC fees (called the Burn) to the designated address.
     ///      LRC fees have been burned already thanks to the new LRC contract's burn function;

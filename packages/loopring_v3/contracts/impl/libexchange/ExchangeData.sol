@@ -77,6 +77,14 @@ library ExchangeData
         bool    depositDisabled;
     }
 
+    struct ProtocolFeeData
+    {
+        uint32 timestamp;
+        uint8 takerFeeBips;
+        uint8 makerFeeBips;
+        uint8 previousTakerFeeBips;
+        uint8 previousMakerFeeBips;
+    }
 
     // This is the (virtual) block an operator needs to submit onchain to maintain the
     // per-exchange (virtual) blockchain.
@@ -169,6 +177,7 @@ library ExchangeData
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
     function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
@@ -202,6 +211,9 @@ library ExchangeData
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
 
         uint numBlocksFinalized;
+
+        // Cached data for the protocol fee
+        ProtocolFeeData protocolFeeData;
 
         // Time when the exchange was shutdown
         uint shutdownStartTime;

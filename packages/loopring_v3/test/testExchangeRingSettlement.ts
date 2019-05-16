@@ -42,7 +42,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
@@ -51,7 +52,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("900", "ether")),
+            feeBips: 5,
+            rebateBips: 10,
           },
         expected: {
           orderA: { filledFraction: 1.0, margin: new BN(0) },
@@ -77,7 +79,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 2,
           },
         orderB:
           {
@@ -86,7 +89,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            amountF: new BN(web3.utils.toWei("3", "ether")),
+            feeBips: 20,
+            rebateBips: 5,
           },
         expected: {
           orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5", "ether")) },
@@ -100,7 +104,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      await verify();
+      // await verify();
     });
 
     it("Matchable (orderA > orderB)", async () => {
@@ -110,20 +114,20 @@ contract("Exchange", (accounts: string[]) => {
             realmID,
             tokenS: "LRC",
             tokenB: "GTO",
-            tokenF: "ETH",
             amountS: new BN(web3.utils.toWei("101", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
             realmID,
             tokenS: "GTO",
             tokenB: "LRC",
-            tokenF: "ETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         expected: {
           orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("1", "ether")) },
@@ -149,6 +153,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
@@ -157,233 +163,9 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             balanceS: new BN(0),
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, margin: new BN(0) },
-          orderB: { filledFraction: 0.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("No fee funds available", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "ETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            balanceF: new BN(0),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "ETH",
-            amountS: new BN(web3.utils.toWei("5", "ether")),
-            amountB: new BN(web3.utils.toWei("45", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, margin: new BN(0) },
-          orderB: { filledFraction: 0.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("Insufficient fee funds available", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "ETH",
-            tokenB: "GTO",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "ETH",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("5", "ether")),
-            amountB: new BN(web3.utils.toWei("45", "ether")),
-            amountF: new BN(web3.utils.toWei("10", "ether")),
-            balanceF: new BN(web3.utils.toWei("2", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 0.1, margin: new BN(web3.utils.toWei("1", "ether")) },
-          orderB: { filledFraction: 0.2 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("tokenF == tokenS (sufficient funds)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "LRC",
-            tokenB: "GTO",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("101", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-            balanceS: new BN(web3.utils.toWei("102", "ether")),
-            balanceF: new BN(0),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "LRC",
-            tokenF: "ETH",
-            amountS: new BN(web3.utils.toWei("20", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("1", "ether")) },
-          orderB: { filledFraction: 0.5 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("tokenF == tokenS (insufficient funds)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "LRC",
-            tokenB: "GTO",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-            balanceS: new BN(web3.utils.toWei("55.5", "ether")),
-            balanceF: new BN(0),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "LRC",
-            tokenF: "ETH",
-            amountS: new BN(web3.utils.toWei("20", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5.0", "ether")) },
-          orderB: { filledFraction: 0.25 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("tokenF == tokenB (amountF <= amountB)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "ETH",
-            tokenB: "LRC",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-            balanceF: new BN(0),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "LRC",
-            tokenB: "ETH",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("10", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 1.0, margin: new BN(0) },
-          orderB: { filledFraction: 1.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("tokenF == tokenB (amountF > amountB)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "ETH",
-            tokenB: "LRC",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("11", "ether")),
-            balanceF: new BN(0),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "LRC",
-            tokenB: "ETH",
-            tokenF: "LRC",
-            amountS: new BN(web3.utils.toWei("10", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
           },
         expected: {
           orderA: { filledFraction: 0.0, margin: new BN(0) },
@@ -410,6 +192,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             walletAccountID: wallet.walletAccountID,
           },
         orderB:
@@ -419,6 +203,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             walletAccountID: wallet.walletAccountID,
           },
         expected: {
@@ -445,6 +231,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             walletSplitPercentage: 0,
           },
         orderB:
@@ -454,6 +242,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             walletSplitPercentage: 0,
           },
         expected: {
@@ -480,6 +270,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             walletSplitPercentage: 100,
           },
         orderB:
@@ -489,6 +281,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             walletSplitPercentage: 100,
           },
         expected: {
@@ -515,6 +309,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             allOrNone: true,
           },
         orderB:
@@ -524,6 +320,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         expected: {
           orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("10", "ether")) },
@@ -549,6 +347,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             allOrNone: true,
           },
         orderB:
@@ -558,6 +358,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             balanceS: new BN(web3.utils.toWei("5", "ether")),
           },
         expected: {
@@ -575,42 +377,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("waiveFeePercentage == 100", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "ETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            waiveFeePercentage: 100,
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "ETH",
-            amountS: new BN(web3.utils.toWei("5", "ether")),
-            amountB: new BN(web3.utils.toWei("45", "ether")),
-            waiveFeePercentage: 0,
-          },
-        expected: {
-          orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5", "ether")) },
-          orderB: { filledFraction: 1.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("Self-trading (same tokenF, sufficient balance)", async () => {
+    it("Self-trading", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -619,10 +386,10 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("105", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
             balanceS: new BN(web3.utils.toWei("105", "ether")),
             balanceB: new BN(web3.utils.toWei("10", "ether")),
-            balanceF: new BN(web3.utils.toWei("3", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
@@ -631,53 +398,12 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("10", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         expected: {
           orderA: { filledFraction: 1.0, margin: new BN(web3.utils.toWei("5", "ether")) },
           orderB: { filledFraction: 1.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-
-      ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.walletAccountID = ring.orderA.walletAccountID;
-
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
-    });
-
-    it("Self-trading (same tokenF, insufficient balance)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-            balanceS: new BN(web3.utils.toWei("100", "ether")),
-            balanceB: new BN(web3.utils.toWei("10", "ether")),
-            balanceF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("10", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, margin: new BN(0) },
-          orderB: { filledFraction: 0.0 },
         },
       };
 
@@ -703,7 +429,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(60),
             amountB: new BN(web3.utils.toWei("5", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
@@ -712,7 +439,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "INDA",
             amountS: new BN(web3.utils.toWei("2.5", "ether")),
             amountB: new BN(25),
-            amountF: new BN(web3.utils.toWei("3", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         expected: {
           orderA: { filledFraction: 0.5, margin: new BN(5) },
@@ -738,7 +466,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "INDB",
             amountS: new BN(20),
             amountB: new BN(200),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
@@ -747,7 +476,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "INDA",
             amountS: new BN(200),
             amountB: new BN(20),
-            amountF: new BN(web3.utils.toWei("3", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             balanceS: new BN(199),
           },
         expected: {
@@ -774,7 +504,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "INDB",
             amountS: new BN(1),
             amountB: new BN(10),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         orderB:
           {
@@ -783,7 +514,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "INDA",
             amountS: new BN(10),
             amountB: new BN(1),
-            amountF: new BN(web3.utils.toWei("3", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             balanceS: new BN(5),
           },
         expected: {
@@ -810,7 +542,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            waiveFeePercentage: 100,
           },
         orderB:
           {
@@ -819,7 +550,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            waiveFeePercentage: 0,
           },
       };
 
@@ -835,7 +565,7 @@ contract("Exchange", (accounts: string[]) => {
       }
     });
 
-    it("Unmatchable", async () => {
+    it("Unmatchable 1", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -844,7 +574,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("90", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
             allOrNone: true,
           },
         orderB:
@@ -854,7 +585,8 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("1000", "ether")),
+            feeBips: 25,
+            rebateBips: 0,
           },
         expected: {
           orderA: { filledFraction: 0.0, margin: new BN(0) },
@@ -868,7 +600,46 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      await verify();
+      // await verify();
+    });
+
+    it.only("Unmatchable 2", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            feeBips: 25,
+            rebateBips: 100,
+          },
+        orderB:
+          {
+            realmID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            feeBips: 110,
+            rebateBips: 0,
+            walletSplitPercentage: 0,
+            allOrNone: true,
+          },
+        expected: {
+          orderA: { filledFraction: 0.0, margin: new BN(0) },
+          orderB: { filledFraction: 0.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      // await verify();
     });
 
     it("validUntil < now", async () => {
@@ -880,7 +651,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1000", "ether")),
             validUntil: 1,
           },
         orderB:
@@ -890,7 +660,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("900", "ether")),
           },
         expected: {
           orderA: { filledFraction: 0.0, margin: new BN(0) },
@@ -916,7 +685,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1000", "ether")),
             validSince: 0xFFFFFFFF,
           },
         orderB:
@@ -926,7 +694,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("900", "ether")),
           },
         expected: {
           orderA: { filledFraction: 0.0, margin: new BN(0) },
@@ -952,7 +719,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("3", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("90", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[0],
           },
         orderB:
@@ -962,7 +728,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("2", "ether")),
-            amountF: new BN(web3.utils.toWei("20", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[1],
           },
         expected: {
@@ -1015,7 +780,6 @@ contract("Exchange", (accounts: string[]) => {
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("10", "ether")),
         amountB: new BN(web3.utils.toWei("100", "ether")),
-        amountF: new BN(web3.utils.toWei("50", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
       };
       await exchangeTestUtil.setupOrder(order, 0);

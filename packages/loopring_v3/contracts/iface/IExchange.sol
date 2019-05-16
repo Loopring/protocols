@@ -182,14 +182,6 @@ contract IExchange
             bool   isAccountNew
         );
 
-    /// @dev Create a fee receipient account for msg.sender.
-    ///      For fee recipient accounts, their pubKeyX and pubKeyY are both `1`.
-    /// @return accountID The account's ID
-    function createFeeRecipientAccount()
-        external
-        payable
-        returns (uint24 accountID);
-
     // -- Balances --
     /// @dev Verifies that the given information is stored in the merkle tree with
     ///      the specified merkle root.
@@ -931,4 +923,12 @@ contract IExchange
             uint numWithdrawalRequestsProcessed,
             uint numAvailableWithdrawalSlots
         );
+
+    /// @dev Get the protocol fees for this exchange.
+    /// @return takerFeeBips The protocol taker fee
+    /// @return makerFeeBips The protocol maker fee
+    function getProtocolFees()
+        external
+        view
+        returns (uint8 takerFeeBips, uint8 makerFeeBips);
 }

@@ -122,11 +122,8 @@ library ExchangeWithdrawals
             msg.sender.transfer(msg.value.sub(S.withdrawalFeeETH));
         }
 
-        // Allow anyone to withdraw from fee accounts
-        require(
-            ExchangeAccounts.isFeeRecipientAccount(account) || account.owner == msg.sender,
-            "UNAUTHORIZED"
-        );
+        // Allow anyone to withdraw from protocol fee account
+        require(account.owner == msg.sender || accountID == 0, "UNAUTHORIZED");
 
         // Add the withdraw to the withdraw chain
         ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
@@ -173,7 +170,6 @@ library ExchangeWithdrawals
         assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
 
         uint24 accountID = S.getAccountID(owner);
-        ExchangeData.Account storage account = S.accounts[accountID];
         uint16 tokenID = S.getTokenID(token);
         require(S.withdrawnInWithdrawMode[owner][token] == false, "WITHDRAWN_ALREADY");
 
@@ -194,12 +190,11 @@ library ExchangeWithdrawals
         S.withdrawnInWithdrawMode[owner][token] = true;
 
         // Transfer the tokens
-        withdrawAndBurn(
+        withdrawTokens(
             S,
             owner,
             tokenID,
-            balance,
-            ExchangeAccounts.isFeeRecipientAccount(account)
+            balance
         );
     }
 
@@ -227,12 +222,11 @@ library ExchangeWithdrawals
 
         // Transfer the tokens
         ExchangeData.Account storage account = S.accounts[_deposit.accountID];
-        withdrawAndBurn(
+        withdrawTokens(
             S,
             account.owner,
             _deposit.tokenID,
-            amount,
-            ExchangeAccounts.isFeeRecipientAccount(account)
+            amount
         );
     }
 
@@ -314,12 +308,11 @@ library ExchangeWithdrawals
             ExchangeData.Account storage account = S.accounts[accountID];
 
             // Transfer the tokens
-            withdrawAndBurn(
+            withdrawTokens(
                 S,
                 account.owner,
                 tokenID,
-                amount,
-                ExchangeAccounts.isFeeRecipientAccount(account)
+                amount
             );
 
             emit WithdrawalCompleted(
@@ -457,53 +450,24 @@ library ExchangeWithdrawals
 
 
     // == Internal Functions ==
-    function withdrawAndBurn(
+    function withdrawTokens(
         ExchangeData.State storage S,
         address accountOwner,
         uint16  tokenID,
-        uint    amount,
-        bool    bBurn
+        uint    amount
         )
         internal
     {
         address payable owner = address(uint160(accountOwner));
         address token = S.getTokenAddress(tokenID);
-
-        // Calculate how much needs to get burned
-        uint amountToBurn = 0;
-        uint amountToOwner = 0;
-        if (bBurn) {
-            uint burnRate = S.loopring.getTokenBurnRate(token);
-            amountToBurn = amount.mul(burnRate) / 10000;
-            amountToOwner = amount - amountToBurn;
-        } else {
-            amountToBurn = 0;
-            amountToOwner = amount;
-        }
-
-        // Increase the burn balance
-        if (amountToBurn > 0) {
-            if (token == address(0x0)) {
-                // ETH
-                address payable payableLoopringAddress = address(uint160(address(S.loopring)));
-                payableLoopringAddress.transfer(amountToBurn);
-            } else if (token == S.lrcAddress) {
-                // LRC: burn LRC directly
-                require(BurnableERC20(S.lrcAddress).burn(amountToBurn), "BURN_FAILURE");
-            } else {
-                // ERC20 token (not LRC)
-                require(token.safeTransfer(address(S.loopring), amountToBurn), "TRANSFER_FAILURE");
-            }
-        }
-
         // Transfer the tokens from the contract to the owner
-        if (amountToOwner > 0) {
+        if (amount > 0) {
             if (token == address(0x0)) {
                 // ETH
-                owner.transfer(amountToOwner);
+                owner.transfer(amount);
             } else {
                 // ERC20 token
-                require(token.safeTransfer(owner, amountToOwner), "TRANSFER_FAILURE");
+                require(token.safeTransfer(owner, amount), "TRANSFER_FAILURE");
             }
         }
     }

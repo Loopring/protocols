@@ -159,7 +159,8 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public settleRing(ring: RingInfo, realm: Realm, timestamp: number, operatorAccountID: number) {
+  public settleRing(ring: RingInfo, realm: Realm, timestamp: number, operatorAccountID: number,
+                    protocolFeeTakerBips: number, protocolFeeMakerBips: number) {
     const orderA = ring.orderA;
     const orderB = ring.orderB;
 
@@ -173,10 +174,6 @@ export class Simulator {
       fillAmountBA = fillAmountSB;
       fillAmountSA = fillAmountBA.mul(ring.orderA.amountS).div(ring.orderA.amountB);
     }
-
-    let fillAmountFA = ring.orderA.amountF.mul(fillAmountSA).div(ring.orderA.amountS);
-    let fillAmountFB = ring.orderB.amountF.mul(fillAmountSB).div(ring.orderB.amountS);
-
     let margin = fillAmountSA.sub(fillAmountBB);
 
     let valid = true;
@@ -184,80 +181,80 @@ export class Simulator {
     // matchable
     valid = valid && this.ensure(!fillAmountSA.lt(fillAmountBB), "Not matchable");
 
-    // self-trading
-    const balanceF = realm.accounts[ring.orderA.accountID].balances[ring.orderA.tokenIdF].balance;
-    const totalFee = fillAmountFA.add(fillAmountFB);
-    if (ring.orderA.accountID === ring.orderB.accountID &&
-        ring.orderA.tokenIdF === ring.orderB.tokenIdF &&
-        balanceF.lt(totalFee)) {
-      valid = this.ensure(false, "Self-trading impossible");
-    }
-
     valid = valid && this.checkValid(ring.orderA, fillAmountSA, fillAmountBA, timestamp);
     valid = valid && this.checkValid(ring.orderB, fillAmountSB, fillAmountBB, timestamp);
 
     if (!valid) {
       fillAmountSA = new BN(0);
       fillAmountBA = new BN(0);
-      fillAmountFA = new BN(0);
       fillAmountSB = new BN(0);
       fillAmountBB = new BN(0);
-      fillAmountFB = new BN(0);
       margin = new BN(0);
     }
 
     fillAmountSA = roundToFloatValue(fillAmountSA, constants.Float24Encoding);
-    fillAmountFA = roundToFloatValue(fillAmountFA, constants.Float24Encoding);
     fillAmountSB = roundToFloatValue(fillAmountSB, constants.Float24Encoding);
-    fillAmountFB = roundToFloatValue(fillAmountFB, constants.Float24Encoding);
-    margin = roundToFloatValue(margin, constants.Float24Encoding);
+    margin = roundToFloatValue(margin, constants.Float16Encoding);
+    const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
     fillAmountBA = fillAmountSB;
     fillAmountBB = fillAmountSA.sub(margin);
 
-    const ringFee = roundToFloatValue(ring.fee, constants.Float16Encoding);
+    const protocolFeeMargin = margin.mul(new BN(protocolFeeTakerBips)).div(new BN(10000));
 
     /*console.log("Simulator: ");
 
     console.log("fillAmountSA: " + fillAmountSA.toString(10));
     console.log("fillAmountBA: " + fillAmountBA.toString(10));
-    console.log("fillAmountFA: " + fillAmountFA.toString(10));
 
     console.log("fillAmountSB: " + fillAmountSB.toString(10));
-    console.log("fillAmountBB: " + fillAmountBB.toString(10));
-    console.log("fillAmountFB: " + fillAmountFB.toString(10));*/
+    console.log("fillAmountBB: " + fillAmountBB.toString(10));*/
 
-    const [walletFeeA, matchingFeeA] = this.calculateFees(
-      fillAmountFA,
+    const [feeA, protocolFeeA, walletFeeA, matchingFeeA, rebateA] = this.calculateFees(
+      fillAmountSA,
+      fillAmountBA,
+      protocolFeeTakerBips,
+      ring.orderA.feeBips,
+      ring.orderA.rebateBips,
       ring.orderA.walletSplitPercentage,
-      ring.orderA.waiveFeePercentage,
     );
 
-    const [walletFeeB, matchingFeeB] = this.calculateFees(
-      fillAmountFB,
+    const [feeB, protocolFeeB, walletFeeB, matchingFeeB, rebateB] = this.calculateFees(
+      fillAmountSB,
+      fillAmountBB,
+      protocolFeeTakerBips,
+      ring.orderB.feeBips,
+      ring.orderB.rebateBips,
       ring.orderB.walletSplitPercentage,
-      ring.orderB.waiveFeePercentage,
     );
+
+    console.log("feeA: " + feeA.toString(10));
+    console.log("protocolFeeA: " + protocolFeeA.toString(10));
+    console.log("walletFeeA: " + walletFeeA.toString(10));
+    console.log("matchingFeeA: " + matchingFeeA.toString(10));
+    console.log("rebateA: " + rebateA.toString(10));
+
+    console.log("feeB: " + feeB.toString(10));
+    console.log("protocolFeeB: " + protocolFeeB.toString(10));
+    console.log("walletFeeB: " + walletFeeB.toString(10));
+    console.log("matchingFeeB: " + matchingFeeB.toString(10));
+    console.log("rebateB: " + rebateB.toString(10));
 
     const newRealm = this.copyRealm(realm);
 
     // Update accountA
     const accountA = newRealm.accounts[ring.orderA.accountID];
     accountA.balances[ring.orderA.tokenIdS].balance =
-      accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA);
+      accountA.balances[ring.orderA.tokenIdS].balance.sub(fillAmountSA).add(rebateA);
     accountA.balances[ring.orderA.tokenIdB].balance =
-      accountA.balances[ring.orderA.tokenIdB].balance.add(fillAmountBA);
-    accountA.balances[ring.orderA.tokenIdF].balance =
-      accountA.balances[ring.orderA.tokenIdF].balance.sub(walletFeeA.add(matchingFeeA));
+      accountA.balances[ring.orderA.tokenIdB].balance.add(fillAmountBA.sub(feeA));
 
     // Update accountB
     const accountB = newRealm.accounts[ring.orderB.accountID];
     accountB.balances[ring.orderB.tokenIdS].balance =
-      accountB.balances[ring.orderB.tokenIdS].balance.sub(fillAmountSB);
+      accountB.balances[ring.orderB.tokenIdS].balance.sub(fillAmountSB).add(rebateB);
     accountB.balances[ring.orderB.tokenIdB].balance =
-      accountB.balances[ring.orderB.tokenIdB].balance.add(fillAmountBB);
-    accountB.balances[ring.orderB.tokenIdF].balance =
-      accountB.balances[ring.orderB.tokenIdF].balance.sub(walletFeeB.add(matchingFeeB));
+      accountB.balances[ring.orderB.tokenIdB].balance.add(fillAmountBB.sub(feeB));
 
     // Update trade history A
     {
@@ -280,33 +277,38 @@ export class Simulator {
 
     // Update walletA
     const walletA = newRealm.accounts[ring.orderA.walletAccountID];
-    walletA.balances[ring.orderA.tokenIdF].balance =
-      walletA.balances[ring.orderA.tokenIdF].balance.add(walletFeeA);
+    walletA.balances[ring.orderA.tokenIdB].balance =
+      walletA.balances[ring.orderA.tokenIdB].balance.add(walletFeeA);
 
     // Update walletB
     const walletB = newRealm.accounts[ring.orderB.walletAccountID];
-    walletB.balances[ring.orderB.tokenIdF].balance =
-      walletB.balances[ring.orderB.tokenIdF].balance.add(walletFeeB);
-
-    // Update feeRecipient
-    const feeRecipient = newRealm.accounts[ring.feeRecipientAccountID];
-    // - Matching fee A
-    feeRecipient.balances[ring.orderA.tokenIdF].balance =
-      feeRecipient.balances[ring.orderA.tokenIdF].balance.add(matchingFeeA);
-    // - Matching fee B
-    feeRecipient.balances[ring.orderB.tokenIdF].balance =
-     feeRecipient.balances[ring.orderB.tokenIdF].balance.add(matchingFeeB);
+    walletB.balances[ring.orderB.tokenIdB].balance =
+      walletB.balances[ring.orderB.tokenIdB].balance.add(walletFeeB);
 
     // Update ringMatcher
     const ringMatcher = newRealm.accounts[ring.minerAccountID];
-    // - Margin
-    ringMatcher.balances[ring.orderA.tokenIdS].balance =
-     ringMatcher.balances[ring.orderA.tokenIdS].balance.add(margin);
+    // - MatchingFeeA
+    ringMatcher.balances[ring.orderA.tokenIdB].balance =
+     ringMatcher.balances[ring.orderA.tokenIdB].balance.add(matchingFeeA.sub(rebateB));
+    // - MatchingFeeB
+    ringMatcher.balances[ring.orderB.tokenIdB].balance =
+     ringMatcher.balances[ring.orderB.tokenIdB].balance.add(
+       matchingFeeB.add(margin.sub(protocolFeeMargin)).sub(rebateA),
+     );
     // - Operator fee
     ringMatcher.balances[ring.tokenID].balance =
      ringMatcher.balances[ring.tokenID].balance.sub(ringFee);
     // Increase nonce
     ringMatcher.nonce++;
+
+    // Update protocol fee recipient
+    const protocolFeeAccount = newRealm.accounts[0];
+    // - Order A
+    protocolFeeAccount.balances[ring.orderA.tokenIdB].balance =
+      protocolFeeAccount.balances[ring.orderA.tokenIdB].balance.add(protocolFeeA);
+    // - Order B
+    protocolFeeAccount.balances[ring.orderB.tokenIdB].balance =
+      protocolFeeAccount.balances[ring.orderB.tokenIdB].balance.add(protocolFeeB.add(protocolFeeMargin));
 
     // Update operator
     const operator = newRealm.accounts[operatorAccountID];
@@ -329,7 +331,7 @@ export class Simulator {
       }
     }
 
-    const detailedTransfersA = this.getDetailedTransfers(
+    /*const detailedTransfersA = this.getDetailedTransfers(
       ring, ring.orderA, ring.orderB,
       fillAmountSA, fillAmountBA, fillAmountFA,
       margin,
@@ -341,7 +343,7 @@ export class Simulator {
       fillAmountSB, fillAmountBB, fillAmountFB,
       new BN(0),
       walletFeeB, matchingFeeB,
-    );
+    );*/
 
     const operatorFee: DetailedTokenTransfer = {
       description: "OperatorFee",
@@ -353,8 +355,8 @@ export class Simulator {
     };
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
-    detailedTransfers.push(...detailedTransfersA);
-    detailedTransfers.push(...detailedTransfersB);
+    /*detailedTransfers.push(...detailedTransfersA);
+    detailedTransfers.push(...detailedTransfersB);*/
     detailedTransfers.push(operatorFee);
 
     const simulatorReport: RingSettlementSimulatorReport = {
@@ -444,38 +446,23 @@ export class Simulator {
     const cancelled = (tradeHistory.orderID > order.orderID) ? true : tradeHistory.cancelled;
 
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
-    const balanceF = new BN(accountData.balances[order.tokenIdF].balance);
-
     const remainingS = cancelled ? new BN(0) : order.amountS.sub(filled);
-    let fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
-
-    // Check how much fee needs to be paid. We limit fillAmountS to how much
-    // fee the order owner can pay.
-    const fillAmountF = order.amountF.mul(fillAmountS).div(order.amountS);
-
-    if (order.tokenIdF === order.tokenIdS && balanceS.lt(fillAmountS.add(fillAmountF))) {
-      // Equally divide the available tokens between fillAmountS and fillAmountF
-      fillAmountS = balanceS.mul(order.amountS).div(order.amountS.add(order.amountF));
-    }
-    if (order.tokenIdF !== order.tokenIdS && balanceF.lt(fillAmountF)) {
-      // Scale down fillAmountS so the available fillAmountF is sufficient
-      fillAmountS = balanceF.mul(order.amountS).div(order.amountF);
-    }
-    if (order.tokenIdF === order.tokenIdB && order.amountF.lte(order.amountB)) {
-      // No rebalancing (because of insufficient balanceF) is ever necessary when amountF <= amountB
-      fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
-    }
+    const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
 
     const fillAmountB = fillAmountS.mul(order.amountB).div(order.amountS);
     return [fillAmountS, fillAmountB];
   }
 
-  private calculateFees(fee: BN, walletSplitPercentage: number, waiveFeePercentage: number) {
-    const walletFee = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
-    const matchingFee = fee.sub(walletFee);
-    const matchingFeeAfterWaiving = matchingFee.mul(new BN(waiveFeePercentage)).div(new BN(100));
-
-    return [walletFee, matchingFeeAfterWaiving];
+  private calculateFees(amountS: BN, amountB: BN,
+                        protocolFeeBips: number, feeBips: number, rebateBips: number,
+                        walletSplitPercentage: number) {
+    const rebate = amountS.mul(new BN(rebateBips)).div(new BN(10000));
+    const fee = amountB.mul(new BN(feeBips)).div(new BN(10000));
+    const protocolFee = amountB.mul(new BN(protocolFeeBips)).div(new BN(100000));
+    const spendableFee = fee.sub(protocolFee);
+    const walletFee = spendableFee.mul(new BN(walletSplitPercentage)).div(new BN(100));
+    const matchingFee = spendableFee.sub(walletFee);
+    return [fee, protocolFee, walletFee, matchingFee, rebate];
   }
 
   private hasRoundingError(value: BN, numerator: BN, denominator: BN) {

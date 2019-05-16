@@ -48,7 +48,7 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State public state;
+    ExchangeData.State private state;
     // -- Constructor --
     constructor(
         uint    _id,
@@ -171,26 +171,6 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
             pubKeyX,
             pubKeyY,
             true
-        );
-    }
-
-    function createFeeRecipientAccount()
-        external
-        payable
-        nonReentrant
-        returns (uint24 accountID)
-    {
-        accountID = state.createFeeRecipientAccount();
-
-        // We need to create a 0-value Ether deposit so this account will
-        // become part of the offchain Merkle tree -- fee recipiient accounts cannot
-        // receive further deposits.
-        state.depositTo(
-            true, // allowFeeRecipientAccount
-            msg.sender,
-            address(0),
-            0,
-            state.accountCreationFeeETH
         );
     }
 
@@ -456,7 +436,6 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
             additionalFeeETH = state.accountUpdateFeeETH;
         }
         state.depositTo(
-            false, // allowFeeRecipientAccount
             msg.sender,
             token,
             amount,
@@ -473,7 +452,6 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         nonReentrant
     {
         state.depositTo(
-            false, // allowFeeRecipientAccount
             msg.sender,
             token,
             amount,
@@ -491,7 +469,6 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         nonReentrant
     {
         state.depositTo(
-            false, // allowFeeRecipientAccount
             recipient,
             tokenAddress,
             amount,
@@ -742,5 +719,13 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         numAvailableDepositSlots = state.getNumAvailableDepositSlots();
         numWithdrawalRequestsProcessed = state.getNumWithdrawalRequestsProcessed();
         numAvailableWithdrawalSlots = state.getNumAvailableWithdrawalSlots();
+    }
+
+    function getProtocolFees()
+        external
+        view
+        returns (uint8 takerFeeBips, uint8 makerFeeBips)
+    {
+        return state.loopring.getProtocolFees(state.id);
     }
 }

@@ -615,23 +615,22 @@ In the calculations below we use 68 gas/byte for our data-availability data.
 - Operator account ID: 3 bytes
 - For every ring
     - Ring-matcher account ID: 2,5 bytes
-    - Fee-recipient account ID: 2,5 bytes
+    - Fee amount: 1,5 bytes
     - Token ID (fee to operator): 1 bytes
-    - Fee amount: 2 bytes
-    - Margin (paid by first order): 3 bytes
+    - Margin (paid by first order): 2 bytes
     - For both Orders:
         - Account ID: 2,5 bytes
         - Wallet account ID: 2,5 bytes
         - TokenS: 1 bytes
-        - TokenF: 1 bytes
         - Order ID: 2,5 bytes
         - FillS: 3 bytes
-        - FillF: 3 bytes
+        - feeBips: 1 byte
+        - rebateBips: 1 byte
         - WalletSplitPercentage: 1 byte
-        - WaiveFeePercentage: 1 byte
+
 ```
-=> **46 bytes/ring**
-=> Calldata cost: (11 + 2 * 17,5) * 68 = **3128 gas/ring**
+=> **36 bytes/ring**
+=> Calldata cost: (7 + 2 * 14,5) * 68 = **2448 gas/ring**
 
 #### Data-availability for order cancellations
 ```
