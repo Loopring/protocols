@@ -48,8 +48,7 @@ library AuctionStatus
         uint P0 = s.P / s.M;
         uint P1 = s.P.mul(s.M);
         assert(P0 > 0 && P1 > P0);
-        
-        i.settledAt = s.settledAt;
+
         uint elapsed = block.timestamp - s.startTime;
 
         if (s.askAmount > 0) {

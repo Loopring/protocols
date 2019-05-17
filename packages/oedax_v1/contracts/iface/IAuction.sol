@@ -106,7 +106,6 @@ contract IAuction is Ownable
     /// @return bidPrice The current bid price.
     /// @return askAllowed The max amount of ask tokens that can be accepted.
     /// @return bidAllowed The max amount of bid tokens that can be accepted.
-    /// @return settledAt The timestamp that the settlement completed.
     function getStatus()
         external
         view
@@ -117,7 +116,6 @@ contract IAuction is Ownable
             uint askPrice,
             uint bidPrice,
             uint askAllowed,
-            uint bidAllowed,
-            uint settledAt
+            uint bidAllowed
         );
 }

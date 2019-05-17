@@ -192,8 +192,7 @@ contract Auction is IAuction
             uint askPrice,
             uint bidPrice,
             uint askAllowed,
-            uint bidAllowed,
-            uint settledAt
+            uint bidAllowed
         )
     {
         IAuctionData.Status memory i = state.getAuctionStatus();
@@ -209,7 +208,6 @@ contract Auction is IAuction
         uint elapsed = block.timestamp - state.startTime;
 
         timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
-        settledAt = i.settledAt;
     }
 
     // == Internal & Private Functions ==

@@ -102,7 +102,7 @@ library IAuctionData
         mapping (address => Account) accounts;
         address payable[] users;
 
-        uint numDistributed;
+        uint    numDistributed;
         uint    settledAt;
     }
 
