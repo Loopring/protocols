@@ -35,6 +35,8 @@ library IAuctionData
 
       uint    askAllowed;
       uint    bidAllowed;
+
+      uint    settledAt;
     }
 
 
@@ -101,6 +103,7 @@ library IAuctionData
         address payable[] users;
 
         uint numDistributed;
+        uint    settledAt;
     }
 
     event Bid(

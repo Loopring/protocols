@@ -48,7 +48,7 @@ library AuctionSettlement
     using ERC20SafeTransfer for address;
     using AuctionStatus     for IAuctionData.State;
 
-    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 80000;
     uint32 public constant MIN_GAS_TO_DISTRIBUTE_FEES = 100000;
 
     function settle(
@@ -59,6 +59,7 @@ library AuctionSettlement
     {
         IAuctionData.Status memory i = s.getAuctionStatus();
         require(!s.isAuctionOpen(i), "auction needs to be closed");
+        require(s.settledAt == 0, "settlement has been completed");
 
         bool hasTokensBeenDistributed = false;
         // First all tokens for all users need to be distributed
@@ -66,6 +67,7 @@ library AuctionSettlement
             distributeTokens(s, i);
             hasTokensBeenDistributed = true;
         }
+
         // Once all users have received their tokens we will distribute the fees
         if (s.numDistributed == s.users.length) {
             // If the caller also distributed tokens for users in this transaction
@@ -169,9 +171,7 @@ library AuctionSettlement
         }
 
         // Make sure the fees above cannot be withdrawn again by cleaning up the state
-        s.askAmount = 0;
-        s.bidAmount = 0;
-        s.fees.creatorEtherStake = 0;
+        s.settledAt = block.timestamp;
     }
 
     function distributeTokens(
