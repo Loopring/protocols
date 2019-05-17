@@ -35,8 +35,6 @@ library IAuctionData
 
       uint    askAllowed;
       uint    bidAllowed;
-
-      uint    settledAt;
     }
 
 
