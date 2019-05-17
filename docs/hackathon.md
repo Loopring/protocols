@@ -1,6 +1,6 @@
 # Loopring Hackathon Challenges
 
-## Challange #1: Build Oedax UI
+## Challenge #1: Build Oedax UI
 
 ### Description
 
