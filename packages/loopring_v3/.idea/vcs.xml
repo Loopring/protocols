@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="$PROJECT_DIR$/../.." vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/SHA3IUF" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/ate-pairing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/gtest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libff" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libff/depends/ate-pairing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libff/depends/xbyak" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft/depends/ate-pairing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft/depends/gtest" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft/depends/libff" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft/depends/libff/depends/ate-pairing" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft/depends/libff/depends/xbyak" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libfqfft/depends/xbyak" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/libsnark-supercop" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/ethsnarks/depends/libsnark/depends/xbyak" vcs="Git" />
+  </component>
+</project>
