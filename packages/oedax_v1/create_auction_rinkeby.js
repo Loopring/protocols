@@ -56,7 +56,7 @@ async function sendTx(txDataBin, sender, toAddr, privKey, ethVal = "0x0", nonceS
   const txCount = await web3.eth.getTransactionCount(addressFrom);
 
   const txData = {
-    nonce: web3.utils.toHex(txCount),
+    nonce: web3.utils.toHex(txCount + nonceShift),
     gasLimit: web3.utils.toHex(6500000),
     gasPrice: web3.utils.toHex(5e9),
     from: addressFrom,
@@ -94,7 +94,7 @@ async function test() {
   // console.log(fooToken.address, barToken.address);
 
   // const createAuctionBin1 =  oedaxInstance.methods.createAuction(
-  //   fooToken.address, barToken.address, 1, 1, 10, 5, 2, 60, 10800
+  //   fooToken.address, barToken.address, 1, 1, 10, 5, 2, 600, 10800
   // ).encodeABI();
   // await sendTx(createAuctionBin1, deployAddr, oedaxInstance.address, deployerPrivKey, numToBN(1e18));
 
@@ -107,20 +107,31 @@ async function test() {
   // const approveBin1 = fooToken.methods.approve(oedaxAddress, "1000000000000000000000000").encodeABI();
   // await sendTx(approveBin1, asker1, fooToken.address, asker1PrivKey);
 
-  // // const setBalanceBin2 = barToken.methods.setBalance(bidder1, "1000000000000000000000000").encodeABI();
-  // // await sendTx(setBalanceBin2, bidder1, barToken.address, bidder1PrivKey);
+  // const setBalanceBin2 = barToken.methods.setBalance(bidder1, "1000000000000000000000000").encodeABI();
+  // await sendTx(setBalanceBin2, bidder1, barToken.address, bidder1PrivKey);
+
   // const approveBin2 = barToken.methods.approve(oedaxAddress, "1000000000000000000000000").encodeABI();
   // await sendTx(approveBin2, bidder1, barToken.address, bidder1PrivKey);
 
-
-  // await fooToken.approve(oedaxInstance.address, numToBN(100000));
-  // await barToken.approve(oedaxInstance.address, numToBN(1000000000));
-
-  const auctionAddr1 = "0x8963Ceedfee98724e4a092934E5c0439376371Cf";
+  // const auctionAddr1 = "0xbFc90d47B99F6f9d644ab258F101386db0954963";
+  const auctionAddr1 = "0x6826DEC36f51cEa933e29a9f989D41Fb734f1CC6";
   const auctionInstance1 = new web3.eth.Contract(JSON.parse(auctionABI), auctionAddr1);
 
-  const bidBin1 = auctionInstance1.methods.bid("10000000000").encodeABI();
-  await sendTx(bidBin1, bidder1, auctionAddr1, bidder1PrivKey);
+  // const bidderBarTokenBalance = await barToken.methods.balanceOf(bidder1).call();
+  // const bidderBarAllowance = await barToken.methods.allowance(bidder1, oedaxAddress).call();
+  // console.log(bidderBarTokenBalance.toString(10), bidderBarAllowance.toString(10));
+
+  // const askBin1 = auctionInstance1.methods.ask("100000").encodeABI();
+  // await sendTx(askBin1, asker1, auctionAddr1, asker1PrivKey);
+
+  // const bidBin1 = auctionInstance1.methods.bid("10").encodeABI();
+  // await sendTx(bidBin1, bidder1, auctionAddr1, bidder1PrivKey);
+
+  const status1 = await auctionInstance1.methods.getStatus().call();
+  console.log("status1:", status1);
+
+  const settleBin = auctionInstance1.methods.settle().encodeABI();
+  await sendTx(settleBin, asker1, auctionAddr1, asker1PrivKey);
 
 }
 
