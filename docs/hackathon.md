@@ -46,8 +46,8 @@ The data returned from these two methods are complementary.
 ### Testnet Deployment Addresses
 
 - Testnet Name: rinkeby
-- IOedax contract address: [0x7f9D7c8d69c13215fE9D460342996BE35CA6F9aA](https://rinkeby.etherscan.io/address/0x7f9d7c8d69c13215fe9d460342996be35ca6f9aa)
-- ICurve contract address: [0xbe38136066d4d753988f820ca8043318e92fa70e](https://rinkeby.etherscan.io/address/0xbe38136066d4d753988f820ca8043318e92fa70e)
+- IOedax contract address: [0xc87d291C40C9F2754be26391878f715277c134B8](https://rinkeby.etherscan.io/address/0xc87d291C40C9F2754be26391878f715277c134B8)
+- ICurve contract address: [0x44Cd575E35F580b12702127b25421e3128525F2B](https://rinkeby.etherscan.io/address/0x44Cd575E35F580b12702127b25421e3128525F2B)
 - Token Foo address: [0xD0ef9379c783E5783BA499ceBA78734794B67E72](https://rinkeby.etherscan.io/address/0xd0ef9379c783e5783ba499ceba78734794b67e72)
 - Token Bar address: [0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615](https://rinkeby.etherscan.io/address/0x4ff214811f164dab1889c83b1fe2c8c27d3db615)
 
