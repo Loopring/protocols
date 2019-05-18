@@ -51,7 +51,7 @@ function sendSigned(txData, privKey, cb) {
   web3.eth.sendSignedTransaction('0x' + serializedTx, cb);
 }
 
-async function sendTx(txDataBin, sender, toAddr, privKey, ethVal = "0x0") {
+async function sendTx(txDataBin, sender, toAddr, privKey, ethVal = "0x0", nonceShift = 0) {
   const addressFrom = sender;
   const txCount = await web3.eth.getTransactionCount(addressFrom);
 
@@ -80,9 +80,8 @@ function numToBN(num) {
 
 async function test() {
   // const updateSettingsBin = oedaxInstance.methods.updateSettings(
-  //   feeRecipient, curveAddress, 5, 20, 1, 10, 15, 25, 35, 1
+  //   feeRecipient, curveAddress, 5, 20, 1, 300, 1, 1, 1, 1
   // ).encodeABI();
-
   // await sendTx(updateSettingsBin, deployAddr, oedaxInstance.address, deployerPrivKey);
 
   // const setFooTokenRankBin = oedaxInstance.methods.setTokenRank(
@@ -95,10 +94,9 @@ async function test() {
   // console.log(fooToken.address, barToken.address);
 
   // const createAuctionBin1 =  oedaxInstance.methods.createAuction(
-  //   fooToken.address, barToken.address, 1, 1, 10, 5, 2, 60, 120
+  //   fooToken.address, barToken.address, 1, 1, 10, 5, 2, 60, 10800
   // ).encodeABI();
-
-  // await sendTx(createAuctionBin1, deployAddr, oedaxInstance.address, deployerPrivKey);
+  // await sendTx(createAuctionBin1, deployAddr, oedaxInstance.address, deployerPrivKey, numToBN(1e18));
 
   // transfer eth to askers and bidders:
   // await sendTx("", deployAddr, asker1, deployerPrivKey, numToBN(5e17));
@@ -106,19 +104,19 @@ async function test() {
 
   // const setBalanceBin1 = fooToken.methods.setBalance(asker1, "1000000000000000000000000").encodeABI();
   // await sendTx(setBalanceBin1, asker1, fooToken.address, asker1PrivKey);
-  // const approveBin1 = fooToken.methods.setBalance(oedaxAddress, "1000000000000000000000000").encodeABI();
+  // const approveBin1 = fooToken.methods.approve(oedaxAddress, "1000000000000000000000000").encodeABI();
   // await sendTx(approveBin1, asker1, fooToken.address, asker1PrivKey);
 
-  // const setBalanceBin2 = barToken.methods.setBalance(bidder1, "1000000000000000000000000").encodeABI();
-  // await sendTx(setBalanceBin2, bidder1, barToken.address, bidder1PrivKey);
-  // const approveBin2 = barToken.methods.setBalance(oedaxAddress, "1000000000000000000000000").encodeABI();
+  // // const setBalanceBin2 = barToken.methods.setBalance(bidder1, "1000000000000000000000000").encodeABI();
+  // // await sendTx(setBalanceBin2, bidder1, barToken.address, bidder1PrivKey);
+  // const approveBin2 = barToken.methods.approve(oedaxAddress, "1000000000000000000000000").encodeABI();
   // await sendTx(approveBin2, bidder1, barToken.address, bidder1PrivKey);
 
 
   // await fooToken.approve(oedaxInstance.address, numToBN(100000));
   // await barToken.approve(oedaxInstance.address, numToBN(1000000000));
 
-  const auctionAddr1 = "0xB08bD3aB221da3326eC5C826317705B1fbA227F2";
+  const auctionAddr1 = "0x8963Ceedfee98724e4a092934E5c0439376371Cf";
   const auctionInstance1 = new web3.eth.Contract(JSON.parse(auctionABI), auctionAddr1);
 
   const bidBin1 = auctionInstance1.methods.bid("10000000000").encodeABI();
