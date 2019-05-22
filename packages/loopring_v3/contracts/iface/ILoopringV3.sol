@@ -83,7 +83,7 @@ contract ILoopringV3
     uint    public tokenRegistrationFeeLRCDelta                     = 0;
     uint    public minExchangeStakeWithDataAvailability             = 0;
     uint    public minExchangeStakeWithoutDataAvailability          = 0;
-    uint    public revertFineLRC                                    = 0;
+    uint    public revertFineLRC                                    = 50000 ether;
     uint8   public minProtocolTakerFeeBips                          = 25;
     uint8   public maxProtocolTakerFeeBips                          = 50;
     uint8   public minProtocolMakerFeeBips                          = 10;

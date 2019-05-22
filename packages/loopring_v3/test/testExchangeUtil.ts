@@ -63,7 +63,6 @@ export class ExchangeTestUtil {
   public MAX_AGE_REQUEST_UNTIL_FORCED: number;
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
-  public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
   public MAX_TIME_IN_SHUTDOWN_BASE: number;
@@ -164,7 +163,6 @@ export class ExchangeTestUtil {
     this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
     this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
     this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
-    this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
   }
 
@@ -1446,6 +1444,14 @@ export class ExchangeTestUtil {
       await this.registerTokens();
       await this.setupTestState(realmID);
     }
+
+    // Deposit some LRC to stake for the exchange
+    const depositer = this.testContext.operators[2];
+    const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+    await this.setBalanceAndApprove(depositer, "LRC", stakeAmount, this.loopringV3.address);
+
+    // Stake it
+    await this.loopringV3.depositExchangeStake(realmID, stakeAmount, {from: depositer});
 
     return realmID;
   }

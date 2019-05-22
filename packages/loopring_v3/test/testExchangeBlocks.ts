@@ -14,23 +14,25 @@ contract("Exchange", (accounts: string[]) => {
   const revertBlockChecked = async (block: Block) => {
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
-    const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
-    const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
+    const revertFineLRC = await loopring.revertFineLRC();
+
+    const blockIdxBefore = (await exchange.getBlockHeight()).toNumber();
+    const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, "LRC");
     const lrcSupplyBefore = await LRC.totalSupply();
 
     await exchangeTestUtil.revertBlock(block.blockIdx);
 
-    const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
-    const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
+    const blockIdxAfter = (await exchange.getBlockHeight()).toNumber();
+    const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, "LRC");
     const lrcSupplyAfter = await LRC.totalSupply();
 
     assert(blockIdxBefore > blockIdxAfter, "blockIdx should have decreased");
     assert.equal(blockIdxAfter, block.blockIdx - 1, "State should have been reverted to the specified block");
 
-    assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
-           "LRC balance of exchange needs to be reduced by STAKE_AMOUNT_IN_LRC");
-    assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
-           "LRC supply needs to be reduced by STAKE_AMOUNT_IN_LRC");
+    assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(revertFineLRC)),
+           "LRC balance of exchange needs to be reduced by revertFineLRC");
+    assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(revertFineLRC)),
+           "LRC supply needs to be reduced by revertFineLRC");
   };
 
   const withdrawBlockFeeChecked = async (blockIdx: number, operator: string, totalBlockFee: BN,
