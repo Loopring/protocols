@@ -31,17 +31,27 @@ contract ILoopringV3
         uint            burnedLRC
     );
 
-    event StakeDeposited(
+    event ExchangeStakeDeposited(
         uint    indexed exchangeId,
         uint            amount
     );
 
-    event StakeBurned(
+    event ExchangeStakeWithdrawn(
         uint    indexed exchangeId,
         uint            amount
     );
 
-    event StakeWithdrawn(
+    event ExchangeStakeBurned(
+        uint    indexed exchangeId,
+        uint            amount
+    );
+
+    event ProtocolFeeStakeDeposited(
+        uint    indexed exchangeId,
+        uint            amount
+    );
+
+    event ProtocolFeeStakeWithdrawn(
         uint    indexed exchangeId,
         uint            amount
     );
@@ -51,21 +61,35 @@ contract ILoopringV3
     );
 
     // == Public Variables ==
-    address[] public exchanges;
+    struct Exchange
+    {
+        address exchangeAddress;
+        uint exchangeStake;
+        uint protocolFeeStake;
+    }
+    Exchange[] public exchanges;
 
-    mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
+    uint    public totalStake                                       = 0;
 
-    uint    public totalStake                   = 0;
-    address public lrcAddress                   = address(0);
-    address public wethAddress                  = address(0);
-    address public exchangeDeployerAddress      = address(0);
-    address public blockVerifierAddress         = address(0);
-    uint    public exchangeCreationCostLRC      = 0;
-    uint    public maxWithdrawalFee             = 0;
-    uint    public downtimePriceLRCPerDay       = 0;
-    uint    public withdrawalFineLRC            = 0;
-    uint    public tokenRegistrationFeeLRCBase  = 0;
-    uint    public tokenRegistrationFeeLRCDelta = 0;
+    address public lrcAddress                                       = address(0);
+    address public wethAddress                                      = address(0);
+    address public exchangeDeployerAddress                          = address(0);
+    address public blockVerifierAddress                             = address(0);
+    uint    public exchangeCreationCostLRC                          = 0;
+    uint    public maxWithdrawalFee                                 = 0;
+    uint    public downtimePriceLRCPerDay                           = 0;
+    uint    public withdrawalFineLRC                                = 0;
+    uint    public tokenRegistrationFeeLRCBase                      = 0;
+    uint    public tokenRegistrationFeeLRCDelta                     = 0;
+    uint    public minExchangeStakeWithDataAvailability             = 0;
+    uint    public minExchangeStakeWithoutDataAvailability          = 0;
+    uint    public revertFineLRC                                    = 0;
+    uint8   public minProtocolTakerFeeBips                          = 25;
+    uint8   public maxProtocolTakerFeeBips                          = 50;
+    uint8   public minProtocolMakerFeeBips                          = 10;
+    uint8   public maxProtocolMakerFeeBips                          = 25;
+    uint    public targetProtocolTakerFeeStake                      = 25000000 ether;
+    uint    public targetProtocolMakerFeeStake                      = 10000000 ether;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
@@ -102,32 +126,39 @@ contract ILoopringV3
             address exchangeAddress
         );
 
-    /// @dev Get the amount of stacked LRC for an exchange.
+    /// @dev Returns whether the Exchange has staked enough to commit blocks
+    ///      Exchanges with on-chain data-availaiblity need to stake at least
+    ///      minExchangeStakeWithDataAvailability, exchanges without
+    ///      data-availability need to stake at least
+    ///      minExchangeStakeWithoutDataAvailability.
+    /// @param exchangeId The id of the exchange
+    /// @param onchainDataAvailability True if the exchange has on-chain
+    ///        data-availability, else false
+    /// @return True if the exchange has staked enough, else false
+    function canExchangeCommitBlocks(
+        uint exchangeId,
+        bool onchainDataAvailability
+        )
+        external
+        view
+        returns (bool);
+
+    /// @dev Get the amount of staked LRC for an exchange.
     /// @param exchangeId The id of the exchange
     /// @return stakedLRC The amount of LRC
-    function getStake(
+    function getExchangeStake(
         uint exchangeId
         )
         public
         view
         returns (uint stakedLRC);
 
-    /// @dev Burn all staked LRC for a specific exchange.
-    ///      This function is meant to be called only from within exchange contracts.
-    /// @param  exchangeId The id of the exchange
-    /// @return burnedLRC The amount of LRC burned
-    function burnAllStake(
-        uint exchangeId
-        )
-        external
-        returns (uint burnedLRC);
-
     /// @dev Burn a certain amount of staked LRC for a specific exchange.
     ///      This function is meant to be called only from exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @return burnedLRC The amount of LRC burned. If the amount is greater than
     ///         the staked amount, all staked LRC will be burned.
-    function burnStake(
+    function burnExchangeStake(
         uint exchangeId,
         uint amount
         )
@@ -138,7 +169,7 @@ contract ILoopringV3
     /// @param  exchangeId The id of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
-    function depositStake(
+    function depositExchangeStake(
         uint exchangeId,
         uint amountLRC
         )
@@ -151,13 +182,46 @@ contract ILoopringV3
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
     /// @return stakedLRC The amount of LRC withdrawn
-    function withdrawStake(
+    function withdrawExchangeStake(
         uint exchangeId,
         address recipient,
         uint requestedAmount
         )
         public
         returns (uint amount);
+
+    /// @dev Stake more LRC for an exchange.
+    /// @param  exchangeId The id of the exchange
+    /// @param  amountLRC The amount of LRC to stake
+    /// @return stakedLRC The total amount of LRC staked for the exchange
+    function depositProtocolFeeStake(
+        uint exchangeId,
+        uint amountLRC
+        )
+        external
+        returns (uint stakedLRC);
+
+    /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
+    ///      This function is meant to be called only from within exchange contracts.
+    /// @param  exchangeId The id of the exchange
+    /// @param  recipient The address to receive LRC
+    /// @param  amount The amount of LRC to withdraw
+    function withdrawProtocolFeeStake(
+        uint exchangeId,
+        address recipient,
+        uint amount
+        )
+        external;
+
+    /// @dev Withdraw
+    /// @param exchangeId The id of the exchange to withdraw the fees from
+    /// @param tokenAddress The token to withdraw the fees for
+    function withdrawProtocolFees(
+        uint exchangeId,
+        address tokenAddress
+        )
+        external
+        payable;
 
     /// @dev Get the protocol fees for an exchange.
     /// @param exchangeId The id of the exchange

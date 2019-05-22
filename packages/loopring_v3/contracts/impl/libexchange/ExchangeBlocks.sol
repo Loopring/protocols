@@ -142,8 +142,10 @@ library ExchangeBlocks
             now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
             "PROOF_NOT_TOO_LATE"
         );
-        // Burn the complete stake of the exchange
-        S.loopring.burnAllStake(S.id);
+
+        // Fine the exchange
+        uint fine = S.loopring.revertFineLRC();
+        S.loopring.burnExchangeStake(S.id, fine);
 
         // Remove all blocks after and including blockIdx
         S.blocks.length = blockIdx;
@@ -166,8 +168,13 @@ library ExchangeBlocks
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        // TODO: Check if this exchange has a minimal amount of LRC staked?
+        // Check if this exchange has a minimal amount of LRC staked
+        require(
+            S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
+            "INSUFFICIENT_EXCHANGE_STAKE"
+        );
 
+        // Check if the block is supported
         require(
             S.blockVerifier.canVerify(uint8(blockType), S.onchainDataAvailability, blockSize),
             "CANNOT_VERIFY_BLOCK"

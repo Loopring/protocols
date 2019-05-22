@@ -17,6 +17,7 @@
 pragma solidity 0.5.7;
 
 import "../iface/ILoopringV3.sol";
+import "../iface/IExchange.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -127,7 +128,13 @@ contract LoopringV3 is ILoopringV3, Ownable
             operator,
             onchainDataAvailability
         );
-        exchanges.push(exchangeAddress);
+
+        Exchange memory exchange = Exchange(
+            exchangeAddress,
+            0,
+            0
+        );
+        exchanges.push(exchange);
 
         emit ExchangeCreated(
             exchangeId,
@@ -138,8 +145,23 @@ contract LoopringV3 is ILoopringV3, Ownable
         );
     }
 
+    function canExchangeCommitBlocks(
+        uint exchangeId,
+        bool onchainDataAvailability
+        )
+        external
+        view
+        returns (bool)
+    {
+        uint amountStaked = getExchangeStake(exchangeId);
+        if (onchainDataAvailability) {
+            return amountStaked >= minExchangeStakeWithDataAvailability;
+        } else {
+            return amountStaked >= minExchangeStakeWithoutDataAvailability;
+        }
+    }
 
-    function getStake(
+    function getExchangeStake(
         uint exchangeId
         )
         public
@@ -150,20 +172,10 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId > 0 && exchangeId <= exchanges.length,
             "INVALID_EXCHANGE_ID"
         );
-        return exchangeStakes[exchangeId - 1];
+        return exchanges[exchangeId - 1].exchangeStake;
     }
 
-    function burnAllStake(
-        uint exchangeId
-        )
-        external
-        returns (uint burnedLRC)
-    {
-        burnedLRC = getStake(exchangeId);
-        burnStake(exchangeId, burnedLRC);
-    }
-
-    function burnStake(
+    function burnExchangeStake(
         uint exchangeId,
         uint amount
         )
@@ -173,7 +185,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        burnedLRC = getStake(exchangeId);
+        burnedLRC = getExchangeStake(exchangeId);
 
         if (amount < burnedLRC) {
             burnedLRC = amount;
@@ -183,13 +195,13 @@ contract LoopringV3 is ILoopringV3, Ownable
                 BurnableERC20(lrcAddress).burn(burnedLRC),
                 "BURN_FAILURE"
             );
-            exchangeStakes[exchangeId - 1] = exchangeStakes[exchangeId - 1].sub(burnedLRC);
+            exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1].exchangeStake.sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }
-        emit StakeBurned(exchangeId, burnedLRC);
+        emit ExchangeStakeBurned(exchangeId, burnedLRC);
     }
 
-    function depositStake(
+    function depositExchangeStake(
         uint exchangeId,
         uint amountLRC
         )
@@ -205,13 +217,13 @@ contract LoopringV3 is ILoopringV3, Ownable
             ),
             "TRANSFER_FAILURE"
         );
-        stakedLRC = exchangeStakes[exchangeId - 1].add(amountLRC);
-        exchangeStakes[exchangeId - 1] = stakedLRC;
+        stakedLRC = exchanges[exchangeId - 1].exchangeStake.add(amountLRC);
+        exchanges[exchangeId - 1].exchangeStake = stakedLRC;
         totalStake = totalStake.add(amountLRC);
-        emit StakeDeposited(exchangeId, amountLRC);
+        emit ExchangeStakeDeposited(exchangeId, amountLRC);
     }
 
-    function withdrawStake(
+    function withdrawExchangeStake(
         uint exchangeId,
         address recipient,
         uint requestedAmount
@@ -222,7 +234,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        uint stakedLRC = getStake(exchangeId);
+        uint stakedLRC = getExchangeStake(exchangeId);
         amount = (stakedLRC > requestedAmount) ? requestedAmount : stakedLRC;
         if (amount > 0) {
             require(
@@ -232,10 +244,82 @@ contract LoopringV3 is ILoopringV3, Ownable
                 ),
                 "WITHDRAWAL_FAILURE"
             );
-            exchangeStakes[exchangeId - 1] = exchangeStakes[exchangeId - 1].sub(amount);
+            exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1].exchangeStake.sub(amount);
             totalStake = totalStake.sub(amount);
         }
-        emit StakeWithdrawn(exchangeId, amount);
+        emit ExchangeStakeWithdrawn(exchangeId, amount);
+    }
+
+    function getProtocolFeeStake(
+        uint exchangeId
+        )
+        public
+        view
+        returns (uint)
+    {
+        require(
+            exchangeId > 0 && exchangeId <= exchanges.length,
+            "INVALID_EXCHANGE_ID"
+        );
+        return exchanges[exchangeId - 1].protocolFeeStake;
+    }
+
+    function depositProtocolFeeStake(
+        uint exchangeId,
+        uint amountLRC
+        )
+        external
+        returns (uint stakedLRC)
+    {
+        require(amountLRC > 0, "ZERO_VALUE");
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(this),
+                amountLRC
+            ),
+            "TRANSFER_FAILURE"
+        );
+        stakedLRC = exchanges[exchangeId - 1].protocolFeeStake.add(amountLRC);
+        exchanges[exchangeId - 1].protocolFeeStake = stakedLRC;
+        totalStake = totalStake.add(amountLRC);
+        emit ProtocolFeeStakeDeposited(exchangeId, amountLRC);
+    }
+
+    function withdrawProtocolFeeStake(
+        uint exchangeId,
+        address recipient,
+        uint amount
+        )
+        external
+    {
+        address exchangeAddress = getExchangeAddress(exchangeId);
+        require(msg.sender == exchangeAddress, "UNAUTHORIZED");
+
+        uint stakedLRC = getProtocolFeeStake(exchangeId);
+        require(amount >= stakedLRC, "INSUFFICIENT_STAKE");
+        if (amount > 0) {
+            require(
+                lrcAddress.safeTransfer(
+                    recipient,
+                    amount
+                ),
+                "WITHDRAWAL_FAILURE"
+            );
+            exchanges[exchangeId - 1].protocolFeeStake = exchanges[exchangeId - 1].protocolFeeStake.sub(amount);
+            totalStake = totalStake.sub(amount);
+        }
+        emit ProtocolFeeStakeWithdrawn(exchangeId, amount);
+    }
+
+    function withdrawProtocolFees(
+        uint exchangeId,
+        address tokenAddress
+        )
+        external
+        payable
+    {
+        IExchange(exchanges[exchangeId - 1].exchangeAddress).withdraw.value(msg.value)(tokenAddress, ~uint96(0));
     }
 
     function getProtocolFees(
@@ -245,8 +329,36 @@ contract LoopringV3 is ILoopringV3, Ownable
         view
         returns (uint8 takerFeeBips, uint8 makerFeeBips)
     {
-        takerFeeBips = 50;
-        makerFeeBips = 25;
+        Exchange storage exchange = exchanges[exchangeId - 1];
+
+        // The total stake used here is the owner stake + the protocol fee stake, but
+        // the protocol fee stake has a reduced weight of 50%.
+        uint stake = exchange.exchangeStake.add(exchange.protocolFeeStake / 2);
+
+        takerFeeBips = calculateProtocolFee(
+            minProtocolTakerFeeBips, maxProtocolTakerFeeBips, stake, targetProtocolTakerFeeStake
+        );
+        makerFeeBips = calculateProtocolFee(
+            minProtocolMakerFeeBips, maxProtocolMakerFeeBips, stake, targetProtocolMakerFeeStake
+        );
+    }
+
+    function calculateProtocolFee(
+        uint minFee,
+        uint maxFee,
+        uint stake,
+        uint targetStake
+        )
+        internal
+        pure
+        returns (uint8)
+    {
+        uint maxReduction = maxFee.sub(minFee);
+        uint reduction = maxReduction.mul(stake) / targetStake;
+        if (reduction > maxReduction) {
+            reduction = maxReduction;
+        }
+        return uint8(maxFee.sub(reduction));
     }
 
     function withdrawTheBurn(
@@ -266,6 +378,53 @@ contract LoopringV3 is ILoopringV3, Ownable
             uint balance = ERC20(token).balanceOf(address(this));
             require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
+    }
+
+    struct Stake
+    {
+        uint amount;
+        uint startDuration;
+        uint minimumDuration;
+    }
+
+    uint totalStaked;
+    mapping (address => mapping (uint => uint)) discreteBalances;
+    mapping (address => uint) totalWithdrawn;
+
+    function stakeFor(
+        uint amount,
+        uint duration
+        )
+        external
+        onlyOwner
+    {
+        require(amount > 0, "ZERO_VALUE");
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(this),
+                amount
+            ),
+            "TRANSFER_FAILURE"
+        );
+    }
+
+    function withdraw(
+        uint amount,
+        uint duration
+        )
+        external
+        onlyOwner
+    {
+        require(amount > 0, "ZERO_VALUE");
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(this),
+                amount
+            ),
+            "TRANSFER_FAILURE"
+        );
     }
 
     function()
@@ -310,6 +469,6 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeId > 0 && exchangeId <= exchanges.length,
             "INVALID_EXCHANGE_ID"
         );
-        return exchanges[exchangeId - 1];
+        return exchanges[exchangeId - 1].exchangeAddress;
     }
 }

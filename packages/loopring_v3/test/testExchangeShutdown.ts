@@ -14,14 +14,14 @@ contract("Exchange", (accounts: string[]) => {
     const token = "LRC";
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeBefore = await exchange.getStake();
+    const stakeBefore = await exchange.getExchangeStake();
     const totalStakeBefore = await loopringV3.totalStake();
 
     await loopringV3.depositStake(exchangeId, amount, {from: owner});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeAfter = await exchange.getStake();
+    const stakeAfter = await exchange.getExchangeStake();
     const totalStakeAfter = await loopringV3.totalStake();
 
     assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(amount)),
@@ -45,18 +45,18 @@ contract("Exchange", (accounts: string[]) => {
     assert(items[0][1].eq(amount), "amount should match");
   };
 
-  const withdrawStakeChecked = async (recipient: string, amount: BN) => {
+  const withdrawExchangeStakeChecked = async (recipient: string, amount: BN) => {
     const token = "LRC";
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeBefore = await exchange.getStake();
+    const stakeBefore = await exchange.getExchangeStake();
     const totalStakeBefore = await loopringV3.totalStake();
 
-    await exchange.withdrawStake(recipient, {from: exchangeTestUtil.exchangeOwner});
+    await exchange.withdrawExchangeStake(recipient, {from: exchangeTestUtil.exchangeOwner});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeAfter = await exchange.getStake();
+    const stakeAfter = await exchange.getExchangeStake();
     const totalStakeAfter = await loopringV3.totalStake();
 
     assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amount)),
@@ -126,7 +126,7 @@ contract("Exchange", (accounts: string[]) => {
             amountF: new BN(web3.utils.toWei("900", "ether")),
           },
         expected: {
-          orderA: { filledFraction: 1.0, margin: new BN(0) },
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
           orderB: { filledFraction: 1.0 },
         },
       };
@@ -146,7 +146,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to withdraw before the exchange is shutdown
       await expectThrow(
-        exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
+        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "EXCHANGE_NOT_SHUTDOWN",
       );
 
@@ -158,7 +158,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to withdraw before all deposits are processed
       await expectThrow(
-        exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
+        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "DEPOSITS_NOT_PROCESSED",
       );
 
@@ -170,7 +170,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to withdraw before the block is finalized
       await expectThrow(
-        exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
+        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "MERKLE_ROOT_NOT_REVERTED",
       );
 
@@ -209,7 +209,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to withdraw before the block is finalized
       await expectThrow(
-        exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
+        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "BLOCK_NOT_FINALIZED",
       );
 
@@ -218,7 +218,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to withdraw too early
       await expectThrow(
-        exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
+        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "TOO_EARLY",
       );
 
@@ -226,7 +226,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
 
       // Withdraw the exchange stake
-      await withdrawStakeChecked(exchangeTestUtil.exchangeOwner, stakeAmount);
+      await withdrawExchangeStakeChecked(exchangeTestUtil.exchangeOwner, stakeAmount);
     });
 
     it("Incomplete shutdown", async () => {
@@ -254,12 +254,12 @@ contract("Exchange", (accounts: string[]) => {
 
       // Withdraw the exchange stake
       await expectThrow(
-        exchange.withdrawStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
+        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {from: exchangeTestUtil.exchangeOwner}),
         "MERKLE_ROOT_NOT_REVERTED",
       );
 
       // Burn the stake
-      await exchange.burnStake();
+      await exchange.burnExchangeStake();
     });
 
     it("Should not be able to shutdown when already shutdown", async () => {

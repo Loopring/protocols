@@ -284,7 +284,7 @@ contract IExchange
     ///      performed by another party and is not part of the exchange's duty.
     ///
     /// @return The amount of LRC staked
-    function getStake()
+    function getExchangeStake()
         external
         view
         returns (uint);
@@ -298,18 +298,29 @@ contract IExchange
     ///      Can only be called by the exchange owner.
     ///
     /// @return The amount of LRC withdrawn
-    function withdrawStake(
+    function withdrawExchangeStake(
         address recipient
         )
         external
         returns (uint);
+
+    /// @dev Withdraws the amount staked for this exchange.
+    ///      This can always be called.
+    ///      Can only be called by the exchange owner.
+    /// @param  recipient The recipient of the withdrawn LRC
+    /// @param  amount The amount of LRC that needs to be withdrawn
+    function withdrawProtocolFeeStake(
+        address recipient,
+        uint amount
+        )
+        external;
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.
     ///
     ///      Currently this will only burn the stake of the exchange if there are
     ///      unfinalized blocks and the exchange is in withdrawal mode.
-    function burnStake()
+    function burnExchangeStake()
         external;
 
     // -- Blocks --
@@ -405,7 +416,7 @@ contract IExchange
     ///                - Fee-recipient account ID: 2,5 bytes
     ///                - Token ID (fee to operator): 1 bytes
     ///                - Fee amount: 2 bytes
-    ///                - Margin (paid by first order): 3 bytes
+    ///                - Spread: 3 bytes
     ///                - OrderA.orderID: 2,5 bytes
     ///                - OrderB.orderID: 2,5 bytes
     ///                - For both Orders:
@@ -925,10 +936,15 @@ contract IExchange
         );
 
     /// @dev Get the protocol fees for this exchange.
+    /// @return timestamp The timestamp the protocol fees were last updated
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
+    /// @return previousTakerFeeBips The previous protocol taker fee
+    /// @return previousMakerFeeBips The previous protocol maker fee
     function getProtocolFees()
         external
         view
-        returns (uint8 takerFeeBips, uint8 makerFeeBips);
+        returns (uint32 timestamp,
+                 uint8 takerFeeBips, uint8 makerFeeBips,
+                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips);
 }

@@ -30,10 +30,11 @@ export interface OrderInfo {
   allOrNone?: boolean;
   validSince?: number;
   validUntil?: number;
+  maxFeeBips?: number;
+  minWalletSplitPercentage?: number;
+
   feeBips?: number;
-  rebateBips?: number;
   walletSplitPercentage?: number;
-  waiveFeePercentage?: number;
 
   balanceS?: BN;
   balanceB?: BN;
@@ -43,7 +44,7 @@ export interface OrderInfo {
 
 export interface OrderExpectation {
   filledFraction: number;
-  margin?: BN;
+  spread?: BN;
 }
 
 export interface RingExpectation {

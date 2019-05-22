@@ -269,7 +269,7 @@ export class ExchangeTestUtil {
   }
 
   public async setupRing(ring: RingInfo, bSetupOrderA: boolean = true, bSetupOrderB: boolean = true) {
-    ring.minerAccountID = this.minerAccountID[ring.orderA.realmID];
+    ring.minerAccountID = ring.minerAccountID ? ring.minerAccountID : this.minerAccountID[ring.orderA.realmID];
     ring.tokenID = ring.tokenID ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     if (bSetupOrderA) {
@@ -316,11 +316,14 @@ export class ExchangeTestUtil {
     }
 
     // Fill in defaults
-    order.feeBips = order.feeBips ? order.feeBips : 20;
-    order.rebateBips = order.rebateBips ? order.rebateBips : 0;
-
+    order.maxFeeBips = (order.maxFeeBips !== undefined) ? order.maxFeeBips : 20;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
-    order.walletSplitPercentage = (order.walletSplitPercentage !== undefined) ? order.walletSplitPercentage : 50;
+    order.minWalletSplitPercentage = (order.minWalletSplitPercentage !== undefined) ?
+                                     order.minWalletSplitPercentage : 50;
+
+    order.feeBips = (order.feeBips !== undefined) ? order.feeBips : order.maxFeeBips;
+    order.walletSplitPercentage = (order.walletSplitPercentage !== undefined) ?
+                                  order.walletSplitPercentage : order.minWalletSplitPercentage;
 
     const walletIndex = index % this.testContext.wallets.length;
     order.walletAccountID = (order.walletAccountID !== undefined) ?
@@ -361,6 +364,7 @@ export class ExchangeTestUtil {
       addrBook[accountID] = (addrBook[accountID] ? addrBook[accountID] + "=" : "") + name;
     };
     const bIndex = index !== undefined;
+    addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderA.walletAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
@@ -521,11 +525,22 @@ export class ExchangeTestUtil {
     const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
 
     // Submit the withdraw request
-    const tx = await this.exchange.withdraw(
-      token,
-      web3.utils.toBN(amount),
-      {from: owner, value: withdrawalFee},
-    );
+    let tx;
+    if (accountID === 0) {
+      tx = await this.loopringV3.withdrawProtocolFees(
+        realmID,
+        token,
+        {from: owner, value: withdrawalFee},
+      );
+      amount = new BN(2);
+      amount = amount.pow(new BN(96)).sub(new BN(1));
+    } else {
+      tx = await this.exchange.withdraw(
+        token,
+        web3.utils.toBN(amount),
+        {from: owner, value: withdrawalFee},
+      );
+    }
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawalRequested", web3.eth.blockNumber);
@@ -984,6 +999,9 @@ export class ExchangeTestUtil {
         hashData.addNumber(withdrawal.accountID, 3);
         hashData.addNumber(withdrawal.tokenID, 1);
         hashData.addBN(withdrawal.amount, 12);
+        console.log("withdrawal.accountID: " + withdrawal.accountID);
+        console.log("withdrawal.tokenID: " + withdrawal.tokenID);
+        console.log("withdrawal.amount: " + withdrawal.amount.toString(10));
         endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
       }
 
@@ -1137,8 +1155,11 @@ export class ExchangeTestUtil {
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
+
+                maxFeeBips: 0,
+                minWalletSplitPercentage: 0,
+
                 feeBips: 0,
-                rebateBips: 0,
                 walletSplitPercentage: 0,
 
                 amountS: new BN(1),
@@ -1161,8 +1182,11 @@ export class ExchangeTestUtil {
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
+
+                maxFeeBips: 0,
+                minWalletSplitPercentage: 0,
+
                 feeBips: 0,
-                rebateBips: 0,
                 walletSplitPercentage: 0,
 
                 amountS: new BN(1),
@@ -1181,8 +1205,6 @@ export class ExchangeTestUtil {
       const protocolFees = await this.exchange.getProtocolFees();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
       const protocolMakerFeeBips = protocolFees.makerFeeBips.toNumber();
-      console.log("protocolTakerFeeBips: " + protocolTakerFeeBips);
-      console.log("protocolMakerFeeBips: " + protocolMakerFeeBips);
 
       const operator = await this.getActiveOperator(realmID);
       const ringBlock: RingBlock = {
@@ -1225,10 +1247,10 @@ export class ExchangeTestUtil {
           const orderA = ringSettlement.ring.orderA;
           const orderB = ringSettlement.ring.orderB;
 
-          const fRingFee = toFloat(new BN(ring.fee), constants.Float16Encoding);
-          bs.addNumber((ring.minerAccountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + fRingFee, 4);
+          const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
+          bs.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
           bs.addNumber(ring.tokenID, 1);
-          bs.addNumber(ring.fMargin, 2);
+          bs.addNumber(ring.fSpread, 3);
 
           bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
 
@@ -1236,14 +1258,13 @@ export class ExchangeTestUtil {
           bs.addNumber(orderA.tokenS, 1);
           bs.addNumber(ring.fFillS_A, 3);
           bs.addNumber(orderA.feeBips, 1);
-          bs.addNumber(orderA.rebateBips, 1);
-          bs.addNumber(orderA.walletSplitPercentage, 1);
+          const surplusMask = ring.bSurplus ? 0b10000000 : 0;
+          bs.addNumber(surplusMask + orderA.walletSplitPercentage, 1);
 
           bs.addNumber((orderB.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.walletAccountID, 5);
           bs.addNumber(orderB.tokenS, 1);
           bs.addNumber(ring.fFillS_B, 3);
           bs.addNumber(orderB.feeBips, 1);
-          bs.addNumber(orderB.rebateBips, 1);
           bs.addNumber(orderB.walletSplitPercentage, 1);
         }
       }

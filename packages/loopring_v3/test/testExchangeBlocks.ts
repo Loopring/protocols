@@ -96,7 +96,7 @@ contract("Exchange", (accounts: string[]) => {
           amountF: new BN(web3.utils.toWei("900", "ether")),
         },
       expected: {
-        orderA: { filledFraction: 1.0, margin: new BN(0) },
+        orderA: { filledFraction: 1.0, spread: new BN(0) },
         orderB: { filledFraction: 1.0 },
       },
     };

@@ -183,7 +183,6 @@ library ExchangeAccounts
         require(owner != address(0), "ZERO_ADDRESS");
 
         accountID = S.ownerToAccountId[owner];
-        require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
     }
 
     function isAccountBalanceCorrect(

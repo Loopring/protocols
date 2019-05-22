@@ -130,7 +130,7 @@ contract("Loopring", (accounts: string[]) => {
 
     it("should not be to burn the stake", async () => {
       await expectThrow(
-        loopring.burnStake(exchangeTestUtil.exchangeId, new BN(0),
+        loopring.burnExchangeStake(exchangeTestUtil.exchangeId, new BN(0),
         {from: exchangeTestUtil.testContext.deployer}),
         "UNAUTHORIZED",
       );
@@ -139,7 +139,7 @@ contract("Loopring", (accounts: string[]) => {
     it("should not be able to withdraw the stake", async () => {
       const recipient = exchangeTestUtil.testContext.orderOwners[1];
       await expectThrow(
-        loopring.withdrawStake(exchangeTestUtil.exchangeId, recipient, new BN(0),
+        loopring.withdrawExchangeStake(exchangeTestUtil.exchangeId, recipient, new BN(0),
         {from: exchangeTestUtil.testContext.deployer}),
         "UNAUTHORIZED",
       );

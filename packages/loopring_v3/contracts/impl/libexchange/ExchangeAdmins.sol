@@ -147,7 +147,7 @@ library ExchangeAdmins
             .downtimePriceLRCPerDay()) / (1 days);
     }
 
-    function withdrawStake(
+    function withdrawExchangeStake(
         ExchangeData.State storage S,
         address recipient
         )
@@ -175,7 +175,7 @@ library ExchangeAdmins
         );
 
         // Withdraw the complete stake
-        uint amount = S.loopring.getStake(S.id);
-        return S.loopring.withdrawStake(S.id, recipient, amount);
+        uint amount = S.loopring.getExchangeStake(S.id);
+        return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
     }
 }

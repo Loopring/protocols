@@ -73,8 +73,10 @@ def orderFromJSON(jOrder, state):
     allOrNone = int(jOrder["allOrNone"])
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
+    maxFeeBips = int(jOrder["maxFeeBips"])
+    minWalletSplitPercentage = int(jOrder["minWalletSplitPercentage"])
+
     feeBips = int(jOrder["feeBips"])
-    rebateBips = int(jOrder["rebateBips"])
     walletSplitPercentage = int(jOrder["walletSplitPercentage"])
 
     account = state.getAccount(accountID)
@@ -87,7 +89,8 @@ def orderFromJSON(jOrder, state):
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil,
-                  feeBips, rebateBips, walletSplitPercentage)
+                  maxFeeBips, minWalletSplitPercentage,
+                  feeBips, walletSplitPercentage)
 
     order.sign(FQ(int(account.secretKey)))
 

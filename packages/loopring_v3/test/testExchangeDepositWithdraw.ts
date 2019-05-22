@@ -123,30 +123,28 @@ contract("Exchange", (accounts: string[]) => {
 
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
                                      accountID: number, token: string,
-                                     owner: string, expectedAmount: BN, bBurn: boolean = false) => {
-    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
+                                     owner: string, expectedAmount: BN) => {
+    const recipient = (accountID === 0) ? loopring.address : owner;
+    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    // const burnBalanceBefore = await exchange.burnBalances(token);
 
     await exchange.withdrawFromApprovedWithdrawal(blockIdx, slotIdx);
 
-    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    // const burnBalanceAfter = await exchange.burnBalances(token);
 
-    let amountToOwner = expectedAmount;
-    let amountToBurn = new BN(0);
-    if (bBurn) {
-      const burnRate = await exchangeTestUtil.loopringV3.getTokenBurnRate(token);
-      amountToBurn = expectedAmount.mul(burnRate).div(new BN(10000));
-      amountToOwner = expectedAmount.sub(amountToBurn);
-    }
-    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amountToOwner)),
-           "Token balance of owner should be increased by amountToOwner");
-    assert(balanceContractBefore.eq(balanceContractAfter.add(amountToOwner).add(amountToBurn)),
-           "Token balance of contract should be decreased by amountToOwner + amountToBurn");
-    /*assert(burnBalanceAfter.eq(burnBalanceBefore.add(amountToBurn)),
-           "burnBalance should be increased by amountToBurn");*/
+    console.log("balanceOwnerBefore: " + balanceOwnerBefore.toString(10));
+    console.log("balanceOwnerAfter: " + balanceOwnerAfter.toString(10));
+
+    console.log("balanceContractBefore: " + balanceContractBefore.toString(10));
+    console.log("balanceContractAfter: " + balanceContractAfter.toString(10));
+
+    console.log("expectedAmount: " + expectedAmount.toString(10));
+
+    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(expectedAmount)),
+           "Token balance of owner should be increased by expectedAmount");
+    assert(balanceContractAfter.eq(balanceContractBefore.sub(expectedAmount)),
+           "Token balance of contract should be decreased by expectedAmount");
 
     // Get the Withdraw event
     const eventArr: any = await exchangeTestUtil.getEventsFromContract(
@@ -168,15 +166,15 @@ contract("Exchange", (accounts: string[]) => {
 
   const withdrawChecked = async (blockIdx: number, slotIdx: number,
                                  accountID: number, token: string,
-                                 owner: string, expectedAmount: BN, bBurn: boolean = false) => {
+                                 owner: string, expectedAmount: BN) => {
     // Withdraw
     await withdrawOnceChecked(blockIdx, slotIdx,
                               accountID, token,
-                              owner, expectedAmount, bBurn);
+                              owner, expectedAmount);
     // Withdraw again, no tokens should be transferred
     await withdrawOnceChecked(blockIdx, slotIdx,
                               accountID, token,
-                              owner, new BN(0), bBurn);
+                              owner, new BN(0));
   };
 
   const distributeWithdrawalsChecked = async (blockIdx: number, numWithdrawals: number, deposits: DepositInfo[],
@@ -201,7 +199,7 @@ contract("Exchange", (accounts: string[]) => {
       }
     }
     // Exchange stake
-    const stakeBefore = await exchange.getStake();
+    const stakeBefore = await exchange.getExchangeStake();
     const totalStakeBefore = await loopring.totalStake();
     // LRC balance from
     const balanceFromBefore = await exchangeTestUtil.getOnchainBalance(from, "LRC");
@@ -234,7 +232,7 @@ contract("Exchange", (accounts: string[]) => {
       }
     }
     // Check stake
-    const stakeAfter = await exchange.getStake();
+    const stakeAfter = await exchange.getExchangeStake();
     const totalStakeAfter = await loopring.totalStake();
     // LRC balance from
     const balanceFromAfter = await exchangeTestUtil.getOnchainBalance(from, "LRC");
@@ -307,7 +305,7 @@ contract("Exchange", (accounts: string[]) => {
       assert(accountID > 0);
     });
 
-    it.only("ERC20: Deposit", async () => {
+    it("ERC20: Deposit", async () => {
       await createExchange();
 
       let keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -614,7 +612,7 @@ contract("Exchange", (accounts: string[]) => {
                             ownerB, balanceB);
     });
 
-    it("Withdraw (fee-recipient account)", async () => {
+    it("Withdraw (protocol fee pool account)", async () => {
       await createExchange();
 
       const walletA = exchangeTestUtil.wallets[realmID][0];
@@ -625,10 +623,8 @@ contract("Exchange", (accounts: string[]) => {
             realmID,
             tokenS: "WETH",
             tokenB: "GTO",
-            tokenF: "ETH",
             amountS: new BN(web3.utils.toWei("110", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1.5", "ether")),
             walletAccountID: walletA.walletAccountID,
           },
         orderB:
@@ -636,10 +632,8 @@ contract("Exchange", (accounts: string[]) => {
             realmID,
             tokenS: "GTO",
             tokenB: "WETH",
-            tokenF: "LRC",
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("90", "ether")),
             walletAccountID: walletB.walletAccountID,
           },
       };
@@ -650,30 +644,31 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      const witdrawalRequestA = await exchangeTestUtil.requestWithdrawalOnchain(
-        realmID, ring.orderA.walletAccountID,
-        ring.orderA.tokenF, ring.orderA.amountF.mul(new BN(2)),
+      await exchangeTestUtil.requestWithdrawalOnchain(
+        realmID, 0,
+        ring.orderA.tokenS, ring.orderA.amountS,
         walletA.owner,
       );
-      const witdrawalRequestB = await exchangeTestUtil.requestWithdrawalOnchain(
-        realmID, ring.orderB.walletAccountID,
-        ring.orderB.tokenF, ring.orderB.amountF.mul(new BN(2)),
+      await exchangeTestUtil.requestWithdrawalOnchain(
+        realmID, 0,
+        ring.orderB.tokenS, ring.orderB.amountS,
         walletB.owner,
       );
       await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
-      const walletFeeA = ring.orderA.amountF.mul(new BN(ring.orderA.walletSplitPercentage)).div(new BN(100));
-      const walletFeeB = ring.orderB.amountF.mul(new BN(ring.orderB.walletSplitPercentage)).div(new BN(100));
+      const protocolFees = await exchange.getProtocolFees();
+      const protocolFeeA = ring.orderA.amountS.mul(protocolFees.takerFeeBips).div(new BN(100000));
+      const protocolFeeB = ring.orderB.amountS.mul(protocolFees.takerFeeBips).div(new BN(100000));
 
       // Withdraw
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
       await withdrawChecked(blockIdx, 0,
-                            ring.orderA.walletAccountID, ring.orderA.tokenF,
-                            walletA.owner, walletFeeA, true);
+                            0, ring.orderA.tokenS,
+                            walletA.owner, protocolFeeA);
       await withdrawChecked(blockIdx, 1,
-                            ring.orderB.walletAccountID, ring.orderB.tokenF,
-                            walletB.owner, walletFeeB, true);
+                            0, ring.orderB.tokenS,
+                            walletB.owner, protocolFeeB);
     });
 
     it("Distribute withdrawals (by operator)", async () => {

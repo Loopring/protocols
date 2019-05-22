@@ -98,7 +98,7 @@ library ExchangeWithdrawals
         timestamp = request.timestamp;
     }
 
-    // Set the large value for amount to withdraw the complete balance
+    // Set a large value for amount to withdraw the complete balance
     function withdraw(
         ExchangeData.State storage S,
         address token,
@@ -122,8 +122,8 @@ library ExchangeWithdrawals
             msg.sender.transfer(msg.value.sub(S.withdrawalFeeETH));
         }
 
-        // Allow anyone to withdraw from protocol fee account
-        require(account.owner == msg.sender || accountID == 0, "UNAUTHORIZED");
+        // Only the account owner can withdraw from the account
+        require(account.owner == msg.sender, "UNAUTHORIZED");
 
         // Add the withdraw to the withdraw chain
         ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
@@ -443,8 +443,8 @@ library ExchangeWithdrawals
             // Burn 50% of the fine, reward the distributer the rest
             uint amountToBurn = totalFine / 2;
             uint amountToDistributer = totalFine - amountToBurn;
-            S.loopring.burnStake(S.id, amountToBurn);
-            S.loopring.withdrawStake(S.id, msg.sender, amountToDistributer);
+            S.loopring.burnExchangeStake(S.id, amountToBurn);
+            S.loopring.withdrawExchangeStake(S.id, msg.sender, amountToDistributer);
         }
     }
 

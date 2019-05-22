@@ -266,15 +266,15 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     }
 
     // -- Stakes --
-    function getStake()
+    function getExchangeStake()
         external
         view
         returns (uint)
     {
-        return state.loopring.getStake(state.id);
+        return state.loopring.getExchangeStake(state.id);
     }
 
-    function withdrawStake(
+    function withdrawExchangeStake(
         address recipient
         )
         external
@@ -282,17 +282,29 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         nonReentrant
         returns (uint)
     {
-        return state.withdrawStake(recipient);
+        return state.withdrawExchangeStake(recipient);
     }
 
-    function burnStake()
+    function withdrawProtocolFeeStake(
+        address recipient,
+        uint amount
+        )
+        external
+        onlyOwner
+        nonReentrant
+    {
+        state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
+    }
+
+    function burnExchangeStake()
         external
         nonReentrant
     {
-        // Always allow burning the stake when the exchange gets into withdrawal mode for now
+        // Allow burning the complete owner stake when the exchange gets into withdrawal mode
         if(state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
-            state.loopring.burnAllStake(state.id);
+            uint stake = state.loopring.getExchangeStake(state.id);
+            state.loopring.burnExchangeStake(state.id, stake);
         }
     }
 
@@ -724,8 +736,14 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     function getProtocolFees()
         external
         view
-        returns (uint8 takerFeeBips, uint8 makerFeeBips)
+        returns (uint32 timestamp,
+                 uint8 takerFeeBips, uint8 makerFeeBips,
+                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips)
     {
-        return state.loopring.getProtocolFees(state.id);
+        timestamp = state.protocolFeeData.timestamp;
+        takerFeeBips = state.protocolFeeData.takerFeeBips;
+        makerFeeBips = state.protocolFeeData.makerFeeBips;
+        previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
+        previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
     }
 }
