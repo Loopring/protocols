@@ -737,7 +737,7 @@ class State(object):
         (fee_B, protocolFee_B, walletFee_B, matchingFee_B) = self.calculateFees(
             fillB_B,
             ring.orderB.feeBips,
-            context.protocolTakerFeeBips,
+            context.protocolMakerFeeBips,
             ring.orderB.walletSplitPercentage
         )
 

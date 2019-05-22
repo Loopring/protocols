@@ -221,7 +221,7 @@ export class Simulator {
 
     const [feeB, protocolFeeB, walletFeeB, matchingFeeB] = this.calculateFees(
       fillAmountBB,
-      protocolFeeTakerBips,
+      protocolFeeMakerBips,
       ring.orderB.feeBips,
       ring.orderB.walletSplitPercentage,
     );

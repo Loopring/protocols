@@ -623,7 +623,7 @@ contract("Exchange", (accounts: string[]) => {
             realmID,
             tokenS: "WETH",
             tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
             walletAccountID: walletA.walletAccountID,
           },
@@ -646,29 +646,29 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.requestWithdrawalOnchain(
         realmID, 0,
-        ring.orderA.tokenS, ring.orderA.amountS,
+        ring.orderA.tokenB, ring.orderA.amountB,
         walletA.owner,
       );
       await exchangeTestUtil.requestWithdrawalOnchain(
         realmID, 0,
-        ring.orderB.tokenS, ring.orderB.amountS,
+        ring.orderB.tokenB, ring.orderB.amountB,
         walletB.owner,
       );
       await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
       const protocolFees = await exchange.getProtocolFees();
-      const protocolFeeA = ring.orderA.amountS.mul(protocolFees.takerFeeBips).div(new BN(100000));
-      const protocolFeeB = ring.orderB.amountS.mul(protocolFees.takerFeeBips).div(new BN(100000));
+      const protocolFeeA = ring.orderA.amountB.mul(protocolFees.takerFeeBips).div(new BN(100000));
+      const protocolFeeB = ring.orderB.amountB.mul(protocolFees.makerFeeBips).div(new BN(100000));
 
       // Withdraw
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
       await withdrawChecked(blockIdx, 0,
-                            0, ring.orderA.tokenS,
-                            walletA.owner, protocolFeeA);
+                            0, ring.orderA.tokenB,
+                            loopring.address, protocolFeeA);
       await withdrawChecked(blockIdx, 1,
-                            0, ring.orderB.tokenS,
-                            walletB.owner, protocolFeeB);
+                            0, ring.orderB.tokenB,
+                            loopring.address, protocolFeeB);
     });
 
     it("Distribute withdrawals (by operator)", async () => {

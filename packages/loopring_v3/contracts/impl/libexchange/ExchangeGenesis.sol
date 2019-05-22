@@ -93,6 +93,7 @@ library ExchangeGenesis
         );
 
         S.accounts.push(protocolFeePoolAccount);
+        S.ownerToAccountId[protocolFeePoolAccount.owner] = uint24(S.accounts.length);
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.timestamp = uint32(0);
