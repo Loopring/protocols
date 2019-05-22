@@ -81,10 +81,6 @@ library ExchangeAccounts
             bool   isAccountNew
         )
     {
-        // normal account cannot have keys to be both 1, this would be a
-        // fee recipient account then.
-        require(!(pubKeyX == 1 && pubKeyY == 1), "INVALID_PUBKEY");
-
         // We allow pubKeyX and/or pubKeyY to be 0 for normal accounts to
         // disable offchain request signing.
 
@@ -125,7 +121,7 @@ library ExchangeAccounts
         );
 
         S.accounts.push(account);
-        S.ownerToAccountId[msg.sender] = accountID;
+        S.ownerToAccountId[msg.sender] = accountID + 1;
 
         emit AccountCreated(
             msg.sender,
@@ -157,7 +153,7 @@ library ExchangeAccounts
             }
         }
 
-        accountID = S.ownerToAccountId[msg.sender];
+        accountID = S.ownerToAccountId[msg.sender] - 1;
         ExchangeData.Account storage account = S.accounts[accountID];
 
         account.pubKeyX = pubKeyX;
@@ -183,6 +179,9 @@ library ExchangeAccounts
         require(owner != address(0), "ZERO_ADDRESS");
 
         accountID = S.ownerToAccountId[owner];
+        require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
+
+        accountID = accountID - 1;
     }
 
     function isAccountBalanceCorrect(

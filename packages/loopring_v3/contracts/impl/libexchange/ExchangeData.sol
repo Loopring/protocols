@@ -172,7 +172,7 @@ library ExchangeData
     function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 15 seconds; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 10 minutes; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20; }
+    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
     function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
@@ -204,6 +204,7 @@ library ExchangeData
         Request[]   depositChain;
         Request[]   withdrawalChain;
 
+        // A map from the account owner to accountID + 1
         mapping (address => uint24) ownerToAccountId;
         mapping (address => uint16) tokenToTokenId;
 

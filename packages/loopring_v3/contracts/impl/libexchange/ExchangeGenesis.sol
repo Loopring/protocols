@@ -96,8 +96,10 @@ library ExchangeGenesis
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.timestamp = uint32(0);
-        S.protocolFeeData.previousTakerFeeBips = S.loopring.maxProtocolTakerFeeBips();
-        S.protocolFeeData.previousMakerFeeBips = S.loopring.maxProtocolMakerFeeBips();
+        S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
+        S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
+        S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;
+        S.protocolFeeData.previousMakerFeeBips = S.protocolFeeData.makerFeeBips;
 
         // Call these after the main state has been set up
         S.registerToken(address(0), 0);

@@ -120,14 +120,6 @@ contract("Loopring", (accounts: string[]) => {
       );
     });
 
-    it("should not be to burn the complete stake", async () => {
-      await expectThrow(
-        loopring.burnAllStake(exchangeTestUtil.exchangeId,
-        {from: exchangeTestUtil.testContext.deployer}),
-        "UNAUTHORIZED",
-      );
-    });
-
     it("should not be to burn the stake", async () => {
       await expectThrow(
         loopring.burnExchangeStake(exchangeTestUtil.exchangeId, new BN(0),

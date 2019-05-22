@@ -755,7 +755,7 @@ contract("Exchange", (accounts: string[]) => {
       const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
       await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
 
-      await loopring.depositStake(realmID, stakeAmount, {from: depositer});
+      await loopring.depositExchangeStake(realmID, stakeAmount, {from: depositer});
 
       // Do deposits to fill a complete block
       const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[0];
@@ -819,7 +819,7 @@ contract("Exchange", (accounts: string[]) => {
       const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
       await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
 
-      await loopring.depositStake(realmID, stakeAmount, {from: depositer});
+      await loopring.depositExchangeStake(realmID, stakeAmount, {from: depositer});
 
       // Do deposits to fill a complete block
       const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[1];
