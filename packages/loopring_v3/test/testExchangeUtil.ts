@@ -1225,9 +1225,6 @@ export class ExchangeTestUtil {
       // Store state after
       const stateAfter = await this.loadRealmForRingBlock(realmID, currentBlockIdx + 1, ringBlock);
 
-      // Validate state change
-      this.validateRingSettlements(ringBlock, stateBefore, stateAfter);
-
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
@@ -1266,6 +1263,9 @@ export class ExchangeTestUtil {
           bs.addNumber(orderB.walletSplitPercentage, 1);
         }
       }
+
+      // Validate state change
+      this.validateRingSettlements(ringBlock, bs, stateBefore, stateAfter);
 
       // Commit the block
       await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
@@ -1680,18 +1680,22 @@ export class ExchangeTestUtil {
     }
   }
 
-  public validateRingSettlements(ringBlock: RingBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateRingSettlements(ringBlock: RingBlock, bs: pjs.Bitstream, stateBefore: Realm, stateAfter: Realm) {
     console.log("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
     let latestState = stateBefore;
     const addressBook = this.getAddressBookBlock(ringBlock);
-    for (const ring of ringBlock.rings) {
+    for (const [ringIndex, ring] of ringBlock.rings.entries()) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.settleRing(
+      const simulatorReport = simulator.settleRingFromInputData(
         ring, latestState, timestamp, operatorAccountID,
         ringBlock.protocolTakerFeeBips, ringBlock.protocolMakerFeeBips,
       );
+
+      // Verify onchain data can be used to update the Merkle tree correctly
+      const reconstructedState = simulator.settleRingFromOnchainData(bs, ringIndex, latestState);
+      this.compareStates(simulatorReport.realmAfter, reconstructedState);
 
       for (const detailedTransfer of simulatorReport.detailedTransfers) {
         this.logDetailedTokenTransfer(detailedTransfer, addressBook);

@@ -234,13 +234,13 @@ library ExchangeBlocks
                 protocolMakerFeeBips := and(mload(add(data, 74)), 0xFF)
             }
             require(
-                validateProtocolFees(S, protocolTakerFeeBips, protocolMakerFeeBips),
-                "INVALID_PROTOCOL_TAKER_FEE_BIPS"
-            );
-            require(
                 inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
                 inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
                 "INVALID_TIMESTAMP"
+            );
+            require(
+                validateProtocolFees(S, protocolTakerFeeBips, protocolMakerFeeBips),
+                "INVALID_PROTOCOL_FEES"
             );
         } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
             uint startIdx = 0;
@@ -317,7 +317,6 @@ library ExchangeBlocks
                 require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
                 require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
-
             }
         } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             // Do nothing
@@ -379,7 +378,10 @@ library ExchangeBlocks
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
-            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFees(S.id);
+            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFees(
+                S.id,
+                S.onchainDataAvailability
+            );
             data.timestamp = uint32(now);
         }
         // The given fee values are valid if they are the current or previous protocol fee values

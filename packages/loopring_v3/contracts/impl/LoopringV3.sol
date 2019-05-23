@@ -323,7 +323,8 @@ contract LoopringV3 is ILoopringV3, Ownable
     }
 
     function getProtocolFees(
-        uint exchangeId
+        uint exchangeId,
+        bool onchainDataAvailability
         )
         external
         view
@@ -331,34 +332,24 @@ contract LoopringV3 is ILoopringV3, Ownable
     {
         Exchange storage exchange = exchanges[exchangeId - 1];
 
-        // The total stake used here is the owner stake + the protocol fee stake, but
+        // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
+        uint stake = 0;
+        if (onchainDataAvailability && stake > minExchangeStakeWithDataAvailability) {
+            stake = exchange.exchangeStake - minExchangeStakeWithDataAvailability;
+        } else if (!onchainDataAvailability && stake > minExchangeStakeWithoutDataAvailability) {
+            stake = exchange.exchangeStake - minExchangeStakeWithoutDataAvailability;
+        }
+
+        // The total stake used here is the exchange stake + the protocol fee stake, but
         // the protocol fee stake has a reduced weight of 50%.
-        uint stake = exchange.exchangeStake.add(exchange.protocolFeeStake / 2);
+        uint protocolFeeStake = stake.add(exchange.protocolFeeStake / 2);
 
         takerFeeBips = calculateProtocolFee(
-            minProtocolTakerFeeBips, maxProtocolTakerFeeBips, stake, targetProtocolTakerFeeStake
+            minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
         );
         makerFeeBips = calculateProtocolFee(
-            minProtocolMakerFeeBips, maxProtocolMakerFeeBips, stake, targetProtocolMakerFeeStake
+            minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
         );
-    }
-
-    function calculateProtocolFee(
-        uint minFee,
-        uint maxFee,
-        uint stake,
-        uint targetStake
-        )
-        internal
-        pure
-        returns (uint8)
-    {
-        uint maxReduction = maxFee.sub(minFee);
-        uint reduction = maxReduction.mul(stake) / targetStake;
-        if (reduction > maxReduction) {
-            reduction = maxReduction;
-        }
-        return uint8(maxFee.sub(reduction));
     }
 
     function withdrawTheBurn(
@@ -378,35 +369,6 @@ contract LoopringV3 is ILoopringV3, Ownable
             uint balance = ERC20(token).balanceOf(address(this));
             require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
-    }
-
-    struct Stake
-    {
-        uint amount;
-        uint startDuration;
-        uint minimumDuration;
-    }
-
-    uint totalStaked;
-    mapping (address => mapping (uint => uint)) discreteBalances;
-    mapping (address => uint) totalWithdrawn;
-
-    function stakeFor(
-        uint amount,
-        uint duration
-        )
-        external
-        onlyOwner
-    {
-        require(amount > 0, "ZERO_VALUE");
-        require(
-            lrcAddress.safeTransferFrom(
-                msg.sender,
-                address(this),
-                amount
-            ),
-            "TRANSFER_FAILURE"
-        );
     }
 
     function withdraw(
@@ -470,5 +432,23 @@ contract LoopringV3 is ILoopringV3, Ownable
             "INVALID_EXCHANGE_ID"
         );
         return exchanges[exchangeId - 1].exchangeAddress;
+    }
+
+     function calculateProtocolFee(
+        uint minFee,
+        uint maxFee,
+        uint stake,
+        uint targetStake
+        )
+        internal
+        pure
+        returns (uint8)
+    {
+        uint maxReduction = maxFee.sub(minFee);
+        uint reduction = maxReduction.mul(stake) / targetStake;
+        if (reduction > maxReduction) {
+            reduction = maxReduction;
+        }
+        return uint8(maxFee.sub(reduction));
     }
 }

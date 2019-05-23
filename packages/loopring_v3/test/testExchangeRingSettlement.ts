@@ -546,7 +546,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("1000", "ether")),
             amountB: new BN(web3.utils.toWei("1000", "ether")),
             maxFeeBips: 125,
-            feeBips: 100,
+            feeBips: 90,
             minWalletSplitPercentage: 20,
             walletSplitPercentage: 25,
           },

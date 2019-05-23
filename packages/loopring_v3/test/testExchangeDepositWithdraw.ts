@@ -615,6 +615,8 @@ contract("Exchange", (accounts: string[]) => {
     it("Withdraw (protocol fee pool account)", async () => {
       await createExchange();
 
+      const protocolFees = await exchange.getProtocolFees();
+
       const walletA = exchangeTestUtil.wallets[realmID][0];
       const walletB = exchangeTestUtil.wallets[realmID][1];
       const ring: RingInfo = {
@@ -657,7 +659,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitOnchainWithdrawalRequests(realmID);
       await exchangeTestUtil.verifyPendingBlocks(realmID);
 
-      const protocolFees = await exchange.getProtocolFees();
+      // Expected protocol fees earned
       const protocolFeeA = ring.orderA.amountB.mul(protocolFees.takerFeeBips).div(new BN(100000));
       const protocolFeeB = ring.orderB.amountB.mul(protocolFees.makerFeeBips).div(new BN(100000));
 

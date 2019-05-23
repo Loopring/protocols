@@ -97,6 +97,8 @@ contract("Exchange", (accounts: string[]) => {
     it("Withdraw exchange stake", async () => {
       await createExchange();
 
+      const currentStakeAmount = await exchange.getExchangeStake();
+
       // Deposit some LRC to stake for the exchange
       const depositer = exchangeTestUtil.testContext.operators[2];
       const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
@@ -226,7 +228,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
 
       // Withdraw the exchange stake
-      await withdrawExchangeStakeChecked(exchangeTestUtil.exchangeOwner, stakeAmount);
+      await withdrawExchangeStakeChecked(exchangeTestUtil.exchangeOwner, currentStakeAmount.add(stakeAmount));
     });
 
     it("Incomplete shutdown", async () => {
