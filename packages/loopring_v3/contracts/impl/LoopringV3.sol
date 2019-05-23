@@ -41,12 +41,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         address _wethAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
         )
         public
     {
@@ -59,12 +61,14 @@ contract LoopringV3 is ILoopringV3, Ownable
         updateSettingsInternal(
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
-            _tierUpgradeCostBips,
             _maxWithdrawalFee,
             _downtimePriceLRCPerDay,
-            _withdrawalFineLRC,
             _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta
+            _tokenRegistrationFeeLRCDelta,
+            _minExchangeStakeWithDataAvailability,
+            _minExchangeStakeWithoutDataAvailability,
+            _revertFineLRC,
+            _withdrawalFineLRC
         );
     }
 
@@ -72,12 +76,14 @@ contract LoopringV3 is ILoopringV3, Ownable
     function updateSettings(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
         )
         external
         onlyOwner
@@ -85,13 +91,36 @@ contract LoopringV3 is ILoopringV3, Ownable
         updateSettingsInternal(
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
-            _tierUpgradeCostBips,
             _maxWithdrawalFee,
             _downtimePriceLRCPerDay,
-            _withdrawalFineLRC,
             _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta
+            _tokenRegistrationFeeLRCDelta,
+            _minExchangeStakeWithDataAvailability,
+            _minExchangeStakeWithoutDataAvailability,
+            _revertFineLRC,
+            _withdrawalFineLRC
         );
+    }
+
+    function updateProtocolFeeSettings(
+        uint8   _minProtocolTakerFeeBips,
+        uint8   _maxProtocolTakerFeeBips,
+        uint8   _minProtocolMakerFeeBips,
+        uint8   _maxProtocolMakerFeeBips,
+        uint    _targetProtocolTakerFeeStake,
+        uint    _targetProtocolMakerFeeStake
+        )
+        external
+        onlyOwner
+    {
+        minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
+        maxProtocolTakerFeeBips = _maxProtocolTakerFeeBips;
+        minProtocolMakerFeeBips = _minProtocolMakerFeeBips;
+        maxProtocolMakerFeeBips = _maxProtocolMakerFeeBips;
+        targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
+        targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
+
+        emit SettingsUpdated(now);
     }
 
     function createExchange(
@@ -371,24 +400,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         }
     }
 
-    function withdraw(
-        uint amount,
-        uint duration
-        )
-        external
-        onlyOwner
-    {
-        require(amount > 0, "ZERO_VALUE");
-        require(
-            lrcAddress.safeTransferFrom(
-                msg.sender,
-                address(this),
-                amount
-            ),
-            "TRANSFER_FAILURE"
-        );
-    }
-
     function()
         external
         payable
@@ -398,12 +409,14 @@ contract LoopringV3 is ILoopringV3, Ownable
     function updateSettingsInternal(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
         )
         private
     {
@@ -413,9 +426,12 @@ contract LoopringV3 is ILoopringV3, Ownable
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
-        withdrawalFineLRC = _withdrawalFineLRC;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
+        minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
+        minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
+        revertFineLRC = _revertFineLRC;
+        withdrawalFineLRC = _withdrawalFineLRC;
 
         emit SettingsUpdated(now);
     }
@@ -434,7 +450,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         return exchanges[exchangeId - 1].exchangeAddress;
     }
 
-     function calculateProtocolFee(
+    function calculateProtocolFee(
         uint minFee,
         uint maxFee,
         uint stake,
@@ -444,11 +460,15 @@ contract LoopringV3 is ILoopringV3, Ownable
         pure
         returns (uint8)
     {
-        uint maxReduction = maxFee.sub(minFee);
-        uint reduction = maxReduction.mul(stake) / targetStake;
-        if (reduction > maxReduction) {
-            reduction = maxReduction;
+        if (targetStake > 0) {
+            uint maxReduction = maxFee.sub(minFee);
+            uint reduction = maxReduction.mul(stake) / targetStake;
+            if (reduction > maxReduction) {
+                reduction = maxReduction;
+            }
+            return uint8(maxFee.sub(reduction));
+        } else {
+            return uint8(minFee);
         }
-        return uint8(maxFee.sub(reduction));
     }
 }

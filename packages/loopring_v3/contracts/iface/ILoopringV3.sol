@@ -83,29 +83,46 @@ contract ILoopringV3
     uint    public tokenRegistrationFeeLRCDelta                     = 0;
     uint    public minExchangeStakeWithDataAvailability             = 0;
     uint    public minExchangeStakeWithoutDataAvailability          = 0;
-    uint    public revertFineLRC                                    = 50000 ether;
-    uint8   public minProtocolTakerFeeBips                          = 25;
-    uint8   public maxProtocolTakerFeeBips                          = 50;
-    uint8   public minProtocolMakerFeeBips                          = 10;
-    uint8   public maxProtocolMakerFeeBips                          = 25;
-    uint    public targetProtocolTakerFeeStake                      = 25000000 ether;
-    uint    public targetProtocolMakerFeeStake                      = 10000000 ether;
+    uint    public revertFineLRC                                    = 0;
+    uint8   public minProtocolTakerFeeBips                          = 0;
+    uint8   public maxProtocolTakerFeeBips                          = 0;
+    uint8   public minProtocolMakerFeeBips                          = 0;
+    uint8   public maxProtocolMakerFeeBips                          = 0;
+    uint    public targetProtocolTakerFeeStake                      = 0;
+    uint    public targetProtocolMakerFeeStake                      = 0;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
-    ///      This function can onlhy be called by the owner the this contract.
+    ///      This function can only be called by the owner of this contract.
     ///
-    ///      Warning: theese new values will be used by existing and
+    ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDalta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
+        )
+        external;
+
+    /// @dev Update the global protocol fee settings.
+    ///      This function can only be called by the owner of this contract.
+    ///
+    ///      Warning: these new values will be used by existing and
+    ///      new Loopring exchanges.
+    function updateProtocolFeeSettings(
+        uint8   _minProtocolTakerFeeBips,
+        uint8   _maxProtocolTakerFeeBips,
+        uint8   _minProtocolMakerFeeBips,
+        uint8   _maxProtocolMakerFeeBips,
+        uint    _targetProtocolTakerFeeStake,
+        uint    _targetProtocolMakerFeeStake
         )
         external;
 

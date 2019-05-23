@@ -232,16 +232,16 @@ export class Simulator {
     offset += 1;
 
     // Further extraction of packed data
-    const ringMatcherID = ringMatcherAccountIdAndRingFee >> 12;
+    const ringMatcherID = Math.floor(ringMatcherAccountIdAndRingFee / (2 ** 12));
     const fRingFee = ringMatcherAccountIdAndRingFee & 0xFFF;
 
-    const orderIdA = orderIds >> 20;
+    const orderIdA = Math.floor(orderIds / (2 ** 20));
     const orderIdB = orderIds & 0xFFFFF;
 
-    const orderOwnerA = orderAccountsA >> 20;
+    const orderOwnerA = Math.floor(orderAccountsA / (2 ** 20));
     const walletA = orderAccountsA & 0xFFFFF;
 
-    const orderOwnerB = orderAccountsB >> 20;
+    const orderOwnerB = Math.floor(orderAccountsB / (2 ** 20));
     const walletB = orderAccountsB & 0xFFFFF;
 
     const surplusMask = walletSplitPercentageA & 0b10000000;

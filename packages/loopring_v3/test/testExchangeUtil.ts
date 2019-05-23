@@ -110,12 +110,24 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
-      new BN(1),
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("10000", "ether")),
-      new BN(web3.utils.toWei("2", "ether")),
       new BN(web3.utils.toWei("2000", "ether")),
-      new BN(web3.utils.toWei("1000", "ether")),
+      new BN(web3.utils.toWei("1", "ether")),
+      new BN(web3.utils.toWei("250000", "ether")),
+      new BN(web3.utils.toWei("1000000", "ether")),
+      new BN(web3.utils.toWei("50000", "ether")),
+      new BN(web3.utils.toWei("10", "ether")),
+      {from: this.testContext.deployer},
+    );
+
+    await this.loopringV3.updateProtocolFeeSettings(
+      25,
+      50,
+      10,
+      25,
+      new BN(web3.utils.toWei("25000000", "ether")),
+      new BN(web3.utils.toWei("10000000", "ether")),
       {from: this.testContext.deployer},
     );
 
@@ -1693,9 +1705,11 @@ export class ExchangeTestUtil {
         ringBlock.protocolTakerFeeBips, ringBlock.protocolMakerFeeBips,
       );
 
-      // Verify onchain data can be used to update the Merkle tree correctly
-      const reconstructedState = simulator.settleRingFromOnchainData(bs, ringIndex, latestState);
-      this.compareStates(simulatorReport.realmAfter, reconstructedState);
+      if (ringBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.settleRingFromOnchainData(bs, ringIndex, latestState);
+        this.compareStates(simulatorReport.realmAfter, reconstructedState);
+      }
 
       for (const detailedTransfer of simulatorReport.detailedTransfers) {
         this.logDetailedTokenTransfer(detailedTransfer, addressBook);
