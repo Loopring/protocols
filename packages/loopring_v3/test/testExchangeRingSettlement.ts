@@ -66,7 +66,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Matchable (orderA < orderB)", async () => {
+    it("Positive spread (orderA < orderB)", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -99,7 +99,7 @@ contract("Exchange", (accounts: string[]) => {
       // await verify();
     });
 
-    it("Matchable (orderA > orderB)", async () => {
+    it("Positive spread (orderA > orderB)", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -129,7 +129,165 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      // await verify();
+      await verify();
+    });
+
+    it("Negative Spread (orderA < orderB)", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("999", "ether")),
+            amountB: new BN(web3.utils.toWei("1000", "ether")),
+            maxFeeBips: 125,
+            feeBips: 100,
+            minWalletSplitPercentage: 20,
+            walletSplitPercentage: 25,
+          },
+        orderB:
+          {
+            realmID,
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("1000", "ether")),
+            amountB: new BN(web3.utils.toWei("1000", "ether")),
+            maxFeeBips: 125,
+            feeBips: 90,
+            minWalletSplitPercentage: 20,
+            walletSplitPercentage: 25,
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")).neg()},
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
+    });
+
+    it("Negative Spread (orderA > orderB)", async () => {
+      const ring: RingInfo = {
+        orderA:
+        {
+          realmID,
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("1000", "ether")),
+          amountB: new BN(web3.utils.toWei("1000", "ether")),
+          maxFeeBips: 125,
+          feeBips: 90,
+          minWalletSplitPercentage: 20,
+          walletSplitPercentage: 25,
+        },
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("999", "ether")),
+            amountB: new BN(web3.utils.toWei("1000", "ether")),
+            maxFeeBips: 125,
+            feeBips: 100,
+            minWalletSplitPercentage: 20,
+            walletSplitPercentage: 25,
+          },
+        expected: {
+          orderA: { filledFraction: 0.999, spread: new BN(web3.utils.toWei("1", "ether")).neg()},
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
+    });
+
+    it("feeBips < maxFeeBips", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "LRC",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("101", "ether")),
+            amountB: new BN(web3.utils.toWei("10", "ether")),
+            maxFeeBips: 125,
+            feeBips: 90,
+          },
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("20", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            maxFeeBips: 40,
+            feeBips: 25,
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")) },
+          orderB: { filledFraction: 0.5 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
+    });
+
+    it("walletSplitPercentage > minWalletSplitPercentage", async () => {
+      const ring: RingInfo = {
+        orderA:
+        {
+          realmID,
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("1000", "ether")),
+          amountB: new BN(web3.utils.toWei("1000", "ether")),
+          minWalletSplitPercentage: 30,
+          walletSplitPercentage: 35,
+          maxFeeBips: 50,
+          feeBips: 50,
+        },
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("999", "ether")),
+            amountB: new BN(web3.utils.toWei("1000", "ether")),
+            minWalletSplitPercentage: 20,
+            walletSplitPercentage: 25,
+          },
+        expected: {
+          orderA: { filledFraction: 0.999, spread: new BN(web3.utils.toWei("1", "ether")).neg()},
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(realmID, ring);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      await verify();
     });
 
     it("No funds available", async () => {
@@ -522,47 +680,6 @@ contract("Exchange", (accounts: string[]) => {
       } catch {
         exchangeTestUtil.cancelPendingRings(realmID);
       }
-    });
-
-    it("Negative Spread", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            realmID,
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("999", "ether")),
-            amountB: new BN(web3.utils.toWei("1000", "ether")),
-            maxFeeBips: 125,
-            feeBips: 100,
-            minWalletSplitPercentage: 20,
-            walletSplitPercentage: 25,
-          },
-        orderB:
-          {
-            realmID,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("1000", "ether")),
-            amountB: new BN(web3.utils.toWei("1000", "ether")),
-            maxFeeBips: 125,
-            feeBips: 90,
-            minWalletSplitPercentage: 20,
-            walletSplitPercentage: 25,
-          },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")).neg()},
-          orderB: { filledFraction: 1.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
-
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
-
-      await verify();
     });
 
     it("validUntil < now", async () => {

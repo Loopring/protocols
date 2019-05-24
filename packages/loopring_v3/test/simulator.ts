@@ -96,38 +96,24 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public offchainWithdraw(withdrawal: WithdrawalRequest, realm: Realm, operatorAccountID: number) {
-    const newRealm = this.copyRealm(realm);
-
+  public offchainWithdrawFromInputData(withdrawal: WithdrawalRequest, realm: Realm, operatorAccountID: number) {
     const fee = roundToFloatValue(withdrawal.fee, constants.Float16Encoding);
 
-    const feeToWallet = fee.mul(new BN(withdrawal.walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = fee.sub(feeToWallet);
-
-    const account = newRealm.accounts[withdrawal.accountID];
-
-    // Update balanceF
-    account.balances[withdrawal.feeTokenID].balance =
-      account.balances[withdrawal.feeTokenID].balance.sub(fee);
-
-    const balance = account.balances[withdrawal.tokenID].balance;
+    const account = realm.accounts[withdrawal.accountID];
+    let balance = account.balances[withdrawal.tokenID].balance;
+    if (withdrawal.tokenID === withdrawal.feeTokenID) {
+      balance = balance.sub(fee);
+    }
     const amountToWithdraw = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
     const amountWithdrawn = roundToFloatValue(amountToWithdraw, constants.Float28Encoding);
 
-    // Update balance
-    account.balances[withdrawal.tokenID].balance =
-      account.balances[withdrawal.tokenID].balance.sub(amountWithdrawn);
-    account.nonce++;
-
-    // Update wallet
-    const wallet = newRealm.accounts[withdrawal.walletAccountID];
-    wallet.balances[withdrawal.feeTokenID].balance =
-      wallet.balances[withdrawal.feeTokenID].balance.add(feeToWallet);
-
-    // Update operator
-    const operator = newRealm.accounts[operatorAccountID];
-    operator.balances[withdrawal.feeTokenID].balance =
-      operator.balances[withdrawal.feeTokenID].balance.add(feeToOperator);
+    // Update the Merkle tree with the input data
+    const newRealm = this.offchainWithdraw(
+      realm,
+      operatorAccountID, withdrawal.accountID, withdrawal.walletAccountID,
+      withdrawal.tokenID, amountWithdrawn,
+      withdrawal.feeTokenID, fee, withdrawal.walletSplitPercentage,
+    );
 
     const simulatorReport: SimulatorReport = {
       realmBefore: realm,
@@ -136,46 +122,199 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public cancelOrder(cancel: Cancel, realm: Realm, operatorAccountID: number) {
+  public offchainWithdrawFromOnchainData(bs: pjs.Bitstream, blockSize: number, withdrawalIndex: number, realm: Realm) {
+    let offset = 0;
+
+    // General data
+    const realmId = bs.extractUint32(offset);
+    offset += 4 + 32 + 32;
+
+    const onchainDataOffset = offset;
+
+    // Jump to the specified withdrawal
+    const onchainDataSize = 7;
+    offset += withdrawalIndex * onchainDataSize;
+
+    // Extract onchain data
+    const token = bs.extractUint8(offset);
+    offset += 1;
+    const accountIdAndAmountWithdrawn = parseInt(bs.extractBytesX(offset, 6).toString("hex"), 16);
+    offset += 6;
+
+    offset = onchainDataOffset + blockSize * onchainDataSize;
+
+    // General data
+    const operatorAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    offset += 3;
+
+    // Jump to the specified withdrawal
+    const offchainDataSize = 7;
+    offset += withdrawalIndex * offchainDataSize;
+
+    // Extract offchain data
+    const walletAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    offset += 3;
+    const feeToken = bs.extractUint8(offset);
+    offset += 1;
+    const fFee = bs.extractUint16(offset);
+    offset += 2;
+    const walletSplitPercentage = bs.extractUint8(offset);
+    offset += 1;
+
+    // Further extraction of packed data
+    const accountID = Math.floor(accountIdAndAmountWithdrawn / (2 ** 28));
+    const fAmountWithdrawn = accountIdAndAmountWithdrawn & 0xFFFFFFF;
+
+    // Decode the float values
+    const fee = fromFloat(fFee, constants.Float16Encoding);
+    const amountWithdrawn = fromFloat(fAmountWithdrawn, constants.Float28Encoding);
+
+    // Update the Merkle tree with the onchain data
+    const newRealm = this.offchainWithdraw(
+      realm,
+      operatorAccountID, accountID, walletAccountID,
+      token, amountWithdrawn,
+      feeToken, fee, walletSplitPercentage,
+    );
+
+    return newRealm;
+  }
+
+  public offchainWithdraw(realm: Realm,
+                          operatorAccountID: number, accountID: number, walletAccountID: number,
+                          tokenID: number, amountWithdrawn: BN,
+                          feeTokenID: number, fee: BN, walletSplitPercentage: number) {
     const newRealm = this.copyRealm(realm);
 
-    const fee = roundToFloatValue(cancel.fee, constants.Float16Encoding);
-
-    const feeToWallet = fee.mul(new BN(cancel.walletSplitPercentage)).div(new BN(100));
+    const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
     const feeToOperator = fee.sub(feeToWallet);
 
-    const account = newRealm.accounts[cancel.accountID];
+    const account = newRealm.accounts[accountID];
+
+    // Update balanceF
+    account.balances[feeTokenID].balance =
+      account.balances[feeTokenID].balance.sub(fee);
 
     // Update balance
-    account.balances[cancel.orderTokenID].balance =
-      account.balances[cancel.orderTokenID].balance.sub(fee);
+    account.balances[tokenID].balance =
+      account.balances[tokenID].balance.sub(amountWithdrawn);
     account.nonce++;
 
-    // Update trade history
-    if (!account.balances[cancel.orderTokenID].tradeHistory[cancel.orderID]) {
-      account.balances[cancel.orderTokenID].tradeHistory[cancel.orderID] = {
-        filled: new BN(0),
-        cancelled: false,
-        orderID: 0,
-      };
-    }
-    account.balances[cancel.orderTokenID].tradeHistory[cancel.orderID].cancelled = true;
-
     // Update wallet
-    const wallet = newRealm.accounts[cancel.walletAccountID];
-    wallet.balances[cancel.feeTokenID].balance =
-      wallet.balances[cancel.feeTokenID].balance.add(feeToWallet);
+    const wallet = newRealm.accounts[walletAccountID];
+    wallet.balances[feeTokenID].balance =
+      wallet.balances[feeTokenID].balance.add(feeToWallet);
 
     // Update operator
     const operator = newRealm.accounts[operatorAccountID];
-    operator.balances[cancel.feeTokenID].balance =
-      operator.balances[cancel.feeTokenID].balance.add(feeToOperator);
+    operator.balances[feeTokenID].balance =
+      operator.balances[feeTokenID].balance.add(feeToOperator);
+
+    return newRealm;
+  }
+
+  public cancelOrderFromOnchainData(bs: pjs.Bitstream, cancelIndex: number, realm: Realm) {
+    let offset = 0;
+
+    // General data
+    const realmId = bs.extractUint32(offset);
+    offset += 4 + 32 + 32;
+
+    // General data
+    const operatorAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    offset += 3;
+
+    // Jump to the specified withdrawal
+    const onchainDataSize = 13;
+    offset += cancelIndex * onchainDataSize;
+
+    // Extract onchain data
+    const accountIds = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
+    offset += 5;
+    const orderToken = bs.extractUint8(offset);
+    offset += 1;
+    const orderID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    offset += 3;
+    const feeToken = bs.extractUint8(offset);
+    offset += 1;
+    const fFee = bs.extractUint16(offset);
+    offset += 2;
+    const walletSplitPercentage = bs.extractUint8(offset);
+    offset += 1;
+
+    // Further extraction of packed data
+    const accountID = Math.floor(accountIds / (2 ** 20));
+    const walletAccountID = accountIds & 0xFFFFF;
+
+    // Decode the float values
+    const fee = fromFloat(fFee, constants.Float16Encoding);
+
+    // Update the Merkle tree with the onchain data
+    const newRealm = this.cancelOrder(
+      realm,
+      operatorAccountID, walletAccountID,
+      accountID, orderToken, orderID,
+      feeToken, fee, walletSplitPercentage,
+    );
+
+    return newRealm;
+  }
+
+  public cancelOrderFromInputData(cancel: Cancel, realm: Realm, operatorAccountID: number) {
+    const fee = roundToFloatValue(cancel.fee, constants.Float16Encoding);
+
+    // Update the Merkle tree with the input data
+    const newRealm = this.cancelOrder(
+      realm,
+      operatorAccountID, cancel.walletAccountID,
+      cancel.accountID, cancel.orderTokenID, cancel.orderID,
+      cancel.feeTokenID, fee, cancel.walletSplitPercentage,
+    );
 
     const simulatorReport: SimulatorReport = {
       realmBefore: realm,
       realmAfter: newRealm,
     };
     return simulatorReport;
+  }
+
+  public cancelOrder(realm: Realm,
+                     operatorAccountID: number, walletAccountID: number,
+                     accountID: number, orderTokenID: number, orderID: number,
+                     feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+    const newRealm = this.copyRealm(realm);
+
+    const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
+    const feeToOperator = fee.sub(feeToWallet);
+
+    const account = newRealm.accounts[accountID];
+
+    // Update balance
+    account.balances[orderTokenID].balance =
+      account.balances[orderTokenID].balance.sub(fee);
+    account.nonce++;
+
+    // Update trade history
+    if (!account.balances[orderTokenID].tradeHistory[orderID]) {
+      account.balances[orderTokenID].tradeHistory[orderID] = {
+        filled: new BN(0),
+        cancelled: false,
+        orderID: 0,
+      };
+    }
+    account.balances[orderTokenID].tradeHistory[orderID].cancelled = true;
+
+    // Update wallet
+    const wallet = newRealm.accounts[walletAccountID];
+    wallet.balances[feeTokenID].balance =
+      wallet.balances[feeTokenID].balance.add(feeToWallet);
+
+    // Update operator
+    const operator = newRealm.accounts[operatorAccountID];
+    operator.balances[feeTokenID].balance =
+      operator.balances[feeTokenID].balance.add(feeToOperator);
+
+    return newRealm;
   }
 
   public settleRingFromOnchainData(bs: pjs.Bitstream, ringIndex: number, realm: Realm) {

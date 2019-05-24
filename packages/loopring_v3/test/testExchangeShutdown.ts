@@ -10,76 +10,6 @@ contract("Exchange", (accounts: string[]) => {
   let loopringV3: any;
   let exchangeId = 0;
 
-  const depositExchangeStakeChecked = async (amount: BN, owner: string) => {
-    const token = "LRC";
-    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
-    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeBefore = await exchange.getExchangeStake();
-    const totalStakeBefore = await loopringV3.totalStake();
-
-    await loopringV3.depositExchangeStake(exchangeId, amount, {from: owner});
-
-    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
-    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeAfter = await exchange.getExchangeStake();
-    const totalStakeAfter = await loopringV3.totalStake();
-
-    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(amount)),
-           "Token balance of owner should be decreased by amount");
-    assert(balanceContractAfter.eq(balanceContractBefore.add(amount)),
-           "Token balance of contract should be increased by amount");
-    assert(stakeAfter.eq(stakeBefore.add(amount)),
-           "Stake should be increased by amount");
-    assert(totalStakeAfter.eq(totalStakeBefore.add(amount)),
-           "Total stake should be increased by amount");
-
-    // Get the ExchangeStakeDeposited event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-      loopringV3, "ExchangeStakeDeposited", web3.eth.blockNumber,
-    );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.exchangeId, eventObj.args.amount];
-    });
-    assert.equal(items.length, 1, "A single ExchangeStakeDeposited event should have been emitted");
-    assert.equal(items[0][0].toNumber(), exchangeId, "exchangeId should match");
-    assert(items[0][1].eq(amount), "amount should match");
-  };
-
-  const withdrawExchangeStakeChecked = async (recipient: string, amount: BN) => {
-    const token = "LRC";
-    const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
-    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeBefore = await exchange.getExchangeStake();
-    const totalStakeBefore = await loopringV3.totalStake();
-
-    await exchange.withdrawExchangeStake(recipient, {from: exchangeTestUtil.exchangeOwner});
-
-    const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
-    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopringV3.address, token);
-    const stakeAfter = await exchange.getExchangeStake();
-    const totalStakeAfter = await loopringV3.totalStake();
-
-    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amount)),
-           "Token balance of owner should be increased by amount");
-    assert(balanceContractBefore.eq(balanceContractAfter.add(amount)),
-           "Token balance of contract should be decreased by amount");
-    assert(stakeBefore.eq(stakeAfter.add(amount)),
-           "Stake should be decreased by amount");
-    assert(totalStakeAfter.eq(totalStakeBefore.sub(amount)),
-           "Total stake should be decreased by amount");
-
-    // Get the ExchangeStakeWithdrawn event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-      loopringV3, "ExchangeStakeWithdrawn", web3.eth.blockNumber,
-    );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.exchangeId, eventObj.args.amount];
-    });
-    assert.equal(items.length, 1, "A single ExchangeStakeWithdrawn event should have been emitted");
-    assert.equal(items[0][0].toNumber(), exchangeId, "exchangeId should match");
-    assert(items[0][1].eq(amount), "amount should match");
-  };
-
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
     exchange = exchangeTestUtil.exchange;
@@ -105,7 +35,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopringV3.address);
 
       // Stake it
-      await depositExchangeStakeChecked(stakeAmount, depositer);
+      await exchangeTestUtil.depositExchangeStakeChecked(stakeAmount, depositer);
 
       // Do a trade so the trading history/nonce for some accounts don't have default values
       const ring: RingInfo = {
@@ -228,7 +158,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
 
       // Withdraw the exchange stake
-      await withdrawExchangeStakeChecked(exchangeTestUtil.exchangeOwner, currentStakeAmount.add(stakeAmount));
+      await exchangeTestUtil.withdrawExchangeStakeChecked(
+        exchangeTestUtil.exchangeOwner, currentStakeAmount.add(stakeAmount),
+      );
     });
 
     it("Incomplete shutdown", async () => {
@@ -243,7 +175,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopringV3.address);
 
       // Stake it
-      await depositExchangeStakeChecked(stakeAmount, depositer);
+      await exchangeTestUtil.depositExchangeStakeChecked(stakeAmount, depositer);
 
       // Shut down the exchange
       await exchange.shutdown({from: exchangeTestUtil.exchangeOwner});

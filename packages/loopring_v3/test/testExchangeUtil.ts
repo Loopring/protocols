@@ -1036,13 +1036,6 @@ export class ExchangeTestUtil {
       // Store state after
       const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
 
-      // Validate state change
-      if (onchain) {
-        this.validateOnchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
-      } else {
-        this.validateOffchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
-      }
-
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
       bs.addNumber(block.realmID, 4);
@@ -1066,6 +1059,13 @@ export class ExchangeTestUtil {
           bs.addNumber(toFloat(new BN(withdrawal.fee), constants.Float16Encoding), 2);
           bs.addNumber(withdrawal.walletSplitPercentage, 1);
         }
+      }
+
+       // Validate state change
+      if (onchain) {
+        this.validateOnchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
+      } else {
+        this.validateOffchainWithdrawals(withdrawalBlock, bs, stateBefore, stateAfter);
       }
 
       // Commit the block
@@ -1338,9 +1338,6 @@ export class ExchangeTestUtil {
       // Store state after
       const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
 
-      // Validate state change
-      this.validateOrderCancellations(cancelBlock, stateBefore, stateAfter);
-
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
@@ -1359,6 +1356,9 @@ export class ExchangeTestUtil {
           bs.addNumber(cancel.walletSplitPercentage, 1);
         }
       }
+
+      // Validate state change
+      this.validateOrderCancellations(cancelBlock, bs, stateBefore, stateAfter);
 
       // Commit the block
       await this.commitBlock(operator, BlockType.ORDER_CANCELLATION, blockSize, bs.getData(), blockFilename);
@@ -1804,13 +1804,22 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, bs: pjs.Bitstream,
+                                     stateBefore: Realm, stateAfter: Realm) {
     console.log("----------------------------------------------------");
     const operatorAccountID = withdrawBlock.operatorAccountID;
     let latestState = stateBefore;
-    for (const withdrawal of withdrawBlock.withdrawals) {
+    for (const [withdrawalIndex, withdrawal] of withdrawBlock.withdrawals.entries()) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.offchainWithdraw(withdrawal, latestState, operatorAccountID);
+      const simulatorReport = simulator.offchainWithdrawFromInputData(withdrawal, latestState, operatorAccountID);
+
+      if (withdrawBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.offchainWithdrawFromOnchainData(
+          bs, withdrawBlock.withdrawals.length, withdrawalIndex, latestState,
+        );
+        this.compareStates(simulatorReport.realmAfter, reconstructedState);
+      }
 
       const accountBefore = latestState.accounts[withdrawal.accountID];
       const accountAfter = simulatorReport.realmAfter.accounts[withdrawal.accountID];
@@ -1831,13 +1840,22 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOrderCancellations(cancelBlock: CancelBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateOrderCancellations(cancelBlock: CancelBlock, bs: pjs.Bitstream,
+                                    stateBefore: Realm, stateAfter: Realm) {
     console.log("----------------------------------------------------");
     const operatorAccountID = cancelBlock.operatorAccountID;
     let latestState = stateBefore;
-    for (const cancel of cancelBlock.cancels) {
+    for (const [cancelIndex, cancel] of cancelBlock.cancels.entries()) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.cancelOrder(cancel, latestState, operatorAccountID);
+      const simulatorReport = simulator.cancelOrderFromInputData(cancel, latestState, operatorAccountID);
+
+      if (cancelBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.cancelOrderFromOnchainData(
+          bs, cancelIndex, latestState,
+        );
+        this.compareStates(simulatorReport.realmAfter, reconstructedState);
+      }
 
       // const accountBefore = latestState.accounts[cancel.accountID];
       // const accountAfter = simulatorReport.realmAfter.accounts[cancel.accountID];
@@ -1896,6 +1914,146 @@ export class ExchangeTestUtil {
     console.log(accountID + ": " +
                 prettyBalanceBefore + " " + tokenSymbol + " -> " +
                 prettyBalanceAfter + " " + tokenSymbol);
+  }
+
+  public async depositExchangeStakeChecked(amount: BN, owner: string) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(owner, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.exchange.getExchangeStake();
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.loopringV3.depositExchangeStake(this.exchangeId, amount, {from: owner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(owner, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.exchange.getExchangeStake();
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(amount)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(amount)),
+           "Token balance of contract should be increased by amount");
+    assert(stakeAfter.eq(stakeBefore.add(amount)),
+           "Stake should be increased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.add(amount)),
+           "Total stake should be increased by amount");
+
+    // Get the ExchangeStakeDeposited event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ExchangeStakeDeposited", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ExchangeStakeDeposited event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
+  }
+
+  public async withdrawExchangeStakeChecked(recipient: string, amount: BN) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(recipient, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.exchange.getExchangeStake();
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.exchange.withdrawExchangeStake(recipient, {from: this.exchangeOwner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(recipient, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.exchange.getExchangeStake();
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amount)),
+           "Token balance of owner should be increased by amount");
+    assert(balanceContractBefore.eq(balanceContractAfter.add(amount)),
+           "Token balance of contract should be decreased by amount");
+    assert(stakeBefore.eq(stakeAfter.add(amount)),
+           "Stake should be decreased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.sub(amount)),
+           "Total stake should be decreased by amount");
+
+    // Get the ExchangeStakeWithdrawn event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ExchangeStakeWithdrawn", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ExchangeStakeWithdrawn event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
+  }
+
+  public async depositProtocolFeeStakeChecked(amount: BN, owner: string) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(owner, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.loopringV3.depositProtocolFeeStake(this.exchangeId, amount, {from: owner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(owner, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(amount)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(amount)),
+           "Token balance of contract should be increased by amount");
+    assert(stakeAfter.eq(stakeBefore.add(amount)),
+           "Stake should be increased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.add(amount)),
+           "Total stake should be increased by amount");
+
+    // Get the ProtocolFeeStakeDeposited event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ProtocolFeeStakeDeposited", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ProtocolFeeStakeDeposited event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
+  }
+
+  public async withdrawProtocolFeeStakeChecked(recipient: string, amount: BN) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(recipient, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.exchange.withdrawProtocolFeeStake(recipient, amount, {from: this.exchangeOwner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(recipient, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amount)),
+           "Token balance of owner should be increased by amount");
+    assert(balanceContractBefore.eq(balanceContractAfter.add(amount)),
+           "Token balance of contract should be decreased by amount");
+    assert(stakeBefore.eq(stakeAfter.add(amount)),
+           "Stake should be decreased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.sub(amount)),
+           "Total stake should be decreased by amount");
+
+    // Get the ProtocolFeeStakeWithdrawn event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ProtocolFeeStakeWithdrawn", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ProtocolFeeStakeWithdrawn event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
   }
 
   private getPrivateKey(address: string) {

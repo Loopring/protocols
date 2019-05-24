@@ -33,6 +33,40 @@ contract("Loopring", (accounts: string[]) => {
 
   describe("Staking", function() {
     this.timeout(0);
+
+    describe("Owner", () => {
+      it("should be able to withdraw the protocol fee stake", async () => {
+        // Deposit some LRC to stake for the exchange
+        const depositer = exchangeTestUtil.testContext.operators[2];
+        const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+        await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
+
+        // Stake it
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(stakeAmount, depositer);
+
+        // Try to withdraw it from an unauthorized address on the exchange contract
+        await expectThrow(
+          exchangeTestUtil.exchange.withdrawProtocolFeeStake(
+            exchangeTestUtil.exchangeOwner, stakeAmount, {from: exchangeTestUtil.exchangeOperator},
+          ),
+          "UNAUTHORIZED",
+        );
+
+        // Try to withdraw it from an unauthorized address on the loopring contract
+        await expectThrow(
+          loopring.withdrawProtocolFeeStake(
+            exchangeTestUtil.exchangeId, exchangeTestUtil.exchangeOwner, stakeAmount,
+            {from: exchangeTestUtil.exchangeOwner},
+          ),
+          "UNAUTHORIZED",
+        );
+
+        // Withdraw the exchange stake
+        await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
+          exchangeTestUtil.exchangeOwner, stakeAmount,
+        );
+      });
+    });
   });
 
   describe("Owner", () => {
@@ -120,7 +154,7 @@ contract("Loopring", (accounts: string[]) => {
       );
     });
 
-    it("should not be to burn the stake", async () => {
+    it("should not be able to burn the stake", async () => {
       await expectThrow(
         loopring.burnExchangeStake(exchangeTestUtil.exchangeId, new BN(0),
         {from: exchangeTestUtil.testContext.deployer}),
