@@ -720,9 +720,9 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 |  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
 | :----- |:-------------: |:---------------:| :-------------:|
-|Trades per Ethereum Block | ~26      | ~1800 |      ~7000|
-| Trades per Second | ~2      | ~120        |           ~450 |
-| Cost per Trade | ~300,000 gas | ~4450 gas | ~1150 gas|
+|Trades per Ethereum Block | ~26      | ~2400 |      ~8165|
+| Trades per Second | ~2      | ~160        |           ~525 |
+| Cost per Trade | ~300,000 gas | ~3340 gas | ~1120 gas|
 | Cost in USD per Trade <br> (1ETH=164USD) | ~0.1 | ~0.0015* | ~0.0004* |
 
 * *Cost in USD per Trade* in the table does not cover off-chain proof generation.
