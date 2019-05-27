@@ -84,6 +84,8 @@ export class ExchangeTestUtil {
 
   public pendingBlocks: Block[][] = [];
 
+  public onchainDataAvailability = true;
+
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
@@ -95,8 +97,6 @@ export class ExchangeTestUtil {
   private orderIDGenerator: number = 0;
 
   private dualAuthKeyPair: any;
-
-  private onchainDataAvailability = true;
 
   private MAX_NUM_EXCHANGES: number = 128;
 
@@ -1459,7 +1459,9 @@ export class ExchangeTestUtil {
 
     // Deposit some LRC to stake for the exchange
     const depositer = this.testContext.operators[2];
-    const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+    const stakeAmount = onchainDataAvailability ?
+                        (await this.loopringV3.minExchangeStakeWithDataAvailability()) :
+                        (await this.loopringV3.minExchangeStakeWithoutDataAvailability());
     await this.setBalanceAndApprove(depositer, "LRC", stakeAmount, this.loopringV3.address);
 
     // Stake it

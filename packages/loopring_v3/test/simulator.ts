@@ -472,7 +472,7 @@ export class Simulator {
 
     const detailedTransfersB = this.getDetailedTransfers(
       ring, ring.orderB, ring.orderA,
-      fillSB, fillBB, spread,
+      fillSB, fillBB, new BN(0),
       s.feeB, s.walletFeeB, s.matchingFeeB,
     );
 

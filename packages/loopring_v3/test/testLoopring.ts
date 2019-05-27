@@ -31,6 +31,40 @@ contract("Loopring", (accounts: string[]) => {
            "Token balance of contract should be decreased by amount");
   };
 
+  const calculateProtocolFee = (minFee: BN, maxFee: BN, stake: BN, targetStake: BN) => {
+    const maxReduction = maxFee.sub(minFee);
+    let reduction = maxReduction.mul(stake).div(targetStake);
+    if (reduction.gt(maxReduction)) {
+        reduction = maxReduction;
+    }
+    return maxFee.sub(reduction);
+  };
+
+  const checkProtocolFees = async () => {
+    const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
+    const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
+    const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();
+    const maxProtocolMakerFeeBips = await loopring.maxProtocolMakerFeeBips();
+    const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
+    const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
+
+    const stake = (await loopring.getProtocolFeeStake(exchangeTestUtil.exchangeId)).div(new BN(2));
+
+    const expectedTakerFee = calculateProtocolFee(
+      minProtocolTakerFeeBips, maxProtocolTakerFeeBips, stake, targetProtocolTakerFeeStake,
+    );
+    const expectedMakerFee = calculateProtocolFee(
+      minProtocolMakerFeeBips, maxProtocolMakerFeeBips, stake, targetProtocolMakerFeeStake,
+    );
+
+    const protocolFees = await loopring.getProtocolFees(
+      exchangeTestUtil.exchangeId,
+      exchangeTestUtil.onchainDataAvailability,
+    );
+    assert(protocolFees.takerFeeBips.eq(expectedTakerFee), "Wrong protocol taker fees");
+    assert(protocolFees.makerFeeBips.eq(expectedMakerFee), "Wrong protocol maker fees");
+  };
+
   describe("Staking", function() {
     this.timeout(0);
 
@@ -65,6 +99,48 @@ contract("Loopring", (accounts: string[]) => {
         await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
           exchangeTestUtil.exchangeOwner, stakeAmount,
         );
+      });
+    });
+
+    describe("Anyone", () => {
+      it.only("should be able to lower the protocol fees", async () => {
+        const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
+        const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
+        const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();
+        const maxProtocolMakerFeeBips = await loopring.maxProtocolMakerFeeBips();
+        const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
+        const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
+
+        // Deposit some LRC to stake for the exchange
+        const depositer = exchangeTestUtil.testContext.operators[2];
+        const totalLRC = targetProtocolTakerFeeStake.mul(new BN(4));
+        await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", totalLRC, loopring.address);
+
+        {
+          const protocolFees = await loopring.getProtocolFees(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.onchainDataAvailability,
+          );
+          assert(protocolFees.takerFeeBips.eq(maxProtocolTakerFeeBips), "Wrong protocol taker fees");
+          assert(protocolFees.makerFeeBips.eq(maxProtocolMakerFeeBips), "Wrong protocol maker fees");
+        }
+
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(targetProtocolMakerFeeStake, depositer);
+        await checkProtocolFees();
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(targetProtocolMakerFeeStake, depositer);
+        await checkProtocolFees();
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(targetProtocolTakerFeeStake, depositer);
+        await checkProtocolFees();
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(targetProtocolTakerFeeStake, depositer);
+
+        {
+          const protocolFees = await loopring.getProtocolFees(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.onchainDataAvailability,
+          );
+          assert(protocolFees.takerFeeBips.eq(minProtocolTakerFeeBips), "Wrong protocol taker fees");
+          assert(protocolFees.makerFeeBips.eq(minProtocolMakerFeeBips), "Wrong protocol maker fees");
+        }
       });
     });
   });

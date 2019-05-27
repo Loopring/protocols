@@ -46,7 +46,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            amountF: new BN(web3.utils.toWei("1000", "ether")),
           },
         orderB:
           {
@@ -55,7 +54,6 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            amountF: new BN(web3.utils.toWei("900", "ether")),
           },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
