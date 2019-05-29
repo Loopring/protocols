@@ -1,5 +1,21 @@
 # Deployment on Ethereum
 
+## v2.2-release [main-net]:
+- Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
+- creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
+- RingSubmitter: [0x5cb5C63faf15EEc77d3738340BC9f7cDbbDC09aB](https://etherscan.io/address/0x5cb5C63faf15EEc77d3738340BC9f7cDbbDC09aB)
+- BrokerRegistry: [0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9](https://etherscan.io/address/0x4e1E917F030556788AB3C9d8D0971Ebf0d5439E9)
+- BurnRateTable: [0x02476020450f40222741Fb061BF078c5390d670D](https://etherscan.io/address/0x02476020450f40222741Fb061BF078c5390d670D)
+- OrderBook: [0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577](https://etherscan.io/address/0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577)
+- OrderRegistry: [0x6fb707F15Ab3657Dc52776b057B33cB7D95e4E90](https://etherscan.io/address/0x6fb707F15Ab3657Dc52776b057B33cB7D95e4E90)
+- TradeDelegate: [0xb258f5C190faDAB30B5fF0D6ab7E32a646A4BaAe](https://etherscan.io/address/0xb258f5C190faDAB30B5fF0D6ab7E32a646A4BaAe)
+- TradeHistory: [0xBF5a37670B3DE1E606EC68bE3558c536b2008669](https://etherscan.io/address/0xBF5a37670B3DE1E606EC68bE3558c536b2008669)
+- FeeHolder: [0x5beaEA36efA78F43a6d61145817FDFf6A9929e60](https://etherscan.io/address/0x5beaEA36efA78F43a6d61145817FDFf6A9929e60)
+- BurnManager: [0x43639F9991e60a14cb737dC4B756F86234c40DD7](https://etherscan.io/address/0x43639F9991e60a14cb737dC4B756F86234c40DD7)
+- OrderCanceller: [0x4170d9Ce07d2cc93E132E70c80bA5fb7c1532AF2](https://etherscan.io/address/0x4170d9Ce07d2cc93E132E70c80bA5fb7c1532AF2)
+- RingSubmitter: [0xC34E7FF8c4A87Ba000bCD46d59d1fdc1deD2f1f6](https://etherscan.io/address/0xC34E7FF8c4A87Ba000bCD46d59d1fdc1deD2f1f6)
+
+
 ## v2.1-release [main-net]:
 - Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
 - creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
