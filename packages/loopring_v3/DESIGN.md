@@ -620,15 +620,13 @@ In the calculations below we use 68 gas/byte for our data-availability data.
     - Spread: 3 bytes
     - For both Orders:
         - Account ID: 2,5 bytes
-        - Wallet account ID: 2,5 bytes
         - Order ID: 2,5 bytes
         - TokenS: 1 bytes
         - FillS: 3 bytes
         - feeBips: 1 byte
-        - WalletSplitPercentage: 1 byte
 ```
-=> **35 bytes/ring**
-=> Calldata cost: (8 + 2 * 13,5) * 68 = **2380 gas/ring**
+=> **28 bytes/ring**
+=> Calldata cost: (8 + 2 * 10) * 68 = **1904 gas/ring**
 
 #### Data-availability for order cancellations
 ```
@@ -685,28 +683,28 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 ### On-chain Data-availability Limit
 
 - Verifying a proof + some state updates/querying: ~600,000 gas
-- => (8,000,000 - 600,000) / 2,380 = **3109 rings/Ethereum block = ~210 rings/second**
+- => (8,000,000 - 600,000) / 1,904 = **3886 rings/Ethereum block = ~260 rings/second**
 
 ### Constraints Limit
 
 We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently.
 
 Currently, our **most expensive** ring settlement circuit with data-availability support uses ~450,000 constraints/ring:
-- 256,000,000 / ~450,000 = ~570 rings/block
+- 256,000,000 / ~360,000 = ~710 rings/block
 
 Our **most expensive** ring settlement circuit without data-availability support uses ~425,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
-- 256,000,000 / ~425,000 = ~600 rings/block
+- 256,000,000 / ~335,000 = ~765 rings/block
 
 ### Results
 
 In a single block, we are currently limited by the number of constraints used in the circuit. Verifying a proof costs _only_ ~600,000 gas so multiple blocks can be committed if needed.
 
 Using 4 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
-- => (8,000,000 - 600,000 * 4) / 2,380 = ~2352 rings/Ethereum block = **~160 rings/second**
+- => (8,000,000 - 600,000 * 4) / 1,904 = ~2941 rings/Ethereum block = **~200 rings/second**
 
 Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can verify in a single Ethereum block:
 - => 8,000,000 / 600,000 = ~13 blocks/Ethereum block
-- = ~600 rings/block * 13 blocks/Ethereum block = ~7800 rings/Ethereum block = **~525 rings/second**
+- = ~765 rings/block * 13 blocks/Ethereum block = ~9945 rings/Ethereum block = **~660 rings/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
 - Gas cost/ring settlement: ~300,000 gas

@@ -18,7 +18,6 @@ export interface OrderInfo {
   realmID?: number;
   accountID?: number;
   orderID?: number;
-  walletAccountID?: number;
 
   dualAuthPublicKeyX?: string;
   dualAuthPublicKeyY?: string;
@@ -31,10 +30,9 @@ export interface OrderInfo {
   validSince?: number;
   validUntil?: number;
   maxFeeBips?: number;
-  minWalletSplitPercentage?: number;
 
   feeBips?: number;
-  walletSplitPercentage?: number;
+  rebateBips?: number;
 
   balanceS?: BN;
   balanceB?: BN;

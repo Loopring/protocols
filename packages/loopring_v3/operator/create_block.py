@@ -62,7 +62,6 @@ def orderFromJSON(jOrder, state):
     realmID = int(jOrder["realmID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
-    walletAccountID = int(jOrder["walletAccountID"])
     dualAuthPublicKeyX = int(jOrder["dualAuthPublicKeyX"])
     dualAuthPublicKeyY = int(jOrder["dualAuthPublicKeyY"])
     dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
@@ -74,23 +73,19 @@ def orderFromJSON(jOrder, state):
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
     maxFeeBips = int(jOrder["maxFeeBips"])
-    minWalletSplitPercentage = int(jOrder["minWalletSplitPercentage"])
 
     feeBips = int(jOrder["feeBips"])
-    walletSplitPercentage = int(jOrder["walletSplitPercentage"])
+    rebateBips = int(jOrder["rebateBips"])
 
     account = state.getAccount(accountID)
-    walletAccount = state.getAccount(walletAccountID)
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
-                  Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
                   Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
-                  realmID, orderID, accountID, walletAccountID,
+                  realmID, orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil,
-                  maxFeeBips, minWalletSplitPercentage,
-                  feeBips, walletSplitPercentage)
+                  maxFeeBips, feeBips, rebateBips)
 
     order.sign(FQ(int(account.secretKey)))
 

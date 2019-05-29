@@ -279,8 +279,9 @@ export class ExchangeTestUtil {
   }
 
   public async setupRing(ring: RingInfo, bSetupOrderA: boolean = true, bSetupOrderB: boolean = true) {
-    ring.minerAccountID = ring.minerAccountID ? ring.minerAccountID : this.minerAccountID[ring.orderA.realmID];
-    ring.tokenID = ring.tokenID ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
+    ring.minerAccountID = (ring.minerAccountID !== undefined) ?
+                          ring.minerAccountID : this.minerAccountID[ring.orderA.realmID];
+    ring.tokenID = (ring.tokenID !== undefined) ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     if (bSetupOrderA) {
       await this.setupOrder(ring.orderA, this.orderIDGenerator++);
@@ -328,12 +329,9 @@ export class ExchangeTestUtil {
     // Fill in defaults
     order.maxFeeBips = (order.maxFeeBips !== undefined) ? order.maxFeeBips : 20;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
-    order.minWalletSplitPercentage = (order.minWalletSplitPercentage !== undefined) ?
-                                     order.minWalletSplitPercentage : 50;
 
     order.feeBips = (order.feeBips !== undefined) ? order.feeBips : order.maxFeeBips;
-    order.walletSplitPercentage = (order.walletSplitPercentage !== undefined) ?
-                                  order.walletSplitPercentage : order.minWalletSplitPercentage;
+    order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
 
     const walletIndex = index % this.testContext.wallets.length;
     order.walletAccountID = (order.walletAccountID !== undefined) ?
@@ -1260,19 +1258,16 @@ export class ExchangeTestUtil {
           bs.addNumber(ring.fSpread, 3);
 
           bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
+          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
 
-          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderA.walletAccountID, 5);
           bs.addNumber(orderA.tokenS, 1);
           bs.addNumber(ring.fFillS_A, 3);
-          bs.addNumber(orderA.feeBips, 1);
           const surplusMask = ring.bSurplus ? 0b10000000 : 0;
-          bs.addNumber(surplusMask + orderA.walletSplitPercentage, 1);
+          bs.addNumber(surplusMask + orderA.feeBips, 1);
 
-          bs.addNumber((orderB.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.walletAccountID, 5);
           bs.addNumber(orderB.tokenS, 1);
           bs.addNumber(ring.fFillS_B, 3);
           bs.addNumber(orderB.feeBips, 1);
-          bs.addNumber(orderB.walletSplitPercentage, 1);
         }
       }
 

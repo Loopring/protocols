@@ -291,18 +291,15 @@ class WithdrawProof(object):
 
 class Order(object):
     def __init__(self,
-                 publicKey, walletPublicKey,
+                 publicKey,
                  dualAuthPublicKey, dualAuthSecretKey,
-                 realmID, orderID, accountID, walletAccountID,
+                 realmID, orderID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil,
-                 maxFeeBips, minWalletSplitPercentage,
-                 feeBips, walletSplitPercentage):
+                 maxFeeBips, feeBips, rebateBips):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.walletPublicKeyX = str(walletPublicKey.x)
-        self.walletPublicKeyY = str(walletPublicKey.y)
         self.dualAuthPublicKeyX = str(dualAuthPublicKey.x)
         self.dualAuthPublicKeyY = str(dualAuthPublicKey.y)
         self.dualAuthSecretKey = str(dualAuthSecretKey)
@@ -310,7 +307,6 @@ class Order(object):
         self.realmID = int(realmID)
         self.orderID = int(orderID)
         self.accountID = int(accountID)
-        self.walletAccountID = int(walletAccountID)
 
         self.amountS = str(amountS)
         self.amountB = str(amountB)
@@ -322,22 +318,20 @@ class Order(object):
         self.validSince = validSince
         self.validUntil = validUntil
         self.maxFeeBips = maxFeeBips
-        self.minWalletSplitPercentage = minWalletSplitPercentage
 
         self.feeBips = feeBips
-        self.walletSplitPercentage = walletSplitPercentage
+        self.rebateBips = rebateBips
 
 
     def message(self):
         msg_parts = [
                         FQ(int(self.realmID), 1<<32), FQ(int(self.orderID), 1<<20),
-                        FQ(int(self.accountID), 1<<20), FQ(int(self.walletAccountID), 1<<20),
+                        FQ(int(self.accountID), 1<<20),
                         FQ(int(self.dualAuthPublicKeyX), 1<<254), FQ(int(self.dualAuthPublicKeyY), 1<<254),
                         FQ(int(self.tokenS), 1<<8), FQ(int(self.tokenB), 1<<8),
                         FQ(int(self.amountS), 1<<96), FQ(int(self.amountB), 1<<96),
                         FQ(int(self.allOrNone), 1<<1), FQ(int(self.validSince), 1<<32), FQ(int(self.validUntil), 1<<32),
-                        FQ(int(self.maxFeeBips), 1<<8), FQ(int(self.minWalletSplitPercentage), 1 << 7),
-                        FQ(int(0), 1<<2)
+                        FQ(int(self.maxFeeBips), 1<<7)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -380,10 +374,9 @@ class Ring(object):
         msg_parts = [
                         FQ(int(self.orderA.hash), 1<<254), FQ(int(self.orderB.hash), 1<<254),
                         FQ(int(self.minerAccountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.fee), 1<<96),
-                        FQ(int(self.orderA.feeBips), 1<<8), FQ(int(self.orderB.feeBips), 1<<8),
-                        FQ(int(self.orderA.walletSplitPercentage), 1<<7), FQ(int(self.orderB.walletSplitPercentage), 1<<7),
-                        FQ(int(self.nonce), 1<<32),
-                        FQ(int(0), 1<<1)
+                        FQ(int(self.orderA.feeBips), 1<<7), FQ(int(self.orderB.feeBips), 1<<7),
+                        FQ(int(self.orderA.rebateBips), 1<<7), FQ(int(self.orderB.rebateBips), 1<<7),
+                        FQ(int(self.nonce), 1<<32)
                     ]
         return PureEdDSA.to_bits(*msg_parts)
 
@@ -406,13 +399,9 @@ class RingSettlement(object):
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                  balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
-                 balanceUpdateA_W, accountUpdateA_W,
-                 balanceUpdateB_W, accountUpdateB_W,
                  balanceUpdateA_M, balanceUpdateB_M, balanceUpdateO_M, accountUpdate_M,
                  balanceUpdateA_P, balanceUpdateB_P,
-                 balanceUpdateF_O,
-                 walletFee_A, matchingFee_A,
-                 walletFee_B, matchingFee_B):
+                 balanceUpdateF_O):
         self.ring = ring
 
         self.accountsMerkleRoot = str(accountsMerkleRoot)
@@ -428,12 +417,6 @@ class RingSettlement(object):
         self.balanceUpdateB_B = balanceUpdateB_B
         self.accountUpdate_B = accountUpdate_B
 
-        self.balanceUpdateA_W = balanceUpdateA_W
-        self.accountUpdateA_W = accountUpdateA_W
-
-        self.balanceUpdateB_W = balanceUpdateB_W
-        self.accountUpdateB_W = accountUpdateB_W
-
         self.balanceUpdateA_M = balanceUpdateA_M
         self.balanceUpdateB_M = balanceUpdateB_M
         self.balanceUpdateO_M = balanceUpdateO_M
@@ -443,12 +426,6 @@ class RingSettlement(object):
         self.balanceUpdateB_P = balanceUpdateB_P
 
         self.balanceUpdateF_O = balanceUpdateF_O
-
-        self.walletFee_A = walletFee_A
-        self.matchingFee_A = matchingFee_A
-
-        self.walletFee_B = walletFee_B
-        self.matchingFee_B = matchingFee_B
 
 
 class OnchainWithdrawal(object):
@@ -587,12 +564,10 @@ class State(object):
                     "accounts_tree": self._accountsTree._db.kv,
                 }, default=lambda o: o.__dict__, sort_keys=True, indent=4))
 
-    def calculateFees(self, amountB, feeBips, protocolFeeBips, walletSplitPercentage):
+    def calculateFees(self, amountB, feeBips, protocolFeeBips):
         protocolFee = (amountB * protocolFeeBips) // 100000
         fee = (amountB * feeBips) // 10000
-        walletFee = (fee * walletSplitPercentage) // 100
-        matchingFee = fee - walletFee
-        return (fee, protocolFee, walletFee, matchingFee)
+        return (fee, protocolFee)
 
     def getMaxFillAmounts(self, order):
         account = self.getAccount(order.accountID)
@@ -695,8 +670,6 @@ class State(object):
         fillB_A = int(fillS_B)
         fillB_B = int(fillS_A) - int(tradeSurplus) + int(tradeDeficit)
 
-        protocolFeeTradeSurplus = (tradeSurplus * context.protocolTakerFeeBips) // 100000
-
         ringFee = roundToFloatValue(ring.fee, Float12Encoding)
 
 
@@ -727,29 +700,23 @@ class State(object):
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
 
-        (fee_A, protocolFee_A, walletFee_A, matchingFee_A) = self.calculateFees(
+        (fee_A, protocolFee_A) = self.calculateFees(
             fillB_A,
             ring.orderA.feeBips,
-            context.protocolTakerFeeBips,
-            ring.orderA.walletSplitPercentage
+            context.protocolTakerFeeBips
         )
 
-        (fee_B, protocolFee_B, walletFee_B, matchingFee_B) = self.calculateFees(
+        (fee_B, protocolFee_B) = self.calculateFees(
             fillB_B,
             ring.orderB.feeBips,
-            context.protocolMakerFeeBips,
-            ring.orderB.walletSplitPercentage
+            context.protocolMakerFeeBips
         )
 
         print("fee_A: " + str(fee_A))
         print("protocolFee_A: " + str(protocolFee_A))
-        print("walletFee_A: " + str(walletFee_A))
-        print("matchingFee_A: " + str(matchingFee_A))
 
         print("fee_B: " + str(fee_B))
         print("protocolFee_B: " + str(protocolFee_B))
-        print("walletFee_B: " + str(walletFee_B))
-        print("matchingFee_B: " + str(matchingFee_B))
 
         # Update balances A
         accountA = self.getAccount(ring.orderA.accountID)
@@ -759,7 +726,7 @@ class State(object):
         proof = self._accountsTree.createProof(ring.orderA.accountID)
 
         (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(
-            ring.orderA.tokenS, ring.orderA.orderID, -fillS_A,
+            ring.orderA.tokenS, ring.orderA.orderID, -(fillS_A - int(tradeSurplus)),
             filled_A + fillS_A, cancelledToStore_A, orderIDToStore_A
         )
         balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, fillB_A - fee_A)
@@ -789,32 +756,6 @@ class State(object):
         accountUpdate_B = AccountUpdateData(ring.orderB.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Update wallet A
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.orderA.walletAccountID))
-        proof = self._accountsTree.createProof(ring.orderA.walletAccountID)
-
-        balanceUpdateA_W = self.getAccount(ring.orderA.walletAccountID).updateBalance(ring.orderA.tokenB, walletFee_A)
-
-        self.updateAccountTree(ring.orderA.walletAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.orderA.walletAccountID))
-        rootAfter = self._accountsTree._root
-        accountUpdateA_W = AccountUpdateData(ring.orderA.walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
-
-        # Update wallet B
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.orderB.walletAccountID))
-        proof = self._accountsTree.createProof(ring.orderB.walletAccountID)
-
-        balanceUpdateB_W = self.getAccount(ring.orderB.walletAccountID).updateBalance(ring.orderB.tokenB, walletFee_B)
-
-        self.updateAccountTree(ring.orderB.walletAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.orderB.walletAccountID))
-        rootAfter = self._accountsTree._root
-        accountUpdateB_W = AccountUpdateData(ring.orderB.walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
-
         # Update ringmatcher
         accountM = self.getAccount(ring.minerAccountID)
 
@@ -822,8 +763,8 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
         proof = self._accountsTree.createProof(ring.minerAccountID)
 
-        balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenB, matchingFee_A - protocolFee_A)
-        balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenB, matchingFee_B - protocolFee_B + tradeSurplus - tradeDeficit - protocolFeeTradeSurplus)
+        balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenB, fee_A - protocolFee_A)
+        balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenB, fee_B - protocolFee_B - tradeDeficit)
         balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -ringFee)
         accountM.nonce += 1
 
@@ -835,7 +776,7 @@ class State(object):
 
         # Protocol fee payment
         balanceUpdateA_P = self.getAccount(0).updateBalance(ring.orderA.tokenB, protocolFee_A)
-        balanceUpdateB_P = self.getAccount(0).updateBalance(ring.orderB.tokenB, protocolFee_B + protocolFeeTradeSurplus)
+        balanceUpdateB_P = self.getAccount(0).updateBalance(ring.orderB.tokenB, protocolFee_B)
         ###
 
         # Operator payment
@@ -847,13 +788,9 @@ class State(object):
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                               balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                               balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
-                              balanceUpdateA_W, accountUpdateA_W,
-                              balanceUpdateB_W, accountUpdateB_W,
                               balanceUpdateA_M, balanceUpdateB_M, balanceUpdateO_M, accountUpdate_M,
                               balanceUpdateA_P, balanceUpdateB_P,
-                              balanceUpdateF_O,
-                              walletFee_A, matchingFee_A,
-                              walletFee_B, matchingFee_B)
+                              balanceUpdateF_O)
 
 
     def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, token, amount):

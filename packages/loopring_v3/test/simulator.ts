@@ -10,18 +10,12 @@ interface SettlementValues {
   fillSA: BN;
   fillBA: BN;
   feeA: BN;
-  walletFeeA: BN;
-  matchingFeeA: BN;
   protocolFeeA: BN;
 
   fillSB: BN;
   fillBB: BN;
   feeB: BN;
-  walletFeeB: BN;
-  matchingFeeB: BN;
   protocolFeeB: BN;
-
-  protocolFeeTradeSurplus: BN;
 }
 
 export class Simulator {
@@ -331,7 +325,7 @@ export class Simulator {
     offset += 3;
 
     // Jump to the specified ring
-    const ringSize = 35;
+    const ringSize = 28;
     offset += ringIndex * ringSize;
 
     // Ring data
@@ -346,28 +340,24 @@ export class Simulator {
     const orderIds = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
     offset += 5;
 
-    // Order A
-    const orderAccountsA = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
+    // Accounts
+    const accounts = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
     offset += 5;
+
+    // Order A
     const tokenA = bs.extractUint8(offset);
     offset += 1;
     const fFillSA = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
-    const feeBipsA = bs.extractUint8(offset);
-    offset += 1;
-    let walletSplitPercentageA = bs.extractUint8(offset);
+    let feeBipsA = bs.extractUint8(offset);
     offset += 1;
 
     // Order B
-    const orderAccountsB = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
-    offset += 5;
     const tokenB = bs.extractUint8(offset);
     offset += 1;
     const fFillSB = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
     const feeBipsB = bs.extractUint8(offset);
-    offset += 1;
-    const walletSplitPercentageB = bs.extractUint8(offset);
     offset += 1;
 
     // Further extraction of packed data
@@ -377,14 +367,11 @@ export class Simulator {
     const orderIdA = Math.floor(orderIds / (2 ** 20));
     const orderIdB = orderIds & 0xFFFFF;
 
-    const orderOwnerA = Math.floor(orderAccountsA / (2 ** 20));
-    const walletA = orderAccountsA & 0xFFFFF;
+    const orderOwnerA = Math.floor(accounts / (2 ** 20));
+    const orderOwnerB = accounts & 0xFFFFF;
 
-    const orderOwnerB = Math.floor(orderAccountsB / (2 ** 20));
-    const walletB = orderAccountsB & 0xFFFFF;
-
-    const surplusMask = walletSplitPercentageA & 0b10000000;
-    walletSplitPercentageA = walletSplitPercentageA & ~0b10000000;
+    const surplusMask = feeBipsA & 0b10000000;
+    feeBipsA = feeBipsA & ~0b10000000;
 
     // Decode the float values
     const ringFee = fromFloat(fRingFee, constants.Float12Encoding);
@@ -398,8 +385,8 @@ export class Simulator {
       realm, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ringMatcherID, feeToken, ringFee,
       fillSA, fillSB, spread, tokenA, tokenB,
-      orderIdA, orderOwnerA, walletA, feeBipsA, walletSplitPercentageA,
-      orderIdB, orderOwnerB, walletB, feeBipsB, walletSplitPercentageB,
+      orderIdA, orderOwnerA, feeBipsA,
+      orderIdB, orderOwnerB, feeBipsB,
     );
 
     return newRealm;
@@ -442,10 +429,8 @@ export class Simulator {
       realm, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ring.minerAccountID, ring.tokenID, ringFee,
       fillSA, fillSB, spread, ring.orderA.tokenIdS, ring.orderB.tokenIdS,
-      ring.orderA.orderID, ring.orderA.accountID, ring.orderA.walletAccountID,
-      ring.orderA.feeBips, ring.orderA.walletSplitPercentage,
-      ring.orderB.orderID, ring.orderB.accountID, ring.orderB.walletAccountID,
-      ring.orderB.feeBips, ring.orderB.walletSplitPercentage,
+      ring.orderA.orderID, ring.orderA.accountID, ring.orderA.feeBips,
+      ring.orderB.orderID, ring.orderB.accountID, ring.orderB.feeBips,
     );
 
     // Check expected
@@ -466,14 +451,12 @@ export class Simulator {
 
     const detailedTransfersA = this.getDetailedTransfers(
       ring, ring.orderA, ring.orderB,
-      fillSA, fillBA, spread,
-      s.feeA, s.walletFeeA, s.matchingFeeA,
+      fillSA, fillBA, spread, s.feeA,
     );
 
     const detailedTransfersB = this.getDetailedTransfers(
       ring, ring.orderB, ring.orderA,
-      fillSB, fillBB, new BN(0),
-      s.feeB, s.walletFeeB, s.matchingFeeB,
+      fillSB, fillBB, new BN(0), s.feeB,
     );
 
     const ringMatcherPayments: DetailedTokenTransfer = {
@@ -500,14 +483,6 @@ export class Simulator {
       amount: s.protocolFeeB,
       subPayments: [],
     };
-    const payProtocolFeeTradeSurplus: DetailedTokenTransfer = {
-      description: "ProtocolFeeTradeSurplus",
-      token: ring.orderA.tokenIdS,
-      from: ring.minerAccountID,
-      to: 0,
-      amount: s.protocolFeeTradeSurplus,
-      subPayments: [],
-    };
     const tradeDeficit = spread.gt(new BN(0)) ? new BN(0) : spread.abs();
     const payTradeDeficit: DetailedTokenTransfer = {
       description: "TradeDeficit",
@@ -527,7 +502,6 @@ export class Simulator {
     };
     ringMatcherPayments.subPayments.push(payProtocolFeeA);
     ringMatcherPayments.subPayments.push(payProtocolFeeB);
-    ringMatcherPayments.subPayments.push(payProtocolFeeTradeSurplus);
     ringMatcherPayments.subPayments.push(payTradeDeficit);
     ringMatcherPayments.subPayments.push(operatorFee);
 
@@ -546,14 +520,9 @@ export class Simulator {
 
   public calculateSettlementValues(protocolFeeTakerBips: number, protocolFeeMakerBips: number,
                                    fillSA: BN, fillSB: BN, spread: BN,
-                                   feeBipsA: number, walletSplitPercentageA: number,
-                                   feeBipsB: number, walletSplitPercentageB: number) {
+                                   feeBipsA: number, feeBipsB: number) {
     const fillBA = fillSB;
     const fillBB = fillSA.sub(spread);
-
-    const protocolFeeTradeSurplus = (spread.gt(new BN(0))) ?
-                                    spread.mul(new BN(protocolFeeTakerBips)).div(new BN(100000)) :
-                                    new BN(0);
 
     console.log("Simulator: ");
     console.log("fillSA: " + fillSA.toString(10));
@@ -562,46 +531,34 @@ export class Simulator {
     console.log("fillBB: " + fillBB.toString(10));
     console.log("spread: " + spread.toString(10));
 
-    const [feeA, protocolFeeA, walletFeeA, matchingFeeA] = this.calculateFees(
+    const [feeA, protocolFeeA] = this.calculateFees(
       fillBA,
       protocolFeeTakerBips,
       feeBipsA,
-      walletSplitPercentageA,
     );
 
-    const [feeB, protocolFeeB, walletFeeB, matchingFeeB] = this.calculateFees(
+    const [feeB, protocolFeeB] = this.calculateFees(
       fillBB,
       protocolFeeMakerBips,
       feeBipsB,
-      walletSplitPercentageB,
     );
 
     console.log("feeA: " + feeA.toString(10));
     console.log("protocolFeeA: " + protocolFeeA.toString(10));
-    console.log("walletFeeA: " + walletFeeA.toString(10));
-    console.log("matchingFeeA: " + matchingFeeA.toString(10));
 
     console.log("feeB: " + feeB.toString(10));
     console.log("protocolFeeB: " + protocolFeeB.toString(10));
-    console.log("walletFeeB: " + walletFeeB.toString(10));
-    console.log("matchingFeeB: " + matchingFeeB.toString(10));
 
     const settlementValues: SettlementValues = {
       fillSA,
       fillBA,
       feeA,
-      walletFeeA,
-      matchingFeeA,
       protocolFeeA,
 
       fillSB,
       fillBB,
       feeB,
-      walletFeeB,
-      matchingFeeB,
       protocolFeeB,
-
-      protocolFeeTradeSurplus,
     };
     return settlementValues;
   }
@@ -609,23 +566,23 @@ export class Simulator {
   public settleRing(realm: Realm, protocolFeeTakerBips: number, protocolFeeMakerBips: number,
                     operatorId: number, ringMatcherId: number, feeToken: number, ringFee: BN,
                     fillSA: BN, fillSB: BN, spread: BN, tokenA: number, tokenB: number,
-                    orderIdA: number, accountIdA: number, walletIdA: number,
-                    feeBipsA: number, walletSplitPercentageA: number,
-                    orderIdB: number, accountIdB: number, walletIdB: number,
-                    feeBipsB: number, walletSplitPercentageB: number) {
+                    orderIdA: number, accountIdA: number, feeBipsA: number,
+                    orderIdB: number, accountIdB: number, feeBipsB: number) {
     const s = this.calculateSettlementValues(
       protocolFeeTakerBips, protocolFeeMakerBips,
       fillSA, fillSB, spread,
-      feeBipsA, walletSplitPercentageA,
-      feeBipsB, walletSplitPercentageB,
+      feeBipsA, feeBipsB,
     );
+
+    const tradeSurplus = spread.gt(new BN(0)) ? spread : new BN(0);
+    const tradeDeficit = spread.gt(new BN(0)) ? new BN(0) : spread;
 
     const newRealm = this.copyRealm(realm);
 
     // Update accountA
     const accountA = newRealm.accounts[accountIdA];
     accountA.balances[tokenA].balance =
-      accountA.balances[tokenA].balance.sub(fillSA);
+      accountA.balances[tokenA].balance.sub(fillSA.sub(tradeSurplus));
     accountA.balances[tokenB].balance =
       accountA.balances[tokenB].balance.add(s.fillBA.sub(s.feeA));
 
@@ -655,26 +612,14 @@ export class Simulator {
       tradeHistoryB.orderID = (orderIdB > tradeHistoryB.orderID) ? orderIdB : tradeHistoryB.orderID;
     }
 
-    // Update walletA
-    const walletA = newRealm.accounts[walletIdA];
-    walletA.balances[tokenB].balance =
-      walletA.balances[tokenB].balance.add(s.walletFeeA);
-
-    // Update walletB
-    const walletB = newRealm.accounts[walletIdB];
-    walletB.balances[tokenA].balance =
-      walletB.balances[tokenA].balance.add(s.walletFeeB);
-
     // Update ringMatcher
     const ringMatcher = newRealm.accounts[ringMatcherId];
-    // - MatchingFeeA
+    // - FeeA
     ringMatcher.balances[tokenB].balance =
-     ringMatcher.balances[tokenB].balance.add(s.matchingFeeA).sub(s.protocolFeeA);
-    // - MatchingFeeB
+     ringMatcher.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA);
+    // - FeeB + trade deficit
     ringMatcher.balances[tokenA].balance =
-     ringMatcher.balances[tokenA].balance.add(
-      s.matchingFeeB.sub(s.protocolFeeB).add(spread.sub(s.protocolFeeTradeSurplus)),
-     );
+     ringMatcher.balances[tokenA].balance.add(s.feeB.sub(s.protocolFeeB).add(tradeDeficit));
     // - Operator fee
     ringMatcher.balances[feeToken].balance =
      ringMatcher.balances[feeToken].balance.sub(ringFee);
@@ -688,7 +633,7 @@ export class Simulator {
       protocolFeeAccount.balances[tokenB].balance.add(s.protocolFeeA);
     // - Order B
     protocolFeeAccount.balances[tokenA].balance =
-      protocolFeeAccount.balances[tokenA].balance.add(s.protocolFeeB.add(s.protocolFeeTradeSurplus));
+      protocolFeeAccount.balances[tokenA].balance.add(s.protocolFeeB);
 
     // Update operator
     const operator = newRealm.accounts[operatorId];
@@ -699,8 +644,7 @@ export class Simulator {
   }
 
   private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
-                               fillAmountS: BN, fillAmountB: BN, spread: BN,
-                               totalFee: BN, walletFee: BN, matchingFee: BN) {
+                               fillAmountS: BN, fillAmountB: BN, spread: BN, fee: BN) {
 
     const tradeSurplus = spread.gt(new BN(0)) ? spread : new BN(0);
 
@@ -731,36 +675,18 @@ export class Simulator {
     sell.subPayments.push(toBuyer);
     sell.subPayments.push(paySurplus);
 
-    const fee: DetailedTokenTransfer = {
+    const payFee: DetailedTokenTransfer = {
       description: "Fee@" + order.feeBips + "Bips",
       token: order.tokenIdB,
       from: order.accountID,
       to: 0,
-      amount: totalFee,
+      amount: fee,
       subPayments: [],
     };
-    const feeWallet: DetailedTokenTransfer = {
-      description: "Wallet@" + order.walletSplitPercentage + "%",
-      token: order.tokenIdB,
-      from: order.accountID,
-      to: order.walletAccountID,
-      amount: walletFee,
-      subPayments: [],
-    };
-    const feeMatching: DetailedTokenTransfer = {
-      description: "Matching@" + (100 - order.walletSplitPercentage) + "%",
-      token: order.tokenIdB,
-      from: order.accountID,
-      to: ring.minerAccountID,
-      amount: matchingFee,
-      subPayments: [],
-    };
-    fee.subPayments.push(feeWallet);
-    fee.subPayments.push(feeMatching);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
     detailedTransfers.push(sell);
-    detailedTransfers.push(fee);
+    detailedTransfers.push(payFee);
 
     return detailedTransfers;
   }
@@ -786,14 +712,10 @@ export class Simulator {
     return [fillAmountS, fillAmountB];
   }
 
-  private calculateFees(fillB: BN,
-                        protocolFeeBips: number, feeBips: number,
-                        walletSplitPercentage: number) {
+  private calculateFees(fillB: BN, protocolFeeBips: number, feeBips: number) {
     const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
-    const walletFee = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
-    const matchingFee = fee.sub(walletFee);
-    return [fee, protocolFee, walletFee, matchingFee];
+    return [fee, protocolFee];
   }
 
   private hasRoundingError(value: BN, numerator: BN, denominator: BN) {
