@@ -3090,7 +3090,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     address public constant orderRegistryAddress        = 0x6fb707F15Ab3657Dc52776b057B33cB7D95e4E90;
     address public constant feeHolderAddress            = 0x5beaEA36efA78F43a6d61145817FDFf6A9929e60;
     address public constant orderBookAddress            = 0xaC0F8a27012fe8dc5a0bB7f5fc7170934F7e3577;
-    address public constant burnRateTableAddress        = 0x02476020450f40222741Fb061BF078c5390d670D;
+    address public constant burnRateTableAddress        = 0xA62ACd4ab0065daD489b6a459073ebfa50fEc46a;
 
     uint64  public  ringIndex                   = 0;
 

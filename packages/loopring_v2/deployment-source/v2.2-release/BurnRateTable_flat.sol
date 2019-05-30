@@ -453,8 +453,7 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
 
         // Set fixed LRC and WETH burn rates
         setFixedTokenTier(lrcAddress, TIER_1);
-        setFixedTokenTier(wethAddress, TIER_3);
-
+        setFixedTokenTier(wethAddress, TIER_2);
         setFixedTokenTier(daiAddress, TIER_2);
         setFixedTokenTier(wbtcAddress, TIER_2);
     }
