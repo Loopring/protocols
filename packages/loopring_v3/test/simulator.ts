@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import * as pjs from "protocol2-js";
 import * as constants from "./constants";
 import { fromFloat, roundToFloatValue, toFloat } from "./float";
-import { Account, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
+import { AccountLeaf, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
          Realm, RingExpectation, RingInfo, RingSettlementSimulatorReport, SimulatorReport,
          TradeHistory, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
 
@@ -32,7 +32,7 @@ export class Simulator {
           tradeHistory: {},
         };
       }
-      const emptyAccount: Account = {
+      const emptyAccount: AccountLeaf = {
         publicKeyX: "0",
         publicKeyY: "0",
         nonce: 0,
@@ -739,7 +739,7 @@ export class Simulator {
     return valid;
   }
 
-  private copyAccount(account: Account) {
+  private copyAccount(account: AccountLeaf) {
     const balances: {[key: number]: Balance} = {};
     for (const tokenID of Object.keys(account.balances)) {
       const balanceValue = account.balances[Number(tokenID)];
@@ -758,7 +758,7 @@ export class Simulator {
         tradeHistory,
       };
     }
-    const accountCopy: Account = {
+    const accountCopy: AccountLeaf = {
       publicKeyX: account.publicKeyX,
       publicKeyY: account.publicKeyY,
       nonce: account.nonce,
@@ -768,7 +768,7 @@ export class Simulator {
   }
 
   private copyRealm(realm: Realm) {
-    const accounts: Account[] = [];
+    const accounts: AccountLeaf[] = [];
     for (let accountID = 0; accountID < realm.accounts.length; accountID++) {
       accounts[accountID] = this.copyAccount(realm.accounts[accountID]);
     }

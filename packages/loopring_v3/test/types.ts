@@ -8,6 +8,12 @@ export enum BlockType {
   ORDER_CANCELLATION,
 }
 
+export interface Signature {
+  Rx: string;
+  Ry: string;
+  s: string;
+}
+
 export interface OrderInfo {
   owner?: string;
   tokenS?: string;
@@ -37,6 +43,9 @@ export interface OrderInfo {
   balanceS?: BN;
   balanceB?: BN;
 
+  hash?: string;
+  signature?: Signature;
+
   [key: string]: any;
 }
 
@@ -57,6 +66,10 @@ export interface RingInfo {
   minerAccountID?: number;
   tokenID?: number;
   fee?: BN;
+
+  signature?: Signature;
+  dualAuthASignature?: Signature;
+  dualAuthBSignature?: Signature;
 
   expected?: RingExpectation;
 }
@@ -149,6 +162,15 @@ export interface Block {
   operator: Operator;
 }
 
+export interface Account {
+  accountID: number;
+  owner: string;
+  publicKeyX: string;
+  publicKeyY: string;
+  secretKey: string;
+  nonce: number;
+}
+
 export interface Operator {
   owner: string;
   accountID: number;
@@ -170,7 +192,7 @@ export interface Balance {
   tradeHistory: {[key: number]: TradeHistory};
 }
 
-export interface Account {
+export interface AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
@@ -178,7 +200,7 @@ export interface Account {
 }
 
 export interface Realm {
-  accounts: Account[];
+  accounts: AccountLeaf[];
 }
 
 export interface DetailedTokenTransfer {

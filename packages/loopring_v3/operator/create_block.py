@@ -87,7 +87,9 @@ def orderFromJSON(jOrder, state):
                   allOrNone, validSince, validUntil,
                   maxFeeBips, feeBips, rebateBips)
 
-    order.sign(FQ(int(account.secretKey)))
+    # order.sign(FQ(int(account.secretKey)))
+
+    order.signature = jOrder["signature"]
 
     return order
 
@@ -103,7 +105,11 @@ def ringFromJSON(jRing, state):
 
     ring = Ring(orderA, orderB, minerAccountID, tokenID, fee, minerAccount.nonce)
 
-    ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
+    ring.minerSignature = jRing["signature"]
+    ring.dualAuthASignature = jRing["dualAuthASignature"]
+    ring.dualAuthBSignature = jRing["dualAuthBSignature"]
+
+    # ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
 
     return ring
 

@@ -1,21 +1,25 @@
 import BN = require("bn.js");
 import childProcess = require("child_process");
-import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
 import path = require("path");
 import * as pjs from "protocol2-js";
 import { SHA256 } from "sha2";
+import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import * as constants from "./constants";
 import { Context } from "./context";
+import eddsa = require("./eddsa");
 import { toFloat } from "./float";
+import pedersenHash = require("./pedersenHash");
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, Balance, Block, BlockType, Cancel, CancelBlock,
+import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
          Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer,
-         Operator, OrderInfo, Realm, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
+         Operator, OrderInfo, Realm, RingBlock, RingInfo, Signature, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
+
+const bigInt = snarkjs.bigInt;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -53,6 +57,8 @@ export class ExchangeTestUtil {
   public activeOperator: Operator;
 
   public minerAccountID: number[] = [];
+
+  public accounts: Account[][] = [];
 
   public operators: Operator[] = [];
   public wallets: Wallet[][] = [];
@@ -149,6 +155,18 @@ export class ExchangeTestUtil {
 
       const wallets: Wallet[] = [];
       this.wallets.push(wallets);
+
+      const accountsT: Account[] = [];
+      const account: Account = {
+        accountID: 0,
+        owner: this.loopringV3.address,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
+        nonce: 0,
+      };
+      accountsT.push(account);
+      this.accounts.push(accountsT);
 
       const pendingBlocks: Block[] = [];
       this.pendingBlocks.push(pendingBlocks);
@@ -289,6 +307,59 @@ export class ExchangeTestUtil {
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
+
+    // Sign the ring
+    const account = this.accounts[this.exchangeId][ring.minerAccountID];
+    const nonce = account.nonce++;
+    const message = this.flattenList([
+      this.toBitsString(ring.orderA.hash, 254),
+      this.toBitsString(ring.orderB.hash, 254),
+      this.toBitsNumber(ring.minerAccountID, 20),
+      this.toBitsNumber(ring.tokenID, 8),
+      this.toBitsBN(ring.fee, 96),
+      this.toBitsNumber(ring.orderA.feeBips, 7),
+      this.toBitsNumber(ring.orderB.feeBips, 7),
+      this.toBitsNumber(ring.orderA.rebateBips, 7),
+      this.toBitsNumber(ring.orderB.rebateBips, 7),
+      this.toBitsNumber(nonce, 32),
+    ]);
+
+    const sig = eddsa.sign(account.secretKey, message);
+    ring.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+
+    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message);
+    ring.dualAuthASignature = {
+      Rx: dualAuthAsig.R[0].toString(),
+      Ry: dualAuthAsig.R[1].toString(),
+      s: dualAuthAsig.S.toString(),
+    };
+
+    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message);
+    ring.dualAuthBSignature = {
+      Rx: dualAuthBsig.R[0].toString(),
+      Ry: dualAuthBsig.R[1].toString(),
+      s: dualAuthBsig.S.toString(),
+    };
+  }
+
+  public toBitsBN(value: BN, length: number) {
+    const res = new Array(length);
+    for (let i = 0; i < length; i++) {
+      res[i] = value.testn(i) ? 1 : 0;
+    }
+    return res;
+  }
+
+  public toBitsNumber(value: number, length: number) {
+    return this.toBitsBN(new BN(value), length);
+  }
+
+  public toBitsString(value: string, length: number) {
+    return this.toBitsBN(new BN(value, 10), length);
   }
 
   public async setupOrder(order: OrderInfo, index: number) {
@@ -346,6 +417,47 @@ export class ExchangeTestUtil {
 
     // setup initial balances:
     await this.setOrderBalances(order);
+
+    // Sign the order
+    const message = this.flattenList([
+      this.toBitsNumber(this.exchangeId, 32),
+      this.toBitsNumber(order.orderID, 20),
+      this.toBitsNumber(order.accountID, 20),
+      this.toBitsString(order.dualAuthPublicKeyX, 254),
+      this.toBitsString(order.dualAuthPublicKeyY, 254),
+      this.toBitsNumber(order.tokenIdS, 8),
+      this.toBitsNumber(order.tokenIdB, 8),
+      this.toBitsBN(order.amountS, 96),
+      this.toBitsBN(order.amountB, 96),
+      this.toBitsNumber(order.allOrNone ? 1 : 0, 1),
+      this.toBitsNumber(order.validSince, 32),
+      this.toBitsNumber(order.validUntil, 32),
+      this.toBitsNumber(order.maxFeeBips, 7),
+    ]);
+    const account = this.accounts[this.exchangeId][order.accountID];
+    const sig = eddsa.sign(account.secretKey, message);
+    // console.log(sig);
+
+    order.hash = sig.hash;
+    order.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+    console.log(order.signature);
+
+    // const msg = this.toBits(123456, 24);
+    // console.log("msg: " + msg);
+    // const hash = pedersenHash.hash(msg);
+    // console.log("hash: " + hash);
+
+    // const secretKey = "1604229682838453979160098578537594917065636593682766929050397603475111863262";
+    // const pubKey = eddsa.prv2pub(prvKey);
+    /*const signature = eddsa.sign(secretKey, msg);
+    console.log("msg length: ", msg.length);
+    console.log("msg: ", msg.toString());
+    console.log("Signature: ");
+    console.log(signature);*/
   }
 
   public async setOrderBalances(order: OrderInfo) {
@@ -493,6 +605,20 @@ export class ExchangeTestUtil {
       accountID: items[0][0].toNumber(),
       depositIdx: items[0][1].toNumber(),
     };
+
+    accountID = items[0][0].toNumber();
+
+    if (accountID === this.accounts[realmID].length) {
+      const account: Account = {
+        accountID,
+        owner,
+        publicKeyX,
+        publicKeyY,
+        secretKey,
+        nonce: 0,
+      };
+      this.accounts[realmID].push(account);
+    }
 
     this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositIdx, depositInfo.accountID,
                     secretKey, publicKeyX, publicKeyY,
@@ -860,7 +986,7 @@ export class ExchangeTestUtil {
     if (blockIdx === undefined) {
       blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     }
-    const accounts: Account[] = [];
+    const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
       const stateFile = "states/state_" + realmID + "_" + blockIdx + ".json";
       const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
@@ -871,7 +997,7 @@ export class ExchangeTestUtil {
         numAccounts = (Number(accountKey) >= numAccounts) ? Number(accountKey) + 1 : numAccounts;
       }
       for (let i = 0; i < numAccounts; i++) {
-        const emptyAccount: Account = {
+        const emptyAccount: AccountLeaf = {
           publicKeyX: "0",
           publicKeyY: "0",
           nonce: 0,
@@ -902,7 +1028,7 @@ export class ExchangeTestUtil {
             tradeHistory,
           };
         }
-        const account: Account = {
+        const account: AccountLeaf = {
           publicKeyX: jAccount.publicKeyX,
           publicKeyY: jAccount.publicKeyY,
           nonce: jAccount.nonce,
@@ -911,7 +1037,7 @@ export class ExchangeTestUtil {
         accounts[Number(accountKey)] = account;
       }
     } else {
-      const emptyAccount: Account = {
+      const emptyAccount: AccountLeaf = {
         publicKeyX: "0",
         publicKeyY: "0",
         nonce: 0,
@@ -1739,7 +1865,7 @@ export class ExchangeTestUtil {
             tradeHistory: {},
           };
         }
-        const emptyAccount: Account = {
+        const emptyAccount: AccountLeaf = {
           publicKeyX: "0",
           publicKeyY: "0",
           nonce: 0,
@@ -2210,7 +2336,9 @@ export class ExchangeTestUtil {
     );
   }
 
-  private logFilledAmountOrder(description: string, accountBefore: Account, accountAfter: Account, order: OrderInfo) {
+  private logFilledAmountOrder(description: string,
+                               accountBefore: AccountLeaf, accountAfter: AccountLeaf,
+                               order: OrderInfo) {
     const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     const before = accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const after = accountAfter.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
