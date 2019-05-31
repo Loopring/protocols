@@ -70,11 +70,24 @@ contract Operator is Ownable
 
     function withdraw(
         address token,
-        uint    amount
+        uint96 amount
         )
         external
+        payable
         onlyOwner
     {
-        // TODO(dongw)
+        IExchange(exchange).withdraw(token, amount);
+    }
+
+    /// @dev Withdrawal the tokens/ether held in this contract.
+    function withdrawTo(
+        address token,
+        uint96 amount
+        )
+        external
+        payable
+        onlyOwner
+    {
+        // TODO(dongw): defaults to withdrawing to msg.sender.
     }
 }
