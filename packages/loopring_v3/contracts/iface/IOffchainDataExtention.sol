@@ -23,7 +23,7 @@ pragma solidity 0.5.7;
 interface IOffchainDataExtention
 {
     /// @dev Publish the offchain data for the given block.
-    /// @param merkleRoot The Merkle root for of this block
+    /// @param merkleRoot The Merkle root for a given block
     /// @param offchainData Arbitrary data associate with off-chain data-availability.
     function publish(
         bytes32 merkleRoot,
