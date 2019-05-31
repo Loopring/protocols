@@ -16,10 +16,6 @@
 */
 pragma solidity 0.5.7;
 
-import "../iface/IExchange.sol";
-
-import "./Operator.sol";
-
 
 /// @title IOffchainDataExtention
 /// @author Daniel Wang  - <daniel@loopring.org>
