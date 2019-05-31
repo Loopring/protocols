@@ -450,12 +450,14 @@ contract IExchange
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
+    /// @return merkleRootAfter The new merkle tree root after this block
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
         bytes  calldata data
         )
-        external;
+        external
+        returns (bytes32 merkleRootAfter);
 
     /// @dev Submit a ZK proof onchain to verify a previouly committed block. Submitting an
     ///      invalid proof will not change the state of the exchange. Note that proofs can

@@ -57,8 +57,14 @@ library ExchangeBlocks
         bytes memory data
         )
         internal  // inline call
+        returns(bytes32 merkleRootAfter)
     {
-        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, data);
+        merkleRootAfter = commitBlockInternal(
+            S,
+            ExchangeData.BlockType(blockType),
+            blockSize,
+            data
+        );
     }
 
     function verifyBlock(
@@ -162,6 +168,7 @@ library ExchangeBlocks
                             // in this block. This is fine because 0-bytes consume fewer gas.
         )
         private
+        returns (bytes32 merkleRootAfter)
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -185,7 +192,6 @@ library ExchangeBlocks
 
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore;
-        bytes32 merkleRootAfter;
         assembly {
             merkleRootBefore := mload(add(data, 36))
             merkleRootAfter := mload(add(data, 68))

@@ -374,8 +374,9 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         external
         onlyOperator
         nonReentrant
+        returns (bytes32 merkleRootAfter)
     {
-        state.commitBlock(blockType, blockSize, data);
+        merkleRootAfter = state.commitBlock(blockType, blockSize, data);
     }
 
     function verifyBlock(
