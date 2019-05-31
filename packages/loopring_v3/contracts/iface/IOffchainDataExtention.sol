@@ -16,33 +16,20 @@
 */
 pragma solidity 0.5.7;
 
-
 import "../iface/IExchange.sol";
 
 import "./Operator.sol";
 
-/// @title IPFSBasedDataAvailabilityOperator.
-/// @author Daniel Wang  - <daniel@loopring.org>
-contract HashedOffchainDataAvailabilityOperator is Operator
-{
-    mapping (bytes32 => bytes) public ipfsHashMap;
 
-    ///@dev Submit a block with an IPFS hash for offchain data file.
-    function commitBlock(
-        uint8   blockType,
-        uint16  blockSize,
-        bytes   calldata data
+/// @title IOffchainDataExtention
+/// @author Daniel Wang  - <daniel@loopring.org>
+/// @dev Implement this interface to publish offchain data for a block.
+interface IOffchainDataExtention
+{
+    /// @dev Publish the offchain data for the given block.
+    function publish(
+        bytes32 merkleRootAfter,
+        bytes   calldata offchainData
         )
-        onlyOwner
-        external
-        returns (bytes32 merkleRootAfter)
-    {
-        require(data.length > 0, "empty ipfs multihash");
-        merkleRootAfter = IExchange(exchange).commitBlock(
-            blockType,
-            blockSize,
-            bytes("0")
-        );
-        ipfsHashMap[merkleRootAfter] = data;
-    }
+        external;
 }

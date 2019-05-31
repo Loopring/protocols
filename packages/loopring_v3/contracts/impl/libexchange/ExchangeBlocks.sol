@@ -19,7 +19,9 @@ pragma solidity 0.5.7;
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
+
 import "../../iface/IBlockVerifier.sol";
+import "../../iface/IOffchainDataExtention.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -54,7 +56,8 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint8 blockType,
         uint16 blockSize,
-        bytes memory data
+        bytes memory data,
+        bytes memory offchainData
         )
         internal  // inline call
         returns(bytes32 merkleRootAfter)
@@ -65,6 +68,12 @@ library ExchangeBlocks
             blockSize,
             data
         );
+
+        if (S.offchainDataExt == address(0)) {
+            assert(offchainData.size == 0);
+        } else {
+            IOffchainDataExtention(S.offchainDataExt).publish(merkleRootAfter, offchainData);
+        }
     }
 
     function verifyBlock(

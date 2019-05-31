@@ -49,18 +49,22 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State public state;
+
     // -- Constructor --
     constructor(
         uint    _id,
-        address payable _loopringAddress,
         address _owner,
+        address payable _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability
+        address _offchainDataExt
         )
         public
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
+
+        offchainDataExt = _offchainDataExt;
+        bool _onchainDataAvailability = (offchainDataExt == address(0));
 
         state.initializeGenesisBlock(
             _id,

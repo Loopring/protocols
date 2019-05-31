@@ -175,6 +175,7 @@ library ExchangeData
     {
         uint    id;
         address payable operator; // The only address that can submit new blocks.
+        address offchainDataExt;
         bool    onchainDataAvailability;
 
         ILoopringV3    loopring;
