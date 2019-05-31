@@ -23,7 +23,7 @@ import "./Operator.sol";
 
 /// @title IPFSBasedDataAvailabilityOperator.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IPFSBasedDataAvailabilityOperator is Operator
+contract HashedOffchainDataAvailabilityOperator is Operator
 {
     mapping (bytes32 => bytes) public ipfsHashMap;
 

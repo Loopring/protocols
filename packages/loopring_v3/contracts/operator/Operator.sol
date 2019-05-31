@@ -17,6 +17,7 @@
 pragma solidity 0.5.7;
 
 import "../lib/Ownable.sol";
+import "../lib/ERC20SafeTransfer.sol";
 
 import "../iface/IExchange.sol";
 
@@ -24,6 +25,9 @@ import "../iface/IExchange.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Operator is Ownable
 {
+
+    using ERC20SafeTransfer for address;
+
     address  exchange;
 
     function commitBlock(
@@ -81,14 +85,21 @@ contract Operator is Ownable
     }
 
     /// @dev Withdrawal the tokens/ether held in this contract.
-    function withdrawTo(
-        address token,
-        uint96 amount
+    function drain(
+        address payable recipient,
+        address         token,
+        uint96          amount
         )
         external
         payable
         onlyOwner
     {
-        // TODO(dongw): defaults to withdrawing to msg.origin?.
+        if (token == address(0x0)) {
+            // ETH
+            recipient.transfer(amount);
+        } else {
+            // ERC20 token
+            require(token.safeTransfer(recipient, amount), "TRANSFER_FAILURE");
+        }
     }
 }
