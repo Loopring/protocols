@@ -36,20 +36,45 @@ function toBitsBigInt(value, length) {
 
 function toBitsArray(l) {
     return [].concat.apply([], l);
-  }
+}
+
+function bitsToBigInt(bits) {
+    value = bigInt(0);
+    for (let i = 0; i < bits.length; i++) {
+        value = value.add(bigInt(bits[i]).shl(i));
+    }
+    return value;
+}
 
 function sign(strKey, bits) {
+    const key = bigInt(strKey);
+    const prv = bigInt.leInt2Buff(key, 32);
+    const msg = bigInt.leInt2Buff(bitsToBigInt(bits), Math.floor(bits.length + 7) / 8);
+
+    console.log("msg: " + msg.toString("hex"));
+
+    const h1 = createBlakeHash("blake512").update(prv).digest();
+    // const sBuff = pruneBuffer(h1.slice(0,32));
+    // const s = bigInt.leBuff2int(sBuff);
+    // const A = babyJub.mulPointEscalar(babyJub.Base8, s.shr(3));
+
+    const rBuff = createBlakeHash("blake512").update(Buffer.concat([h1.slice(32,64), msg])).digest();
+    let r = bigInt.leBuff2int(rBuff);
+    r = r.mod(babyJub.subOrder);
+
+    console.log("r: " + r.toString(10));
+
     // const h1 = createBlakeHash("blake512").update(prv).digest();
     // const sBuff = pruneBuffer(h1.slice(0,32));
     // const s = bigInt.leBuff2int(sBuff);
-    const key = bigInt(strKey);
+
     const A = babyJub.mulPointEscalar(babyJub.Base8, key);
 
     // const rBuff = createBlakeHash("blake512").update(Buffer.concat([h1.slice(32,64), msg])).digest();
     // let r = bigInt.leBuff2int(rBuff);
     // r = r.mod(babyJub.subOrder);
     // TODO: secure r
-    const r = bigInt("1");
+    // const r = bigInt("1");
     const R = babyJub.mulPointEscalar(babyJub.Base8, r);
     // const R8p = babyJub.packPoint(R8);
     // const Ap = babyJub.packPoint(A);
