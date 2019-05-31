@@ -8,6 +8,12 @@ export enum BlockType {
   ORDER_CANCELLATION,
 }
 
+export interface KeyPair {
+  publicKeyX: string;
+  publicKeyY: string;
+  secretKey: string;
+}
+
 export interface Signature {
   Rx: string;
   Ry: string;

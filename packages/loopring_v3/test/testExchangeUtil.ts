@@ -7,6 +7,7 @@ import { SHA256 } from "sha2";
 import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
+import babyJub = require("./babyjub");
 import * as constants from "./constants";
 import { Context } from "./context";
 import eddsa = require("./eddsa");
@@ -15,7 +16,7 @@ import pedersenHash = require("./pedersenHash");
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
-         Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer,
+         Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer, KeyPair,
          Operator, OrderInfo, Realm, RingBlock, RingInfo, Signature, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
@@ -307,8 +308,9 @@ export class ExchangeTestUtil {
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
+  }
 
-    // Sign the ring
+  public signRing(ring: RingInfo) {
     const account = this.accounts[this.exchangeId][ring.minerAccountID];
     const nonce = account.nonce++;
     const message = this.flattenList([
@@ -406,7 +408,7 @@ export class ExchangeTestUtil {
 
     const walletIndex = index % this.testContext.wallets.length;
     order.walletAccountID = (order.walletAccountID !== undefined) ?
-                              order.walletAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
+                            order.walletAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
 
     order.orderID = (order.orderID !== undefined) ? order.orderID : index;
 
@@ -419,6 +421,10 @@ export class ExchangeTestUtil {
     await this.setOrderBalances(order);
 
     // Sign the order
+    this.signOrder(order);
+  }
+
+  public signOrder(order: OrderInfo) {
     const message = this.flattenList([
       this.toBitsNumber(this.exchangeId, 32),
       this.toBitsNumber(order.orderID, 20),
@@ -462,19 +468,28 @@ export class ExchangeTestUtil {
 
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
+    let publicKeyX = keyPair.publicKeyX;
+    let publicKeyY = keyPair.publicKeyY;
+    let secretKey = keyPair.secretKey;
 
     const accountID = await this.getAccountID(order.owner);
+    if (accountID !== undefined) {
+      const account = this.accounts[this.exchangeId][accountID];
+      publicKeyX = account.publicKeyX;
+      publicKeyY = account.publicKeyY;
+      secretKey = account.secretKey;
+    }
 
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
     const depositInfo = await this.deposit(order.realmID, order.owner,
-                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                           secretKey, publicKeyX, publicKeyY,
                                            order.tokenS, balanceS, accountID);
     order.accountID = depositInfo.accountID;
 
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
     if (balanceB.gt(new BN(0))) {
       await this.deposit(order.realmID, order.owner,
-                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                         secretKey, publicKeyX, publicKeyY,
                          order.tokenB, balanceB, order.accountID);
     }
   }
@@ -508,9 +523,23 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    childProcess.spawnSync("python3", ["util/generate_EDDSA_keypair.py"], {stdio: "inherit"});
-    const jKeyPair = fs.readFileSync("EDDSA_KeyPair.json", "ascii");
-    const keyPair = JSON.parse(jKeyPair);
+    // TODO: secure random number generation
+    const randomNumber = this.getRandomInt(218882428718390);
+    let secretKey = bigInt(randomNumber.toString(10));
+    secretKey = secretKey.mod(babyJub.subOrder);
+
+    // const publicKey = eddsa.prv2pub(secretKey);
+    const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
+    // const publicKey = eddsa.prv2pub(Buffer.from(randomNumber.toString(16), "hex"));
+    // console.log(secretKey);
+    // console.log(publicKey);
+
+    const keyPair: KeyPair = {
+      publicKeyX: publicKey[0].toString(10),
+      publicKeyY: publicKey[1].toString(10),
+      secretKey: secretKey.toString(10),
+    };
+    // console.log(keyPair);
     return keyPair;
   }
 
@@ -624,6 +653,13 @@ export class ExchangeTestUtil {
                     secretKey, publicKeyX, publicKeyY,
                     this.tokenAddressToIDMap.get(token), amount);
     return depositInfo;
+  }
+
+  public async depositTo(accountID: number, token: string, amount: BN) {
+    const account = this.accounts[this.exchangeId][accountID];
+    return await this.deposit(this.exchangeId, account.owner,
+                              account.secretKey, account.publicKeyX, account.publicKeyY,
+                              token, amount);
   }
 
   public async requestWithdrawalOffchain(realmID: number, accountID: number, token: string, amount: BN,
@@ -1291,10 +1327,9 @@ export class ExchangeTestUtil {
                 validUntil: 0,
 
                 maxFeeBips: 0,
-                minWalletSplitPercentage: 0,
 
                 feeBips: 0,
-                walletSplitPercentage: 0,
+                rebateBips: 0,
 
                 amountS: new BN(1),
                 amountB: new BN(1),
@@ -1318,10 +1353,9 @@ export class ExchangeTestUtil {
                 validUntil: 0,
 
                 maxFeeBips: 0,
-                minWalletSplitPercentage: 0,
 
                 feeBips: 0,
-                walletSplitPercentage: 0,
+                rebateBips: 0,
 
                 amountS: new BN(1),
                 amountB: new BN(1),
@@ -1330,11 +1364,18 @@ export class ExchangeTestUtil {
             tokenID: 0,
             fee: new BN(0),
           };
+          this.signOrder(dummyRing.orderA);
+          this.signOrder(dummyRing.orderB);
           rings.push(dummyRing);
         }
       }
       assert(rings.length === blockSize);
       numRingsDone += blockSize;
+
+      // Sign the rings
+      for (const ring of rings) {
+        this.signRing(ring);
+      }
 
       const protocolFees = await this.exchange.getProtocolFees();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();

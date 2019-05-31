@@ -51,6 +51,11 @@ class Signature(object):
             self.Ry = "0"
             self.s = "0"
 
+class Price(object):
+    def __init__(self, amountS, amountB):
+        self.amountS = int(amountS)
+        self.amountB = int(amountB)
+
 class BalanceLeaf(object):
     def __init__(self, balance = 0):
         self.balance = str(balance)
@@ -341,14 +346,14 @@ class Order(object):
         self.hash = PureEdDSA().hash_public(signedMessage.sig.R, signedMessage.A, signedMessage.msg)
         self.signature = Signature(signedMessage.sig)
 
-    def checkValid(self, context, fillAmountS, fillAmountB):
+    def checkValid(self, context, price, fillAmountS, fillAmountB):
         valid = True
 
         valid = valid and (self.validSince <= context.timestamp)
         valid = valid and (context.timestamp <= self.validUntil)
 
-        valid = valid and not self.hasRoundingError(fillAmountS, int(self.amountB), int(self.amountS))
-        valid = valid and not (self.allOrNone and fillAmountS != int(self.amountS))
+        valid = valid and not self.hasRoundingError(fillAmountS, int(price.amountB), int(price.amountS))
+        valid = valid and not (self.allOrNone and fillAmountS != int(price.amountS))
         valid = valid and fillAmountS != 0
         valid = valid and fillAmountB != 0
 
@@ -569,7 +574,12 @@ class State(object):
         fee = (amountB * feeBips) // 10000
         return (fee, protocolFee)
 
-    def getMaxFillAmounts(self, order):
+    def calculatePrice(self, order):
+        amountS = int(order.amountS)
+        amountB = int(order.amountB) * (10000 + int(order.rebateBips)) // 10000
+        return Price(amountS, amountB)
+
+    def getMaxFillAmounts(self, order, price):
         account = self.getAccount(order.accountID)
         tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
         order.tradeHistoryFilled = str(tradeHistory.filled)
@@ -596,18 +606,21 @@ class State(object):
 
         # Scale the order
         balanceS = int(account.getBalance(order.tokenS))
-        remainingS = int(order.amountS) - filled
+        remainingS = int(price.amountS) - filled
         if cancelled == 1:
             remainingS = 0
         fillAmountS = balanceS if (balanceS < remainingS) else remainingS
-        fillAmountB = (fillAmountS * int(order.amountB)) // int(order.amountS)
+        fillAmountB = (fillAmountS * int(price.amountB)) // int(price.amountS)
         return (fillAmountS, fillAmountB, filled, cancelledToStore, orderIDToStore)
 
     def settleRing(self, context, ring):
         #print("State update ring: ")
 
-        (fillAmountS_A, fillAmountB_A, filled_A, cancelledToStore_A, orderIDToStore_A) = self.getMaxFillAmounts(ring.orderA)
-        (fillAmountS_B, fillAmountB_B, filled_B, cancelledToStore_B, orderIDToStore_B) = self.getMaxFillAmounts(ring.orderB)
+        priceA = self.calculatePrice(ring.orderA)
+        priceB = self.calculatePrice(ring.orderB)
+
+        (fillAmountS_A, fillAmountB_A, filled_A, cancelledToStore_A, orderIDToStore_A) = self.getMaxFillAmounts(ring.orderA, priceA)
+        (fillAmountS_B, fillAmountB_B, filled_B, cancelledToStore_B, orderIDToStore_B) = self.getMaxFillAmounts(ring.orderB, priceB)
 
         '''
         print("fillAmountS_A: " + str(fillAmountS_A))
@@ -619,18 +632,18 @@ class State(object):
 
         if fillAmountB_A < fillAmountS_B:
             fillAmountS_B = fillAmountB_A
-            fillAmountB_B = (fillAmountS_B * int(ring.orderB.amountB)) // int(ring.orderB.amountS)
+            fillAmountB_B = (fillAmountS_B * int(priceB.amountB)) // int(priceB.amountS)
         else:
             fillAmountB_A = fillAmountS_B
-            fillAmountS_A = (fillAmountB_A * int(ring.orderA.amountS)) // int(ring.orderA.amountB)
+            fillAmountS_A = (fillAmountB_A * int(priceA.amountS)) // int(priceA.amountB)
         bSurplus = fillAmountB_B < fillAmountS_A
         tradeSurplus = fillAmountS_A - fillAmountB_B if bSurplus else 0
         tradeDeficit = fillAmountB_B - fillAmountS_A if not bSurplus else 0
         spread = tradeSurplus + tradeDeficit
 
-        # matchablee
-        ring.orderA.checkValid(context, fillAmountS_A, fillAmountB_A)
-        ring.orderB.checkValid(context, fillAmountS_B, fillAmountB_B)
+        # Check valid
+        ring.orderA.checkValid(context, priceA, fillAmountS_A, fillAmountB_A)
+        ring.orderB.checkValid(context, priceB, fillAmountS_B, fillAmountB_B)
         ring.valid = ring.orderA.valid and ring.orderB.valid
 
         #print("ring.orderA.valid " + str(ring.orderA.valid))

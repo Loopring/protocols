@@ -689,10 +689,10 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 
 We can only prove circuits with a maximum of 256,000,000 constraints on-chain efficiently.
 
-Currently, our **most expensive** ring settlement circuit with data-availability support uses ~450,000 constraints/ring:
-- 256,000,000 / ~360,000 = ~710 rings/block
+Currently, our **most expensive** ring settlement circuit with data-availability support uses ~350,000 constraints/ring:
+- 256,000,000 / ~350,000 = ~730 rings/block
 
-Our **most expensive** ring settlement circuit without data-availability support uses ~425,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
+Our **most expensive** ring settlement circuit without data-availability support uses ~335,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
 - 256,000,000 / ~335,000 = ~765 rings/block
 
 ### Results
