@@ -38,7 +38,7 @@ contract Operator {
         )
         external
     {
-        exchange.commitBlock(blockType, numElements, data);
+        exchange.commitBlock(blockType, numElements, data, bytes("0"));
     }
 
     function verifyBlock(
