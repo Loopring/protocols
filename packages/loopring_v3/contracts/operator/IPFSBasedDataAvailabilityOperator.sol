@@ -21,7 +21,6 @@ import "../iface/IExchange.sol";
 
 import "./Operator.sol";
 
-
 /// @title IPFSBasedDataAvailabilityOperator.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IPFSBasedDataAvailabilityOperator is Operator
