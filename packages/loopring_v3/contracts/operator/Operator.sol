@@ -23,12 +23,23 @@ import "../iface/IExchange.sol";
 
 /// @title Operator
 /// @author Daniel Wang  - <daniel@loopring.org>
+/// @dev An operator base contract that does not do any fancy work.
 contract Operator is Ownable
 {
-
     using ERC20SafeTransfer for address;
 
-    address  exchange;
+    address public exchange;
+
+    // -- Constructor --
+    constructor(
+        address _exchange
+        )
+        public
+    {
+        require(address(0) != _exchange, "ZERO_ADDRESS");
+        exchange = _exchange;
+        owner = msg.sender;
+    }
 
     function commitBlock(
         uint8 blockType,
@@ -42,7 +53,7 @@ contract Operator is Ownable
        return IExchange(exchange).commitBlock(blockType, blockSize, data);
     }
 
-    /// @dev Forward call to the DEX.
+    /// @dev Forward the call to the DEX.
     function verifyBlock(
         uint blockIdx,
         uint256[8] calldata proof
@@ -53,7 +64,7 @@ contract Operator is Ownable
         IExchange(exchange).verifyBlock(blockIdx, proof);
     }
 
-    /// @dev Forward call to the DEX.
+    /// @dev Forward the call to the DEX.
     function revertBlock(
         uint blockIdx
         )
@@ -63,7 +74,7 @@ contract Operator is Ownable
         IExchange(exchange).revertBlock(blockIdx);
     }
 
-    /// @dev Forward call to the DEX.
+    /// @dev Forward the call to the DEX.
     function withdrawBlockFee(
         uint blockIdx,
         address payable feeRecipient
@@ -75,7 +86,7 @@ contract Operator is Ownable
         return IExchange(exchange).withdrawBlockFee(blockIdx, feeRecipient);
     }
 
-    /// @dev Forward call to the DEX.
+    /// @dev Forward the call to the DEX.
     function withdraw(
         address token,
         uint96 amount
@@ -85,6 +96,17 @@ contract Operator is Ownable
         onlyOwner
     {
         IExchange(exchange).withdraw(token, amount);
+    }
+
+    /// @dev Forward the call to the DEX.
+    function deposit(
+        address token,
+        uint96  amount
+        )
+        external
+        payable
+    {
+        IExchange(exchange).deposit(token, amount);
     }
 
     /// @dev Withdraw tokens/ether held in this contract to a designated address.
@@ -97,7 +119,7 @@ contract Operator is Ownable
         payable
         onlyOwner
     {
-        address to = recipient == address(0x0)? owner : recipient;
+        require(address(0) != recipient, "ZERO_ADDRESS");
         if (token == address(0x0)) {
             // ETH
             recipient.transfer(amount);
