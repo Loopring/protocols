@@ -42,6 +42,7 @@ contract Operator is Ownable
        return IExchange(exchange).commitBlock(blockType, blockSize, data);
     }
 
+    /// @dev Forward call to the DEX.
     function verifyBlock(
         uint blockIdx,
         uint256[8] calldata proof
@@ -52,6 +53,7 @@ contract Operator is Ownable
         IExchange(exchange).verifyBlock(blockIdx, proof);
     }
 
+    /// @dev Forward call to the DEX.
     function revertBlock(
         uint blockIdx
         )
@@ -61,6 +63,7 @@ contract Operator is Ownable
         IExchange(exchange).revertBlock(blockIdx);
     }
 
+    /// @dev Forward call to the DEX.
     function withdrawBlockFee(
         uint blockIdx,
         address payable feeRecipient
@@ -72,7 +75,7 @@ contract Operator is Ownable
         return IExchange(exchange).withdrawBlockFee(blockIdx, feeRecipient);
     }
 
-    /// @dev Make a withdrawal request onchain.
+    /// @dev Forward call to the DEX.
     function withdraw(
         address token,
         uint96 amount
@@ -84,7 +87,7 @@ contract Operator is Ownable
         IExchange(exchange).withdraw(token, amount);
     }
 
-    /// @dev Withdrawal the tokens/ether held in this contract.
+    /// @dev Withdraw tokens/ether held in this contract to a designated address.
     function drain(
         address payable recipient,
         address         token,
@@ -94,6 +97,7 @@ contract Operator is Ownable
         payable
         onlyOwner
     {
+        address to = recipient == address(0x0)? owner : recipient;
         if (token == address(0x0)) {
             // ETH
             recipient.transfer(amount);
