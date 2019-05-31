@@ -59,7 +59,9 @@ library ExchangeBlocks
         )
         internal  // inline call
     {
-        require(!S.onchainDataAvailability || offchainData.length > 0, "INVALID_OFFCHAIN_DATA");
+        if (S.onchainDataAvailability) {
+            require(offchainData.length == 0, "INVALID_OFFCHAIN_DATA");
+        }
 
         commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, data);
     }
