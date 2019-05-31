@@ -68,6 +68,7 @@ contract Operator is Ownable
         return IExchange(exchange).withdrawBlockFee(blockIdx, feeRecipient);
     }
 
+    /// @dev Make a withdrawal request onchain.
     function withdraw(
         address token,
         uint96 amount
