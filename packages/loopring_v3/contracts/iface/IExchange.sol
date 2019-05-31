@@ -450,11 +450,13 @@ contract IExchange
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
+    /// @param offchainData Arbitrary data associate with off-chain data-availability.
     /// @return merkleRootAfter The new merkle tree root after this block
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
-        bytes  calldata data
+        bytes  calldata data,
+        bytes  calldata offchainData
         )
         external
         returns (bytes32 merkleRootAfter);

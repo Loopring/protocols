@@ -99,7 +99,7 @@ contract LoopringV3 is ILoopringV3, Ownable
 
     function createExchange(
         address payable _operator,
-        bool onchainDataAvailability
+        address offchainDataExt
         )
         external
         returns (
@@ -126,10 +126,10 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         exchangeAddress = ExchangeDeployer.deployExchange(
             exchangeId,
-            address(this),
             msg.sender,
+            address(this),
             operator,
-            onchainDataAvailability
+            offchainDataExt
         );
         exchanges.push(exchangeAddress);
 
@@ -138,6 +138,7 @@ contract LoopringV3 is ILoopringV3, Ownable
             exchangeAddress,
             msg.sender,
             operator,
+            offchainDataExt,
             exchangeCreationCostLRC
         );
     }

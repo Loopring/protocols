@@ -63,8 +63,8 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
 
-        offchainDataExt = _offchainDataExt;
-        bool _onchainDataAvailability = (offchainDataExt == address(0));
+        bool _onchainDataAvailability = (_offchainDataExt == address(0));
+        state.offchainDataExt = _offchainDataExt;
 
         state.initializeGenesisBlock(
             _id,
@@ -373,14 +373,15 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     function commitBlock(
         uint8 blockType,
         uint16 blockSize,
-        bytes calldata data
+        bytes calldata data,
+        bytes calldata offchainData
         )
         external
         onlyOperator
         nonReentrant
         returns (bytes32 merkleRootAfter)
     {
-        merkleRootAfter = state.commitBlock(blockType, blockSize, data);
+        merkleRootAfter = state.commitBlock(blockType, blockSize, data, offchainData);
     }
 
     function verifyBlock(

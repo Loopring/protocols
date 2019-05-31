@@ -29,20 +29,20 @@ library ExchangeDeployer
 {
     function deployExchange(
         uint    exchangeId,
-        address payable loopringAddress,
         address owner,
+        address payable loopringAddress,
         address payable operator,
-        bool    onchainDataAvailability
+        address offchainDataExt
         )
         external
         returns (address)
     {
         Exchange exchange = new Exchange(
             exchangeId,
-            loopringAddress,
             owner,
+            loopringAddress,
             operator,
-            onchainDataAvailability
+            offchainDataExt
         );
         return address(exchange);
     }

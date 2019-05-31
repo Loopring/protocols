@@ -70,7 +70,7 @@ library ExchangeBlocks
         );
 
         if (S.offchainDataExt == address(0)) {
-            assert(offchainData.size == 0);
+            assert(offchainData.length == 0);
         } else {
             IOffchainDataExtention(S.offchainDataExt).publish(merkleRootAfter, offchainData);
         }

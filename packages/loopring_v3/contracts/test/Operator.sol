@@ -38,7 +38,8 @@ contract Operator {
         )
         external
     {
-        exchange.commitBlock(blockType, numElements, data);
+        // bytes memory offchainData = bytes(0);
+        exchange.commitBlock(blockType, numElements, data, bytes("0"));
     }
 
     function verifyBlock(

@@ -36,6 +36,7 @@ contract ILoopringV3
         address indexed exchangeAddress,
         address indexed owner,
         address         operator,
+        address         offchainDataExt,
         uint            burnedLRC
     );
 
