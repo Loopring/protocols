@@ -369,14 +369,13 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
     function commitBlock(
         uint8 blockType,
         uint16 blockSize,
-        bytes calldata data,
-        bytes calldata offchainData
+        bytes calldata data
         )
         external
         onlyOperator
         nonReentrant
     {
-        state.commitBlock(blockType, blockSize, data, offchainData);
+        state.commitBlock(blockType, blockSize, data);
     }
 
     function verifyBlock(

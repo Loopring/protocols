@@ -450,12 +450,10 @@ contract IExchange
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
-    /// @param offchainData Arbitriy data for off-chain data-availability.
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
-        bytes  calldata data,
-        bytes  calldata offchainData
+        bytes  calldata data
         )
         external;
 
