@@ -89,6 +89,6 @@ contract Operator is Ownable
         payable
         onlyOwner
     {
-        // TODO(dongw): defaults to withdrawing to msg.sender.
+        // TODO(dongw): defaults to withdrawing to msg.origin?.
     }
 }
