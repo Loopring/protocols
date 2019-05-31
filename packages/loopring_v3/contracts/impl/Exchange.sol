@@ -63,14 +63,11 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
 
-        bool _onchainDataAvailability = (_offchainDataExt == address(0));
-        state.offchainDataExt = _offchainDataExt;
-
         state.initializeGenesisBlock(
             _id,
             _loopringAddress,
             _operator,
-            _onchainDataAvailability
+            _offchainDataExt
         );
     }
 

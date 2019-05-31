@@ -39,7 +39,7 @@ library ExchangeGenesis
         uint    _id,
         address payable _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability
+        address _offchainDataExt
         )
         public
     {
@@ -50,7 +50,8 @@ library ExchangeGenesis
         S.id = _id;
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
-        S.onchainDataAvailability = _onchainDataAvailability;
+        S.offchainDataExt = _offchainDataExt;
+        S.onchainDataAvailability = (_offchainDataExt == address(0x0));
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());

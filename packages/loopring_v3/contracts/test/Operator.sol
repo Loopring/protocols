@@ -38,7 +38,6 @@ contract Operator {
         )
         external
     {
-        // bytes memory offchainData = bytes(0);
         exchange.commitBlock(blockType, numElements, data, bytes("0"));
     }
 
