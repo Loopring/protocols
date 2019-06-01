@@ -60,7 +60,7 @@ contract Killable is Claimable
         onlyOwner
         isSuspended
     {
-        owner = address(0x0);
-        emit OwnershipTransferred(owner, address(0x0));
+        owner = address(0);
+        emit OwnershipTransferred(owner, address(0));
     }
 }

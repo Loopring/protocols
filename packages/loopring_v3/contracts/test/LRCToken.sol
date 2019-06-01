@@ -90,7 +90,7 @@ contract BasicToken is ERC20Basic {
      * @param _value The amount to be transferred.
      */
     function transfer(address _to, uint256 _value) public returns (bool) {
-        // require(_to != address(0x0), "ZERO_ADDRESS");
+        // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "TRANSFER_INSUFFICIENT_BALANCE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -133,7 +133,7 @@ contract StandardToken is ERC20, BasicToken {
      * @param _value uint256 the amount of tokens to be transferred
      */
     function transferFrom(address _from, address _to, uint256 _value) public returns (bool) {
-        // require(_to != address(0x0), "ZERO_ADDRESS");
+        // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "TRANSFERFROM_INSUFFICIENT_BALANCE");
         require(_value <= allowed[_from][msg.sender], "TRANSFERFROM_INSUFFICIENT_ALLOWANCE");
         balances[_from] = balances[_from].sub(_value);
@@ -219,12 +219,12 @@ contract LRCToken is StandardToken {
         balances[burner] = balances[burner].sub(_value);
         totalSupply_ = totalSupply_.sub(_value);
         emit Burn(burner, _value);
-        emit Transfer(burner, address(0x0), _value);
+        emit Transfer(burner, address(0), _value);
         return true;
     }
 
     function burnFrom(address _owner, uint256 _value) public returns (bool) {
-        require(_owner != address(0x0), "ZERO_ADDRESS");
+        require(_owner != address(0), "ZERO_ADDRESS");
         require(_value <= balances[_owner], "BURNFROM_INSUFFICIENT_BALANCE");
         require(_value <= allowed[_owner][msg.sender], "BURNFROM_INSUFFICIENT_ALLOWANCE");
 
@@ -233,7 +233,7 @@ contract LRCToken is StandardToken {
         totalSupply_ = totalSupply_.sub(_value);
 
         emit Burn(_owner, _value);
-        emit Transfer(_owner, address(0x0), _value);
+        emit Transfer(_owner, address(0), _value);
         return true;
     }
 
@@ -247,7 +247,7 @@ contract LRCToken is StandardToken {
         public
     {
         require(_totalSupply > 0, "INVALID_VALUE");
-        require(_firstHolder != address(0x0), "ZERO_ADDRESS");
+        require(_firstHolder != address(0), "ZERO_ADDRESS");
         checkSymbolAndName(_symbol,_name);
 
         name = _name;

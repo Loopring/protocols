@@ -18,7 +18,8 @@ pragma solidity 0.5.7;
 
 import "../iface/IBlockVerifier.sol";
 
-import "../lib/Ownable.sol";
+import "../lib/Claimable.sol";
+
 import "../impl/libexchange/ExchangeData.sol";
 
 import "../thirdparty/Verifier.sol";
@@ -26,7 +27,7 @@ import "../thirdparty/Verifier.sol";
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>,
-contract BlockVerifier is IBlockVerifier, Ownable
+contract BlockVerifier is IBlockVerifier, Claimable
 {
     mapping (bool => mapping (uint8 => mapping (uint16 => uint256[18]))) verificationKeys;
 
