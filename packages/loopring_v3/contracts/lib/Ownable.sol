@@ -55,8 +55,16 @@ contract Ownable
         public
         onlyOwner
     {
-        require(newOwner != address(0x0), "ZERO_ADDRESS");
+        require(newOwner != address(0), "ZERO_ADDRESS");
         emit OwnershipTransferred(owner, newOwner);
         owner = newOwner;
+    }
+
+    function renounceOwnership()
+        public
+        onlyOwner
+    {
+        emit OwnershipTransferred(owner, address(0));
+        owner = address(0);
     }
 }

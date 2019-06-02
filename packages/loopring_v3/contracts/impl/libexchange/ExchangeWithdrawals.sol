@@ -483,7 +483,7 @@ library ExchangeWithdrawals
 
         // Increase the burn balance
         if (amountToBurn > 0) {
-            if (token == address(0x0)) {
+            if (token == address(0)) {
                 // ETH
                 address payable payableLoopringAddress = address(uint160(address(S.loopring)));
                 payableLoopringAddress.transfer(amountToBurn);
@@ -498,7 +498,7 @@ library ExchangeWithdrawals
 
         // Transfer the tokens from the contract to the owner
         if (amountToOwner > 0) {
-            if (token == address(0x0)) {
+            if (token == address(0)) {
                 // ETH
                 owner.transfer(amountToOwner);
             } else {
