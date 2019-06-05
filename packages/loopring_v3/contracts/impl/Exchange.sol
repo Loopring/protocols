@@ -300,7 +300,7 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         external
         nonReentrant
     {
-        // Allow burning the complete owner stake when the exchange gets into withdrawal mode
+        // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
         if(state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
             uint stake = state.loopring.getExchangeStake(state.id);
@@ -733,7 +733,7 @@ contract Exchange is IExchange, Ownable, ReentrancyGuard
         numAvailableWithdrawalSlots = state.getNumAvailableWithdrawalSlots();
     }
 
-    function getProtocolFees()
+    function getProtocolFeeValues()
         external
         view
         returns (uint32 timestamp,

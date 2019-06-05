@@ -413,21 +413,17 @@ contract IExchange
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
     ///                - Ring-matcher account ID: 2,5 bytes
-    ///                - Fee-recipient account ID: 2,5 bytes
+    ///                - Fee amount: 1,5 bytes
     ///                - Token ID (fee to operator): 1 bytes
-    ///                - Fee amount: 2 bytes
-    ///                - Spread: 3 bytes
     ///                - OrderA.orderID: 2,5 bytes
     ///                - OrderB.orderID: 2,5 bytes
+    ///                - OrderA.accountID: 2,5 bytes
+    ///                - OrderB.accountID: 2,5 bytes
     ///                - For both Orders:
-    ///                    - Account ID: 2,5 bytes
-    ///                    - Wallet account ID: 2,5 bytes
     ///                    - TokenS: 1 bytes
-    ///                    - TokenF: 1 bytes
     ///                    - FillS: 3 bytes
-    ///                    - FillF: 3 bytes
-    ///                    - WalletSplitPercentage: 1 byte
-    ///                    - WaiveFeePercentage: 1 byte
+    ///                    - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
+    ///                                 feeOrRebateBips (6 bits)
     ///        For DEPOSIT blocks add the following data:
     ///            - None
     ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
@@ -941,7 +937,7 @@ contract IExchange
     /// @return makerFeeBips The protocol maker fee
     /// @return previousTakerFeeBips The previous protocol taker fee
     /// @return previousMakerFeeBips The previous protocol maker fee
-    function getProtocolFees()
+    function getProtocolFeeValues()
         external
         view
         returns (uint32 timestamp,

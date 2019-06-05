@@ -615,7 +615,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Withdraw (protocol fee pool account)", async () => {
       await createExchange();
 
-      const protocolFees = await exchange.getProtocolFees();
+      const protocolFees = await exchange.getProtocolFeeValues();
 
       const walletA = exchangeTestUtil.wallets[realmID][0];
       const walletB = exchangeTestUtil.wallets[realmID][1];

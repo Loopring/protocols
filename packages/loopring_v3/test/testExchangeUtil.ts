@@ -1387,7 +1387,7 @@ export class ExchangeTestUtil {
         this.signRing(ring);
       }
 
-      const protocolFees = await this.exchange.getProtocolFees();
+      const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
       const protocolMakerFeeBips = protocolFees.makerFeeBips.toNumber();
 

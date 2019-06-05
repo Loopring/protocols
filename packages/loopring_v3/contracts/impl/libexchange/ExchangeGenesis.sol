@@ -80,12 +80,8 @@ library ExchangeGenesis
         S.depositChain.push(genesisRequest);
         S.withdrawalChain.push(genesisRequest);
 
-        // Create an account for the protocol fees.
-        // This account is also used for padding deposits and onchain withdrawal requests. While we do
-        // do not necessarily need a special account for this (we could use the data of the first account
-        // to do the padding) it's easier and more efficient if this data remains the same.
-        // The account owner of account ID 0 would also see many deposit/withdrawal events for his account
-        // that should simply be ignored.
+        // Create an account for the protocol fees. This account is also used
+        // for padding deposits and on-chain withdrawal requests.
         ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
             _loopringAddress,
             uint256(0),

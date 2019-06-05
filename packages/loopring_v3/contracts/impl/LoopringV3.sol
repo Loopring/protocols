@@ -351,7 +351,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         IExchange(exchanges[exchangeId - 1].exchangeAddress).withdraw.value(msg.value)(tokenAddress, ~uint96(0));
     }
 
-    function getProtocolFees(
+    function getProtocolFeeValues(
         uint exchangeId,
         bool onchainDataAvailability
         )
@@ -363,9 +363,9 @@ contract LoopringV3 is ILoopringV3, Ownable
 
         // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
         uint stake = 0;
-        if (onchainDataAvailability && stake > minExchangeStakeWithDataAvailability) {
+        if (onchainDataAvailability && exchange.exchangeStake > minExchangeStakeWithDataAvailability) {
             stake = exchange.exchangeStake - minExchangeStakeWithDataAvailability;
-        } else if (!onchainDataAvailability && stake > minExchangeStakeWithoutDataAvailability) {
+        } else if (!onchainDataAvailability && exchange.exchangeStake > minExchangeStakeWithoutDataAvailability) {
             stake = exchange.exchangeStake - minExchangeStakeWithoutDataAvailability;
         }
 
@@ -463,6 +463,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         returns (uint8)
     {
         if (targetStake > 0) {
+            // Simple linear interpolation between 2 points
             uint maxReduction = maxFee.sub(minFee);
             uint reduction = maxReduction.mul(stake) / targetStake;
             if (reduction > maxReduction) {

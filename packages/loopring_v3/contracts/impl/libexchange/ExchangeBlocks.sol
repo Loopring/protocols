@@ -239,7 +239,7 @@ library ExchangeBlocks
                 "INVALID_TIMESTAMP"
             );
             require(
-                validateProtocolFees(S, protocolTakerFeeBips, protocolMakerFeeBips),
+                validateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
                 "INVALID_PROTOCOL_FEES"
             );
         } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
@@ -364,7 +364,7 @@ library ExchangeBlocks
         emit BlockCommitted(S.blocks.length - 1, publicDataHash);
     }
 
-    function validateProtocolFees(
+    function validateProtocolFeeValues(
         ExchangeData.State storage S,
         uint8 takerFeeBips,
         uint8 makerFeeBips
@@ -378,7 +378,7 @@ library ExchangeBlocks
             data.previousTakerFeeBips = data.takerFeeBips;
             data.previousMakerFeeBips = data.makerFeeBips;
             // Get the latest protocol fees for this exchange
-            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFees(
+            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
                 S.id,
                 S.onchainDataAvailability
             );

@@ -57,7 +57,7 @@ contract("Loopring", (accounts: string[]) => {
       minProtocolMakerFeeBips, maxProtocolMakerFeeBips, stake, targetProtocolMakerFeeStake,
     );
 
-    const protocolFees = await loopring.getProtocolFees(
+    const protocolFees = await loopring.getProtocolFeeValues(
       exchangeTestUtil.exchangeId,
       exchangeTestUtil.onchainDataAvailability,
     );
@@ -117,7 +117,7 @@ contract("Loopring", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", totalLRC, loopring.address);
 
         {
-          const protocolFees = await loopring.getProtocolFees(
+          const protocolFees = await loopring.getProtocolFeeValues(
             exchangeTestUtil.exchangeId,
             exchangeTestUtil.onchainDataAvailability,
           );
@@ -134,7 +134,7 @@ contract("Loopring", (accounts: string[]) => {
         await exchangeTestUtil.depositProtocolFeeStakeChecked(targetProtocolTakerFeeStake, depositer);
 
         {
-          const protocolFees = await loopring.getProtocolFees(
+          const protocolFees = await loopring.getProtocolFeeValues(
             exchangeTestUtil.exchangeId,
             exchangeTestUtil.onchainDataAvailability,
           );

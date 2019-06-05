@@ -240,13 +240,13 @@ contract ILoopringV3
         external
         payable;
 
-    /// @dev Get the protocol fees for an exchange.
+    /// @dev Get the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
     /// @param onchainDataAvailability True if the exchange has on-chain
     ///        data-availability, else false
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee
-    function getProtocolFees(
+    function getProtocolFeeValues(
         uint exchangeId,
         bool onchainDataAvailability
         )
