@@ -112,6 +112,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitCancels(exchangeId);
 
       ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      exchangeTestUtil.signOrder(ring.orderA);
 
       await exchangeTestUtil.commitRings(exchangeId);
 

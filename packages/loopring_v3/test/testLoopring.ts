@@ -165,42 +165,6 @@ contract("Loopring", (accounts: string[]) => {
       // WETH
       await withdrawTheBurnChecked("WETH", recipient, amountB);
     });
-
-    it("should not be able to withdraw any LRC", async () => {
-      const user = exchangeTestUtil.testContext.orderOwners[0];
-      const amount = new BN(web3.utils.toWei("123.456", "ether"));
-      await exchangeTestUtil.setBalanceAndApprove(user, "LRC", amount, loopring.address);
-      // Transfer some funds to the contract that we can withdraw
-      const LRC = await exchangeTestUtil.getTokenContract("LRC");
-      await LRC.transfer(loopring.address, amount, {from: user});
-
-      // Withdraw
-      const recipient = exchangeTestUtil.testContext.orderOwners[1];
-      // LRC
-      await expectThrow(
-        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("LRC"), recipient,
-        {from: exchangeTestUtil.testContext.deployer}),
-        "LRC_ALREADY_BURNED",
-      );
-    });
-
-    it("should not be able to withdraw any LRC", async () => {
-      const user = exchangeTestUtil.testContext.orderOwners[0];
-      const amount = new BN(web3.utils.toWei("123.456", "ether"));
-      await exchangeTestUtil.setBalanceAndApprove(user, "LRC", amount, loopring.address);
-      // Transfer some funds to the contract that we can withdraw
-      const LRC = await exchangeTestUtil.getTokenContract("LRC");
-      await LRC.transfer(loopring.address, amount, {from: user});
-
-      // Withdraw
-      const recipient = exchangeTestUtil.testContext.orderOwners[1];
-      // LRC
-      await expectThrow(
-        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("LRC"), recipient,
-        {from: exchangeTestUtil.testContext.deployer}),
-        "LRC_ALREADY_BURNED",
-      );
-    });
   });
 
   describe("anyone", () => {

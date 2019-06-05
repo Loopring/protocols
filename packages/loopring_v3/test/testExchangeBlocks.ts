@@ -485,7 +485,7 @@ contract("Exchange", (accounts: string[]) => {
           }
 
           const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-          const owner = exchangeTestUtil.testContext.orderOwners[0];
+          const owner = exchangeTestUtil.testContext.orderOwners[2];
           const token = "LRC";
           const balance = new BN(web3.utils.toWei("7.1", "ether"));
 
@@ -509,11 +509,24 @@ contract("Exchange", (accounts: string[]) => {
           // Revert the block again, now correctly
           await revertBlockChecked(blocksA[0]);
 
+          // Try to commit a block without adding to the stake
+          await expectThrow(
+            exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits),
+            "INSUFFICIENT_EXCHANGE_STAKE",
+          );
+
+          // Deposit extra LRC to stake for the exchange
+          const depositer = exchangeTestUtil.testContext.operators[2];
+          const stakeAmount = await loopring.revertFineLRC();
+          await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
+          await loopring.depositExchangeStake(exchangeId, stakeAmount, {from: depositer});
+
           // Now commit the deposits again
           const blockIndicesB = await exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits);
           assert(blockIndicesB.length === 1);
 
           // Submit some other work
+          // exchangeTestUtil.signRing(ring);
           await exchangeTestUtil.sendRing(exchangeId, ring);
           await exchangeTestUtil.commitRings(exchangeId);
 

@@ -311,6 +311,9 @@ export class ExchangeTestUtil {
   }
 
   public signRing(ring: RingInfo) {
+    if (ring.signature !== undefined) {
+      return;
+    }
     const account = this.accounts[this.exchangeId][ring.minerAccountID];
     const nonce = account.nonce++;
     const message = this.flattenList([

@@ -145,6 +145,11 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1);
       // Revert the block
       await exchangeTestUtil.revertBlock(blockA.block.blockIdx);
+      // Deposit extra LRC to stake for the exchange
+      const depositer = exchangeTestUtil.testContext.operators[2];
+      const stakeAmount = await exchangeTestUtil.loopringV3.revertFineLRC();
+      await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, exchangeTestUtil.loopringV3.address);
+      await exchangeTestUtil.loopringV3.depositExchangeStake(exchangeId, stakeAmount, {from: depositer});
       // Now commit the deposits again
       await exchangeTestUtil.commitDeposits(exchangeId, blockA.deposits);
       // Verify all blocks
