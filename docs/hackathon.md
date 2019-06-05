@@ -1,6 +1,6 @@
 # Loopring Hackathon Challenges
 
-## Challange #1: Build Oedax UI
+## Challenge #1: Build Oedax UI
 
 ### Description
 
@@ -34,7 +34,7 @@ We've also created this little [tool](https://loopring.github.io/protocols/curve
 ### Auction Interface
 The Oedax Auction's interface is defined in this [IAuction](https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.sol) solidity file.
 
-The ABI files can be found in our github repository - link (TODO)
+The ABI files can be found in our github repository - [link](../packages/oedax_v1/ABI/version10/)
 
 There are two ways you can query the state of an auction:
 
@@ -45,9 +45,9 @@ The data returned from these two methods are complementary.
 
 ### Testnet Deployment Addresses
 
-- Testnet Name: TODO
-- IOedax contract address: TODO
-- ICurve contract address: TODO
-- Token Foo address: TODO
-- Token Bar address: TODO
+- Testnet Name: rinkeby
+- IOedax contract address: [0xc87d291C40C9F2754be26391878f715277c134B8](https://rinkeby.etherscan.io/address/0xc87d291C40C9F2754be26391878f715277c134B8)
+- ICurve contract address: [0x44Cd575E35F580b12702127b25421e3128525F2B](https://rinkeby.etherscan.io/address/0x44Cd575E35F580b12702127b25421e3128525F2B)
+- Token Foo address: [0xD0ef9379c783E5783BA499ceBA78734794B67E72](https://rinkeby.etherscan.io/address/0xd0ef9379c783e5783ba499ceba78734794b67e72)
+- Token Bar address: [0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615](https://rinkeby.etherscan.io/address/0x4ff214811f164dab1889c83b1fe2c8c27d3db615)
 

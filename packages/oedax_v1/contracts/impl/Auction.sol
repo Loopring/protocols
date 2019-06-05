@@ -86,7 +86,7 @@ contract Auction is IAuction
 
         require(_T1 > 0 && _T1 < _T2, "invalid duration value");
 
-        owner = msg.sender; // creator
+        owner = tx.origin; // creator
 
         state.oedax = IOedax(_oedax);
         state.curve = ICurve(state.oedax.curveAddress());
@@ -121,17 +121,14 @@ contract Auction is IAuction
         safeCheckTokenSupply(_bidToken);
     }
 
-    event Log1(address addr, uint val);
-
     // == Public & External Functions ==
     function ()
         external
         payable
     {
         if (!staked) {
-            require(msg.sender == owner, "not owner");
+            require(tx.origin == owner, "not owner");
             require(msg.value > 0, "zero value");
-            emit Log1(msg.sender, msg.value);
             staked = true;
         } else {
             if (msg.value == 0) {
@@ -204,10 +201,12 @@ contract Auction is IAuction
         actualPrice = i.actualPrice;
         askPrice = i.askPrice;
         bidPrice = i.bidPrice;
+
         askAllowed = i.askAllowed;
         bidAllowed = i.bidAllowed;
 
         uint elapsed = block.timestamp - state.startTime;
+
         timeRemaining = i.duration > elapsed ? i.duration - elapsed : 0;
     }
 

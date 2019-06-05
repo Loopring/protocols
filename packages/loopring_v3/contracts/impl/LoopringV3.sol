@@ -20,9 +20,9 @@ import "../iface/ILoopringV3.sol";
 import "../iface/IExchange.sol";
 
 import "../lib/BurnableERC20.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
-import "../lib/Ownable.sol";
 
 import "./ExchangeDeployer.sol";
 
@@ -30,7 +30,7 @@ import "./ExchangeDeployer.sol";
 /// @title An Implementation of ILoopring.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is ILoopringV3, Ownable
+contract LoopringV3 is ILoopringV3, Claimable
 {
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
@@ -388,7 +388,7 @@ contract LoopringV3 is ILoopringV3, Ownable
         external
         onlyOwner
     {
-        if (token == address(0x0)) {
+        if (token == address(0)) {
             // ETH
             uint balance = address(this).balance;
             recipient.transfer(balance);

@@ -57,7 +57,7 @@ contract ERC20Token is ERC20
         public
     {
         require(_totalSupply > 0, "INVALID_VALUE");
-        require(_firstHolder != address(0x0), "ZERO_ADDRESS");
+        require(_firstHolder != address(0), "ZERO_ADDRESS");
         checkSymbolAndName(_symbol,_name);
 
         name = _name;

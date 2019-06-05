@@ -462,7 +462,7 @@ library ExchangeWithdrawals
         address token = S.getTokenAddress(tokenID);
         // Transfer the tokens from the contract to the owner
         if (amount > 0) {
-            if (token == address(0x0)) {
+            if (token == address(0)) {
                 // ETH
                 owner.transfer(amount);
             } else {

@@ -32,7 +32,7 @@ contract TEST is DummyToken {
 
     uint public testCase = TEST_NOTHING;
 
-    address public exchangeAddress = address(0x0);
+    address public exchangeAddress = address(0);
     bytes public submitRingsData;
 
     constructor() DummyToken(
@@ -51,7 +51,7 @@ contract TEST is DummyToken {
         public
         returns (bool)
     {
-        require(_to != address(0x0), "ZERO_ADDRESS");
+        require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -68,7 +68,7 @@ contract TEST is DummyToken {
         public
         returns (bool)
     {
-        require(_to != address(0x0), "ZERO_ADDRESS");
+        require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "INVALID_VALUE");
         require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");
         balances[_from] = balances[_from].sub(_value);

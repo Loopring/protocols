@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.7;
 
-import "../lib/Ownable.sol";
+import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IExchange.sol";
@@ -36,7 +36,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, Ownable, ReentrancyGuard
+contract Exchange is IExchange, Claimable, ReentrancyGuard
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;

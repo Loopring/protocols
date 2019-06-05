@@ -56,7 +56,7 @@ contract Authorizable is Claimable
         external
         onlyOwner
     {
-        require(address(0x0) != addr, "ZERO_ADDRESS");
+        require(address(0) != addr, "ZERO_ADDRESS");
         require(0 == positionMap[addr], "ALREADY_EXIST");
         require(isContract(addr), "INVALID_ADDRESS");
 
@@ -71,7 +71,7 @@ contract Authorizable is Claimable
         external
         onlyOwner
     {
-        require(address(0x0) != addr, "ZERO_ADDRESS");
+        require(address(0) != addr, "ZERO_ADDRESS");
 
         uint pos = positionMap[addr];
         require(pos != 0, "NOT_FOUND");

@@ -67,6 +67,10 @@ contract IExchange
         bytes32 indexed publicDataHash
     );
 
+    event BlockVerified(
+        uint    indexed blockIdx
+    );
+
     event BlockFinalized(
         uint    indexed blockIdx
     );

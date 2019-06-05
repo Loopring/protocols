@@ -6,8 +6,13 @@ const Auction = artifacts.require("Auction");
 
 const auctionABI = '[{"constant":false,"inputs":[],"name":"settle","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[],"name":"withdraw","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"bid","outputs":[{"name":"accepted","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"getStatus","outputs":[{"name":"isBounded","type":"bool"},{"name":"timeRemaining","type":"uint256"},{"name":"actualPrice","type":"uint256"},{"name":"askPrice","type":"uint256"},{"name":"bidPrice","type":"uint256"},{"name":"askAllowed","type":"uint256"},{"name":"bidAllowed","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"users","type":"address[]"}],"name":"withdrawFor","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"stateMutability":"view","type":"function"},{"constant":false,"inputs":[{"name":"amount","type":"uint256"}],"name":"ask","outputs":[{"name":"accepted","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"payable":false,"stateMutability":"nonpayable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"user","type":"address"},{"indexed":false,"name":"askAmount","type":"int256"},{"indexed":false,"name":"bidAmount","type":"int256"}],"name":"Trade","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"name":"previousOwner","type":"address"},{"indexed":true,"name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"}]';
 
-contract("Oedax-Auction", async(accounts) => {
+contract("Oedax-Auction-Failed", async(accounts) => {
   const deployer = accounts[0];
+  const feeRecipient = accounts[1];
+  const settler = accounts[2];
+  const asker = accounts[5];
+  const bidder = accounts[6];
+
   let curve;
   let oedax;
   let fooToken;
@@ -25,12 +30,11 @@ contract("Oedax-Auction", async(accounts) => {
   };
 
   it("should excute auction", async function() {
-
     // update oedax
-    await oedax.updateSettings(accounts[0], curve.address, 5, 20, 1, 10, 15, 25, 35, 1);
+    await oedax.updateSettings(feeRecipient, curve.address, 5, 20, 1, 10, 15, 25, 35, 1);
 
-    const minAskAmount = 100e18;
-    const minBidAmount = 10e18;
+    const minAskAmount = 100;
+    const minBidAmount = 10;
 
     await oedax.setTokenRank(fooToken.address, numToBN(10), {
       from: deployer
@@ -55,49 +59,61 @@ contract("Oedax-Auction", async(accounts) => {
     const blockBefore1 = await web3.eth.getBlockNumber();
     const previousTimestamp = (await web3.eth.getBlock(blockBefore1)).timestamp;
 
-    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [150001], id: 0}, function() {
-        console.log("evm_increaseTime done")
-      });
-
     const auctionAddr = auctionCreationEvent[0].returnValues.auctionAddr;
-    console.log(auctionAddr)
 
     const auctionInstance = new web3.eth.Contract(JSON.parse(auctionABI), auctionAddr);
 
-    const asker = accounts[5];
-    const bidder = accounts[6];
+    await fooToken.setBalance(asker, numToBN(100000));
+    await barToken.setBalance(bidder, numToBN(100000000));
 
-    await fooToken.setBalance(asker, numToBN(1000e18));
-    await barToken.setBalance(bidder, numToBN(10000e18));
-
-    await fooToken.approve(oedax.address, numToBN(1000e18), {
+    await fooToken.approve(oedax.address, numToBN(100000), {
       from: asker
     });
 
-    await barToken.approve(oedax.address, numToBN(10000e18), {
+    await barToken.approve(oedax.address, numToBN(1000000000), {
       from: bidder
     });
-
-    const blockAfter1 = await web3.eth.getBlockNumber();
-    const currentTimestamp = (await web3.eth.getBlock(blockAfter1)).timestamp;
-    console.log("blockBefore1:", blockBefore1, "; blockAfter1:", blockAfter1);
-    console.log("previousTimestamp:", previousTimestamp, "; currentTimestamp:", currentTimestamp);
 
     // bid
-    await auctionInstance.methods.bid(numToBN(100e18).toString(10)).send({
-      from: bidder
+    await auctionInstance.methods.bid(numToBN(10).toString(10)).send({
+      from: bidder, gas: 1000000
     });
 
-    // some times past
-    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [150001], id: 0}, function() {
-      console.log("evm_increaseTime done")
+    // ask
+    await auctionInstance.methods.ask(numToBN(10000).toString(10)).send({
+      from: asker, gas: 1000000
     });
 
+    //some times past
+    await web3.currentProvider.send({jsonrpc: "2.0", method: "evm_increaseTime", params: [125], id: 0}, function() {console.log("")});
+
+    const auctionEthBeforeSettle = await web3.eth.getBalance(auctionAddr);
+    //console.log("auctionEthBeforeSettle ", auctionEthBeforeSettle);
+    const oedaxEthBeforeSettle = await web3.eth.getBalance(oedax.address);
+    //console.log("oedaxEthBeforeSettle ", oedaxEthBeforeSettle);
+    const feeRecipientEthBeforeSettle = await web3.eth.getBalance(feeRecipient);
+    //console.log("feeRecipientEthBeforeSettle ", feeRecipientEthBeforeSettle);
+    const settlerEthBeforeSettle = await web3.eth.getBalance(settler);
+    //console.log("settlerEthBeforeSettle ", settlerEthBeforeSettle);
+    
     // settle
-    await auctionInstance.methods.settel().send({
-      from: bidder
+    await auctionInstance.methods.settle().send({
+      from: settler, gas: 6000000
     });
+    const auctionEthAfterSettle = await web3.eth.getBalance(auctionAddr);
+    assert.equal(auctionEthAfterSettle, 0, "auctionEthAfterSettle error!");
+    const oedaxEthAfterSettle = await web3.eth.getBalance(oedax.address);
+    const feeRecipientEthAfterSettle = await web3.eth.getBalance(feeRecipient);
+    const settlerEthAfterSettle = await web3.eth.getBalance(settler);
 
+    const auctionBidTokenAfter = await barToken.balanceOf(auctionAddr);
+    assert.equal(auctionBidTokenAfter, 0,  "auctionBidTokenAfter error");
+    const auctionAskTokenAfter = await fooToken.balanceOf(auctionAddr);
+    assert.equal(auctionAskTokenAfter, 0,  "auctionAskTokenAfter error");
+    const askerFooTokenAfter = await fooToken.balanceOf(asker);
+    assert.equal(askerFooTokenAfter, 100000,  "askerFooTokenAfter error");
+    const bidderBarTokenAfter = await barToken.balanceOf(bidder);
+    assert.equal(bidderBarTokenAfter, 100000000,  "bidderBarTokenAfter error");
   });
 
 });

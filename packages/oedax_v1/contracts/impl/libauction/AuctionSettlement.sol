@@ -48,7 +48,7 @@ library AuctionSettlement
     using ERC20SafeTransfer for address;
     using AuctionStatus     for IAuctionData.State;
 
-    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 50000;
+    uint32 public constant MIN_GAS_TO_DISTRIBUTE_TOKENS = 80000;
     uint32 public constant MIN_GAS_TO_DISTRIBUTE_FEES = 100000;
 
     function settle(
@@ -59,6 +59,7 @@ library AuctionSettlement
     {
         IAuctionData.Status memory i = s.getAuctionStatus();
         require(!s.isAuctionOpen(i), "auction needs to be closed");
+        require(s.settledAt == 0, "settlement has been completed");
 
         bool hasTokensBeenDistributed = false;
         // First all tokens for all users need to be distributed
@@ -66,6 +67,7 @@ library AuctionSettlement
             distributeTokens(s, i);
             hasTokensBeenDistributed = true;
         }
+
         // Once all users have received their tokens we will distribute the fees
         if (s.numDistributed == s.users.length) {
             // If the caller also distributed tokens for users in this transaction
@@ -141,17 +143,21 @@ library AuctionSettlement
             address(0x0),
             amountStakeToCaller
         );
+
+
         // Stake to the protocol pool
         payToken(
             s.oedax.feeRecipient(),
             address(0x0),
             s.fees.creatorEtherStake.sub(amountStakeToOwner).sub(amountStakeToCaller)
         );
-
-        // Collect the owner trading fees
-        collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
-        // Collect the protocol fees
-        collectTradingFees(s, s.fees.protocolFeeBips, s.oedax.feeRecipient());
+        
+        if (i.isBounded) {
+            // Collect the owner trading fees
+            collectTradingFees(s, s.fees.ownerFeeBips, ownerFeeRecipient);
+            // Collect the protocol fees
+            collectTradingFees(s, s.fees.protocolFeeBips, s.oedax.feeRecipient());
+        }   
 
         // Only emit an event once
         if (s.fees.creatorEtherStake > 0) {
@@ -165,9 +171,7 @@ library AuctionSettlement
         }
 
         // Make sure the fees above cannot be withdrawn again by cleaning up the state
-        s.askAmount = 0;
-        s.bidAmount = 0;
-        s.fees.creatorEtherStake = 0;
+        s.settledAt = block.timestamp;
     }
 
     function distributeTokens(
@@ -250,7 +254,7 @@ library AuctionSettlement
 
         Trading memory t = Trading(0, 0, 0, 0, 0, 0);
 
-        IAuctionData.Account storage a = s.accounts[msg.sender];
+        IAuctionData.Account storage a = s.accounts[user];
 
         t.askPaid = a.askAmount;
         t.askReceived = askSettlement.mul(a.bidAmount) / s.bidAmount;
@@ -260,7 +264,7 @@ library AuctionSettlement
         t.bidReceived = bidSettlement.mul(a.askAmount) / s.askAmount;
         t.bidFeeRebate = bidTakerFee.mul(bips) / 10000;
 
-        payUser(s.askToken, s.bidToken, msg.sender, t);
+        payUser(s.askToken, s.bidToken, user, t);
     }
 
     function calcUserFeeRebateBips(
@@ -280,7 +284,11 @@ library AuctionSettlement
             .add(a.askRebateWeight / s.askAmount);
 
         total /= 10000;
-        assert(total > 0);
+        
+        // some times total will be smaller than 10000 
+        if (total == 0) {
+            total = 1;
+        }
 
         bips /= total;
     }

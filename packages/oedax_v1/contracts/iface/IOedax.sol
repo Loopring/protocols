@@ -58,8 +58,8 @@ contract IOedax is Ownable
     address     public curveAddress;
     uint16      public settleGracePeriodBase;
     uint16      public settleGracePeriodPerUser;
-    uint16      public minDuration;
-    uint16      public maxDuration;
+    uint32      public minDuration;
+    uint32      public maxDuration;
     uint16      public protocolFeeBips;
     uint16      public ownerFeeBips;
     uint16      public takerFeeBips;

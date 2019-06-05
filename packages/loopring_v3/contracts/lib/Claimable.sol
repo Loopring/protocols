@@ -41,7 +41,7 @@ contract Claimable is Ownable
         public
         onlyOwner
     {
-        require(newOwner != address(0x0) && newOwner != owner, "INVALID_ADDRESS");
+        require(newOwner != address(0) && newOwner != owner, "INVALID_ADDRESS");
         pendingOwner = newOwner;
     }
 
@@ -52,6 +52,6 @@ contract Claimable is Ownable
     {
         emit OwnershipTransferred(owner, pendingOwner);
         owner = pendingOwner;
-        pendingOwner = address(0x0);
+        pendingOwner = address(0);
     }
 }
