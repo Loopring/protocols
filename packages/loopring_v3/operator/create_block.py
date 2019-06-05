@@ -72,6 +72,7 @@ def orderFromJSON(jOrder, state):
     allOrNone = int(jOrder["allOrNone"])
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
+    buy = int(jOrder["buy"])
     maxFeeBips = int(jOrder["maxFeeBips"])
 
     feeBips = int(jOrder["feeBips"])
@@ -84,10 +85,8 @@ def orderFromJSON(jOrder, state):
                   realmID, orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
-                  allOrNone, validSince, validUntil,
+                  allOrNone, validSince, validUntil, buy,
                   maxFeeBips, feeBips, rebateBips)
-
-    # order.sign(FQ(int(account.secretKey)))
 
     order.signature = jOrder["signature"]
 
@@ -108,8 +107,6 @@ def ringFromJSON(jRing, state):
     ring.minerSignature = jRing["signature"]
     ring.dualAuthASignature = jRing["dualAuthASignature"]
     ring.dualAuthBSignature = jRing["dualAuthBSignature"]
-
-    # ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
 
     return ring
 

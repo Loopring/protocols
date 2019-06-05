@@ -11,16 +11,23 @@ interface SettlementValues {
   fillBA: BN;
   feeA: BN;
   protocolFeeA: BN;
+  rebateA: BN;
 
   fillSB: BN;
   fillBB: BN;
   feeB: BN;
   protocolFeeB: BN;
+  rebateB: BN;
 }
 
-interface Price {
-  amountS: BN;
-  amountB: BN;
+interface Fill {
+  S: BN;
+  B: BN;
+}
+
+interface MatchResult {
+  spread: BN;
+  matchable: boolean;
 }
 
 export class Simulator {
@@ -330,7 +337,7 @@ export class Simulator {
     offset += 3;
 
     // Jump to the specified ring
-    const ringSize = 28;
+    const ringSize = 25;
     offset += ringIndex * ringSize;
 
     // Ring data
@@ -338,8 +345,6 @@ export class Simulator {
     offset += 4;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
-    const fSpread = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
-    offset += 3;
 
     // Order IDs
     const orderIds = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
@@ -354,7 +359,7 @@ export class Simulator {
     offset += 1;
     const fFillSA = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
-    let feeBipsA = bs.extractUint8(offset);
+    const orderDataA = bs.extractUint8(offset);
     offset += 1;
 
     // Order B
@@ -362,7 +367,7 @@ export class Simulator {
     offset += 1;
     const fFillSB = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
-    const feeBipsB = bs.extractUint8(offset);
+    const orderDataB = bs.extractUint8(offset);
     offset += 1;
 
     // Further extraction of packed data
@@ -375,103 +380,113 @@ export class Simulator {
     const orderOwnerA = Math.floor(accounts / (2 ** 20));
     const orderOwnerB = accounts & 0xFFFFF;
 
-    const surplusMask = feeBipsA & 0b10000000;
-    feeBipsA = feeBipsA & ~0b10000000;
+    const buyMaskA = orderDataA & 0b10000000;
+    const rebateMaskA = orderDataA & 0b01000000;
+    const feeOrRebateA = orderDataA & 0b00111111;
+    const buyA = buyMaskA > 0;
+    const feeBipsA = rebateMaskA > 0 ? 0 : feeOrRebateA;
+    const rebateBipsA = rebateMaskA > 0 ? feeOrRebateA : 0;
+
+    const buyMaskB = orderDataB & 0b10000000;
+    const rebateMaskB = orderDataB & 0b01000000;
+    const feeOrRebateB = orderDataB & 0b00111111;
+    const buyB = buyMaskB > 0;
+    const feeBipsB = rebateMaskB > 0 ? 0 : feeOrRebateB;
+    const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
 
     // Decode the float values
     const ringFee = fromFloat(fRingFee, constants.Float12Encoding);
     const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
     const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
-    let spread = fromFloat(fSpread, constants.Float24Encoding);
-    spread = surplusMask > 0 ? spread : spread.neg();
 
     // Update the Merkle tree with the onchain data
     const {newRealm, s} = this.settleRing(
       realm, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ringMatcherID, feeToken, ringFee,
-      fillSA, fillSB, spread, tokenA, tokenB,
-      orderIdA, orderOwnerA, feeBipsA,
-      orderIdB, orderOwnerB, feeBipsB,
+      fillSA, fillSB,
+      buyA, buyB,
+      tokenA, tokenB,
+      orderIdA, orderOwnerA, feeBipsA, rebateBipsA,
+      orderIdB, orderOwnerB, feeBipsB, rebateBipsB,
     );
 
     return newRealm;
   }
 
-  public calculatePrice(order: OrderInfo) {
-    const price: Price = {
-      amountS: order.amountS,
-      amountB: order.amountB.mul(new BN(10000 + order.rebateBips)).div(new BN(10000)),
-    };
-    return price;
-  }
-
   public settleRingFromInputData(ring: RingInfo, realm: Realm, timestamp: number, operatorAccountID: number,
                                  protocolFeeTakerBips: number, protocolFeeMakerBips: number) {
-    const priceA = this.calculatePrice(ring.orderA);
-    const priceB = this.calculatePrice(ring.orderB);
 
-    let [fillSA, fillBA] = this.getMaxFillAmounts(ring.orderA, priceA, realm.accounts[ring.orderA.accountID]);
-    let [fillSB, fillBB] = this.getMaxFillAmounts(ring.orderB, priceB, realm.accounts[ring.orderB.accountID]);
+    const fillA = this.getMaxFillAmounts(ring.orderA, realm.accounts[ring.orderA.accountID]);
+    const fillB = this.getMaxFillAmounts(ring.orderB, realm.accounts[ring.orderB.accountID]);
 
-    if (fillBA.lt(fillSB)) {
-      fillSB = fillBA;
-      fillBB = fillSB.mul(priceB.amountB).div(priceB.amountS);
+    console.log("MaxFillA.S: " + fillA.S.toString(10));
+    console.log("MaxFillA.B: " + fillA.B.toString(10));
+    console.log("MaxFillB.S: " + fillB.S.toString(10));
+    console.log("MaxFillB.B: " + fillB.B.toString(10));
+
+    let matchResult: MatchResult;
+    if (ring.orderA.buy) {
+      matchResult = this.match(ring.orderA, fillA, ring.orderB, fillB);
+      fillA.S = fillB.B;
     } else {
-      fillBA = fillSB;
-      fillSA = fillBA.mul(priceA.amountS).div(priceA.amountB);
+      matchResult = this.match(ring.orderB, fillB, ring.orderA, fillA);
+      fillA.B = fillB.S;
     }
-    let spread = fillSA.sub(fillBB);
+    console.log("spread:     " + matchResult.spread.toString(10));
 
-    let valid = true;
-    valid = valid && this.checkValid(ring.orderA, priceA, fillSA, fillBA, timestamp);
-    valid = valid && this.checkValid(ring.orderB, priceB, fillSB, fillBB, timestamp);
+    let valid = matchResult.matchable;
+    valid = valid && this.checkValid(ring.orderA, fillA.S, fillA.B, timestamp);
+    valid = valid && this.checkValid(ring.orderB, fillB.S, fillB.B, timestamp);
 
     if (!valid) {
-      fillSA = new BN(0);
-      fillBA = new BN(0);
-      fillSB = new BN(0);
-      fillBB = new BN(0);
-      spread = new BN(0);
+      fillA.S = new BN(0);
+      fillA.B = new BN(0);
+      fillB.S = new BN(0);
+      fillB.B = new BN(0);
     }
 
-    fillSA = roundToFloatValue(fillSA, constants.Float24Encoding);
-    fillSB = roundToFloatValue(fillSB, constants.Float24Encoding);
-    const aSpread = roundToFloatValue(spread.abs(), constants.Float24Encoding);
-    spread = spread.lt(new BN(0)) ? aSpread.neg() : aSpread;
+    fillA.S = roundToFloatValue(fillA.S, constants.Float24Encoding);
+    fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
     const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
     const {newRealm, s} = this.settleRing(
       realm, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ring.minerAccountID, ring.tokenID, ringFee,
-      fillSA, fillSB, spread, ring.orderA.tokenIdS, ring.orderB.tokenIdS,
-      ring.orderA.orderID, ring.orderA.accountID, ring.orderA.feeBips,
-      ring.orderB.orderID, ring.orderB.accountID, ring.orderB.feeBips,
+      fillA.S, fillB.S,
+      ring.orderA.buy, ring.orderB.buy,
+      ring.orderA.tokenIdS, ring.orderB.tokenIdS,
+      ring.orderA.orderID, ring.orderA.accountID, ring.orderA.feeBips, ring.orderA.rebateBips,
+      ring.orderB.orderID, ring.orderB.accountID, ring.orderB.feeBips, ring.orderB.rebateBips,
     );
 
     // Check expected
     if (ring.expected) {
       if (ring.expected.orderA) {
-        const filledFraction = (fillSA.mul(new BN(10000)).div(priceA.amountS).toNumber() / 10000);
+        const filledFraction = ring.orderA.buy ?
+                               (fillA.B.mul(new BN(10000)).div(ring.orderA.amountB).toNumber() / 10000) :
+                               (fillA.S.mul(new BN(10000)).div(ring.orderA.amountS).toNumber() / 10000);
         this.assertAlmostEqual(filledFraction, ring.expected.orderA.filledFraction, "OrderA filled", -3);
         if (ring.expected.orderA.spread !== undefined) {
           const nSpread = Number(ring.expected.orderA.spread.toString(10));
-          this.assertAlmostEqual(Number(spread.toString(10)), nSpread, "spread", 0);
+          this.assertAlmostEqual(Number(matchResult.spread.toString(10)), nSpread, "spread", 0);
         }
       }
       if (ring.expected.orderB) {
-        const filledFraction = (fillSB.mul(new BN(10000)).div(priceB.amountS).toNumber() / 10000);
+        const filledFraction = ring.orderB.buy ?
+                               (fillB.B.mul(new BN(10000)).div(ring.orderB.amountB).toNumber() / 10000) :
+                               (fillB.S.mul(new BN(10000)).div(ring.orderB.amountS).toNumber() / 10000);
         this.assertAlmostEqual(filledFraction, ring.expected.orderB.filledFraction, "OrderB filled", -3);
       }
     }
 
     const detailedTransfersA = this.getDetailedTransfers(
       ring, ring.orderA, ring.orderB,
-      fillSA, fillBA, spread, s.feeA,
+      fillA.S, fillA.B, s.feeA,
     );
 
     const detailedTransfersB = this.getDetailedTransfers(
       ring, ring.orderB, ring.orderA,
-      fillSB, fillBB, new BN(0), s.feeB,
+      fillB.S, fillB.B, s.feeB,
     );
 
     const ringMatcherPayments: DetailedTokenTransfer = {
@@ -498,13 +513,20 @@ export class Simulator {
       amount: s.protocolFeeB,
       subPayments: [],
     };
-    const tradeDeficit = spread.gt(new BN(0)) ? new BN(0) : spread.abs();
-    const payTradeDeficit: DetailedTokenTransfer = {
-      description: "TradeDeficit",
-      token: ring.orderA.tokenIdS,
+    const payRebateA: DetailedTokenTransfer = {
+      description: "RebateA",
+      token: ring.orderA.tokenIdB,
       from: ring.minerAccountID,
       to: ring.orderB.accountID,
-      amount: tradeDeficit,
+      amount: s.rebateA,
+      subPayments: [],
+    };
+    const payRebateB: DetailedTokenTransfer = {
+      description: "RebateB",
+      token: ring.orderB.tokenIdB,
+      from: ring.minerAccountID,
+      to: ring.orderB.accountID,
+      amount: s.rebateB,
       subPayments: [],
     };
     const operatorFee: DetailedTokenTransfer = {
@@ -517,7 +539,8 @@ export class Simulator {
     };
     ringMatcherPayments.subPayments.push(payProtocolFeeA);
     ringMatcherPayments.subPayments.push(payProtocolFeeB);
-    ringMatcherPayments.subPayments.push(payTradeDeficit);
+    ringMatcherPayments.subPayments.push(payRebateA);
+    ringMatcherPayments.subPayments.push(payRebateB);
     ringMatcherPayments.subPayments.push(operatorFee);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
@@ -534,28 +557,30 @@ export class Simulator {
   }
 
   public calculateSettlementValues(protocolFeeTakerBips: number, protocolFeeMakerBips: number,
-                                   fillSA: BN, fillSB: BN, spread: BN,
-                                   feeBipsA: number, feeBipsB: number) {
+                                   fillSA: BN, fillSB: BN,
+                                   feeBipsA: number, feeBipsB: number,
+                                   rebateBipsA: number, rebateBipsB: number) {
     const fillBA = fillSB;
-    const fillBB = fillSA.sub(spread);
+    const fillBB = fillSA;
 
     console.log("Simulator: ");
     console.log("fillSA: " + fillSA.toString(10));
     console.log("fillBA: " + fillBA.toString(10));
     console.log("fillSB: " + fillSB.toString(10));
     console.log("fillBB: " + fillBB.toString(10));
-    console.log("spread: " + spread.toString(10));
 
-    const [feeA, protocolFeeA] = this.calculateFees(
+    const [feeA, protocolFeeA, rebateA] = this.calculateFees(
       fillBA,
       protocolFeeTakerBips,
       feeBipsA,
+      rebateBipsA,
     );
 
-    const [feeB, protocolFeeB] = this.calculateFees(
+    const [feeB, protocolFeeB, rebateB] = this.calculateFees(
       fillBB,
       protocolFeeMakerBips,
       feeBipsB,
+      rebateBipsB,
     );
 
     console.log("feeA: " + feeA.toString(10));
@@ -569,51 +594,53 @@ export class Simulator {
       fillBA,
       feeA,
       protocolFeeA,
+      rebateA,
 
       fillSB,
       fillBB,
       feeB,
       protocolFeeB,
+      rebateB,
     };
     return settlementValues;
   }
 
   public settleRing(realm: Realm, protocolFeeTakerBips: number, protocolFeeMakerBips: number,
                     operatorId: number, ringMatcherId: number, feeToken: number, ringFee: BN,
-                    fillSA: BN, fillSB: BN, spread: BN, tokenA: number, tokenB: number,
-                    orderIdA: number, accountIdA: number, feeBipsA: number,
-                    orderIdB: number, accountIdB: number, feeBipsB: number) {
+                    fillSA: BN, fillSB: BN,
+                    buyA: boolean, buyB: boolean,
+                    tokenA: number, tokenB: number,
+                    orderIdA: number, accountIdA: number, feeBipsA: number, rebateBipsA: number,
+                    orderIdB: number, accountIdB: number, feeBipsB: number, rebateBipsB: number) {
     const s = this.calculateSettlementValues(
       protocolFeeTakerBips, protocolFeeMakerBips,
-      fillSA, fillSB, spread,
+      fillSA, fillSB,
       feeBipsA, feeBipsB,
+      rebateBipsA, rebateBipsB,
     );
-
-    const tradeSurplus = spread.gt(new BN(0)) ? spread : new BN(0);
-    const tradeDeficit = spread.gt(new BN(0)) ? new BN(0) : spread;
 
     const newRealm = this.copyRealm(realm);
 
     // Update accountA
     const accountA = newRealm.accounts[accountIdA];
     accountA.balances[tokenA].balance =
-      accountA.balances[tokenA].balance.sub(fillSA.sub(tradeSurplus));
+      accountA.balances[tokenA].balance.sub(s.fillSA);
     accountA.balances[tokenB].balance =
-      accountA.balances[tokenB].balance.add(s.fillBA.sub(s.feeA));
+      accountA.balances[tokenB].balance.add(s.fillBA.sub(s.feeA).add(s.rebateA));
 
     // Update accountB
     const accountB = newRealm.accounts[accountIdB];
     accountB.balances[tokenB].balance =
-      accountB.balances[tokenB].balance.sub(fillSB);
+      accountB.balances[tokenB].balance.sub(s.fillSB);
     accountB.balances[tokenA].balance =
-      accountB.balances[tokenA].balance.add(s.fillBB.sub(s.feeB));
+      accountB.balances[tokenA].balance.add(s.fillBB.sub(s.feeB).add(s.rebateB));
 
     // Update trade history A
     {
       const tradeHistorySlotA = orderIdA % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
       const tradeHistoryA = accountA.balances[tokenA].tradeHistory[tradeHistorySlotA];
       tradeHistoryA.filled = (orderIdA > tradeHistoryA.orderID) ? new BN(0) : tradeHistoryA.filled;
-      tradeHistoryA.filled = tradeHistoryA.filled.add(fillSA);
+      tradeHistoryA.filled = tradeHistoryA.filled.add(buyA ? s.fillBA : s.fillSA);
       tradeHistoryA.cancelled = (orderIdA > tradeHistoryA.orderID) ? false : tradeHistoryA.cancelled;
       tradeHistoryA.orderID = (orderIdA > tradeHistoryA.orderID) ? orderIdA : tradeHistoryA.orderID;
     }
@@ -622,7 +649,7 @@ export class Simulator {
       const tradeHistorySlotB = orderIdB % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
       const tradeHistoryB = accountB.balances[tokenB].tradeHistory[tradeHistorySlotB];
       tradeHistoryB.filled = (orderIdB > tradeHistoryB.orderID) ? new BN(0) : tradeHistoryB.filled;
-      tradeHistoryB.filled = tradeHistoryB.filled.add(fillSB);
+      tradeHistoryB.filled = tradeHistoryB.filled.add(buyB ? s.fillBB : s.fillSB);
       tradeHistoryB.cancelled = (orderIdB > tradeHistoryB.orderID) ? false : tradeHistoryB.cancelled;
       tradeHistoryB.orderID = (orderIdB > tradeHistoryB.orderID) ? orderIdB : tradeHistoryB.orderID;
     }
@@ -631,10 +658,10 @@ export class Simulator {
     const ringMatcher = newRealm.accounts[ringMatcherId];
     // - FeeA
     ringMatcher.balances[tokenB].balance =
-     ringMatcher.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA);
-    // - FeeB + trade deficit
+     ringMatcher.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA).sub(s.rebateA);
+    // - FeeB
     ringMatcher.balances[tokenA].balance =
-     ringMatcher.balances[tokenA].balance.add(s.feeB.sub(s.protocolFeeB).add(tradeDeficit));
+     ringMatcher.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
     // - Operator fee
     ringMatcher.balances[feeToken].balance =
      ringMatcher.balances[feeToken].balance.sub(ringFee);
@@ -659,10 +686,7 @@ export class Simulator {
   }
 
   private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
-                               fillAmountS: BN, fillAmountB: BN, spread: BN, fee: BN) {
-
-    const tradeSurplus = spread.gt(new BN(0)) ? spread : new BN(0);
-
+                               fillAmountS: BN, fillAmountB: BN, fee: BN) {
     const sell: DetailedTokenTransfer = {
       description: "Sell",
       token: order.tokenIdS,
@@ -671,25 +695,6 @@ export class Simulator {
       amount: fillAmountS,
       subPayments: [],
     };
-    const toBuyer: DetailedTokenTransfer = {
-      description: "ToBuyer",
-      token: order.tokenIdS,
-      from: order.accountID,
-      to: orderTo.accountID,
-      amount: fillAmountS.sub(tradeSurplus),
-      subPayments: [],
-    };
-    const paySurplus: DetailedTokenTransfer = {
-      description: "TradeSurplus",
-      token: order.tokenIdS,
-      from: order.accountID,
-      to: ring.minerAccountID,
-      amount: tradeSurplus,
-      subPayments: [],
-    };
-    sell.subPayments.push(toBuyer);
-    sell.subPayments.push(paySurplus);
-
     const payFee: DetailedTokenTransfer = {
       description: "Fee@" + order.feeBips + "Bips",
       token: order.tokenIdB,
@@ -706,7 +711,7 @@ export class Simulator {
     return detailedTransfers;
   }
 
-  private getMaxFillAmounts(order: OrderInfo, price: Price, accountData: any) {
+  private getMaxFillAmounts(order: OrderInfo, accountData: any) {
     const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     if (!tradeHistory) {
@@ -716,21 +721,51 @@ export class Simulator {
       };
     }
     // Trade history trimming
-    const filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
+    let filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
     const cancelled = (tradeHistory.orderID > order.orderID) ? true : tradeHistory.cancelled;
 
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
-    const remainingS = cancelled ? new BN(0) : price.amountS.sub(filled);
-    const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
 
-    const fillAmountB = fillAmountS.mul(price.amountB).div(price.amountS);
-    return [fillAmountS, fillAmountB];
+    let remainingS = new BN(0);
+    if (order.buy) {
+      filled = order.amountB.lt(filled) ? order.amountB : filled;
+      const remainingB = cancelled ? new BN(0) : order.amountB.sub(filled);
+      remainingS = remainingB.mul(order.amountS).div(order.amountB);
+    } else {
+      filled = order.amountS.lt(filled) ? order.amountS : filled;
+      remainingS = cancelled ? new BN(0) : order.amountS.sub(filled);
+    }
+    const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
+    const fillAmountB = fillAmountS.mul(order.amountB).div(order.amountS);
+    const fill: Fill = {
+      S: fillAmountS,
+      B: fillAmountB,
+    };
+    return fill;
   }
 
-  private calculateFees(fillB: BN, protocolFeeBips: number, feeBips: number) {
+  private match(takerOrder: OrderInfo, takerFill: Fill, makerOrder: OrderInfo, makerFill: Fill) {
+    if (takerFill.B.lt(makerFill.S)) {
+      makerFill.S = takerFill.B;
+      makerFill.B = makerFill.S.mul(makerOrder.amountB).div(makerOrder.amountS);
+    } else {
+      takerFill.B = makerFill.S;
+      takerFill.S = takerFill.B.mul(takerOrder.amountS).div(takerOrder.amountB);
+    }
+    const spread = takerFill.S.sub(makerFill.B);
+    const matchable = this.ensure(takerFill.S.gte(makerFill.B), "not matchable");
+    const result: MatchResult = {
+      spread,
+      matchable,
+    };
+    return result;
+  }
+
+  private calculateFees(fillB: BN, protocolFeeBips: number, feeBips: number, rebateBips: number) {
     const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
-    return [fee, protocolFee];
+    const rebate = fillB.mul(new BN(rebateBips)).div(new BN(10000));
+    return [fee, protocolFee, rebate];
   }
 
   private hasRoundingError(value: BN, numerator: BN, denominator: BN) {
@@ -740,14 +775,15 @@ export class Simulator {
     return multiplied.lt(remainder.mul(new BN(100)));
   }
 
-  private checkValid(order: OrderInfo, price: Price, fillAmountS: BN, fillAmountB: BN, timestamp: number) {
+  private checkValid(order: OrderInfo, fillAmountS: BN, fillAmountB: BN, timestamp: number) {
     let valid = true;
 
     valid = valid && this.ensure(order.validSince <= timestamp, "order too early");
     valid = valid && this.ensure(timestamp <= order.validUntil, "order too late");
 
-    valid = valid && this.ensure(!(order.allOrNone && (!fillAmountS.eq(price.amountS))), "allOrNone invalid");
-    valid = valid && this.ensure(!this.hasRoundingError(fillAmountS, price.amountB, price.amountS), "rounding error");
+    valid = valid && this.ensure(!(!order.buy && order.allOrNone && fillAmountS.lt(order.amountS)), "allOrNone sell");
+    valid = valid && this.ensure(!(order.buy && order.allOrNone && fillAmountB.lt(order.amountB)), "allOrNone buy");
+    valid = valid && this.ensure(!this.hasRoundingError(fillAmountS, order.amountB, order.amountS), "rounding error");
     valid = valid && this.ensure(!fillAmountS.eq(0), "no tokens sold");
     valid = valid && this.ensure(!fillAmountB.eq(0), "no tokens bought");
 

@@ -103,7 +103,7 @@ contract("Loopring", (accounts: string[]) => {
     });
 
     describe("Anyone", () => {
-      it.only("should be able to lower the protocol fees", async () => {
+      it("should be able to lower the protocol fees", async () => {
         const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
         const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
         const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();

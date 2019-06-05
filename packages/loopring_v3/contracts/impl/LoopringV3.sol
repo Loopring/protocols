@@ -388,7 +388,6 @@ contract LoopringV3 is ILoopringV3, Ownable
         external
         onlyOwner
     {
-        require(token != lrcAddress, "LRC_ALREADY_BURNED");
         if (token == address(0x0)) {
             // ETH
             uint balance = address(this).balance;
@@ -396,6 +395,9 @@ contract LoopringV3 is ILoopringV3, Ownable
         } else {
             // ERC20 token
             uint balance = ERC20(token).balanceOf(address(this));
+            if (token == lrcAddress) {
+                balance = balance.sub(totalStake);
+            }
             require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
     }

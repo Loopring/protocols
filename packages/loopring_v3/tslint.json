@@ -3,6 +3,13 @@
     "extends": [
         "tslint:recommended"
     ],
+    "linterOptions": {
+        "exclude": [
+            "test/babyjub.js",
+            "test/eddsa.js",
+            "test/pedersenHash.js"
+        ]
+    },
     "cliOptions":
     {
         "exclude": [

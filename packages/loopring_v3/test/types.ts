@@ -42,6 +42,7 @@ export interface OrderInfo {
   validSince?: number;
   validUntil?: number;
   maxFeeBips?: number;
+  buy?: boolean;
 
   feeBips?: number;
   rebateBips?: number;

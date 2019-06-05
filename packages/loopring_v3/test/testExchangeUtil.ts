@@ -24,7 +24,7 @@ const bigInt = snarkjs.bigInt;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
-  if (name === "balance" || name === "amountS" || name === "amountB" || name === "amountF" ||
+  if (name === "balance" || name === "amountS" || name === "amountB" ||
       name === "amount" || name === "fee" || name === "startHash") {
     return new BN(val, 16).toString(10);
   } else {
@@ -319,11 +319,12 @@ export class ExchangeTestUtil {
       this.toBitsNumber(ring.minerAccountID, 20),
       this.toBitsNumber(ring.tokenID, 8),
       this.toBitsBN(ring.fee, 96),
-      this.toBitsNumber(ring.orderA.feeBips, 7),
-      this.toBitsNumber(ring.orderB.feeBips, 7),
-      this.toBitsNumber(ring.orderA.rebateBips, 7),
-      this.toBitsNumber(ring.orderB.rebateBips, 7),
+      this.toBitsNumber(ring.orderA.feeBips, 6),
+      this.toBitsNumber(ring.orderB.feeBips, 6),
+      this.toBitsNumber(ring.orderA.rebateBips, 6),
+      this.toBitsNumber(ring.orderB.rebateBips, 6),
       this.toBitsNumber(nonce, 32),
+      this.toBitsNumber(0, 1),
     ]);
 
     const sig = eddsa.sign(account.secretKey, message);
@@ -399,7 +400,8 @@ export class ExchangeTestUtil {
       order.dualAuthSecretKey = keyPair.secretKey;
     }
 
-    // Fill in defaults
+    order.buy = (order.buy !== undefined) ? order.buy : true;
+
     order.maxFeeBips = (order.maxFeeBips !== undefined) ? order.maxFeeBips : 20;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
 
@@ -416,6 +418,10 @@ export class ExchangeTestUtil {
 
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
+
+    assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
+    assert(order.feeBips < 64, "feeBips >= 64");
+    assert(order.rebateBips < 64, "rebateBips >= 64");
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -438,7 +444,8 @@ export class ExchangeTestUtil {
       this.toBitsNumber(order.allOrNone ? 1 : 0, 1),
       this.toBitsNumber(order.validSince, 32),
       this.toBitsNumber(order.validUntil, 32),
-      this.toBitsNumber(order.maxFeeBips, 7),
+      this.toBitsNumber(order.maxFeeBips, 6),
+      this.toBitsNumber(order.buy ? 1 : 0, 1),
     ]);
     const account = this.accounts[this.exchangeId][order.accountID];
     const sig = eddsa.sign(account.secretKey, message);
@@ -1422,19 +1429,21 @@ export class ExchangeTestUtil {
           const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
           bs.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
           bs.addNumber(ring.tokenID, 1);
-          bs.addNumber(ring.fSpread, 3);
 
           bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
           bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
 
           bs.addNumber(orderA.tokenS, 1);
           bs.addNumber(ring.fFillS_A, 3);
-          const surplusMask = ring.bSurplus ? 0b10000000 : 0;
-          bs.addNumber(surplusMask + orderA.feeBips, 1);
+          let buyMask = orderA.buy ? 0b10000000 : 0;
+          let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
+          bs.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
 
           bs.addNumber(orderB.tokenS, 1);
           bs.addNumber(ring.fFillS_B, 3);
-          bs.addNumber(orderB.feeBips, 1);
+          buyMask = orderB.buy ? 0b10000000 : 0;
+          rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
+          bs.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
         }
       }
 
@@ -2383,10 +2392,10 @@ export class ExchangeTestUtil {
     const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     const before = accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const after = accountAfter.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
-    const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.amountS);
-    const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.amountS);
-    const filledBeforePretty = this.getPrettyAmount(order.tokenIdS, before.filled);
-    const filledAfterPretty = this.getPrettyAmount(order.tokenIdS, after.filled);
+    const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.buy ? order.amountB : order.amountS);
+    const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.buy ? order.amountB : order.amountS);
+    const filledBeforePretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, before.filled);
+    const filledAfterPretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, after.filled);
     console.log(
       description + ": " + filledBeforePretty + " -> " + filledAfterPretty +
       " (" + filledBeforePercentage.toString(10) + "% -> " + filledAfterPercentage.toString(10) + "%)" +
