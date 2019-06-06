@@ -9,7 +9,6 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
 
   let realmID = 0;
-  const zeroAddress = "0x" + "00".repeat(20);
 
   const bVerify = true;
 
@@ -174,11 +173,11 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      {
-        const state = await exchangeTestUtil.loadRealm(realmID);
-        const account = state.accounts[order.accountID];
-        console.log("order.balanceB: " + account.balances[order.tokenIdB].balance.toString(10));
-      }
+      const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalance = order.amountB.sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalance, "Balance unexpected",
+      );
 
       await verify();
     });
@@ -247,11 +246,11 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      {
-        const state = await exchangeTestUtil.loadRealm(realmID);
-        const account = state.accounts[order.accountID];
-        console.log("order.balanceB: " + account.balances[order.tokenIdB].balance.toString(10));
-      }
+      const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalance = order.amountB.sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalance, "Balance unexpected",
+      );
 
       await verify();
     });
@@ -298,11 +297,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      {
-        const state = await exchangeTestUtil.loadRealm(realmID);
-        const account = state.accounts[order.accountID];
-        console.log("order.balanceB: " + account.balances[order.tokenIdB].balance.toString(10));
-      }
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
+      );
 
       await verify();
     });
@@ -371,11 +368,150 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(realmID);
       await exchangeTestUtil.commitRings(realmID);
 
-      {
-        const state = await exchangeTestUtil.loadRealm(realmID);
-        const account = state.accounts[order.accountID];
-        console.log("order.balanceB: " + account.balances[order.tokenIdB].balance.toString(10));
-      }
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
+      );
+
+      await verify();
+    });
+
+    it("Buy order used as taker and maker", async () => {
+      const order: OrderInfo = {
+        realmID,
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: new BN(web3.utils.toWei("110", "ether")),
+        amountB: new BN(web3.utils.toWei("100", "ether")),
+        owner: exchangeTestUtil.testContext.orderOwners[0],
+        maxFeeBips: 25,
+        rebateBips: 0,
+        buy: true,
+      };
+      await exchangeTestUtil.setupOrder(order, 0);
+
+      const ringA: RingInfo = {
+        orderA: order,
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("50", "ether")),
+            amountB: new BN(web3.utils.toWei("50", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
+            maxFeeBips: 0,
+            rebateBips: 20,
+            buy: false,
+          },
+        expected: {
+          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+      const ringB: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("220", "ether")),
+            amountB: new BN(web3.utils.toWei("220", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[2],
+            maxFeeBips: 30,
+            buy: false,
+          },
+        orderB: order,
+        expected: {
+          orderA: { filledFraction: 50 / 220, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderB: { filledFraction: 0.5 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ringA, false, true);
+      await exchangeTestUtil.setupRing(ringB, true, false);
+      await exchangeTestUtil.sendRing(realmID, ringA);
+      await exchangeTestUtil.sendRing(realmID, ringB);
+
+      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalance = order.amountB.sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalance, "Balance unexpected",
+      );
+
+      await verify();
+    });
+
+    it.only("Sell order used as taker and maker", async () => {
+      const order: OrderInfo = {
+        realmID,
+        tokenS: "WETH",
+        tokenB: "GTO",
+        amountS: new BN(web3.utils.toWei("100", "ether")),
+        amountB: new BN(web3.utils.toWei("90", "ether")),
+        owner: exchangeTestUtil.testContext.orderOwners[0],
+        maxFeeBips: 25,
+        rebateBips: 0,
+        buy: false,
+      };
+      await exchangeTestUtil.setupOrder(order, 0);
+
+      const ringA: RingInfo = {
+        orderA: order,
+        orderB:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("50", "ether")),
+            amountB: new BN(web3.utils.toWei("50", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
+            maxFeeBips: 0,
+            rebateBips: 20,
+            buy: true,
+          },
+        expected: {
+          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+      const ringB: RingInfo = {
+        orderA:
+          {
+            realmID,
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("190", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[2],
+            maxFeeBips: 15,
+            buy: true,
+          },
+          orderB: order,
+        expected: {
+          orderA: { filledFraction: 0.25, spread: new BN(web3.utils.toWei("2.5", "ether")) },
+          orderB: { filledFraction: 0.5 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ringA, false, true);
+      await exchangeTestUtil.setupRing(ringB, true, false);
+      await exchangeTestUtil.sendRing(realmID, ringA);
+      await exchangeTestUtil.sendRing(realmID, ringB);
+
+      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+
+      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitRings(realmID);
+
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
+      );
 
       await verify();
     });

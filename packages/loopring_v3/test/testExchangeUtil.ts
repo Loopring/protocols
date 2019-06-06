@@ -1779,6 +1779,11 @@ export class ExchangeTestUtil {
     }
   }
 
+  public async checkOffchainBalance(accountID: number, tokenID: number, expectedBalance: BN, desc: string) {
+    const balance = await this.getOffchainBalance(this.exchangeId, accountID, tokenID);
+    assert(balance.eq(expectedBalance), desc);
+  }
+
   public async doRandomDeposit(ownerIndex?: number) {
     // Change the deposit fee
     const fees = await this.exchange.getFees();
