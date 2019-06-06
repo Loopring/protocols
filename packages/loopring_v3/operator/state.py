@@ -603,11 +603,13 @@ class State(object):
 
         ringFee = roundToFloatValue(ring.fee, Float12Encoding)
 
+        '''
         print("fillA.S: " + str(fillA.S))
         print("fillA.B: " + str(fillA.B))
         print("fillB.S: " + str(fillB.S))
         print("fillB.B: " + str(fillB.B))
         print("spread: " + str(spread))
+        '''
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
@@ -626,6 +628,7 @@ class State(object):
             ring.orderB.rebateBips
         )
 
+        '''
         print("fee_A: " + str(fee_A))
         print("protocolFee_A: " + str(protocolFee_A))
         print("rebate_A: " + str(rebate_A))
@@ -633,6 +636,7 @@ class State(object):
         print("fee_B: " + str(fee_B))
         print("protocolFee_B: " + str(protocolFee_B))
         print("rebate_B: " + str(rebate_B))
+        '''
 
         # Update balances A
         accountA = self.getAccount(ring.orderA.accountID)

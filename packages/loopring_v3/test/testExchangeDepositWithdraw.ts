@@ -133,13 +133,11 @@ contract("Exchange", (accounts: string[]) => {
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
 
-    console.log("balanceOwnerBefore: " + balanceOwnerBefore.toString(10));
-    console.log("balanceOwnerAfter: " + balanceOwnerAfter.toString(10));
-
-    console.log("balanceContractBefore: " + balanceContractBefore.toString(10));
-    console.log("balanceContractAfter: " + balanceContractAfter.toString(10));
-
-    console.log("expectedAmount: " + expectedAmount.toString(10));
+    // console.log("balanceOwnerBefore: " + balanceOwnerBefore.toString(10));
+    // console.log("balanceOwnerAfter: " + balanceOwnerAfter.toString(10));
+    // console.log("balanceContractBefore: " + balanceContractBefore.toString(10));
+    // console.log("balanceContractAfter: " + balanceContractAfter.toString(10));
+    // console.log("expectedAmount: " + expectedAmount.toString(10));
 
     assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(expectedAmount)),
            "Token balance of owner should be increased by expectedAmount");

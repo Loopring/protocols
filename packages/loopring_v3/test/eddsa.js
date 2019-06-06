@@ -1,3 +1,6 @@
+// Taken and modified from
+// https://github.com/iden3/circomlib
+
 const createBlakeHash = require("blake-hash");
 const bigInt = require("snarkjs").bigInt;
 const babyJub = require("./babyjub");
@@ -51,7 +54,7 @@ function sign(strKey, bits) {
     const prv = bigInt.leInt2Buff(key, 32);
     const msg = bigInt.leInt2Buff(bitsToBigInt(bits), Math.floor(bits.length + 7) / 8);
 
-    console.log("msg: " + msg.toString("hex"));
+    // console.log("msg: " + msg.toString("hex"));
 
     const h1 = createBlakeHash("blake512").update(prv).digest();
     // const sBuff = pruneBuffer(h1.slice(0,32));
@@ -62,7 +65,7 @@ function sign(strKey, bits) {
     let r = bigInt.leBuff2int(rBuff);
     r = r.mod(babyJub.subOrder);
 
-    console.log("r: " + r.toString(10));
+    // console.log("r: " + r.toString(10));
 
     // const h1 = createBlakeHash("blake512").update(prv).digest();
     // const sBuff = pruneBuffer(h1.slice(0,32));
@@ -79,10 +82,10 @@ function sign(strKey, bits) {
     // const R8p = babyJub.packPoint(R8);
     // const Ap = babyJub.packPoint(A);
 
-    console.log("R[0]: " + R[0].toString(10));
-    console.log("R[1]: " + R[1].toString(10));
-    console.log("A[0]: " + A[0].toString(10));
-    console.log("A[1]: " + A[1].toString(10));
+    // console.log("R[0]: " + R[0].toString(10));
+    // console.log("R[1]: " + R[1].toString(10));
+    // console.log("A[0]: " + A[0].toString(10));
+    // console.log("A[1]: " + A[1].toString(10));
 
     const hash = pedersenHash(toBitsArray(
         [
@@ -91,11 +94,11 @@ function sign(strKey, bits) {
             bits,
         ]
     ));
-    console.log("sig hash: " + hash);
+    // console.log("sig hash: " + hash);
     // const hm = bigInt.leBuff2int(hmBuff);
     const hm = bigInt(hash);
     const S = r.add(hm.mul(key)).mod(babyJub.order);
-    console.log("sig S: " + S.toString());
+    // console.log("sig S: " + S.toString());
     return {
         R: R,
         S: S,

@@ -1,3 +1,6 @@
+// Taken and modified from
+// https://github.com/iden3/circomlib
+
 const bn128 = require("snarkjs").bn128;
 const bigInt = require("snarkjs").bigInt;
 const babyJub = require("./babyjub");
@@ -51,9 +54,9 @@ function pedersenHash(bits) {
         accP = babyJub.addPoint(accP, babyJub.mulPointEscalar(getBasePoint(s), escalar));
     }
 
-    console.log("accP: ");
-    console.log(accP[0].toString(10));
-    console.log(accP[1].toString(10));
+    // console.log("accP: ");
+    // console.log(accP[0].toString(10));
+    // console.log(accP[1].toString(10));
 
     // return babyJub.packPoint(accP);
     return accP[0].toString(10);

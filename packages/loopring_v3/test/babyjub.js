@@ -1,3 +1,6 @@
+// Taken and modified from
+// https://github.com/iden3/circomlib
+
 const bn128 = require("snarkjs").bn128;
 const bigInt = require("snarkjs").bigInt;
 

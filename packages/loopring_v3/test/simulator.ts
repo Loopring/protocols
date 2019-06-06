@@ -422,10 +422,10 @@ export class Simulator {
     const fillA = this.getMaxFillAmounts(ring.orderA, exchangeState.accounts[ring.orderA.accountID]);
     const fillB = this.getMaxFillAmounts(ring.orderB, exchangeState.accounts[ring.orderB.accountID]);
 
-    console.log("MaxFillA.S: " + fillA.S.toString(10));
+    /*console.log("MaxFillA.S: " + fillA.S.toString(10));
     console.log("MaxFillA.B: " + fillA.B.toString(10));
     console.log("MaxFillB.S: " + fillB.S.toString(10));
-    console.log("MaxFillB.B: " + fillB.B.toString(10));
+    console.log("MaxFillB.B: " + fillB.B.toString(10));*/
 
     let matchResult: MatchResult;
     if (ring.orderA.buy) {
@@ -566,11 +566,11 @@ export class Simulator {
     const fillBA = fillSB;
     const fillBB = fillSA;
 
-    console.log("Simulator: ");
+    /*console.log("Simulator: ");
     console.log("fillSA: " + fillSA.toString(10));
     console.log("fillBA: " + fillBA.toString(10));
     console.log("fillSB: " + fillSB.toString(10));
-    console.log("fillBB: " + fillBB.toString(10));
+    console.log("fillBB: " + fillBB.toString(10));*/
 
     const [feeA, protocolFeeA, rebateA] = this.calculateFees(
       fillBA,
@@ -586,11 +586,10 @@ export class Simulator {
       rebateBipsB,
     );
 
-    console.log("feeA: " + feeA.toString(10));
+    /*console.log("feeA: " + feeA.toString(10));
     console.log("protocolFeeA: " + protocolFeeA.toString(10));
-
     console.log("feeB: " + feeB.toString(10));
-    console.log("protocolFeeB: " + protocolFeeB.toString(10));
+    console.log("protocolFeeB: " + protocolFeeB.toString(10));*/
 
     const settlementValues: SettlementValues = {
       fillSA,

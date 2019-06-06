@@ -310,48 +310,6 @@ export class ExchangeTestUtil {
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
 
-  public signRing(ring: RingInfo) {
-    if (ring.signature !== undefined) {
-      return;
-    }
-    const account = this.accounts[this.exchangeId][ring.minerAccountID];
-    const nonce = account.nonce++;
-    const message = this.flattenList([
-      this.toBitsString(ring.orderA.hash, 254),
-      this.toBitsString(ring.orderB.hash, 254),
-      this.toBitsNumber(ring.minerAccountID, 20),
-      this.toBitsNumber(ring.tokenID, 8),
-      this.toBitsBN(ring.fee, 96),
-      this.toBitsNumber(ring.orderA.feeBips, 6),
-      this.toBitsNumber(ring.orderB.feeBips, 6),
-      this.toBitsNumber(ring.orderA.rebateBips, 6),
-      this.toBitsNumber(ring.orderB.rebateBips, 6),
-      this.toBitsNumber(nonce, 32),
-      this.toBitsNumber(0, 1),
-    ]);
-
-    const sig = eddsa.sign(account.secretKey, message);
-    ring.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
-
-    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message);
-    ring.dualAuthASignature = {
-      Rx: dualAuthAsig.R[0].toString(),
-      Ry: dualAuthAsig.R[1].toString(),
-      s: dualAuthAsig.S.toString(),
-    };
-
-    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message);
-    ring.dualAuthBSignature = {
-      Rx: dualAuthBsig.R[0].toString(),
-      Ry: dualAuthBsig.R[1].toString(),
-      s: dualAuthBsig.S.toString(),
-    };
-  }
-
   public toBitsBN(value: BN, length: number) {
     const res = new Array(length);
     for (let i = 0; i < length; i++) {
@@ -454,15 +412,55 @@ export class ExchangeTestUtil {
     ]);
     const account = this.accounts[this.exchangeId][order.accountID];
     const sig = eddsa.sign(account.secretKey, message);
-    // console.log(sig);
-
     order.hash = sig.hash;
     order.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
     };
-    console.log(order.signature);
+    // console.log(order.signature);
+  }
+
+  public signRing(ring: RingInfo) {
+    if (ring.signature !== undefined) {
+      return;
+    }
+    const account = this.accounts[this.exchangeId][ring.minerAccountID];
+    const nonce = account.nonce++;
+    const message = this.flattenList([
+      this.toBitsString(ring.orderA.hash, 254),
+      this.toBitsString(ring.orderB.hash, 254),
+      this.toBitsNumber(ring.minerAccountID, 20),
+      this.toBitsNumber(ring.tokenID, 8),
+      this.toBitsBN(ring.fee, 96),
+      this.toBitsNumber(ring.orderA.feeBips, 6),
+      this.toBitsNumber(ring.orderB.feeBips, 6),
+      this.toBitsNumber(ring.orderA.rebateBips, 6),
+      this.toBitsNumber(ring.orderB.rebateBips, 6),
+      this.toBitsNumber(nonce, 32),
+      this.toBitsNumber(0, 1),
+    ]);
+
+    const sig = eddsa.sign(account.secretKey, message);
+    ring.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+
+    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message);
+    ring.dualAuthASignature = {
+      Rx: dualAuthAsig.R[0].toString(),
+      Ry: dualAuthAsig.R[1].toString(),
+      s: dualAuthAsig.S.toString(),
+    };
+
+    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message);
+    ring.dualAuthBSignature = {
+      Rx: dualAuthBsig.R[0].toString(),
+      Ry: dualAuthBsig.R[1].toString(),
+      s: dualAuthBsig.S.toString(),
+    };
   }
 
   public signCancel(cancel: Cancel) {
@@ -483,14 +481,12 @@ export class ExchangeTestUtil {
       this.toBitsNumber(0, 2),
     ]);
     const sig = eddsa.sign(account.secretKey, message);
-    // console.log(sig);
-
     cancel.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
     };
-    console.log(cancel.signature);
+    // console.log(cancel.signature);
   }
 
   public signWithdrawal(withdrawal: WithdrawalRequest) {
@@ -511,14 +507,12 @@ export class ExchangeTestUtil {
       this.toBitsNumber(0, 1),
     ]);
     const sig = eddsa.sign(account.secretKey, message);
-    // console.log(sig);
-
     withdrawal.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
     };
-    console.log(withdrawal.signature);
+    // console.log(withdrawal.signature);
   }
 
   public async setOrderBalances(order: OrderInfo) {
@@ -702,6 +696,11 @@ export class ExchangeTestUtil {
         nonce: 0,
       };
       this.accounts[exchangeID].push(account);
+    } else {
+      const account = this.accounts[exchangeID][accountID];
+      account.publicKeyX = publicKeyX;
+      account.publicKeyY = publicKeyY;
+      account.secretKey = secretKey;
     }
 
     this.addDeposit(this.pendingDeposits[exchangeID], depositInfo.depositIdx, depositInfo.accountID,
