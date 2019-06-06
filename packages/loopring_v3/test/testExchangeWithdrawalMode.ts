@@ -7,7 +7,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let loopring: any;
-  let realmID = 0;
+  let exchangeID = 0;
 
   const checkWithdrawalMode = async (expectedInWithdrawalMode: boolean) => {
     const inWithdrawalMode = await exchange.isInWithdrawalMode();
@@ -15,7 +15,7 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
+    exchangeID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
     exchange = exchangeTestUtil.exchange;
   };
 
@@ -24,7 +24,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
     loopring = exchangeTestUtil.loopringV3;
-    realmID = 1;
+    exchangeID = 1;
   });
 
   const withdrawFromMerkleTreeChecked = async (owner: string, token: string,
@@ -67,15 +67,15 @@ contract("Exchange", (accounts: string[]) => {
 
     it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
       await createExchange(true);
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Commit the deposits
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2);
       // We shouldn't be in withdrawal mode yet
@@ -94,8 +94,8 @@ contract("Exchange", (accounts: string[]) => {
 
     it("should go into withdrawal mode when a block stays unverified (and is not reverted)", async () => {
       await createExchange(false);
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
@@ -107,7 +107,7 @@ contract("Exchange", (accounts: string[]) => {
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Commit the deposits
-      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE - 10);
       // We shouldn't be in withdrawal mode yet
@@ -122,8 +122,8 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange(false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
@@ -156,13 +156,13 @@ contract("Exchange", (accounts: string[]) => {
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
 
-      const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                          token, balance);
       const accountID = depositInfo.accountID;
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(owner, token, keyPair.publicKeyX, keyPair.publicKeyY),
@@ -170,7 +170,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
+      await exchangeTestUtil.requestWithdrawalOnchain(exchangeID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
@@ -190,17 +190,17 @@ contract("Exchange", (accounts: string[]) => {
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[realmID][0];
+      const wallet = exchangeTestUtil.wallets[exchangeID][0];
       const balance = new BN(web3.utils.toWei("1.7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
 
-      const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                          token, balance);
       const accountID = depositInfo.accountID;
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(owner, token, keyPair.publicKeyX, keyPair.publicKeyY),
@@ -208,7 +208,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
+      await exchangeTestUtil.requestWithdrawalOnchain(exchangeID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
@@ -228,7 +228,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[realmID][0];
+      const wallet = exchangeTestUtil.wallets[exchangeID][0];
 
       const tokenA = "LRC";
       const balanceA = new BN(web3.utils.toWei("2300.7", "ether"));
@@ -239,28 +239,28 @@ contract("Exchange", (accounts: string[]) => {
       const tokenD = "WETH";
       const balanceD = new BN(web3.utils.toWei("23.7", "ether"));
 
-      const depositInfoA = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfoA = await exchangeTestUtil.deposit(exchangeID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                           tokenA, balanceA);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       const finalizedBlockIdx = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
 
-      const depositInfoB = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfoB = await exchangeTestUtil.deposit(exchangeID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                           tokenB, balanceB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
 
-      const depositInfoC = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfoC = await exchangeTestUtil.deposit(exchangeID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                           tokenC, balanceC);
 
-      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
 
-      const depositInfoD = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfoD = await exchangeTestUtil.deposit(exchangeID, owner,
                                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                           tokenD, balanceD);
 
@@ -300,16 +300,16 @@ contract("Exchange", (accounts: string[]) => {
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
 
-      const depositInfo = await exchangeTestUtil.deposit(realmID, owner,
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
                                                          keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                                          token, balance);
       const accountID = depositInfo.accountID;
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(realmID, accountID, token, balance, owner);
+      await exchangeTestUtil.requestWithdrawalOnchain(exchangeID, accountID, token, balance, owner);
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);

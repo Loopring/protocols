@@ -5,25 +5,11 @@ import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
 
-const {
-  TESTToken,
-} = new Artifacts(artifacts);
-
 contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
   let exchangeId = 0;
-
-  const bVerify = true;
-
-  const verify = async () => {
-    if (bVerify) {
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
-    }
-  };
-
-  const zeroAddress = "0x" + "00".repeat(20);
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
@@ -42,7 +28,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID: exchangeId,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -51,7 +36,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID: exchangeId,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -74,7 +58,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitRings(exchangeId);
 
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      // await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
     it("Reuse trade history slot that was cancelled", async () => {
@@ -82,7 +66,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID: exchangeId,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -91,7 +74,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID: exchangeId,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),

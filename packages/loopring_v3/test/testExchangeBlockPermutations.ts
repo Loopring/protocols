@@ -9,24 +9,22 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeId = 0;
 
   const createRandomRing = () => {
-    const amount1 = exchangeTestUtil.getRandomAmount();
-    const amount2 = exchangeTestUtil.getRandomAmount();
     const ring: RingInfo = {
       orderA:
         {
-          realmID: exchangeId,
           tokenS: "WETH",
           tokenB: "GTO",
-          amountS: amount1,
-          amountB: amount2,
+          amountS: exchangeTestUtil.getRandomAmount(),
+          amountB: exchangeTestUtil.getRandomAmount(),
+          buy: exchangeTestUtil.getRandomInt(2) > 0,
         },
       orderB:
         {
-          realmID: exchangeId,
           tokenS: "GTO",
           tokenB: "WETH",
-          amountS: amount2,
-          amountB: amount1,
+          amountS: exchangeTestUtil.getRandomAmount(),
+          amountB: exchangeTestUtil.getRandomAmount(),
+          buy: exchangeTestUtil.getRandomInt(2) > 0,
         },
     };
     return ring;

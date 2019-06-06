@@ -81,7 +81,6 @@ contract("Exchange", (accounts: string[]) => {
     const ring: RingInfo = {
       orderA:
         {
-          realmID: exchangeId,
           tokenS: "WETH",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -89,7 +88,6 @@ contract("Exchange", (accounts: string[]) => {
         },
       orderB:
         {
-          realmID: exchangeId,
           tokenS: "GTO",
           tokenB: "WETH",
           amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -457,7 +455,6 @@ contract("Exchange", (accounts: string[]) => {
           const ring: RingInfo = {
             orderA:
               {
-                realmID: exchangeId,
                 tokenS: "WETH",
                 tokenB: "GTO",
                 amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -465,7 +462,6 @@ contract("Exchange", (accounts: string[]) => {
               },
             orderB:
               {
-                realmID: exchangeId,
                 tokenS: "GTO",
                 tokenB: "WETH",
                 amountS: new BN(web3.utils.toWei("5", "ether")),

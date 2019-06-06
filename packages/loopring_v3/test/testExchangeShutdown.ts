@@ -41,7 +41,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID: exchangeId,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -49,7 +48,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID: exchangeId,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -105,7 +103,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       const currentBlockIdx = (await exchange.getBlockHeight()).toNumber();
-      const exchangeState = await exchangeTestUtil.loadRealm(exchangeId, currentBlockIdx);
+      const exchangeState = await exchangeTestUtil.loadExchangeState(exchangeId, currentBlockIdx);
 
       // Do all withdrawal requests to completely reset the merkle tree
       for (let accountID = 0; accountID < exchangeState.accounts.length; accountID++) {

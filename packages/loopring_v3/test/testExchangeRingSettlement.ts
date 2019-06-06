@@ -8,25 +8,25 @@ contract("Exchange", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
-  let realmID = 0;
+  let exchangeID = 0;
 
   const bVerify = true;
 
   const verify = async () => {
     if (bVerify) {
-      await exchangeTestUtil.verifyPendingBlocks(realmID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
     }
   };
 
   before( async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    realmID = 1;
+    exchangeID = 1;
   });
 
   beforeEach(async () => {
     // Fresh Exchange for each test
-    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    exchangeID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
   });
 
   describe("Trade", function() {
@@ -36,7 +36,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -44,7 +43,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -57,10 +55,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -69,7 +67,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -77,7 +74,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
@@ -90,10 +86,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -102,7 +98,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "LRC",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("101", "ether")),
@@ -110,7 +105,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "LRC",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -123,17 +117,16 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
 
     it("Market buy (single ring)", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("101", "ether")),
@@ -149,7 +142,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -166,12 +158,12 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA, false, true);
-      await exchangeTestUtil.sendRing(realmID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
 
       await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
       const exptectedBalance = order.amountB.sub(expectedFee);
@@ -184,7 +176,6 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market buy (multiple rings)", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -200,7 +191,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("50", "ether")),
@@ -219,7 +209,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -237,14 +226,14 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
       await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
       const exptectedBalance = order.amountB.sub(expectedFee);
@@ -257,7 +246,6 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market sell (single ring)", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -273,7 +261,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -290,12 +277,12 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA, false, true);
-      await exchangeTestUtil.sendRing(realmID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
 
       await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await exchangeTestUtil.checkOffchainBalance(
         order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
@@ -306,7 +293,6 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market sell (multiple rings)", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -322,7 +308,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("50", "ether")),
@@ -341,7 +326,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("90", "ether")),
@@ -359,14 +343,14 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
       await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await exchangeTestUtil.checkOffchainBalance(
         order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
@@ -377,7 +361,6 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Buy order used as taker and maker", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -393,7 +376,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("50", "ether")),
@@ -411,7 +393,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("220", "ether")),
@@ -429,14 +410,14 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, true, false);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
       await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
       const exptectedBalance = order.amountB.sub(expectedFee);
@@ -447,9 +428,8 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it.only("Sell order used as taker and maker", async () => {
+    it("Sell order used as taker and maker", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -465,7 +445,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("50", "ether")),
@@ -483,7 +462,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("190", "ether")),
@@ -501,13 +479,13 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, true, false);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await exchangeTestUtil.checkOffchainBalance(
         order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
@@ -520,7 +498,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "LRC",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("101", "ether")),
@@ -530,7 +507,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "LRC",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -545,10 +521,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -557,7 +533,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "LRC",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -565,7 +540,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "LRC",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -580,12 +554,12 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -594,7 +568,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "LRC",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -604,7 +577,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "LRC",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -619,13 +591,13 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderA.tokenB, ring.orderA.amountB);
       await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -634,7 +606,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("90", "ether")),
@@ -643,7 +614,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -656,10 +626,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -668,7 +638,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -676,7 +645,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
@@ -690,10 +658,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -702,7 +670,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -711,7 +678,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -724,10 +690,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -736,7 +702,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -746,7 +711,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -759,10 +723,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -771,7 +735,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -780,7 +743,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -794,10 +756,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -806,7 +768,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -816,7 +777,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("20", "ether")),
@@ -830,10 +790,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -842,7 +802,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("105", "ether")),
@@ -852,7 +811,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("10", "ether")),
@@ -870,10 +828,10 @@ contract("Exchange", (accounts: string[]) => {
       ring.orderB.walletAccountID = ring.orderA.walletAccountID;
       exchangeTestUtil.signOrder(ring.orderB);
 
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -882,7 +840,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "INDA",
             tokenB: "WETH",
             amountS: new BN(60),
@@ -890,7 +847,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "INDA",
             amountS: new BN(web3.utils.toWei("2.5", "ether")),
@@ -903,10 +859,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -915,7 +871,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "INDA",
             tokenB: "INDB",
             amountS: new BN(20),
@@ -924,7 +879,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "INDB",
             tokenB: "INDA",
             amountS: new BN(200),
@@ -939,10 +893,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -951,7 +905,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "INDA",
             tokenB: "INDB",
             amountS: new BN(1),
@@ -959,7 +912,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "INDB",
             tokenB: "INDA",
             amountS: new BN(10),
@@ -973,10 +925,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -985,7 +937,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -993,7 +944,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "LRC",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
@@ -1002,14 +952,14 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
       try {
-        await exchangeTestUtil.commitRings(realmID);
+        await exchangeTestUtil.commitRings(exchangeID);
         assert(false);
       } catch {
-        exchangeTestUtil.cancelPendingRings(realmID);
+        exchangeTestUtil.cancelPendingRings(exchangeID);
       }
     });
 
@@ -1017,7 +967,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1026,7 +975,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1039,10 +987,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -1051,7 +999,6 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1060,7 +1007,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1073,10 +1019,10 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -1085,7 +1031,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringA: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("3", "ether")),
@@ -1094,7 +1039,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1109,7 +1053,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("110", "ether")),
@@ -1118,7 +1061,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1133,18 +1075,17 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
 
     it("Order filled in multiple rings (order.orderID == tradeHistory.orderID)", async () => {
       const order: OrderInfo = {
-        realmID,
         tokenS: "ETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("10", "ether")),
@@ -1157,7 +1098,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("60", "ether")),
@@ -1173,7 +1113,6 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("120", "ether")),
@@ -1188,11 +1127,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -1202,7 +1141,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringA: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1212,7 +1150,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1227,7 +1164,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1237,7 +1173,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1252,11 +1187,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });
@@ -1266,7 +1201,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringA: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1276,7 +1210,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1291,7 +1224,6 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
@@ -1301,7 +1233,6 @@ contract("Exchange", (accounts: string[]) => {
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
@@ -1316,11 +1247,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(realmID, ringA);
-      await exchangeTestUtil.sendRing(realmID, ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.commitDeposits(realmID);
-      await exchangeTestUtil.commitRings(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
 
       await verify();
     });

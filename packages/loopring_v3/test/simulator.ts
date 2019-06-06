@@ -1,10 +1,10 @@
 import BN = require("bn.js");
 import * as pjs from "protocol2-js";
 import * as constants from "./constants";
-import { fromFloat, roundToFloatValue, toFloat } from "./float";
-import { AccountLeaf, Balance, Block, Cancel, CancelBlock, Deposit, DetailedTokenTransfer, OrderInfo,
-         Realm, RingExpectation, RingInfo, RingSettlementSimulatorReport, SimulatorReport,
-         TradeHistory, Wallet, Withdrawal, WithdrawalRequest, WithdrawBlock } from "./types";
+import { fromFloat, roundToFloatValue } from "./float";
+import { AccountLeaf, Balance, Cancel, Deposit, DetailedTokenTransfer, ExchangeState, OrderInfo,
+         RingInfo, RingSettlementSimulatorReport, SimulatorReport,
+         TradeHistory, WithdrawalRequest } from "./types";
 
 interface SettlementValues {
   fillSA: BN;
@@ -32,10 +32,10 @@ interface MatchResult {
 
 export class Simulator {
 
-  public deposit(deposit: Deposit, realm: Realm) {
-    const newRealm = this.copyRealm(realm);
-    assert(deposit.accountID <= realm.accounts.length, "accountID not incremented by 1");
-    if (deposit.accountID === realm.accounts.length) {
+  public deposit(deposit: Deposit, exchangeState: ExchangeState) {
+    const newExchangeState = this.copyExchangeState(exchangeState);
+    assert(deposit.accountID <= exchangeState.accounts.length, "accountID not incremented by 1");
+    if (deposit.accountID === exchangeState.accounts.length) {
       // Make sure all tokens exist
       const balances: {[key: number]: Balance} = {};
       for (let i = 0; i < constants.MAX_NUM_TOKENS; i++) {
@@ -50,28 +50,28 @@ export class Simulator {
         nonce: 0,
         balances,
       };
-      newRealm.accounts.push(emptyAccount);
+      newExchangeState.accounts.push(emptyAccount);
     }
-    const account = newRealm.accounts[deposit.accountID];
+    const account = newExchangeState.accounts[deposit.accountID];
     account.balances[deposit.tokenID].balance =
       account.balances[deposit.tokenID].balance.add(deposit.amount);
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
 
     const simulatorReport: SimulatorReport = {
-      realmBefore: realm,
-      realmAfter: newRealm,
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState,
     };
     return simulatorReport;
   }
 
-  public onchainWithdraw(withdrawal: WithdrawalRequest, shutdown: boolean, realm: Realm) {
-    const newRealm = this.copyRealm(realm);
+  public onchainWithdraw(withdrawal: WithdrawalRequest, shutdown: boolean, exchangeState: ExchangeState) {
+    const newExchangeState = this.copyExchangeState(exchangeState);
 
     // When a withdrawal is done before the deposit (account creation) we shouldn't
     // do anything. Just leave everything as it is.
-    if (withdrawal.accountID < newRealm.accounts.length) {
-      const account = newRealm.accounts[withdrawal.accountID];
+    if (withdrawal.accountID < newExchangeState.accounts.length) {
+      const account = newExchangeState.accounts[withdrawal.accountID];
 
       const balance = account.balances[withdrawal.tokenID].balance;
       const amountToWithdrawMin = (balance.lt(withdrawal.amount)) ? balance : withdrawal.amount;
@@ -96,16 +96,17 @@ export class Simulator {
     }
 
     const simulatorReport: SimulatorReport = {
-      realmBefore: realm,
-      realmAfter: newRealm,
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState,
     };
     return simulatorReport;
   }
 
-  public offchainWithdrawFromInputData(withdrawal: WithdrawalRequest, realm: Realm, operatorAccountID: number) {
+  public offchainWithdrawFromInputData(withdrawal: WithdrawalRequest,
+                                       exchangeState: ExchangeState, operatorAccountID: number) {
     const fee = roundToFloatValue(withdrawal.fee, constants.Float16Encoding);
 
-    const account = realm.accounts[withdrawal.accountID];
+    const account = exchangeState.accounts[withdrawal.accountID];
     let balance = account.balances[withdrawal.tokenID].balance;
     if (withdrawal.tokenID === withdrawal.feeTokenID) {
       balance = balance.sub(fee);
@@ -114,25 +115,26 @@ export class Simulator {
     const amountWithdrawn = roundToFloatValue(amountToWithdraw, constants.Float28Encoding);
 
     // Update the Merkle tree with the input data
-    const newRealm = this.offchainWithdraw(
-      realm,
+    const newExchangeState = this.offchainWithdraw(
+      exchangeState,
       operatorAccountID, withdrawal.accountID, withdrawal.walletAccountID,
       withdrawal.tokenID, amountWithdrawn,
       withdrawal.feeTokenID, fee, withdrawal.walletSplitPercentage,
     );
 
     const simulatorReport: SimulatorReport = {
-      realmBefore: realm,
-      realmAfter: newRealm,
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState,
     };
     return simulatorReport;
   }
 
-  public offchainWithdrawFromOnchainData(bs: pjs.Bitstream, blockSize: number, withdrawalIndex: number, realm: Realm) {
+  public offchainWithdrawFromOnchainData(bs: pjs.Bitstream, blockSize: number,
+                                         withdrawalIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
     // General data
-    const realmId = bs.extractUint32(offset);
+    const exchangeID = bs.extractUint32(offset);
     offset += 4 + 32 + 32;
 
     const onchainDataOffset = offset;
@@ -176,26 +178,26 @@ export class Simulator {
     const amountWithdrawn = fromFloat(fAmountWithdrawn, constants.Float28Encoding);
 
     // Update the Merkle tree with the onchain data
-    const newRealm = this.offchainWithdraw(
-      realm,
+    const newExchangeState = this.offchainWithdraw(
+      exchangeState,
       operatorAccountID, accountID, walletAccountID,
       token, amountWithdrawn,
       feeToken, fee, walletSplitPercentage,
     );
 
-    return newRealm;
+    return newExchangeState;
   }
 
-  public offchainWithdraw(realm: Realm,
+  public offchainWithdraw(exchangeState: ExchangeState,
                           operatorAccountID: number, accountID: number, walletAccountID: number,
                           tokenID: number, amountWithdrawn: BN,
                           feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    const newRealm = this.copyRealm(realm);
+    const newExchangeState = this.copyExchangeState(exchangeState);
 
     const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
     const feeToOperator = fee.sub(feeToWallet);
 
-    const account = newRealm.accounts[accountID];
+    const account = newExchangeState.accounts[accountID];
 
     // Update balanceF
     account.balances[feeTokenID].balance =
@@ -207,23 +209,23 @@ export class Simulator {
     account.nonce++;
 
     // Update wallet
-    const wallet = newRealm.accounts[walletAccountID];
+    const wallet = newExchangeState.accounts[walletAccountID];
     wallet.balances[feeTokenID].balance =
       wallet.balances[feeTokenID].balance.add(feeToWallet);
 
     // Update operator
-    const operator = newRealm.accounts[operatorAccountID];
+    const operator = newExchangeState.accounts[operatorAccountID];
     operator.balances[feeTokenID].balance =
       operator.balances[feeTokenID].balance.add(feeToOperator);
 
-    return newRealm;
+    return newExchangeState;
   }
 
-  public cancelOrderFromOnchainData(bs: pjs.Bitstream, cancelIndex: number, realm: Realm) {
+  public cancelOrderFromOnchainData(bs: pjs.Bitstream, cancelIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
     // General data
-    const realmId = bs.extractUint32(offset);
+    const exchangeID = bs.extractUint32(offset);
     offset += 4 + 32 + 32;
 
     // General data
@@ -256,44 +258,44 @@ export class Simulator {
     const fee = fromFloat(fFee, constants.Float16Encoding);
 
     // Update the Merkle tree with the onchain data
-    const newRealm = this.cancelOrder(
-      realm,
+    const newExchangeState = this.cancelOrder(
+      exchangeState,
       operatorAccountID, walletAccountID,
       accountID, orderToken, orderID,
       feeToken, fee, walletSplitPercentage,
     );
 
-    return newRealm;
+    return newExchangeState;
   }
 
-  public cancelOrderFromInputData(cancel: Cancel, realm: Realm, operatorAccountID: number) {
+  public cancelOrderFromInputData(cancel: Cancel, exchangeState: ExchangeState, operatorAccountID: number) {
     const fee = roundToFloatValue(cancel.fee, constants.Float16Encoding);
 
     // Update the Merkle tree with the input data
-    const newRealm = this.cancelOrder(
-      realm,
+    const newExchangeState = this.cancelOrder(
+      exchangeState,
       operatorAccountID, cancel.walletAccountID,
       cancel.accountID, cancel.orderTokenID, cancel.orderID,
       cancel.feeTokenID, fee, cancel.walletSplitPercentage,
     );
 
     const simulatorReport: SimulatorReport = {
-      realmBefore: realm,
-      realmAfter: newRealm,
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState,
     };
     return simulatorReport;
   }
 
-  public cancelOrder(realm: Realm,
+  public cancelOrder(exchangeState: ExchangeState,
                      operatorAccountID: number, walletAccountID: number,
                      accountID: number, orderTokenID: number, orderID: number,
                      feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    const newRealm = this.copyRealm(realm);
+    const newExchangeState = this.copyExchangeState(exchangeState);
 
     const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
     const feeToOperator = fee.sub(feeToWallet);
 
-    const account = newRealm.accounts[accountID];
+    const account = newExchangeState.accounts[accountID];
 
     // Update balance
     account.balances[orderTokenID].balance =
@@ -311,23 +313,23 @@ export class Simulator {
     account.balances[orderTokenID].tradeHistory[orderID].cancelled = true;
 
     // Update wallet
-    const wallet = newRealm.accounts[walletAccountID];
+    const wallet = newExchangeState.accounts[walletAccountID];
     wallet.balances[feeTokenID].balance =
       wallet.balances[feeTokenID].balance.add(feeToWallet);
 
     // Update operator
-    const operator = newRealm.accounts[operatorAccountID];
+    const operator = newExchangeState.accounts[operatorAccountID];
     operator.balances[feeTokenID].balance =
       operator.balances[feeTokenID].balance.add(feeToOperator);
 
-    return newRealm;
+    return newExchangeState;
   }
 
-  public settleRingFromOnchainData(bs: pjs.Bitstream, ringIndex: number, realm: Realm) {
+  public settleRingFromOnchainData(bs: pjs.Bitstream, ringIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
     // General data
-    const realmId = bs.extractUint32(offset);
+    const exchangeID = bs.extractUint32(offset);
     offset += 4 + 32 + 32 + 4;
     const protocolFeeTakerBips = bs.extractUint8(offset);
     offset += 1;
@@ -400,8 +402,8 @@ export class Simulator {
     const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
 
     // Update the Merkle tree with the onchain data
-    const {newRealm, s} = this.settleRing(
-      realm, protocolFeeTakerBips, protocolFeeMakerBips,
+    const {newExchangeState, s} = this.settleRing(
+      exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ringMatcherID, feeToken, ringFee,
       fillSA, fillSB,
       buyA, buyB,
@@ -410,14 +412,15 @@ export class Simulator {
       orderIdB, orderOwnerB, feeBipsB, rebateBipsB,
     );
 
-    return newRealm;
+    return newExchangeState;
   }
 
-  public settleRingFromInputData(ring: RingInfo, realm: Realm, timestamp: number, operatorAccountID: number,
+  public settleRingFromInputData(ring: RingInfo, exchangeState: ExchangeState, timestamp: number,
+                                 operatorAccountID: number,
                                  protocolFeeTakerBips: number, protocolFeeMakerBips: number) {
 
-    const fillA = this.getMaxFillAmounts(ring.orderA, realm.accounts[ring.orderA.accountID]);
-    const fillB = this.getMaxFillAmounts(ring.orderB, realm.accounts[ring.orderB.accountID]);
+    const fillA = this.getMaxFillAmounts(ring.orderA, exchangeState.accounts[ring.orderA.accountID]);
+    const fillB = this.getMaxFillAmounts(ring.orderB, exchangeState.accounts[ring.orderB.accountID]);
 
     console.log("MaxFillA.S: " + fillA.S.toString(10));
     console.log("MaxFillA.B: " + fillA.B.toString(10));
@@ -449,8 +452,8 @@ export class Simulator {
     fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
     const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
-    const {newRealm, s} = this.settleRing(
-      realm, protocolFeeTakerBips, protocolFeeMakerBips,
+    const {newExchangeState, s} = this.settleRing(
+      exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ring.minerAccountID, ring.tokenID, ringFee,
       fillA.S, fillB.S,
       ring.orderA.buy, ring.orderB.buy,
@@ -549,8 +552,8 @@ export class Simulator {
     detailedTransfers.push(ringMatcherPayments);
 
     const simulatorReport: RingSettlementSimulatorReport = {
-      realmBefore: realm,
-      realmAfter: newRealm,
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState,
       detailedTransfers,
     };
     return simulatorReport;
@@ -605,7 +608,7 @@ export class Simulator {
     return settlementValues;
   }
 
-  public settleRing(realm: Realm, protocolFeeTakerBips: number, protocolFeeMakerBips: number,
+  public settleRing(exchangeState: ExchangeState, protocolFeeTakerBips: number, protocolFeeMakerBips: number,
                     operatorId: number, ringMatcherId: number, feeToken: number, ringFee: BN,
                     fillSA: BN, fillSB: BN,
                     buyA: boolean, buyB: boolean,
@@ -619,17 +622,17 @@ export class Simulator {
       rebateBipsA, rebateBipsB,
     );
 
-    const newRealm = this.copyRealm(realm);
+    const newExchangeState = this.copyExchangeState(exchangeState);
 
     // Update accountA
-    const accountA = newRealm.accounts[accountIdA];
+    const accountA = newExchangeState.accounts[accountIdA];
     accountA.balances[tokenA].balance =
       accountA.balances[tokenA].balance.sub(s.fillSA);
     accountA.balances[tokenB].balance =
       accountA.balances[tokenB].balance.add(s.fillBA.sub(s.feeA).add(s.rebateA));
 
     // Update accountB
-    const accountB = newRealm.accounts[accountIdB];
+    const accountB = newExchangeState.accounts[accountIdB];
     accountB.balances[tokenB].balance =
       accountB.balances[tokenB].balance.sub(s.fillSB);
     accountB.balances[tokenA].balance =
@@ -655,7 +658,7 @@ export class Simulator {
     }
 
     // Update ringMatcher
-    const ringMatcher = newRealm.accounts[ringMatcherId];
+    const ringMatcher = newExchangeState.accounts[ringMatcherId];
     // - FeeA
     ringMatcher.balances[tokenB].balance =
      ringMatcher.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA).sub(s.rebateA);
@@ -669,7 +672,7 @@ export class Simulator {
     ringMatcher.nonce++;
 
     // Update protocol fee recipient
-    const protocolFeeAccount = newRealm.accounts[0];
+    const protocolFeeAccount = newExchangeState.accounts[0];
     // - Order A
     protocolFeeAccount.balances[tokenB].balance =
       protocolFeeAccount.balances[tokenB].balance.add(s.protocolFeeA);
@@ -678,11 +681,11 @@ export class Simulator {
       protocolFeeAccount.balances[tokenA].balance.add(s.protocolFeeB);
 
     // Update operator
-    const operator = newRealm.accounts[operatorId];
+    const operator = newExchangeState.accounts[operatorId];
     operator.balances[feeToken].balance =
      operator.balances[feeToken].balance.add(ringFee);
 
-    return {newRealm, s};
+    return {newExchangeState, s};
   }
 
   private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
@@ -818,15 +821,15 @@ export class Simulator {
     return accountCopy;
   }
 
-  private copyRealm(realm: Realm) {
+  private copyExchangeState(exchangeState: ExchangeState) {
     const accounts: AccountLeaf[] = [];
-    for (let accountID = 0; accountID < realm.accounts.length; accountID++) {
-      accounts[accountID] = this.copyAccount(realm.accounts[accountID]);
+    for (let accountID = 0; accountID < exchangeState.accounts.length; accountID++) {
+      accounts[accountID] = this.copyAccount(exchangeState.accounts[accountID]);
     }
-    const realmCopy: Realm = {
+    const exchangeStateCopy: ExchangeState = {
       accounts,
     };
-    return realmCopy;
+    return exchangeStateCopy;
   }
 
   private ensure(valid: boolean, description: string) {

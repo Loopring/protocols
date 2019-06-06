@@ -27,7 +27,7 @@ export interface OrderInfo {
   amountS: BN;
   amountB: BN;
 
-  realmID?: number;
+  exchangeID?: number;
   accountID?: number;
   orderID?: number;
 
@@ -88,7 +88,7 @@ export interface RingBlock {
 
   onchainDataAvailability?: boolean;
   timestamp?: number;
-  realmID?: number;
+  exchangeID?: number;
   operatorAccountID?: number;
 }
 
@@ -125,10 +125,12 @@ export interface WithdrawalRequest {
   slotIdx?: number;
 
   withdrawalFee?: BN;
+
+  signature?: Signature;
 }
 
 export interface Withdrawal {
-  realmID: number;
+  exchangeID: number;
   blockIdx: number;
   withdrawalIdx: number;
 }
@@ -153,6 +155,8 @@ export interface Cancel {
   feeTokenID: number;
   fee: BN;
   walletSplitPercentage: number;
+
+  signature?: Signature;
 }
 
 export interface CancelBlock {
@@ -206,7 +210,7 @@ export interface AccountLeaf {
   balances: {[key: number]: Balance};
 }
 
-export interface Realm {
+export interface ExchangeState {
   accounts: AccountLeaf[];
 }
 
@@ -220,14 +224,14 @@ export interface DetailedTokenTransfer {
 }
 
 export interface RingSettlementSimulatorReport {
-  realmBefore: Realm;
-  realmAfter: Realm;
+  exchangeStateBefore: ExchangeState;
+  exchangeStateAfter: ExchangeState;
   detailedTransfers: DetailedTokenTransfer[];
 }
 
 export interface SimulatorReport {
-  realmBefore: Realm;
-  realmAfter: Realm;
+  exchangeStateBefore: ExchangeState;
+  exchangeStateAfter: ExchangeState;
 }
 
 export interface DepositInfo {

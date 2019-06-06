@@ -282,7 +282,7 @@ class Deposit(object):
 
 class WithdrawProof(object):
     def __init__(self,
-                 realmID, accountID, tokenID,
+                 exchangeID, accountID, tokenID,
                  account, balance,
                  root,
                  accountProof, balanceProof):
@@ -298,7 +298,7 @@ class Order(object):
     def __init__(self,
                  publicKey,
                  dualAuthPublicKey, dualAuthSecretKey,
-                 realmID, orderID, accountID,
+                 exchangeID, orderID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
@@ -309,7 +309,7 @@ class Order(object):
         self.dualAuthPublicKeyY = str(dualAuthPublicKey.y)
         self.dualAuthSecretKey = str(dualAuthSecretKey)
 
-        self.realmID = int(realmID)
+        self.exchangeID = int(exchangeID)
         self.orderID = int(orderID)
         self.accountID = int(accountID)
 
@@ -407,14 +407,14 @@ class OnchainWithdrawal(object):
 
 class OffchainWithdrawal(object):
     def __init__(self,
-                 realmID,
+                 exchangeID,
                  accountID, tokenID, amountRequested, fAmountWithdrawn,
                  walletAccountID, feeTokenID, fee, walletSplitPercentage,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
                  balanceUpdateF_O,
                  nonce):
-        self.realmID = realmID
+        self.exchangeID = exchangeID
 
         self.accountID = accountID
         self.tokenID = tokenID
@@ -437,31 +437,16 @@ class OffchainWithdrawal(object):
 
         self.nonce = nonce
 
-    def message(self):
-        msg_parts = [FQ(int(self.realmID), 1<<32),
-                     FQ(int(self.accountID), 1<<20), FQ(int(self.tokenID), 1<<8), FQ(int(self.amountRequested), 1<<96),
-                     FQ(int(self.walletAccountID), 1<<20), FQ(int(self.feeTokenID), 1<<8),
-                     FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<1)]
-        return PureEdDSA.to_bits(*msg_parts)
-
-    def sign(self, k):
-        msg = self.message()
-        # owner
-        signedMessage = PureEdDSA.sign(msg, k)
-        self.signature = Signature(signedMessage.sig)
-
-
 class Cancellation(object):
     def __init__(self,
-                 realmID,
+                 exchangeID,
                  accountID, orderTokenID, orderID, walletAccountID,
                  feeTokenID, fee, walletSplitPercentage,
                  nonce,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
                  balanceUpdateF_O):
-        self.realmID = realmID
+        self.exchangeID = exchangeID
 
         self.accountID = accountID
         self.orderTokenID = orderTokenID
@@ -483,23 +468,9 @@ class Cancellation(object):
         self.balanceUpdateF_O = balanceUpdateF_O
 
 
-    def message(self):
-        msg_parts = [FQ(int(self.realmID), 1<<32), FQ(int(self.accountID), 1<<20),
-                     FQ(int(self.orderTokenID), 1<<8), FQ(int(self.orderID), 1<<20), FQ(int(self.walletAccountID), 1<<20),
-                     FQ(int(self.feeTokenID), 1<<8), FQ(int(self.fee), 1<<96), FQ(int(self.walletSplitPercentage), 1<<7),
-                     FQ(int(self.nonce), 1<<32), FQ(int(0), 1<<2)]
-        return PureEdDSA.to_bits(*msg_parts)
-
-    def sign(self, k):
-        msg = self.message()
-        # owner
-        signedMessage = PureEdDSA.sign(msg, k)
-        self.signature = Signature(signedMessage.sig)
-
-
 class State(object):
-    def __init__(self, realmID):
-        self.realmID = int(realmID)
+    def __init__(self, exchangeID):
+        self.exchangeID = int(exchangeID)
         # Accounts
         self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
         self._accountsTree.newTree(getDefaultAccount().hash())
@@ -510,7 +481,7 @@ class State(object):
     def load(self, filename):
         with open(filename) as f:
             data = json.load(f)
-            self.realmID = int(data["realmID"])
+            self.exchangeID = int(data["exchangeID"])
             # Accounts
             accountLeafsDict = data["accounts_values"]
             for key, val in accountLeafsDict.items():
@@ -524,7 +495,7 @@ class State(object):
         with open(filename, "w") as file:
             file.write(json.dumps(
                 {
-                    "realmID": self.realmID,
+                    "exchangeID": self.exchangeID,
                     "accounts_values": self._accounts,
                     "accounts_root": self._accountsTree._root,
                     "accounts_tree": self._accountsTree._db.kv,
@@ -776,7 +747,7 @@ class State(object):
             print("Account doesn't exist: " + str(accountID))
         return self._accounts[str(accountID)]
 
-    def onchainWithdraw(self, realmID, accountID, tokenID, amountRequested, shutdown):
+    def onchainWithdraw(self, exchangeID, accountID, tokenID, amountRequested, shutdown):
         # When a withdrawal is done before the deposit (account creation) we shouldn't
         # do anything. Just leave everything as it is.
         if str(accountID) in self._accounts:
@@ -829,7 +800,7 @@ class State(object):
         return withdrawal
 
     def offchainWithdraw(self,
-                         realmID, accountID, tokenID, amountRequested,
+                         exchangeID, accountID, tokenID, amountRequested,
                          operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage):
         feeValue = roundToFloatValue(fee, Float16Encoding)
 
@@ -875,19 +846,17 @@ class State(object):
         # Operator payment
         balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
 
-        account = self.getAccount(accountID)
-        withdrawal = OffchainWithdrawal(realmID,
+        withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
                                         walletAccountID, feeTokenID, fee, walletSplitPercentage,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         balanceUpdateF_W, accountUpdate_W,
                                         balanceUpdateF_O,
                                         nonce)
-        withdrawal.sign(FQ(int(account.secretKey)))
         return withdrawal
 
     def cancelOrder(self,
-                    realmID, accountID, orderTokenID, orderID, walletAccountID,
+                    exchangeID, accountID, orderTokenID, orderID, walletAccountID,
                     operatorAccountID, feeTokenID, fee, walletSplitPercentage):
 
         feeValue = roundToFloatValue(fee, Float16Encoding)
@@ -927,24 +896,22 @@ class State(object):
         # Operator payment
         balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
 
-        account = self.getAccount(accountID)
-        cancellation = Cancellation(realmID,
+        cancellation = Cancellation(exchangeID,
                                     accountID, orderTokenID, orderID, walletAccountID,
                                     feeTokenID, fee, walletSplitPercentage,
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     balanceUpdateF_W, accountUpdate_W,
                                     balanceUpdateF_O)
-        cancellation.sign(FQ(int(account.secretKey)))
         return cancellation
 
-    def createWithdrawProof(self, realmID, accountID, tokenID):
+    def createWithdrawProof(self, exchangeID, accountID, tokenID):
         account = copyAccountInfo(self.getAccount(accountID))
         balance = copyBalanceInfo(self.getAccount(accountID)._balancesLeafs[str(tokenID)])
         accountProof = self._accountsTree.createProof(accountID)
         balanceProof = self.getAccount(accountID)._balancesTree.createProof(tokenID)
 
-        return WithdrawProof(realmID, accountID, tokenID,
+        return WithdrawProof(exchangeID, accountID, tokenID,
                              account, balance,
                              self.getRoot(),
                              accountProof, balanceProof)
