@@ -387,6 +387,8 @@ contract IExchange
     ///            - New merkle root: 32 bytes
     ///        For RING_SETTLEMENT blocks add the following data:
     ///            - timestamp used in the block: 4 bytes
+    ///            - protocolTakerFeeBips: 1 bytes
+    ///            - protocolMakerFeeBips: 1 bytes
     ///        For DEPOSIT blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
