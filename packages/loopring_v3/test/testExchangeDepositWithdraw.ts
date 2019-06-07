@@ -678,7 +678,7 @@ contract("Exchange", (accounts: string[]) => {
                             loopring.address, protocolFeeB);
     });
 
-    it.only("Distribute withdrawals (by operator)", async () => {
+    it("Distribute withdrawals (by operator)", async () => {
       await createExchange();
 
       const accountContract = await exchangeTestUtil.contracts.AccountContract.new(
