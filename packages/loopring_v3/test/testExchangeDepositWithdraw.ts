@@ -179,7 +179,10 @@ contract("Exchange", (accounts: string[]) => {
                                               from: string, tooLate: boolean = false, expectedSuccess?: boolean[]) => {
     if (expectedSuccess) {
       assert.equal(expectedSuccess.length, deposits.length, "expectedSuccess wrong length");
+    } else {
+      expectedSuccess = Array(deposits.length).fill(true);
     }
+
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
     // Balances owners
     const balanceOwnerBefore: BN[] = [];
