@@ -86,11 +86,8 @@ library ExchangeDeposits
         timestamp = request.timestamp;
     }
 
-    // This function should allow 0-value deposit for both normal accounts as
-    // well as fee recipient accounts.
     function depositTo(
         ExchangeData.State storage S,
-        bool    allowFeeRecipientAccount,
         address recipient,
         address tokenAddress,
         uint96  amount,  // can be zero
@@ -108,11 +105,6 @@ library ExchangeDeposits
 
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
-
-        require(
-            allowFeeRecipientAccount || !ExchangeAccounts.isFeeRecipientAccount(account),
-            "INVALID_ACCOUNT_TYPE"
-        );
 
         transferDeposit(
             S,

@@ -1,25 +1,30 @@
 import BN = require("bn.js");
 import childProcess = require("child_process");
-import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
 import path = require("path");
 import * as pjs from "protocol2-js";
 import { SHA256 } from "sha2";
+import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
+import babyJub = require("./babyjub");
 import * as constants from "./constants";
 import { Context } from "./context";
+import eddsa = require("./eddsa");
 import { toFloat } from "./float";
+import pedersenHash = require("./pedersenHash");
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, Balance, Block, BlockType, Cancel, CancelBlock,
-         Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer,
-         Operator, OrderInfo, Realm, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
+import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
+         Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer, ExchangeState, KeyPair,
+         Operator, OrderInfo, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
+
+const bigInt = snarkjs.bigInt;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
-  if (name === "balance" || name === "amountS" || name === "amountB" || name === "amountF" ||
+  if (name === "balance" || name === "amountS" || name === "amountB" ||
       name === "amount" || name === "fee" || name === "startHash") {
     return new BN(val, 16).toString(10);
   } else {
@@ -53,7 +58,8 @@ export class ExchangeTestUtil {
   public activeOperator: Operator;
 
   public minerAccountID: number[] = [];
-  public feeRecipientAccountID: number[] = [];
+
+  public accounts: Account[][] = [];
 
   public operators: Operator[] = [];
   public wallets: Wallet[][] = [];
@@ -64,7 +70,6 @@ export class ExchangeTestUtil {
   public MAX_AGE_REQUEST_UNTIL_FORCED: number;
   public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
   public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
-  public STAKE_AMOUNT_IN_LRC: BN;
   public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
   public MAX_TIME_IN_SHUTDOWN_BASE: number;
@@ -73,13 +78,6 @@ export class ExchangeTestUtil {
   public FEE_BLOCK_FINE_MAX_DURATION: number;
   public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
   public MAX_NUM_TOKENS: number;
-
-  public BURNRATE_TIER1: BN;
-  public BURNRATE_TIER2: BN;
-  public BURNRATE_TIER3: BN;
-  public BURNRATE_TIER4: BN;
-
-  public TIER_UPGRADE_DURATION: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
@@ -93,6 +91,8 @@ export class ExchangeTestUtil {
 
   public pendingBlocks: Block[][] = [];
 
+  public onchainDataAvailability = true;
+
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
@@ -104,8 +104,6 @@ export class ExchangeTestUtil {
   private orderIDGenerator: number = 0;
 
   private dualAuthKeyPair: any;
-
-  private onchainDataAvailability = true;
 
   private MAX_NUM_EXCHANGES: number = 128;
 
@@ -119,12 +117,24 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
-      new BN(1),
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("10000", "ether")),
-      new BN(web3.utils.toWei("2", "ether")),
       new BN(web3.utils.toWei("2000", "ether")),
-      new BN(web3.utils.toWei("1000", "ether")),
+      new BN(web3.utils.toWei("1", "ether")),
+      new BN(web3.utils.toWei("250000", "ether")),
+      new BN(web3.utils.toWei("1000000", "ether")),
+      new BN(web3.utils.toWei("50000", "ether")),
+      new BN(web3.utils.toWei("10", "ether")),
+      {from: this.testContext.deployer},
+    );
+
+    await this.loopringV3.updateProtocolFeeSettings(
+      25,
+      50,
+      10,
+      25,
+      new BN(web3.utils.toWei("25000000", "ether")),
+      new BN(web3.utils.toWei("10000000", "ether")),
       {from: this.testContext.deployer},
     );
 
@@ -146,6 +156,18 @@ export class ExchangeTestUtil {
 
       const wallets: Wallet[] = [];
       this.wallets.push(wallets);
+
+      const accountsT: Account[] = [];
+      const account: Account = {
+        accountID: 0,
+        owner: this.loopringV3.address,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
+        nonce: 0,
+      };
+      accountsT.push(account);
+      this.accounts.push(accountsT);
 
       const pendingBlocks: Block[] = [];
       this.pendingBlocks.push(pendingBlocks);
@@ -172,44 +194,35 @@ export class ExchangeTestUtil {
     this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
     this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
     this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
-    this.STAKE_AMOUNT_IN_LRC = new BN(0);
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
-
-    this.BURNRATE_TIER1 = await this.loopringV3.BURNRATE_TIER1();
-    this.BURNRATE_TIER2 = await this.loopringV3.BURNRATE_TIER2();
-    this.BURNRATE_TIER3 = await this.loopringV3.BURNRATE_TIER3();
-    this.BURNRATE_TIER4 = await this.loopringV3.BURNRATE_TIER4();
-
-    this.TIER_UPGRADE_DURATION = (await this.loopringV3.TIER_UPGRADE_DURATION()).toNumber();
   }
 
-  public async setupTestState(realmID: number) {
+  public async setupTestState(exchangeID: number) {
 
     const keyPair = this.getKeyPairEDDSA();
-    const depositInfo = await this.deposit(realmID, this.testContext.deployer,
+    const depositInfo = await this.deposit(exchangeID, this.testContext.deployer,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            this.zeroAddress, new BN(1));
     this.dummyAccountId = depositInfo.accountID;
     this.dummyAccountKeyPair = keyPair;
 
-    this.operators[realmID] = await this.createOperator(realmID, this.testContext.operators[0]);
+    this.operators[exchangeID] = await this.createOperator(exchangeID, this.testContext.operators[0]);
 
-    [this.minerAccountID[realmID], this.feeRecipientAccountID[realmID]] = await this.createRingMatcher(
-      realmID,
+    this.minerAccountID[exchangeID] = await this.createRingMatcher(
+      exchangeID,
       this.testContext.ringMatchers[0],
-      this.testContext.feeRecipients[0],
     );
 
     for (const walletAddress of this.testContext.wallets) {
-      const wallet = await this.createWallet(realmID, walletAddress);
-      this.wallets[realmID].push(wallet);
+      const wallet = await this.createWallet(exchangeID, walletAddress);
+      this.wallets[exchangeID].push(wallet);
     }
   }
 
-  public async createOperator(realmID: number, owner: string) {
+  public async createOperator(exchangeID: number, owner: string) {
     // Make an account for the operator
     const keyPair = this.getKeyPairEDDSA();
-    const depositInfo = await this.deposit(realmID, owner,
+    const depositInfo = await this.deposit(exchangeID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            this.zeroAddress, new BN(1));
     const operator: Operator = {
@@ -219,10 +232,11 @@ export class ExchangeTestUtil {
     return operator;
   }
 
-  public async createWallet(realmID: number, owner: string) {
-    // Make a dual author account for the wallet
-    const walletDeposit = await this.deposit(realmID, owner,
-                                             "1", "1", "1",
+  public async createWallet(exchangeID: number, owner: string) {
+    // Make an account for the wallet
+    const keyPair = this.getKeyPairEDDSA();
+    const walletDeposit = await this.deposit(exchangeID, owner,
+                                             keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                              this.zeroAddress, new BN(0));
     const wallet: Wallet = {
       owner,
@@ -231,25 +245,19 @@ export class ExchangeTestUtil {
     return wallet;
   }
 
-  public async createRingMatcher(realmID: number, owner: string, feeRecipient: string) {
+  public async createRingMatcher(exchangeID: number, owner: string) {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
 
     const balance = new BN(web3.utils.toWei("1000000", "ether"));
 
     // Make an account for the ringmatcher
-    const keyPairM = this.getKeyPairEDDSA();
+    const keyPair = this.getKeyPairEDDSA();
     await LRC.addBalance(owner, balance);
-    const minerDeposit = await this.deposit(realmID, owner,
-                                            keyPairM.secretKey, keyPairM.publicKeyX, keyPairM.publicKeyY,
+    const minerDeposit = await this.deposit(exchangeID, owner,
+                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                             lrcAddress, balance);
-
-    // Make an account to receive fees
-    const feeRecipientDeposit = await this.deposit(realmID, feeRecipient,
-                                                   "1", "1", "1",
-                                                   this.zeroAddress, new BN(0));
-
-    return [minerDeposit.accountID, feeRecipientDeposit.accountID];
+    return minerDeposit.accountID;
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -290,16 +298,32 @@ export class ExchangeTestUtil {
   }
 
   public async setupRing(ring: RingInfo, bSetupOrderA: boolean = true, bSetupOrderB: boolean = true) {
-    ring.minerAccountID = this.minerAccountID[ring.orderA.realmID];
-    ring.feeRecipientAccountID = this.feeRecipientAccountID[ring.orderA.realmID];
-    ring.tokenID = ring.tokenID ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
-    ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
     if (bSetupOrderA) {
       await this.setupOrder(ring.orderA, this.orderIDGenerator++);
     }
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
+    ring.minerAccountID = (ring.minerAccountID !== undefined) ?
+                          ring.minerAccountID : this.minerAccountID[ring.orderA.exchangeID];
+    ring.tokenID = (ring.tokenID !== undefined) ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
+    ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
+  }
+
+  public toBitsBN(value: BN, length: number) {
+    const res = new Array(length);
+    for (let i = 0; i < length; i++) {
+      res[i] = value.testn(i) ? 1 : 0;
+    }
+    return res;
+  }
+
+  public toBitsNumber(value: number, length: number) {
+    return this.toBitsBN(new BN(value), length);
+  }
+
+  public toBitsString(value: string, length: number) {
+    return this.toBitsBN(new BN(value, 10), length);
   }
 
   public async setupOrder(order: OrderInfo, index: number) {
@@ -337,53 +361,184 @@ export class ExchangeTestUtil {
       order.dualAuthSecretKey = keyPair.secretKey;
     }
 
-    // Fill in defaults
-    order.tokenF = order.tokenF ? order.tokenF : this.context.lrcAddress;
-    order.amountF = order.amountF ? order.amountF : new BN(web3.utils.toWei("1.5", "ether"));
+    order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : this.exchangeId;
 
+    order.buy = (order.buy !== undefined) ? order.buy : true;
+
+    order.maxFeeBips = (order.maxFeeBips !== undefined) ? order.maxFeeBips : 20;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
-    order.walletSplitPercentage = (order.walletSplitPercentage !== undefined) ? order.walletSplitPercentage : 50;
 
-    order.waiveFeePercentage = (order.waiveFeePercentage !== undefined) ? order.waiveFeePercentage : 50;
+    order.feeBips = (order.feeBips !== undefined) ? order.feeBips : order.maxFeeBips;
+    order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
 
     const walletIndex = index % this.testContext.wallets.length;
     order.walletAccountID = (order.walletAccountID !== undefined) ?
-                              order.walletAccountID : this.wallets[order.realmID][walletIndex].walletAccountID;
+                            order.walletAccountID : this.wallets[order.exchangeID][walletIndex].walletAccountID;
 
     order.orderID = (order.orderID !== undefined) ? order.orderID : index;
 
-    order.realmID = (order.realmID !== undefined) ? order.realmID : 0;
+    order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : 0;
 
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
-    order.tokenIdF = this.tokenAddressToIDMap.get(order.tokenF);
+
+    assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
+    assert(order.feeBips < 64, "feeBips >= 64");
+    assert(order.rebateBips < 64, "rebateBips >= 64");
 
     // setup initial balances:
     await this.setOrderBalances(order);
+
+    // Sign the order
+    this.signOrder(order);
+  }
+
+  public signOrder(order: OrderInfo) {
+    const message = this.flattenList([
+      this.toBitsNumber(this.exchangeId, 32),
+      this.toBitsNumber(order.orderID, 20),
+      this.toBitsNumber(order.accountID, 20),
+      this.toBitsString(order.dualAuthPublicKeyX, 254),
+      this.toBitsString(order.dualAuthPublicKeyY, 254),
+      this.toBitsNumber(order.tokenIdS, 8),
+      this.toBitsNumber(order.tokenIdB, 8),
+      this.toBitsBN(order.amountS, 96),
+      this.toBitsBN(order.amountB, 96),
+      this.toBitsNumber(order.allOrNone ? 1 : 0, 1),
+      this.toBitsNumber(order.validSince, 32),
+      this.toBitsNumber(order.validUntil, 32),
+      this.toBitsNumber(order.maxFeeBips, 6),
+      this.toBitsNumber(order.buy ? 1 : 0, 1),
+    ]);
+    const account = this.accounts[this.exchangeId][order.accountID];
+    const sig = eddsa.sign(account.secretKey, message);
+    order.hash = sig.hash;
+    order.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+    // console.log(order.signature);
+  }
+
+  public signRing(ring: RingInfo) {
+    if (ring.signature !== undefined) {
+      return;
+    }
+    const account = this.accounts[this.exchangeId][ring.minerAccountID];
+    const nonce = account.nonce++;
+    const message = this.flattenList([
+      this.toBitsString(ring.orderA.hash, 254),
+      this.toBitsString(ring.orderB.hash, 254),
+      this.toBitsNumber(ring.minerAccountID, 20),
+      this.toBitsNumber(ring.tokenID, 8),
+      this.toBitsBN(ring.fee, 96),
+      this.toBitsNumber(ring.orderA.feeBips, 6),
+      this.toBitsNumber(ring.orderB.feeBips, 6),
+      this.toBitsNumber(ring.orderA.rebateBips, 6),
+      this.toBitsNumber(ring.orderB.rebateBips, 6),
+      this.toBitsNumber(nonce, 32),
+      this.toBitsNumber(0, 1),
+    ]);
+
+    const sig = eddsa.sign(account.secretKey, message);
+    ring.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+
+    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message);
+    ring.dualAuthASignature = {
+      Rx: dualAuthAsig.R[0].toString(),
+      Ry: dualAuthAsig.R[1].toString(),
+      s: dualAuthAsig.S.toString(),
+    };
+
+    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message);
+    ring.dualAuthBSignature = {
+      Rx: dualAuthBsig.R[0].toString(),
+      Ry: dualAuthBsig.R[1].toString(),
+      s: dualAuthBsig.S.toString(),
+    };
+  }
+
+  public signCancel(cancel: Cancel) {
+    if (cancel.signature !== undefined) {
+      return;
+    }
+    const account = this.accounts[this.exchangeId][cancel.accountID];
+    const message = this.flattenList([
+      this.toBitsNumber(this.exchangeId, 32),
+      this.toBitsNumber(cancel.accountID, 20),
+      this.toBitsNumber(cancel.orderTokenID, 8),
+      this.toBitsNumber(cancel.orderID, 20),
+      this.toBitsNumber(cancel.walletAccountID, 20),
+      this.toBitsNumber(cancel.feeTokenID, 8),
+      this.toBitsBN(cancel.fee, 96),
+      this.toBitsNumber(cancel.walletSplitPercentage, 7),
+      this.toBitsNumber(account.nonce++, 32),
+      this.toBitsNumber(0, 2),
+    ]);
+    const sig = eddsa.sign(account.secretKey, message);
+    cancel.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+    // console.log(cancel.signature);
+  }
+
+  public signWithdrawal(withdrawal: WithdrawalRequest) {
+    if (withdrawal.signature !== undefined) {
+      return;
+    }
+    const account = this.accounts[this.exchangeId][withdrawal.accountID];
+    const message = this.flattenList([
+      this.toBitsNumber(this.exchangeId, 32),
+      this.toBitsNumber(withdrawal.accountID, 20),
+      this.toBitsNumber(withdrawal.tokenID, 8),
+      this.toBitsBN(withdrawal.amount, 96),
+      this.toBitsNumber(withdrawal.walletAccountID, 20),
+      this.toBitsNumber(withdrawal.feeTokenID, 8),
+      this.toBitsBN(withdrawal.fee, 96),
+      this.toBitsNumber(withdrawal.walletSplitPercentage, 7),
+      this.toBitsNumber(account.nonce++, 32),
+      this.toBitsNumber(0, 1),
+    ]);
+    const sig = eddsa.sign(account.secretKey, message);
+    withdrawal.signature = {
+      Rx: sig.R[0].toString(),
+      Ry: sig.R[1].toString(),
+      s: sig.S.toString(),
+    };
+    // console.log(withdrawal.signature);
   }
 
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
+    let publicKeyX = keyPair.publicKeyX;
+    let publicKeyY = keyPair.publicKeyY;
+    let secretKey = keyPair.secretKey;
 
     const accountID = await this.getAccountID(order.owner);
+    if (accountID !== undefined) {
+      const account = this.accounts[this.exchangeId][accountID];
+      publicKeyX = account.publicKeyX;
+      publicKeyY = account.publicKeyY;
+      secretKey = account.secretKey;
+    }
 
     const balanceS = (order.balanceS !== undefined) ? order.balanceS : order.amountS;
-    const depositInfo = await this.deposit(order.realmID, order.owner,
-                                           keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+    const depositInfo = await this.deposit(order.exchangeID, order.owner,
+                                           secretKey, publicKeyX, publicKeyY,
                                            order.tokenS, balanceS, accountID);
     order.accountID = depositInfo.accountID;
 
-    const balanceF = (order.balanceF !== undefined) ? order.balanceF : order.amountF;
-    if (balanceF.gt(new BN(0))) {
-      await this.deposit(order.realmID, order.owner,
-                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                         order.tokenF, balanceF, order.accountID);
-    }
-
     const balanceB = (order.balanceB !== undefined) ? order.balanceB : new BN(0);
     if (balanceB.gt(new BN(0))) {
-      await this.deposit(order.realmID, order.owner,
-                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+      await this.deposit(order.exchangeID, order.owner,
+                         secretKey, publicKeyX, publicKeyY,
                          order.tokenB, balanceB, order.accountID);
     }
   }
@@ -393,12 +548,12 @@ export class ExchangeTestUtil {
       addrBook[accountID] = (addrBook[accountID] ? addrBook[accountID] + "=" : "") + name;
     };
     const bIndex = index !== undefined;
+    addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderA.walletAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.walletAccountID, "WalletB" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.minerAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.feeRecipientAccountID, "FeeRecipient" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
   }
 
@@ -417,9 +572,23 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    childProcess.spawnSync("python3", ["util/generate_EDDSA_keypair.py"], {stdio: "inherit"});
-    const jKeyPair = fs.readFileSync("EDDSA_KeyPair.json", "ascii");
-    const keyPair = JSON.parse(jKeyPair);
+    // TODO: secure random number generation
+    const randomNumber = this.getRandomInt(218882428718390);
+    let secretKey = bigInt(randomNumber.toString(10));
+    secretKey = secretKey.mod(babyJub.subOrder);
+
+    // const publicKey = eddsa.prv2pub(secretKey);
+    const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
+    // const publicKey = eddsa.prv2pub(Buffer.from(randomNumber.toString(16), "hex"));
+    // console.log(secretKey);
+    // console.log(publicKey);
+
+    const keyPair: KeyPair = {
+      publicKeyX: publicKey[0].toString(10),
+      publicKeyY: publicKey[1].toString(10),
+      secretKey: secretKey.toString(10),
+    };
+    // console.log(keyPair);
     return keyPair;
   }
 
@@ -447,7 +616,7 @@ export class ExchangeTestUtil {
     ]);
   }
 
-  public async deposit(realmID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
+  public async deposit(exchangeID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
                        token: string, amount: BN, accountID?: number) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -455,7 +624,7 @@ export class ExchangeTestUtil {
 
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
     if (numAvailableSlots === 0) {
-      await this.commitDeposits(realmID);
+      await this.commitDeposits(exchangeID);
       numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
@@ -490,19 +659,14 @@ export class ExchangeTestUtil {
       );
       // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
     } else {
-      if (publicKeyX === "1" && publicKeyY === "1") {
-        const tx = await this.exchange.createFeeRecipientAccount({from: owner, value: ethToSend});
-        assert(amount.isZero(), "Cannot deposit to fee recipient");
-      } else {
-        const tx = await this.exchange.updateAccountAndDeposit(
-          new BN(publicKeyX),
-          new BN(publicKeyY),
-          token,
-          web3.utils.toBN(amount),
-          {from: owner, value: ethToSend},
-        );
-        // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
-      }
+      const tx = await this.exchange.updateAccountAndDeposit(
+        new BN(publicKeyX),
+        new BN(publicKeyY),
+        token,
+        web3.utils.toBN(amount),
+        {from: owner, value: ethToSend},
+      );
+      // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
     }
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
@@ -520,13 +684,39 @@ export class ExchangeTestUtil {
       depositIdx: items[0][1].toNumber(),
     };
 
-    this.addDeposit(this.pendingDeposits[realmID], depositInfo.depositIdx, depositInfo.accountID,
+    accountID = items[0][0].toNumber();
+
+    if (accountID === this.accounts[exchangeID].length) {
+      const account: Account = {
+        accountID,
+        owner,
+        publicKeyX,
+        publicKeyY,
+        secretKey,
+        nonce: 0,
+      };
+      this.accounts[exchangeID].push(account);
+    } else {
+      const account = this.accounts[exchangeID][accountID];
+      account.publicKeyX = publicKeyX;
+      account.publicKeyY = publicKeyY;
+      account.secretKey = secretKey;
+    }
+
+    this.addDeposit(this.pendingDeposits[exchangeID], depositInfo.depositIdx, depositInfo.accountID,
                     secretKey, publicKeyX, publicKeyY,
                     this.tokenAddressToIDMap.get(token), amount);
     return depositInfo;
   }
 
-  public async requestWithdrawalOffchain(realmID: number, accountID: number, token: string, amount: BN,
+  public async depositTo(accountID: number, token: string, amount: BN) {
+    const account = this.accounts[this.exchangeId][accountID];
+    return await this.deposit(this.exchangeId, account.owner,
+                              account.secretKey, account.publicKeyX, account.publicKeyY,
+                              token, amount);
+  }
+
+  public async requestWithdrawalOffchain(exchangeID: number, accountID: number, token: string, amount: BN,
                                          feeToken: string, fee: BN, walletSplitPercentage: number,
                                          walletAccountID: number) {
     if (!token.startsWith("0x")) {
@@ -537,12 +727,13 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[realmID], accountID, tokenID, amount,
+    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[exchangeID], accountID, tokenID, amount,
                               walletAccountID, feeTokenID, fee, walletSplitPercentage);
-    return this.pendingOffchainWithdrawalRequests[realmID][this.pendingOffchainWithdrawalRequests[realmID].length - 1];
+    return this.pendingOffchainWithdrawalRequests[exchangeID]
+           [this.pendingOffchainWithdrawalRequests[exchangeID].length - 1];
   }
 
-  public async requestWithdrawalOnchain(realmID: number, accountID: number, token: string,
+  public async requestWithdrawalOnchain(exchangeID: number, accountID: number, token: string,
                                         amount: BN, owner: string) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -551,7 +742,7 @@ export class ExchangeTestUtil {
 
     let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
     if (numAvailableSlots === 0) {
-        await this.commitOnchainWithdrawalRequests(realmID);
+        await this.commitOnchainWithdrawalRequests(exchangeID);
         numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
@@ -559,11 +750,22 @@ export class ExchangeTestUtil {
     const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
 
     // Submit the withdraw request
-    const tx = await this.exchange.withdraw(
-      token,
-      web3.utils.toBN(amount),
-      {from: owner, value: withdrawalFee},
-    );
+    let tx;
+    if (accountID === 0) {
+      tx = await this.loopringV3.withdrawProtocolFees(
+        exchangeID,
+        token,
+        {from: owner, value: withdrawalFee},
+      );
+      amount = new BN(2);
+      amount = amount.pow(new BN(96)).sub(new BN(1));
+    } else {
+      tx = await this.exchange.withdraw(
+        token,
+        web3.utils.toBN(amount),
+        {from: owner, value: withdrawalFee},
+      );
+    }
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawalRequested", web3.eth.blockNumber);
@@ -572,23 +774,25 @@ export class ExchangeTestUtil {
     });
     const withdrawalIdx = items[0][0].toNumber();
 
-    const walletAccountID = this.wallets[realmID][0].walletAccountID;
-    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
+    const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[exchangeID],
                               accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
                               0, withdrawalIdx, withdrawalFee);
-    return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
+    return this.pendingOnchainWithdrawalRequests[exchangeID]
+           [this.pendingOnchainWithdrawalRequests[exchangeID].length - 1];
   }
 
-  public async requestShutdownWithdrawal(realmID: number, accountID: number, token: string, amount: BN) {
+  public async requestShutdownWithdrawal(exchangeID: number, accountID: number, token: string, amount: BN) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
     const tokenID = this.tokenAddressToIDMap.get(token);
 
-    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[realmID],
+    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[exchangeID],
                               accountID, tokenID, amount, 0, tokenID, new BN(0),
                               0, 0);
-    return this.pendingOnchainWithdrawalRequests[realmID][this.pendingOnchainWithdrawalRequests[realmID].length - 1];
+    return this.pendingOnchainWithdrawalRequests[exchangeID]
+           [this.pendingOnchainWithdrawalRequests[exchangeID].length - 1];
   }
 
   public addDeposit(deposits: Deposit[], depositIdx: number, accountID: number,
@@ -602,11 +806,11 @@ export class ExchangeTestUtil {
     cancels.push({accountID, orderTokenID, orderID, walletAccountID, feeTokenID, fee, walletSplitPercentage});
   }
 
-  public cancelOrderID(realmID: number, accountID: number,
+  public cancelOrderID(exchangeID: number, accountID: number,
                        orderTokenID: number, orderID: number,
                        walletAccountID: number,
                        feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    this.addCancel(this.pendingCancels[realmID], accountID, orderTokenID, orderID, walletAccountID,
+    this.addCancel(this.pendingCancels[exchangeID], accountID, orderTokenID, orderID, walletAccountID,
                                                  feeTokenID, fee, walletSplitPercentage);
   }
 
@@ -615,7 +819,7 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.cancelOrderID(order.realmID, order.accountID, order.tokenIdS, order.orderID, order.walletAccountID,
+    this.cancelOrderID(order.exchangeID, order.accountID, order.tokenIdS, order.orderID, order.walletAccountID,
                        feeTokenID, fee, 50);
   }
 
@@ -627,8 +831,8 @@ export class ExchangeTestUtil {
                              feeTokenID, fee, walletSplitPercentage, withdrawalIdx, withdrawalFee});
   }
 
-  public sendRing(realmID: number, ring: RingInfo) {
-    this.pendingRings[realmID].push(ring);
+  public sendRing(exchangeID: number, ring: RingInfo) {
+    this.pendingRings[exchangeID].push(ring);
   }
 
   public ensureDirectoryExists(filePath: string) {
@@ -640,17 +844,17 @@ export class ExchangeTestUtil {
     fs.mkdirSync(dirname);
   }
 
-  public async createBlock(realmID: number, blockType: number, data: string) {
+  public async createBlock(exchangeID: number, blockType: number, data: string) {
     const nextBlockIdx = (await this.exchange.getBlockHeight()).toNumber() + 1;
-    const inputFilename = "./blocks/block_" + realmID + "_" + nextBlockIdx + "_info.json";
-    const outputFilename = "./blocks/block_" + realmID + "_" + nextBlockIdx + ".json";
+    const inputFilename = "./blocks/block_" + exchangeID + "_" + nextBlockIdx + "_info.json";
+    const outputFilename = "./blocks/block_" + exchangeID + "_" + nextBlockIdx + ".json";
 
     this.ensureDirectoryExists(inputFilename);
     fs.writeFileSync(inputFilename, data, "utf8");
 
     const result = childProcess.spawnSync(
       "python3",
-      ["operator/create_block.py", "" + realmID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
+      ["operator/create_block.py", "" + exchangeID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
       {stdio: "inherit"},
     );
     assert(result.status === 0, "create_block failed: " + blockType);
@@ -662,12 +866,12 @@ export class ExchangeTestUtil {
                            data: string, filename: string) {
     const bitstream = new pjs.Bitstream(data);
     console.log("[EVM]PublicData: " + bitstream.getData());
-    const realmID = bitstream.extractUint32(0);
+    const exchangeID = bitstream.extractUint32(0);
 
     // Make sure the keys are generated
     await this.generateKeys(filename);
 
-    // const activeOperator = await this.getActiveOperator(realmID);
+    // const activeOperator = await this.getActiveOperator(exchangeID);
     // assert.equal(activeOperator.operatorID, operator.operatorID);
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
 
@@ -678,7 +882,7 @@ export class ExchangeTestUtil {
       web3.utils.hexToBytes(data),
       {from: this.exchangeOperator},
     );
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
+    pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
     const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const block: Block = {
@@ -686,7 +890,7 @@ export class ExchangeTestUtil {
       filename,
       operator,
     };
-    this.pendingBlocks[realmID].push(block);
+    this.pendingBlocks[exchangeID].push(block);
     return block;
   }
 
@@ -730,7 +934,7 @@ export class ExchangeTestUtil {
   public async verifyBlock(blockIdx: number, blockFilename: string) {
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
-    const proofFilename = "./blocks/block_" + block.realmID + "_" + blockIdx + "_proof.json";
+    const proofFilename = "./blocks/block_" + block.exchangeID + "_" + blockIdx + "_proof.json";
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-prove", blockFilename, proofFilename],
@@ -755,26 +959,26 @@ export class ExchangeTestUtil {
     return proofFilename;
   }
 
-  public async verifyPendingBlocks(realmID: number) {
-    for (const block of this.pendingBlocks[realmID]) {
+  public async verifyPendingBlocks(exchangeID: number) {
+    for (const block of this.pendingBlocks[exchangeID]) {
       await this.verifyBlock(block.blockIdx, block.filename);
     }
-    this.pendingBlocks[realmID] = [];
+    this.pendingBlocks[exchangeID] = [];
   }
 
-  public getPendingDeposits(realmID: number) {
+  public getPendingDeposits(exchangeID: number) {
     const pendingDeposits: Deposit[] = [];
-    for (const pendingDeposit of this.pendingDeposits[realmID]) {
+    for (const pendingDeposit of this.pendingDeposits[exchangeID]) {
       pendingDeposits.push(pendingDeposit);
     }
     return pendingDeposits;
   }
 
-  public async commitDeposits(realmID: number, pendingDeposits?: Deposit[]) {
+  public async commitDeposits(exchangeID: number, pendingDeposits?: Deposit[]) {
     const blockInfos: Block[] = [];
 
     if (pendingDeposits === undefined) {
-      pendingDeposits = this.pendingDeposits[realmID];
+      pendingDeposits = this.pendingDeposits[exchangeID];
     }
     if (pendingDeposits.length === 0) {
       return;
@@ -838,19 +1042,19 @@ export class ExchangeTestUtil {
 
       // Store state before
       const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
-      const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
+      const stateBefore = await this.loadExchangeState(exchangeID, currentBlockIdx);
 
-      const [blockIdx, blockFilename] = await this.createBlock(realmID, 1, JSON.stringify(depositBlock, replacer, 4));
+      const [idx, blockFilename] = await this.createBlock(exchangeID, 1, JSON.stringify(depositBlock, replacer, 4));
 
       // Store state after
-      const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
+      const stateAfter = await this.loadExchangeState(exchangeID, currentBlockIdx + 1);
 
       // Validate state change
       this.validateDeposits(deposits, stateBefore, stateAfter);
 
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
-      bs.addNumber(block.realmID, 4);
+      bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       bs.addBN(new BN(startingHash.slice(2), 16), 32);
@@ -859,25 +1063,25 @@ export class ExchangeTestUtil {
       bs.addNumber(numRequestsInBlock, 4);
 
       // Commit the block
-      const operator = await this.getActiveOperator(realmID);
+      const operator = await this.getActiveOperator(exchangeID);
       const blockInfo = await this.commitBlock(operator, BlockType.DEPOSIT, blockSize, bs.getData(), blockFilename);
 
       blockInfos.push(blockInfo);
     }
 
-    this.pendingDeposits[realmID] = [];
+    this.pendingDeposits[exchangeID] = [];
 
     return blockInfos;
   }
 
-  public async loadRealm(realmID: number, blockIdx?: number) {
+  public async loadExchangeState(exchangeID: number, blockIdx?: number) {
     // Read in the state
     if (blockIdx === undefined) {
       blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     }
-    const accounts: Account[] = [];
+    const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
-      const stateFile = "states/state_" + realmID + "_" + blockIdx + ".json";
+      const stateFile = "states/state_" + exchangeID + "_" + blockIdx + ".json";
       const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
 
       const accountsKeys: string[] = Object.keys(jState.accounts_values);
@@ -886,7 +1090,7 @@ export class ExchangeTestUtil {
         numAccounts = (Number(accountKey) >= numAccounts) ? Number(accountKey) + 1 : numAccounts;
       }
       for (let i = 0; i < numAccounts; i++) {
-        const emptyAccount: Account = {
+        const emptyAccount: AccountLeaf = {
           publicKeyX: "0",
           publicKeyY: "0",
           nonce: 0,
@@ -917,7 +1121,7 @@ export class ExchangeTestUtil {
             tradeHistory,
           };
         }
-        const account: Account = {
+        const account: AccountLeaf = {
           publicKeyX: jAccount.publicKeyX,
           publicKeyY: jAccount.publicKeyY,
           nonce: jAccount.nonce,
@@ -926,7 +1130,7 @@ export class ExchangeTestUtil {
         accounts[Number(accountKey)] = account;
       }
     } else {
-      const emptyAccount: Account = {
+      const emptyAccount: AccountLeaf = {
         publicKeyX: "0",
         publicKeyY: "0",
         nonce: 0,
@@ -947,14 +1151,14 @@ export class ExchangeTestUtil {
       }
     }
 
-    const realm: Realm = {
+    const exchangeState: ExchangeState = {
       accounts,
     };
-    return realm;
+    return exchangeState;
   }
 
-  public async getActiveOperator(realmID: number) {
-    return this.activeOperator ? this.activeOperator : this.operators[realmID];
+  public async getActiveOperator(exchangeID: number) {
+    return this.activeOperator ? this.activeOperator : this.operators[exchangeID];
   }
 
   public async setOperatorContract(operator: any) {
@@ -966,12 +1170,12 @@ export class ExchangeTestUtil {
     this.activeOperator = operator;
   }
 
-  public async commitWithdrawalRequests(onchain: boolean, realmID: number, shutdown: boolean = false) {
+  public async commitWithdrawalRequests(onchain: boolean, exchangeID: number, shutdown: boolean = false) {
     let pendingWithdrawals: WithdrawalRequest[];
     if (onchain) {
-      pendingWithdrawals = this.pendingOnchainWithdrawalRequests[realmID];
+      pendingWithdrawals = this.pendingOnchainWithdrawalRequests[exchangeID];
     } else {
-      pendingWithdrawals = this.pendingOffchainWithdrawalRequests[realmID];
+      pendingWithdrawals = this.pendingOffchainWithdrawalRequests[exchangeID];
     }
     if (pendingWithdrawals.length === 0) {
       return;
@@ -996,7 +1200,7 @@ export class ExchangeTestUtil {
             accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
-            walletAccountID: onchain ? 0 : this.wallets[realmID][0].walletAccountID,
+            walletAccountID: onchain ? 0 : this.wallets[exchangeID][0].walletAccountID,
             feeTokenID: 1,
             fee: new BN(0),
             walletSplitPercentage: 0,
@@ -1006,6 +1210,13 @@ export class ExchangeTestUtil {
       }
       assert(withdrawals.length === blockSize);
       numWithdrawalsDone += blockSize;
+
+      if (!onchain) {
+        // Sign the offchain withdrawals
+        for (const withdrawal of withdrawals) {
+          this.signWithdrawal(withdrawal);
+        }
+      }
 
       const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
@@ -1022,11 +1233,14 @@ export class ExchangeTestUtil {
         hashData.addNumber(withdrawal.accountID, 3);
         hashData.addNumber(withdrawal.tokenID, 1);
         hashData.addBN(withdrawal.amount, 12);
+        console.log("withdrawal.accountID: " + withdrawal.accountID);
+        console.log("withdrawal.tokenID: " + withdrawal.tokenID);
+        console.log("withdrawal.amount: " + withdrawal.amount.toString(10));
         endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
       }
 
       // Block info
-      const operator = await this.getActiveOperator(realmID);
+      const operator = await this.getActiveOperator(exchangeID);
       const withdrawalBlock: WithdrawBlock = {
         withdrawals,
         onchainDataAvailability: this.onchainDataAvailability,
@@ -1038,24 +1252,17 @@ export class ExchangeTestUtil {
 
       // Store state before
       const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
-      const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
+      const stateBefore = await this.loadExchangeState(exchangeID, currentBlockIdx);
 
       const jWithdrawalsInfo = JSON.stringify(withdrawalBlock, replacer, 4);
-      const [blockIdx, blockFilename] = await this.createBlock(realmID, blockType, jWithdrawalsInfo);
+      const [blockIdx, blockFilename] = await this.createBlock(exchangeID, blockType, jWithdrawalsInfo);
 
       // Store state after
-      const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
-
-      // Validate state change
-      if (onchain) {
-        this.validateOnchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
-      } else {
-        this.validateOffchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
-      }
+      const stateAfter = await this.loadExchangeState(exchangeID, currentBlockIdx + 1);
 
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
       const bs = new pjs.Bitstream();
-      bs.addNumber(block.realmID, 4);
+      bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       if (onchain) {
@@ -1078,6 +1285,13 @@ export class ExchangeTestUtil {
         }
       }
 
+       // Validate state change
+      if (onchain) {
+        this.validateOnchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
+      } else {
+        this.validateOffchainWithdrawals(withdrawalBlock, bs, stateBefore, stateAfter);
+      }
+
       // Commit the block
       await this.commitBlock(operator, blockType, blockSize, bs.getData(), blockFilename);
 
@@ -1085,7 +1299,7 @@ export class ExchangeTestUtil {
       let withdrawalIdx = 0;
       for (const withdrawalRequest of block.withdrawals) {
         const withdrawal: Withdrawal = {
-          realmID,
+          exchangeID,
           blockIdx,
           withdrawalIdx,
         };
@@ -1095,28 +1309,28 @@ export class ExchangeTestUtil {
     }
 
     if (onchain) {
-      this.pendingOnchainWithdrawalRequests[realmID] = [];
+      this.pendingOnchainWithdrawalRequests[exchangeID] = [];
     } else {
-      this.pendingOffchainWithdrawalRequests[realmID] = [];
+      this.pendingOffchainWithdrawalRequests[exchangeID] = [];
     }
   }
 
-  public async commitOffchainWithdrawalRequests(realmID: number) {
-    return this.commitWithdrawalRequests(false, realmID);
+  public async commitOffchainWithdrawalRequests(exchangeID: number) {
+    return this.commitWithdrawalRequests(false, exchangeID);
   }
 
-  public async commitOnchainWithdrawalRequests(realmID: number) {
-    return this.commitWithdrawalRequests(true, realmID);
+  public async commitOnchainWithdrawalRequests(exchangeID: number) {
+    return this.commitWithdrawalRequests(true, exchangeID);
   }
 
-  public async commitShutdownWithdrawalRequests(realmID: number) {
-    return this.commitWithdrawalRequests(true, realmID, true);
+  public async commitShutdownWithdrawalRequests(exchangeID: number) {
+    return this.commitWithdrawalRequests(true, exchangeID, true);
   }
 
   public async submitPendingWithdrawals(addressBook?: { [id: string]: string; }) {
     for (const withdrawal of this.pendingWithdrawals) {
       const txw = await this.exchange.withdraw(
-        web3.utils.toBN(withdrawal.realmID),
+        web3.utils.toBN(withdrawal.exchangeID),
         web3.utils.toBN(withdrawal.blockIdx),
         web3.utils.toBN(withdrawal.withdrawalIdx),
       );
@@ -1137,8 +1351,8 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
-  public async commitRings(realmID: number) {
-    const pendingRings = this.pendingRings[realmID];
+  public async commitRings(exchangeID: number) {
+    const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
       return;
     }
@@ -1156,11 +1370,11 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
-          const walletAccountID = this.wallets[realmID][0].walletAccountID;
+          const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
           const dummyRing: RingInfo = {
             orderA:
               {
-                realmID,
+                exchangeID,
                 orderID: 0,
                 accountID: this.dummyAccountId,
                 walletAccountID,
@@ -1171,21 +1385,22 @@ export class ExchangeTestUtil {
 
                 tokenIdS: 0,
                 tokenIdB: 1,
-                tokenIdF: 0,
 
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
-                walletSplitPercentage: 0,
-                waiveFeePercentage: 0,
+
+                maxFeeBips: 0,
+
+                feeBips: 0,
+                rebateBips: 0,
 
                 amountS: new BN(1),
                 amountB: new BN(1),
-                amountF: new BN(1),
               },
             orderB:
               {
-                realmID,
+                exchangeID,
                 orderID: 0,
                 accountID: this.dummyAccountId,
                 walletAccountID,
@@ -1196,59 +1411,71 @@ export class ExchangeTestUtil {
 
                 tokenIdS: 1,
                 tokenIdB: 0,
-                tokenIdF: 0,
 
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
-                walletSplitPercentage: 0,
-                waiveFeePercentage: 0,
+
+                maxFeeBips: 0,
+
+                feeBips: 0,
+                rebateBips: 0,
 
                 amountS: new BN(1),
                 amountB: new BN(1),
-                amountF: new BN(1),
               },
-            minerAccountID: this.minerAccountID[realmID],
-            feeRecipientAccountID: this.feeRecipientAccountID[realmID],
+            minerAccountID: this.minerAccountID[exchangeID],
             tokenID: 0,
             fee: new BN(0),
           };
+          this.signOrder(dummyRing.orderA);
+          this.signOrder(dummyRing.orderB);
           rings.push(dummyRing);
         }
       }
       assert(rings.length === blockSize);
       numRingsDone += blockSize;
 
-      const operator = await this.getActiveOperator(realmID);
+      // Sign the rings
+      for (const ring of rings) {
+        this.signRing(ring);
+      }
+
+      const protocolFees = await this.exchange.getProtocolFeeValues();
+      const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
+      const protocolMakerFeeBips = protocolFees.makerFeeBips.toNumber();
+
+      const operator = await this.getActiveOperator(exchangeID);
       const ringBlock: RingBlock = {
         rings,
         onchainDataAvailability: this.onchainDataAvailability,
         timestamp,
-        realmID,
+        protocolTakerFeeBips,
+        protocolMakerFeeBips,
+        exchangeID,
         operatorAccountID: operator.accountID,
       };
 
       // Store state before
       const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
-      const stateBefore = await this.loadRealmForRingBlock(realmID, currentBlockIdx, ringBlock);
+      const stateBefore = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx, ringBlock);
 
       // Create the block
-      const [blockIdx, blockFilename] = await this.createBlock(realmID, 0, JSON.stringify(ringBlock, replacer, 4));
+      const [blockIdx, blockFilename] = await this.createBlock(exchangeID, 0, JSON.stringify(ringBlock, replacer, 4));
 
       // Store state after
-      const stateAfter = await this.loadRealmForRingBlock(realmID, currentBlockIdx + 1, ringBlock);
-
-      // Validate state change
-      this.validateRingSettlements(ringBlock, stateBefore, stateAfter);
+      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
       const bs = new pjs.Bitstream();
-      bs.addNumber(realmID, 4);
+      bs.addNumber(exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       bs.addNumber(ringBlock.timestamp, 4);
+      bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
+      bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const ringSettlement of block.ringSettlements) {
@@ -1256,44 +1483,43 @@ export class ExchangeTestUtil {
           const orderA = ringSettlement.ring.orderA;
           const orderB = ringSettlement.ring.orderB;
 
-          bs.addNumber((ring.minerAccountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + ring.feeRecipientAccountID, 5);
+          const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
+          bs.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
           bs.addNumber(ring.tokenID, 1);
-          bs.addNumber(toFloat(new BN(ring.fee), constants.Float16Encoding), 2);
-          bs.addNumber(ring.fMargin, 3);
 
           bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
+          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
 
-          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderA.walletAccountID, 5);
           bs.addNumber(orderA.tokenS, 1);
-          bs.addNumber(orderA.tokenF, 1);
           bs.addNumber(ring.fFillS_A, 3);
-          bs.addNumber(ring.fFillF_A, 3);
-          bs.addNumber(orderA.walletSplitPercentage, 1);
-          bs.addNumber(orderA.waiveFeePercentage, 1);
+          let buyMask = orderA.buy ? 0b10000000 : 0;
+          let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
+          bs.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
 
-          bs.addNumber((orderB.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.walletAccountID, 5);
           bs.addNumber(orderB.tokenS, 1);
-          bs.addNumber(orderB.tokenF, 1);
           bs.addNumber(ring.fFillS_B, 3);
-          bs.addNumber(ring.fFillF_B, 3);
-          bs.addNumber(orderB.walletSplitPercentage, 1);
-          bs.addNumber(orderB.waiveFeePercentage, 1);
+          buyMask = orderB.buy ? 0b10000000 : 0;
+          rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
+          bs.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
         }
       }
+
+      // Validate state change
+      this.validateRingSettlements(ringBlock, bs, stateBefore, stateAfter);
 
       // Commit the block
       await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
     }
 
-    this.pendingRings[realmID] = [];
+    this.pendingRings[exchangeID] = [];
   }
 
-  public cancelPendingRings(realmID: number) {
-    this.pendingRings[realmID] = [];
+  public cancelPendingRings(exchangeID: number) {
+    this.pendingRings[exchangeID] = [];
   }
 
-  public async commitCancels(realmID: number) {
-    const pendingCancels = this.pendingCancels[realmID];
+  public async commitCancels(exchangeID: number) {
+    const pendingCancels = this.pendingCancels[exchangeID];
     if (pendingCancels.length === 0) {
       return;
     }
@@ -1307,7 +1533,7 @@ export class ExchangeTestUtil {
         if (b < pendingCancels.length) {
           cancels.push(pendingCancels[b]);
         } else {
-          const walletAccountID = this.wallets[realmID][0].walletAccountID;
+          const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
           const dummyCancel: Cancel = {
             accountID: this.dummyAccountId,
             orderTokenID: 0,
@@ -1323,7 +1549,12 @@ export class ExchangeTestUtil {
       assert(cancels.length === blockSize);
       numCancelsDone += blockSize;
 
-      const operator = await this.getActiveOperator(realmID);
+      // Sign the order cancelations
+      for (const cancel of cancels) {
+        this.signCancel(cancel);
+      }
+
+      const operator = await this.getActiveOperator(exchangeID);
       const cancelBlock: CancelBlock = {
         cancels,
         onchainDataAvailability: this.onchainDataAvailability,
@@ -1332,22 +1563,19 @@ export class ExchangeTestUtil {
 
       // Store state before
       const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
-      const stateBefore = await this.loadRealm(realmID, currentBlockIdx);
+      const stateBefore = await this.loadExchangeState(exchangeID, currentBlockIdx);
 
       // Create the block
-      const [blockIdx, blockFilename] = await this.createBlock(realmID, 4, JSON.stringify(cancelBlock, replacer, 4));
+      const [blockIdx, blockFilename] = await this.createBlock(exchangeID, 4, JSON.stringify(cancelBlock, replacer, 4));
 
       // Store state after
-      const stateAfter = await this.loadRealm(realmID, currentBlockIdx + 1);
-
-      // Validate state change
-      this.validateOrderCancellations(cancelBlock, stateBefore, stateAfter);
+      const stateAfter = await this.loadExchangeState(exchangeID, currentBlockIdx + 1);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
       const bs = new pjs.Bitstream();
-      bs.addNumber(block.realmID, 4);
+      bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       if (block.onchainDataAvailability) {
@@ -1362,11 +1590,14 @@ export class ExchangeTestUtil {
         }
       }
 
+      // Validate state change
+      this.validateOrderCancellations(cancelBlock, bs, stateBefore, stateAfter);
+
       // Commit the block
       await this.commitBlock(operator, BlockType.ORDER_CANCELLATION, blockSize, bs.getData(), blockFilename);
     }
 
-    this.pendingCancels[realmID] = [];
+    this.pendingCancels[exchangeID] = [];
   }
 
   public async registerTokens() {
@@ -1438,12 +1669,12 @@ export class ExchangeTestUtil {
       return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
     });
     const exchangeAddress = items[0][0];
-    const realmID = items[0][1].toNumber();
+    const exchangeID = items[0][1].toNumber();
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
     this.exchangeOwner = owner;
     this.exchangeOperator = operator;
-    this.exchangeId = realmID;
+    this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
 
     await this.exchange.setFees(
@@ -1456,10 +1687,20 @@ export class ExchangeTestUtil {
 
     if (bSetupTestState) {
       await this.registerTokens();
-      await this.setupTestState(realmID);
+      await this.setupTestState(exchangeID);
     }
 
-    return realmID;
+    // Deposit some LRC to stake for the exchange
+    const depositer = this.testContext.operators[2];
+    const stakeAmount = onchainDataAvailability ?
+                        (await this.loopringV3.minExchangeStakeWithDataAvailability()) :
+                        (await this.loopringV3.minExchangeStakeWithoutDataAvailability());
+    await this.setBalanceAndApprove(depositer, "LRC", stakeAmount, this.loopringV3.address);
+
+    // Stake it
+    await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {from: depositer});
+
+    return exchangeID;
   }
 
   public getTokenAddress(token: string) {
@@ -1491,14 +1732,14 @@ export class ExchangeTestUtil {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
-    const realmID = this.exchangeId;
+    const exchangeID = this.exchangeId;
 
     const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const filename = "withdraw_proof.json";
     const result = childProcess.spawnSync(
       "python3",
       ["operator/create_withdraw_proof.py",
-      "" + realmID, "" + blockIdx, "" + accountID, "" + tokenID, filename],
+      "" + exchangeID, "" + blockIdx, "" + accountID, "" + tokenID, filename],
       {stdio: "inherit"},
     );
     assert(result.status === 0, "create_withdraw_proof failed!");
@@ -1573,8 +1814,8 @@ export class ExchangeTestUtil {
            "Timestamp should have been increased by roughly the expected value");
   }
 
-  public async getOffchainBalance(realmID: number, accountID: number, tokenID: number) {
-    const state = await this.loadRealm(realmID);
+  public async getOffchainBalance(exchangeID: number, accountID: number, tokenID: number) {
+    const state = await this.loadExchangeState(exchangeID);
     return state.accounts[accountID].balances[tokenID].balance;
   }
 
@@ -1595,6 +1836,11 @@ export class ExchangeTestUtil {
       const Token = await this.contracts.DummyToken.at(token);
       return await Token.balanceOf(owner);
     }
+  }
+
+  public async checkOffchainBalance(accountID: number, tokenID: number, expectedBalance: BN, desc: string) {
+    const balance = await this.getOffchainBalance(this.exchangeId, accountID, tokenID);
+    assert(balance.eq(expectedBalance), desc);
   }
 
   public async doRandomDeposit(ownerIndex?: number) {
@@ -1660,7 +1906,7 @@ export class ExchangeTestUtil {
     return a;
   }
 
-  public compareStates(stateA: Realm, stateB: Realm) {
+  public compareStates(stateA: ExchangeState, stateB: ExchangeState) {
     assert.equal(stateA.accounts.length, stateA.accounts.length, "number of accounts does not match");
     for (let accountID = 0; accountID < stateA.accounts.length; accountID++) {
       const accountA = stateA.accounts[accountID];
@@ -1686,21 +1932,31 @@ export class ExchangeTestUtil {
     }
   }
 
-  public validateRingSettlements(ringBlock: RingBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateRingSettlements(ringBlock: RingBlock, bs: pjs.Bitstream,
+                                 stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
     let latestState = stateBefore;
     const addressBook = this.getAddressBookBlock(ringBlock);
-    for (const ring of ringBlock.rings) {
+    for (const [ringIndex, ring] of ringBlock.rings.entries()) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.settleRing(ring, latestState, timestamp, operatorAccountID);
+      const simulatorReport = simulator.settleRingFromInputData(
+        ring, latestState, timestamp, operatorAccountID,
+        ringBlock.protocolTakerFeeBips, ringBlock.protocolMakerFeeBips,
+      );
+
+      if (ringBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.settleRingFromOnchainData(bs, ringIndex, latestState);
+        this.compareStates(simulatorReport.exchangeStateAfter, reconstructedState);
+      }
 
       for (const detailedTransfer of simulatorReport.detailedTransfers) {
         this.logDetailedTokenTransfer(detailedTransfer, addressBook);
       }
-      this.logFilledAmountsRing(ring, latestState, simulatorReport.realmAfter);
-      latestState = simulatorReport.realmAfter;
+      this.logFilledAmountsRing(ring, latestState, simulatorReport.exchangeStateAfter);
+      latestState = simulatorReport.exchangeStateAfter;
     }
 
     // Verify resulting state
@@ -1708,7 +1964,7 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateDeposits(deposits: Deposit[], stateBefore: Realm, stateAfter: Realm) {
+  public validateDeposits(deposits: Deposit[], stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     let latestState = stateBefore;
     for (const deposit of deposits) {
@@ -1716,7 +1972,7 @@ export class ExchangeTestUtil {
       const simulatorReport = simulator.deposit(deposit, latestState);
 
       let accountBefore = latestState.accounts[deposit.accountID];
-      const accountAfter = simulatorReport.realmAfter.accounts[deposit.accountID];
+      const accountAfter = simulatorReport.exchangeStateAfter.accounts[deposit.accountID];
 
       let bNewAccount = false;
       if (accountBefore === undefined) {
@@ -1727,7 +1983,7 @@ export class ExchangeTestUtil {
             tradeHistory: {},
           };
         }
-        const emptyAccount: Account = {
+        const emptyAccount: AccountLeaf = {
           publicKeyX: "0",
           publicKeyY: "0",
           nonce: 0,
@@ -1754,7 +2010,7 @@ export class ExchangeTestUtil {
         }
       }
 
-      latestState = simulatorReport.realmAfter;
+      latestState = simulatorReport.exchangeStateAfter;
     }
 
     // Verify resulting state
@@ -1762,7 +2018,8 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOnchainWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateOnchainWithdrawals(withdrawBlock: WithdrawBlock,
+                                    stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     let latestState = stateBefore;
     const shutdown = withdrawBlock.count === 0;
@@ -1771,7 +2028,7 @@ export class ExchangeTestUtil {
       const simulatorReport = simulator.onchainWithdraw(withdrawal, shutdown, latestState);
 
       const accountBefore = latestState.accounts[withdrawal.accountID];
-      const accountAfter = simulatorReport.realmAfter.accounts[withdrawal.accountID];
+      const accountAfter = simulatorReport.exchangeStateAfter.accounts[withdrawal.accountID];
 
       if (withdrawal.tokenID > 0 && withdrawal.accountID < latestState.accounts.length) {
         this.prettyPrintBalanceChange(
@@ -1781,7 +2038,7 @@ export class ExchangeTestUtil {
         );
       }
 
-      latestState = simulatorReport.realmAfter;
+      latestState = simulatorReport.exchangeStateAfter;
     }
 
     // Verify resulting state
@@ -1789,16 +2046,25 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, bs: pjs.Bitstream,
+                                     stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     const operatorAccountID = withdrawBlock.operatorAccountID;
     let latestState = stateBefore;
-    for (const withdrawal of withdrawBlock.withdrawals) {
+    for (const [withdrawalIndex, withdrawal] of withdrawBlock.withdrawals.entries()) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.offchainWithdraw(withdrawal, latestState, operatorAccountID);
+      const simulatorReport = simulator.offchainWithdrawFromInputData(withdrawal, latestState, operatorAccountID);
+
+      if (withdrawBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.offchainWithdrawFromOnchainData(
+          bs, withdrawBlock.withdrawals.length, withdrawalIndex, latestState,
+        );
+        this.compareStates(simulatorReport.exchangeStateAfter, reconstructedState);
+      }
 
       const accountBefore = latestState.accounts[withdrawal.accountID];
-      const accountAfter = simulatorReport.realmAfter.accounts[withdrawal.accountID];
+      const accountAfter = simulatorReport.exchangeStateAfter.accounts[withdrawal.accountID];
 
       if (withdrawal.tokenID > 0) {
         this.prettyPrintBalanceChange(
@@ -1808,7 +2074,7 @@ export class ExchangeTestUtil {
         );
       }
 
-      latestState = simulatorReport.realmAfter;
+      latestState = simulatorReport.exchangeStateAfter;
     }
 
     // Verify resulting state
@@ -1816,18 +2082,27 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOrderCancellations(cancelBlock: CancelBlock, stateBefore: Realm, stateAfter: Realm) {
+  public validateOrderCancellations(cancelBlock: CancelBlock, bs: pjs.Bitstream,
+                                    stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     const operatorAccountID = cancelBlock.operatorAccountID;
     let latestState = stateBefore;
-    for (const cancel of cancelBlock.cancels) {
+    for (const [cancelIndex, cancel] of cancelBlock.cancels.entries()) {
       const simulator = new Simulator();
-      const simulatorReport = simulator.cancelOrder(cancel, latestState, operatorAccountID);
+      const simulatorReport = simulator.cancelOrderFromInputData(cancel, latestState, operatorAccountID);
+
+      if (cancelBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.cancelOrderFromOnchainData(
+          bs, cancelIndex, latestState,
+        );
+        this.compareStates(simulatorReport.exchangeStateAfter, reconstructedState);
+      }
 
       // const accountBefore = latestState.accounts[cancel.accountID];
-      // const accountAfter = simulatorReport.realmAfter.accounts[cancel.accountID];
+      // const accountAfter = simulatorReport.exchangeStateAfter.accounts[cancel.accountID];
 
-      latestState = simulatorReport.realmAfter;
+      latestState = simulatorReport.exchangeStateAfter;
     }
 
     // Verify resulting state
@@ -1835,8 +2110,8 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public async loadRealmForRingBlock(realmID: number, blockIdx: number, ringBlock: RingBlock) {
-    const state = await this.loadRealm(realmID, blockIdx);
+  public async loadExchangeStateForRingBlock(exchangeID: number, blockIdx: number, ringBlock: RingBlock) {
+    const state = await this.loadExchangeState(exchangeID, blockIdx);
     const orders: OrderInfo[] = [];
     for (const ring of ringBlock.rings) {
       orders.push(ring.orderA);
@@ -1881,6 +2156,146 @@ export class ExchangeTestUtil {
     console.log(accountID + ": " +
                 prettyBalanceBefore + " " + tokenSymbol + " -> " +
                 prettyBalanceAfter + " " + tokenSymbol);
+  }
+
+  public async depositExchangeStakeChecked(amount: BN, owner: string) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(owner, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.exchange.getExchangeStake();
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.loopringV3.depositExchangeStake(this.exchangeId, amount, {from: owner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(owner, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.exchange.getExchangeStake();
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(amount)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(amount)),
+           "Token balance of contract should be increased by amount");
+    assert(stakeAfter.eq(stakeBefore.add(amount)),
+           "Stake should be increased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.add(amount)),
+           "Total stake should be increased by amount");
+
+    // Get the ExchangeStakeDeposited event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ExchangeStakeDeposited", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ExchangeStakeDeposited event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
+  }
+
+  public async withdrawExchangeStakeChecked(recipient: string, amount: BN) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(recipient, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.exchange.getExchangeStake();
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.exchange.withdrawExchangeStake(recipient, {from: this.exchangeOwner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(recipient, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.exchange.getExchangeStake();
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amount)),
+           "Token balance of owner should be increased by amount");
+    assert(balanceContractBefore.eq(balanceContractAfter.add(amount)),
+           "Token balance of contract should be decreased by amount");
+    assert(stakeBefore.eq(stakeAfter.add(amount)),
+           "Stake should be decreased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.sub(amount)),
+           "Total stake should be decreased by amount");
+
+    // Get the ExchangeStakeWithdrawn event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ExchangeStakeWithdrawn", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ExchangeStakeWithdrawn event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
+  }
+
+  public async depositProtocolFeeStakeChecked(amount: BN, owner: string) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(owner, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.loopringV3.depositProtocolFeeStake(this.exchangeId, amount, {from: owner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(owner, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerBefore.eq(balanceOwnerAfter.add(amount)),
+           "Token balance of owner should be decreased by amount");
+    assert(balanceContractAfter.eq(balanceContractBefore.add(amount)),
+           "Token balance of contract should be increased by amount");
+    assert(stakeAfter.eq(stakeBefore.add(amount)),
+           "Stake should be increased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.add(amount)),
+           "Total stake should be increased by amount");
+
+    // Get the ProtocolFeeStakeDeposited event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ProtocolFeeStakeDeposited", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ProtocolFeeStakeDeposited event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
+  }
+
+  public async withdrawProtocolFeeStakeChecked(recipient: string, amount: BN) {
+    const token = "LRC";
+    const balanceOwnerBefore = await this.getOnchainBalance(recipient, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeBefore = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeBefore = await this.loopringV3.totalStake();
+
+    await this.exchange.withdrawProtocolFeeStake(recipient, amount, {from: this.exchangeOwner});
+
+    const balanceOwnerAfter = await this.getOnchainBalance(recipient, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.loopringV3.address, token);
+    const stakeAfter = await this.loopringV3.getProtocolFeeStake(this.exchangeId);
+    const totalStakeAfter = await this.loopringV3.totalStake();
+
+    assert(balanceOwnerAfter.eq(balanceOwnerBefore.add(amount)),
+           "Token balance of owner should be increased by amount");
+    assert(balanceContractBefore.eq(balanceContractAfter.add(amount)),
+           "Token balance of contract should be decreased by amount");
+    assert(stakeBefore.eq(stakeAfter.add(amount)),
+           "Stake should be decreased by amount");
+    assert(totalStakeAfter.eq(totalStakeBefore.sub(amount)),
+           "Total stake should be decreased by amount");
+
+    // Get the ProtocolFeeStakeWithdrawn event
+    const eventArr: any = await this.getEventsFromContract(
+      this.loopringV3, "ProtocolFeeStakeWithdrawn", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeId, eventObj.args.amount];
+    });
+    assert.equal(items.length, 1, "A single ProtocolFeeStakeWithdrawn event should have been emitted");
+    assert.equal(items[0][0].toNumber(), this.exchangeId, "exchangeId should match");
+    assert(items[0][1].eq(amount), "amount should match");
   }
 
   private getPrivateKey(address: string) {
@@ -2025,7 +2440,7 @@ export class ExchangeTestUtil {
     return cancelled ? "Cancelled" : "NotCancelled";
   }
 
-  private logFilledAmountsRing(ring: RingInfo, stateBefore: Realm, stateAfter: Realm) {
+  private logFilledAmountsRing(ring: RingInfo, stateBefore: ExchangeState, stateAfter: ExchangeState) {
     this.logFilledAmountOrder(
       "[Filled] OrderA",
       stateBefore.accounts[ring.orderA.accountID],
@@ -2040,14 +2455,16 @@ export class ExchangeTestUtil {
     );
   }
 
-  private logFilledAmountOrder(description: string, accountBefore: Account, accountAfter: Account, order: OrderInfo) {
+  private logFilledAmountOrder(description: string,
+                               accountBefore: AccountLeaf, accountAfter: AccountLeaf,
+                               order: OrderInfo) {
     const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     const before = accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const after = accountAfter.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
-    const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.amountS);
-    const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.amountS);
-    const filledBeforePretty = this.getPrettyAmount(order.tokenIdS, before.filled);
-    const filledAfterPretty = this.getPrettyAmount(order.tokenIdS, after.filled);
+    const filledBeforePercentage = before.filled.mul(new BN(100)).div(order.buy ? order.amountB : order.amountS);
+    const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.buy ? order.amountB : order.amountS);
+    const filledBeforePretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, before.filled);
+    const filledAfterPretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, after.filled);
     console.log(
       description + ": " + filledBeforePretty + " -> " + filledAfterPretty +
       " (" + filledBeforePercentage.toString(10) + "% -> " + filledAfterPercentage.toString(10) + "%)" +

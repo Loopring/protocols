@@ -77,6 +77,14 @@ library ExchangeData
         bool    depositDisabled;
     }
 
+    struct ProtocolFeeData
+    {
+        uint32 timestamp;
+        uint8 takerFeeBips;
+        uint8 makerFeeBips;
+        uint8 previousTakerFeeBips;
+        uint8 previousMakerFeeBips;
+    }
 
     // This is the (virtual) block an operator needs to submit onchain to maintain the
     // per-exchange (virtual) blockchain.
@@ -164,11 +172,12 @@ library ExchangeData
     function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 15 seconds; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 10 minutes; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20; }
+    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
     function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
     function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
@@ -195,6 +204,7 @@ library ExchangeData
         Request[]   depositChain;
         Request[]   withdrawalChain;
 
+        // A map from the account owner to accountID + 1
         mapping (address => uint24) ownerToAccountId;
         mapping (address => uint16) tokenToTokenId;
 
@@ -202,6 +212,9 @@ library ExchangeData
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
 
         uint numBlocksFinalized;
+
+        // Cached data for the protocol fee
+        ProtocolFeeData protocolFeeData;
 
         // Time when the exchange was shutdown
         uint shutdownStartTime;

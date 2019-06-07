@@ -8,19 +8,28 @@ export enum BlockType {
   ORDER_CANCELLATION,
 }
 
+export interface KeyPair {
+  publicKeyX: string;
+  publicKeyY: string;
+  secretKey: string;
+}
+
+export interface Signature {
+  Rx: string;
+  Ry: string;
+  s: string;
+}
+
 export interface OrderInfo {
   owner?: string;
   tokenS?: string;
   tokenB?: string;
-  tokenF?: string;
   amountS: BN;
   amountB: BN;
-  amountF?: BN;
 
-  realmID?: number;
+  exchangeID?: number;
   accountID?: number;
   orderID?: number;
-  walletAccountID?: number;
 
   dualAuthPublicKeyX?: string;
   dualAuthPublicKeyY?: string;
@@ -28,24 +37,28 @@ export interface OrderInfo {
 
   tokenIdS?: number;
   tokenIdB?: number;
-  tokenIdF?: number;
 
   allOrNone?: boolean;
   validSince?: number;
   validUntil?: number;
-  walletSplitPercentage?: number;
-  waiveFeePercentage?: number;
+  maxFeeBips?: number;
+  buy?: boolean;
+
+  feeBips?: number;
+  rebateBips?: number;
 
   balanceS?: BN;
   balanceB?: BN;
-  balanceF?: BN;
+
+  hash?: string;
+  signature?: Signature;
 
   [key: string]: any;
 }
 
 export interface OrderExpectation {
   filledFraction: number;
-  margin?: BN;
+  spread?: BN;
 }
 
 export interface RingExpectation {
@@ -58,19 +71,24 @@ export interface RingInfo {
   orderB: OrderInfo;
 
   minerAccountID?: number;
-  feeRecipientAccountID?: number;
   tokenID?: number;
   fee?: BN;
+
+  signature?: Signature;
+  dualAuthASignature?: Signature;
+  dualAuthBSignature?: Signature;
 
   expected?: RingExpectation;
 }
 
 export interface RingBlock {
   rings: RingInfo[];
+  protocolTakerFeeBips?: number;
+  protocolMakerFeeBips?: number;
 
   onchainDataAvailability?: boolean;
   timestamp?: number;
-  realmID?: number;
+  exchangeID?: number;
   operatorAccountID?: number;
 }
 
@@ -107,10 +125,12 @@ export interface WithdrawalRequest {
   slotIdx?: number;
 
   withdrawalFee?: BN;
+
+  signature?: Signature;
 }
 
 export interface Withdrawal {
-  realmID: number;
+  exchangeID: number;
   blockIdx: number;
   withdrawalIdx: number;
 }
@@ -135,6 +155,8 @@ export interface Cancel {
   feeTokenID: number;
   fee: BN;
   walletSplitPercentage: number;
+
+  signature?: Signature;
 }
 
 export interface CancelBlock {
@@ -149,6 +171,15 @@ export interface Block {
   blockIdx: number;
   filename: string;
   operator: Operator;
+}
+
+export interface Account {
+  accountID: number;
+  owner: string;
+  publicKeyX: string;
+  publicKeyY: string;
+  secretKey: string;
+  nonce: number;
 }
 
 export interface Operator {
@@ -172,15 +203,15 @@ export interface Balance {
   tradeHistory: {[key: number]: TradeHistory};
 }
 
-export interface Account {
+export interface AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
   balances: {[key: number]: Balance};
 }
 
-export interface Realm {
-  accounts: Account[];
+export interface ExchangeState {
+  accounts: AccountLeaf[];
 }
 
 export interface DetailedTokenTransfer {
@@ -193,14 +224,14 @@ export interface DetailedTokenTransfer {
 }
 
 export interface RingSettlementSimulatorReport {
-  realmBefore: Realm;
-  realmAfter: Realm;
+  exchangeStateBefore: ExchangeState;
+  exchangeStateAfter: ExchangeState;
   detailedTransfers: DetailedTokenTransfer[];
 }
 
 export interface SimulatorReport {
-  realmBefore: Realm;
-  realmAfter: Realm;
+  exchangeStateBefore: ExchangeState;
+  exchangeStateAfter: ExchangeState;
 }
 
 export interface DepositInfo {

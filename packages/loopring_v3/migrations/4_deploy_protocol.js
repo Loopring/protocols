@@ -83,6 +83,8 @@ module.exports = function(deployer, network, accounts) {
           0,
           0,
           0,
+          0,
+          0,
         ),
       ]);
     });

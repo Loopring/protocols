@@ -17,6 +17,7 @@
 pragma solidity 0.5.7;
 
 import "../iface/ILoopringV3.sol";
+import "../iface/IExchange.sol";
 
 import "../lib/BurnableERC20.sol";
 import "../lib/Claimable.sol";
@@ -40,12 +41,14 @@ contract LoopringV3 is ILoopringV3, Claimable
         address _wethAddress,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
         )
         public
     {
@@ -55,19 +58,17 @@ contract LoopringV3 is ILoopringV3, Claimable
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
-        tokens[lrcAddress] = Token(lrcAddress, 1, 0xFFFFFFFF);
-        tokens[wethAddress] = Token(wethAddress, 3, 0xFFFFFFFF);
-        tokens[address(0)] = Token(address(0), 3, 0xFFFFFFFF);
-
         updateSettingsInternal(
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
-            _tierUpgradeCostBips,
             _maxWithdrawalFee,
             _downtimePriceLRCPerDay,
-            _withdrawalFineLRC,
             _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta
+            _tokenRegistrationFeeLRCDelta,
+            _minExchangeStakeWithDataAvailability,
+            _minExchangeStakeWithoutDataAvailability,
+            _revertFineLRC,
+            _withdrawalFineLRC
         );
     }
 
@@ -75,12 +76,14 @@ contract LoopringV3 is ILoopringV3, Claimable
     function updateSettings(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
         )
         external
         onlyOwner
@@ -88,13 +91,36 @@ contract LoopringV3 is ILoopringV3, Claimable
         updateSettingsInternal(
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
-            _tierUpgradeCostBips,
             _maxWithdrawalFee,
             _downtimePriceLRCPerDay,
-            _withdrawalFineLRC,
             _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta
+            _tokenRegistrationFeeLRCDelta,
+            _minExchangeStakeWithDataAvailability,
+            _minExchangeStakeWithoutDataAvailability,
+            _revertFineLRC,
+            _withdrawalFineLRC
         );
+    }
+
+    function updateProtocolFeeSettings(
+        uint8   _minProtocolTakerFeeBips,
+        uint8   _maxProtocolTakerFeeBips,
+        uint8   _minProtocolMakerFeeBips,
+        uint8   _maxProtocolMakerFeeBips,
+        uint    _targetProtocolTakerFeeStake,
+        uint    _targetProtocolMakerFeeStake
+        )
+        external
+        onlyOwner
+    {
+        minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
+        maxProtocolTakerFeeBips = _maxProtocolTakerFeeBips;
+        minProtocolMakerFeeBips = _minProtocolMakerFeeBips;
+        maxProtocolMakerFeeBips = _maxProtocolMakerFeeBips;
+        targetProtocolTakerFeeStake = _targetProtocolTakerFeeStake;
+        targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
+
+        emit SettingsUpdated(now);
     }
 
     function createExchange(
@@ -131,7 +157,13 @@ contract LoopringV3 is ILoopringV3, Claimable
             operator,
             onchainDataAvailability
         );
-        exchanges.push(exchangeAddress);
+
+        Exchange memory exchange = Exchange(
+            exchangeAddress,
+            0,
+            0
+        );
+        exchanges.push(exchange);
 
         emit ExchangeCreated(
             exchangeId,
@@ -142,8 +174,23 @@ contract LoopringV3 is ILoopringV3, Claimable
         );
     }
 
+    function canExchangeCommitBlocks(
+        uint exchangeId,
+        bool onchainDataAvailability
+        )
+        external
+        view
+        returns (bool)
+    {
+        uint amountStaked = getExchangeStake(exchangeId);
+        if (onchainDataAvailability) {
+            return amountStaked >= minExchangeStakeWithDataAvailability;
+        } else {
+            return amountStaked >= minExchangeStakeWithoutDataAvailability;
+        }
+    }
 
-    function getStake(
+    function getExchangeStake(
         uint exchangeId
         )
         public
@@ -154,20 +201,10 @@ contract LoopringV3 is ILoopringV3, Claimable
             exchangeId > 0 && exchangeId <= exchanges.length,
             "INVALID_EXCHANGE_ID"
         );
-        return exchangeStakes[exchangeId - 1];
+        return exchanges[exchangeId - 1].exchangeStake;
     }
 
-    function burnAllStake(
-        uint exchangeId
-        )
-        external
-        returns (uint burnedLRC)
-    {
-        burnedLRC = getStake(exchangeId);
-        burnStake(exchangeId, burnedLRC);
-    }
-
-    function burnStake(
+    function burnExchangeStake(
         uint exchangeId,
         uint amount
         )
@@ -177,7 +214,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        burnedLRC = getStake(exchangeId);
+        burnedLRC = getExchangeStake(exchangeId);
 
         if (amount < burnedLRC) {
             burnedLRC = amount;
@@ -187,13 +224,13 @@ contract LoopringV3 is ILoopringV3, Claimable
                 BurnableERC20(lrcAddress).burn(burnedLRC),
                 "BURN_FAILURE"
             );
-            exchangeStakes[exchangeId - 1] = exchangeStakes[exchangeId - 1].sub(burnedLRC);
+            exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1].exchangeStake.sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }
-        emit StakeBurned(exchangeId, burnedLRC);
+        emit ExchangeStakeBurned(exchangeId, burnedLRC);
     }
 
-    function depositStake(
+    function depositExchangeStake(
         uint exchangeId,
         uint amountLRC
         )
@@ -209,13 +246,13 @@ contract LoopringV3 is ILoopringV3, Claimable
             ),
             "TRANSFER_FAILURE"
         );
-        stakedLRC = exchangeStakes[exchangeId - 1].add(amountLRC);
-        exchangeStakes[exchangeId - 1] = stakedLRC;
+        stakedLRC = exchanges[exchangeId - 1].exchangeStake.add(amountLRC);
+        exchanges[exchangeId - 1].exchangeStake = stakedLRC;
         totalStake = totalStake.add(amountLRC);
-        emit StakeDeposited(exchangeId, amountLRC);
+        emit ExchangeStakeDeposited(exchangeId, amountLRC);
     }
 
-    function withdrawStake(
+    function withdrawExchangeStake(
         uint exchangeId,
         address recipient,
         uint requestedAmount
@@ -226,7 +263,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        uint stakedLRC = getStake(exchangeId);
+        uint stakedLRC = getExchangeStake(exchangeId);
         amount = (stakedLRC > requestedAmount) ? requestedAmount : stakedLRC;
         if (amount > 0) {
             require(
@@ -236,87 +273,112 @@ contract LoopringV3 is ILoopringV3, Claimable
                 ),
                 "WITHDRAWAL_FAILURE"
             );
-            exchangeStakes[exchangeId - 1] = exchangeStakes[exchangeId - 1].sub(amount);
+            exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1].exchangeStake.sub(amount);
             totalStake = totalStake.sub(amount);
         }
-        emit StakeWithdrawn(exchangeId, amount);
+        emit ExchangeStakeWithdrawn(exchangeId, amount);
     }
 
-    function getTokenBurnRate(
-        address _token
+    function getProtocolFeeStake(
+        uint exchangeId
         )
         public
         view
-        returns (uint16 burnRate)
+        returns (uint)
     {
-        Token storage token = tokens[_token];
-        if (token.tierValidUntil < now) {
-            burnRate = BURNRATE_TIER4;
-        } else if (token.tier == 1) {
-            burnRate = BURNRATE_TIER1;
-        } else if (token.tier == 2) {
-            burnRate = BURNRATE_TIER2;
-        } else if (token.tier == 3) {
-            burnRate = BURNRATE_TIER3;
-        } else {
-            burnRate = BURNRATE_TIER4;
-        }
+        require(
+            exchangeId > 0 && exchangeId <= exchanges.length,
+            "INVALID_EXCHANGE_ID"
+        );
+        return exchanges[exchangeId - 1].protocolFeeStake;
     }
 
-    function getLRCCostToBuydownTokenBurnRate(
-        address _token
-        )
-        public
-        view
-        returns (
-            uint amountLRC,
-            uint8 currentTier
-        )
-    {
-        require(_token != address(0), "BURN_RATE_FROZEN");
-        require(_token != lrcAddress, "BURN_RATE_FROZEN");
-        require(_token != wethAddress, "BURN_RATE_FROZEN");
-
-        Token storage token = tokens[_token];
-
-        currentTier = 4;
-        if (token.tier != 0 && token.tierValidUntil > now) {
-            currentTier = token.tier;
-        }
-
-        // Can't upgrade to a higher level than tier 1
-        require(currentTier > 1, "BURN_RATE_MINIMIZED");
-        uint totalSupply = BurnableERC20(lrcAddress).totalSupply();
-        amountLRC = totalSupply.mul(tierUpgradeCostBips) / 10000;
-    }
-
-    function buydownTokenBurnRate(
-        address _token
+    function depositProtocolFeeStake(
+        uint exchangeId,
+        uint amountLRC
         )
         external
-        returns (
-            uint amountBurned,
-            uint8 currentTier
-        )
+        returns (uint stakedLRC)
     {
-        (amountBurned, currentTier) = getLRCCostToBuydownTokenBurnRate(_token);
+        require(amountLRC > 0, "ZERO_VALUE");
+        require(
+            lrcAddress.safeTransferFrom(
+                msg.sender,
+                address(this),
+                amountLRC
+            ),
+            "TRANSFER_FAILURE"
+        );
+        stakedLRC = exchanges[exchangeId - 1].protocolFeeStake.add(amountLRC);
+        exchanges[exchangeId - 1].protocolFeeStake = stakedLRC;
+        totalStake = totalStake.add(amountLRC);
+        emit ProtocolFeeStakeDeposited(exchangeId, amountLRC);
+    }
 
-        // Burn tierUpgradeCostBips of total LRC supply
-        require(BurnableERC20(lrcAddress).burnFrom(msg.sender, amountBurned), "BURN_FAILURE");
-        currentTier -= 1;
+    function withdrawProtocolFeeStake(
+        uint exchangeId,
+        address recipient,
+        uint amount
+        )
+        external
+    {
+        address exchangeAddress = getExchangeAddress(exchangeId);
+        require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
-        // Upgrade tier
-        Token storage token = tokens[_token];
-        token.tokenAddress = _token;
-        token.tier = currentTier;
+        uint stakedLRC = getProtocolFeeStake(exchangeId);
+        require(amount >= stakedLRC, "INSUFFICIENT_STAKE");
+        if (amount > 0) {
+            require(
+                lrcAddress.safeTransfer(
+                    recipient,
+                    amount
+                ),
+                "WITHDRAWAL_FAILURE"
+            );
+            exchanges[exchangeId - 1].protocolFeeStake = exchanges[exchangeId - 1].protocolFeeStake.sub(amount);
+            totalStake = totalStake.sub(amount);
+        }
+        emit ProtocolFeeStakeWithdrawn(exchangeId, amount);
+    }
 
-        if (token.tierValidUntil < now) {
-            token.tierValidUntil = now + TIER_UPGRADE_DURATION;
-        } else {
-            token.tierValidUntil += TIER_UPGRADE_DURATION;
+    function withdrawProtocolFees(
+        uint exchangeId,
+        address tokenAddress
+        )
+        external
+        payable
+    {
+        IExchange(exchanges[exchangeId - 1].exchangeAddress).withdraw.value(msg.value)(tokenAddress, ~uint96(0));
+    }
+
+    function getProtocolFeeValues(
+        uint exchangeId,
+        bool onchainDataAvailability
+        )
+        external
+        view
+        returns (uint8 takerFeeBips, uint8 makerFeeBips)
+    {
+        Exchange storage exchange = exchanges[exchangeId - 1];
+
+        // Subtract the minimum exchange stake, this amount cannot be used to reduce the protocol fees
+        uint stake = 0;
+        if (onchainDataAvailability && exchange.exchangeStake > minExchangeStakeWithDataAvailability) {
+            stake = exchange.exchangeStake - minExchangeStakeWithDataAvailability;
+        } else if (!onchainDataAvailability && exchange.exchangeStake > minExchangeStakeWithoutDataAvailability) {
+            stake = exchange.exchangeStake - minExchangeStakeWithoutDataAvailability;
         }
 
-        emit TokenBurnRateDown(_token, token.tier, now);
+        // The total stake used here is the exchange stake + the protocol fee stake, but
+        // the protocol fee stake has a reduced weight of 50%.
+        uint protocolFeeStake = stake.add(exchange.protocolFeeStake / 2);
+
+        takerFeeBips = calculateProtocolFee(
+            minProtocolTakerFeeBips, maxProtocolTakerFeeBips, protocolFeeStake, targetProtocolTakerFeeStake
+        );
+        makerFeeBips = calculateProtocolFee(
+            minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
+        );
     }
 
     function withdrawTheBurn(
@@ -326,7 +388,6 @@ contract LoopringV3 is ILoopringV3, Claimable
         external
         onlyOwner
     {
-        require(token != lrcAddress, "LRC_ALREADY_BURNED");
         if (token == address(0)) {
             // ETH
             uint balance = address(this).balance;
@@ -334,6 +395,9 @@ contract LoopringV3 is ILoopringV3, Claimable
         } else {
             // ERC20 token
             uint balance = ERC20(token).balanceOf(address(this));
+            if (token == lrcAddress) {
+                balance = balance.sub(totalStake);
+            }
             require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
     }
@@ -347,12 +411,14 @@ contract LoopringV3 is ILoopringV3, Claimable
     function updateSettingsInternal(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
         )
         private
     {
@@ -360,12 +426,14 @@ contract LoopringV3 is ILoopringV3, Claimable
 
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
-        tierUpgradeCostBips = _tierUpgradeCostBips;
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
-        withdrawalFineLRC = _withdrawalFineLRC;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
+        minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
+        minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
+        revertFineLRC = _revertFineLRC;
+        withdrawalFineLRC = _withdrawalFineLRC;
 
         emit SettingsUpdated(now);
     }
@@ -381,6 +449,29 @@ contract LoopringV3 is ILoopringV3, Claimable
             exchangeId > 0 && exchangeId <= exchanges.length,
             "INVALID_EXCHANGE_ID"
         );
-        return exchanges[exchangeId - 1];
+        return exchanges[exchangeId - 1].exchangeAddress;
+    }
+
+    function calculateProtocolFee(
+        uint minFee,
+        uint maxFee,
+        uint stake,
+        uint targetStake
+        )
+        internal
+        pure
+        returns (uint8)
+    {
+        if (targetStake > 0) {
+            // Simple linear interpolation between 2 points
+            uint maxReduction = maxFee.sub(minFee);
+            uint reduction = maxReduction.mul(stake) / targetStake;
+            if (reduction > maxReduction) {
+                reduction = maxReduction;
+            }
+            return uint8(maxFee.sub(reduction));
+        } else {
+            return uint8(minFee);
+        }
     }
 }

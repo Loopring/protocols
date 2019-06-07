@@ -14,23 +14,25 @@ contract("Exchange", (accounts: string[]) => {
   const revertBlockChecked = async (block: Block) => {
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
-    const blockIdxBefore = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
-    const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
+    const revertFineLRC = await loopring.revertFineLRC();
+
+    const blockIdxBefore = (await exchange.getBlockHeight()).toNumber();
+    const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, "LRC");
     const lrcSupplyBefore = await LRC.totalSupply();
 
     await exchangeTestUtil.revertBlock(block.blockIdx);
 
-    const blockIdxAfter = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
-    const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(exchangeTestUtil.exchange.address, "LRC");
+    const blockIdxAfter = (await exchange.getBlockHeight()).toNumber();
+    const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, "LRC");
     const lrcSupplyAfter = await LRC.totalSupply();
 
     assert(blockIdxBefore > blockIdxAfter, "blockIdx should have decreased");
     assert.equal(blockIdxAfter, block.blockIdx - 1, "State should have been reverted to the specified block");
 
-    assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
-           "LRC balance of exchange needs to be reduced by STAKE_AMOUNT_IN_LRC");
-    assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(exchangeTestUtil.STAKE_AMOUNT_IN_LRC)),
-           "LRC supply needs to be reduced by STAKE_AMOUNT_IN_LRC");
+    assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(revertFineLRC)),
+           "LRC balance of exchange needs to be reduced by revertFineLRC");
+    assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(revertFineLRC)),
+           "LRC supply needs to be reduced by revertFineLRC");
   };
 
   const withdrawBlockFeeChecked = async (blockIdx: number, operator: string, totalBlockFee: BN,
@@ -79,24 +81,20 @@ contract("Exchange", (accounts: string[]) => {
     const ring: RingInfo = {
       orderA:
         {
-          realmID: exchangeId,
           tokenS: "WETH",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          amountF: new BN(web3.utils.toWei("1000", "ether")),
         },
       orderB:
         {
-          realmID: exchangeId,
           tokenS: "GTO",
           tokenB: "WETH",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
-          amountF: new BN(web3.utils.toWei("900", "ether")),
         },
       expected: {
-        orderA: { filledFraction: 1.0, margin: new BN(0) },
+        orderA: { filledFraction: 1.0, spread: new BN(0) },
         orderB: { filledFraction: 1.0 },
       },
     };
@@ -457,21 +455,17 @@ contract("Exchange", (accounts: string[]) => {
           const ring: RingInfo = {
             orderA:
               {
-                realmID: exchangeId,
                 tokenS: "WETH",
                 tokenB: "GTO",
                 amountS: new BN(web3.utils.toWei("100", "ether")),
                 amountB: new BN(web3.utils.toWei("10", "ether")),
-                amountF: new BN(web3.utils.toWei("1", "ether")),
               },
             orderB:
               {
-                realmID: exchangeId,
                 tokenS: "GTO",
                 tokenB: "WETH",
                 amountS: new BN(web3.utils.toWei("5", "ether")),
                 amountB: new BN(web3.utils.toWei("45", "ether")),
-                amountF: new BN(web3.utils.toWei("3", "ether")),
               },
           };
           await exchangeTestUtil.setupRing(ring);
@@ -487,7 +481,7 @@ contract("Exchange", (accounts: string[]) => {
           }
 
           const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-          const owner = exchangeTestUtil.testContext.orderOwners[0];
+          const owner = exchangeTestUtil.testContext.orderOwners[2];
           const token = "LRC";
           const balance = new BN(web3.utils.toWei("7.1", "ether"));
 
@@ -511,11 +505,24 @@ contract("Exchange", (accounts: string[]) => {
           // Revert the block again, now correctly
           await revertBlockChecked(blocksA[0]);
 
+          // Try to commit a block without adding to the stake
+          await expectThrow(
+            exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits),
+            "INSUFFICIENT_EXCHANGE_STAKE",
+          );
+
+          // Deposit extra LRC to stake for the exchange
+          const depositer = exchangeTestUtil.testContext.operators[2];
+          const stakeAmount = await loopring.revertFineLRC();
+          await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, loopring.address);
+          await loopring.depositExchangeStake(exchangeId, stakeAmount, {from: depositer});
+
           // Now commit the deposits again
           const blockIndicesB = await exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits);
           assert(blockIndicesB.length === 1);
 
           // Submit some other work
+          // exchangeTestUtil.signRing(ring);
           await exchangeTestUtil.sendRing(exchangeId, ring);
           await exchangeTestUtil.commitRings(exchangeId);
 

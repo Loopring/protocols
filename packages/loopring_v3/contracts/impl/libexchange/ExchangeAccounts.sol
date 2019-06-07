@@ -81,10 +81,6 @@ library ExchangeAccounts
             bool   isAccountNew
         )
     {
-        // normal account cannot have keys to be both 1, this would be a
-        // fee recipient account then.
-        require(!(pubKeyX == 1 && pubKeyY == 1), "INVALID_PUBKEY");
-
         // We allow pubKeyX and/or pubKeyY to be 0 for normal accounts to
         // disable offchain request signing.
 
@@ -92,17 +88,6 @@ library ExchangeAccounts
         accountID =  isAccountNew ?
             createAccount(S, pubKeyX, pubKeyY, returnFeeSurplus):
             updateAccount(S, pubKeyX, pubKeyY, returnFeeSurplus);
-    }
-
-    function createFeeRecipientAccount(
-        ExchangeData.State storage S
-        )
-        public
-        returns (uint24 accountID)
-    {
-        require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
-        // use `1` for both pubKeyX and pubKeyY for fee recipient accounts.
-        accountID = createAccount(S, 1, 1, false);
     }
 
     function createAccount(
@@ -136,7 +121,7 @@ library ExchangeAccounts
         );
 
         S.accounts.push(account);
-        S.ownerToAccountId[msg.sender] = accountID;
+        S.ownerToAccountId[msg.sender] = accountID + 1;
 
         emit AccountCreated(
             msg.sender,
@@ -168,10 +153,8 @@ library ExchangeAccounts
             }
         }
 
-        accountID = S.ownerToAccountId[msg.sender];
+        accountID = S.ownerToAccountId[msg.sender] - 1;
         ExchangeData.Account storage account = S.accounts[accountID];
-
-        require(!isFeeRecipientAccount(account), "UPDATE_FEE_RECEPIENT_ACCOUNT_NOT_ALLOWED");
 
         account.pubKeyX = pubKeyX;
         account.pubKeyY = pubKeyY;
@@ -197,6 +180,8 @@ library ExchangeAccounts
 
         accountID = S.ownerToAccountId[owner];
         require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
+
+        accountID = accountID - 1;
     }
 
     function isAccountBalanceCorrect(
@@ -225,15 +210,5 @@ library ExchangeAccounts
             accountMerkleProof,
             balanceMerkleProof
         );
-    }
-
-    function isFeeRecipientAccount(
-        ExchangeData.Account storage account
-        )
-        internal
-        view
-        returns (bool)
-    {
-        return account.pubKeyX == 1 && account.pubKeyY == 1;
     }
 }

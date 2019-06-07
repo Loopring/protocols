@@ -22,14 +22,6 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3
 {
-    // == Structs ==
-    struct Token
-    {
-        address tokenAddress;
-        uint8   tier;
-        uint    tierValidUntil;
-    }
-
     // == Events ==
     event ExchangeCreated(
         uint    indexed exchangeId,
@@ -39,17 +31,27 @@ contract ILoopringV3
         uint            burnedLRC
     );
 
-    event StakeDeposited(
+    event ExchangeStakeDeposited(
         uint    indexed exchangeId,
         uint            amount
     );
 
-    event StakeBurned(
+    event ExchangeStakeWithdrawn(
         uint    indexed exchangeId,
         uint            amount
     );
 
-    event StakeWithdrawn(
+    event ExchangeStakeBurned(
+        uint    indexed exchangeId,
+        uint            amount
+    );
+
+    event ProtocolFeeStakeDeposited(
+        uint    indexed exchangeId,
+        uint            amount
+    );
+
+    event ProtocolFeeStakeWithdrawn(
         uint    indexed exchangeId,
         uint            amount
     );
@@ -58,58 +60,69 @@ contract ILoopringV3
         uint            time
     );
 
-    event TokenBurnRateDown(
-        address indexed token,
-        uint    indexed tier,
-        uint            time
-    );
-
-    // == Constants ==
-    // Burn rates (in bips -- 100bips == 1%)
-    uint16 public constant BURNRATE_TIER1 =  250; // 2.5%
-    uint16 public constant BURNRATE_TIER2 = 1500; //  15%
-    uint16 public constant BURNRATE_TIER3 = 3000; //  30%
-    uint16 public constant BURNRATE_TIER4 = 5000; //  50%
-
-    uint   public constant TIER_UPGRADE_DURATION  = 365 days;
-
     // == Public Variables ==
-    address[] public exchanges;
+    struct Exchange
+    {
+        address exchangeAddress;
+        uint exchangeStake;
+        uint protocolFeeStake;
+    }
+    Exchange[] public exchanges;
 
-    mapping (uint => uint) exchangeStakes; // exchangeId => amountOfLRC
+    uint    public totalStake                                       = 0;
 
-    uint    public totalStake                   = 0;
-    address public lrcAddress                   = address(0);
-    address public wethAddress                  = address(0);
-    address public exchangeDeployerAddress      = address(0);
-    address public blockVerifierAddress         = address(0);
-    uint    public exchangeCreationCostLRC      = 0;
-    uint    public maxWithdrawalFee             = 0;
-    uint    public downtimePriceLRCPerDay       = 0;
-    uint    public withdrawalFineLRC            = 0;
-    uint    public tokenRegistrationFeeLRCBase  = 0;
-    uint    public tokenRegistrationFeeLRCDelta = 0;
-
-    // Cost of upgrading the tier level of a token in a percentage of the total LRC supply
-    uint16  public  tierUpgradeCostBips  =  1; // 0.01% or 130K LRC
-
-    mapping (address => Token) public tokens;
+    address public lrcAddress                                       = address(0);
+    address public wethAddress                                      = address(0);
+    address public exchangeDeployerAddress                          = address(0);
+    address public blockVerifierAddress                             = address(0);
+    uint    public exchangeCreationCostLRC                          = 0;
+    uint    public maxWithdrawalFee                                 = 0;
+    uint    public downtimePriceLRCPerDay                           = 0;
+    uint    public withdrawalFineLRC                                = 0;
+    uint    public tokenRegistrationFeeLRCBase                      = 0;
+    uint    public tokenRegistrationFeeLRCDelta                     = 0;
+    uint    public minExchangeStakeWithDataAvailability             = 0;
+    uint    public minExchangeStakeWithoutDataAvailability          = 0;
+    uint    public revertFineLRC                                    = 0;
+    uint8   public minProtocolTakerFeeBips                          = 0;
+    uint8   public maxProtocolTakerFeeBips                          = 0;
+    uint8   public minProtocolMakerFeeBips                          = 0;
+    uint8   public maxProtocolMakerFeeBips                          = 0;
+    uint    public targetProtocolTakerFeeStake                      = 0;
+    uint    public targetProtocolMakerFeeStake                      = 0;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
-    ///      This function can onlhy be called by the owner the this contract.
+    ///      This function can only be called by the owner of this contract.
     ///
-    ///      Warning: theese new values will be used by existing and
+    ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint16  _tierUpgradeCostBips,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerDay,
-        uint    _withdrawalFineLRC,
         uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDalta
+        uint    _tokenRegistrationFeeLRCDelta,
+        uint    _minExchangeStakeWithDataAvailability,
+        uint    _minExchangeStakeWithoutDataAvailability,
+        uint    _revertFineLRC,
+        uint    _withdrawalFineLRC
+        )
+        external;
+
+    /// @dev Update the global protocol fee settings.
+    ///      This function can only be called by the owner of this contract.
+    ///
+    ///      Warning: these new values will be used by existing and
+    ///      new Loopring exchanges.
+    function updateProtocolFeeSettings(
+        uint8   _minProtocolTakerFeeBips,
+        uint8   _maxProtocolTakerFeeBips,
+        uint8   _minProtocolMakerFeeBips,
+        uint8   _maxProtocolMakerFeeBips,
+        uint    _targetProtocolTakerFeeStake,
+        uint    _targetProtocolMakerFeeStake
         )
         external;
 
@@ -130,32 +143,39 @@ contract ILoopringV3
             address exchangeAddress
         );
 
-    /// @dev Get the amount of stacked LRC for an exchange.
+    /// @dev Returns whether the Exchange has staked enough to commit blocks
+    ///      Exchanges with on-chain data-availaiblity need to stake at least
+    ///      minExchangeStakeWithDataAvailability, exchanges without
+    ///      data-availability need to stake at least
+    ///      minExchangeStakeWithoutDataAvailability.
+    /// @param exchangeId The id of the exchange
+    /// @param onchainDataAvailability True if the exchange has on-chain
+    ///        data-availability, else false
+    /// @return True if the exchange has staked enough, else false
+    function canExchangeCommitBlocks(
+        uint exchangeId,
+        bool onchainDataAvailability
+        )
+        external
+        view
+        returns (bool);
+
+    /// @dev Get the amount of staked LRC for an exchange.
     /// @param exchangeId The id of the exchange
     /// @return stakedLRC The amount of LRC
-    function getStake(
+    function getExchangeStake(
         uint exchangeId
         )
         public
         view
         returns (uint stakedLRC);
 
-    /// @dev Burn all staked LRC for a specific exchange.
-    ///      This function is meant to be called only from within exchange contracts.
-    /// @param  exchangeId The id of the exchange
-    /// @return burnedLRC The amount of LRC burned
-    function burnAllStake(
-        uint exchangeId
-        )
-        external
-        returns (uint burnedLRC);
-
     /// @dev Burn a certain amount of staked LRC for a specific exchange.
     ///      This function is meant to be called only from exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @return burnedLRC The amount of LRC burned. If the amount is greater than
     ///         the staked amount, all staked LRC will be burned.
-    function burnStake(
+    function burnExchangeStake(
         uint exchangeId,
         uint amount
         )
@@ -166,7 +186,7 @@ contract ILoopringV3
     /// @param  exchangeId The id of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
-    function depositStake(
+    function depositExchangeStake(
         uint exchangeId,
         uint amountLRC
         )
@@ -179,7 +199,7 @@ contract ILoopringV3
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
     /// @return stakedLRC The amount of LRC withdrawn
-    function withdrawStake(
+    function withdrawExchangeStake(
         uint exchangeId,
         address recipient,
         uint requestedAmount
@@ -187,55 +207,52 @@ contract ILoopringV3
         public
         returns (uint amount);
 
-    /// @dev Get the burn rate for a given ERC20 token or Ether
-    /// @param  token The address of the token. Use 0x0 for Ether.
-    /// @return burnRate The burn rate in terms of bips.
-    function getTokenBurnRate(
-        address token
-        )
-        public
-        view
-        returns (uint16 burnRate);
-
-    /// @dev Get the amount of LRC to burn for lowering a token's burn rate for 365 days.
-    /// @param  token The address of the token. Use 0x0 for Ether
-    /// @return amountLRC The amount of LRC to burn
-    /// @return currentTier The current tier of the token
-    function getLRCCostToBuydownTokenBurnRate(
-        address token
-        )
-        public
-        view
-        returns (
-            uint amountLRC,
-            uint8 currentTier
-        );
-
-    /// @dev Burn LRC to lower a token's burn rate for 365 days.
-    ///      Initially all ERC20 tokens' burn rates are at tier-4, with the exception
-    ///      that LRC's burn rate is at tier-1, and WETH's burn rate is at tier-3. Ether's burn
-    ///      rate is also at tier-3.
-    ///
-    ///      The amount of LRC required to lower the burn rate to the next level
-    ///      is governed by `tierUpgradeCostBips`. If `tierUpgradeCostBips` is P,
-    ///      a total of `137,495 * P` LRC is required.
-    ///
-    ///      Calling this function more than once will extend the burn rate period.
-    ///      For example, if the token's current burn rate at tier-3 and the burn rate
-    ///      is expiering (restoring to tier-4) in 30 days, a successfull call of this
-    ///      function will extend the tier-2 period to 395 (365+30) days.
-    ///
-    /// @param  token The address of the token. Use 0x0 for Ether
-    /// @return amountBurned The amount of LRC burned
-    /// @return currentTier The current tier of the token after the buydown
-    function buydownTokenBurnRate(
-        address token
+    /// @dev Stake more LRC for an exchange.
+    /// @param  exchangeId The id of the exchange
+    /// @param  amountLRC The amount of LRC to stake
+    /// @return stakedLRC The total amount of LRC staked for the exchange
+    function depositProtocolFeeStake(
+        uint exchangeId,
+        uint amountLRC
         )
         external
-        returns (
-            uint amountBurned,
-            uint8 currentTier
-        );
+        returns (uint stakedLRC);
+
+    /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
+    ///      This function is meant to be called only from within exchange contracts.
+    /// @param  exchangeId The id of the exchange
+    /// @param  recipient The address to receive LRC
+    /// @param  amount The amount of LRC to withdraw
+    function withdrawProtocolFeeStake(
+        uint exchangeId,
+        address recipient,
+        uint amount
+        )
+        external;
+
+    /// @dev Withdraw
+    /// @param exchangeId The id of the exchange to withdraw the fees from
+    /// @param tokenAddress The token to withdraw the fees for
+    function withdrawProtocolFees(
+        uint exchangeId,
+        address tokenAddress
+        )
+        external
+        payable;
+
+    /// @dev Get the protocol fee values for an exchange.
+    /// @param exchangeId The id of the exchange
+    /// @param onchainDataAvailability True if the exchange has on-chain
+    ///        data-availability, else false
+    /// @return takerFeeBips The protocol taker fee
+    /// @return makerFeeBips The protocol maker fee
+    function getProtocolFeeValues(
+        uint exchangeId,
+        bool onchainDataAvailability
+        )
+        external
+        view
+        returns (uint8 takerFeeBips, uint8 makerFeeBips);
 
     /// @dev Withdraw all non-LRC fees (called the Burn) to the designated address.
     ///      LRC fees have been burned already thanks to the new LRC contract's burn function;

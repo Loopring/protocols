@@ -8,7 +8,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let loopring: any;
-  let realmID = 0;
+  let exchangeID = 0;
 
   const getDowntimeCost = async (duration: number) => {
     const downtimePriceLRCPerDay = await loopring.downtimePriceLRCPerDay();
@@ -48,7 +48,7 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    realmID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
+    exchangeID = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], bSetupTestState);
     exchange = exchangeTestUtil.exchange;
   };
 
@@ -57,7 +57,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
     loopring = exchangeTestUtil.loopringV3;
-    realmID = 1;
+    exchangeID = 1;
   });
 
   describe("Tokens", function() {
@@ -74,7 +74,7 @@ contract("Exchange", (accounts: string[]) => {
         const amount = new BN(web3.utils.toWei("4567", "ether"));
         const token = exchangeTestUtil.getTokenAddress("WETH");
 
-        await exchangeTestUtil.deposit(realmID, owner,
+        await exchangeTestUtil.deposit(exchangeID, owner,
                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                        token, amount);
 
@@ -153,29 +153,25 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA:
           {
-            realmID,
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("10", "ether")),
-            amountF: new BN(web3.utils.toWei("1", "ether")),
           },
         orderB:
           {
-            realmID,
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("5", "ether")),
             amountB: new BN(web3.utils.toWei("45", "ether")),
-            amountF: new BN(web3.utils.toWei("3", "ether")),
           },
         expected: {
-          orderA: { filledFraction: 0.5, margin: new BN(web3.utils.toWei("5", "ether")) },
+          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
           orderB: { filledFraction: 1.0 },
         },
       };
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.commitDeposits(realmID);
+      await exchangeTestUtil.commitDeposits(exchangeID);
 
       const fees = await exchange.getFees();
 
@@ -193,9 +189,9 @@ contract("Exchange", (accounts: string[]) => {
 
       // The operator shouldn't be able to commit any ring settlement blocks
       // while in maitenance mode
-      await exchangeTestUtil.sendRing(realmID, ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
       await expectThrow(
-        exchangeTestUtil.commitRings(realmID),
+        exchangeTestUtil.commitRings(exchangeID),
         "SETTLEMENT_SUSPENDED",
       );
     });

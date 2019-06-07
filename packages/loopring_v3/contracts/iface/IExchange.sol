@@ -186,14 +186,6 @@ contract IExchange
             bool   isAccountNew
         );
 
-    /// @dev Create a fee receipient account for msg.sender.
-    ///      For fee recipient accounts, their pubKeyX and pubKeyY are both `1`.
-    /// @return accountID The account's ID
-    function createFeeRecipientAccount()
-        external
-        payable
-        returns (uint24 accountID);
-
     // -- Balances --
     /// @dev Verifies that the given information is stored in the merkle tree with
     ///      the specified merkle root.
@@ -296,7 +288,7 @@ contract IExchange
     ///      performed by another party and is not part of the exchange's duty.
     ///
     /// @return The amount of LRC staked
-    function getStake()
+    function getExchangeStake()
         external
         view
         returns (uint);
@@ -310,18 +302,29 @@ contract IExchange
     ///      Can only be called by the exchange owner.
     ///
     /// @return The amount of LRC withdrawn
-    function withdrawStake(
+    function withdrawExchangeStake(
         address recipient
         )
         external
         returns (uint);
+
+    /// @dev Withdraws the amount staked for this exchange.
+    ///      This can always be called.
+    ///      Can only be called by the exchange owner.
+    /// @param  recipient The recipient of the withdrawn LRC
+    /// @param  amount The amount of LRC that needs to be withdrawn
+    function withdrawProtocolFeeStake(
+        address recipient,
+        uint amount
+        )
+        external;
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.
     ///
     ///      Currently this will only burn the stake of the exchange if there are
     ///      unfinalized blocks and the exchange is in withdrawal mode.
-    function burnStake()
+    function burnExchangeStake()
         external;
 
     // -- Blocks --
@@ -384,6 +387,8 @@ contract IExchange
     ///            - New merkle root: 32 bytes
     ///        For RING_SETTLEMENT blocks add the following data:
     ///            - timestamp used in the block: 4 bytes
+    ///            - protocolTakerFeeBips: 1 bytes
+    ///            - protocolMakerFeeBips: 1 bytes
     ///        For DEPOSIT blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
@@ -414,21 +419,17 @@ contract IExchange
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
     ///                - Ring-matcher account ID: 2,5 bytes
-    ///                - Fee-recipient account ID: 2,5 bytes
+    ///                - Fee amount: 1,5 bytes
     ///                - Token ID (fee to operator): 1 bytes
-    ///                - Fee amount: 2 bytes
-    ///                - Margin (paid by first order): 3 bytes
     ///                - OrderA.orderID: 2,5 bytes
     ///                - OrderB.orderID: 2,5 bytes
+    ///                - OrderA.accountID: 2,5 bytes
+    ///                - OrderB.accountID: 2,5 bytes
     ///                - For both Orders:
-    ///                    - Account ID: 2,5 bytes
-    ///                    - Wallet account ID: 2,5 bytes
     ///                    - TokenS: 1 bytes
-    ///                    - TokenF: 1 bytes
     ///                    - FillS: 3 bytes
-    ///                    - FillF: 3 bytes
-    ///                    - WalletSplitPercentage: 1 byte
-    ///                    - WaiveFeePercentage: 1 byte
+    ///                    - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
+    ///                                 feeOrRebateBips (6 bits)
     ///        For DEPOSIT blocks add the following data:
     ///            - None
     ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
@@ -935,4 +936,17 @@ contract IExchange
             uint numWithdrawalRequestsProcessed,
             uint numAvailableWithdrawalSlots
         );
+
+    /// @dev Get the protocol fees for this exchange.
+    /// @return timestamp The timestamp the protocol fees were last updated
+    /// @return takerFeeBips The protocol taker fee
+    /// @return makerFeeBips The protocol maker fee
+    /// @return previousTakerFeeBips The previous protocol taker fee
+    /// @return previousMakerFeeBips The previous protocol maker fee
+    function getProtocolFeeValues()
+        external
+        view
+        returns (uint32 timestamp,
+                 uint8 takerFeeBips, uint8 makerFeeBips,
+                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips);
 }

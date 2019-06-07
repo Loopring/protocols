@@ -53,6 +53,7 @@
     "any-promise": "1.3.0",
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
+    "blake-hash": "^1.1.0",
     "bluebird": "^3.5.1",
     "bn.js": "^4.11.8",
     "braces": "^2.3.2",
@@ -71,8 +72,10 @@
     "protocol2-js": "0.2.26",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
+    "snarkjs": "0.1.11",
     "solidity-coverage": "^0.5.11",
     "truffle": "5.0.0",
-    "truffle-hdwallet-provider": "web3-one"
+    "truffle-hdwallet-provider": "web3-one",
+    "typedarray-to-buffer": "^3.1.5"
   }
 }

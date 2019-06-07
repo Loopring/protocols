@@ -59,38 +59,36 @@ class OrderCancellationBlock(object):
 
 
 def orderFromJSON(jOrder, state):
-    realmID = int(jOrder["realmID"])
+    exchangeID = int(jOrder["exchangeID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
-    walletAccountID = int(jOrder["walletAccountID"])
     dualAuthPublicKeyX = int(jOrder["dualAuthPublicKeyX"])
     dualAuthPublicKeyY = int(jOrder["dualAuthPublicKeyY"])
     dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
-    tokenF = int(jOrder["tokenIdF"])
     amountS = int(jOrder["amountS"])
     amountB = int(jOrder["amountB"])
-    amountF = int(jOrder["amountF"])
     allOrNone = int(jOrder["allOrNone"])
     validSince = int(jOrder["validSince"])
     validUntil = int(jOrder["validUntil"])
-    walletSplitPercentage = int(jOrder["walletSplitPercentage"])
-    waiveFeePercentage = int(jOrder["waiveFeePercentage"])
+    buy = int(jOrder["buy"])
+    maxFeeBips = int(jOrder["maxFeeBips"])
+
+    feeBips = int(jOrder["feeBips"])
+    rebateBips = int(jOrder["rebateBips"])
 
     account = state.getAccount(accountID)
-    walletAccount = state.getAccount(walletAccountID)
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
-                  Point(walletAccount.publicKeyX, walletAccount.publicKeyY),
                   Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
-                  realmID, orderID, accountID, walletAccountID,
-                  tokenS, tokenB, tokenF,
-                  amountS, amountB, amountF,
-                  allOrNone, validSince, validUntil,
-                  walletSplitPercentage, waiveFeePercentage)
+                  exchangeID, orderID, accountID,
+                  tokenS, tokenB,
+                  amountS, amountB,
+                  allOrNone, validSince, validUntil, buy,
+                  maxFeeBips, feeBips, rebateBips)
 
-    order.sign(FQ(int(account.secretKey)))
+    order.signature = jOrder["signature"]
 
     return order
 
@@ -99,43 +97,54 @@ def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
     minerAccountID = int(jRing["minerAccountID"])
-    feeRecipientAccountID = int(jRing["feeRecipientAccountID"])
     tokenID = int(jRing["tokenID"])
     fee = int(jRing["fee"])
 
     minerAccount = state.getAccount(minerAccountID)
 
-    ring = Ring(orderA, orderB, minerAccountID, feeRecipientAccountID, tokenID, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, minerAccountID, tokenID, fee, minerAccount.nonce)
 
-    ring.sign(FQ(int(minerAccount.secretKey)), FQ(int(orderA.dualAuthSecretKey)), FQ(int(orderB.dualAuthSecretKey)))
+    ring.minerSignature = jRing["signature"]
+    ring.dualAuthASignature = jRing["dualAuthASignature"]
+    ring.dualAuthBSignature = jRing["dualAuthBSignature"]
 
     return ring
 
 def createRingSettlementBlock(state, data):
     block = RingSettlementBlock()
     block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.realmID = state.realmID
+    block.exchangeID = state.exchangeID
     block.merkleRootBefore = str(state.getRoot())
     block.timestamp = int(data["timestamp"])
+    block.protocolTakerFeeBips = int(data["protocolTakerFeeBips"])
+    block.protocolMakerFeeBips = int(data["protocolMakerFeeBips"])
     block.operatorAccountID = int(data["operatorAccountID"])
 
-    context = Context(block.operatorAccountID, block.timestamp)
+    context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
-    # Operator payment
+    # Protocol fee payment / Operator payment
     rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
+    accountBefore_P = copyAccountInfo(state.getAccount(0))
+    accountBefore_O = copyAccountInfo(state.getAccount(block.operatorAccountID))
 
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, state)
         ringSettlement = state.settleRing(context, ring)
         block.ringSettlements.append(ringSettlement)
 
+    # Protocol fee payment
+    proof = state._accountsTree.createProof(0)
+    state.updateAccountTree(0)
+    accountAfter = copyAccountInfo(state.getAccount(0))
+    rootAfter = state._accountsTree._root
+    block.accountUpdate_P = AccountUpdateData(0, proof, rootBefore, rootAfter, accountBefore_P, accountAfter)
+
     # Operator payment
     proof = state._accountsTree.createProof(block.operatorAccountID)
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
-    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore_O, accountAfter)
 
     block.merkleRootAfter = str(state.getRoot())
     return block
@@ -143,7 +152,7 @@ def createRingSettlementBlock(state, data):
 def createDepositBlock(state, data):
     block = DepositBlock()
     block.onchainDataAvailability = False
-    block.realmID = state.realmID
+    block.exchangeID = state.exchangeID
     block.merkleRootBefore = str(state.getRoot())
     block.startHash = str(data["startHash"])
     block.startIndex = str(data["startIndex"])
@@ -167,7 +176,7 @@ def createDepositBlock(state, data):
 def createOnchainWithdrawalBlock(state, data):
     block = OnchainWithdrawalBlock()
     block.onchainDataAvailability = False
-    block.realmID = state.realmID
+    block.exchangeID = state.exchangeID
     block.merkleRootBefore = str(state.getRoot())
     block.startHash = str(data["startHash"])
     block.startIndex = str(data["startIndex"])
@@ -182,7 +191,7 @@ def createOnchainWithdrawalBlock(state, data):
         tokenID = int(withdrawalInfo["tokenID"])
         amount = int(withdrawalInfo["amount"])
 
-        withdrawal = state.onchainWithdraw(block.realmID, accountID, tokenID, amount, shutdown)
+        withdrawal = state.onchainWithdraw(block.exchangeID, accountID, tokenID, amount, shutdown)
 
         block.withdrawals.append(withdrawal)
 
@@ -192,7 +201,7 @@ def createOnchainWithdrawalBlock(state, data):
 def createOffchainWithdrawalBlock(state, data):
     block = OffchainWithdrawalBlock()
     block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.realmID = state.realmID
+    block.exchangeID = state.exchangeID
     block.merkleRootBefore = str(state.getRoot())
     block.operatorAccountID = int(data["operatorAccountID"])
 
@@ -209,8 +218,9 @@ def createOffchainWithdrawalBlock(state, data):
         fee = int(withdrawalInfo["fee"])
         walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
-        withdrawal = state.offchainWithdraw(block.realmID, accountID, tokenID, amount,
+        withdrawal = state.offchainWithdraw(block.exchangeID, accountID, tokenID, amount,
                                             block.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
+        withdrawal.signature = withdrawalInfo["signature"]
         block.withdrawals.append(withdrawal)
 
     # Operator payment
@@ -227,7 +237,7 @@ def createOffchainWithdrawalBlock(state, data):
 def createOrderCancellationBlock(state, data):
     block = OrderCancellationBlock()
     block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.realmID = state.realmID
+    block.exchangeID = state.exchangeID
     block.merkleRootBefore = str(state.getRoot())
     block.operatorAccountID = int(data["operatorAccountID"])
 
@@ -244,8 +254,11 @@ def createOrderCancellationBlock(state, data):
         fee = int(cancelInfo["fee"])
         walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
-        block.cancels.append(state.cancelOrder(block.realmID, accountID, orderTokenID, orderID,
-                                               walletAccountID, block.operatorAccountID, feeTokenID, fee, walletSplitPercentage))
+        cancel = state.cancelOrder(block.exchangeID, accountID, orderTokenID, orderID,
+                                   walletAccountID, block.operatorAccountID, feeTokenID, fee, walletSplitPercentage)
+
+        cancel.signature = cancelInfo["signature"]
+        block.cancels.append(cancel)
 
     # Operator payment
     proof = state._accountsTree.createProof(block.operatorAccountID)
@@ -258,11 +271,11 @@ def createOrderCancellationBlock(state, data):
     return block
 
 
-def main(realmID, blockIdx, blockType, inputFilename, outputFilename):
+def main(exchangeID, blockIdx, blockType, inputFilename, outputFilename):
     previousBlockIdx = int(blockIdx) - 1
-    previous_state_filename = "./states/state_" + str(realmID) + "_" + str(previousBlockIdx) + ".json"
+    previous_state_filename = "./states/state_" + str(exchangeID) + "_" + str(previousBlockIdx) + ".json"
 
-    state = State(realmID)
+    state = State(exchangeID)
     if os.path.exists(previous_state_filename):
         state.load(previous_state_filename)
 
@@ -292,7 +305,7 @@ def main(realmID, blockIdx, blockType, inputFilename, outputFilename):
     subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
-    state_filename = "./states/state_" + str(realmID) + "_" + str(blockIdx) + ".json"
+    state_filename = "./states/state_" + str(exchangeID) + "_" + str(blockIdx) + ".json"
     state.save(state_filename)
 
 

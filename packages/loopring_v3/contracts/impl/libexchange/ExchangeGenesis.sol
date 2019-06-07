@@ -80,18 +80,23 @@ library ExchangeGenesis
         S.depositChain.push(genesisRequest);
         S.withdrawalChain.push(genesisRequest);
 
-        // This account is used for padding deposits and onchain withdrawal requests. While we do
-        // do not necessarily need a special account for this (we could use the data of the first account
-        // to do the padding) it's easier and more efficient if this data remains the same.
-        // The account owner of account ID 0 would also see many deposit/withdrawal events for his account
-        // that should simply be ignored.
-        ExchangeData.Account memory defaultAccount = ExchangeData.Account(
-            address(0),
+        // Create an account for the protocol fees. This account is also used
+        // for padding deposits and on-chain withdrawal requests.
+        ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
+            _loopringAddress,
             uint256(0),
             uint256(0)
         );
 
-        S.accounts.push(defaultAccount);
+        S.accounts.push(protocolFeePoolAccount);
+        S.ownerToAccountId[protocolFeePoolAccount.owner] = uint24(S.accounts.length);
+
+        // Get the protocol fees for this exchange
+        S.protocolFeeData.timestamp = uint32(0);
+        S.protocolFeeData.takerFeeBips = S.loopring.maxProtocolTakerFeeBips();
+        S.protocolFeeData.makerFeeBips = S.loopring.maxProtocolMakerFeeBips();
+        S.protocolFeeData.previousTakerFeeBips = S.protocolFeeData.takerFeeBips;
+        S.protocolFeeData.previousMakerFeeBips = S.protocolFeeData.makerFeeBips;
 
         // Call these after the main state has been set up
         S.registerToken(address(0), 0);

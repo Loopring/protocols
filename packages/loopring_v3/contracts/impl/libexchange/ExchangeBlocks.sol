@@ -143,8 +143,10 @@ library ExchangeBlocks
             now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
             "PROOF_NOT_TOO_LATE"
         );
-        // Burn the complete stake of the exchange
-        S.loopring.burnAllStake(S.id);
+
+        // Fine the exchange
+        uint fine = S.loopring.revertFineLRC();
+        S.loopring.burnExchangeStake(S.id, fine);
 
         // Remove all blocks after and including blockIdx
         S.blocks.length = blockIdx;
@@ -167,8 +169,13 @@ library ExchangeBlocks
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        // TODO: Check if this exchange has a minimal amount of LRC staked?
+        // Check if this exchange has a minimal amount of LRC staked
+        require(
+            S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
+            "INSUFFICIENT_EXCHANGE_STAKE"
+        );
 
+        // Check if the block is supported
         require(
             S.blockVerifier.canVerify(uint8(blockType), S.onchainDataAvailability, blockSize),
             "CANNOT_VERIFY_BLOCK"
@@ -220,13 +227,21 @@ library ExchangeBlocks
         if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
             require(now >= S.disableUserRequestsUntil, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
+            uint8 protocolTakerFeeBips;
+            uint8 protocolMakerFeeBips;
             assembly {
                 inputTimestamp := and(mload(add(data, 72)), 0xFFFFFFFF)
+                protocolTakerFeeBips := and(mload(add(data, 73)), 0xFF)
+                protocolMakerFeeBips := and(mload(add(data, 74)), 0xFF)
             }
             require(
                 inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() &&
                 inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
                 "INVALID_TIMESTAMP"
+            );
+            require(
+                validateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
+                "INVALID_PROTOCOL_FEES"
             );
         } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
             uint startIdx = 0;
@@ -303,7 +318,6 @@ library ExchangeBlocks
                 require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
                 require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
-
             }
         } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             // Do nothing
@@ -316,7 +330,8 @@ library ExchangeBlocks
         // Hash all the public data to a single value which is used as the input for the circuit
         bytes32 publicDataHash = sha256(data);
 
-        // Only store the approved withdrawal data onchain
+        // Store the approved withdrawal data onchain
+        bytes memory withdrawals = new bytes(0);
         if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
             blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             uint start = 4 + 32 + 32;
@@ -325,8 +340,8 @@ library ExchangeBlocks
             }
             uint length = 7 * blockSize;
             assembly {
-                data := add(data, start)
-                mstore(data, length)
+                withdrawals := add(data, start)
+                mstore(withdrawals, length)
             }
         }
 
@@ -342,13 +357,37 @@ library ExchangeBlocks
             numWithdrawalRequestsCommitted,
             false,
             0,
-            (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-             blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) ? data : new bytes(0)
+            withdrawals
         );
 
         S.blocks.push(newBlock);
 
         emit BlockCommitted(S.blocks.length - 1, publicDataHash);
+    }
+
+    function validateProtocolFeeValues(
+        ExchangeData.State storage S,
+        uint8 takerFeeBips,
+        uint8 makerFeeBips
+        )
+        private
+        returns (bool)
+    {
+        ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
+        if (now > data.timestamp + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+            // Store the current protocol fees in the previous protocol fees
+            data.previousTakerFeeBips = data.takerFeeBips;
+            data.previousMakerFeeBips = data.makerFeeBips;
+            // Get the latest protocol fees for this exchange
+            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
+                S.id,
+                S.onchainDataAvailability
+            );
+            data.timestamp = uint32(now);
+        }
+        // The given fee values are valid if they are the current or previous protocol fee values
+        return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
+               (takerFeeBips == data.previousTakerFeeBips && makerFeeBips == data.previousMakerFeeBips);
     }
 
     function isDepositRequestForced(

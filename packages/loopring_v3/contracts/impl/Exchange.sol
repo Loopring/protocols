@@ -48,7 +48,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    ExchangeData.State public state;
+    ExchangeData.State private state;
     // -- Constructor --
     constructor(
         uint    _id,
@@ -174,26 +174,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         );
     }
 
-    function createFeeRecipientAccount()
-        external
-        payable
-        nonReentrant
-        returns (uint24 accountID)
-    {
-        accountID = state.createFeeRecipientAccount();
-
-        // We need to create a 0-value Ether deposit so this account will
-        // become part of the offchain Merkle tree -- fee recipiient accounts cannot
-        // receive further deposits.
-        state.depositTo(
-            true, // allowFeeRecipientAccount
-            msg.sender,
-            address(0),
-            0,
-            state.accountCreationFeeETH
-        );
-    }
-
     // -- Balances --
     function isAccountBalanceCorrect(
         uint256 merkleRoot,
@@ -286,15 +266,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     // -- Stakes --
-    function getStake()
+    function getExchangeStake()
         external
         view
         returns (uint)
     {
-        return state.loopring.getStake(state.id);
+        return state.loopring.getExchangeStake(state.id);
     }
 
-    function withdrawStake(
+    function withdrawExchangeStake(
         address recipient
         )
         external
@@ -302,17 +282,29 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         returns (uint)
     {
-        return state.withdrawStake(recipient);
+        return state.withdrawExchangeStake(recipient);
     }
 
-    function burnStake()
+    function withdrawProtocolFeeStake(
+        address recipient,
+        uint amount
+        )
+        external
+        onlyOwner
+        nonReentrant
+    {
+        state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
+    }
+
+    function burnExchangeStake()
         external
         nonReentrant
     {
-        // Always allow burning the stake when the exchange gets into withdrawal mode for now
+        // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
         if(state.isInWithdrawalMode()) {
             // Burn the complete stake of the exchange
-            state.loopring.burnAllStake(state.id);
+            uint stake = state.loopring.getExchangeStake(state.id);
+            state.loopring.burnExchangeStake(state.id, stake);
         }
     }
 
@@ -456,7 +448,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             additionalFeeETH = state.accountUpdateFeeETH;
         }
         state.depositTo(
-            false, // allowFeeRecipientAccount
             msg.sender,
             token,
             amount,
@@ -473,7 +464,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
     {
         state.depositTo(
-            false, // allowFeeRecipientAccount
             msg.sender,
             token,
             amount,
@@ -491,7 +481,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
     {
         state.depositTo(
-            false, // allowFeeRecipientAccount
             recipient,
             tokenAddress,
             amount,
@@ -742,5 +731,19 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         numAvailableDepositSlots = state.getNumAvailableDepositSlots();
         numWithdrawalRequestsProcessed = state.getNumWithdrawalRequestsProcessed();
         numAvailableWithdrawalSlots = state.getNumAvailableWithdrawalSlots();
+    }
+
+    function getProtocolFeeValues()
+        external
+        view
+        returns (uint32 timestamp,
+                 uint8 takerFeeBips, uint8 makerFeeBips,
+                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips)
+    {
+        timestamp = state.protocolFeeData.timestamp;
+        takerFeeBips = state.protocolFeeData.takerFeeBips;
+        makerFeeBips = state.protocolFeeData.makerFeeBips;
+        previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
+        previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
     }
 }

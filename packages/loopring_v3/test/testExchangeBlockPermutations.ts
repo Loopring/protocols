@@ -12,21 +12,19 @@ contract("Exchange", (accounts: string[]) => {
     const ring: RingInfo = {
       orderA:
         {
-          realmID: exchangeId,
           tokenS: "WETH",
           tokenB: "GTO",
           amountS: exchangeTestUtil.getRandomAmount(),
           amountB: exchangeTestUtil.getRandomAmount(),
-          amountF: exchangeTestUtil.getRandomAmount(),
+          buy: exchangeTestUtil.getRandomInt(2) > 0,
         },
       orderB:
         {
-          realmID: exchangeId,
           tokenS: "GTO",
           tokenB: "WETH",
           amountS: exchangeTestUtil.getRandomAmount(),
           amountB: exchangeTestUtil.getRandomAmount(),
-          amountF: exchangeTestUtil.getRandomAmount(),
+          buy: exchangeTestUtil.getRandomInt(2) > 0,
         },
     };
     return ring;
