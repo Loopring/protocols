@@ -29,11 +29,13 @@ contract TEST is DummyToken {
     uint8 public constant TEST_RETURN_FALSE = 3;
     uint8 public constant TEST_NO_RETURN_VALUE = 4;
     uint8 public constant TEST_INVALID_RETURN_SIZE = 5;
+    uint8 public constant TEST_EXPENSIVE_TRANSFER = 6;
 
     uint public testCase = TEST_NOTHING;
 
     address public exchangeAddress = address(0);
-    bytes public submitRingsData;
+
+    uint[16] private dummyStorageVariables;
 
     constructor() DummyToken(
         "TEST_TEST",
@@ -80,7 +82,6 @@ contract TEST is DummyToken {
 
     function doTestCase()
         internal
-        view
         returns (bool)
     {
         if (testCase == TEST_NOTHING) {
@@ -121,6 +122,11 @@ contract TEST is DummyToken {
             assembly {
                 return(0, 64)
             }
+        } else if (testCase == TEST_EXPENSIVE_TRANSFER) {
+            // Some expensive operation
+            for (uint i = 0; i < 16; i++) {
+                dummyStorageVariables[i] = block.number;
+            }
         }
         return true;
     }
@@ -131,18 +137,5 @@ contract TEST is DummyToken {
         external
     {
         testCase = _testCase;
-    }
-
-    function setReentrancyAttackData(
-        address _exchangeAddress,
-        bytes memory _submitRingsData
-        )
-        public
-    {
-        exchangeAddress = _exchangeAddress;
-        submitRingsData = new bytes(_submitRingsData.length);
-        for (uint i = 0; i < _submitRingsData.length; i++) {
-            submitRingsData[i] = _submitRingsData[i];
-        }
     }
 }

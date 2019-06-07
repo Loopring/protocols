@@ -604,7 +604,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     {
         state.withdrawFromApprovedWithdrawal(
             blockIdx,
-            slotIdx
+            slotIdx,
+            false
         );
     }
 
