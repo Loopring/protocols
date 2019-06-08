@@ -137,7 +137,7 @@ library ExchangeMode
     {
         if (S.downtimeStart != 0) {
             // Calculate how long (in minutes) the exchange is in maintenance
-            uint numDowntimeMinutesUsed = S.downtimeStart.sub(now) / 60;
+            uint numDowntimeMinutesUsed = now.sub(S.downtimeStart) / 60;
             if (S.numDowntimeMinutes > numDowntimeMinutesUsed) {
                 return S.numDowntimeMinutes.sub(numDowntimeMinutesUsed);
             } else {
