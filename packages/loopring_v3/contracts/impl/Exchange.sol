@@ -684,14 +684,22 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         _withdrawalFeeETH = state.withdrawalFeeETH;
     }
 
-    function purchaseDowntime(
+    function startOrContinueMaintenanceMode(
         uint durationMinutes
         )
         external
         onlyOwner
         nonReentrant
     {
-        state.purchaseDowntime(durationMinutes);
+        state.startOrContinueMaintenanceMode(durationMinutes);
+    }
+
+    function stopMaintenanceMode()
+        external
+        onlyOwner
+        nonReentrant
+    {
+        state.stopMaintenanceMode();
     }
 
     function getRemainingDowntime()

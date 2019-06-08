@@ -136,9 +136,8 @@ library ExchangeMode
         returns (uint)
     {
         if (S.downtimeStart != 0) {
-            uint timeInMaintenanceMode = S.downtimeStart.sub(now);
-            // Convert from seconds to minutes, rounding up
-            uint numDowntimeMinutesUsed = timeInMaintenanceMode.add(59) / 60;
+            // Calculate how long (in minutes) the exchange is in maintenance
+            uint numDowntimeMinutesUsed = S.downtimeStart.sub(now) / 60;
             if (S.numDowntimeMinutes > numDowntimeMinutesUsed) {
                 return S.numDowntimeMinutes.sub(numDowntimeMinutesUsed);
             } else {

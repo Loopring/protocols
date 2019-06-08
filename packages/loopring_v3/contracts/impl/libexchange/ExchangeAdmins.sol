@@ -96,7 +96,7 @@ library ExchangeAdmins
         );
     }
 
-    function purchaseDowntime(
+    function startOrContinueMaintenanceMode(
         ExchangeData.State storage S,
         uint durationMinutes
         )
@@ -104,32 +104,31 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(!S.isShutdown(), "INVALID_MODE");
+        require(durationMinutes > 0, "INVALID_DURATION");
 
-        uint costLRC = getDowntimeCostLRC(S, durationMinutes);
-        if (costLRC > 0) {
-            require(
-                BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
-                "BURN_FAILURE"
-            );
+        // Purchased downtime from a previous maintenance period or a previous call
+        // to startOrContinueMaintenanceMode can be re-used, so we need to calculate
+        // how many additional minutes we need to purchase
+        uint numMinutesLeft = S.getNumDowntimeMinutesLeft();
+        if (numMinutesLeft < durationMinutes) {
+            uint numMinutesToPurchase = durationMinutes.sub(numMinutesLeft);
+            uint costLRC = getDowntimeCostLRC(S, numMinutesToPurchase);
+            if (costLRC > 0) {
+                require(
+                    BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
+                    "BURN_FAILURE"
+                );
+            }
+            S.numDowntimeMinutes = S.numDowntimeMinutes.add(numMinutesToPurchase);
         }
 
-        S.numDowntimeMinutes = S.numDowntimeMinutes.add(durationMinutes);
+        // Start maintenance mode if the exchange isn't in maintenance mode yet
+        if (S.downtimeStart == 0) {
+            S.downtimeStart = now;
+        }
     }
 
-    function startDowntime(
-        ExchangeData.State storage S
-        )
-        public
-    {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(!S.isShutdown(), "INVALID_MODE");
-        require(S.downtimeStart == 0, "ALREADY_IN_MAINTENANCE_MODE");
-        require(S.numDowntimeMinutes > 0, "NO_DOWNTIME_MINUTES_AVAILABLE");
-
-        S.downtimeStart = now;
-    }
-
-    function stopDowntime(
+    function stopMaintenanceMode(
         ExchangeData.State storage S
         )
         public
@@ -138,7 +137,17 @@ library ExchangeAdmins
         require(!S.isShutdown(), "INVALID_MODE");
         require(S.downtimeStart != 0, "NOT_IN_MAINTENANCE_MODE");
 
+        // Get the number of downtime minutes left
         S.numDowntimeMinutes = S.getNumDowntimeMinutesLeft();
+
+        // Add an extra fixed cost of 1 minute to mitigate the posibility of abusing
+        // the starting/stopping of maintenance mode within a minute or even a single Ethereum block.
+        // This is practically the same as rounding down when converting from seconds to minutes.
+        if (S.numDowntimeMinutes > 0) {
+            S.numDowntimeMinutes -= 1;
+        }
+
+        // Stop maintenance mode
         S.downtimeStart = 0;
     }
 

@@ -860,32 +860,39 @@ contract IExchange
             uint _withdrawalFeeETH
         );
 
-    /// @dev Purchase downtime by burning LRC and enter the maintaince mode.
-    ///      In the maintainance mode,  all onchain user requests, including account creation,
+    /// @dev Starts or continues maintenance mode for the specified duration.
+    ///      The necessary additional downtime minutes will be purchased. The number of
+    ///      downtime minutes still available can be checked with getRemainingDowntime().
+    ///      In maintainance mode, all onchain user requests, including account creation,
     ///      account update, deposits, and withdrawal requests are disabled.
     ///
     ///      If the remaining downtime is non-zero, calling this function will extend the
-    ///      remaining downtime by `durationSeconds`.
+    ///      remaining downtime by `durationMinutes`.
     ///
-    ///      The only way to get out of the maintaince mode is waiting for the
-    ///      remaining downtime to reduce to 0. Therefore, exchange owner should be very
-    ///      cautious not to purchae too much downtime.
+    ///      The exchange owner can exit maintenance mode by calling stopMaintenanceMode()
+    ///      or by waiting until the remaining downtime is reduced to 0.
     ///
     ///      Once entering the maintainance mode, the operator should still fulfill his duty
     ///      by submitting blocks and proofs until all pending user requests have been taken
-    ///      care of within the required timeouts. In the maintaince mode, operator can no longer
+    ///      care of within the required timeouts. In the maintenance mode, operator can no longer
     ///      submit settlement blocks.
     ///
     ///      After all pending onchain requests have been handled, the operator can no longer
-    ///      submit blocks of any type until the downtime times out.
+    ///      submit blocks of any type until either the downtime times out.
     ///
     ///      This function is only callable by the exchange owner.
     ///
-    /// @param durationSeconds The duration in seconds that this exchange will remain in
-    ///                        the maintaince mode.
-    function purchaseDowntime(
-        uint durationSeconds
+    /// @param durationMinutes The duration in minutes that this exchange can remain in
+    ///                        the maintenance mode.
+    function startOrContinueMaintenanceMode(
+        uint durationMinutes
         )
+        external;
+
+    /// @dev Gets the exchange out of maintenance mode.
+    ///
+    ///      This function is only callable by the exchange owner.
+    function stopMaintenanceMode()
         external;
 
     /// @dev Get the remaining downtime.
