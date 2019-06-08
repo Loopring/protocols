@@ -107,6 +107,13 @@ contract IExchange
         uint96          amount
     );
 
+    event WithdrawalFailed(
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        address         to,
+        uint96          amount
+    );
+
     // -- Settings --
     function getGlobalSettings()
         public

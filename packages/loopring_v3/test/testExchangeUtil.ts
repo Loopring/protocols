@@ -617,7 +617,7 @@ export class ExchangeTestUtil {
   }
 
   public async deposit(exchangeID: number, owner: string, secretKey: string, publicKeyX: string, publicKeyY: string,
-                       token: string, amount: BN, accountID?: number) {
+                       token: string, amount: BN, accountID?: number, accountContract?: any) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -649,25 +649,16 @@ export class ExchangeTestUtil {
     }
 
     // Do the deposit
-    if (accountID !== undefined) {
-      const tx = await this.exchange.updateAccountAndDeposit(
-        new BN(publicKeyX),
-        new BN(publicKeyY),
-        token,
-        web3.utils.toBN(amount),
-        {from: owner, value: ethToSend},
-      );
-      // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
-    } else {
-      const tx = await this.exchange.updateAccountAndDeposit(
-        new BN(publicKeyX),
-        new BN(publicKeyY),
-        token,
-        web3.utils.toBN(amount),
-        {from: owner, value: ethToSend},
-      );
-      // pjs.logInfo("\x1b[46m%s\x1b[0m", "[DepositAndCreate] Gas used: " + tx.receipt.gasUsed);
-    }
+    const contract = accountContract ? accountContract : this.exchange;
+    const caller = accountContract ? this.testContext.orderOwners[0] : owner;
+    const tx = await contract.updateAccountAndDeposit(
+      new BN(publicKeyX),
+      new BN(publicKeyY),
+      token,
+      web3.utils.toBN(amount),
+      {from: caller, value: ethToSend},
+    );
+    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {

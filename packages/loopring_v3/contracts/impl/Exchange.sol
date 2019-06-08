@@ -603,9 +603,12 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         nonReentrant
     {
+        require(blockIdx < state.blocks.length, "INVALID_BLOCK_IDX");
+        ExchangeData.Block storage withdrawBlock = state.blocks[blockIdx];
         state.withdrawFromApprovedWithdrawal(
-            blockIdx,
-            slotIdx
+            withdrawBlock,
+            slotIdx,
+            false
         );
     }
 
