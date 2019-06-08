@@ -292,7 +292,9 @@ library ExchangeWithdrawals
 
         address recipient = S.accounts[accountID].owner;
 
-        if (amount > 0) {
+        if (amount == 0) {
+            success = true;
+        } else {
             // Transfer the tokens
             success = transferTokens(
                 S,
@@ -325,8 +327,6 @@ library ExchangeWithdrawals
                     withdrawBlock.withdrawals = mWithdrawals;
                 }
             }
-        } else {
-            success = true;
         }
 
         if (!success) {
