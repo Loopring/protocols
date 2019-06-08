@@ -170,9 +170,7 @@ library ExchangeAdmins
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        return durationMinutes
-            .mul(S.loopring
-            .downtimePriceLRCPerMinute());
+        return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute());
     }
 
     function withdrawExchangeStake(
