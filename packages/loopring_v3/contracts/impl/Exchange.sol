@@ -369,13 +369,14 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     function commitBlock(
         uint8 blockType,
         uint16 blockSize,
-        bytes calldata data
+        bytes calldata data,
+        bytes calldata offchainData
         )
         external
         onlyOperator
         nonReentrant
     {
-        state.commitBlock(blockType, blockSize, data);
+        state.commitBlock(blockType, blockSize, data, offchainData);
     }
 
     function verifyBlock(
@@ -610,9 +611,12 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         nonReentrant
     {
+        require(blockIdx < state.blocks.length, "INVALID_BLOCK_IDX");
+        ExchangeData.Block storage withdrawBlock = state.blocks[blockIdx];
         state.withdrawFromApprovedWithdrawal(
-            blockIdx,
-            slotIdx
+            withdrawBlock,
+            slotIdx,
+            false
         );
     }
 

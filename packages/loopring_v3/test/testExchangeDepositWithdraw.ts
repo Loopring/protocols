@@ -176,7 +176,13 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const distributeWithdrawalsChecked = async (blockIdx: number, numWithdrawals: number, deposits: DepositInfo[],
-                                              from: string, tooLate: boolean = false) => {
+                                              from: string, tooLate: boolean = false, expectedSuccess?: boolean[]) => {
+    if (expectedSuccess) {
+      assert.equal(expectedSuccess.length, deposits.length, "expectedSuccess wrong length");
+    } else {
+      expectedSuccess = Array(deposits.length).fill(true);
+    }
+
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
     // Balances owners
     const balanceOwnerBefore: BN[] = [];
@@ -210,14 +216,20 @@ contract("Exchange", (accounts: string[]) => {
 
     // Check balances owners
     const balanceOwnerAfter: BN[] = [];
-    for (const deposit of deposits) {
+    for (const [i, deposit] of deposits.entries()) {
       balanceOwnerAfter.push(await exchangeTestUtil.getOnchainBalance(deposit.owner, deposit.token));
       const tokenID = await exchangeTestUtil.getTokenID(deposit.token);
-      const amountWithdrawn = roundToFloatValue(deposit.amount, constants.Float28Encoding);
+      let amountWithdrawn = roundToFloatValue(deposit.amount, constants.Float28Encoding);
+      if (!expectedSuccess[i]) {
+        amountWithdrawn = new BN(0);
+      }
       balancesContractExpected[tokenID] = balancesContractExpected[tokenID].sub(amountWithdrawn);
     }
     for (let i = 0; i < deposits.length; i++) {
-      const amountWithdrawn = roundToFloatValue(deposits[i].amount, constants.Float28Encoding);
+      let amountWithdrawn = roundToFloatValue(deposits[i].amount, constants.Float28Encoding);
+      if (!expectedSuccess[i]) {
+        amountWithdrawn = new BN(0);
+      }
       assert(balanceOwnerAfter[i].eq(balanceOwnerBefore[i].add(amountWithdrawn)),
            "Token balance of owner should be increased by amountToOwner");
     }
@@ -672,18 +684,40 @@ contract("Exchange", (accounts: string[]) => {
     it("Distribute withdrawals (by operator)", async () => {
       await createExchange();
 
+      const accountContract = await exchangeTestUtil.contracts.AccountContract.new(
+        exchangeTestUtil.exchange.address,
+      );
+
+      // Enable expensive token transfer testing on the TEST token
+      const testTokenAddress = await exchangeTestUtil.getTokenAddress("TEST");
+      const TestToken = await exchangeTestUtil.contracts.TESTToken.at(testTokenAddress);
+      await TestToken.setTestCase(await TestToken.TEST_EXPENSIVE_TRANSFER());
+
       // Do deposits to fill a complete block
       const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[0];
+      assert(blockSize >= 4);
       const deposits: DepositInfo[] = [];
       for (let i = 0; i < blockSize; i++) {
         const orderOwners = exchangeTestUtil.testContext.orderOwners;
         const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-        const owner = orderOwners[i];
-        const amount = exchangeTestUtil.getRandomAmount();
-        const token = exchangeTestUtil.getTokenAddress("LRC");
+        let owner = orderOwners[i];
+        let amount = exchangeTestUtil.getRandomAmount();
+        let token = exchangeTestUtil.getTokenAddress("LRC");
+        let contract;
+        if (i === 1) {
+          // Expensive ETH transfer
+          owner = accountContract.address;
+          contract = accountContract;
+          token = exchangeTestUtil.getTokenAddress("ETH");
+          amount = new BN(web3.utils.toWei("1.23", "ether"));
+        } else if (i === 3) {
+          // Expensive ERC20 transfer
+          token = exchangeTestUtil.getTokenAddress("TEST");
+          amount = new BN(web3.utils.toWei("4.56", "ether"));
+        }
         const deposit = await exchangeTestUtil.deposit(exchangeID, owner,
                                                        keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                       token, amount);
+                                                       token, amount, undefined, contract);
         deposits.push(deposit);
       }
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -736,13 +770,26 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Distribute the withdrawals
-      await distributeWithdrawalsChecked(blockIdx + 1, deposits.length, deposits, exchangeTestUtil.exchangeOperator);
+      const expectedSuccess = [true, false, true, false];
+      await distributeWithdrawalsChecked(
+        blockIdx + 1, deposits.length, deposits, exchangeTestUtil.exchangeOperator,
+        false, expectedSuccess,
+      );
 
       // Try to distribute again
       await expectThrow(
         exchange.distributeWithdrawals(blockIdx + 1, deposits.length, {from: exchangeTestUtil.exchangeOperator}),
         "WITHDRAWALS_ALREADY_DISTRIBUTED",
       );
+
+      // Do the withdrawals that cost too much gas manually
+      for (const [i, deposit] of deposits.entries()) {
+        if (!expectedSuccess[i]) {
+          await withdrawChecked(blockIdx + 1, i,
+                                deposit.accountID, deposit.token,
+                                deposit.owner, deposit.amount);
+          }
+      }
     });
 
     it("Distribute withdrawals (not by operator)", async () => {

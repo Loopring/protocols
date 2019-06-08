@@ -107,6 +107,13 @@ contract IExchange
         uint96          amount
     );
 
+    event WithdrawalFailed(
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        address         to,
+        uint96          amount
+    );
+
     // -- Settings --
     function getGlobalSettings()
         public
@@ -451,10 +458,13 @@ contract IExchange
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
+    /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
+    ///        the multihash of the IPFS file that containts the block data.
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
-        bytes  calldata data
+        bytes  calldata data,
+        bytes  calldata offchainData
         )
         external;
 

@@ -26,9 +26,27 @@ library ERC20SafeTransfer
     function safeTransfer(
         address token,
         address to,
-        uint256 value)
+        uint256 value
+        )
         internal
-        returns (bool success)
+        returns (bool)
+    {
+        return safeTransferWithGasLimit(
+            token,
+            to,
+            value,
+            gasleft()
+        );
+    }
+
+    function safeTransferWithGasLimit(
+        address token,
+        address to,
+        uint256 value,
+        uint gasLimit
+        )
+        internal
+        returns (bool)
     {
         // A transfer is successful when 'call' is successful and depending on the token:
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
@@ -40,7 +58,7 @@ library ERC20SafeTransfer
             to,
             value
         );
-        (success, ) = token.call(callData);
+        (bool success, ) = token.call.gas(gasLimit)(callData);
         return checkReturnValue(success);
     }
 
@@ -48,9 +66,29 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint256 value)
+        uint256 value
+        )
         internal
-        returns (bool success)
+        returns (bool)
+    {
+        return safeTransferFromWithGasLimit(
+            token,
+            from,
+            to,
+            value,
+            gasleft()
+        );
+    }
+
+    function safeTransferFromWithGasLimit(
+        address token,
+        address from,
+        address to,
+        uint256 value,
+        uint gasLimit
+        )
+        internal
+        returns (bool)
     {
         // A transferFrom is successful when 'call' is successful and depending on the token:
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
@@ -63,7 +101,7 @@ library ERC20SafeTransfer
             to,
             value
         );
-        (success, ) = token.call(callData);
+        (bool success, ) = token.call.gas(gasLimit)(callData);
         return checkReturnValue(success);
     }
 

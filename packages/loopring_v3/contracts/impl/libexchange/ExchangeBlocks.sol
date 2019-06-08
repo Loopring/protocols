@@ -55,10 +55,15 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint8 blockType,
         uint16 blockSize,
-        bytes memory data
+        bytes memory data,
+        bytes memory offchainData
         )
         internal  // inline call
     {
+        if (S.onchainDataAvailability) {
+            require(offchainData.length == 0, "INVALID_OFFCHAIN_DATA");
+        }
+
         commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, data);
     }
 

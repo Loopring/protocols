@@ -19,9 +19,11 @@ pragma solidity 0.5.7;
 import "../iface/IExchange.sol";
 
 
-contract Operator {
+contract AccountContract {
 
     IExchange exchange;
+
+    uint[16] private dummyStorageVariables;
 
     constructor(
         address _exchangeAddress
@@ -31,47 +33,39 @@ contract Operator {
         exchange = IExchange(_exchangeAddress);
     }
 
-    function commitBlock(
-        uint8 blockType,
-        uint16 numElements,
-        bytes calldata data
+    function updateAccountAndDeposit(
+        uint    pubKeyX,
+        uint    pubKeyY,
+        address token,
+        uint96  amount
         )
         external
+        payable
+        returns (
+            uint24 accountID,
+            bool   isAccountNew
+        )
     {
-        exchange.commitBlock(blockType, numElements, data, new bytes(0));
+        return exchange.updateAccountAndDeposit.value(msg.value)(pubKeyX, pubKeyY, token, amount);
     }
 
-    function verifyBlock(
-        uint blockIdx,
-        uint256[8] calldata proof
+    function withdraw(
+        address token,
+        uint96 amount
         )
         external
+        payable
     {
-        exchange.verifyBlock(blockIdx, proof);
+        exchange.withdraw.value(msg.value)(token, amount);
     }
 
-    function revertBlock(
-        uint blockIdx
-        )
+    function()
         external
+        payable
     {
-        exchange.revertBlock(blockIdx);
-    }
-
-    function withdrawBlockFee(
-        uint blockIdx
-        )
-        external
-    {
-        exchange.withdrawBlockFee(blockIdx, msg.sender);
-    }
-
-    function distributeWithdrawals(
-        uint blockIdx,
-        uint maxNumWithdrawals
-        )
-        external
-    {
-        exchange.distributeWithdrawals(blockIdx, maxNumWithdrawals);
+        // Some expensive operation
+        for (uint i = 0; i < 16; i++) {
+            dummyStorageVariables[i] = block.number;
+        }
     }
 }

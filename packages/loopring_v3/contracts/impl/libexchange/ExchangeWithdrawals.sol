@@ -57,6 +57,13 @@ library ExchangeWithdrawals
         uint96          amount
     );
 
+    event WithdrawalFailed(
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        address         to,
+        uint96          amount
+    );
+
     function getNumWithdrawalRequestsProcessed(
         ExchangeData.State storage S
         )
@@ -190,11 +197,12 @@ library ExchangeWithdrawals
         S.withdrawnInWithdrawMode[owner][token] = true;
 
         // Transfer the tokens
-        withdrawTokens(
+        transferTokens(
             S,
             owner,
             tokenID,
-            balance
+            balance,
+            false
         );
     }
 
@@ -222,23 +230,24 @@ library ExchangeWithdrawals
 
         // Transfer the tokens
         ExchangeData.Account storage account = S.accounts[_deposit.accountID];
-        withdrawTokens(
+        transferTokens(
             S,
             account.owner,
             _deposit.tokenID,
-            amount
+            amount,
+            false
         );
     }
 
     function withdrawFromApprovedWithdrawal(
         ExchangeData.State storage S,
-        uint blockIdx,
-        uint slotIdx
+        ExchangeData.Block storage withdrawBlock,
+        uint slotIdx,
+        bool allowFailure
         )
         public
+        returns (bool success)
     {
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-        ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
         require(slotIdx < withdrawBlock.blockSize, "INVALID_SLOT_IDX");
 
         // Only allow withdrawing on finalized blocks
@@ -246,9 +255,8 @@ library ExchangeWithdrawals
 
         // Get the withdrawal data from storage for the given slot
         uint[] memory slice = new uint[](2);
-        uint slot1 = (7 * slotIdx) / 32;
-        uint slot2 = slot1 + 1;
-        uint offset = (7 * (slotIdx + 1)) - (slot1 * 32);
+        uint slot = (7 * slotIdx) / 32;
+        uint offset = (7 * (slotIdx + 1)) - (slot * 32);
         uint sc = 0;
         uint data = 0;
         // Short byte arrays (length <= 31) are stored differently in storage
@@ -260,8 +268,8 @@ library ExchangeWithdrawals
                 // keccak hash to get the contents of the array
                 mstore(0x0, withdrawals_slot)
                 sc := keccak256(0x0, 0x20)
-                dataSlot1 := sload(add(sc, slot1))
-                dataSlot2 := sload(add(sc, slot2))
+                dataSlot1 := sload(add(sc, slot))
+                dataSlot2 := sload(add(sc, add(slot, 1)))
             }
             // Stitch the data together so we can extract the data in a single uint
             // (withdrawal data is at the LSBs)
@@ -282,43 +290,59 @@ library ExchangeWithdrawals
         uint24 accountID = uint24((data >> 28) & 0xFFFFF);
         uint amount = (data & 0xFFFFFFF).decodeFloat();
 
-        if (amount > 0) {
-            // Set everything to 0 for this withdrawal so it cannot be used anymore
-            data = data & uint(~((1 << (7 * 8)) - 1));
+        address recipient = S.accounts[accountID].owner;
 
-            // Update the data in storage
-            if (withdrawBlock.withdrawals.length >= 32) {
-                assembly {
-                    mstore(add(slice, offset), data)
-                }
-                uint dataSlot1 = slice[0];
-                uint dataSlot2 = slice[1];
-                assembly {
-                    sstore(add(sc, slot1), dataSlot1)
-                    sstore(add(sc, slot2), dataSlot2)
-                }
-            } else {
-                bytes memory mWithdrawals = withdrawBlock.withdrawals;
-                assembly {
-                    mstore(add(mWithdrawals, offset), data)
-                }
-                withdrawBlock.withdrawals = mWithdrawals;
-            }
-
-            ExchangeData.Account storage account = S.accounts[accountID];
-
+        if (amount == 0) {
+            success = true;
+        } else {
             // Transfer the tokens
-            withdrawTokens(
+            success = transferTokens(
                 S,
-                account.owner,
+                recipient,
                 tokenID,
-                amount
+                amount,
+                allowFailure
             );
 
+            if (success) {
+                // Set everything to 0 for this withdrawal so it cannot be used anymore
+                data = data & uint(~((1 << (7 * 8)) - 1));
+
+                // Update the data in storage
+                if (withdrawBlock.withdrawals.length >= 32) {
+                    assembly {
+                        mstore(add(slice, offset), data)
+                    }
+                    uint dataSlot1 = slice[0];
+                    uint dataSlot2 = slice[1];
+                    assembly {
+                        sstore(add(sc, slot), dataSlot1)
+                        sstore(add(sc, add(slot, 1)), dataSlot2)
+                    }
+                } else {
+                    bytes memory mWithdrawals = withdrawBlock.withdrawals;
+                    assembly {
+                        mstore(add(mWithdrawals, offset), data)
+                    }
+                    withdrawBlock.withdrawals = mWithdrawals;
+                }
+            }
+        }
+
+        if (!success) {
+            emit WithdrawalFailed(
+                accountID,
+                tokenID,
+                recipient,
+                uint96(amount)
+            );
+        } else if(accountID > 0 || tokenID > 0 || amount > 0) {
+            // Only emit an event when the withdrawal data hasn't been reset yet
+            // by a previous successful withdrawal
             emit WithdrawalCompleted(
                 accountID,
                 tokenID,
-                account.owner,
+                recipient,
                 uint96(amount)
             );
         }
@@ -430,7 +454,15 @@ library ExchangeWithdrawals
         uint gasLimit = ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS();
         uint totalNumWithdrawn = start;
         while (totalNumWithdrawn < end && gasleft() >= gasLimit) {
-            withdrawFromApprovedWithdrawal(S, blockIdx, totalNumWithdrawn);
+            // Don't check the return value here, the withdrawal is allowed to fail.
+            // The automatic token disribution by the operator is a best effort only.
+            // The account owner can always manually withdraw without any limits.
+            withdrawFromApprovedWithdrawal(
+                S,
+                withdrawBlock,
+                totalNumWithdrawn,
+                true
+            );
             totalNumWithdrawn++;
         }
         withdrawBlock.numWithdrawalsDistributed = uint16(totalNumWithdrawn);
@@ -450,25 +482,40 @@ library ExchangeWithdrawals
 
 
     // == Internal Functions ==
-    function withdrawTokens(
+
+    // If allowFailure is true the transfer can fail because of a transfer error or
+    // because the transfer uses more than GAS_LIMIT_SEND_TOKENS gas. The function
+    // will return true when successful, false otherwise.
+    // If allowFailure is false the transfer is guaranteed to succeed using
+    // as much gas as needed, otherwise it throws. The function always returns true.
+    function transferTokens(
         ExchangeData.State storage S,
-        address accountOwner,
+        address to,
         uint16  tokenID,
-        uint    amount
+        uint    amount,
+        bool    allowFailure
         )
         internal
+        returns (bool success)
     {
-        address payable owner = address(uint160(accountOwner));
+        address payable recipient = address(uint160(to));
         address token = S.getTokenAddress(tokenID);
+        // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
+        uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
         // Transfer the tokens from the contract to the owner
         if (amount > 0) {
             if (token == address(0)) {
                 // ETH
-                owner.transfer(amount);
+                (success, ) = recipient.call.value(amount).gas(gasLimit)("");
             } else {
                 // ERC20 token
-                require(token.safeTransfer(owner, amount), "TRANSFER_FAILURE");
+                success = token.safeTransferWithGasLimit(recipient, amount, gasLimit);
             }
+        } else {
+            success = true;
+        }
+        if (!allowFailure) {
+            require(success, "TRANSFER_FAILURE");
         }
     }
 }
