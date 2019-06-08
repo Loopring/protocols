@@ -77,6 +77,16 @@ library ExchangeMode
         return S.shutdownStartTime > 0;
     }
 
+    function isInMaintenance(
+        ExchangeData.State storage S
+        )
+        internal // inline call
+        view
+        returns (bool)
+    {
+        return S.downtimeStart != 0 && getNumDowntimeMinutesLeft(S) > 0;
+    }
+
     function isInInitialState(
         ExchangeData.State storage S
         )
@@ -100,7 +110,7 @@ library ExchangeMode
     {
         // Users requests are possible when the exchange is not in maintenance mode,
         // the exchange hasn't been shutdown, and the exchange isn't in withdrawal mode
-        return (now >= S.disableUserRequestsUntil) && !isShutdown(S) && !isInWithdrawalMode(S);
+        return !isInMaintenance(S) && !isShutdown(S) && !isInWithdrawalMode(S);
     }
 
     function isAnyUnfinalizedBlockTooOld(
@@ -115,6 +125,27 @@ library ExchangeMode
             return blockTimestamp < now.sub(ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE());
         } else {
             return false;
+        }
+    }
+
+    function getNumDowntimeMinutesLeft(
+        ExchangeData.State storage S
+        )
+        internal // inline call
+        view
+        returns (uint)
+    {
+        if (S.downtimeStart != 0) {
+            uint timeInMaintenanceMode = S.downtimeStart.sub(now);
+            // Convert from seconds to minutes, rounding up
+            uint numDowntimeMinutesUsed = timeInMaintenanceMode.add(59) / 60;
+            if (S.numDowntimeMinutes > numDowntimeMinutesUsed) {
+                return S.numDowntimeMinutes.sub(numDowntimeMinutesUsed);
+            } else {
+                return 0;
+            }
+        } else {
+            return S.numDowntimeMinutes;
         }
     }
 }

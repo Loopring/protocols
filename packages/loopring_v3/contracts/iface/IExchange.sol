@@ -893,12 +893,12 @@ contract IExchange
     function getRemainingDowntime()
         external
         view
-        returns (uint durationSeconds);
+        returns (uint durationMinutes);
 
     /// @dev Get the amount of LRC to burn for buying the downtime.
     /// @return costLRC The amount of LRC to burn
     function getDowntimeCostLRC(
-        uint durationSeconds
+        uint durationMinutes
         )
         external
         view

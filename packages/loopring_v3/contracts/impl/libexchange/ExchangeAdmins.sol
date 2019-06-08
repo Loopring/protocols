@@ -98,14 +98,14 @@ library ExchangeAdmins
 
     function purchaseDowntime(
         ExchangeData.State storage S,
-        uint durationSeconds
+        uint durationMinutes
         )
         public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(!S.isShutdown(), "INVALID_MODE");
 
-        uint costLRC = getDowntimeCostLRC(S, durationSeconds);
+        uint costLRC = getDowntimeCostLRC(S, durationMinutes);
         if (costLRC > 0) {
             require(
                 BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
@@ -113,10 +113,33 @@ library ExchangeAdmins
             );
         }
 
-        if (now > S.disableUserRequestsUntil) {
-            S.disableUserRequestsUntil = now;
-        }
-        S.disableUserRequestsUntil = S.disableUserRequestsUntil.add(durationSeconds);
+        S.numDowntimeMinutes = S.numDowntimeMinutes.add(durationMinutes);
+    }
+
+    function startDowntime(
+        ExchangeData.State storage S
+        )
+        public
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(!S.isShutdown(), "INVALID_MODE");
+        require(S.downtimeStart == 0, "ALREADY_IN_MAINTENANCE_MODE");
+        require(S.numDowntimeMinutes > 0, "NO_DOWNTIME_MINUTES_AVAILABLE");
+
+        S.downtimeStart = now;
+    }
+
+    function stopDowntime(
+        ExchangeData.State storage S
+        )
+        public
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(!S.isShutdown(), "INVALID_MODE");
+        require(S.downtimeStart != 0, "NOT_IN_MAINTENANCE_MODE");
+
+        S.numDowntimeMinutes = S.getNumDowntimeMinutesLeft();
+        S.downtimeStart = 0;
     }
 
     function getRemainingDowntime(
@@ -126,25 +149,21 @@ library ExchangeAdmins
         view
         returns (uint duration)
     {
-        if (S.disableUserRequestsUntil == 0 || now >= S.disableUserRequestsUntil || S.isInWithdrawalMode()) {
-            duration = 0;
-        } else {
-            duration = S.disableUserRequestsUntil - now;
-        }
+        return S.getNumDowntimeMinutesLeft();
     }
 
     function getDowntimeCostLRC(
         ExchangeData.State storage S,
-        uint durationSeconds
+        uint durationMinutes
         )
         public
         view
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        return durationSeconds
+        return durationMinutes
             .mul(S.loopring
-            .downtimePriceLRCPerDay()) / (1 days);
+            .downtimePriceLRCPerMinute());
     }
 
     function withdrawExchangeStake(

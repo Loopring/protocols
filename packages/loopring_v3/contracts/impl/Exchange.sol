@@ -132,6 +132,14 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         result = state.isShutdown();
     }
 
+    function isInMaintenance()
+        external
+        view
+        returns (bool result)
+    {
+        result = state.isInMaintenance();
+    }
+
     // -- Accounts --
     function getNumAccounts()
         external
@@ -677,31 +685,31 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function purchaseDowntime(
-        uint durationSeconds
+        uint durationMinutes
         )
         external
         onlyOwner
         nonReentrant
     {
-        state.purchaseDowntime(durationSeconds);
+        state.purchaseDowntime(durationMinutes);
     }
 
     function getRemainingDowntime()
         external
         view
-        returns (uint durationSeconds)
+        returns (uint durationMinutes)
     {
-        durationSeconds = state.getRemainingDowntime();
+        durationMinutes = state.getRemainingDowntime();
     }
 
     function getDowntimeCostLRC(
-        uint durationSeconds
+        uint durationMinutes
         )
         external
         view
         returns (uint costLRC)
     {
-        costLRC = state.getDowntimeCostLRC(durationSeconds);
+        costLRC = state.getDowntimeCostLRC(durationMinutes);
     }
 
     function shutdown()

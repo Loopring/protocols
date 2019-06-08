@@ -11,9 +11,9 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeID = 0;
 
   const getDowntimeCost = async (duration: number) => {
-    const downtimePriceLRCPerDay = await loopring.downtimePriceLRCPerDay();
-    const dayInSeconds = 24 * 60 * 60;
-    const cost = new BN(duration).mul(downtimePriceLRCPerDay).div(new BN(dayInSeconds));
+    const downtimePriceLRCPerMinute = await loopring.downtimePriceLRCPerMinute();
+    const dayInMinutes = 24 * 60;
+    const cost = new BN(duration).mul(downtimePriceLRCPerMinute).div(new BN(dayInMinutes));
     return cost;
   };
 

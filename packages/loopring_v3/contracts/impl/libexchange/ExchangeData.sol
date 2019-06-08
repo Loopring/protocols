@@ -191,7 +191,9 @@ library ExchangeData
 
         address lrcAddress;
 
-        uint    disableUserRequestsUntil;
+        uint    numDowntimeMinutes;
+        uint    downtimeStart;
+
         uint    accountCreationFeeETH;
         uint    accountUpdateFeeETH;
         uint    depositFeeETH;

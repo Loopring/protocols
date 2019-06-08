@@ -42,7 +42,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerDay,
+        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -62,7 +62,7 @@ contract LoopringV3 is ILoopringV3, Claimable
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
-            _downtimePriceLRCPerDay,
+            _downtimePriceLRCPerMinute,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -77,7 +77,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerDay,
+        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -92,7 +92,7 @@ contract LoopringV3 is ILoopringV3, Claimable
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
-            _downtimePriceLRCPerDay,
+            _downtimePriceLRCPerMinute,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -412,7 +412,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerDay,
+        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -427,7 +427,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
-        downtimePriceLRCPerDay = _downtimePriceLRCPerDay;
+        downtimePriceLRCPerMinute = _downtimePriceLRCPerMinute;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
