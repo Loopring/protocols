@@ -872,12 +872,12 @@ contract IExchange
 
     /// @dev Starts or continues maintenance mode for the specified duration.
     ///      The necessary additional downtime minutes will be purchased. The number of
-    ///      downtime minutes still available can be checked with getRemainingDowntime().
+    ///      downtime minutes still available for use can be checked with getRemainingDowntime().
     ///      In maintainance mode, all onchain user requests, including account creation,
     ///      account update, deposits, and withdrawal requests are disabled.
     ///
-    ///      If the remaining downtime is non-zero, calling this function will extend the
-    ///      remaining downtime by `durationMinutes`.
+    ///      The remaining downtime time will be extended so that the exchange can stay in
+    ///      maintenance mode for at least `durationMinutes`
     ///
     ///      The exchange owner can exit maintenance mode by calling stopMaintenanceMode()
     ///      or by waiting until the remaining downtime is reduced to 0.
@@ -888,7 +888,7 @@ contract IExchange
     ///      submit settlement blocks.
     ///
     ///      After all pending onchain requests have been handled, the operator can no longer
-    ///      submit blocks of any type until either the downtime times out.
+    ///      submit blocks of any type until maintenance mode is no longer active.
     ///
     ///      This function is only callable by the exchange owner.
     ///
