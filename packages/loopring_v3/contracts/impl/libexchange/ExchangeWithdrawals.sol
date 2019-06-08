@@ -57,6 +57,13 @@ library ExchangeWithdrawals
         uint96          amount
     );
 
+    event WithdrawalFailed(
+        uint24  indexed accountID,
+        uint16  indexed tokenID,
+        address         to,
+        uint96          amount
+    );
+
     function getNumWithdrawalRequestsProcessed(
         ExchangeData.State storage S
         )
@@ -194,7 +201,8 @@ library ExchangeWithdrawals
             S,
             owner,
             tokenID,
-            balance
+            balance,
+            false
         );
     }
 
@@ -226,21 +234,20 @@ library ExchangeWithdrawals
             S,
             account.owner,
             _deposit.tokenID,
-            amount
+            amount,
+            false
         );
     }
 
     function withdrawFromApprovedWithdrawal(
         ExchangeData.State storage S,
-        uint blockIdx,
+        ExchangeData.Block storage withdrawBlock,
         uint slotIdx,
-        bool useGasLimit
+        bool allowFailure
         )
         public
         returns (bool success)
     {
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-        ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
         require(slotIdx < withdrawBlock.blockSize, "INVALID_SLOT_IDX");
 
         // Only allow withdrawing on finalized blocks
@@ -283,24 +290,17 @@ library ExchangeWithdrawals
         uint24 accountID = uint24((data >> 28) & 0xFFFFF);
         uint amount = (data & 0xFFFFFFF).decodeFloat();
 
+        address recipient = S.accounts[accountID].owner;
+
         if (amount > 0) {
-            address recipient = S.accounts[accountID].owner;
             // Transfer the tokens
-            if (useGasLimit) {
-                success = sendTokens(
-                    S,
-                    recipient,
-                    tokenID,
-                    amount
-                );
-            } else {
-                success = transferTokens(
-                    S,
-                    recipient,
-                    tokenID,
-                    amount
-                );
-            }
+            success = transferTokens(
+                S,
+                recipient,
+                tokenID,
+                amount,
+                allowFailure
+            );
 
             if (success) {
                 // Set everything to 0 for this withdrawal so it cannot be used anymore
@@ -324,16 +324,27 @@ library ExchangeWithdrawals
                     }
                     withdrawBlock.withdrawals = mWithdrawals;
                 }
-
-                emit WithdrawalCompleted(
-                    accountID,
-                    tokenID,
-                    recipient,
-                    uint96(amount)
-                );
             }
         } else {
             success = true;
+        }
+
+        if (!success) {
+            emit WithdrawalFailed(
+                accountID,
+                tokenID,
+                recipient,
+                uint96(amount)
+            );
+        } else if(accountID > 0 || tokenID > 0 || amount > 0) {
+            // Only emit an event when the withdrawal data hasn't been reset yet
+            // by a previous successful withdrawal
+            emit WithdrawalCompleted(
+                accountID,
+                tokenID,
+                recipient,
+                uint96(amount)
+            );
         }
     }
 
@@ -448,7 +459,7 @@ library ExchangeWithdrawals
             // The account owner can always manually withdraw without any limits.
             withdrawFromApprovedWithdrawal(
                 S,
-                blockIdx,
+                withdrawBlock,
                 totalNumWithdrawn,
                 true
             );
@@ -472,54 +483,25 @@ library ExchangeWithdrawals
 
     // == Internal Functions ==
 
-    // The transfer can fail because of a transfer error or because the transfer uses
-    // more than GAS_LIMIT_SEND_TOKENS gas.
-    // The function returns true when successful, otherwise false.
-    // Works similar to address.send() for sending ETH.
-    function sendTokens(
-        ExchangeData.State storage S,
-        address to,
-        uint16  tokenID,
-        uint    amount
-        )
-        internal
-        returns (bool)
-    {
-        // Limit the amount of gas that can be used
-        uint gasLimit = ExchangeData.GAS_LIMIT_SEND_TOKENS();
-        return sendTokensInternal(S, to, tokenID, amount, gasLimit);
-    }
-
-    // The transfer is guaranteed to succeed using as much gas as needed,
-    // otherwise it throws. Always returns true.
-    // Works similar to address.transfer() for transfering ETH.
+    // If allowFailure is true the transfer can fail because of a transfer error or
+    // because the transfer uses more than GAS_LIMIT_SEND_TOKENS gas. The function
+    // will return true when successful, false otherwise.
+    // If allowFailure is false the transfer is guaranteed to succeed using
+    // as much gas as needed, otherwise it throws. The function always returns true.
     function transferTokens(
         ExchangeData.State storage S,
         address to,
         uint16  tokenID,
-        uint    amount
-        )
-        internal
-        returns (bool)
-    {
-        // Forward all gas
-        uint gasLimit = gasleft();
-        require(sendTokensInternal(S, to, tokenID, amount, gasLimit), "TRANSFER_FAILURE");
-        return true;
-    }
-
-    function sendTokensInternal(
-        ExchangeData.State storage S,
-        address to,
-        uint16  tokenID,
         uint    amount,
-        uint    gasLimit
+        bool    allowFailure
         )
         internal
         returns (bool success)
     {
         address payable recipient = address(uint160(to));
         address token = S.getTokenAddress(tokenID);
+        // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
+        uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
         // Transfer the tokens from the contract to the owner
         if (amount > 0) {
             if (token == address(0)) {
@@ -531,6 +513,9 @@ library ExchangeWithdrawals
             }
         } else {
             success = true;
+        }
+        if (!allowFailure) {
+            require(success, "TRANSFER_FAILURE");
         }
     }
 }
