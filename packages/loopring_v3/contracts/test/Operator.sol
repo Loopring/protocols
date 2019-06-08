@@ -38,7 +38,7 @@ contract Operator {
         )
         external
     {
-        exchange.commitBlock(blockType, numElements, data);
+        exchange.commitBlock(blockType, numElements, data, new bytes(0));
     }
 
     function verifyBlock(
@@ -63,7 +63,6 @@ contract Operator {
         )
         external
     {
-        /*uint feeAmount = */
         exchange.withdrawBlockFee(blockIdx, msg.sender);
     }
 
