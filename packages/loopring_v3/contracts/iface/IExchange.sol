@@ -877,7 +877,7 @@ contract IExchange
     ///      account update, deposits, and withdrawal requests are disabled.
     ///
     ///      The remaining downtime time will be extended so that the exchange can stay in
-    ///      maintenance mode for at least `durationMinutes`
+    ///      maintenance mode for at least `durationMinutes`.
     ///
     ///      The exchange owner can exit maintenance mode by calling stopMaintenanceMode()
     ///      or by waiting until the remaining downtime is reduced to 0.
