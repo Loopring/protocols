@@ -230,7 +230,7 @@ library ExchangeBlocks
         }
 
         if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
-            require(!S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
+            require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             uint8 protocolTakerFeeBips;
             uint8 protocolMakerFeeBips;

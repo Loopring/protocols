@@ -921,6 +921,20 @@ contract IExchange
         view
         returns (uint costLRC);
 
+    /// @dev Gets the total amount of time in seconds the exchange has ever been in maintenance.
+    /// @return timeInSeconds The total time in maintenance.
+    function getTotalTimeInMaintenanceSeconds()
+        external
+        view
+        returns (uint timeInSeconds);
+
+    /// @dev Gets the time the exchange was created.
+    /// @return timestamp The time the exchange was created.
+    function getExchangeCreationTimestamp()
+        external
+        view
+        returns (uint timestamp);
+
     /// @dev Shuts down the exchange.
     ///      Once the exchange is shutdown all onchain requests are permanently disabled.
     ///      When all requirements are fulfilled the exchange owner can withdraw

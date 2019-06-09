@@ -106,10 +106,16 @@ library ExchangeAdmins
         require(!S.isShutdown(), "INVALID_MODE");
         require(durationMinutes > 0, "INVALID_DURATION");
 
+        uint numMinutesLeft = S.getNumDowntimeMinutesLeft();
+
+        // If we automatically exited maintenance mode first call stop
+        if (S.downtimeStart != 0 && numMinutesLeft == 0) {
+            stopMaintenanceMode(S);
+        }
+
         // Purchased downtime from a previous maintenance period or a previous call
         // to startOrContinueMaintenanceMode can be re-used, so we need to calculate
         // how many additional minutes we need to purchase
-        uint numMinutesLeft = S.getNumDowntimeMinutesLeft();
         if (numMinutesLeft < durationMinutes) {
             uint numMinutesToPurchase = durationMinutes.sub(numMinutesLeft);
             uint costLRC = getDowntimeCostLRC(S, numMinutesToPurchase);
@@ -136,6 +142,9 @@ library ExchangeAdmins
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(!S.isShutdown(), "INVALID_MODE");
         require(S.downtimeStart != 0, "NOT_IN_MAINTENANCE_MODE");
+
+        // Keep a history of how long the exchange has been in maintenance
+        S.totalTimeInMaintenanceSeconds = getTotalTimeInMaintenanceSeconds(S);
 
         // Get the number of downtime minutes left
         S.numDowntimeMinutes = S.getNumDowntimeMinutesLeft();
@@ -171,6 +180,23 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute());
+    }
+
+    function getTotalTimeInMaintenanceSeconds(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint time)
+    {
+        time = S.totalTimeInMaintenanceSeconds;
+        if (S.downtimeStart != 0) {
+            if (S.getNumDowntimeMinutesLeft() > 0) {
+                time = time.add(now.sub(S.downtimeStart));
+            } else {
+                time = time.add(S.numDowntimeMinutes.mul(60));
+            }
+        }
     }
 
     function withdrawExchangeStake(

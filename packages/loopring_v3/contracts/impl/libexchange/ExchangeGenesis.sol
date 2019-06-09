@@ -48,6 +48,7 @@ library ExchangeGenesis
         require(address(0) != _operator, "ZERO_ADDRESS");
 
         S.id = _id;
+        S.exchangeCreationTimestamp = now;
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
         S.onchainDataAvailability = _onchainDataAvailability;

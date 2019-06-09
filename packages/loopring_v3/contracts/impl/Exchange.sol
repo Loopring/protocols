@@ -724,6 +724,22 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         costLRC = state.getDowntimeCostLRC(durationMinutes);
     }
 
+    function getTotalTimeInMaintenanceSeconds()
+        external
+        view
+        returns (uint timeSeconds)
+    {
+        timeSeconds = state.getTotalTimeInMaintenanceSeconds();
+    }
+
+    function getExchangeCreationTimestamp()
+        external
+        view
+        returns (uint timestamp)
+    {
+        timestamp = state.exchangeCreationTimestamp;
+    }
+
     function shutdown()
         external
         onlyOwner
