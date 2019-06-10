@@ -77,7 +77,7 @@ contract ILoopringV3
     address public blockVerifierAddress                             = address(0);
     uint    public exchangeCreationCostLRC                          = 0;
     uint    public maxWithdrawalFee                                 = 0;
-    uint    public downtimePriceLRCPerDay                           = 0;
+    uint    public downtimePriceLRCPerMinute                        = 0;
     uint    public withdrawalFineLRC                                = 0;
     uint    public tokenRegistrationFeeLRCBase                      = 0;
     uint    public tokenRegistrationFeeLRCDelta                     = 0;
@@ -101,7 +101,7 @@ contract ILoopringV3
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerDay,
+        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,

@@ -184,6 +184,7 @@ library ExchangeData
     struct State
     {
         uint    id;
+        uint    exchangeCreationTimestamp;
         address payable operator; // The only address that can submit new blocks.
         bool    onchainDataAvailability;
 
@@ -192,7 +193,10 @@ library ExchangeData
 
         address lrcAddress;
 
-        uint    disableUserRequestsUntil;
+        uint    totalTimeInMaintenanceSeconds;
+        uint    numDowntimeMinutes;
+        uint    downtimeStart;
+
         uint    accountCreationFeeETH;
         uint    accountUpdateFeeETH;
         uint    depositFeeETH;

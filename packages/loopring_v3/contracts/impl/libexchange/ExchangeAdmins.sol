@@ -96,27 +96,68 @@ library ExchangeAdmins
         );
     }
 
-    function purchaseDowntime(
+    function startOrContinueMaintenanceMode(
         ExchangeData.State storage S,
-        uint durationSeconds
+        uint durationMinutes
         )
         public
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(!S.isShutdown(), "INVALID_MODE");
+        require(durationMinutes > 0, "INVALID_DURATION");
 
-        uint costLRC = getDowntimeCostLRC(S, durationSeconds);
-        if (costLRC > 0) {
-            require(
-                BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
-                "BURN_FAILURE"
-            );
+        uint numMinutesLeft = S.getNumDowntimeMinutesLeft();
+
+        // If we automatically exited maintenance mode first call stop
+        if (S.downtimeStart != 0 && numMinutesLeft == 0) {
+            stopMaintenanceMode(S);
         }
 
-        if (now > S.disableUserRequestsUntil) {
-            S.disableUserRequestsUntil = now;
+        // Purchased downtime from a previous maintenance period or a previous call
+        // to startOrContinueMaintenanceMode can be re-used, so we need to calculate
+        // how many additional minutes we need to purchase
+        if (numMinutesLeft < durationMinutes) {
+            uint numMinutesToPurchase = durationMinutes.sub(numMinutesLeft);
+            uint costLRC = getDowntimeCostLRC(S, numMinutesToPurchase);
+            if (costLRC > 0) {
+                require(
+                    BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
+                    "BURN_FAILURE"
+                );
+            }
+            S.numDowntimeMinutes = S.numDowntimeMinutes.add(numMinutesToPurchase);
         }
-        S.disableUserRequestsUntil = S.disableUserRequestsUntil.add(durationSeconds);
+
+        // Start maintenance mode if the exchange isn't in maintenance mode yet
+        if (S.downtimeStart == 0) {
+            S.downtimeStart = now;
+        }
+    }
+
+    function stopMaintenanceMode(
+        ExchangeData.State storage S
+        )
+        public
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(!S.isShutdown(), "INVALID_MODE");
+        require(S.downtimeStart != 0, "NOT_IN_MAINTENANCE_MODE");
+
+        // Keep a history of how long the exchange has been in maintenance
+        S.totalTimeInMaintenanceSeconds = getTotalTimeInMaintenanceSeconds(S);
+
+        // Get the number of downtime minutes left
+        S.numDowntimeMinutes = S.getNumDowntimeMinutesLeft();
+
+        // Add an extra fixed cost of 1 minute to mitigate the posibility of abusing
+        // the starting/stopping of maintenance mode within a minute or even a single Ethereum block.
+        // This is practically the same as rounding down when converting from seconds to minutes.
+        if (S.numDowntimeMinutes > 0) {
+            S.numDowntimeMinutes -= 1;
+        }
+
+        // Stop maintenance mode
+        S.downtimeStart = 0;
     }
 
     function getRemainingDowntime(
@@ -126,25 +167,36 @@ library ExchangeAdmins
         view
         returns (uint duration)
     {
-        if (S.disableUserRequestsUntil == 0 || now >= S.disableUserRequestsUntil || S.isInWithdrawalMode()) {
-            duration = 0;
-        } else {
-            duration = S.disableUserRequestsUntil - now;
-        }
+        return S.getNumDowntimeMinutesLeft();
     }
 
     function getDowntimeCostLRC(
         ExchangeData.State storage S,
-        uint durationSeconds
+        uint durationMinutes
         )
         public
         view
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        return durationSeconds
-            .mul(S.loopring
-            .downtimePriceLRCPerDay()) / (1 days);
+        return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute());
+    }
+
+    function getTotalTimeInMaintenanceSeconds(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint time)
+    {
+        time = S.totalTimeInMaintenanceSeconds;
+        if (S.downtimeStart != 0) {
+            if (S.getNumDowntimeMinutesLeft() > 0) {
+                time = time.add(now.sub(S.downtimeStart));
+            } else {
+                time = time.add(S.numDowntimeMinutes.mul(60));
+            }
+        }
     }
 
     function withdrawExchangeStake(

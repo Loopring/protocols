@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, Deposit, Operator, OrderInfo, RingInfo, Wallet } from "./types";
 
-contract("Exchange", (accounts: string[]) => {
+contract("Operator", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;

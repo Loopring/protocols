@@ -24,3 +24,5 @@ export const Float12Encoding: FloatEncoding = {
 export const Float8Encoding: FloatEncoding = {
   numBitsExponent: 5, numBitsMantissa: 3, exponentBase: 10,
 };
+
+export const emptyBytes = web3.utils.hexToBytes("0x");

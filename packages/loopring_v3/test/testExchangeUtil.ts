@@ -871,6 +871,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockType),
       web3.utils.toBN(blockSize),
       web3.utils.hexToBytes(data),
+      web3.utils.hexToBytes("0x"),
       {from: this.exchangeOperator},
     );
     pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
