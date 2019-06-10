@@ -34,11 +34,12 @@ contract Operator {
     function commitBlock(
         uint8 blockType,
         uint16 numElements,
-        bytes calldata data
+        bytes calldata data,
+        bytes calldata offchainData
         )
         external
     {
-        exchange.commitBlock(blockType, numElements, data, new bytes(0));
+        exchange.commitBlock(blockType, numElements, data, offchainData);
     }
 
     function verifyBlock(

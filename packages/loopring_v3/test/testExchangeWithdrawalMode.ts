@@ -322,7 +322,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to commit a block
       await expectThrow(
-        exchange.commitBlock(0, 2, web3.utils.hexToBytes("0x0"),
+        exchange.commitBlock(0, 2, web3.utils.hexToBytes("0x0"), web3.utils.hexToBytes("0x"),
         {from: exchangeTestUtil.exchangeOperator}),
         "INVALID_MODE",
       );
