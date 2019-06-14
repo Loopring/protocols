@@ -45,7 +45,7 @@ npm run compile
 
 ### Circuits
 
-The code of our circuits is currently not open source. If you have access to the private repo `loopring3-circuits` please clone it and update the `circuit_src_folder` variable in `circuit/CMakeLists.txt` so it points to the correct folder.
+The code of our circuits is currently not open source. If you have access to the private repo `protocol3-circuits` please clone it and update the `circuit_src_folder` variable in `circuit/CMakeLists.txt` so it points to the correct folder.
 
 ```
 make
