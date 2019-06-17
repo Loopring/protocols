@@ -866,10 +866,12 @@ export class ExchangeTestUtil {
     // assert.equal(activeOperator.operatorID, operator.operatorID);
     // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
 
+    const blockVersion = 0;
     const operatorContract = this.operator ? this.operator : this.exchange;
     const tx = await operatorContract.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.toBN(blockSize),
+      web3.utils.toBN(blockVersion),
       web3.utils.hexToBytes(data),
       web3.utils.hexToBytes("0x"),
       {from: this.exchangeOperator},
@@ -915,10 +917,12 @@ export class ExchangeTestUtil {
     const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
     const vkFlattened = this.flattenList(this.flattenVK(vk));
     // console.log(vkFlattened);
+    const blockVersion = 0;
     await this.blockVerifier.setVerifyingKey(
       block.blockType,
       block.onchainDataAvailability,
       block.numElements,
+      blockVersion,
       vkFlattened,
     );
   }

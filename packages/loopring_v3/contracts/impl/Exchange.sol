@@ -367,8 +367,9 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function commitBlock(
-        uint8 blockType,
+        uint8  blockType,
         uint16 blockSize,
+        uint8  blockVersion,
         bytes calldata data,
         bytes calldata offchainData
         )
@@ -376,7 +377,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         onlyOperator
         nonReentrant
     {
-        state.commitBlock(blockType, blockSize, data, offchainData);
+        state.commitBlock(blockType, blockSize, blockVersion, data, offchainData);
     }
 
     function verifyBlock(

@@ -387,6 +387,7 @@ contract IExchange
     /// @param blockType The type of the new block
     /// @param blockSize The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
+    /// @param blockVersion The circuit version to use for verifying the block
     /// @param data The data for this block -
     ///        For all block types:
     ///            - Exchange ID: 4 bytes
@@ -463,6 +464,7 @@ contract IExchange
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
+        uint8  blockVersion,
         bytes  calldata data,
         bytes  calldata offchainData
         )

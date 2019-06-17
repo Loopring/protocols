@@ -129,7 +129,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 1, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 1, 0, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "CANNOT_VERIFY_BLOCK",
           );
@@ -143,7 +143,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 2, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "INVALID_EXCHANGE_ID",
           );
@@ -157,7 +157,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 2, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "INVALID_MERKLE_ROOT",
           );
@@ -178,7 +178,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
             );
@@ -193,7 +193,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
             );
@@ -257,7 +257,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex + 1, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
@@ -273,7 +273,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(4, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
@@ -289,7 +289,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(8, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 8, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 8, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
@@ -305,7 +305,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_STARTING_HASH",
               );
@@ -321,7 +321,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_ENDING_HASH",
               );
@@ -707,7 +707,7 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
         // Try to commit a block
         await expectThrow(
-          exchange.commitBlock(0, 2, web3.utils.hexToBytes("0x0"), constants.emptyBytes,
+          exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes("0x0"), constants.emptyBytes,
           {from: exchangeTestUtil.testContext.orderOwners[0]}),
           "UNAUTHORIZED",
         );

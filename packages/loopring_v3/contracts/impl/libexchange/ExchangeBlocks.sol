@@ -53,8 +53,9 @@ library ExchangeBlocks
 
     function commitBlock(
         ExchangeData.State storage S,
-        uint8 blockType,
+        uint8  blockType,
         uint16 blockSize,
+        uint8  blockVersion,
         bytes memory data,
         bytes memory offchainData
         )
@@ -64,7 +65,7 @@ library ExchangeBlocks
             require(offchainData.length == 0, "INVALID_OFFCHAIN_DATA");
         }
 
-        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, data);
+        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, blockVersion, data);
     }
 
     function verifyBlock(
@@ -95,6 +96,7 @@ library ExchangeBlocks
                 uint8(specifiedBlock.blockType),
                 S.onchainDataAvailability,
                 specifiedBlock.blockSize,
+                specifiedBlock.blockVersion,
                 specifiedBlock.publicDataHash,
                 proof
             ),
@@ -164,6 +166,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         ExchangeData.BlockType blockType,
         uint16 blockSize,
+        uint8  blockVersion,
         bytes memory data   // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed
@@ -182,7 +185,7 @@ library ExchangeBlocks
 
         // Check if the block is supported
         require(
-            S.blockVerifier.canVerify(uint8(blockType), S.onchainDataAvailability, blockSize),
+            S.blockVerifier.canVerify(uint8(blockType), S.onchainDataAvailability, blockSize, blockVersion),
             "CANNOT_VERIFY_BLOCK"
         );
 
@@ -357,6 +360,7 @@ library ExchangeBlocks
             ExchangeData.BlockState.COMMITTED,
             blockType,
             blockSize,
+            blockVersion,
             uint32(now),
             numDepositRequestsCommitted,
             numWithdrawalRequestsCommitted,
