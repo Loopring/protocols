@@ -52,8 +52,8 @@ contract StakingPool is IStakingPool, Claimable
         public
         returns (uint minutes_)
     {
-        if (users[user].depositedAt + MIN_WITHDRAW_DELAY <= now) return 0;
-        else return users[user].depositedAt + MIN_WITHDRAW_DELAY - now;
+        if (users[user].depositedAt.add(MIN_WITHDRAW_DELAY) <= now) return 0;
+        else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
     }
 
     function getUserClaimWaitTime(address user)
@@ -61,8 +61,8 @@ contract StakingPool is IStakingPool, Claimable
         public
         returns (uint minutes_)
     {
-       if (users[user].claimedAt + MIN_CLAIM_DELAY <= now) return 0;
-       else return users[user].claimedAt + MIN_CLAIM_DELAY - now;
+       if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
+       else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
     }
 
     function getTotalReward()
@@ -70,7 +70,7 @@ contract StakingPool is IStakingPool, Claimable
         public
         returns (uint)
     {
-        return ERC20(lrcAddress).balanceOf(address(this)) - global.stake;
+        return ERC20(lrcAddress).balanceOf(address(this)).sub(global.stake);
     }
 
     function deposit(uint amount)
@@ -91,26 +91,26 @@ contract StakingPool is IStakingPool, Claimable
         Stake storage user = users[msg.sender];
 
         // Update the user's stake
-        user.depositedAt = (user.stake * user.depositedAt + amount * now) / (user.stake + amount);
+        user.depositedAt = user.stake.mul(user.depositedAt).add(amount.mul(now)) / user.stake.add(amount);
 
         if (user.claimedAt == 0) {
           user.claimedAt = user.depositedAt;
         } else {
-          user.claimedAt = (user.stake * user.claimedAt + amount * now) / (user.stake + amount);
+          user.claimedAt = user.stake.mul(user.claimedAt).add(amount.mul(now)) / user.stake.add(amount);
         }
 
-        user.stake += amount;
+        user.stake = user.stake.add(amount);
 
         // update global stake the same way (create an internal function for this)
-        global.depositedAt = (global.stake * global.depositedAt + amount * now) / (global.stake + amount);
+        global.depositedAt = global.stake.mul(global.depositedAt).add(amount.mul(now)) / global.stake.add(amount);
 
         if (global.claimedAt == 0) {
           global.claimedAt = global.depositedAt;
         } else {
-          global.claimedAt = (global.stake * global.claimedAt + amount * now) / (global.stake + amount);
+          global.claimedAt = global.stake.mul(global.claimedAt).add(amount.mul(now)) / global.stake.add(amount);
         }
 
-        global.stake += amount;
+        global.stake = global.stake.add(amount);
     }
 
     function claimReward()
@@ -121,17 +121,17 @@ contract StakingPool is IStakingPool, Claimable
 
         Stake storage user = users[msg.sender];
 
-        uint globalPoints = global.stake * (now - global.claimedAt);
-        uint userPoints = user.stake * (now - user.claimedAt);
+        uint globalPoints = global.stake.mul(now.sub(global.claimedAt));
+        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
 
         require(globalPoints > 0 && userPoints > 0);
 
-        claimed = getTotalReward() * userPoints / globalPoints;
+        claimed = getTotalReward().mul(userPoints) / globalPoints;
 
-        global.stake += claimed;
-        global.claimedAt = (globalPoints - userPoints) / global.stake;
+        global.stake = global.stake.add(claimed);
+        global.claimedAt = globalPoints.sub(userPoints) / global.stake;
 
-        user.stake += claimed;
+        user.stake = user.stake.add(claimed);
         user.claimedAt = now;
     }
 
@@ -146,8 +146,8 @@ contract StakingPool is IStakingPool, Claimable
         Stake storage user = users[msg.sender];
         require(user.stake >= amount);
 
-        user.stake -= amount;
-        global.stake -= amount;
+        user.stake = user.stake.sub(amount);
+        global.stake = global.stake.sub(amount);
 
         // transfer LRC to user
         require(
