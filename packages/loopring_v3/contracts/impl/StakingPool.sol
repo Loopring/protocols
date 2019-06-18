@@ -201,6 +201,7 @@ contract StakingPool is IStakingPool, Claimable
         uint    expectedLRCAmount
         )
         external
+        onlyOwner
         returns (
             address auction
         )
