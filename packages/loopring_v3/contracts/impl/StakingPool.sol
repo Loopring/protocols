@@ -131,7 +131,7 @@ contract StakingPool is IStakingPool, Claimable
         emit LRCStaked(msg.sender, amount);
     }
 
-    function claimReward()
+    function claim()
         public
         returns (uint claimed)
     {
@@ -158,7 +158,7 @@ contract StakingPool is IStakingPool, Claimable
     function withdraw(uint amount)
         external
     {
-        claimReward();  // always claim reward first
+        claim();  // always claim reward first
 
         require(getUserWithdrawalWaitTime(msg.sender) == 0);
 

@@ -65,5 +65,5 @@ contract IStakingPool
 
     function withdraw(uint amount) external;
 
-    function claimReward() public returns (uint claimed);
+    function claim() public returns (uint claimed);
 }
