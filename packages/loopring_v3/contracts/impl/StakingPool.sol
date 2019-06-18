@@ -58,6 +58,41 @@ contract StakingPool is IStakingPool, Claimable
         auctionerAddress = _auctionerAddress;
     }
 
+    function getStakingStats()
+        view
+        public
+        returns (
+            uint totalStake,
+            uint accumulatedFees,
+            uint accumulatedBurn,
+            uint accumulatedReward,
+            uint accumulatedDev,
+            uint remainingFees,
+            uint remainingBurn,
+            uint remainingReward,
+            uint remainingDev
+        )
+    {
+        totalStake = total.stake;
+        uint balance = ERC20(lrcAddress).balanceOf(address(this));
+
+        accumulatedFees = balance.sub(total.stake)
+            .add(claimedBurn)
+            .add(claimedDev)
+            .add(total.claimedReward);
+
+        accumulatedBurn = accumulatedFees.mul(BURN_PERDENTAGE) / 100;
+        remainingBurn = accumulatedBurn.sub(claimedBurn);
+
+        accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
+        remainingReward = accumulatedReward.sub(total.claimedReward);
+
+        accumulatedDev = accumulatedFees.sub(accumulatedBurn).sub(accumulatedReward);
+        remainingDev = accumulatedDev.sub(claimedDev);
+
+        remainingFees = remainingBurn.add(remainingReward).add(remainingDev);
+    }
+
     function getUserStaking(address user)
         view
         external
@@ -129,35 +164,6 @@ contract StakingPool is IStakingPool, Claimable
         emit LRCStaked(msg.sender, amount);
     }
 
-    function claim()
-        public
-        returns (uint claimed)
-    {
-        require(userRewardWaitTime(msg.sender) == 0);
-
-        Stake storage user = users[msg.sender];
-
-        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
-        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
-
-        require(totalPoints > 0 && userPoints > 0);
-
-        uint remainingReward;
-        (, , , , , , remainingReward,) = getFeeDistribution();
-
-        claimed = remainingReward.mul(userPoints) / totalPoints;
-
-        total.stake = total.stake.add(claimed);
-        total.claimedReward = total.claimedReward.add(claimed);
-        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
-
-        user.stake = user.stake.add(claimed);
-        user.claimedReward = user.claimedReward.add(claimed);
-        user.claimedAt = now;
-
-        emit LRCRewarded(msg.sender, claimed);
-    }
-
     function withdraw(uint amount)
         external
     {
@@ -188,6 +194,35 @@ contract StakingPool is IStakingPool, Claimable
         );
 
         emit LRCWithdrawn(msg.sender, _amount);
+    }
+
+    function claim()
+        public
+        returns (uint claimed)
+    {
+        require(userRewardWaitTime(msg.sender) == 0);
+
+        Stake storage user = users[msg.sender];
+
+        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
+        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
+
+        require(totalPoints > 0 && userPoints > 0);
+
+        uint remainingReward;
+        (, , , , , , , remainingReward,) = getStakingStats();
+
+        claimed = remainingReward.mul(userPoints) / totalPoints;
+
+        total.stake = total.stake.add(claimed);
+        total.claimedReward = total.claimedReward.add(claimed);
+        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
+
+        user.stake = user.stake.add(claimed);
+        user.claimedReward = user.claimedReward.add(claimed);
+        user.claimedAt = now;
+
+        emit LRCRewarded(msg.sender, claimed);
     }
 
     function setAuctioner(address _auctionerAddress)
@@ -225,39 +260,6 @@ contract StakingPool is IStakingPool, Claimable
             expectedLRCAmount,
             auction
         );
-    }
-
-    function getFeeDistribution()
-        view
-        public
-        returns (
-            uint accumulatedFees,
-            uint accumulatedBurn,
-            uint accumulatedReward,
-            uint accumulatedDev,
-            uint remainingFees,
-            uint remainingBurn,
-            uint remainingReward,
-            uint remainingDev
-        )
-    {
-        uint balance = ERC20(lrcAddress).balanceOf(address(this));
-
-        accumulatedFees = balance.sub(total.stake)
-            .add(claimedBurn)
-            .add(claimedDev)
-            .add(total.claimedReward);
-
-        accumulatedBurn = accumulatedFees.mul(BURN_PERDENTAGE) / 100;
-        remainingBurn = accumulatedBurn.sub(claimedBurn);
-
-        accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
-        remainingReward = accumulatedReward.sub(total.claimedReward);
-
-        accumulatedDev = accumulatedFees.sub(accumulatedBurn).sub(accumulatedReward);
-        remainingDev = accumulatedDev.sub(claimedDev);
-
-        remainingFees = remainingBurn.add(remainingReward).add(remainingDev);
     }
 
     // -- Private Function --
@@ -299,7 +301,7 @@ contract StakingPool is IStakingPool, Claimable
         }
 
         uint remainingReward;
-        (, , , , , , remainingReward,) = getFeeDistribution();
+        (, , , , , , , remainingReward,) = getStakingStats();
         return remainingReward.mul(userPoints) / totalPoints;
     }
 }

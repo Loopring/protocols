@@ -57,14 +57,21 @@ contract IStakingPool
         address auction
     );
 
-    function getTotalStaking()
+    function getStakingStats()
         view
-        external
+        public
         returns (
-            uint stakedAmount,
-            uint rewardAmountClaimable,
-            uint amountBurnable
+            uint totalStake,
+            uint accumulatedFees,
+            uint accumulatedBurn,
+            uint accumulatedReward,
+            uint accumulatedDev,
+            uint remainingFees,
+            uint remainingBurn,
+            uint remainingReward,
+            uint remainingDev
         );
+
     function getUserStaking(address user)
         view
         external
