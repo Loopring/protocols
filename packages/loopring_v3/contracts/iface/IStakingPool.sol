@@ -25,9 +25,15 @@ contract IStakingPool
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
     uint public constant AUCTION_DURATION       = 15 days;
 
+    uint public constant REWARD_PERCENTAGE      = 70;
+    uint public constant BURN_PERDENTAGE        = 10;
+
     address public lrcAddress   = address(0);
     address public auctionerAddress = address(0);
-    uint    public numAddresses = 0;
+    
+    uint    public numAddresses         = 0;
+    uint    public claimedBurn          = 0;
+    uint    public claimedDev           = 0;
 
     event LRCStaked(
         address  user,
@@ -44,6 +50,11 @@ contract IStakingPool
         uint     amount
     );
 
+    event LRCDrained(
+        uint     burnAmount,
+        uint     devAmount
+    );
+
     event AuctionStarted(
         address tokenS,
         uint    amountS,
@@ -51,22 +62,29 @@ contract IStakingPool
         address auction
     );
 
-    function getTotalStaking()
+    function getStakingStats()
         view
-        external
+        public
         returns (
-            uint stakedAmount,
-            uint rewardAmount
+            uint totalStake,
+            uint accumulatedFees,
+            uint accumulatedBurn,
+            uint accumulatedReward,
+            uint accumulatedDev,
+            uint remainingFees,
+            uint remainingBurn,
+            uint remainingReward,
+            uint remainingDev
         );
 
     function getUserStaking(address user)
         view
         external
         returns (
-            uint withdrawalWaitTimeMinutes,
-            uint claimWaitTimeMinutes,
+            uint withdrawalWaitTime,
+            uint claimWaitTime,
             uint stakedAmount,
-            uint rewardAmount
+            uint claimableAmount
         );
 
     function deposit(uint amount) external;
@@ -74,6 +92,8 @@ contract IStakingPool
     function withdraw(uint amount) external;
 
     function claim() public returns (uint claimed);
+
+    function drain(address recipient) external;
 
     function setAuctioner(address auctioner) external;
 
@@ -85,4 +105,6 @@ contract IStakingPool
         returns (
             address auction
         );
+
+
 }

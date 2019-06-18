@@ -38,6 +38,7 @@ contract StakingPool is IStakingPool, Claimable
         uint    stake;
         uint    depositedAt;
         uint    claimedAt; // timestamp from which more points will be accumulated
+        uint    claimedReward;
     }
 
     Stake private total;
@@ -57,58 +58,81 @@ contract StakingPool is IStakingPool, Claimable
         auctionerAddress = _auctionerAddress;
     }
 
-    function getTotalStaking()
+    function getStakingStats()
         view
-        external
+        public
         returns (
-            uint stakedAmount,
-            uint rewardAmount
+            uint totalStake,
+            uint accumulatedFees,
+            uint accumulatedBurn,
+            uint accumulatedReward,
+            uint accumulatedDev,
+            uint remainingFees,
+            uint remainingBurn,
+            uint remainingReward,
+            uint remainingDev
         )
     {
-        stakedAmount = getTotalStake();
-        rewardAmount = getTotalReward();
+        totalStake = total.stake;
+        uint balance = ERC20(lrcAddress).balanceOf(address(this));
+
+        accumulatedFees = balance.sub(total.stake)
+            .add(claimedBurn)
+            .add(claimedDev)
+            .add(total.claimedReward);
+
+        accumulatedBurn = accumulatedFees.mul(BURN_PERDENTAGE) / 100;
+        remainingBurn = accumulatedBurn.sub(claimedBurn);
+
+        accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
+        remainingReward = accumulatedReward.sub(total.claimedReward);
+
+        accumulatedDev = accumulatedFees.sub(accumulatedBurn).sub(accumulatedReward);
+        remainingDev = accumulatedDev.sub(claimedDev);
+
+        remainingFees = remainingBurn.add(remainingReward).add(remainingDev);
     }
 
     function getUserStaking(address user)
         view
         external
         returns (
-            uint withdrawalWaitTimeMinutes,
-            uint claimWaitTimeMinutes,
-            uint stakedAmount,
-            uint rewardAmount
+            uint withdrawalWaitTime,
+            uint rewardWaitTime,
+            uint stakeAmount,
+            uint outstandingReward
         )
     {
-        withdrawalWaitTimeMinutes = getUserWithdrawalWaitTime(user);
-        claimWaitTimeMinutes = getUserClaimWaitTime(user);
-        stakedAmount = getUserStake(user);
-        rewardAmount = getUserReward(user);
+        withdrawalWaitTime = userWithdrawalWaitTime(user);
+        rewardWaitTime = userRewardWaitTime(user);
+        stakeAmount = users[user].stake;
+        outstandingReward = userOutstandingReward(user);
     }
 
     function deposit(uint amount)
         external
     {
-        require(amount > 0);
+        require(amount > 0, "ZERO_VALUE");
 
         // Lets trandfer LRC first.
         require(
-            lrcAddress.safeTransferFrom(
-                msg.sender,
-                address(this),
-                amount
-            ),
+            lrcAddress.safeTransferFrom(msg.sender, address(this), amount),
             "TRANSFER_FAILURE"
         );
 
         Stake storage user = users[msg.sender];
 
         // Update the user's stake
-        user.depositedAt = user.stake.mul(user.depositedAt).add(amount.mul(now)) / user.stake.add(amount);
+        user.depositedAt = user.stake
+            .mul(user.depositedAt)
+            .add(amount.mul(now)) / user.stake.add(amount);
 
         if (user.claimedAt == 0) {
-          user.claimedAt = user.depositedAt;
+            user.claimedAt = user.depositedAt;
         } else {
-          user.claimedAt = user.stake.mul(user.claimedAt).add(amount.mul(now)) / user.stake.add(amount);
+            user.claimedAt = user.stake
+                .mul(user.claimedAt)
+                .add(amount.mul(now)) / user.stake.add(amount);
         }
 
         if (user.stake == 0) {
@@ -118,12 +142,16 @@ contract StakingPool is IStakingPool, Claimable
         user.stake = user.stake.add(amount);
 
         // update total stake the same way (create an internal function for this)
-        total.depositedAt = total.stake.mul(total.depositedAt).add(amount.mul(now)) / total.stake.add(amount);
+        total.depositedAt = total.stake
+            .mul(total.depositedAt)
+            .add(amount.mul(now)) / total.stake.add(amount);
 
         if (total.claimedAt == 0) {
-          total.claimedAt = total.depositedAt;
+            total.claimedAt = total.depositedAt;
         } else {
-          total.claimedAt = total.stake.mul(total.claimedAt).add(amount.mul(now)) / total.stake.add(amount);
+            total.claimedAt = total.stake
+                .mul(total.claimedAt)
+                .add(amount.mul(now)) / total.stake.add(amount);
         }
 
         total.stake = total.stake.add(amount);
@@ -132,36 +160,12 @@ contract StakingPool is IStakingPool, Claimable
         emit LRCStaked(msg.sender, amount);
     }
 
-    function claim()
-        public
-        returns (uint claimed)
-    {
-        require(getUserClaimWaitTime(msg.sender) == 0);
-
-        Stake storage user = users[msg.sender];
-
-        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
-        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
-
-        require(totalPoints > 0 && userPoints > 0);
-
-        claimed = getTotalReward().mul(userPoints) / totalPoints;
-
-        total.stake = total.stake.add(claimed);
-        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
-
-        user.stake = user.stake.add(claimed);
-        user.claimedAt = now;
-
-        emit LRCRewarded(msg.sender, claimed);
-    }
-
     function withdraw(uint amount)
         external
     {
         claim();  // always claim reward first
 
-        require(getUserWithdrawalWaitTime(msg.sender) == 0);
+        require(userWithdrawalWaitTime(msg.sender) == 0);
 
         Stake storage user = users[msg.sender];
         require(user.stake >= amount);
@@ -177,15 +181,62 @@ contract StakingPool is IStakingPool, Claimable
 
         // transfer LRC to user
         require(
-            lrcAddress.safeTransferFrom(
-                address(this),
-                msg.sender,
-                _amount
-            ),
+            lrcAddress.safeTransferFrom(address(this), msg.sender, _amount),
             "TRANSFER_FAILURE"
         );
 
         emit LRCWithdrawn(msg.sender, _amount);
+    }
+
+    function claim()
+        public
+        returns (uint claimed)
+    {
+        require(userRewardWaitTime(msg.sender) == 0);
+
+        Stake storage user = users[msg.sender];
+
+        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
+        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
+
+        require(totalPoints > 0 && userPoints > 0);
+
+        uint remainingReward;
+        (, , , , , , , remainingReward,) = getStakingStats();
+
+        claimed = remainingReward.mul(userPoints) / totalPoints;
+
+        total.stake = total.stake.add(claimed);
+        total.claimedReward = total.claimedReward.add(claimed);
+        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
+
+        user.stake = user.stake.add(claimed);
+        user.claimedReward = user.claimedReward.add(claimed);
+        user.claimedAt = now;
+
+        emit LRCRewarded(msg.sender, claimed);
+    }
+
+    function drain(address recipient)
+        external
+        onlyOwner 
+    {
+        uint remainingBurn;
+        uint remainingDev;
+        (, , , , , , remainingBurn, , remainingDev) = getStakingStats();
+
+        require(BurnableERC20(lrcAddress).burn(remainingBurn), "BURN_FAILURE");
+
+        address target = recipient == address(0) ?  owner : recipient;
+        require(
+            lrcAddress.safeTransferFrom(address(this), target, remainingDev),
+            "TRANSFER_FAILURE"
+        );
+
+        claimedBurn = claimedBurn.add(remainingBurn);
+        claimedDev = claimedDev.add(remainingDev);
+
+        emit LRCDrained(remainingBurn, remainingDev);
     }
 
     function setAuctioner(address _auctionerAddress)
@@ -209,8 +260,6 @@ contract StakingPool is IStakingPool, Claimable
         uint amountS = ERC20(tokenS).balanceOf(address(this));
         require(amountS > 0, "ZERO_AMOUNT");
 
-        // TODO(daniel): trander tokenS to auctionerAddress?
-
         auction = IAuctioner(auctionerAddress).startAuction(
             tokenS,
             lrcAddress,
@@ -229,23 +278,7 @@ contract StakingPool is IStakingPool, Claimable
 
     // -- Private Function --
 
-    function getTotalReward()
-        view
-        private
-        returns (uint)
-    {
-        return ERC20(lrcAddress).balanceOf(address(this)).sub(total.stake);
-    }
-
-    function getTotalStake()
-        view
-        private
-        returns (uint)
-    {
-        return total.stake;
-    }
-
-    function getUserWithdrawalWaitTime(address user)
+    function userWithdrawalWaitTime(address user)
         view
         private
         returns (uint minutes_)
@@ -254,7 +287,7 @@ contract StakingPool is IStakingPool, Claimable
         else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
     }
 
-    function getUserClaimWaitTime(address user)
+    function userRewardWaitTime(address user)
         view
         private
         returns (uint minutes_)
@@ -263,12 +296,12 @@ contract StakingPool is IStakingPool, Claimable
        else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
     }
 
-    function getUserReward(address userAddress)
+    function userOutstandingReward(address userAddress)
         view
         private
         returns (uint)
     {
-        if (getUserClaimWaitTime(userAddress) != 0) {
+        if (userRewardWaitTime(userAddress) != 0) {
             return 0;
         }
 
@@ -281,14 +314,8 @@ contract StakingPool is IStakingPool, Claimable
             return 0;
         }
 
-        return getTotalReward().mul(userPoints) / totalPoints;
-    }
-
-    function getUserStake(address userAddress)
-        view
-        private
-        returns (uint)
-    {
-        return users[userAddress].stake;
+        uint remainingReward;
+        (, , , , , , , remainingReward,) = getStakingStats();
+        return remainingReward.mul(userPoints) / totalPoints;
     }
 }
