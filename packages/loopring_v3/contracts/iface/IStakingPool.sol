@@ -50,6 +50,11 @@ contract IStakingPool
         uint     amount
     );
 
+    event LRCDrained(
+        uint     burnAmount,
+        uint     devAmount
+    );
+
     event AuctionStarted(
         address tokenS,
         uint    amountS,
@@ -88,6 +93,8 @@ contract IStakingPool
 
     function claim() public returns (uint claimed);
 
+    function drain(address recipient) external;
+
     function setAuctioner(address auctioner) external;
 
     function startAuction(
@@ -98,4 +105,6 @@ contract IStakingPool
         returns (
             address auction
         );
+
+
 }
