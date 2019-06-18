@@ -188,6 +188,13 @@ contract StakingPool is IStakingPool, Claimable
         emit LRCWithdrawn(msg.sender, _amount);
     }
 
+    function setAuctioner(address _auctionerAddress)
+        external
+        onlyOwner
+    {
+        require(_auctionerAddress != address(0), "ZERO_ADDRESS");
+        auctionerAddress = _auctionerAddress;
+    }
 
     function startAuction(
         address tokenS,

@@ -75,6 +75,8 @@ contract IStakingPool
 
     function claim() public returns (uint claimed);
 
+    function setAuctioner(address auctioner) external;
+
     function startAuction(
         address tokenS,
         address expectedLRCAmount
