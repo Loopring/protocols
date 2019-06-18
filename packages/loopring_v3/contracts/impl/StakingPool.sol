@@ -32,11 +32,6 @@ contract StakingPool is IStakingPool, Claimable
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    uint public constant MIN_CLAIM_DELAY      = 90 days;
-    uint public constant MIN_WITHDRAW_DELAY   = 90 days;
-
-    address public lrcAddress = address(0);
-
     struct Stake {
         address user;
         uint    stake;
@@ -44,33 +39,49 @@ contract StakingPool is IStakingPool, Claimable
         uint    claimedAt; // timestamp from which more points will be accumulated
     }
 
-    Stake global;
-    mapping (address => Stake) users;
+    Stake private total;
+    mapping (address => Stake) private users;
 
-    function getUserWithdrawalWaitTime(address user)
-        view
+    constructor(
+        address _lrcAddress,
+        address _oedaxAddress
+        )
         public
-        returns (uint minutes_)
     {
-        if (users[user].depositedAt.add(MIN_WITHDRAW_DELAY) <= now) return 0;
-        else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
+        require(_lrcAddress != address(0), "ZERO_ADDRESS");
+        require(_oedaxAddress != address(0), "ZERO_ADDRESS");
+
+        owner = msg.sender;
+        lrcAddress = _lrcAddress;
+        oedaxAddress = _oedaxAddress;
     }
 
-    function getUserClaimWaitTime(address user)
+    function getTotalStaking()
         view
-        public
-        returns (uint minutes_)
+        external
+        returns (
+            uint stakedAmount,
+            uint rewardAmount
+        )
     {
-       if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
-       else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
+        stakedAmount = getTotalStake();
+        rewardAmount = getTotalReward();
     }
 
-    function getTotalReward()
+    function getUserStaking(address user)
         view
-        public
-        returns (uint)
+        external
+        returns (
+            uint withdrawalWaitTimeMinutes,
+            uint claimWaitTimeMinutes,
+            uint stakedAmount,
+            uint rewardAmount
+        )
     {
-        return ERC20(lrcAddress).balanceOf(address(this)).sub(global.stake);
+        withdrawalWaitTimeMinutes = getUserWithdrawalWaitTime(user);
+        claimWaitTimeMinutes = getUserClaimWaitTime(user);
+        stakedAmount = getUserStake(user);
+        rewardAmount = getUserReward(user);
     }
 
     function deposit(uint amount)
@@ -99,18 +110,22 @@ contract StakingPool is IStakingPool, Claimable
           user.claimedAt = user.stake.mul(user.claimedAt).add(amount.mul(now)) / user.stake.add(amount);
         }
 
-        user.stake = user.stake.add(amount);
-
-        // update global stake the same way (create an internal function for this)
-        global.depositedAt = global.stake.mul(global.depositedAt).add(amount.mul(now)) / global.stake.add(amount);
-
-        if (global.claimedAt == 0) {
-          global.claimedAt = global.depositedAt;
-        } else {
-          global.claimedAt = global.stake.mul(global.claimedAt).add(amount.mul(now)) / global.stake.add(amount);
+        if (user.stake == 0) {
+            numAddresses = numAddresses.add(1);
         }
 
-        global.stake = global.stake.add(amount);
+        user.stake = user.stake.add(amount);
+
+        // update total stake the same way (create an internal function for this)
+        total.depositedAt = total.stake.mul(total.depositedAt).add(amount.mul(now)) / total.stake.add(amount);
+
+        if (total.claimedAt == 0) {
+          total.claimedAt = total.depositedAt;
+        } else {
+          total.claimedAt = total.stake.mul(total.claimedAt).add(amount.mul(now)) / total.stake.add(amount);
+        }
+
+        total.stake = total.stake.add(amount);
     }
 
     function claimReward()
@@ -121,15 +136,15 @@ contract StakingPool is IStakingPool, Claimable
 
         Stake storage user = users[msg.sender];
 
-        uint globalPoints = global.stake.mul(now.sub(global.claimedAt));
+        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
         uint userPoints = user.stake.mul(now.sub(user.claimedAt));
 
-        require(globalPoints > 0 && userPoints > 0);
+        require(totalPoints > 0 && userPoints > 0);
 
-        claimed = getTotalReward().mul(userPoints) / globalPoints;
+        claimed = getTotalReward().mul(userPoints) / totalPoints;
 
-        global.stake = global.stake.add(claimed);
-        global.claimedAt = globalPoints.sub(userPoints) / global.stake;
+        total.stake = total.stake.add(claimed);
+        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
 
         user.stake = user.stake.add(claimed);
         user.claimedAt = now;
@@ -146,8 +161,12 @@ contract StakingPool is IStakingPool, Claimable
         Stake storage user = users[msg.sender];
         require(user.stake >= amount);
 
+        total.stake = total.stake.sub(amount);
         user.stake = user.stake.sub(amount);
-        global.stake = global.stake.sub(amount);
+
+        if (user.stake == 0) {
+            numAddresses = numAddresses.sub(1);
+        }
 
         // transfer LRC to user
         require(
@@ -158,5 +177,70 @@ contract StakingPool is IStakingPool, Claimable
             ),
             "TRANSFER_FAILURE"
         );
+    }
+
+    // -- Private Function --
+
+    function getTotalReward()
+        view
+        private
+        returns (uint)
+    {
+        return ERC20(lrcAddress).balanceOf(address(this)).sub(total.stake);
+    }
+
+    function getTotalStake()
+        view
+        private
+        returns (uint)
+    {
+        return total.stake;
+    }
+
+    function getUserWithdrawalWaitTime(address user)
+        view
+        private
+        returns (uint minutes_)
+    {
+        if (users[user].depositedAt.add(MIN_WITHDRAW_DELAY) <= now) return 0;
+        else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
+    }
+
+    function getUserClaimWaitTime(address user)
+        view
+        private
+        returns (uint minutes_)
+    {
+       if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
+       else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
+    }
+
+    function getUserReward(address userAddress)
+        view
+        private
+        returns (uint)
+    {
+        if (getUserClaimWaitTime(userAddress) != 0) {
+            return 0;
+        }
+
+        Stake storage user = users[userAddress];
+
+        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
+        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
+
+        if (totalPoints == 0 || userPoints == 0) {
+            return 0;
+        }
+
+        return getTotalReward().mul(userPoints) / totalPoints;
+    }
+
+    function getUserStake(address userAddress)
+        view
+        private
+        returns (uint)
+    {
+        return users[userAddress].stake;
     }
 }

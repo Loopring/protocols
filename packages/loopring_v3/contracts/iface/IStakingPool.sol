@@ -17,9 +17,42 @@
 pragma solidity 0.5.7;
 
 
-/// @title IBlockVerifier
+/// @title IStakingPool
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IStakingPool
 {
+    uint public constant MIN_CLAIM_DELAY      = 90 days;
+    uint public constant MIN_WITHDRAW_DELAY   = 90 days;
 
+    address public lrcAddress   = address(0);
+    address public oedaxAddress = address(0);
+    uint    public numAddresses = 0;
+
+    function getTotalStaking()
+        view
+        external
+        returns (
+            uint stakedAmount,
+            uint rewardAmount
+        );
+
+    function getUserStaking(address user)
+        view
+        external
+        returns (
+            uint withdrawalWaitTimeMinutes,
+            uint claimWaitTimeMinutes,
+            uint stakedAmount,
+            uint rewardAmount
+        );
+
+    function deposit(uint amount)
+        external;
+
+    function withdraw(uint amount)
+        external;
+
+    function claimReward()
+        public
+        returns (uint claimed);
 }
