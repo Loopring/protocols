@@ -156,15 +156,12 @@ contract StakingPool is IStakingPool, Claimable
 
         total.stake = total.stake.add(amount);
 
-
         emit LRCStaked(msg.sender, amount);
     }
 
     function withdraw(uint amount)
         external
     {
-        claim();  // always claim reward first
-
         require(userWithdrawalWaitTime(msg.sender) == 0);
 
         Stake storage user = users[msg.sender];
@@ -188,7 +185,7 @@ contract StakingPool is IStakingPool, Claimable
         emit LRCWithdrawn(msg.sender, _amount);
     }
 
-    function claim()
+    function claimAndBurn()
         public
         returns (uint claimed)
     {
@@ -199,7 +196,7 @@ contract StakingPool is IStakingPool, Claimable
         uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
         uint userPoints = user.stake.mul(now.sub(user.claimedAt));
 
-        require(totalPoints > 0 && userPoints > 0);
+        assert(totalPoints > 0);
 
         uint remainingReward;
         (, , , , , , , remainingReward,) = getStakingStats();
@@ -244,7 +241,10 @@ contract StakingPool is IStakingPool, Claimable
         onlyOwner
     {
         require(_auctionerAddress != address(0), "ZERO_ADDRESS");
+        require(_auctionerAddress != auctionerAddress, "SAME_ADDRESS");
         auctionerAddress = _auctionerAddress;
+
+        emit AuctionerChanged(auctionerAddress);
     }
 
     function startAuction(
@@ -257,6 +257,10 @@ contract StakingPool is IStakingPool, Claimable
             address auction
         )
     {
+        require(tokenS != lrcAddress, "BAD_TOKEN");
+
+        // TODO(dongw): handle selling Ether.
+
         uint amountS = ERC20(tokenS).balanceOf(address(this));
         require(amountS > 0, "ZERO_AMOUNT");
 
@@ -301,10 +305,6 @@ contract StakingPool is IStakingPool, Claimable
         private
         returns (uint)
     {
-        if (userRewardWaitTime(userAddress) != 0) {
-            return 0;
-        }
-
         Stake storage user = users[userAddress];
 
         uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
