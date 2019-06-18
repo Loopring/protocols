@@ -57,38 +57,26 @@ contract StakingPool is IStakingPool, Claimable
         auctionerAddress = _auctionerAddress;
     }
 
-    function getTotalStaking()
-        view
-        external
-        returns (
-            uint stakedAmount,
-            uint rewardAmount
-        )
-    {
-        stakedAmount = getTotalStake();
-        rewardAmount = getTotalReward();
-    }
-
     function getUserStaking(address user)
         view
         external
         returns (
-            uint withdrawalWaitTimeMinutes,
-            uint claimWaitTimeMinutes,
+            uint withdrawalWaitTime,
+            uint claimWaitTime,
             uint stakedAmount,
-            uint rewardAmount
+            uint claimableAmount
         )
     {
-        withdrawalWaitTimeMinutes = getUserWithdrawalWaitTime(user);
-        claimWaitTimeMinutes = getUserClaimWaitTime(user);
-        stakedAmount = getUserStake(user);
-        rewardAmount = getUserReward(user);
+        withdrawalWaitTime = userWithdrawalWaitTime(user);
+        claimWaitTime = userClaimWaitTime(user);
+        stakedAmount = users[user].stake;
+        claimableAmount = userClaimableAmount(user);
     }
 
     function deposit(uint amount)
         external
     {
-        require(amount > 0);
+        require(amount > 0, "ZERO_VALUE");
 
         // Lets trandfer LRC first.
         require(
@@ -103,12 +91,16 @@ contract StakingPool is IStakingPool, Claimable
         Stake storage user = users[msg.sender];
 
         // Update the user's stake
-        user.depositedAt = user.stake.mul(user.depositedAt).add(amount.mul(now)) / user.stake.add(amount);
+        user.depositedAt = user.stake
+            .mul(user.depositedAt)
+            .add(amount.mul(now)) / user.stake.add(amount);
 
         if (user.claimedAt == 0) {
-          user.claimedAt = user.depositedAt;
+            user.claimedAt = user.depositedAt;
         } else {
-          user.claimedAt = user.stake.mul(user.claimedAt).add(amount.mul(now)) / user.stake.add(amount);
+            user.claimedAt = user.stake
+                .mul(user.claimedAt)
+                .add(amount.mul(now)) / user.stake.add(amount);
         }
 
         if (user.stake == 0) {
@@ -118,12 +110,16 @@ contract StakingPool is IStakingPool, Claimable
         user.stake = user.stake.add(amount);
 
         // update total stake the same way (create an internal function for this)
-        total.depositedAt = total.stake.mul(total.depositedAt).add(amount.mul(now)) / total.stake.add(amount);
+        total.depositedAt = total.stake
+            .mul(total.depositedAt)
+            .add(amount.mul(now)) / total.stake.add(amount);
 
         if (total.claimedAt == 0) {
-          total.claimedAt = total.depositedAt;
+            total.claimedAt = total.depositedAt;
         } else {
-          total.claimedAt = total.stake.mul(total.claimedAt).add(amount.mul(now)) / total.stake.add(amount);
+            total.claimedAt = total.stake
+                .mul(total.claimedAt)
+                .add(amount.mul(now)) / total.stake.add(amount);
         }
 
         total.stake = total.stake.add(amount);
@@ -136,7 +132,7 @@ contract StakingPool is IStakingPool, Claimable
         public
         returns (uint claimed)
     {
-        require(getUserClaimWaitTime(msg.sender) == 0);
+        require(userClaimWaitTime(msg.sender) == 0);
 
         Stake storage user = users[msg.sender];
 
@@ -145,7 +141,10 @@ contract StakingPool is IStakingPool, Claimable
 
         require(totalPoints > 0 && userPoints > 0);
 
-        claimed = getTotalReward().mul(userPoints) / totalPoints;
+        uint remainingReward;
+        (, , , , , , remainingReward,) = getFeeDistribution();
+
+        claimed = remainingReward.mul(userPoints) / totalPoints;
 
         total.stake = total.stake.add(claimed);
         total.claimedAt = totalPoints.sub(userPoints) / total.stake;
@@ -161,7 +160,7 @@ contract StakingPool is IStakingPool, Claimable
     {
         claim();  // always claim reward first
 
-        require(getUserWithdrawalWaitTime(msg.sender) == 0);
+        require(userWithdrawalWaitTime(msg.sender) == 0);
 
         Stake storage user = users[msg.sender];
         require(user.stake >= amount);
@@ -209,8 +208,6 @@ contract StakingPool is IStakingPool, Claimable
         uint amountS = ERC20(tokenS).balanceOf(address(this));
         require(amountS > 0, "ZERO_AMOUNT");
 
-        // TODO(daniel): trander tokenS to auctionerAddress?
-
         auction = IAuctioner(auctionerAddress).startAuction(
             tokenS,
             lrcAddress,
@@ -227,25 +224,42 @@ contract StakingPool is IStakingPool, Claimable
         );
     }
 
+    function getFeeDistribution()
+        view
+        public
+        returns (
+            uint accumulatedFees,
+            uint accumulatedBurn,
+            uint accumulatedReward,
+            uint accumulatedDev,
+            uint remainingFees,
+            uint remainingBurn,
+            uint remainingReward,
+            uint remainingDev
+        )
+    {
+        uint balance = ERC20(lrcAddress).balanceOf(address(this));
+
+        accumulatedFees = balance.sub(total.stake)
+            .add(withdrawnBurn)
+            .add(withdrawnReward)
+            .add(withdrawnDev);
+
+        accumulatedBurn = accumulatedFees.mul(BURN_PERDENTAGE) / 100;
+        remainingBurn = accumulatedBurn.sub(withdrawnBurn);
+
+        accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
+        remainingReward = accumulatedReward.sub(withdrawnReward);
+
+        accumulatedDev = accumulatedFees.sub(accumulatedBurn).sub(accumulatedReward);
+        remainingDev = accumulatedDev.sub(withdrawnDev);
+
+        remainingFees = remainingBurn.add(remainingReward).add(remainingDev);
+    }
+
     // -- Private Function --
 
-    function getTotalReward()
-        view
-        private
-        returns (uint)
-    {
-        return ERC20(lrcAddress).balanceOf(address(this)).sub(total.stake);
-    }
-
-    function getTotalStake()
-        view
-        private
-        returns (uint)
-    {
-        return total.stake;
-    }
-
-    function getUserWithdrawalWaitTime(address user)
+    function userWithdrawalWaitTime(address user)
         view
         private
         returns (uint minutes_)
@@ -254,7 +268,7 @@ contract StakingPool is IStakingPool, Claimable
         else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
     }
 
-    function getUserClaimWaitTime(address user)
+    function userClaimWaitTime(address user)
         view
         private
         returns (uint minutes_)
@@ -263,12 +277,12 @@ contract StakingPool is IStakingPool, Claimable
        else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
     }
 
-    function getUserReward(address userAddress)
+    function userClaimableAmount(address userAddress)
         view
         private
         returns (uint)
     {
-        if (getUserClaimWaitTime(userAddress) != 0) {
+        if (userClaimWaitTime(userAddress) != 0) {
             return 0;
         }
 
@@ -281,14 +295,8 @@ contract StakingPool is IStakingPool, Claimable
             return 0;
         }
 
-        return getTotalReward().mul(userPoints) / totalPoints;
-    }
-
-    function getUserStake(address userAddress)
-        view
-        private
-        returns (uint)
-    {
-        return users[userAddress].stake;
+        uint remainingReward;
+        (, , , , , , remainingReward,) = getFeeDistribution();
+        return remainingReward.mul(userPoints) / totalPoints;
     }
 }

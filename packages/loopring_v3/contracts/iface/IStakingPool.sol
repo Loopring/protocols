@@ -25,9 +25,16 @@ contract IStakingPool
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
     uint public constant AUCTION_DURATION       = 15 days;
 
+    uint public constant REWARD_PERCENTAGE      = 70;
+    uint public constant BURN_PERDENTAGE        = 10;
+
     address public lrcAddress   = address(0);
     address public auctionerAddress = address(0);
-    uint    public numAddresses = 0;
+    
+    uint    public numAddresses         = 0;
+    uint    public withdrawnBurn        = 0;
+    uint    public withdrawnReward      = 0;
+    uint    public withdrawnDev         = 0;
 
     event LRCStaked(
         address  user,
@@ -56,17 +63,17 @@ contract IStakingPool
         external
         returns (
             uint stakedAmount,
-            uint rewardAmount
+            uint rewardAmountClaimable,
+            uint amountBurnable
         );
-
     function getUserStaking(address user)
         view
         external
         returns (
-            uint withdrawalWaitTimeMinutes,
-            uint claimWaitTimeMinutes,
+            uint withdrawalWaitTime,
+            uint claimWaitTime,
             uint stakedAmount,
-            uint rewardAmount
+            uint claimableAmount
         );
 
     function deposit(uint amount) external;
