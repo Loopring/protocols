@@ -38,6 +38,7 @@ contract StakingPool is IStakingPool, Claimable
         uint    stake;
         uint    depositedAt;
         uint    claimedAt; // timestamp from which more points will be accumulated
+        uint    claimedReward;
     }
 
     Stake private total;
@@ -62,15 +63,15 @@ contract StakingPool is IStakingPool, Claimable
         external
         returns (
             uint withdrawalWaitTime,
-            uint claimWaitTime,
-            uint stakedAmount,
-            uint claimableAmount
+            uint rewardWaitTime,
+            uint stakeAmount,
+            uint outstandingReward
         )
     {
         withdrawalWaitTime = userWithdrawalWaitTime(user);
-        claimWaitTime = userClaimWaitTime(user);
-        stakedAmount = users[user].stake;
-        claimableAmount = userClaimableAmount(user);
+        rewardWaitTime = userRewardWaitTime(user);
+        stakeAmount = users[user].stake;
+        outstandingReward = userOutstandingReward(user);
     }
 
     function deposit(uint amount)
@@ -132,7 +133,7 @@ contract StakingPool is IStakingPool, Claimable
         public
         returns (uint claimed)
     {
-        require(userClaimWaitTime(msg.sender) == 0);
+        require(userRewardWaitTime(msg.sender) == 0);
 
         Stake storage user = users[msg.sender];
 
@@ -147,9 +148,11 @@ contract StakingPool is IStakingPool, Claimable
         claimed = remainingReward.mul(userPoints) / totalPoints;
 
         total.stake = total.stake.add(claimed);
+        total.claimedReward = total.claimedReward.add(claimed);
         total.claimedAt = totalPoints.sub(userPoints) / total.stake;
 
         user.stake = user.stake.add(claimed);
+        user.claimedReward = user.claimedReward.add(claimed);
         user.claimedAt = now;
 
         emit LRCRewarded(msg.sender, claimed);
@@ -241,18 +244,18 @@ contract StakingPool is IStakingPool, Claimable
         uint balance = ERC20(lrcAddress).balanceOf(address(this));
 
         accumulatedFees = balance.sub(total.stake)
-            .add(withdrawnBurn)
-            .add(withdrawnReward)
-            .add(withdrawnDev);
+            .add(claimedBurn)
+            .add(claimedDev)
+            .add(total.claimedReward);
 
         accumulatedBurn = accumulatedFees.mul(BURN_PERDENTAGE) / 100;
-        remainingBurn = accumulatedBurn.sub(withdrawnBurn);
+        remainingBurn = accumulatedBurn.sub(claimedBurn);
 
         accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
-        remainingReward = accumulatedReward.sub(withdrawnReward);
+        remainingReward = accumulatedReward.sub(total.claimedReward);
 
         accumulatedDev = accumulatedFees.sub(accumulatedBurn).sub(accumulatedReward);
-        remainingDev = accumulatedDev.sub(withdrawnDev);
+        remainingDev = accumulatedDev.sub(claimedDev);
 
         remainingFees = remainingBurn.add(remainingReward).add(remainingDev);
     }
@@ -268,7 +271,7 @@ contract StakingPool is IStakingPool, Claimable
         else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
     }
 
-    function userClaimWaitTime(address user)
+    function userRewardWaitTime(address user)
         view
         private
         returns (uint minutes_)
@@ -277,12 +280,12 @@ contract StakingPool is IStakingPool, Claimable
        else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
     }
 
-    function userClaimableAmount(address userAddress)
+    function userOutstandingReward(address userAddress)
         view
         private
         returns (uint)
     {
-        if (userClaimWaitTime(userAddress) != 0) {
+        if (userRewardWaitTime(userAddress) != 0) {
             return 0;
         }
 

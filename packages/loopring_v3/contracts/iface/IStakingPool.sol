@@ -32,9 +32,8 @@ contract IStakingPool
     address public auctionerAddress = address(0);
     
     uint    public numAddresses         = 0;
-    uint    public withdrawnBurn        = 0;
-    uint    public withdrawnReward      = 0;
-    uint    public withdrawnDev         = 0;
+    uint    public claimedBurn          = 0;
+    uint    public claimedDev           = 0;
 
     event LRCStaked(
         address  user,
