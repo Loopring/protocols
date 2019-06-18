@@ -28,6 +28,21 @@ contract IStakingPool
     address public oedaxAddress = address(0);
     uint    public numAddresses = 0;
 
+    event LRCStaked(
+        address  user,
+        uint     amount
+    );
+
+    event LRCRewarded(
+        address  user,
+        uint     amount
+    );
+
+    event LRCWithdrawn(
+        address  user,
+        uint     amount
+    );
+
     function getTotalStaking()
         view
         external
@@ -46,13 +61,9 @@ contract IStakingPool
             uint rewardAmount
         );
 
-    function deposit(uint amount)
-        external;
+    function deposit(uint amount) external;
 
-    function withdraw(uint amount)
-        external;
+    function withdraw(uint amount) external;
 
-    function claimReward()
-        public
-        returns (uint claimed);
+    function claimReward() public returns (uint claimed);
 }

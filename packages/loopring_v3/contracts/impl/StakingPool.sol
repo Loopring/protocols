@@ -126,6 +126,9 @@ contract StakingPool is IStakingPool, Claimable
         }
 
         total.stake = total.stake.add(amount);
+
+
+        emit LRCStaked(msg.sender, amount);
     }
 
     function claimReward()
@@ -148,6 +151,8 @@ contract StakingPool is IStakingPool, Claimable
 
         user.stake = user.stake.add(claimed);
         user.claimedAt = now;
+
+        emit LRCRewarded(msg.sender, claimed);
     }
 
     function withdraw(uint amount)
@@ -155,14 +160,15 @@ contract StakingPool is IStakingPool, Claimable
     {
         claimReward();  // always claim reward first
 
-        require(amount > 0);
         require(getUserWithdrawalWaitTime(msg.sender) == 0);
 
         Stake storage user = users[msg.sender];
         require(user.stake >= amount);
 
-        total.stake = total.stake.sub(amount);
-        user.stake = user.stake.sub(amount);
+        uint _amount = amount == 0 ? user.stake : amount;
+
+        total.stake = total.stake.sub(_amount);
+        user.stake = user.stake.sub(_amount);
 
         if (user.stake == 0) {
             numAddresses = numAddresses.sub(1);
@@ -173,10 +179,12 @@ contract StakingPool is IStakingPool, Claimable
             lrcAddress.safeTransferFrom(
                 address(this),
                 msg.sender,
-                amount
+                _amount
             ),
             "TRANSFER_FAILURE"
         );
+
+        emit LRCWithdrawn(msg.sender, _amount);
     }
 
     // -- Private Function --
