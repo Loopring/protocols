@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.7;
 
+import "../iface/IAuctioner.sol";
 import "../iface/IStakingPool.sol";
 
 import "../lib/BurnableERC20.sol";
@@ -44,16 +45,16 @@ contract StakingPool is IStakingPool, Claimable
 
     constructor(
         address _lrcAddress,
-        address _oedaxAddress
+        address _auctionerAddress
         )
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
-        require(_oedaxAddress != address(0), "ZERO_ADDRESS");
+        require(_auctionerAddress != address(0), "ZERO_ADDRESS");
 
         owner = msg.sender;
         lrcAddress = _lrcAddress;
-        oedaxAddress = _oedaxAddress;
+        auctionerAddress = _auctionerAddress;
     }
 
     function getTotalStaking()
@@ -185,6 +186,37 @@ contract StakingPool is IStakingPool, Claimable
         );
 
         emit LRCWithdrawn(msg.sender, _amount);
+    }
+
+
+    function startAuction(
+        address tokenS,
+        uint    expectedLRCAmount
+        )
+        external
+        returns (
+            address auction
+        )
+    {
+        uint amountS = ERC20(tokenS).balanceOf(address(this));
+        require(amountS > 0, "ZERO_AMOUNT");
+
+        // TODO(daniel): trander tokenS to auctionerAddress?
+
+        auction = IAuctioner(auctionerAddress).startAuction(
+            tokenS,
+            lrcAddress,
+            amountS,
+            expectedLRCAmount,
+            AUCTION_DURATION
+        );
+
+        emit AuctionStarted(
+            tokenS,
+            amountS,
+            expectedLRCAmount,
+            auction
+        );
     }
 
     // -- Private Function --

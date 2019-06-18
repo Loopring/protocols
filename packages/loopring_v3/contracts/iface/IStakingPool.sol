@@ -21,11 +21,12 @@ pragma solidity 0.5.7;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IStakingPool
 {
-    uint public constant MIN_CLAIM_DELAY      = 90 days;
-    uint public constant MIN_WITHDRAW_DELAY   = 90 days;
+    uint public constant MIN_CLAIM_DELAY        = 90 days;
+    uint public constant MIN_WITHDRAW_DELAY     = 90 days;
+    uint public constant AUCTION_DURATION       = 15 days;
 
     address public lrcAddress   = address(0);
-    address public oedaxAddress = address(0);
+    address public auctionerAddress = address(0);
     uint    public numAddresses = 0;
 
     event LRCStaked(
@@ -41,6 +42,13 @@ contract IStakingPool
     event LRCWithdrawn(
         address  user,
         uint     amount
+    );
+
+    event AuctionStarted(
+        address tokenS,
+        uint    amountS,
+        uint    expectedLRCAmount,
+        address auction
     );
 
     function getTotalStaking()
@@ -66,4 +74,13 @@ contract IStakingPool
     function withdraw(uint amount) external;
 
     function claim() public returns (uint claimed);
+
+    function startAuction(
+        address tokenS,
+        address expectedLRCAmount
+        )
+        external
+        returns (
+            address auction
+        );
 }
