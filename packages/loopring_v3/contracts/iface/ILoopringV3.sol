@@ -64,8 +64,8 @@ contract ILoopringV3
     struct Exchange
     {
         address exchangeAddress;
-        uint exchangeStake;
-        uint protocolFeeStake;
+        uint    exchangeStake;
+        uint    protocolFeeStake;
     }
     Exchange[] public exchanges;
 
