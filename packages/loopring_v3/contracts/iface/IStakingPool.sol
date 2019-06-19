@@ -22,6 +22,8 @@ pragma solidity 0.5.7;
 ///      70% of all protocol fees (in LRC) will be rewarded to users as staking reward;
 ///      10% of all protocol fees will be burned, and the rest 20% will be used as
 ///      developer fund.
+///
+///      WARNING: sending LRC directly to this contract will DONATE those LRC as protocol fees.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IStakingPool
 {
@@ -143,7 +145,7 @@ contract IStakingPool
     /// @param tokenS Tokens to sell. use 0x0 for Ether.
     /// @param expectedLRCAmount The expacted amount of LRC to get.
     /// @return auction The auction address.
-    function startAuction(
+    function auctionTokensForLRC(
         address tokenS,
         address expectedLRCAmount
         )

@@ -49,6 +49,7 @@ contract IAuctioner
         uint    duration
         )
         external
+        payable
         returns (
             address auction
         );

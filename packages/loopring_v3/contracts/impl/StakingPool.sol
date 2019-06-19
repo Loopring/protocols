@@ -240,14 +240,13 @@ contract StakingPool is IStakingPool, Claimable
         external
         onlyOwner
     {
-        require(_auctionerAddress != address(0), "ZERO_ADDRESS");
         require(_auctionerAddress != auctionerAddress, "SAME_ADDRESS");
         auctionerAddress = _auctionerAddress;
 
         emit AuctionerChanged(auctionerAddress);
     }
 
-    function startAuction(
+    function auctionTokensForLRC(
         address tokenS,
         uint    expectedLRCAmount
         )
@@ -257,24 +256,36 @@ contract StakingPool is IStakingPool, Claimable
             address auction
         )
     {
-        require(tokenS != lrcAddress, "BAD_TOKEN");
+        require(auctionerAddress != address(0), "ZERO_ADDRESS");
+        require(tokenS != lrcAddress, "SELL_LRC");
 
-        // TODO(dongw): handle selling Ether.
+        uint balance;
+        uint EtherToSend;
 
-        uint amountS = ERC20(tokenS).balanceOf(address(this));
-        require(amountS > 0, "ZERO_AMOUNT");
+        if (tokenS == address(0)) {
+            balance = address(this).balance;
+            EtherToSend = balance;
+        } else {
+            balance = ERC20(tokenS).balanceOf(address(this));
+            require(
+                tokenS.safeTransfer(auctionerAddress, balance),
+                "TRANSFER_FAILURE"
+            );
+        }
+ 
+        require(balance > 0, "ZERO_AMOUNT");
 
-        auction = IAuctioner(auctionerAddress).startAuction(
+        auction = IAuctioner(auctionerAddress).startAuction.value(EtherToSend)(
             tokenS,
             lrcAddress,
-            amountS,
+            balance,
             expectedLRCAmount,
             AUCTION_DURATION
         );
 
         emit AuctionStarted(
             tokenS,
-            amountS,
+            balance,
             expectedLRCAmount,
             auction
         );
