@@ -35,7 +35,7 @@ contract IStakingPool
     uint public constant BURN_PERDENTAGE        = 10;
 
     address public lrcAddress       = address(0);
-    address public auctionerAddress = address(0);
+    address public oedaxAddress     = address(0);
     
     uint    public numAddresses         = 0;
     uint    public claimedBurn          = 0;
@@ -63,12 +63,10 @@ contract IStakingPool
 
     event AuctionStarted(
         address tokenS,
-        uint    amountS,
-        uint    expectedLRCAmount,
         address auction
     );
 
-    event AuctionerChanged(
+    event OedaxAddressUpdated(
         address auctioner
     );
 
@@ -138,19 +136,21 @@ contract IStakingPool
     /// @param auctioner THe new auctioner address.
     ///
     ///      This function can only be called by the owner.
-    function setAuctioner(address auctioner) external;
-
+    function setOedax(address auctioner) external;
 
     /// @dev Sell a token for LRC by starting a new auction.
     /// @param tokenS Tokens to sell. use 0x0 for Ether.
-    /// @param expectedLRCAmount The expacted amount of LRC to get.
     /// @return auction The auction address.
-    function auctionTokensForLRC(
+    function sellTokens(
         address tokenS,
-        address expectedLRCAmount
+        bool    sellForEther,
+        uint64  P,
+        uint64  S,
+        uint8   M,
+        uint    T
         )
         external
         returns (
-            address auction
+            address payable auction
         );
 }
