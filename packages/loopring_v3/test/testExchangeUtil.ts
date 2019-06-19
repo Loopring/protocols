@@ -8,6 +8,7 @@ import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import babyJub = require("./babyjub");
+import { compress, CompressionType, compressLZ, decompress, decompressLZ } from "./compression";
 import * as constants from "./constants";
 import { Context } from "./context";
 import eddsa = require("./eddsa");
@@ -32,6 +33,11 @@ function replacer(name: any, val: any) {
   }
 }
 
+interface Range {
+    offset: number;
+    length: number;
+}
+
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
@@ -45,6 +51,7 @@ export class ExchangeTestUtil {
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
+  public lzDecompressor: any;
 
   public lrcAddress: string;
   public wethAddress: string;
@@ -92,6 +99,7 @@ export class ExchangeTestUtil {
   public pendingBlocks: Block[][] = [];
 
   public onchainDataAvailability = true;
+  public compressionType = CompressionType.LZ;
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -341,9 +349,6 @@ export class ExchangeTestUtil {
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = this.testContext.tokenSymbolAddrMap.get(order.tokenB);
     }
-    if (order.tokenF && !order.tokenF.startsWith("0x")) {
-      order.tokenF = this.testContext.tokenSymbolAddrMap.get(order.tokenF);
-    }
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
@@ -370,10 +375,6 @@ export class ExchangeTestUtil {
 
     order.feeBips = (order.feeBips !== undefined) ? order.feeBips : order.maxFeeBips;
     order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
-
-    const walletIndex = index % this.testContext.wallets.length;
-    order.walletAccountID = (order.walletAccountID !== undefined) ?
-                            order.walletAccountID : this.wallets[order.exchangeID][walletIndex].walletAccountID;
 
     order.orderID = (order.orderID !== undefined) ? order.orderID : index;
 
@@ -855,16 +856,11 @@ export class ExchangeTestUtil {
 
   public async commitBlock(operator: Operator, blockType: BlockType, blockSize: number,
                            data: string, filename: string) {
-    const bitstream = new pjs.Bitstream(data);
-    console.log("[EVM]PublicData: " + bitstream.getData());
-    const exchangeID = bitstream.extractUint32(0);
+    console.log("[EVM]PublicData: " + data);
+    const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
     // Make sure the keys are generated
     await this.generateKeys(filename);
-
-    // const activeOperator = await this.getActiveOperator(exchangeID);
-    // assert.equal(activeOperator.operatorID, operator.operatorID);
-    // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
 
     const blockVersion = 0;
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -872,7 +868,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockType),
       web3.utils.toBN(blockSize),
       web3.utils.toBN(blockVersion),
-      web3.utils.hexToBytes(data),
+      web3.utils.hexToBytes(compressedData),
       web3.utils.hexToBytes("0x"),
       {from: this.exchangeOperator},
     );
@@ -883,8 +879,9 @@ export class ExchangeTestUtil {
       blockIdx,
       filename,
       operator,
+      compressedData,
     };
-    this.pendingBlocks[exchangeID].push(block);
+    this.pendingBlocks[this.exchangeId].push(block);
     return block;
   }
 
@@ -1472,6 +1469,8 @@ export class ExchangeTestUtil {
       bs.addNumber(ringBlock.timestamp, 4);
       bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
       bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
+
+      const da = new pjs.Bitstream();
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const ringSettlement of block.ringSettlements) {
@@ -1480,34 +1479,120 @@ export class ExchangeTestUtil {
           const orderB = ringSettlement.ring.orderB;
 
           const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
-          bs.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
-          bs.addNumber(ring.tokenID, 1);
+          da.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
+          da.addNumber(ring.tokenID, 1);
 
-          bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
-          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
+          da.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
+          da.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
 
-          bs.addNumber(orderA.tokenS, 1);
-          bs.addNumber(ring.fFillS_A, 3);
+          da.addNumber(orderA.tokenS, 1);
+          da.addNumber(ring.fFillS_A, 3);
           let buyMask = orderA.buy ? 0b10000000 : 0;
           let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
-          bs.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
+          da.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
 
-          bs.addNumber(orderB.tokenS, 1);
-          bs.addNumber(ring.fFillS_B, 3);
+          da.addNumber(orderB.tokenS, 1);
+          da.addNumber(ring.fFillS_B, 3);
           buyMask = orderB.buy ? 0b10000000 : 0;
           rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
-          bs.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
+          da.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
         }
       }
 
+      if (block.onchainDataAvailability) {
+        // Apply circuit transfrom
+        const transformedData = this.transformRingSettlementsData(da.getData());
+        bs.addHex(transformedData);
+      }
+
       // Validate state change
-      this.validateRingSettlements(ringBlock, bs, stateBefore, stateAfter);
+      this.validateRingSettlements(ringBlock, bs.getData(), stateBefore, stateAfter);
 
       // Commit the block
       await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
     }
 
     this.pendingRings[exchangeID] = [];
+  }
+
+  public transformRingSettlementsData(input: string) {
+    // console.log("fdata1: " + input);
+    // Compress
+    const bs = new pjs.Bitstream(input);
+    const compressed = new pjs.Bitstream();
+    const ringSize = 25;
+    compressed.addHex(bs.extractBytesX(0, ringSize).toString("hex"));
+    for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
+      for (let i = 0; i < 5; i++) {
+        const previousRingData = bs.extractUint8(offset + i - ringSize);
+        const currentRingData = bs.extractUint8(offset + i);
+        const data = previousRingData ^ currentRingData;
+        compressed.addNumber(data, 1);
+      }
+      compressed.addHex(bs.extractBytesX(offset + 5, ringSize - 5).toString("hex"));
+    }
+    // console.log("fdata2: " + compressed.getData());
+    // Transform
+    const ranges: Range[] = [];
+    ranges.push({offset: 0, length: 5});      // ringMatcherID + fFee + tokenID
+    ranges.push({offset: 5, length: 5});      // orderA.orderID + orderB.orderID
+    ranges.push({offset: 10, length: 5});     // orderA.accountID + orderB.accountID
+    ranges.push({offset: 15, length: 1});     // orderA.tokenS
+    ranges.push({offset: 16, length: 3});     // orderA.fillS
+    ranges.push({offset: 19, length: 1});     // orderA.data
+    ranges.push({offset: 20, length: 1});     // orderB.tokenS
+    ranges.push({offset: 21, length: 3});     // orderB.fillS
+    ranges.push({offset: 24, length: 1});     // orderB.data
+    const transformed = new pjs.Bitstream();
+    for (const range of ranges) {
+        for (let offset = 0; offset < compressed.length(); offset += ringSize) {
+          transformed.addHex(compressed.extractBytesX(offset + range.offset, range.length).toString("hex"));
+        }
+    }
+    // console.log("fdata3: " + transformed.getData());
+    return transformed.getData();
+  }
+
+  public inverseTransformRingSettlementsData(input: string) {
+    // console.log("idata3: " + input);
+    // Inverse Transform
+    const transformed = new pjs.Bitstream(input);
+    const ringSize = 25;
+    const numRings = transformed.length() / ringSize;
+    const ranges: Range[] = [];
+    ranges.push({offset: 0, length: 5});      // ringMatcherID + fFee + tokenID
+    ranges.push({offset: 5, length: 5});      // orderA.orderID + orderB.orderID
+    ranges.push({offset: 10, length: 5});     // orderA.accountID + orderB.accountID
+    ranges.push({offset: 15, length: 1});     // orderA.tokenS
+    ranges.push({offset: 16, length: 3});     // orderA.fillS
+    ranges.push({offset: 19, length: 1});     // orderA.data
+    ranges.push({offset: 20, length: 1});     // orderB.tokenS
+    ranges.push({offset: 21, length: 3});     // orderB.fillS
+    ranges.push({offset: 24, length: 1});     // orderB.data
+    const compressed = new pjs.Bitstream();
+    for (let r = 0; r < numRings; r++) {
+      let offset = 0;
+      for (const range of ranges) {
+        compressed.addHex(transformed.extractBytesX(offset + range.length * r, range.length).toString("hex"));
+        offset += range.length * numRings;
+      }
+    }
+    // console.log("idata2: " + compressed.getData());
+
+    // Decompress
+    const bs = new pjs.Bitstream();
+    bs.addHex(compressed.extractBytesX(0, ringSize).toString("hex"));
+    for (let r = 1; r < numRings; r++) {
+      for (let i = 0; i < 5; i++) {
+        const previousRingData = bs.extractUint8((r - 1) * ringSize + i);
+        const delta = compressed.extractUint8(r * ringSize + i);
+        const reconstructedData = previousRingData ^ delta;
+        bs.addNumber(reconstructedData, 1);
+      }
+      bs.addHex(compressed.extractBytesX(r * ringSize + 5, ringSize - 5).toString("hex"));
+    }
+    // console.log("idata1: " + bs.getData());
+    return bs.getData();
   }
 
   public cancelPendingRings(exchangeID: number) {
@@ -1928,8 +2013,13 @@ export class ExchangeTestUtil {
     }
   }
 
-  public validateRingSettlements(ringBlock: RingBlock, bs: pjs.Bitstream,
+  public validateRingSettlements(ringBlock: RingBlock, onchainData: string,
                                  stateBefore: ExchangeState, stateAfter: ExchangeState) {
+    // Reverse circuit transform
+    const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
+    const ringData = this.inverseTransformRingSettlementsData("0x" + onchainData.slice(2 + 2 * ringDataStart));
+    const bs = new pjs.Bitstream(onchainData.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2));
+
     console.log("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
@@ -2309,6 +2399,8 @@ export class ExchangeTestUtil {
         this.contracts.LRCToken.deployed(),
         this.contracts.WETHToken.deployed(),
       ]);
+
+    this.lzDecompressor = await this.contracts.LzDecompressor.new();
 
     this.loopringV3 = loopringV3;
     this.exchangeDeployer = exchangeDeployer;

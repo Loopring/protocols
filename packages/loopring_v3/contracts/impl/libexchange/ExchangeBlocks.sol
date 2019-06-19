@@ -17,20 +17,23 @@
 pragma solidity 0.5.7;
 
 import "../../lib/BurnableERC20.sol";
+import "../../lib/BytesUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
 import "../../iface/IBlockVerifier.sol";
+import "../../iface/IDecompressor.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
 
-/// @title ExchangeAccounts.
+/// @title ExchangeBlocks.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeBlocks
 {
+    using BytesUtil         for bytes;
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
 
@@ -65,7 +68,38 @@ library ExchangeBlocks
             require(offchainData.length == 0, "INVALID_OFFCHAIN_DATA");
         }
 
-        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, blockVersion, data);
+        uint8 mode;
+        assembly {
+            // Read the mode
+            mode := mload(add(data, 1))
+        }
+
+        bytes memory uncompressed;
+        if (mode == 0) {
+            // No compression
+            assembly {
+                // Strip out the mode from data
+                let length := mload(data)
+                uncompressed := add(data, 1)
+                mstore(uncompressed, sub(length, 1))
+            }
+        } else if (mode == 1) {
+            // External contract
+            address contractAddress;
+            assembly {
+                contractAddress := and(mload(add(data, 21)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+
+                // Strip out the mode + address from data
+                let length := mload(data)
+                uncompressed := add(data, 21)
+                mstore(uncompressed, sub(length, 21))
+            }
+            uncompressed = IDecompressor(contractAddress).decompress(uncompressed);
+        } else {
+            revert("unsupported data encoding");
+        }
+
+        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, blockVersion, uncompressed);
     }
 
     function verifyBlock(
@@ -336,7 +370,7 @@ library ExchangeBlocks
         }
 
         // Hash all the public data to a single value which is used as the input for the circuit
-        bytes32 publicDataHash = sha256(data);
+        bytes32 publicDataHash = data.fastSHA256();
 
         // Store the approved withdrawal data onchain
         bytes memory withdrawals = new bytes(0);

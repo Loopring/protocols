@@ -325,17 +325,17 @@ export class Simulator {
     return newExchangeState;
   }
 
-  public settleRingFromOnchainData(bs: pjs.Bitstream, ringIndex: number, exchangeState: ExchangeState) {
+  public settleRingFromOnchainData(data: pjs.Bitstream, ringIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
     // General data
-    const exchangeID = bs.extractUint32(offset);
+    const exchangeID = data.extractUint32(offset);
     offset += 4 + 32 + 32 + 4;
-    const protocolFeeTakerBips = bs.extractUint8(offset);
+    const protocolFeeTakerBips = data.extractUint8(offset);
     offset += 1;
-    const protocolFeeMakerBips = bs.extractUint8(offset);
+    const protocolFeeMakerBips = data.extractUint8(offset);
     offset += 1;
-    const operatorAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const operatorAccountID = parseInt(data.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
 
     // Jump to the specified ring
@@ -343,33 +343,33 @@ export class Simulator {
     offset += ringIndex * ringSize;
 
     // Ring data
-    const ringMatcherAccountIdAndRingFee = bs.extractUint32(offset);
+    const ringMatcherAccountIdAndRingFee = data.extractUint32(offset);
     offset += 4;
-    const feeToken = bs.extractUint8(offset);
+    const feeToken = data.extractUint8(offset);
     offset += 1;
 
     // Order IDs
-    const orderIds = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
+    const orderIds = parseInt(data.extractBytesX(offset, 5).toString("hex"), 16);
     offset += 5;
 
     // Accounts
-    const accounts = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
+    const accounts = parseInt(data.extractBytesX(offset, 5).toString("hex"), 16);
     offset += 5;
 
     // Order A
-    const tokenA = bs.extractUint8(offset);
+    const tokenA = data.extractUint8(offset);
     offset += 1;
-    const fFillSA = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const fFillSA = parseInt(data.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
-    const orderDataA = bs.extractUint8(offset);
+    const orderDataA = data.extractUint8(offset);
     offset += 1;
 
     // Order B
-    const tokenB = bs.extractUint8(offset);
+    const tokenB = data.extractUint8(offset);
     offset += 1;
-    const fFillSB = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const fFillSB = parseInt(data.extractBytesX(offset, 3).toString("hex"), 16);
     offset += 3;
-    const orderDataB = bs.extractUint8(offset);
+    const orderDataB = data.extractUint8(offset);
     offset += 1;
 
     // Further extraction of packed data
