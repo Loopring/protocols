@@ -21,6 +21,7 @@ import "../../lib/ERC20.sol";
 
 import "./UserStakingPoolBase.sol";
 
+
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
 contract IOedax {
     function createAuction(

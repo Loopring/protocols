@@ -24,6 +24,7 @@ import "../../lib/MathUint.sol";
 
 import "./UserStakingPoolAuction.sol";
 
+
 /// @title The third part of an IUserStakingPool implementation.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract UserStakingPoolAdmin is UserStakingPoolAuction

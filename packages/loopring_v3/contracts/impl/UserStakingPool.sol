@@ -18,6 +18,7 @@ pragma solidity 0.5.7;
 
 import "./libstaking/UserStakingPoolAdmin.sol";
 
+
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract UserStakingPool is UserStakingPoolAdmin
