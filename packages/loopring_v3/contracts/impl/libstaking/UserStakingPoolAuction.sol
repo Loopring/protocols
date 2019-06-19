@@ -57,17 +57,6 @@ contract UserStakingPoolAuction is UserStakingPoolBase
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-  
-    function setOedax(address _oedaxAddress)
-        external
-        onlyOwner
-    {
-        require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
-        oedaxAddress = _oedaxAddress;
-
-        emit OedaxAddressUpdated(oedaxAddress);
-    }
-
 	function settleAuction(address auction)
 		external
 		onlyOwner
