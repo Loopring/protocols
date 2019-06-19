@@ -32,7 +32,7 @@ contract UserStakingPool is UserStakingPoolAdmin
         require(_oedaxAddress != address(0), "ZERO_ADDRESS");
 
         owner = msg.sender;
-        ownerCanWithdrawNonLRCTokensAndEther = true;
+        allowOwnerWithdrawal = true;
 
         lrcAddress = _lrcAddress;
         oedaxAddress = _oedaxAddress;

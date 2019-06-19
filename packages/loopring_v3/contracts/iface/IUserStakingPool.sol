@@ -41,7 +41,7 @@ contract IUserStakingPool
     uint    public claimedBurn          = 0;
     uint    public claimedDev           = 0;
 
-    bool    public ownerCanWithdrawNonLRCTokensAndEther = false;
+    bool    public allowOwnerWithdrawal = false;
 
     event LRCStaked(
         address  user,
@@ -179,11 +179,15 @@ contract IUserStakingPool
 
     /// @dev Disable owner to withdrawl non-LRC tokens and Ether.
     //       This operation cannot be un-done.
-    function disableOwnerWithdrawal()
+    function permanentlyDisableOwnerWithdrawal()
         external
         // onlyOwner
         ;
 
+    /// @dev Owner withdraw non-LRC tokens or Ether. This method will be disable
+    ///      once `permanentlyDisableOwnerWithdrawal` is called after auction has been tested.
+    /// @param token Tokens to withdraw, 0x0 for Ether.
+    /// @param amount The amount of token/ether to withdraw.
     function ownerWithdraw(
         address token,
         uint    amount

@@ -62,12 +62,12 @@ contract UserStakingPoolAdmin is UserStakingPoolAuction
         emit LRCDrained(remainingBurn, remainingDev);
     }
 
-    function disableOwnerWithdrawal()
+    function permanentlyDisableOwnerWithdrawal()
         external
         onlyOwner
     {
-        require(ownerCanWithdrawNonLRCTokensAndEther, "DISABLED_ALREADY");
-        ownerCanWithdrawNonLRCTokensAndEther = false;
+        require(allowOwnerWithdrawal, "DISABLED_ALREADY");
+        allowOwnerWithdrawal = false;
     }
 
     function ownerWithdraw(
@@ -77,8 +77,7 @@ contract UserStakingPoolAdmin is UserStakingPoolAuction
         external
         onlyOwner
     {
-       
-        require(ownerCanWithdrawNonLRCTokensAndEther, "DISABLED_ALREADY");
+        require(allowOwnerWithdrawal, "DISABLED_ALREADY");
         require(token != lrcAddress, "INVALD_TOKEN");
 
         if (token == address(0)) {
@@ -87,7 +86,6 @@ contract UserStakingPoolAdmin is UserStakingPoolAuction
         } else {
             require(token.safeTransfer(owner, amount), "TRANSFER_FAILURE");
         }
-
 
         emit OwnerWithdrawal(token, amount);
     }
