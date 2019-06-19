@@ -75,7 +75,7 @@ contract UserStakingPoolAuction is UserStakingPoolBase
 		IAuction(auction).settle();
 	}
 
-    // TODO(dongw): this method is not fully Implementated.
+    // TODO(dongw): this method is not Implementated.
     function auctionOffTokens(
         address tokenS,
         bool    sellForEther,
