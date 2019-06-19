@@ -90,33 +90,5 @@ contract UserStakingPoolAuction is UserStakingPoolBase
             address payable auctionAddr
         )
     {
-        require(oedaxAddress != address(0), "ZERO_ADDRESS");
-
-        address tokenB = sellForEther ? address(0) : lrcAddress;
-        require(tokenS != tokenB, "SAME_TOKEN");
-
-        IOedax oedax = IOedax(oedaxAddress);
-        uint ethStake = oedax.creatorEtherStake();
-
-        auctionAddr = oedax.createAuction.value(ethStake)(
-            tokenS,
-            tokenB,
-            0,
-            0,
-            P,
-            S,
-            M,
-            T,
-            T * 2
-        );
-
-        IAuction auction = IAuction(auctionAddr);
-
-        auction.ask(124);
-
-        emit AuctionStarted(
-            tokenS,
-            auctionAddr
-        );
     }
 }
