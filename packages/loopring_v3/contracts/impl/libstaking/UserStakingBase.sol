@@ -16,56 +16,17 @@
 */
 pragma solidity 0.5.7;
 
-import "../iface/IStakingPool.sol";
+import "../../iface/IUserStaking.sol";
 
-import "../lib/BurnableERC20.sol";
-import "../lib/Claimable.sol";
-import "../lib/ERC20SafeTransfer.sol";
-import "../lib/MathUint.sol";
+import "../../lib/BurnableERC20.sol";
+import "../../lib/Claimable.sol";
+import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/MathUint.sol";
 
-contract IOedax {
-    /// @dev Create a new auction
-    ///      NOTE that this method should have the same signature as in:
-    ///      https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.sol
-    /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
-    /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
-    /// @param minAskAmount The minimum ask amount.
-    /// @param minBidAmount The minimum bid amount.
-    /// @param P Numerator part of the target price `p`.
-    /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
-    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T1 The maximum auction duration in second.
-    /// @param T2 The maximum auction duration in second.
-    /// @return auctionAddr Auction address.
-    function createAuction(
-        address askToken,
-        address bidToken,
-        uint    minAskAmount,
-        uint    minBidAmount,
-        uint64  P,
-        uint64  S,
-        uint8   M,
-        uint    T1,
-        uint    T2
-        )
-        public
-        payable
-        returns (address payable auctionAddr);
-
-    mapping (address => uint) public tokenRankMap;
-
-    uint public creatorEtherStake;
-}
-
-contract IAuction {
-    function settle() public;
-    function ask(uint amount) external returns (uint accepted);
-}
-
-/// @title An Implementation of IStakingPool.
+/// @title An Implementation of IUserStaking.
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
-contract StakingPool is IStakingPool, Claimable
+contract UserStakingBase is IUserStaking, Claimable
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -80,20 +41,6 @@ contract StakingPool is IStakingPool, Claimable
 
     Stake private total;
     mapping (address => Stake) private users;
-
-    constructor(
-        address _lrcAddress,
-        address _oedaxAddress
-        )
-        public
-    {
-        require(_lrcAddress != address(0), "ZERO_ADDRESS");
-        require(_oedaxAddress != address(0), "ZERO_ADDRESS");
-
-        owner = msg.sender;
-        lrcAddress = _lrcAddress;
-        oedaxAddress = _oedaxAddress;
-    }
 
     function getStakingStats()
         view
@@ -271,60 +218,6 @@ contract StakingPool is IStakingPool, Claimable
         claimedDev = claimedDev.add(remainingDev);
 
         emit LRCDrained(remainingBurn, remainingDev);
-    }
-
-    function setOedax(address _oedaxAddress)
-        external
-        onlyOwner
-    {
-        require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
-        oedaxAddress = _oedaxAddress;
-
-        emit OedaxAddressUpdated(oedaxAddress);
-    }
-
-    function sellTokens(
-        address tokenS,
-        bool    sellForEther,
-        uint64  P,
-        uint64  S,
-        uint8   M,
-        uint    T
-        )
-        external
-        onlyOwner
-        returns (
-            address payable auctionAddr
-        )
-    {
-        require(oedaxAddress != address(0), "ZERO_ADDRESS");
-
-        address tokenB = sellForEther ? address(0) : lrcAddress;
-        require(tokenS != tokenB, "SAME_TOKEN");
-
-        IOedax oedax = IOedax(oedaxAddress);
-        uint ethStake = oedax.creatorEtherStake();
-
-        auctionAddr = oedax.createAuction.value(ethStake)(
-            tokenS,
-            tokenB,
-            0,
-            0,
-            P,
-            S,
-            M,
-            T,
-            T * 2
-        );
-
-        IAuction auction = IAuction(auctionAddr);
-
-        auction.ask(124);
-
-        emit AuctionStarted(
-            tokenS,
-            auctionAddr
-        );
     }
 
     // -- Private Function --

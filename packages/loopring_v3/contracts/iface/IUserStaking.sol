@@ -17,7 +17,7 @@
 pragma solidity 0.5.7;
 
 
-/// @title IStakingPool
+/// @title IUserStaking
 /// @dev This is the staking pool to hold LRC staked by end users.
 ///      70% of all protocol fees (in LRC) will be rewarded to users as staking reward;
 ///      10% of all protocol fees will be burned, and the rest 20% will be used as
@@ -25,7 +25,7 @@ pragma solidity 0.5.7;
 ///
 ///      WARNING: sending LRC directly to this contract will DONATE those LRC as protocol fees.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract IStakingPool
+contract IUserStaking
 {
     uint public constant MIN_CLAIM_DELAY        = 90 days;
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
@@ -67,7 +67,7 @@ contract IStakingPool
     );
 
     event OedaxAddressUpdated(
-        address auctioner
+        address Oedax
     );
 
     /// @dev Returns global staking stats.
@@ -132,16 +132,16 @@ contract IStakingPool
     ///        This function can only be called by the owner.
     function drain(address recipient) external;
 
-    /// @dev Set a new auctioner address.
-    /// @param auctioner THe new auctioner address.
+    /// @dev Set a new Oedax address.
+    /// @param _oedaxAddress THe new Oedax address.
     ///
     ///      This function can only be called by the owner.
-    function setOedax(address auctioner) external;
+    function setOedax(address _oedaxAddress) external;
 
     /// @dev Sell a token for LRC by starting a new auction.
     /// @param tokenS Tokens to sell. use 0x0 for Ether.
     /// @return auction The auction address.
-    function sellTokens(
+    function auctionOffTokens(
         address tokenS,
         bool    sellForEther,
         uint64  P,
@@ -153,4 +153,8 @@ contract IStakingPool
         returns (
             address payable auction
         );
+
+    /// @dev Settles an auction
+    /// @param auction Auction address.
+    function settleAuction(address auction) external;
 }
