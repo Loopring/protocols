@@ -222,19 +222,19 @@ Order
     exchangeID: number,
     orderID: number,
     accountID: number,
-    walletAccountID: number,
     tokenS: number,
     tokenB: number,
-    tokenF: number,
     amountS: string,
     amountB: string,
-    amountF: string,
 
     allOrNone: number,
     validSince: number,
     validUntil: number,
-    walletSplitPercentage: number,
-    waiveFeePercentage: number,
+    maxFeeBips: number,
+    buy: number,
+    
+    feeBips: number,
+    rebateBips: number,
 
     signature: Signature,
 
@@ -242,12 +242,6 @@ Order
     tradeHistoryFilled: string,
     tradeHistoryCancelled: number,
     tradeHistoryOrderID: number,
-
-    # The balances of tokenS, tokenB and tokenF before they are updated in
-    # the ring settlement logic
-    balanceS: string,
-    balanceB: string,
-    balanceF: string,
 }
 
 class Ring
@@ -282,7 +276,6 @@ RingSettlement
     # Account update data
     balanceUpdateS_A: BalanceUpdate,
     balanceUpdateB_A: BalanceUpdate,
-    balanceUpdateF_A: BalanceUpdate,
     accountUpdate_A: AccountUpdate,
 
     # OrderB:
@@ -290,34 +283,20 @@ RingSettlement
     # Account update data
     balanceUpdateS_B: BalanceUpdate,
     balanceUpdateB_B: BalanceUpdate,
-    balanceUpdateF_B: BalanceUpdate,
     accountUpdate_B: AccountUpdate,
 
-    # WalletA:
-    # Balance update data for tokenF of orderA
-    # Account update data
-    balanceUpdateA_W: BalanceUpdate,
-    accountUpdateA_W: AccountUpdate,
-
-    # WalletB:
-    # Balance update data for tokenF of orderB
-    # Account update data
-    balanceUpdateB_W: BalanceUpdate,
-    accountUpdateB_W: AccountUpdate,
-
-    # Fee-recipient:
-    # Balance update data for tokenF of orderA and tokenF of orderB
-    # Account update data
-    balanceUpdateA_F: BalanceUpdate,
-    balanceUpdateB_F: BalanceUpdate,
-    accountUpdate_F: AccountUpdate,
-
     # Ring-matcher:
-    # Balance update data for tokenS of orderA (margin) and token used for paying the operator
+    # Balance update data for tokenB of orderA and orderB (fee/rebate/protocol fee)
+    # and token used for paying the operator
     # Account update data
-    balanceUpdateM_M: BalanceUpdate,
+    balanceUpdateA_M: BalanceUpdate,
+    balanceUpdateB_M: BalanceUpdate,
     balanceUpdateO_M: BalanceUpdate,
     accountUpdate_M: AccountUpdate,
+    
+    # Balance update data for protocol fee payments
+    balanceUpdateA_P: BalanceUpdate,
+    balanceUpdateB_P: BalanceUpdate,
 
     # Balance update data for fee payment by the ring-matcher
     balanceUpdateF_O: BalanceUpdate,
@@ -332,6 +311,13 @@ RingSettlementBlock
 
     # Timestamp used in this block
     timestamp: number,
+    
+    # Protocol fees used in this block
+    protocolTakerFeeBips: number;
+    protocolMakerFeeBips: number;
+    
+    # Protocol fee account update data (account 0)
+    accountUpdate_P: AccountUpdate,
 
     # Operator:
     # Account update data
@@ -590,21 +576,20 @@ Order
     exchangeID: number,
     orderID: number,
     accountID: number,
-    walletAccountID: number,
     dualAuthPublicKeyX: string,
     dualAuthPublicKeyY: string,
     dualAuthSecretKey: string,
     tokenIdS: number,
     tokenIdB: number,
-    tokenIdF: number,
     amountS: string,
     amountB: string,
-    amountF: string,
     allOrNone: boolean,
     validSince: number,
     validUntil: number,
-    walletSplitPercentage: number,
-    waiveFeePercentage: number,
+    buy: number,
+    maxFeeBips: number,
+    feeBips: number,
+    rebateBips: number,
 }
 
 Ring

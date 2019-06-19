@@ -26,7 +26,7 @@ import "../thirdparty/Verifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
-/// @author Brecht Devos - <brecht@loopring.org>,
+/// @author Brecht Devos - <brecht@loopring.org>
 contract BlockVerifier is IBlockVerifier, Claimable
 {
     mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => uint256[18])))) verificationKeys;
