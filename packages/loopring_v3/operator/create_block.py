@@ -16,7 +16,7 @@ class RingSettlementBlock(object):
         self.ringSettlements = []
 
     def toJSON(self):
-        self.numElements = len(self.ringSettlements)
+        self.blockSize = len(self.ringSettlements)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
@@ -26,7 +26,7 @@ class DepositBlock(object):
         self.deposits = []
 
     def toJSON(self):
-        self.numElements = len(self.deposits)
+        self.blockSize = len(self.deposits)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 class OnchainWithdrawalBlock(object):
@@ -35,7 +35,7 @@ class OnchainWithdrawalBlock(object):
         self.withdrawals = []
 
     def toJSON(self):
-        self.numElements = len(self.withdrawals)
+        self.blockSize = len(self.withdrawals)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 class OffchainWithdrawalBlock(object):
@@ -44,7 +44,7 @@ class OffchainWithdrawalBlock(object):
         self.withdrawals = []
 
     def toJSON(self):
-        self.numElements = len(self.withdrawals)
+        self.blockSize = len(self.withdrawals)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 
@@ -54,7 +54,7 @@ class OrderCancellationBlock(object):
         self.cancels = []
 
     def toJSON(self):
-        self.numElements = len(self.cancels)
+        self.blockSize = len(self.cancels)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 

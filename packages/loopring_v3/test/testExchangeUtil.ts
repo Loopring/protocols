@@ -908,7 +908,7 @@ export class ExchangeTestUtil {
       verificationKeyFilename += "cancel";
     }
     verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
-    verificationKeyFilename += block.numElements + "_vk.json";
+    verificationKeyFilename += block.blockSize + "_vk.json";
 
     // Read the verification key and set it in the smart contract
     const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
@@ -918,7 +918,7 @@ export class ExchangeTestUtil {
     await this.blockVerifier.setVerifyingKey(
       block.blockType,
       block.onchainDataAvailability,
-      block.numElements,
+      block.blockSize,
       blockVersion,
       vkFlattened,
     );

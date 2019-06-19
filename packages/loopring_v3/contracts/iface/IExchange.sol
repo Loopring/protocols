@@ -390,6 +390,7 @@ contract IExchange
     /// @param blockVersion The circuit version to use for verifying the block
     /// @param data The data for this block -
     ///        For all block types:
+    ///            - Compression type: 1 bytes
     ///            - Exchange ID: 4 bytes
     ///            - Old merkle root: 32 bytes
     ///            - New merkle root: 32 bytes
@@ -459,6 +460,12 @@ contract IExchange
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
+    ///
+    ///        The data can be sent on-chain compressed. The data will be decompressed respecting the
+    ///        Compression type (the first byte in 'data'):
+    ///            - Mode 0: No compression
+    ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
+    ///                      IDecompressor.decompress() will be called to decompress the data.
     /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that containts the block data.
     function commitBlock(
