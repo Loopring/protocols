@@ -806,13 +806,13 @@ export class ExchangeTestUtil {
                                                  feeTokenID, fee, walletSplitPercentage);
   }
 
-  public cancelOrder(order: OrderInfo, feeToken: string, fee: BN) {
+  public cancelOrder(order: OrderInfo, walletAccountID: number, feeToken: string, fee: BN) {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.cancelOrderID(order.exchangeID, order.accountID, order.tokenIdS, order.orderID, order.walletAccountID,
-                       feeTokenID, fee, 50);
+    this.cancelOrderID(order.exchangeID, order.accountID, order.tokenIdS, order.orderID,
+                       walletAccountID, feeTokenID, fee, 50);
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
@@ -2015,10 +2015,15 @@ export class ExchangeTestUtil {
 
   public validateRingSettlements(ringBlock: RingBlock, onchainData: string,
                                  stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    // Reverse circuit transform
-    const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
-    const ringData = this.inverseTransformRingSettlementsData("0x" + onchainData.slice(2 + 2 * ringDataStart));
-    const bs = new Bitstream(onchainData.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2));
+    let bs: Bitstream;
+    if (ringBlock.onchainDataAvailability) {
+      // Reverse circuit transform
+      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
+      const ringData = this.inverseTransformRingSettlementsData("0x" + onchainData.slice(2 + 2 * ringDataStart));
+      bs = new Bitstream(onchainData.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2));
+    } else {
+      bs = new Bitstream(onchainData);
+    }
 
     console.log("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;

@@ -724,7 +724,8 @@ export class Simulator {
     }
     // Trade history trimming
     let filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
-    const cancelled = (tradeHistory.orderID > order.orderID) ? true : tradeHistory.cancelled;
+    const cancelled = (tradeHistory.orderID === order.orderID) ? tradeHistory.cancelled :
+                      (tradeHistory.orderID < order.orderID) ? false : true;
 
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
 

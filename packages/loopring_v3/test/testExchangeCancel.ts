@@ -53,12 +53,13 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
-      await exchangeTestUtil.cancelOrder(ring.orderA, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0].walletAccountID;
+      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
 
-      // await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
     it("Reuse trade history slot that was cancelled", async () => {
@@ -87,15 +88,17 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeId, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
+      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0].walletAccountID;
+      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("0", "ether")));
       await exchangeTestUtil.commitCancels(exchangeId);
 
       ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
       exchangeTestUtil.signOrder(ring.orderA);
 
+      await exchangeTestUtil.sendRing(exchangeId, ring);
       await exchangeTestUtil.commitRings(exchangeId);
 
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
