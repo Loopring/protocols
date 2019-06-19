@@ -65,7 +65,7 @@ contract UserStakingPoolAuction is UserStakingPoolBase
 		IAuction(auction).settle();
 	}
 
-    // TODO(dongw): this method is not fully Implementated.
+    // TODO(dongw): this method is not Implementated.
     function auctionOffTokens(
         address tokenS,
         bool    sellForEther,
@@ -85,28 +85,28 @@ contract UserStakingPoolAuction is UserStakingPoolBase
         address tokenB = sellForEther ? address(0) : lrcAddress;
         require(tokenS != tokenB, "SAME_TOKEN");
 
-        IOedax oedax = IOedax(oedaxAddress);
-        uint ethStake = oedax.creatorEtherStake();
+        // IOedax oedax = IOedax(oedaxAddress);
+        // uint ethStake = oedax.creatorEtherStake();
 
-        auctionAddr = oedax.createAuction.value(ethStake)(
-            tokenS,
-            tokenB,
-            0,
-            0,
-            P,
-            S,
-            M,
-            T,
-            T * 2
-        );
+        // auctionAddr = oedax.createAuction.value(ethStake)(
+        //     tokenS,
+        //     tokenB,
+        //     0,
+        //     0,
+        //     P,
+        //     S,
+        //     M,
+        //     T,
+        //     T * 2
+        // );
 
-        IAuction auction = IAuction(auctionAddr);
+        // IAuction auction = IAuction(auctionAddr);
 
-        auction.ask(124);
+        // auction.ask(124);
 
-        emit AuctionStarted(
-            tokenS,
-            auctionAddr
-        );
+        // emit AuctionStarted(
+        //     tokenS,
+        //     auctionAddr
+        // );
     }
 }
