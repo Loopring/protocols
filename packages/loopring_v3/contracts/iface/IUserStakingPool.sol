@@ -17,7 +17,7 @@
 pragma solidity 0.5.7;
 
 
-/// @title IUserStaking
+/// @title IUserStakingPool
 /// @dev This is the staking pool to hold LRC staked by end users.
 ///      70% of all protocol fees (in LRC) will be rewarded to users as staking reward;
 ///      10% of all protocol fees will be burned, and the rest 20% will be used as
@@ -25,7 +25,7 @@ pragma solidity 0.5.7;
 ///
 ///      WARNING: sending LRC directly to this contract will DONATE those LRC as protocol fees.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract IUserStaking
+contract IUserStakingPool
 {
     uint public constant MIN_CLAIM_DELAY        = 90 days;
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
@@ -103,7 +103,7 @@ contract IUserStaking
     /// @return claimWaitTime Time in seconds the user must wait until he can claim LRC reward.
     /// @return stakedAmount The amount of LRC this user staked.
     /// @return outstandingReward The amount of LRC reward the user can claim as of now.
-    function getUserStaking(address user)
+    function getUserStakingPool(address user)
         view
         external
         returns (

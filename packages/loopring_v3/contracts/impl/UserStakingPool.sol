@@ -16,12 +16,12 @@
 */
 pragma solidity 0.5.7;
 
-import "./libstaking/UserStakingAuction.sol";
+import "./libstaking/UserStakingPoolAuction.sol";
 
-/// @title An Implementation of IUserStaking.
+/// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
-contract UserStaking is UserStakingAuction
+contract UserStakingPool is UserStakingPoolAuction
 {
     constructor(
         address _lrcAddress,

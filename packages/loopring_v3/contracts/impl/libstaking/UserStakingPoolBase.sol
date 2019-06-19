@@ -16,17 +16,17 @@
 */
 pragma solidity 0.5.7;
 
-import "../../iface/IUserStaking.sol";
+import "../../iface/IUserStakingPool.sol";
 
 import "../../lib/BurnableERC20.sol";
 import "../../lib/Claimable.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
-/// @title An Implementation of IUserStaking.
+/// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
-contract UserStakingBase is IUserStaking, Claimable
+contract UserStakingPoolBase is IUserStakingPool, Claimable
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -77,7 +77,7 @@ contract UserStakingBase is IUserStaking, Claimable
         remainingFees = remainingBurn.add(remainingReward).add(remainingDev);
     }
 
-    function getUserStaking(address user)
+    function getUserStakingPool(address user)
         view
         external
         returns (
