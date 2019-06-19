@@ -1,4 +1,4 @@
-import * as pjs from "protocol2-js";
+import { Bitstream } from "./bitstream";
 
 export enum CompressionType {
   NONE = 0,
@@ -34,13 +34,13 @@ const isAllZeros = (data: string)  => {
 
 export function compress(data: string, mode: CompressionType, externalContractAddress?: string) {
   if (mode === CompressionType.NONE) {
-    const bitstream = new pjs.Bitstream();
+    const bitstream = new Bitstream();
     bitstream.addNumber(CompressionType.NONE, 1);
     bitstream.addHex(data);
     return bitstream.getData();
   } else if (mode === CompressionType.LZ) {
     const compressedData = compressLZ(data);
-    const bitstream = new pjs.Bitstream();
+    const bitstream = new Bitstream();
     bitstream.addNumber(CompressionType.LZ, 1);
     bitstream.addAddress(externalContractAddress);
     bitstream.addHex(compressedData);
@@ -51,7 +51,7 @@ export function compress(data: string, mode: CompressionType, externalContractAd
 }
 
 export function decompress(data: string) {
-  const bitstream = new pjs.Bitstream(data);
+  const bitstream = new Bitstream(data);
   const mode = bitstream.extractUint8(0);
   if (mode === CompressionType.NONE) {
     // Cutoff '0x' and the mode byte of data
@@ -65,16 +65,16 @@ export function decompress(data: string) {
 }
 
 export function compressLZ(input: string) {
-  const data = new pjs.Bitstream(input);
+  const data = new Bitstream(input);
   assert(data.length() > 0, "cannot compress empty input");
 
-  const compressed = new pjs.Bitstream();
+  const compressed = new Bitstream();
   let pos = 0;
   // Limit the maximum offset for now because the compressor uses brute force
   // to find repeated patterns for now
   const maxOffset = /*2 ** 16 - 1*/128;
   const maxLength = 2 ** 16 - 1;
-  let literals = new pjs.Bitstream();
+  let literals = new Bitstream();
   while (pos < data.length()) {
     // Find the longest match
     // TODO: better way to find long sequences of zeros
@@ -98,7 +98,7 @@ export function compressLZ(input: string) {
     // Only take the overhead of the extra (offset, length) when
     // enough gas can be saved
     // TODO: better gas cost prediction
-    const replacedData = data.extractBytesX(bestStartIndex, bestLength).toString("hex");
+    const replacedData = data.extractData(bestStartIndex, bestLength);
     const gasSaved = calculateCalldataCost(replacedData);
     // console.log("replacedData: " + replacedData + " (" + gasSaved + ")");
     if (gasSaved >= 600) {
@@ -106,18 +106,18 @@ export function compressLZ(input: string) {
       if (literals.length() > 0) {
         // console.log("mode: " + 0);
         // console.log("length: " + literals.length());
-        compressed.addNumber(0, 1, true);
-        compressed.addNumber(literals.length(), 2, true);
-        compressed.addHex(literals.getData().slice(2), true);
+        compressed.addNumber(0, 1);
+        compressed.addNumber(literals.length(), 2);
+        compressed.addHex(literals.getData().slice(2));
         // All literals consumed, reset
-        literals = new pjs.Bitstream();
+        literals = new Bitstream();
       }
 
       const bAllZeros = isAllZeros(replacedData);
       if (bAllZeros) {
         // Zeros
-        compressed.addNumber(1, 1, true);
-        compressed.addNumber(bestLength, 2, true);
+        compressed.addNumber(1, 1);
+        compressed.addNumber(bestLength, 2);
         // console.log("zeros: " + bestLength);
       } else {
         // Write (offset, length) pair
@@ -125,13 +125,13 @@ export function compressLZ(input: string) {
         // console.log("mode: " + 2);
         // console.log("offset: " + offset);
         // console.log("length: " + bestLength);
-        compressed.addNumber(2, 1, true);
-        compressed.addNumber(offset, 2, true);
-        compressed.addNumber(bestLength, 2, true);
+        compressed.addNumber(2, 1);
+        compressed.addNumber(offset, 2);
+        compressed.addNumber(bestLength, 2);
       }
       pos += bestLength;
     } else {
-      literals.addNumber(data.extractUint8(pos), 1, true);
+      literals.addNumber(data.extractUint8(pos), 1);
       pos += 1;
     }
   }
@@ -140,9 +140,9 @@ export function compressLZ(input: string) {
   if (literals.length() > 0) {
     // console.log("mode: " + 0);
     // console.log("length: " + literals.length());
-    compressed.addNumber(0, 1, true);
-    compressed.addNumber(literals.length(), 2, true);
-    compressed.addHex(literals.getData().slice(2), true);
+    compressed.addNumber(0, 1);
+    compressed.addNumber(literals.length(), 2);
+    compressed.addHex(literals.getData().slice(2));
   }
 
   // console.log("o: " + data.getData());
@@ -155,10 +155,10 @@ export function compressLZ(input: string) {
 }
 
 export function decompressLZ(input: string) {
-  const data = new pjs.Bitstream(input);
+  const data = new Bitstream(input);
   assert(data.length() > 0, "cannot decompress empty input");
 
-  const uncompressed = new pjs.Bitstream();
+  const uncompressed = new Bitstream();
   let pos = 0;
   while (pos < data.length()) {
     const mode = data.extractUint8(pos);
@@ -170,7 +170,7 @@ export function decompressLZ(input: string) {
       pos += 2;
       // console.log("length: " + length);
       // Literals, just copy directly from the compressed stream
-      uncompressed.addHex(data.extractBytesX(pos, length).toString("hex"), true);
+      uncompressed.addHex(data.extractData(pos, length));
       pos += length;
       // console.log("calldatacopy");
     } else if (mode === 1) {
@@ -178,7 +178,7 @@ export function decompressLZ(input: string) {
       const length = data.extractUint16(pos);
       pos += 2;
       for (let i = 0; i < length; i++) {
-        uncompressed.addNumber(0, 1, true);
+        uncompressed.addNumber(0, 1);
       }
       // console.log("memclear");
     } else if (mode === 2) {
@@ -191,7 +191,7 @@ export function decompressLZ(input: string) {
       // Do a byte-wise copy
       const startIdx = uncompressed.length() - offset;
       for (let i = 0; i < length; i++) {
-        uncompressed.addNumber(uncompressed.extractUint8(startIdx + i), 1, true);
+        uncompressed.addNumber(uncompressed.extractUint8(startIdx + i), 1);
       }
       // console.log("memmove");
     } else {

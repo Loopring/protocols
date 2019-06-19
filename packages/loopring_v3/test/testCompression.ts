@@ -1,5 +1,4 @@
-import { expectThrow } from "protocol2-js";
-import * as pjs from "protocol2-js";
+import { Bitstream } from "./bitstream";
 import { compressLZ, decompressLZ } from "./compression";
 
 const LzDecompressor = artifacts.require("LzDecompressor");
@@ -48,11 +47,11 @@ contract("Compression", (accounts: string[]) => {
       const numRounds = 8;
       const maxLength = 25 * 1000;
       for (let r = 0; r < numRounds; r++) {
-        const bitstream = new pjs.Bitstream();
+        const bitstream = new Bitstream();
         const length = 1 + Math.floor(Math.random() * maxLength);
         for (let i = 0; i < length; i++) {
           const byte = Math.floor(Math.random() * 256);
-          bitstream.addNumber(byte, 1, true);
+          bitstream.addNumber(byte, 1);
         }
         await compressAndDecompressLZChecked(bitstream.getData());
       }

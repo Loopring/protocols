@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as pjs from "protocol2-js";
+import { Bitstream } from "./bitstream";
 import * as constants from "./constants";
 import { fromFloat, roundToFloatValue } from "./float";
 import { AccountLeaf, Balance, Cancel, Deposit, DetailedTokenTransfer, ExchangeState, OrderInfo,
@@ -129,7 +129,7 @@ export class Simulator {
     return simulatorReport;
   }
 
-  public offchainWithdrawFromOnchainData(bs: pjs.Bitstream, blockSize: number,
+  public offchainWithdrawFromOnchainData(bs: Bitstream, blockSize: number,
                                          withdrawalIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
@@ -146,13 +146,13 @@ export class Simulator {
     // Extract onchain data
     const token = bs.extractUint8(offset);
     offset += 1;
-    const accountIdAndAmountWithdrawn = parseInt(bs.extractBytesX(offset, 6).toString("hex"), 16);
+    const accountIdAndAmountWithdrawn = bs.extractUint48(offset);
     offset += 6;
 
     offset = onchainDataOffset + blockSize * onchainDataSize;
 
     // General data
-    const operatorAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const operatorAccountID = bs.extractUint24(offset);
     offset += 3;
 
     // Jump to the specified withdrawal
@@ -160,7 +160,7 @@ export class Simulator {
     offset += withdrawalIndex * offchainDataSize;
 
     // Extract offchain data
-    const walletAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const walletAccountID = bs.extractUint24(offset);
     offset += 3;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
@@ -221,7 +221,7 @@ export class Simulator {
     return newExchangeState;
   }
 
-  public cancelOrderFromOnchainData(bs: pjs.Bitstream, cancelIndex: number, exchangeState: ExchangeState) {
+  public cancelOrderFromOnchainData(bs: Bitstream, cancelIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
     // General data
@@ -229,7 +229,7 @@ export class Simulator {
     offset += 4 + 32 + 32;
 
     // General data
-    const operatorAccountID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const operatorAccountID = bs.extractUint24(offset);
     offset += 3;
 
     // Jump to the specified withdrawal
@@ -237,11 +237,11 @@ export class Simulator {
     offset += cancelIndex * onchainDataSize;
 
     // Extract onchain data
-    const accountIds = parseInt(bs.extractBytesX(offset, 5).toString("hex"), 16);
+    const accountIds = bs.extractUint40(offset);
     offset += 5;
     const orderToken = bs.extractUint8(offset);
     offset += 1;
-    const orderID = parseInt(bs.extractBytesX(offset, 3).toString("hex"), 16);
+    const orderID = bs.extractUint24(offset);
     offset += 3;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
@@ -325,7 +325,7 @@ export class Simulator {
     return newExchangeState;
   }
 
-  public settleRingFromOnchainData(data: pjs.Bitstream, ringIndex: number, exchangeState: ExchangeState) {
+  public settleRingFromOnchainData(data: Bitstream, ringIndex: number, exchangeState: ExchangeState) {
     let offset = 0;
 
     // General data
@@ -335,7 +335,7 @@ export class Simulator {
     offset += 1;
     const protocolFeeMakerBips = data.extractUint8(offset);
     offset += 1;
-    const operatorAccountID = parseInt(data.extractBytesX(offset, 3).toString("hex"), 16);
+    const operatorAccountID = data.extractUint24(offset);
     offset += 3;
 
     // Jump to the specified ring
@@ -349,17 +349,17 @@ export class Simulator {
     offset += 1;
 
     // Order IDs
-    const orderIds = parseInt(data.extractBytesX(offset, 5).toString("hex"), 16);
+    const orderIds = data.extractUint40(offset);
     offset += 5;
 
     // Accounts
-    const accounts = parseInt(data.extractBytesX(offset, 5).toString("hex"), 16);
+    const accounts = data.extractUint40(offset);
     offset += 5;
 
     // Order A
     const tokenA = data.extractUint8(offset);
     offset += 1;
-    const fFillSA = parseInt(data.extractBytesX(offset, 3).toString("hex"), 16);
+    const fFillSA = data.extractUint24(offset);
     offset += 3;
     const orderDataA = data.extractUint8(offset);
     offset += 1;
@@ -367,7 +367,7 @@ export class Simulator {
     // Order B
     const tokenB = data.extractUint8(offset);
     offset += 1;
-    const fFillSB = parseInt(data.extractBytesX(offset, 3).toString("hex"), 16);
+    const fFillSB = data.extractUint24(offset);
     offset += 3;
     const orderDataB = data.extractUint8(offset);
     offset += 1;

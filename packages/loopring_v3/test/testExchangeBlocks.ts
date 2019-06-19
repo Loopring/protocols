@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as pjs from "protocol2-js";
+import { Bitstream } from "./bitstream";
 import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
@@ -124,7 +124,7 @@ contract("Exchange", (accounts: string[]) => {
         it("should not be able to commit unsupported blocks", async () => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, 0, new Array(18).fill(1));
-          const bs = new pjs.Bitstream();
+          const bs = new Bitstream();
           bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -139,7 +139,7 @@ contract("Exchange", (accounts: string[]) => {
         it("should not be able to commit block from different exchanges", async () => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, 0, new Array(18).fill(1));
-          const bs = new pjs.Bitstream();
+          const bs = new Bitstream();
           bs.addNumber(0, 1);
           bs.addNumber(exchangeId + 1, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -154,7 +154,7 @@ contract("Exchange", (accounts: string[]) => {
         it("should not be able to commit blocks starting from a wrong merkle root state", async () => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, 0, new Array(18).fill(1));
-          const bs = new pjs.Bitstream();
+          const bs = new Bitstream();
           bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
@@ -175,7 +175,7 @@ contract("Exchange", (accounts: string[]) => {
           {
             let timestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
             timestamp -= (exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1);
-            const bs = new pjs.Bitstream();
+            const bs = new Bitstream();
             bs.addNumber(0, 1);
             bs.addNumber(exchangeId, 4);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -191,7 +191,7 @@ contract("Exchange", (accounts: string[]) => {
           {
             let timestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
             timestamp += (exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15);
-            const bs = new pjs.Bitstream();
+            const bs = new Bitstream();
             bs.addNumber(0, 1);
             bs.addNumber(exchangeId, 4);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -253,7 +253,7 @@ contract("Exchange", (accounts: string[]) => {
 
             // startIdx != numRequestsCommitted
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
               bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -270,7 +270,7 @@ contract("Exchange", (accounts: string[]) => {
             }
             // count > blockSize
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
               bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -287,7 +287,7 @@ contract("Exchange", (accounts: string[]) => {
             }
             // startIdx + count > depositChain.length
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
               bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -304,7 +304,7 @@ contract("Exchange", (accounts: string[]) => {
             }
             // Wrong starting hash
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
               bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
@@ -321,7 +321,7 @@ contract("Exchange", (accounts: string[]) => {
             }
             // Wrong ending hash
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
               bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
