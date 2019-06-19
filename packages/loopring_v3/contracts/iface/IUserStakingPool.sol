@@ -63,7 +63,6 @@ contract IUserStakingPool
         uint     devAmount
     );
 
-
     event OwnerWithdrawal(
         address  token,
         uint     amount

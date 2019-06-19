@@ -36,6 +36,5 @@ contract UserStakingPool is UserStakingPoolAdmin
 
         lrcAddress = _lrcAddress;
         oedaxAddress = _oedaxAddress;
-
     }
 }

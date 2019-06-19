@@ -57,13 +57,13 @@ contract UserStakingPoolAuction is UserStakingPoolBase
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-	function settleAuction(address auction)
-		external
-		onlyOwner
-	{
-		require(auction != address(0), "ZERO_ADDRESS");
-		IAuction(auction).settle();
-	}
+	  function settleAuction(address auction)
+		    external
+		    onlyOwner
+	  {
+		    require(auction != address(0), "ZERO_ADDRESS");
+		    IAuction(auction).settle();
+	  }
 
     // TODO(dongw): this method is not Implementated.
     function auctionOffTokens(

@@ -202,7 +202,7 @@ contract UserStakingPoolBase is IUserStakingPool, Claimable
     function userWithdrawalWaitTime(address user)
         view
         private
-        returns (uint minutes_)
+        returns (uint _seconds)
     {
         if (users[user].depositedAt.add(MIN_WITHDRAW_DELAY) <= now) return 0;
         else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
