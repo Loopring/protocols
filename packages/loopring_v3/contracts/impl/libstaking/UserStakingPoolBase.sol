@@ -23,9 +23,8 @@ import "../../lib/Claimable.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
-/// @title An Implementation of IUserStakingPool.
+/// @title The first part of an IUserStakingPool implementation.
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @author Brecht Devos - <brecht@loopring.org>
 contract UserStakingPoolBase is IUserStakingPool, Claimable
 {
     using ERC20SafeTransfer for address;

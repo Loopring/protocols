@@ -17,10 +17,11 @@
 pragma solidity 0.5.7;
 
 import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/ERC20.sol";
 
 import "./UserStakingPoolBase.sol";
 
-// See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
+/// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
 contract IOedax {
     function createAuction(
         address askToken,
@@ -42,15 +43,15 @@ contract IOedax {
     uint public creatorEtherStake;
 }
 
-// See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
+/// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
 contract IAuction {
     function settle() public;
     function ask(uint amount) external returns (uint accepted);
 }
 
-/// @title An Implementation of IUserStakingPool.
+/// @title The second part of an IUserStakingPool implementation.
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Kongliang Zhong - <kongliang@loopring.org>
 contract UserStakingPoolAuction is UserStakingPoolBase
 {
     using ERC20SafeTransfer for address;
