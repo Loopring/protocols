@@ -69,7 +69,7 @@
     "events": "^3.0.0",
     "js-sha3": "^0.8.0",
     "lodash": "^4.17.5",
-    "protocol2-js": "0.2.26",
+    "protocol2-js": "^0.4.4",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "solidity-coverage": "^0.5.11",

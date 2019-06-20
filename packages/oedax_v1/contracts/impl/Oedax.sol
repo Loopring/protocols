@@ -118,8 +118,8 @@ contract Oedax is IOedax, NoDefaultFunc
         require(curveAddress != address(0x0), "empty curve");
         require(T2 >= minDuration && T2 <= maxDuration, "invalid duration");
         require(
-            tokenRankMap[bidToken] > tokenRankMap[askToken],
-            "bid (quote) token must have a higher rank than ask (base) token"
+            tokenRankMap[bidToken] >= tokenRankMap[askToken],
+            "bid (quote) token must have a higher or the same rank than ask (base) token"
         );
 
         uint auctionId = auctions.length + 1;

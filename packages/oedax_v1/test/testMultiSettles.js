@@ -38,7 +38,7 @@ contract("Oedax-Auction-Multi-Users-Success-Settle-Multi-Times", async(accounts)
     return web3.utils.toBN("0x" + num.toString(16), 16);
   };
 
-  it("should excute auction", async function() {
+  it("should execute auction", async function() {
 
     console.log("deployer is:     ", deployer);
     console.log("feeRecipient is: ", feeRecipient);
