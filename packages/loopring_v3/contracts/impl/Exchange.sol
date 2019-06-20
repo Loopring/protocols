@@ -370,14 +370,62 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint8  blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes calldata data,
+        bytes calldata /*data*/,
         bytes calldata offchainData
         )
         external
         onlyOperator
         nonReentrant
     {
-        state.commitBlock(blockType, blockSize, blockVersion, data, offchainData);
+        // Decompress the data here so we can extract the data directly from calldata
+        bytes4 selector = IDecompressor(0x0).decompress.selector;
+        bytes memory decompressed;
+        assembly {
+          // Calldata layout:
+          //   0: selector
+          //   4: blockType
+          //  36: blockSize
+          //  68: blockVersion
+          // 100: offset data
+          // 132: offset offchainData
+          let dataOffset := add(calldataload(100), 4)
+          let mode := and(calldataload(add(dataOffset, 1)), 0xFF)
+          switch mode
+          case 0 {
+              // No compression
+              let length := sub(calldataload(dataOffset), 1)
+
+              let data := mload(0x40)
+              calldatacopy(add(data, 32), add(dataOffset, 33), length)
+              mstore(data, length)
+              decompressed := data
+              mstore(0x40, add(add(decompressed, length), 32))
+          }
+          case 1 {
+              // External contract
+              let contractAddress := and(calldataload(add(dataOffset, 21)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+              let length := sub(calldataload(dataOffset), 21)
+
+              let data := mload(0x40)
+              mstore(data, selector)
+              mstore(add(data,  4), 32)
+              mstore(add(data, 36), length)
+              calldatacopy(add(data, 68), add(dataOffset, 53), length)
+
+              let success := call(gas, contractAddress, 0, data, add(68, length), 0x0, 0)
+              if eq(success, 0) {
+                revert(0, 0)
+              }
+
+              returndatacopy(data, 32, sub(returndatasize(), 32))
+              decompressed := data
+              mstore(0x40, add(add(decompressed, length), 32))
+          }
+          default {
+              revert(0, 0)
+          }
+        }
+        state.commitBlock(blockType, blockSize, blockVersion, decompressed, offchainData);
     }
 
     function verifyBlock(

@@ -40,10 +40,9 @@ contract LzDecompressor is IDecompressor
         pure
         returns (bytes memory)
     {
-        bytes memory uncompressed;
         assembly {
-            uncompressed := mload(0x40)
-            let ptr := add(uncompressed, 32)
+            let uncompressed := mload(0x40)
+            let ptr := add(uncompressed, 64)
             let dataLength := calldataload(36)
             for { let pos := 0 } lt(pos, dataLength) {} {
                 // Read the mode
@@ -112,9 +111,12 @@ contract LzDecompressor is IDecompressor
                     revert(0, 0)
                 }
             }
-            mstore(uncompressed, sub(sub(ptr, uncompressed), 32))
-            mstore(0x40, ptr)
+            // Store offset to data
+            mstore(uncompressed, 0x20)
+            // Store data length
+            mstore(add(uncompressed, 32), sub(sub(ptr, uncompressed), 64))
+            // Return the data
+            return(uncompressed, sub(ptr, uncompressed))
         }
-        return uncompressed;
     }
 }
