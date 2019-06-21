@@ -1515,6 +1515,19 @@ export class ExchangeTestUtil {
     this.pendingRings[exchangeID] = [];
   }
 
+  public getRingTransformations() {
+    const ranges: Range[][] = [];
+    ranges.push([{offset: 0, length: 5}]);      // ringMatcherID + fFee + tokenID
+    ranges.push([{offset: 5, length: 5}]);      // orderA.orderID + orderB.orderID
+    ranges.push([{offset: 10, length: 5}]);     // orderA.accountID + orderB.accountID
+    ranges.push([{offset: 15, length: 1}, {offset: 20, length: 1}]);     // orderA.tokenS + // orderB.tokenS
+    ranges.push([{offset: 19, length: 1}]);     // orderA.data
+    ranges.push([{offset: 24, length: 1}]);     // orderB.data
+    ranges.push([{offset: 16, length: 3}]);     // orderA.fillS
+    ranges.push([{offset: 21, length: 3}]);     // orderB.fillS
+    return ranges;
+  }
+
   public transformRingSettlementsData(input: string) {
     // console.log("fdata1: " + input);
     // Compress
@@ -1533,24 +1546,21 @@ export class ExchangeTestUtil {
     }
     // console.log("fdata2: " + compressed.getData());
     // Transform
-    const ranges: Range[] = [];
-    ranges.push({offset: 0, length: 5});      // ringMatcherID + fFee + tokenID
-    ranges.push({offset: 5, length: 5});      // orderA.orderID + orderB.orderID
-    ranges.push({offset: 10, length: 5});     // orderA.accountID + orderB.accountID
-    ranges.push({offset: 15, length: 1});     // orderA.tokenS
-    ranges.push({offset: 16, length: 3});     // orderA.fillS
-    ranges.push({offset: 19, length: 1});     // orderA.data
-    ranges.push({offset: 20, length: 1});     // orderB.tokenS
-    ranges.push({offset: 21, length: 3});     // orderB.fillS
-    ranges.push({offset: 24, length: 1});     // orderB.data
+    const ranges = this.getRingTransformations();
     const transformed = new Bitstream();
-    for (const range of ranges) {
-        for (let offset = 0; offset < compressed.length(); offset += ringSize) {
-          transformed.addHex(compressed.extractData(offset + range.offset, range.length));
+    for (const subranges of ranges) {
+      for (let offset = 0; offset < compressed.length(); offset += ringSize) {
+        for (const subrange of subranges) {
+          transformed.addHex(compressed.extractData(offset + subrange.offset, subrange.length));
         }
+      }
     }
     // console.log("fdata3: " + transformed.getData());
     return transformed.getData();
+  }
+
+  public replaceAt(data: string, index: number, replacement: string) {
+      return data.substr(0, index) + replacement + data.substr(index + replacement.length);
   }
 
   public inverseTransformRingSettlementsData(input: string) {
@@ -1559,23 +1569,27 @@ export class ExchangeTestUtil {
     const transformed = new Bitstream(input);
     const ringSize = 25;
     const numRings = transformed.length() / ringSize;
-    const ranges: Range[] = [];
-    ranges.push({offset: 0, length: 5});      // ringMatcherID + fFee + tokenID
-    ranges.push({offset: 5, length: 5});      // orderA.orderID + orderB.orderID
-    ranges.push({offset: 10, length: 5});     // orderA.accountID + orderB.accountID
-    ranges.push({offset: 15, length: 1});     // orderA.tokenS
-    ranges.push({offset: 16, length: 3});     // orderA.fillS
-    ranges.push({offset: 19, length: 1});     // orderA.data
-    ranges.push({offset: 20, length: 1});     // orderB.tokenS
-    ranges.push({offset: 21, length: 3});     // orderB.fillS
-    ranges.push({offset: 24, length: 1});     // orderB.data
+    const ranges = this.getRingTransformations();
     const compressed = new Bitstream();
     for (let r = 0; r < numRings; r++) {
       let offset = 0;
-      for (const range of ranges) {
-        compressed.addHex(transformed.extractData(offset + range.length * r, range.length));
-        offset += range.length * numRings;
+      let ringData = "00".repeat(ringSize);
+      for (const subranges of ranges) {
+        let totalRangeLength = 0;
+        for (const subrange of subranges) {
+          totalRangeLength += subrange.length;
+        }
+        let partialRangeLength = 0;
+        for (const subrange of subranges) {
+          const dataPart = transformed.extractData(
+            offset + totalRangeLength * r + partialRangeLength, subrange.length,
+          );
+          ringData = this.replaceAt(ringData, subrange.offset * 2, dataPart);
+          partialRangeLength += subrange.length;
+        }
+        offset += totalRangeLength * numRings;
       }
+      compressed.addHex(ringData);
     }
     // console.log("idata2: " + compressed.getData());
 

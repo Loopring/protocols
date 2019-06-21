@@ -419,7 +419,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
               returndatacopy(data, 32, sub(returndatasize(), 32))
               decompressed := data
-              mstore(0x40, add(add(decompressed, length), 32))
+              mstore(0x40, add(add(decompressed, mload(decompressed)), 32))
           }
           default {
               revert(0, 0)

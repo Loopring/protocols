@@ -1,5 +1,5 @@
 import { Bitstream } from "./bitstream";
-import { compressLZ, decompressLZ } from "./compression";
+import { calculateCalldataCost, compressLZ, decompressLZ } from "./compression";
 
 const LzDecompressor = artifacts.require("LzDecompressor");
 
@@ -28,7 +28,14 @@ contract("Compression", (accounts: string[]) => {
   const compressAndDecompressLZChecked = async (data: string) => {
     const compressed = compressLZChecked(data);
     await decompressLZChecked(compressed);
+
+    const gasCostOriginal = calculateCalldataCost(data);
+    const gasCostCompressed = calculateCalldataCost(compressed);
+
     // console.log("compressed: " + compressed);
+    // console.log("Calldata gas cost reduction: " +
+    //              (100 - Math.floor((gasCostCompressed * 100) / gasCostOriginal)) + "%");
+
     return compressed;
   };
 
@@ -39,7 +46,11 @@ contract("Compression", (accounts: string[]) => {
   describe("LZ compression", () => {
     it("Test data", async () => {
       const data = "0x0123456789987654301111111111111111111111111115548914444444444444121288412354425140000000000000" +
-                   "151156455787878787878787878787878454000000000000000000000000000000000000456487844878984567000000";
+                   "151156455787878787878787878787878454000000000000000000000000000000000000456487844878984567000000" +
+                   "151515151515151515151515151515151515151515151500000000000000000000000000000000000000000000000000" +
+                   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000" +
+                   "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001";
       await compressAndDecompressLZChecked(data);
     });
 
@@ -77,6 +88,16 @@ contract("Compression", (accounts: string[]) => {
 
     it("Single byte data", async () => {
       await compressAndDecompressLZChecked("0x5f");
+    });
+
+    it("Large data size", async () => {
+      const length = 70 * 1000;
+      const bitstream = new Bitstream();
+      for (let i = 0; i < length; i++) {
+        const byte = Math.floor(Math.random() * 256);
+        bitstream.addNumber(byte, 1);
+      }
+      await compressAndDecompressLZChecked(bitstream.getData());
     });
   });
 

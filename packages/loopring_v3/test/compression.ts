@@ -5,15 +5,24 @@ export enum CompressionType {
   LZ,
 }
 
-const calculateCalldataCost = (data: string)  => {
+export enum CompressionSpeed {
+  FAST = 0,
+  MEDIUM,
+  SLOW,
+}
+
+const GAS_COST_ZERO_BYTE = 4;
+const GAS_COST_NONZERO_BYTE = 68;
+
+export const calculateCalldataCost = (data: string)  => {
   assert(data.length % 2 === 0, "data needs to be an integer number of bytes");
   let cost = 0;
   let i = data.startsWith("0x") ? 2 : 0;
   for (; i < data.length; i += 2) {
     if (data.slice(i, i + 2) === "00") {
-      cost += 4;
+      cost += GAS_COST_ZERO_BYTE;
     } else {
-      cost += 68;
+      cost += GAS_COST_NONZERO_BYTE;
     }
   }
   return cost;
@@ -64,34 +73,68 @@ export function decompress(data: string) {
   }
 }
 
-export function compressLZ(input: string) {
+export function compressLZ(input: string, speed: CompressionSpeed = CompressionSpeed.MEDIUM) {
+  const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * 10;
+  const minLengthReplacement = Math.floor(minGasSavedForReplacement / GAS_COST_NONZERO_BYTE);
+
+  // Limit the maximum offset for now because the compressor uses brute force
+  // to find repeated patterns for now
+  const maxOffset = (speed === CompressionSpeed.FAST) ? 512 :
+                    (speed === CompressionSpeed.MEDIUM) ? 1024 :
+                    (speed === CompressionSpeed.SLOW) ? 2048 :
+                    assert(false, "unknown compression speed");
+  const maxLength = 2 ** 16 - 1;
+
+  assert(maxOffset < 2 ** 16, "max offset too large");
+  assert(maxLength < 2 ** 16, "max length too large");
+
+  const writeLiterals = () => {
+    if (literals.length() > 0) {
+      // console.log("mode: " + 0);
+      // console.log("length: " + literals.length());
+      // If necessary, split up writing the literals so that length < maxLength
+      const numParts = Math.ceil(literals.length() / maxLength);
+      for (let p = 0; p < literals.length(); p += maxLength) {
+        const partLength = Math.min(literals.length() - p, maxLength);
+        compressed.addNumber(0, 1);
+        compressed.addNumber(partLength, 2);
+        compressed.addHex(literals.extractData(p, partLength));
+      }
+      // All literals consumed, reset
+      literals = new Bitstream();
+    }
+  };
+
+  const startTime = (new Date()).getTime();
+
   const data = new Bitstream(input);
   assert(data.length() > 0, "cannot compress empty input");
 
   const compressed = new Bitstream();
   let pos = 0;
-  // Limit the maximum offset for now because the compressor uses brute force
-  // to find repeated patterns for now
-  const maxOffset = /*2 ** 16 - 1*/128;
-  const maxLength = 2 ** 16 - 1;
   let literals = new Bitstream();
   while (pos < data.length()) {
     // Find the longest match
     // TODO: better way to find long sequences of zeros
     let bestStartIndex = 0;
     let bestLength = 0;
+    let bestGasSaved = 0;
     for (let s = Math.max(0, pos - maxOffset); s < pos; s++) {
       let length = 0;
       for (let n = 0; n < maxLength && (pos + n) < data.length(); n++) {
-        if (data.extractUint8(s + n) === data.extractUint8(pos + n)) {
+        if (data.extractChar(s + n) === data.extractChar(pos + n)) {
           length++;
         } else {
           break;
         }
       }
-      if (length > bestLength || (length === bestLength && s > bestStartIndex)) {
-        bestLength = length;
-        bestStartIndex = s;
+      if (length >= minLengthReplacement) {
+        const gasSaved = calculateCalldataCost(data.extractData(bestStartIndex, length));
+        if (gasSaved > bestGasSaved || (gasSaved === bestGasSaved && s > bestStartIndex)) {
+          bestGasSaved = gasSaved;
+          bestStartIndex = s;
+          bestLength = length;
+        }
       }
     }
 
@@ -99,19 +142,10 @@ export function compressLZ(input: string) {
     // enough gas can be saved
     // TODO: better gas cost prediction
     const replacedData = data.extractData(bestStartIndex, bestLength);
-    const gasSaved = calculateCalldataCost(replacedData);
     // console.log("replacedData: " + replacedData + " (" + gasSaved + ")");
-    if (gasSaved >= 600) {
+    if (bestGasSaved >= minGasSavedForReplacement) {
       // First check if we have literals we have to write out
-      if (literals.length() > 0) {
-        // console.log("mode: " + 0);
-        // console.log("length: " + literals.length());
-        compressed.addNumber(0, 1);
-        compressed.addNumber(literals.length(), 2);
-        compressed.addHex(literals.getData().slice(2));
-        // All literals consumed, reset
-        literals = new Bitstream();
-      }
+      writeLiterals();
 
       const bAllZeros = isAllZeros(replacedData);
       if (bAllZeros) {
@@ -135,15 +169,11 @@ export function compressLZ(input: string) {
       pos += 1;
     }
   }
+  // Write out remaining literals
+  writeLiterals();
 
-  // Check if we have literals we have to write out
-  if (literals.length() > 0) {
-    // console.log("mode: " + 0);
-    // console.log("length: " + literals.length());
-    compressed.addNumber(0, 1);
-    compressed.addNumber(literals.length(), 2);
-    compressed.addHex(literals.getData().slice(2));
-  }
+  const endTime = (new Date()).getTime();
+  // console.log("Compression time: " + (endTime - startTime) + "ms.");
 
   // console.log("o: " + data.getData());
   // console.log("compressed: " + compressed.getData());

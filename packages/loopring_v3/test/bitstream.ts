@@ -64,7 +64,7 @@ export class Bitstream {
   }
 
   public extractUint8(offset: number) {
-    return parseInt(this.extractBytes1(offset).toString("hex"), 16);
+    return parseInt(this.extractData(offset, 1), 16);
   }
 
   public extractUint16(offset: number) {
@@ -115,13 +115,17 @@ export class Bitstream {
     return new Buffer(this.extractData(offset, length), "hex");
   }
 
+  public extractChar(offset: number) {
+    return this.extractData(offset, 1);
+  }
+
   public extractData(offset: number, length: number) {
     const start = offset * 2;
     const end = start + length * 2;
     if (this.data.length < end) {
       throw new Error("substring index out of range:[" + start + ", " + end + "]");
     }
-    return this.data.substring(start, end);
+    return this.data.slice(start, end);
   }
 
   // Returns the number of bytes of data
