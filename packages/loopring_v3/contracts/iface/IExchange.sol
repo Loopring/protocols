@@ -461,11 +461,26 @@ contract IExchange
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
     ///
+    ///        The RING_SETTLEMENT data availability data is further transformed
+    ///        to make it more compressable:
+    ///        - The Ring-matcher account ID, fee amount and token ID (the first 5 bytes) are
+    ///          XORed with the corresponding data from the previous ring
+    ///        - To group more similar data together we don't store all data
+    ///          for a ring next to eachother but group them together for all rings.
+    ///          For ALL rings, sequentially:
+    ///             - Ring-matcher account ID + fee + Token ID
+    ///             - orderA.orderID + orderB.orderID
+    ///             - orderA.accountID + orderB.accountID
+    ///             - orderA.tokenS + orderB.tokenS
+    ///             - orderA.fillS + orderB.fillS
+    ///             - orderA.orderData
+    ///             - orderB.orderData
+    ///
     ///        The data can be sent on-chain compressed. The data will be decompressed respecting the
     ///        Compression type (the first byte in 'data'):
-    ///            - Mode 0: No compression
+    ///            - Mode 0: No compression. The data following the mode byte is used as is.
     ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
-    ///                      IDecompressor.decompress() will be called to decompress the data.
+    ///                      IDecompressor.decompress() will be called to decompress the following data.
     /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that containts the block data.
     function commitBlock(

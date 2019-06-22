@@ -7,6 +7,7 @@ import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import babyJub = require("./babyjub");
+import { BitArray } from "./bitarray";
 import { Bitstream } from "./bitstream";
 import { compress, CompressionType } from "./compression";
 import * as constants from "./constants";
@@ -318,22 +319,6 @@ export class ExchangeTestUtil {
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
 
-  public toBitsBN(value: BN, length: number) {
-    const res = new Array(length);
-    for (let i = 0; i < length; i++) {
-      res[i] = value.testn(i) ? 1 : 0;
-    }
-    return res;
-  }
-
-  public toBitsNumber(value: number, length: number) {
-    return this.toBitsBN(new BN(value), length);
-  }
-
-  public toBitsString(value: string, length: number) {
-    return this.toBitsBN(new BN(value, 10), length);
-  }
-
   public async setupOrder(order: OrderInfo, index: number) {
     if (order.owner === undefined) {
       const accountIndex = index % this.testContext.orderOwners.length;
@@ -395,24 +380,23 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
-    const message = this.flattenList([
-      this.toBitsNumber(this.exchangeId, 32),
-      this.toBitsNumber(order.orderID, 20),
-      this.toBitsNumber(order.accountID, 20),
-      this.toBitsString(order.dualAuthPublicKeyX, 254),
-      this.toBitsString(order.dualAuthPublicKeyY, 254),
-      this.toBitsNumber(order.tokenIdS, 8),
-      this.toBitsNumber(order.tokenIdB, 8),
-      this.toBitsBN(order.amountS, 96),
-      this.toBitsBN(order.amountB, 96),
-      this.toBitsNumber(order.allOrNone ? 1 : 0, 1),
-      this.toBitsNumber(order.validSince, 32),
-      this.toBitsNumber(order.validUntil, 32),
-      this.toBitsNumber(order.maxFeeBips, 6),
-      this.toBitsNumber(order.buy ? 1 : 0, 1),
-    ]);
+    const message = new BitArray();
+    message.addNumber(this.exchangeId, 32);
+    message.addNumber(order.orderID, 20);
+    message.addNumber(order.accountID, 20);
+    message.addString(order.dualAuthPublicKeyX, 254);
+    message.addString(order.dualAuthPublicKeyY, 254);
+    message.addNumber(order.tokenIdS, 8);
+    message.addNumber(order.tokenIdB, 8);
+    message.addBN(order.amountS, 96);
+    message.addBN(order.amountB, 96);
+    message.addNumber(order.allOrNone ? 1 : 0, 1);
+    message.addNumber(order.validSince, 32);
+    message.addNumber(order.validUntil, 32);
+    message.addNumber(order.maxFeeBips, 6);
+    message.addNumber(order.buy ? 1 : 0, 1);
     const account = this.accounts[this.exchangeId][order.accountID];
-    const sig = eddsa.sign(account.secretKey, message);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     order.hash = sig.hash;
     order.signature = {
       Rx: sig.R[0].toString(),
@@ -428,35 +412,33 @@ export class ExchangeTestUtil {
     }
     const account = this.accounts[this.exchangeId][ring.minerAccountID];
     const nonce = account.nonce++;
-    const message = this.flattenList([
-      this.toBitsString(ring.orderA.hash, 254),
-      this.toBitsString(ring.orderB.hash, 254),
-      this.toBitsNumber(ring.minerAccountID, 20),
-      this.toBitsNumber(ring.tokenID, 8),
-      this.toBitsBN(ring.fee, 96),
-      this.toBitsNumber(ring.orderA.feeBips, 6),
-      this.toBitsNumber(ring.orderB.feeBips, 6),
-      this.toBitsNumber(ring.orderA.rebateBips, 6),
-      this.toBitsNumber(ring.orderB.rebateBips, 6),
-      this.toBitsNumber(nonce, 32),
-      this.toBitsNumber(0, 1),
-    ]);
-
-    const sig = eddsa.sign(account.secretKey, message);
+    const message = new BitArray();
+    message.addString(ring.orderA.hash, 254);
+    message.addString(ring.orderB.hash, 254);
+    message.addNumber(ring.minerAccountID, 20);
+    message.addNumber(ring.tokenID, 8);
+    message.addBN(ring.fee, 96);
+    message.addNumber(ring.orderA.feeBips, 6);
+    message.addNumber(ring.orderB.feeBips, 6);
+    message.addNumber(ring.orderA.rebateBips, 6);
+    message.addNumber(ring.orderB.rebateBips, 6);
+    message.addNumber(nonce, 32);
+    message.addNumber(0, 1);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     ring.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
     };
 
-    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message);
+    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
     ring.dualAuthASignature = {
       Rx: dualAuthAsig.R[0].toString(),
       Ry: dualAuthAsig.R[1].toString(),
       s: dualAuthAsig.S.toString(),
     };
 
-    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message);
+    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
     ring.dualAuthBSignature = {
       Rx: dualAuthBsig.R[0].toString(),
       Ry: dualAuthBsig.R[1].toString(),
@@ -469,19 +451,18 @@ export class ExchangeTestUtil {
       return;
     }
     const account = this.accounts[this.exchangeId][cancel.accountID];
-    const message = this.flattenList([
-      this.toBitsNumber(this.exchangeId, 32),
-      this.toBitsNumber(cancel.accountID, 20),
-      this.toBitsNumber(cancel.orderTokenID, 8),
-      this.toBitsNumber(cancel.orderID, 20),
-      this.toBitsNumber(cancel.walletAccountID, 20),
-      this.toBitsNumber(cancel.feeTokenID, 8),
-      this.toBitsBN(cancel.fee, 96),
-      this.toBitsNumber(cancel.walletSplitPercentage, 7),
-      this.toBitsNumber(account.nonce++, 32),
-      this.toBitsNumber(0, 2),
-    ]);
-    const sig = eddsa.sign(account.secretKey, message);
+    const message = new BitArray();
+    message.addNumber(this.exchangeId, 32);
+    message.addNumber(cancel.accountID, 20);
+    message.addNumber(cancel.orderTokenID, 8);
+    message.addNumber(cancel.orderID, 20);
+    message.addNumber(cancel.walletAccountID, 20);
+    message.addNumber(cancel.feeTokenID, 8);
+    message.addBN(cancel.fee, 96);
+    message.addNumber(cancel.walletSplitPercentage, 7);
+    message.addNumber(account.nonce++, 32);
+    message.addNumber(0, 2);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     cancel.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
@@ -495,18 +476,17 @@ export class ExchangeTestUtil {
       return;
     }
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
-    const message = this.flattenList([
-      this.toBitsNumber(this.exchangeId, 32),
-      this.toBitsNumber(withdrawal.accountID, 20),
-      this.toBitsNumber(withdrawal.tokenID, 8),
-      this.toBitsBN(withdrawal.amount, 96),
-      this.toBitsNumber(withdrawal.walletAccountID, 20),
-      this.toBitsNumber(withdrawal.feeTokenID, 8),
-      this.toBitsBN(withdrawal.fee, 96),
-      this.toBitsNumber(withdrawal.walletSplitPercentage, 7),
-      this.toBitsNumber(account.nonce++, 32),
-      this.toBitsNumber(0, 1),
-    ]);
+    const message = new BitArray();
+    message.addNumber(this.exchangeId, 32);
+    message.addNumber(withdrawal.accountID, 20);
+    message.addNumber(withdrawal.tokenID, 8);
+    message.addBN(withdrawal.amount, 96);
+    message.addNumber(withdrawal.walletAccountID, 20);
+    message.addNumber(withdrawal.feeTokenID, 8);
+    message.addBN(withdrawal.fee, 96);
+    message.addNumber(withdrawal.walletSplitPercentage, 7);
+    message.addNumber(account.nonce++, 32);
+    message.addNumber(0, 1);
     const sig = eddsa.sign(account.secretKey, message);
     withdrawal.signature = {
       Rx: sig.R[0].toString(),
@@ -1517,19 +1497,17 @@ export class ExchangeTestUtil {
 
   public getRingTransformations() {
     const ranges: Range[][] = [];
-    ranges.push([{offset: 0, length: 5}]);      // ringMatcherID + fFee + tokenID
-    ranges.push([{offset: 5, length: 5}]);      // orderA.orderID + orderB.orderID
-    ranges.push([{offset: 10, length: 5}]);     // orderA.accountID + orderB.accountID
-    ranges.push([{offset: 15, length: 1}, {offset: 20, length: 1}]);     // orderA.tokenS + // orderB.tokenS
-    ranges.push([{offset: 19, length: 1}]);     // orderA.data
-    ranges.push([{offset: 24, length: 1}]);     // orderB.data
-    ranges.push([{offset: 16, length: 3}]);     // orderA.fillS
-    ranges.push([{offset: 21, length: 3}]);     // orderB.fillS
+    ranges.push([{offset: 0, length: 5}]);                            // ringMatcherID + fFee + tokenID
+    ranges.push([{offset: 5, length: 5}]);                            // orderA.orderID + orderB.orderID
+    ranges.push([{offset: 10, length: 5}]);                           // orderA.accountID + orderB.accountID
+    ranges.push([{offset: 15, length: 1}, {offset: 20, length: 1}]);  // orderA.tokenS + orderB.tokenS
+    ranges.push([{offset: 16, length: 3}, {offset: 21, length: 3}]);  // orderA.fillS + orderB.fillS
+    ranges.push([{offset: 19, length: 1}]);                           // orderA.data
+    ranges.push([{offset: 24, length: 1}]);                           // orderB.data
     return ranges;
   }
 
   public transformRingSettlementsData(input: string) {
-    // console.log("fdata1: " + input);
     // Compress
     const bs = new Bitstream(input);
     const compressed = new Bitstream();
@@ -1544,7 +1522,6 @@ export class ExchangeTestUtil {
       }
       compressed.addHex(bs.extractData(offset + 5, ringSize - 5));
     }
-    // console.log("fdata2: " + compressed.getData());
     // Transform
     const ranges = this.getRingTransformations();
     const transformed = new Bitstream();
@@ -1555,7 +1532,6 @@ export class ExchangeTestUtil {
         }
       }
     }
-    // console.log("fdata3: " + transformed.getData());
     return transformed.getData();
   }
 
@@ -1564,7 +1540,6 @@ export class ExchangeTestUtil {
   }
 
   public inverseTransformRingSettlementsData(input: string) {
-    // console.log("idata3: " + input);
     // Inverse Transform
     const transformed = new Bitstream(input);
     const ringSize = 25;
@@ -1591,7 +1566,6 @@ export class ExchangeTestUtil {
       }
       compressed.addHex(ringData);
     }
-    // console.log("idata2: " + compressed.getData());
 
     // Decompress
     const bs = new Bitstream();
@@ -1605,7 +1579,6 @@ export class ExchangeTestUtil {
       }
       bs.addHex(compressed.extractData(r * ringSize + 5, ringSize - 5));
     }
-    // console.log("idata1: " + bs.getData());
     return bs.getData();
   }
 

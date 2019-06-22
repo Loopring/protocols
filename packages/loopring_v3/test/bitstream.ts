@@ -5,7 +5,7 @@ import abi = require("ethereumjs-abi");
 export class Bitstream {
   private data: string;
 
-  constructor(private initialData: string = "") {
+  constructor(initialData: string = "") {
     this.data = initialData;
     if (this.data.startsWith("0x")) {
       this.data = this.data.slice(2);
