@@ -79,9 +79,9 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
 
   // Limit the maximum offset for now because the compressor uses brute force
   // to find repeated patterns for now
-  const maxOffset = (speed === CompressionSpeed.FAST) ? 512 :
-                    (speed === CompressionSpeed.MEDIUM) ? 1024 :
-                    (speed === CompressionSpeed.SLOW) ? 2048 :
+  const maxOffset = (speed === CompressionSpeed.FAST) ? 1024 :
+                    (speed === CompressionSpeed.MEDIUM) ? 2048 :
+                    (speed === CompressionSpeed.SLOW) ? 4096 :
                     assert(false, "unknown compression speed");
   const maxLength = 2 ** 16 - 1;
 
@@ -107,13 +107,20 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
 
   const startTime = (new Date()).getTime();
 
-  const data = new Bitstream(input);
-  assert(data.length() > 0, "cannot compress empty input");
+  const stream = new Bitstream(input);
+  assert(stream.length() > 0, "cannot compress empty input");
+
+  // Cache the data in an array for performance
+  const data: number[] = [];
+  for (let i = 0; i < stream.length(); i++) {
+    data.push(stream.extractUint8(i));
+  }
 
   const compressed = new Bitstream();
   let pos = 0;
   let literals = new Bitstream();
-  while (pos < data.length()) {
+  const dataLength = stream.length();
+  while (pos < dataLength) {
     // Find the longest match
     // TODO: better way to find long sequences of zeros
     let bestStartIndex = 0;
@@ -121,15 +128,11 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
     let bestGasSaved = 0;
     for (let s = Math.max(0, pos - maxOffset); s < pos; s++) {
       let length = 0;
-      for (let n = 0; n < maxLength && (pos + n) < data.length(); n++) {
-        if (data.extractChar(s + n) === data.extractChar(pos + n)) {
-          length++;
-        } else {
-          break;
-        }
+      while (length < maxLength && (pos + length) < dataLength && data[s + length] === data[pos + length]) {
+        length++;
       }
       if (length >= minLengthReplacement) {
-        const gasSaved = calculateCalldataCost(data.extractData(bestStartIndex, length));
+        const gasSaved = calculateCalldataCost(stream.extractData(bestStartIndex, length));
         if (gasSaved > bestGasSaved || (gasSaved === bestGasSaved && s > bestStartIndex)) {
           bestGasSaved = gasSaved;
           bestStartIndex = s;
@@ -141,7 +144,7 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
     // Only take the overhead of the extra (offset, length) when
     // enough gas can be saved
     // TODO: better gas cost prediction
-    const replacedData = data.extractData(bestStartIndex, bestLength);
+    const replacedData = stream.extractData(bestStartIndex, bestLength);
     // console.log("replacedData: " + replacedData + " (" + gasSaved + ")");
     if (bestGasSaved >= minGasSavedForReplacement) {
       // First check if we have literals we have to write out
@@ -165,7 +168,7 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
       }
       pos += bestLength;
     } else {
-      literals.addNumber(data.extractUint8(pos), 1);
+      literals.addNumber(data[pos], 1);
       pos += 1;
     }
   }
