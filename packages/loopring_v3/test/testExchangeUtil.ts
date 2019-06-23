@@ -487,7 +487,7 @@ export class ExchangeTestUtil {
     message.addNumber(withdrawal.walletSplitPercentage, 7);
     message.addNumber(account.nonce++, 32);
     message.addNumber(0, 1);
-    const sig = eddsa.sign(account.secretKey, message);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     withdrawal.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
