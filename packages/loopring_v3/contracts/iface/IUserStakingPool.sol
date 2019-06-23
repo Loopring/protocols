@@ -41,6 +41,8 @@ contract IUserStakingPool
     uint    public claimedBurn          = 0;
     uint    public claimedDev           = 0;
 
+    bool    public allowOwnerWithdrawal = false;
+
     event LRCStaked(
         address  user,
         uint     amount
@@ -59,6 +61,11 @@ contract IUserStakingPool
     event LRCDrained(
         uint     burnAmount,
         uint     devAmount
+    );
+
+    event OwnerWithdrawal(
+        address  token,
+        uint     amount
     );
 
     event AuctionStarted(
@@ -115,28 +122,35 @@ contract IUserStakingPool
 
     /// @dev Deposit a certain amount of LRC to stake.
     /// @param amount The amount of LRC to stake.
-    function deposit(uint amount) external;
+    function deposit(uint amount)
+        external;
 
     /// @dev Withdraw a certain amount of LRC.
     ///      To get all LRC back, a user needs to call `claim` then `withdraw`.
     /// @param amount The amount of LRC to stake.
-    function withdraw(uint amount) external;
+    function withdraw(uint amount)
+        external;
 
     /// @dev Claim all LRC reward and immediately stake them.
-    function claimAndBurn() public returns (uint claimed);
+    function claim()
+        public
+        returns (uint claimed);
 
     /// @dev Owner calls this function to withdraw developer fund and burn LRC.
-    /// @param recipient The address to receive the developer fund. Use 0x0 to withdraw
-    ///        directly to the owner address.
-    ///
     ///        This function can only be called by the owner.
-    function drain(address recipient) external;
+    function drainAndBurn()
+        external
+        // onlyOwner
+        ;
 
     /// @dev Set a new Oedax address.
     /// @param _oedaxAddress THe new Oedax address.
     ///
     ///      This function can only be called by the owner.
-    function setOedax(address _oedaxAddress) external;
+    function setOedax(address _oedaxAddress)
+        external
+        // onlyOwner
+        ;
 
     /// @dev Sell a token for LRC by starting a new auction.
     /// @param tokenS Tokens to sell. use 0x0 for Ether.
@@ -150,11 +164,34 @@ contract IUserStakingPool
         uint    T
         )
         external
+        // onlyOwner
         returns (
             address payable auction
         );
 
     /// @dev Settles an auction
     /// @param auction Auction address.
-    function settleAuction(address auction) external;
+    function settleAuction(address auction)
+        external
+        // onlyOwner
+        ;
+
+    /// @dev Disable owner to withdrawl non-LRC tokens and Ether.
+    //       This operation cannot be un-done.
+    function permanentlyDisableOwnerWithdrawal()
+        external
+        // onlyOwner
+        ;
+
+    /// @dev Owner withdraw non-LRC tokens or Ether. This method will be disable
+    ///      once `permanentlyDisableOwnerWithdrawal` is called after auction has been tested.
+    /// @param token Tokens to withdraw, 0x0 for Ether.
+    /// @param amount The amount of token/ether to withdraw.
+    function ownerWithdraw(
+        address token,
+        uint    amount
+        )
+        external
+        // onlyOwner
+        ;
 }

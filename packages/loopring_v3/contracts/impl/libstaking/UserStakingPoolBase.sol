@@ -18,14 +18,14 @@ pragma solidity 0.5.7;
 
 import "../../iface/IUserStakingPool.sol";
 
-import "../../lib/BurnableERC20.sol";
 import "../../lib/Claimable.sol";
 import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 
-/// @title An Implementation of IUserStakingPool.
+
+/// @title The first part of an IUserStakingPool implementation.
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @author Brecht Devos - <brecht@loopring.org>
 contract UserStakingPoolBase is IUserStakingPool, Claimable
 {
     using ERC20SafeTransfer for address;
@@ -162,14 +162,14 @@ contract UserStakingPoolBase is IUserStakingPool, Claimable
 
         // transfer LRC to user
         require(
-            lrcAddress.safeTransferFrom(address(this), msg.sender, _amount),
+            lrcAddress.safeTransfer(msg.sender, _amount),
             "TRANSFER_FAILURE"
         );
 
         emit LRCWithdrawn(msg.sender, _amount);
     }
 
-    function claimAndBurn()
+    function claim()
         public
         returns (uint claimed)
     {
@@ -198,28 +198,6 @@ contract UserStakingPoolBase is IUserStakingPool, Claimable
         emit LRCRewarded(msg.sender, claimed);
     }
 
-    function drain(address recipient)
-        external
-        onlyOwner 
-    {
-        uint remainingBurn;
-        uint remainingDev;
-        (, , , , , , remainingBurn, , remainingDev) = getStakingStats();
-
-        require(BurnableERC20(lrcAddress).burn(remainingBurn), "BURN_FAILURE");
-
-        address target = recipient == address(0) ?  owner : recipient;
-        require(
-            lrcAddress.safeTransferFrom(address(this), target, remainingDev),
-            "TRANSFER_FAILURE"
-        );
-
-        claimedBurn = claimedBurn.add(remainingBurn);
-        claimedDev = claimedDev.add(remainingDev);
-
-        emit LRCDrained(remainingBurn, remainingDev);
-    }
-
     // -- Private Function --
 
     function userWithdrawalWaitTime(address user)
@@ -234,7 +212,7 @@ contract UserStakingPoolBase is IUserStakingPool, Claimable
     function userRewardWaitTime(address user)
         view
         private
-        returns (uint _seconds)
+        returns (uint minutes_)
     {
        if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
        else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
