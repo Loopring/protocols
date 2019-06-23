@@ -120,8 +120,8 @@ contract IOedax is Ownable
     ///     than the rank of its ask token. In Oedax, Ether (address 0x0) has
     ///     the highest rank.
     ///     Only Oedax owner can invoke this method.
-    /// @param token The non-zero id of the price curve.
-    /// @param rank The ask (base) token. Prices are in form of 'bids/asks'.
+    /// @param token The token's address.
+    /// @param rank The token's rank.
     function setTokenRank(
         address token,
         uint    rank

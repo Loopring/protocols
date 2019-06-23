@@ -1,0 +1,29 @@
+{
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "linterOptions": {
+        "exclude": [
+            "test/babyjub.js",
+            "test/eddsa.js",
+            "test/pedersenHash.js"
+        ]
+    },
+    "cliOptions":
+    {
+        "exclude": [
+            "./util/submit_rings.ts"
+        ]
+    },
+    "jsRules":
+    {},
+    "rules":
+    {
+        "no-console": false,
+        "no-bitwise": false,
+        "object-literal-sort-keys": false,
+        "interface-name": false
+    },
+    "rulesDirectory": []
+}

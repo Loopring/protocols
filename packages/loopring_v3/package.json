@@ -1,7 +1,7 @@
 {
   "name": "loopring_v3",
   "version": "3.0.0",
-  "description": "",
+  "description": "Loopring DEX protocol version 3.0",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -10,7 +10,17 @@
     "type": "git",
     "url": "git+http://github.com/Loopring/protocol.git"
   },
+  "watch": {
+    "compile": {
+      "patterns": [
+        "contracts"
+      ],
+      "extensions": "sol",
+      "delay": 10000
+    }
+  },
   "scripts": {
+    "watch": "npm-watch compile",
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
     "pretest": "tslint --project .",
     "test": "npm run transpile && truffle test",
@@ -41,12 +51,14 @@
     "mocha": "^5.2.0",
     "node": "8.11.3",
     "npm": "^6.9.0",
+    "npm-watch": "^0.6.0",
+    "solidity-coverage": "^0.5.11",
     "solium": "^1.2.4",
     "tslint": "5.11.0",
     "types-bn": "0.0.1",
     "typescript": "3.1.6",
     "web3-typescript-typings": "0.10.2",
-    "webpack": "^4.29.6"
+    "webpack": "^4.35.0"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",

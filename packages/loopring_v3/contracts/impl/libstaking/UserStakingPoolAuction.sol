@@ -17,10 +17,12 @@
 pragma solidity 0.5.7;
 
 import "../../lib/ERC20SafeTransfer.sol";
+import "../../lib/ERC20.sol";
 
 import "./UserStakingPoolBase.sol";
 
-// See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
+
+/// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
 contract IOedax {
     function createAuction(
         address askToken,
@@ -42,38 +44,27 @@ contract IOedax {
     uint public creatorEtherStake;
 }
 
-// See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
+/// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
 contract IAuction {
     function settle() public;
     function ask(uint amount) external returns (uint accepted);
 }
 
-/// @title An Implementation of IUserStakingPool.
+/// @title The second part of an IUserStakingPool implementation.
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @author Kongliang Zhong - <kongliang@loopring.org>
 contract UserStakingPoolAuction is UserStakingPoolBase
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-  
-    function setOedax(address _oedaxAddress)
-        external
-        onlyOwner
-    {
-        require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
-        oedaxAddress = _oedaxAddress;
-
-        emit OedaxAddressUpdated(oedaxAddress);
-    }
-
-	function settleAuction(address auction)
-		external
-		onlyOwner
-	{
-		require(auction != address(0), "ZERO_ADDRESS");
-		IAuction(auction).settle();
-	}
+	  function settleAuction(address auction)
+		    external
+		    onlyOwner
+	  {
+		    require(auction != address(0), "ZERO_ADDRESS");
+		    IAuction(auction).settle();
+	  }
 
     // TODO(dongw): this method is not Implementated.
     function auctionOffTokens(
@@ -90,5 +81,33 @@ contract UserStakingPoolAuction is UserStakingPoolBase
             address payable auctionAddr
         )
     {
+        require(oedaxAddress != address(0), "ZERO_ADDRESS");
+
+        address tokenB = sellForEther ? address(0) : lrcAddress;
+        require(tokenS != tokenB, "SAME_TOKEN");
+
+        // IOedax oedax = IOedax(oedaxAddress);
+        // uint ethStake = oedax.creatorEtherStake();
+
+        // auctionAddr = oedax.createAuction.value(ethStake)(
+        //     tokenS,
+        //     tokenB,
+        //     0,
+        //     0,
+        //     P,
+        //     S,
+        //     M,
+        //     T,
+        //     T * 2
+        // );
+
+        // IAuction auction = IAuction(auctionAddr);
+
+        // auction.ask(124);
+
+        // emit AuctionStarted(
+        //     tokenS,
+        //     auctionAddr
+        // );
     }
 }

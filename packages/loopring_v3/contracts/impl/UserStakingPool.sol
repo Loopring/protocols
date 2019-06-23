@@ -16,12 +16,12 @@
 */
 pragma solidity 0.5.7;
 
-import "./libstaking/UserStakingPoolAuction.sol";
+import "./libstaking/UserStakingPoolAdmin.sol";
+
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-/// @author Brecht Devos - <brecht@loopring.org>
-contract UserStakingPool is UserStakingPoolAuction
+contract UserStakingPool is UserStakingPoolAdmin
 {
     constructor(
         address _lrcAddress,
@@ -33,6 +33,8 @@ contract UserStakingPool is UserStakingPoolAuction
         require(_oedaxAddress != address(0), "ZERO_ADDRESS");
 
         owner = msg.sender;
+        allowOwnerWithdrawal = true;
+
         lrcAddress = _lrcAddress;
         oedaxAddress = _oedaxAddress;
     }

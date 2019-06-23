@@ -37,11 +37,7 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 
 ## Build
 
-```
-./install
-
-npm run compile
-```
+`npm run build // first time` or `npm run compile` or `npm run watch`.
 
 ### Circuits
 
