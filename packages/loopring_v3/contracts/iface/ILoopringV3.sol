@@ -89,7 +89,7 @@ contract ILoopringV3
     uint8   public minProtocolMakerFeeBips;
     uint8   public maxProtocolMakerFeeBips;
     uint    public targetProtocolTakerFeeStake;
-    uint    public targetProtocolMakerFeeStake= 0;
+    uint    public targetProtocolMakerFeeStake;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
