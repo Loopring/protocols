@@ -20,9 +20,28 @@ pragma solidity 0.5.7;
 /// @title IProtocolFeeManager
 contract IProtocolFeeManager
 {
+    uint public constant REWARD_PERCENTAGE      = 70;
+    uint public constant DEVPOOL_PERDENTAGE        = 10;
+    
     address public userStakingPoolAddress;
     address public lrcAddress;
     address public oedaxAddress;
+
+    uint claimedReward;
+    uint claimedDev;
+    uint claimedBurn;
+
+    bool allowOwnerWithdrawal;
+
+    event OwnerWithdrawal(address token, uint amount);
+    event LRCDrained(uint burnedAmount, uint devAmount);
+
+    function claim(
+        uint    amount
+        )
+        external
+        // onlyUserStakingPool
+        ;
 
     function getLRCFeeStats()
         public
@@ -30,11 +49,53 @@ contract IProtocolFeeManager
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,
-            uint accumulatedReward,
             uint accumulatedDev,
+            uint accumulatedReward,
             uint remainingFees,
             uint remainingBurn,
-            uint remainingReward,
-            uint remainingDev
+            uint remainingDev,
+            uint remainingReward
+        );
+
+    function setOedax(address _oedaxAddress)
+        external
+        // onlyOwner
+        ;
+
+    function permanentlyDisableOwnerWithdrawal()
+        external
+        // onlyOwner
+        ;
+
+    function ownerWithdraw(
+        address token,
+        uint    amount
+        )
+        external
+        // onlyOwner
+        ;
+
+    function drainAndBurn()
+        external
+        // onlyOwner
+        ;
+
+  function settleAuction(address auction)
+        external
+        // onlyOwner
+        ;
+
+    function auctionOffTokens(
+        address tokenS,
+        bool    sellForEther,
+        uint64  ,//P,
+        uint64  ,//S,
+        uint8   ,//M,
+        uint    //T
+        )
+        external
+        // onlyOwner
+        returns (
+            address payable auctionAddr
         );
 }

@@ -69,27 +69,27 @@ contract ILoopringV3
     }
     Exchange[] public exchanges;
 
-    uint    public totalStake                                       = 0;
+    uint    public totalStake;
 
-    address public lrcAddress                                       = address(0);
-    address public wethAddress                                      = address(0);
-    address public exchangeDeployerAddress                          = address(0);
-    address public blockVerifierAddress                             = address(0);
-    uint    public exchangeCreationCostLRC                          = 0;
-    uint    public maxWithdrawalFee                                 = 0;
-    uint    public downtimePriceLRCPerMinute                        = 0;
-    uint    public withdrawalFineLRC                                = 0;
-    uint    public tokenRegistrationFeeLRCBase                      = 0;
-    uint    public tokenRegistrationFeeLRCDelta                     = 0;
-    uint    public minExchangeStakeWithDataAvailability             = 0;
-    uint    public minExchangeStakeWithoutDataAvailability          = 0;
-    uint    public revertFineLRC                                    = 0;
-    uint8   public minProtocolTakerFeeBips                          = 0;
-    uint8   public maxProtocolTakerFeeBips                          = 0;
-    uint8   public minProtocolMakerFeeBips                          = 0;
-    uint8   public maxProtocolMakerFeeBips                          = 0;
-    uint    public targetProtocolTakerFeeStake                      = 0;
-    uint    public targetProtocolMakerFeeStake                      = 0;
+    address public lrcAddress;
+    address public wethAddress;
+    address public exchangeDeployerAddress;
+    address public blockVerifierAddress;
+    uint    public exchangeCreationCostLRC;
+    uint    public maxWithdrawalFee;
+    uint    public downtimePriceLRCPerMinute;
+    uint    public withdrawalFineLRC;
+    uint    public tokenRegistrationFeeLRCBase;
+    uint    public tokenRegistrationFeeLRCDelta;
+    uint    public minExchangeStakeWithDataAvailability;
+    uint    public minExchangeStakeWithoutDataAvailability;
+    uint    public revertFineLRC;
+    uint8   public minProtocolTakerFeeBips;
+    uint8   public maxProtocolTakerFeeBips;
+    uint8   public minProtocolMakerFeeBips;
+    uint8   public maxProtocolMakerFeeBips;
+    uint    public targetProtocolTakerFeeStake;
+    uint    public targetProtocolMakerFeeStake= 0;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
