@@ -21,7 +21,7 @@ pragma solidity 0.5.7;
 contract IProtocolFeeManager
 {
     uint public constant REWARD_PERCENTAGE      = 70;
-    uint public constant DEVPOOL_PERDENTAGE        = 10;
+    uint public constant DEVPOOL_PERDENTAGE     = 10;
     
     address public userStakingPoolAddress;
     address public lrcAddress;
@@ -36,13 +36,23 @@ contract IProtocolFeeManager
     event OwnerWithdrawal(address token, uint amount);
     event LRCDrained(uint burnedAmount, uint devAmount);
 
-    function claim(
-        uint    amount
-        )
-        external
-        // onlyUserStakingPool
-        ;
+    /// @dev Claim LRC as staking reward to the IUserStakingPool contract.
+    ///
+    ///      Note that this function can only be called by
+    ///      the IUserStakingPool contract.
+    ///
+    /// @param amount The amount of LRC to be claimed.
+    function claim(uint amount ) external;
 
+    /// @dev Returns some global stats regarding fees.
+    /// @return accumulatedFees The accumulated amount of LRC protocol fees.
+    /// @return accumulatedDev The accumulated amount of LRC to burn.
+    /// @return accumulatedBurn The accumulated amount of LRC as developer pool.
+    /// @return accumulatedReward The accumulated amount of LRC as staking reward.
+    /// @return remainingFees The remaining amount of LRC protocol fees.
+    /// @return remainingBurn The remaining amount of LRC to burn.
+    /// @return remainingDev The remaining amount of LRC as developer pool.
+    /// @return remainingReward The remaining amount of LRC as staking reward.
     function getLRCFeeStats()
         public
         view
@@ -57,34 +67,24 @@ contract IProtocolFeeManager
             uint remainingReward
         );
 
-    function setOedax(address _oedaxAddress)
-        external
-        // onlyOwner
-        ;
+    /// @dev Set Oedax address, only callable by the owner.
+    /// @param _oedaxAddress The address of Oedax contract.
+    function setOedax(address _oedaxAddress) external;
 
-    function permanentlyDisableOwnerWithdrawal()
-        external
-        // onlyOwner
-        ;
+    /// @dev Permanently disallow owner to withdraw non-LRC protocol fees, only callable by the owner.
+    function disableOwnerWithdrawaldisableOwnerWithdrawal() external;
 
-    function ownerWithdraw(
+    /// @dev Withdraw non-LRC protocol fees to owner's address, only callable by the owner.
+    /// @param token The token to be withdrawn
+    /// @param amount The amount of token to withdraw.
+    function withdraw(
         address token,
         uint    amount
         )
         external
-        // onlyOwner
         ;
 
-    function drainAndBurn()
-        external
-        // onlyOwner
-        ;
-
-  function settleAuction(address auction)
-        external
-        // onlyOwner
-        ;
-
+    /// @dev Sell a non-LRC token or Ether to LRC, only callable by the owner.
     function auctionOffTokens(
         address tokenS,
         bool    sellForEther,
@@ -94,8 +94,15 @@ contract IProtocolFeeManager
         uint    //T
         )
         external
-        // onlyOwner
         returns (
             address payable auctionAddr
         );
+
+    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC,
+    ///      only callable by the owner.
+    function withdrawDevPoolAndBurn() external;
+
+    /// @dev settle a closed Oedax auction, 
+    function settleAuction(address auction) external;
+
 }

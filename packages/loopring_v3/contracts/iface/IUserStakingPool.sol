@@ -40,17 +40,24 @@ contract IUserStakingPool
     event LRCWithdrawn(address user, uint amount);
     event LRCRewarded (address user, uint amount);
 
-
+    /// @dev Set a new IProtocolFeeManager address, only callable by the owner.
+    /// @param _pfmAddress The new IProtocolFeeManager address.
     function setProtocolFeeManager(address _pfmAddress)
         external
-        // onlyOwner
         ;
 
+    /// @dev Return the total number of LRC staked.
     function getTotalStaking()
         external
         view
         returns (uint);
 
+    /// @dev Return information related to a specific user.
+    /// @param user The user address.
+    /// @return withdrawalWaitTime Time in seconds that the user has to wait before any LRC can be withdrawn.
+    /// @return rewardWaitTime Time in seconds that the user has to wait before any LRC reward can be claimed.
+    /// @return stakeAmount The amount of LRC staked.
+    /// @return claimableReward The amount of LRC reward waiting to be claimed.
     function getUserStaking(address user)
         view
         external
@@ -58,16 +65,24 @@ contract IUserStakingPool
             uint withdrawalWaitTime,
             uint rewardWaitTime,
             uint stakeAmount,
-            uint outstandingReward
+            uint claimableReward
         );
 
-    function deposit(uint amount)
+    /// @dev Users call this function stake certain amount of LRC.
+    ///      Note that transfering LRC directly to this contract will lost those LRC!!!
+    /// @param amount The amount of LRC to stake.
+    function stake(uint amount)
         external;
 
+    /// @dev Users call this funciton to withdraw staked LRC.
+    /// @param amount The amount of LRC to withdraw.
     function withdraw(uint amount)
         external;
 
+    /// @dev Users call this funciton to claim all his/her LRC reward. The claimed LRC
+    ///      will be staked again automatically.
+    /// @param claimedAmount The amount of LRC claimed.
     function claim()
         external
-        returns (uint claimed);
+        returns (uint claimedAmount);
 }

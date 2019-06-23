@@ -58,7 +58,6 @@ contract IAuction {
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 {
-
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -127,15 +126,17 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         oedaxAddress = _oedaxAddress;
     }
 
-    function permanentlyDisableOwnerWithdrawal()
+    function disableOwnerWithdrawal()
         external
         onlyOwner
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
+        require(oedaxAddress != address(0x0), "OEDAX_ADDRESS_ZERO");
+
         allowOwnerWithdrawal = false;
     }
 
-    function ownerWithdraw(
+    function withdraw(
         address token,
         uint    amount
         )
@@ -155,10 +156,8 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         emit OwnerWithdrawal(token, amount);
     }
 
-
-    function drainAndBurn()
+    function withdrawDevPoolAndBurn()
         external
-        onlyOwner 
     {
         uint remainingBurn;
         uint remainingDev;
@@ -177,9 +176,8 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         emit LRCDrained(remainingBurn, remainingDev);
     }
 
-  function settleAuction(address auction)
+   function settleAuction(address auction)
         external
-        onlyOwner
     {
         require(auction != address(0), "ZERO_ADDRESS");
         IAuction(auction).settle();

@@ -79,16 +79,16 @@ contract UserStakingPool is IUserStakingPool, Claimable
             uint withdrawalWaitTime,
             uint rewardWaitTime,
             uint stakeAmount,
-            uint outstandingReward
+            uint claimableReward
         )
     {
         withdrawalWaitTime = userWithdrawalWaitTime(user);
-        rewardWaitTime = userRewardWaitTime(user);
+        rewardWaitTime = userClaimWaitTime(user);
         stakeAmount = users[user].stake;
-        outstandingReward = userOutstandingReward(user);
+        (, , claimableReward) = userOutstandingReward(user);
     }
 
-    function deposit(uint amount)
+    function stake(uint amount)
         external
     {
         require(amount > 0, "ZERO_VALUE");
@@ -166,35 +166,27 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function claim()
         external
-        returns (uint claimed)
+        returns (uint claimedAmount)
     {
-        require(userRewardWaitTime(msg.sender) == 0);
+        require(userClaimWaitTime(msg.sender) == 0);
 
-        Stake storage user = users[msg.sender];
+        uint totalPoints;
+        uint userPoints;
 
-        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
-        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
+        (totalPoints, userPoints, claimedAmount) = userOutstandingReward(msg.sender);
 
-        assert(totalPoints > 0);
+        IProtocolFeeManager(pfmAddress).claim(claimedAmount);
 
-        IProtocolFeeManager pfm = IProtocolFeeManager(pfmAddress);
-
-        uint remainingReward;
-        (, , , , , , , remainingReward) = pfm.getLRCFeeStats();
-
-        claimed = remainingReward.mul(userPoints) / totalPoints;
-
-        pfm.claim(claimed);
-
-        total.stake = total.stake.add(claimed);
-        total.claimedReward = total.claimedReward.add(claimed);
+        total.stake = total.stake.add(claimedAmount);
+        total.claimedReward = total.claimedReward.add(claimedAmount);
         total.claimedAt = totalPoints.sub(userPoints) / total.stake;
 
-        user.stake = user.stake.add(claimed);
-        user.claimedReward = user.claimedReward.add(claimed);
+        Stake storage user = users[msg.sender];
+        user.stake = user.stake.add(claimedAmount);
+        user.claimedReward = user.claimedReward.add(claimedAmount);
         user.claimedAt = now;
 
-        emit LRCRewarded(msg.sender, claimed);
+        emit LRCRewarded(msg.sender, claimedAmount);
     }
 
     // -- Private Function --
@@ -208,7 +200,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
     }
 
-    function userRewardWaitTime(address user)
+    function userClaimWaitTime(address user)
         view
         private
         returns (uint minutes_)
@@ -220,21 +212,20 @@ contract UserStakingPool is IUserStakingPool, Claimable
     function userOutstandingReward(address userAddress)
         view
         private
-        returns (uint)
+        returns (
+            uint userPoints,
+            uint totalPoints,
+            uint outstandindReward
+        )
     {
         Stake storage user = users[userAddress];
 
-        uint totalPoints = total.stake.mul(now.sub(total.claimedAt));
-        uint userPoints = user.stake.mul(now.sub(user.claimedAt));
+        totalPoints = total.stake.mul(now.sub(total.claimedAt));
+        userPoints = user.stake.mul(now.sub(user.claimedAt));
 
-        if (totalPoints == 0 || userPoints == 0) {
-            return 0;
+        if (totalPoints != 0 && userPoints != 0) {
+            (, , , , , , , outstandindReward) = IProtocolFeeManager(pfmAddress).getLRCFeeStats();
+            outstandindReward = outstandindReward.mul(userPoints) / totalPoints;
         }
-
-        uint remainingReward;
-        (, , , , , , , remainingReward) = IProtocolFeeManager(pfmAddress).getLRCFeeStats();
-
-        return remainingReward.mul(userPoints) / totalPoints;
     }
-
 }
