@@ -183,15 +183,5 @@ contract IUserStakingPool
         // onlyOwner
         ;
 
-    /// @dev Owner withdraw non-LRC tokens or Ether. This method will be disable
-    ///      once `permanentlyDisableOwnerWithdrawal` is called after auction has been tested.
-    /// @param token Tokens to withdraw, 0x0 for Ether.
-    /// @param amount The amount of token/ether to withdraw.
-    function ownerWithdraw(
-        address token,
-        uint    amount
-        )
-        external
-        // onlyOwner
-        ;
+
 }
