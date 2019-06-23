@@ -1,0 +1,106 @@
+/*
+ * Copyright 2018 Loopring Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+option java_multiple_files = true;
+package io.lightcone.data.order;
+
+import "data_types.proto";
+
+// new fee model
+message TokenAmounts {
+    types.Amount            amount_s                    = 1;
+    types.Amount            amount_b                    = 2;
+}
+
+// old fee model
+//message TokenAmounts {
+//    types.Amount            amount_s                    = 1;
+//    types.Amount            amount_b                    = 2;
+//    types.Amount            amount_f                    = 3;
+//}
+
+// new fee model
+message Order {
+    uint32                  exchange_id                 = 1;
+    types.OrderID           order_id                    = 2;
+    types.AccountID         account_id                  = 3;
+    types.TokenID           token_s                     = 5;
+    types.TokenID           token_b                     = 6;
+    TokenAmounts            amounts                     = 8;
+    types.Bips              max_fee                     = 9;
+    types.Bips              fee                         = 10;
+    types.Bips              rebate                      = 11;
+    bool                    all_or_none                 = 12;
+    uint64                  valid_since                 = 13;
+    uint64                  valid_until                 = 14;
+    bool                    buy                         = 15;
+
+    types.EdDSAPubKey       trading_pub_key             = 16;
+    types.EdDSAPubKey       dual_auth_pub_key           = 17;
+    types.EdDSAPrivKey      dual_auth_priv_key          = 18;
+    types.EdDSASignature    trading_sig                 = 19;
+}
+
+// old fee model
+//message Order {
+//    uint32                  exchange_id                 = 1;
+//    types.OrderID           order_id                    = 2;
+//    types.AccountID         account_id                  = 3;
+//    types.AccountID         wallet_id                   = 4;
+//    types.TokenID           token_s                     = 5;
+//    types.TokenID           token_b                     = 6;
+//    types.TokenID           token_f                     = 7;
+//    TokenAmounts            amounts                     = 8;
+//    types.Percentage        wallet_split                = 9;
+//    types.Percentage        waive_fee                   = 10;
+//    bool                    all_or_none                 = 11;
+//    uint64                  valid_since                 = 12;
+//    uint64                  valid_until                 = 13;
+//
+//    types.EdDSAPubKey       trading_pub_key             = 14;
+//    types.EdDSAPubKey       dual_auth_pub_key           = 15;
+//    types.EdDSAPrivKey      dual_auth_priv_key          = 16;
+//    types.EdDSASignature    trading_sig                 = 17;
+//}
+
+message Fill {
+    types.AccountID         account_id                  = 1;
+    types.OrderID           order_id                    = 2;
+    bool                    is_sell                     = 3;
+    double                  price                       = 4;
+    types.Amount            amount_base_token           = 5;
+    types.Amount            amount_quote_token          = 6;
+    uint64                  timestamp                   = 7;
+    bool                    deprecated                  = 8;
+}
+
+message FillData {
+    uint64                  sequence_id                 = 1;
+    types.AccountID         account_id                  = 2;
+    types.OrderID           order_id                    = 3;
+    uint64                  settlement_request_id       = 4;
+    types.TokenID           token_s                     = 5;
+    types.TokenID           token_b                     = 6;
+    bool                    is_sell                     = 7;
+    double                  price                       = 8;
+    types.Amount            estimate_amount_base_token  = 9;
+    types.Amount            estimate_amount_quote_token = 10;
+    types.Amount            actual_amount_base_token    = 11;
+    types.Amount            actual_amount_quote_token   = 12;
+    uint64                  created_at                  = 13;
+    uint64                  updated_at                  = 14;
+}

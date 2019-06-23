@@ -1,0 +1,57 @@
+{
+  "name": "loopr-app-sdk",
+  "version": "1.0.0",
+  "description": "Loopring javascript library for Lightcone 2.0",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "build:proto": "rimraf proto_gen && mkdir proto_gen && node lib/grpc/proto",
+    "lint": "tslint --project tsconfig.json ./src/**/*.ts",
+    "test": "mocha -r ts-node/register src/**/*.spec.ts"
+  },
+  "keywords": [
+    "ethereum",
+    "zksnark",
+    "grpc"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Loopring/loopr-app-sdk.git"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "async-validator": "1.8.2",
+    "bip39": "2.5.0",
+    "blake-hash": "^1.1.0",
+    "bn.js": "^4.11.8",
+    "ethereumjs-abi": "0.6.5",
+    "ethereumjs-tx": "1.3.3",
+    "ethereumjs-util": "5.2.0",
+    "ethereumjs-wallet": "0.6.0",
+    "google-protobuf": "^3.6.1",
+    "grpc": "^1.17.0",
+    "hdkey": "0.7.1",
+    "nodeunit": "^0.11.3",
+    "snarkjs": "0.1.11",
+    "socket.io-client": "2.0.4",
+    "web3": "^1.0.0-beta.36"
+  },
+  "devDependencies": {
+    "@types/google-protobuf": "^3.2.7",
+    "@types/node": "9.3.0",
+    "chai": "^4.2.0",
+    "grpc-tools": "^1.6.6",
+    "grpc_tools_node_protoc_ts": "^2.5.3",
+    "mocha": "^5.2.0",
+    "node": "8.11.3",
+    "npm": "^6.9.0",
+    "protobufjs": "^6.8.8",
+    "rimraf": "^2.6.2",
+    "shelljs": "^0.8.3",
+    "tslint": "^5.12.0",
+    "types-bn": "0.0.1",
+    "typescript": "^3.2.2"
+  }
+}
