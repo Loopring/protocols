@@ -1,0 +1,231 @@
+
+/*
+ * Copyright 2018 Loopring Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+option java_multiple_files = true;
+package io.lightcone.data.types;
+
+
+message AccountID {
+    uint32 value = 1;
+}
+
+message TokenID {
+    uint32 value = 1;
+}
+
+message OrderID {
+    uint32 value = 1;
+}
+
+message Amount {
+    bytes  value = 1;
+}
+
+message Address {
+    string value = 1;
+}
+
+message TxData {
+    string value = 1;
+}
+
+message Nonce {
+    uint32 value = 1;
+}
+
+message Bips {
+    uint32 value = 1;
+}
+
+message Percentage {
+    int32  value = 1;
+}
+
+message MiMCHash {
+    bytes  value = 1;
+}
+
+message SHA256Hash {
+    bytes  value = 1;
+}
+
+message Proof {
+    repeated types.MiMCHash data = 1;
+    uint64   cost_seconds        = 2;
+}
+
+message EdDSAPrivKey {
+    bytes value = 1;
+}
+
+message EdDSAPubKey {
+    bytes x = 1;
+    bytes y = 2;
+}
+
+message EdDSASignature {
+    bytes rx = 1;  // 256bit
+    bytes ry = 2;  // 256bit
+    bytes s  = 3;  // 256bit
+}
+
+message CursorPaging {
+    uint32  num     = 1;
+    uint64  cursor  = 2;
+}
+
+message Account {
+    Address     owner                               = 1;
+    EdDSAPubKey pub_key                             = 2;
+}
+
+message TokenMetadata {
+    enum Type {
+        TOKEN_TYPE_ERC20       = 0;
+        TOKEN_TYPE_ETH         = 1;
+    }
+
+    Type     type                   = 1;
+    string   symbol                 = 2;
+    string   name                   = 3;
+    string   address                = 4;
+    string   unit                   = 5;
+    int32    decimals               = 6;
+    int32    precision              = 7;
+    int64    updated_at             = 8;
+    TokenID  token_id               = 9;  // token id in merkle tree
+    bool     deposit_enabled        = 10;
+}
+
+message TokenInfo {
+    string   symbol                 = 1;
+    int64    circulating_supply     = 2;
+    int64    total_supply           = 3;
+    int64    max_supply             = 4;
+    int32    cmc_rank               = 5;
+    double   ico_rate_with_eth      = 6;
+    string   website_url            = 7;
+    int64    updated_at             = 8;
+}
+
+message TokenTicker {
+    TokenID token_id = 1;  // token address
+    double price = 2; // price of current currency
+    double volume_24h = 3; // volume of current currency
+    double percent_change_1h = 4;
+    double percent_change_24h = 5;
+    double percent_change_7d = 6;
+}
+
+message Token {
+    TokenMetadata metadata = 1;
+    TokenInfo     info     = 2;
+    TokenTicker   ticker   = 3;
+}
+
+message MarketMetadata {
+    enum Status {
+        TERMINATED                  = 0;
+        ACTIVE                      = 1;
+        READONLY                    = 2;
+    }
+
+    Status status                               = 1;
+    string quote_token_symbol                   = 2;
+    string base_token_symbol                    = 3;
+    int32  max_numbers_of_orders                = 4;
+    int32  price_decimals                       = 5;
+    int32  orderbook_agg_levels                 = 6;
+    int32  precision_for_amount                 = 7;
+    int32  precision_for_total                  = 8;
+    bool   browsable_in_wallet                  = 9;
+    int64  updated_at                           = 10;
+
+    uint64 market_id                            = 20; // computed
+    string market_hash                          = 21; // computed
+}
+
+message MarketTicker {
+    string base_token = 1;  // base token address
+    string quote_token = 2; // quote token address
+    double exchange_rate = 3; // exchange rate for base token to quote token
+    double price = 4; // price of quote currency
+    double volume_24h = 5; // volume of quote token
+    double percent_change_1h = 6;
+    double percent_change_24h = 7;
+    double percent_change_7d = 8;
+}
+
+message Market {
+    MarketMetadata metadata = 1;
+    MarketTicker   ticker   = 2;
+}
+
+enum Interval {
+    OHCL_INTERVAL_INVALID            = 0; // don't use it
+    OHLC_INTERVAL_ONE_MINUTES        = 60;
+    OHLC_INTERVAL_FIVE_MINUTES       = 300;
+    OHLC_INTERVAL_FIFTEEN_MINUTES    = 900;
+    OHLC_INTERVAL_THIRTY_MINUTES     = 1800;
+    OHLC_INTERVAL_ONE_HOUR           = 3600;
+    OHLC_INTERVAL_TWO_HOURS          = 7200;
+    OHLC_INTERVAL_FOUR_HOURS         = 14400;
+    OHLC_INTERVAL_TWELVE_HOURS       = 43200;
+    OHLC_INTERVAL_ONE_DAY            = 86400;
+    OHLC_INTERVAL_THREE_DAYS         = 259200;
+    OHLC_INTERVAL_FIVE_DAYS          = 432000;
+    OHLC_INTERVAL_ONE_WEEK           = 604800;
+}
+
+enum ErrorCode{
+    ERR_NONE                = 0;
+    ERR_INTERNAL_UNKNOWN    = 1;
+    ERR_INVALID_ARGUMENT    = 2;
+
+    //1001 -- 2000 ethereum Error
+    ERR_ETHEREUM_ILLEGAL_ADDRESS        = 1001;
+    ERR_NO_ACCESSIBLE_ETHEREUM_NODE     = 1002;
+    ERR_UNEXPECTED_RESPONSE             = 1003;
+    ERR_INVALID_SIG                     = 1004;
+
+    //2001 -- 3000 Block Error
+    ERR_BLOCK_UNRECOGNIZED_TYPE         = 2001;
+    ERR_COMMITTER_NOT_READY             = 2002;
+
+    //3001 -- 4000 persistence Error
+    ERR_PERSISTENCE_INVALID_DATA        = 3001;
+    ERR_PERSISTENCE_DUPLICATE_INSERT    = 3002;
+    ERR_PERSISTENCE_UPDATE_FAILED       = 3003;
+    ERR_PERSISTENCE_INTERNAL            = 3004;
+
+}
+
+message Error {
+    ErrorCode code = 1;
+    string message = 2;
+}
+
+enum OrderStatus {
+    STATUS_NEW                      = 0;
+    STATUS_PENDING                  = 1;
+    STATUS_EXPIRED                  = 2;
+    STATUS_COMPLETELY_FILLED        = 4;
+    STATUS_PARTIALLY_FILLED         = 5;
+    STATUS_ONCHAIN_CANCELLED        = 6;
+    STATUS_SOFT_CANCELLED           = 7;
+}

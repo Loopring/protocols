@@ -8,8 +8,7 @@
   "license": "MIT",
   "private": true,
   "workspaces": [
-    "packages/*",
-    "packages/loopring_v2.js/packages/*"
+    "packages/*"
   ],
   "scripts": {
     "lerna": "lerna",

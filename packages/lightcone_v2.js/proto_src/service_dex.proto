@@ -1,0 +1,338 @@
+/*
+ * Copyright 2018 Loopring Foundation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+syntax = "proto3";
+option java_multiple_files = true;
+package io.lightcone.data.dex;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
+
+import "data_order.proto";
+import "data_requests.proto";
+import "data_types.proto";
+
+/*
+    We use `string` to represent amounts in two forms:
+    1) full decimal string (FDS), i.e., "124567000000000000000"
+    2) double value string (DVS), i.e., "123.45600"
+*/
+
+message DexConfigurations {
+    uint64 dex_id = 1;
+    string dex_address = 2;
+    string deposit_fee_eth = 3; // FDS
+    string onchain_withdrawal_fee_eth = 4; // FDS
+    types.TokenID offchain_withdrawal_fee_token_id = 5; // 前端无需设计展示，以withdraw token为准
+    string offchain_withdrawal_fee_amount = 6; // FDS
+    string order_cancellation_fee_eth = 7; // FDS
+    bool in_maintainance = 8;
+}
+
+message TokenInfo {
+    uint32 id = 1;
+    string symbol = 2;
+    string address = 3;
+    uint32 decimals = 4;
+    string status = 5;
+}
+
+message GetTokensReq {
+    bool require_metadata = 1;
+    bool require_info = 2;
+    bool require_price = 3;
+    string quote_currency_for_price = 4; // USD, CNY
+    repeated string tokens = 5; // addresses
+}
+
+message GetTokensRes {
+    repeated types.Token tokens = 1;
+}
+
+message GetMarketsReq {
+    bool require_metadata = 1;
+    bool require_ticker = 2;
+    bool query_loopring_ticker = 3;
+    string quote_currency_for_ticker = 4;  // USD, RMB
+    repeated uint64 market_id = 5; // empty for query all
+}
+
+message GetMarketsRes {
+    repeated types.Market markets = 1;
+}
+
+message TokenBalance {
+    uint32 id              = 1;
+    string balance         = 2; // FDS
+    string order_frozen    = 3; // FDS
+    string withdraw_frozen = 4; // FDS  TODO: yangli
+}
+
+message Account {
+    string address                  = 1;
+    types.AccountID account_id = 2;
+    repeated TokenBalance balances  = 3;
+}
+
+message GetAvailableBalanceReq {
+    uint64 account_id = 1;
+    repeated string token_addresses = 2;
+}
+
+message GetAvailableBalanceRes {
+    repeated TokenBalance available_balances = 1;
+}
+
+message Order {
+    uint64 uuid = 1;
+    bool is_sell = 2;
+    types.TokenID base_token_id = 3;
+    string base_amount = 4; // DVS
+    string base_fill_amount = 5; // DVS
+    string quote_symbol = 6;
+    string quote_amount = 7; // DVS
+    string quote_fill_amount = 8; // DVS
+    types.OrderStatus status = 9;
+    uint64 submitted_at = 10;
+    uint64 processed_at = 11;
+}
+
+message GetUserOrdersReq {
+    uint64 account_id = 1;
+    string base_token_id = 2;
+    string quote_token_id = 3;
+    types.CursorPaging paging = 4;
+    repeated string statuses = 5;
+}
+
+message GetUserOrdersRes {
+    repeated Order orders = 1;
+}
+
+message Fill {
+    uint64 uuid = 1;
+    uint64 order_uuid = 2;
+    bool is_taker = 3;
+    bool is_sell = 4;
+    types.TokenID base_token_id = 5;
+    string base_fill_amount = 6; // DVS
+    types.TokenID quote_token_id = 7;
+    string quote_fill_amount = 8; // DVS
+    uint64 timestamp = 9;
+}
+
+message MarketTicker {
+    types.TokenID base_token_id = 1;  // base token id
+    types.TokenID quote_token_id = 2; // quote token id
+    double exchange_rate = 3; // exchange rate for base token to quote token
+    double price = 4; // price of quote currency
+    double volume_24h = 5; // volume of quote token
+    double percent_change_1h = 6;
+    double percent_change_24h = 7;
+    double percent_change_7d = 8;
+}
+
+// TODO: check with yadong
+message UserTransaction {
+    uint64 request_id = 1;
+    uint64 account_id = 2;
+    uint32 token_id = 3;
+    string amount = 4; // DVS
+    uint64 submitted_at = 5;
+    uint64 updated_at = 6;
+    string status = 7;
+    string transaction_type = 8; // `deposit`, `withdrawal` or `transfer`
+}
+
+message GetUserFillsReq {
+    uint64 account_id = 1;
+    uint64 order_uuid = 2;
+    types.CursorPaging paging = 3;
+}
+
+message GetMarketFillsReq {
+    uint64 market_id = 1; // 32bit base_token_id + 32bit quote_token_id
+    uint32 num = 2;
+}
+
+message GetFillsRes {
+    repeated Fill fills = 1;
+}
+
+message OrderBook {
+    message Item {
+        string price = 1; // DVS
+        string base_amount = 2; // DVS
+        string quote_amount = 3; // DVS
+    }
+
+    message Update {
+        int32 level = 1;
+        repeated Item sells = 2;
+        repeated Item buys = 3;
+        double latest_price = 4;
+        uint64 market_id = 5; // 32bit base_token_id + 32bit quote_token_id
+    }
+
+    string last_price = 1; // DVS
+    string last_price_fiat = 2; // DVS
+    repeated Item sells = 3;
+    repeated Item buys = 4;
+    types.TokenID base_token_id = 5;
+    types.TokenID quote_token_id = 6;
+}
+
+message GetOrderBookReq {
+    uint64 market_id = 1; // 32bit base_token_id + 32bit quote_token_id
+    uint32 aggregation_level = 2;
+    string fiat_symbol = 3;
+}
+
+/*
+message OHLCData {
+    repeated  double  data      = 1;
+    int64    starting_point     = 2;
+    double     quality          = 3;
+    double     amount           = 4;
+    double     opening_price    = 5;
+    double     closing_price    = 6;
+    double     highest_price    = 7;
+    double     lowest_price     = 8;
+}
+*/
+message Candles {
+    message OHLC {
+        repeated double ohlc = 1;
+    }
+    repeated OHLC data = 1;
+}
+
+message GetCandlesReq {
+    uint64 market_id          = 1; // 32bit base_token_id + 32bit quote_token_id
+    types.Interval interval   = 2;
+    types.CursorPaging paging = 3;
+}
+
+message GetUserTransactionsReq {
+    uint64 account_id = 1;
+    uint32 token_id = 2;
+    string transaction_type = 3; // `deposit`, `withdrawal`, `transfer`, or "both"
+    types.CursorPaging paging = 4;
+}
+
+message GetUserTransactionsRes {
+    repeated UserTransaction transactions = 1;
+}
+
+message GetNextOrderIdReq {
+    uint64 account_id = 1;
+    uint32 token_sell_id = 2;
+}
+
+message SubmitOrderRes {
+    uint64 order_uuid = 1;
+}
+
+message CancelOrderRes {
+    repeated uint64 order_uuids = 1;
+}
+
+message OffchainWithdrawalalRes {
+    uint64 withdrwal_uuid = 1;
+}
+
+message SimpleOrderCancellationReq {
+    uint32 exchange_id  = 1;
+    uint64 account_id   = 2;
+    uint64 order_uuid   = 3;
+    uint64 market_id    = 4; // 32 + 32
+    uint64 timestamp    = 5;
+    string sig          = 6;
+}
+
+// Error handling: https://github.com/avinassh/grpc-errors
+service DexService {
+    // queries
+    rpc getDexConfigurations (google.protobuf.Empty) returns (DexConfigurations);
+
+    rpc getTokens (GetTokensReq)  returns (GetTokensRes);
+
+    rpc getMarkets (GetMarketsReq) returns (GetMarketsRes);
+    rpc getMarketFills (GetMarketFillsReq) returns (GetFillsRes);
+    rpc getOrderBook (GetOrderBookReq) returns (OrderBook);
+    rpc getCandles (GetCandlesReq) returns (Candles);
+
+    rpc getAccount (google.protobuf.StringValue) returns (Account);
+
+    rpc getUserOrders (GetUserOrdersReq) returns (GetUserOrdersRes);
+    rpc getUserFills (GetUserFillsReq) returns (GetFillsRes);
+    rpc getUserTransfers (GetUserTransactionsReq) returns (GetUserTransactionsRes);
+    rpc getNextOrderId (GetNextOrderIdReq) returns (google.protobuf.UInt32Value);
+
+    rpc getNonce (google.protobuf.UInt32Value) returns (google.protobuf.UInt32Value);
+
+    // order operations
+    rpc submitOrder (data.order.Order) returns (SubmitOrderRes);
+
+    // Cancel orders by marking them obsoleted in database, not to be included in blocks.
+    rpc cancelOrder (SimpleOrderCancellationReq) returns (CancelOrderRes);
+
+    // Submit an offchain order cancellation request, will make into blocks.
+    rpc submitOrderCancellation (data.requests.OrderCancellationRequest) returns (CancelOrderRes);
+
+    // Submit an offchain withdrawal request, will make into blocks.
+    rpc submitOffchainWithdrawal (data.requests.OffchainWithdrawalRequest) returns (OffchainWithdrawalalRes);
+}
+
+message SocketIOSubscription {
+    message Ack {
+        types.Error error               = 1;
+    }
+
+    message ParamsForFills {
+        types.AccountID account_id      = 1;
+        uint64 market_id                = 2; // 32bit base_token_id + 32bit quote_token_id
+    }
+
+    message ParamsForInternalTickers {
+        uint64 market_id                = 1; // 32bit base_token_id + 32bit quote_token_id
+    }
+
+    // subscribe for message Orderbook.InternalUpdate defined in core.proto
+    message ParamsForOrderbook {
+        int32 level = 1;
+        uint64 market_id = 2; // 32bit base_token_id + 32bit quote_token_id
+    }
+
+    message ParamsForCandles {
+        uint64 market_id = 1; // 32bit base_token_id + 32bit quote_token_id
+        int64 begin_time = 2;
+        int64 end_time = 3;
+        types.Interval interval = 4;
+    }
+
+    message Notification {
+        OrderBook.Update orderbook                        = 1;
+        Candles candles                                   = 2;
+        Fill fill                                         = 3;
+        MarketTicker internal_ticker                      = 4;
+    }
+
+    ParamsForOrderbook params_for_orderbook               = 1;
+    ParamsForCandles params_for_candles                   = 2;
+    ParamsForFills params_for_fills                       = 3;
+    ParamsForInternalTickers params_for_internal_tickers  = 4;
+}
