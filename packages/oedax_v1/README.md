@@ -2,7 +2,7 @@
 
 ## Compile
 
-Run `npm run compile` or `npm run watch` for continuous build.
+`npm run build // first time` or `npm run compile` or `npm run watch`.
 
 ## Run Unit Tests
 - run *npm run ganache* from project's root directory in terminal.

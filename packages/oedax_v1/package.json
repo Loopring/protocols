@@ -1,7 +1,7 @@
 {
   "name": "oedax_v1",
   "version": "1.0.0",
-  "description": "",
+  "description": "Loopring Open-Ended Dutch Auction Protocol version 1.0",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -10,14 +10,25 @@
     "type": "git",
     "url": "git+http://github.com/Loopring/protocol.git"
   },
+  "watch": {
+    "compile": {
+      "patterns": [
+        "contracts"
+      ],
+      "extensions": "sol",
+      "delay": 10000
+    }
+  },
   "scripts": {
-    "test": "truffle test",
+    "watch": "npm-watch compile",
+    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
+    "pretest": "tslint --project .",
+    "test": "npm run transpile && truffle test",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
-    "testdocker": "truffle test --network docker",
+    "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",
-    "watch": "watch 'npm run compile' ./contracts",
     "build": "./install && yarn run compile",
-    "migrate": "truffle compile && truffle migrate",
+    "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
     "ganache": "./ganache.sh",
     "coverage": "./node_modules/.bin/solidity-coverage",
@@ -36,23 +47,25 @@
     "chai": "^4.2.0",
     "copyfiles": "^2.1.0",
     "dirty-chai": "^2.0.1",
-    "ganache-cli": "6.4.3",
+    "ganache-cli": "6.2.4",
     "mocha": "^5.2.0",
     "node": "8.11.3",
     "npm": "^6.9.0",
+    "npm-watch": "^0.6.0",
+    "solidity-coverage": "^0.5.11",
     "solium": "^1.2.4",
     "tslint": "5.11.0",
     "types-bn": "0.0.1",
     "typescript": "3.1.6",
-    "watch": "^1.0.2",
     "web3-typescript-typings": "0.10.2",
-    "webpack": "^4.29.6"
+    "webpack": "^4.35.0"
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
     "any-promise": "1.3.0",
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
+    "blake-hash": "^1.1.0",
     "bluebird": "^3.5.1",
     "bn.js": "^4.11.8",
     "braces": "^2.3.2",
@@ -63,7 +76,6 @@
     "estraverse": "^4.2.0",
     "esutils": "^2.0.2",
     "ethereumjs-abi": "^0.6.5",
-    "ethereumjs-tx": "^1.3.7",
     "ethereumjs-util": "^5.1.5",
     "event-emitter": "^0.3.5",
     "events": "^3.0.0",
@@ -72,9 +84,9 @@
     "protocol2-js": "^0.4.4",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
-    "solidity-coverage": "^0.5.11",
-    "truffle": "5.0.17",
+    "snarkjs": "0.1.11",
+    "truffle": "5.0.0",
     "truffle-hdwallet-provider": "web3-one",
-    "web3": "^1.0.0-beta.55"
+    "typedarray-to-buffer": "^3.1.5"
   }
 }

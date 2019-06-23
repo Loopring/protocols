@@ -25,7 +25,6 @@ import "../lib/Claimable.sol";
 ///      by authorizing it by the contract owner.
 contract Authorizable is Claimable
 {
-
     event AddressAuthorized(
         address indexed addr
     );
