@@ -59,7 +59,6 @@ contract UserStakingPool is IUserStakingPool, Claimable
         external
         onlyOwner
     {
-        require(pfmAddress == address(0), "PFM_SET_ALREADY");
         require(_pfmAddress != address(0), "ZERO_ADDRESS");
         pfmAddress = _pfmAddress;
     }
