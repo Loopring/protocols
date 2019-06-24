@@ -35,6 +35,7 @@ contract IProtocolFeeManager
 
     event OwnerWithdrawal(address token, uint amount);
     event LRCDrained(uint burnedAmount, uint devAmount);
+    event AuctionStarted(address tokenS, address tokenB, address payable auctionAddr);
 
     /// @dev Claim LRC as staking reward to the IUserStakingPool contract.
     ///
@@ -85,13 +86,26 @@ contract IProtocolFeeManager
         ;
 
     /// @dev Sell a non-LRC token or Ether to LRC, only callable by the owner.
+    /// @param token The token or ether (0x0) to sell.
+    /// @param amount THe amout of token/ether to sell.
+    /// @param sellForEther True if tokenB should be Ether,false if tokenB is LRC.
+    /// @param minAskAmount The minimum amount that can be used in an ask.
+    /// @param minBidAmount The minimum amount that can be used in a bid.
+    /// @param P Numerator part of the target price `p`.
+    /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
+    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
+    /// @param T The minimum auction duration in second, the maximam duration will be 2*T.
+    /// @return auctionAddr Auction address.
     function auctionOffTokens(
-        address tokenS,
+        address token,
+        uint    amount,
         bool    sellForEther,
-        uint64  ,//P,
-        uint64  ,//S,
-        uint8   ,//M,
-        uint    //T
+        uint    minAskAmount,
+        uint    minBidAmount,
+        uint64  P,
+        uint64  S,
+        uint8   M,
+        uint    T
         )
         external
         returns (

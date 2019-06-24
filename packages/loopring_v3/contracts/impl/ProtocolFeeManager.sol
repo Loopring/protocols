@@ -20,12 +20,24 @@ import "../iface/IProtocolFeeManager.sol";
 
 import "..//lib/Claimable.sol";
 import "../lib/BurnableERC20.sol";
+import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
 contract IOedax {
+
+    /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
+    /// @param bidToken The bid (quote) token.
+    /// @param minAskAmount The minimum ask amount.
+    /// @param minBidAmount The minimum bid amount.
+    /// @param P Numerator part of the target price `p`.
+    /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
+    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
+    /// @param T1 The maximum auction duration in second.
+    /// @param T2 The maximum auction duration in second.
+    /// @return auctionAddr Auction address.
     function createAuction(
         address askToken,
         address bidToken,
@@ -58,6 +70,7 @@ contract IAuction {
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 {
+    uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -183,48 +196,53 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         IAuction(auction).settle();
     }
 
-    // TODO(dongw): this method is not implementated.
     function auctionOffTokens(
-        address tokenS,
+        address token,
+        uint    amount,
         bool    sellForEther,
-        uint64  ,//P,
-        uint64  ,//S,
-        uint8   ,//M,
-        uint    //T
+        uint    minAskAmount,
+        uint    minBidAmount,
+        uint64  P,
+        uint64  S,
+        uint8   M,
+        uint    T
         )
         external
         onlyOwner
         returns (
-            address payable //auctionAddr
+            address payable auctionAddr
         )
     {
         require(oedaxAddress != address(0), "ZERO_ADDRESS");
-
+        require(amount > 0, "ZERO_AMOUNT");
         address tokenB = sellForEther ? address(0) : lrcAddress;
-        require(tokenS != tokenB, "SAME_TOKEN");
 
-        // IOedax oedax = IOedax(oedaxAddress);
-        // uint ethStake = oedax.creatorEtherStake();
+        IOedax oedax = IOedax(oedaxAddress);
+        uint ethStake = oedax.creatorEtherStake();
 
-        // auctionAddr = oedax.createAuction.value(ethStake)(
-        //     tokenS,
-        //     tokenB,
-        //     0,
-        //     0,
-        //     P,
-        //     S,
-        //     M,
-        //     T,
-        //     T * 2
-        // );
+        auctionAddr = oedax.createAuction.value(ethStake)(
+            token,  // askToken
+            tokenB, // bidToken
+            minAskAmount,
+            minBidAmount,
+            P,
+            S,
+            M,
+            T,
+            T * 2
+        );
 
-        // IAuction auction = IAuction(auctionAddr);
+        if (token == address(0)) {
+            auctionAddr.transfer(amount);
+        } else {
+            require(ERC20(token).approve(auctionAddr, amount), "AUTH_FAILED");
+            IAuction(auctionAddr).ask(amount);
+        }
 
-        // auction.ask(124);
-
-        // emit AuctionStarted(
-        //     tokenS,
-        //     auctionAddr
-        // );
+        emit AuctionStarted(
+            token,
+            tokenB,
+            auctionAddr
+        );
     }
 }
