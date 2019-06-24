@@ -20,6 +20,7 @@ import "../iface/IProtocolFeeManager.sol";
 
 import "..//lib/Claimable.sol";
 import "../lib/BurnableERC20.sol";
+import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
@@ -211,7 +212,6 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         )
     {
         require(oedaxAddress != address(0), "ZERO_ADDRESS");
-
         address tokenB = sellForEther ? address(0) : lrcAddress;
 
         IOedax oedax = IOedax(oedaxAddress);
@@ -229,10 +229,19 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
             T * 2
         );
 
-
         IAuction auction = IAuction(auctionAddr);
 
-        auction.ask(124);
+        if (token == address(0)) {
+            uint balance = address(this).balance;
+            require(balance > 0, "ZERO_BALANCE");
+            auctionAddr.transfer(balance);
+        } else {
+            ERC20 erc20 = ERC20(token);
+            uint balance = erc20.balanceOf(address(this));
+            require(balance > 0, "ZERO_BALANCE");
+            require(ERC20(token).approve(auctionAddr, balance), "AUTH_FAILED");
+            auction.ask(balance);
+        }
 
         emit AuctionStarted(
             token,
