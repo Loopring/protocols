@@ -241,6 +241,7 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 
         emit AuctionStarted(
             token,
+            tokenB,
             auctionAddr
         );
     }
