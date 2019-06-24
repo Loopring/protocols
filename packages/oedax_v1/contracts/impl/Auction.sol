@@ -59,7 +59,7 @@ contract Auction is IAuction
     /// @param _P Numerator part of the target price `p`.
     /// @param _S Price precision -- (_P / 10**_S) is the float value of the target price.
     /// @param _M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param _T1 The maximum auction duration in second.
+    /// @param _T1 The minimum auction duration in second.
     /// @param _T2 The maximum auction duration in second.
     constructor(
         address _oedax,
@@ -79,6 +79,7 @@ contract Auction is IAuction
         require(_oedax != address(0x0), "invalid oedax address");
         require(_auctionId > 0, "invalid auction id");
         require(_askToken != address(0x0) || _bidToken != address(0x0), "invalid token address");
+        require(_askToken != _bidToken, "same token");
 
         require(_S >= 5 && _S <= 10, "invalid price precision");
         require(_P > 0 && _P <= uint(10 ** 20), "invalid target price");
