@@ -35,7 +35,7 @@ contract IProtocolFeeManager
 
     event OwnerWithdrawal(address token, uint amount);
     event LRCDrained(uint burnedAmount, uint devAmount);
-    event AuctionStarted(address token, address payable auctionAddr);
+    event AuctionStarted(address tokenS, address tokenB, address payable auctionAddr);
 
     /// @dev Claim LRC as staking reward to the IUserStakingPool contract.
     ///

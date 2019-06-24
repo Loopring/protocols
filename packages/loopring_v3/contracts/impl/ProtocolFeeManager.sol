@@ -198,6 +198,7 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 
     function auctionOffTokens(
         address token,
+        uint    amount,
         bool    sellForEther,
         uint    minAskAmount,
         uint    minBidAmount,
@@ -213,6 +214,7 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         )
     {
         require(oedaxAddress != address(0), "ZERO_ADDRESS");
+        require(amount > 0, "ZERO_AMOUNT");
         address tokenB = sellForEther ? address(0) : lrcAddress;
 
         IOedax oedax = IOedax(oedaxAddress);
@@ -230,18 +232,11 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
             T * 2
         );
 
-        IAuction auction = IAuction(auctionAddr);
-
         if (token == address(0)) {
-            uint balance = address(this).balance;
-            require(balance > MIN_ETHER_TO_KEEP, "ZERO_BALANCE");
-            auctionAddr.transfer(balance - MIN_ETHER_TO_KEEP);
+            auctionAddr.transfer(amount);
         } else {
-            ERC20 erc20 = ERC20(token);
-            uint balance = erc20.balanceOf(address(this));
-            require(balance > 0, "ZERO_BALANCE");
-            require(erc20.approve(auctionAddr, balance), "AUTH_FAILED");
-            auction.ask(balance);
+            require(ERC20(token).approve(auctionAddr, amount), "AUTH_FAILED");
+            IAuction(auctionAddr).ask(amount);
         }
 
         emit AuctionStarted(
