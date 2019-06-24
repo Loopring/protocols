@@ -76,7 +76,7 @@ export class Exchange {
                             const dexAccount = new DexAccount();
                             dexAccount.nonce = 0;
                             dexAccount.owner = wallet.getAddress();
-                            dexAccount.accountID = account.getAccountId();
+                            dexAccount.accountID = account.getAccountId().getValue();
                             dexAccount.publicKeyX = keyPair.publicKeyX;
                             dexAccount.publicKeyY = keyPair.publicKeyY;
                             dexAccount.secretKey = keyPair.secretKey;
@@ -206,7 +206,7 @@ export class Exchange {
         order.tokenIdB = config.getTokenBySymbol(order.tokenB).id;
 
         const getNextOrderIdReq = new GetNextOrderIdReq();
-        getNextOrderIdReq.setTokenId(order.tokenIdS);
+        getNextOrderIdReq.setTokenSellId(order.tokenIdS);
         getNextOrderIdReq.setAccountId(this.currentDexAccount.accountID);
         const nextOrderId = await grpcClient.getNextOrderId(getNextOrderIdReq);
         order.orderID = (order.orderID !== undefined) ? order.orderID : nextOrderId.getValue();

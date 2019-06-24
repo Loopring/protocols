@@ -145,16 +145,16 @@ message MarketTicker {
     double percent_change_7d = 8;
 }
 
-// TODO: check with yadong
 message UserTransaction {
-    uint64 request_id = 1;
-    uint64 account_id = 2;
-    uint32 token_id = 3;
-    string amount = 4; // DVS
-    uint64 submitted_at = 5;
-    uint64 updated_at = 6;
-    string status = 7;
-    string transaction_type = 8; // `deposit`, `withdrawal` or `transfer`
+    uint64 request_id                 = 1;
+    uint64 account_id                 = 2;
+    uint32 token_id                   = 3;
+    string amount                     = 4; // DVS
+    uint64 submitted_at               = 5;
+    uint64 updated_at                 = 6;
+    types.UserTxStatus tx_status      = 7;
+    types.UserTxType tx_type          = 8; // `deposit`, `withdrawal` or `transfer`
+    types.SHA256Hash tx_hash          = 9;
 }
 
 message GetUserFillsReq {

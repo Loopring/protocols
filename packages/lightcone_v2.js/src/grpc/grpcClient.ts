@@ -36,7 +36,7 @@ import {io} from "../model/types";
  */
 class GrpcClient {
 
-    private readonly client: DexServiceClient = new DexServiceClient('localhost:50051', credentials.createInsecure()); // TODO: config
+    private readonly client: DexServiceClient = new DexServiceClient('localhost:8980', credentials.createInsecure()); // TODO: config
 
     public async getDexConfigurations(metadata: Metadata = new Metadata()): Promise<DexConfigurations> {
         const empty: Empty = new Empty();
