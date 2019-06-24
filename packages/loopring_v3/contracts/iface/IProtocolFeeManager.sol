@@ -22,7 +22,7 @@ contract IProtocolFeeManager
 {
     uint public constant REWARD_PERCENTAGE      = 70;
     uint public constant DEVPOOL_PERDENTAGE     = 10;
-    
+
     address public userStakingPoolAddress;
     address public lrcAddress;
     address public oedaxAddress;
@@ -72,7 +72,7 @@ contract IProtocolFeeManager
     function setOedax(address _oedaxAddress) external;
 
     /// @dev Permanently disallow owner to withdraw non-LRC protocol fees, only callable by the owner.
-    function disableOwnerWithdrawaldisableOwnerWithdrawal() external;
+    function disableOwnerWithdrawal() external;
 
     /// @dev Withdraw non-LRC protocol fees to owner's address, only callable by the owner.
     /// @param token The token to be withdrawn
@@ -102,7 +102,7 @@ contract IProtocolFeeManager
     ///      only callable by the owner.
     function withdrawDevPoolAndBurn() external;
 
-    /// @dev settle a closed Oedax auction, 
+    /// @dev Settle a closed Oedax auction,
     function settleAuction(address auction) external;
 
 }
