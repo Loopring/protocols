@@ -68,7 +68,13 @@ library ExchangeBlocks
             require(offchainData.length == 0, "INVALID_OFFCHAIN_DATA");
         }
 
-        commitBlockInternal(S, ExchangeData.BlockType(blockType), blockSize, blockVersion, data);
+        commitBlockInternal(
+            S,
+            ExchangeData.BlockType(blockType),
+            blockSize,
+            blockVersion,
+            data
+        );
     }
 
     function verifyBlock(
@@ -188,7 +194,12 @@ library ExchangeBlocks
 
         // Check if the block is supported
         require(
-            S.blockVerifier.canVerify(uint8(blockType), S.onchainDataAvailability, blockSize, blockVersion),
+            S.blockVerifier.canVerify(
+                uint8(blockType),
+                S.onchainDataAvailability,
+                blockSize,
+                blockVersion
+            ),
             "CANNOT_VERIFY_BLOCK"
         );
 
