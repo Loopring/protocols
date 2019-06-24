@@ -33,12 +33,13 @@ contract IUserStakingPool
 
     address public lrcAddress;
     address public pfmAddress;
-    
+
     uint    public numAddresses;
 
-    event LRCStaked   (address user, uint amount);
-    event LRCWithdrawn(address user, uint amount);
-    event LRCRewarded (address user, uint amount);
+    event LRCStaked       (address user,  uint amount);
+    event LRCWithdrawn    (address user,  uint amount);
+    event LRCRewarded     (address user,  uint amount);
+    event AuctionStarted  (address token, address auctionAddr);
 
     /// @dev Set a new IProtocolFeeManager address, only callable by the owner.
     /// @param _pfmAddress The new IProtocolFeeManager address.

@@ -197,6 +197,8 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
     function auctionOffTokens(
         address token,
         bool    sellForEther,
+        uint    minAskAmount,
+        uint    minBidAmount,
         uint64  P,
         uint64  S,
         uint8   M,
@@ -218,9 +220,9 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         auctionAddr = oedax.createAuction.value(ethStake)(
             token,  // askToken
             tokenB, // bidToken
-            0,      // minAskAmount
-            0,      // minBidAmount
-            P,      // price
+            minAskAmount,
+            minBidAmount,
+            P,
             S,
             M,
             T,
