@@ -86,7 +86,8 @@ contract IProtocolFeeManager
         ;
 
     /// @dev Sell a non-LRC token or Ether to LRC, only callable by the owner.
-    /// @param token The token to sell.
+    /// @param token The token or ether (0x0) to sell.
+    /// @param amount THe amout of token/ether to sell.
     /// @param sellForEther True if tokenB should be Ether,false if tokenB is LRC.
     /// @param minAskAmount The minimum amount that can be used in an ask.
     /// @param minBidAmount The minimum amount that can be used in a bid.
@@ -97,6 +98,7 @@ contract IProtocolFeeManager
     /// @return auctionAddr Auction address.
     function auctionOffTokens(
         address token,
+        uint    amount,
         bool    sellForEther,
         uint    minAskAmount,
         uint    minBidAmount,

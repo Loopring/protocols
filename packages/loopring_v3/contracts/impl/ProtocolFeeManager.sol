@@ -70,6 +70,7 @@ contract IAuction {
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 {
+    uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -233,13 +234,13 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 
         if (token == address(0)) {
             uint balance = address(this).balance;
-            require(balance > 0, "ZERO_BALANCE");
-            auctionAddr.transfer(balance);
+            require(balance > MIN_ETHER_TO_KEEP, "ZERO_BALANCE");
+            auctionAddr.transfer(balance - MIN_ETHER_TO_KEEP);
         } else {
             ERC20 erc20 = ERC20(token);
             uint balance = erc20.balanceOf(address(this));
             require(balance > 0, "ZERO_BALANCE");
-            require(ERC20(token).approve(auctionAddr, balance), "AUTH_FAILED");
+            require(erc20.approve(auctionAddr, balance), "AUTH_FAILED");
             auction.ask(balance);
         }
 
