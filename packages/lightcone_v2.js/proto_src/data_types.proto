@@ -193,9 +193,9 @@ enum Interval {
 }
 
 enum ErrorCode{
-    ERR_NONE                = 0;
-    ERR_INTERNAL_UNKNOWN    = 1;
-    ERR_INVALID_ARGUMENT    = 2;
+    ERR_NONE                            = 0;
+    ERR_INTERNAL_UNKNOWN                = 1;
+    ERR_INVALID_ARGUMENT                = 2;
 
     //1001 -- 2000 ethereum Error
     ERR_ETHEREUM_ILLEGAL_ADDRESS        = 1001;
@@ -221,11 +221,23 @@ message Error {
 }
 
 enum OrderStatus {
-    STATUS_NEW                      = 0;
-    STATUS_PENDING                  = 1;
-    STATUS_EXPIRED                  = 2;
-    STATUS_COMPLETELY_FILLED        = 4;
-    STATUS_PARTIALLY_FILLED         = 5;
-    STATUS_ONCHAIN_CANCELLED        = 6;
-    STATUS_SOFT_CANCELLED           = 7;
+    ORDER_STATUS_NEW                      = 0;
+    ORDER_STATUS_PENDING                  = 1;
+    ORDER_STATUS_EXPIRED                  = 2;
+    ORDER_STATUS_COMPLETELY_FILLED        = 4;
+    ORDER_STATUS_PARTIALLY_FILLED         = 5;
+    ORDER_STATUS_ONCHAIN_CANCELLED        = 6;
+    ORDER_STATUS_SOFT_CANCELLED           = 7;
+}
+
+enum UserTxStatus {
+    TX_STATUS_NEW                      = 0;
+    TX_STATUS_PENDING                  = 1;
+    TX_STATUS_FAILED                   = 2;
+}
+
+enum UserTxType {
+    TX_TYPE_DEPOSIT                    = 0;
+    TX_TYPE_WITHDRAW                   = 1;
+    TX_TYPE_TRANSFER                   = 2;
 }
