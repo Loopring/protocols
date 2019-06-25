@@ -21,6 +21,7 @@ import "../lib/Claimable.sol";
 
 /// @title NonTransferrableToken
 /// @author Daniel Wang  - <daniel@loopring.org>
+// TODO(daniel): use role masks
 contract HasOperators is Claimable
 {
     uint8 private constant DEFAULT_ROLE = 0;
@@ -89,5 +90,15 @@ contract HasOperators is Claimable
         returns (bool)
     {
         return operatorMap[role][who] != 0;
+    }
+
+    modifier onlyOperator() {
+        require(isOperator(msg.sender), "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyOperatorWithRole(uint8 role) {
+        require(isOperator(msg.sender, role), "UNAUTHORIZED");
+        _;
     }
 }
