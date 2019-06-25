@@ -18,12 +18,9 @@ pragma solidity 0.5.7;
 
 
 /// @title IUserStakingPool
-/// @dev This is the staking pool to hold LRC staked by end users.
-///      70% of all protocol fees (in LRC) will be rewarded to users as staking reward;
-///      10% of all protocol fees will be burned, and the rest 20% will be used as
-///      developer fund.
-///
-///      WARNING: sending LRC directly to this contract will DONATE those LRC as protocol fees.
+/// @dev This contract manages staked LRC tokens and their rewards.
+///      WARNING: sending tokens directly to this contract will result in all
+///      tokens to be lost.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IUserStakingPool
 {

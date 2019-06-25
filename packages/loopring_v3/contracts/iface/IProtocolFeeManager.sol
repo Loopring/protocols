@@ -18,6 +18,14 @@ pragma solidity 0.5.7;
 
 
 /// @title IProtocolFeeManager
+/// @dev This smart contract manages the distribution of protocol fees.
+/// Tokens other than LRC will be auctioned off for LRC using Oedax. The owner
+/// of this smart contract will also have the option to withdraw non-LRC tokens
+/// and Ether to sell them for LRC by other means such as using a centralized
+/// exchange. This option will be disabled once Oedax is production ready.
+/// For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
+/// to reward LRC stakers; 15% of them can be withdrawn to the Loopring DAO,
+/// and the remaining 15% can be burned to reduce LRC's total supply.
 contract IProtocolFeeManager
 {
     uint public constant REWARD_PERCENTAGE      = 70;
@@ -34,10 +42,20 @@ contract IProtocolFeeManager
 
     bool allowOwnerWithdrawal;
 
-    event OwnerWithdrawal (address token, uint amount);
-    event DAOFundWithdrawn(uint amount);
-    event LRCBurned       (uint amount);
-    event AuctionStarted  (address tokenS, address tokenB, address payable auctionAddr);
+    event OwnerWithdrawal(
+        address token,
+        uint    amount
+    );
+    event LRCWithdrawnToDAO(
+        uint    amountDAO,
+        uint    amountBurn
+    );
+    event AuctionStarted(
+        address tokenS,
+        uint    amountS,
+        address tokenB,
+        address payable auctionAddr
+    );
 
     /// @dev Claim LRC as staking reward to the IUserStakingPool contract.
     ///
@@ -45,7 +63,7 @@ contract IProtocolFeeManager
     ///      the IUserStakingPool contract.
     ///
     /// @param amount The amount of LRC to be claimed.
-    function claim(uint amount ) external;
+    function claim(uint amount) external;
 
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
@@ -118,11 +136,9 @@ contract IProtocolFeeManager
             address payable auctionAddr
         );
 
-    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC.
+    /// @dev withdraw LRC to DAO and in the meanwhile burn some LRC according to
+    ///      the predefined percentages.
     function withdrawLRCToDAO() external;
-
-    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC.
-    function burnLRC() external;
 
     /// @dev Settle a closed Oedax auction,
     function settleAuction(address auction) external;

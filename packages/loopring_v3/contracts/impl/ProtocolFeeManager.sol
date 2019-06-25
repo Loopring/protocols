@@ -181,26 +181,21 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         external
     {
         require(daoAddress != address(0), "ZERO_DAO_ADDRESS");
-        uint amount;
-        (, , , , , , amount, ) = getLRCFeeStats();
+        uint amountDAO;
+        uint amountBurn;
+        (, , , , , amountBurn, amountDAO, ) = getLRCFeeStats();
 
         require(
-            lrcAddress.safeTransferFrom(address(this), daoAddress, amount),
+            lrcAddress.safeTransferFrom(address(this), daoAddress, amountDAO),
             "TRANSFER_FAILURE"
         );
 
-        claimedDAOFund = claimedDAOFund.add(amount);
-        emit DAOFundWithdrawn(amount);
-    }
+        require(BurnableERC20(lrcAddress).burn(amountBurn), "BURN_FAILURE");
 
-    function burnLRC()
-        external
-    {
-        uint amount;
-        (, , , , , amount, , ) = getLRCFeeStats();
-        require(BurnableERC20(lrcAddress).burn(amount), "BURN_FAILURE");
-        claimedBurn = claimedBurn.add(amount);
-        emit LRCBurned(amount);
+        claimedBurn = claimedBurn.add(amountBurn);
+        claimedDAOFund = claimedDAOFund.add(amountDAO);
+
+        emit LRCWithdrawnToDAO(amountDAO, amountBurn);
     }
 
     function settleAuction(address auction)
@@ -211,8 +206,8 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
     }
 
     function auctionOffTokens(
-        address token,
-        uint    amount,
+        address tokenS,
+        uint    amountS,
         bool    sellForEther,
         uint    minAskAmount,
         uint    minBidAmount,
@@ -228,16 +223,16 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         )
     {
         require(oedaxAddress != address(0), "NO_OEDAX_SET");
-        require(amount > 0, "ZERO_AMOUNT");
+        require(amountS > 0, "ZERO_AMOUNT");
 
         address tokenB = sellForEther ? address(0) : lrcAddress;
-        require(token != tokenB, "SAME_TOKEN");
+        require(tokenS != tokenB, "SAME_TOKEN");
 
         IOedax oedax = IOedax(oedaxAddress);
         uint ethStake = oedax.creatorEtherStake();
 
         auctionAddr = oedax.createAuction.value(ethStake)(
-            token,  // askToken
+            tokenS,  // askToken
             tokenB, // bidToken
             minAskAmount,
             minBidAmount,
@@ -248,17 +243,18 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
             T * 2
         );
 
-        if (token == address(0)) {
+        if (tokenS == address(0)) {
             bool success;
-            (success, ) = auctionAddr.call.value(amount)("");
+            (success, ) = auctionAddr.call.value(amountS)("");
             require(success, "TRANSFER_FAILURE");
         } else {
-            require(ERC20(token).approve(auctionAddr, amount), "AUTH_FAILED");
-            IAuction(auctionAddr).ask(amount);
+            require(ERC20(tokenS).approve(auctionAddr, amountS), "AUTH_FAILED");
+            IAuction(auctionAddr).ask(amountS);
         }
 
         emit AuctionStarted(
-            token,
+            tokenS,
+            amountS,
             tokenB,
             auctionAddr
         );
