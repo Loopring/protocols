@@ -36,7 +36,7 @@ import {io} from "../model/types";
  */
 class GrpcClient {
 
-    private readonly client: DexServiceClient = new DexServiceClient('localhost:8980', credentials.createInsecure()); // TODO: config
+    private readonly client: DexServiceClient = new DexServiceClient('127.0.0.1:59480', credentials.createInsecure()); // TODO: config
 
     public async getDexConfigurations(metadata: Metadata = new Metadata()): Promise<DexConfigurations> {
         const empty: Empty = new Empty();
@@ -57,6 +57,20 @@ class GrpcClient {
 
         return new Promise<Account>((resolve: Function, reject: Function): void => {
             this.client.getAccount(address, metadata, (err: ServiceError | null, res: Account) => {
+                if (err) {
+                    return reject(err);
+                }
+                resolve(res);
+            });
+        });
+    }
+
+    public async getNonce(param: number, metadata: Metadata = new Metadata()): Promise<UInt32Value> {
+        const accountId: UInt32Value = new UInt32Value();
+        accountId.setValue(param);
+
+        return new Promise<UInt32Value>((resolve: Function, reject: Function): void => {
+            this.client.getNonce(accountId, metadata, (err: ServiceError | null, res: UInt32Value) => {
                 if (err) {
                     return reject(err);
                 }

@@ -321,6 +321,10 @@ export class Exchange {
         return grpcClient.submitOrder(order);
     }
 
+    public async cancelOrder(orderInfo: OrderInfo) {
+
+    }
+
 }
 
 export const exchange: Exchange = new Exchange();
