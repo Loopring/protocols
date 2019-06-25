@@ -118,12 +118,10 @@ contract IProtocolFeeManager
             address payable auctionAddr
         );
 
-    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC,
-    ///      only callable by the owner.
+    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC.
     function withdrawLRCToDAO() external;
 
-    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC,
-    ///      only callable by the owner.
+    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC.
     function burnLRC() external;
 
     /// @dev Settle a closed Oedax auction,
