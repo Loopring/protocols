@@ -254,16 +254,7 @@ contract ILoopringV3
         view
         returns (uint8 takerFeeBips, uint8 makerFeeBips);
 
-    /// @dev Withdraw all non-LRC fees (called the Burn) to the designated address.
-    ///      LRC fees have been burned already thanks to the new LRC contract's burn function;
-    ///      All non-LRC fees will be auctioned off for LRC by the Looprong Foundation, the
-    ///      purchased LRC will also be publicly burned.
-    ///
-    ///      In the future, all non-LRC fees will be auctioned off in a fully decentralized
-    ///      fashion using Loopring's Oedax (Open-Ended Dutch Auction eXchange) protocol.
-    ///      For more details, please see:
-    ///      https://medium.com/loopring-protocol/oedax-looprings-open-ended-dutch-auction-exchange-model-d92cebbd3667
-    ///
+    /// @dev Withdraw all protocol fees to the designated address.
     /// @param  token The address of the token. Use 0x0 for Ether.
     /// @param  recipient The address to receive the tokens.
     function withdrawTheBurn(
@@ -272,7 +263,7 @@ contract ILoopringV3
         )
         external;
 
-    /// @dev Allow ETH to be sent directly to this contract (for burning)
+    /// @dev Allow ETH to be sent directly to this contract (to collect the protocol fees)
     function()
         external
         payable;

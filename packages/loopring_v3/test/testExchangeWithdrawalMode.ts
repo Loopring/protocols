@@ -28,10 +28,9 @@ contract("Exchange", (accounts: string[]) => {
   });
 
   const withdrawFromMerkleTreeChecked = async (owner: string, token: string,
-                                               pubKeyX: string, pubKeyY: string,
                                                expectedAmount: BN) => {
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
-    await exchangeTestUtil.withdrawFromMerkleTree(owner, token, pubKeyX, pubKeyY);
+    await exchangeTestUtil.withdrawFromMerkleTree(owner, token);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdrawal mode incorrect");
   };
@@ -165,7 +164,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(owner, token, keyPair.publicKeyX, keyPair.publicKeyY),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "NOT_IN_WITHDRAW_MODE",
       );
 
@@ -175,12 +174,20 @@ contract("Exchange", (accounts: string[]) => {
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
 
+      // Try to withdraw with an incorrect proof
+      const proof = await exchangeTestUtil.createMerkleTreeInclusionProof(owner, token);
+      proof.balance.balance = new BN(proof.balance.balance).mul(new BN(2));
+      await expectThrow(
+        exchangeTestUtil.withdrawFromMerkleTreeWithProof(owner, token, proof),
+        "INVALID_MERKLE_TREE_DATA",
+      );
+
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await withdrawFromMerkleTreeChecked(owner, token, keyPair.publicKeyX, keyPair.publicKeyY, balance);
+      await withdrawFromMerkleTreeChecked(owner, token, balance);
 
       // Try to withdraw again
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(owner, token, keyPair.publicKeyX, keyPair.publicKeyY),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "WITHDRAWN_ALREADY",
       );
     });
@@ -203,7 +210,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(owner, token, keyPair.publicKeyX, keyPair.publicKeyY),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "NOT_IN_WITHDRAW_MODE",
       );
 
@@ -214,11 +221,11 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      await withdrawFromMerkleTreeChecked(owner, token, keyPair.publicKeyX, keyPair.publicKeyY, balance);
+      await withdrawFromMerkleTreeChecked(owner, token, balance);
 
       // Try to withdraw again
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(owner, token, keyPair.publicKeyX, keyPair.publicKeyY),
+        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
         "WITHDRAWN_ALREADY",
       );
     });

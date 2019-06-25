@@ -33,7 +33,8 @@ library ExchangeData
         DEPOSIT,
         ONCHAIN_WITHDRAWAL,
         OFFCHAIN_WITHDRAWAL,
-        ORDER_CANCELLATION
+        ORDER_CANCELLATION,
+        TRANSFER
     }
 
     enum BlockState
@@ -166,6 +167,7 @@ library ExchangeData
     }
 
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
+    function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 1000; }
     function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
     function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
     function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }

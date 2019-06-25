@@ -96,6 +96,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitCancels(exchangeId);
 
       ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      ring.orderA.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderA);
 
       await exchangeTestUtil.sendRing(exchangeId, ring);

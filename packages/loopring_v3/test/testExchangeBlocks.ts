@@ -205,6 +205,50 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
+        it("should not be able to commit settlement blocks with invalid protocol fees", async () => {
+          await createExchange(false);
+          await exchangeTestUtil.blockVerifier.setVerifyingKey(
+            BlockType.RING_SETTLEMENT, true, 2, 0, new Array(18).fill(1),
+          );
+          const protocolFees = await loopring.getProtocolFeeValues(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.onchainDataAvailability,
+          );
+          const timestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
+          // Invalid taker protocol fee
+          {
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
+            bs.addNumber(exchangeId, 4);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addNumber(timestamp, 4);
+            bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
+            bs.addNumber(protocolFees.makerFeeBips, 1);
+            await expectThrow(
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+                                   constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
+              "INVALID_PROTOCOL_FEES",
+            );
+          }
+          // Invalid maker protocol fee
+          {
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
+            bs.addNumber(exchangeId, 4);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addNumber(timestamp, 4);
+            bs.addNumber(protocolFees.takerFeeBips, 1);
+            bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
+            await expectThrow(
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+                                   constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
+              "INVALID_PROTOCOL_FEES",
+            );
+          }
+        });
+
         it("should not be able to commit deposit/on-chain withdrawal blocks with invalid data", async () => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(
@@ -457,6 +501,43 @@ contract("Exchange", (accounts: string[]) => {
               {from: exchangeTestUtil.exchangeOperator}),
             );
           }
+        });
+
+        it("should not be able to verify a block with incorrect public data", async () => {
+          await createExchange();
+          const ring: RingInfo = {
+            orderA:
+              {
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("100", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+              },
+            orderB:
+              {
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+              },
+            expected: {
+              orderA: { filledFraction: 1.0, spread: new BN(0) },
+              orderB: { filledFraction: 1.0 },
+            },
+          };
+
+          await exchangeTestUtil.setupRing(ring);
+          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+          await exchangeTestUtil.sendRing(exchangeId, ring);
+
+          exchangeTestUtil.commitWrongPublicDataOnce = true;
+          await exchangeTestUtil.commitRings(exchangeId);
+
+          await expectThrow(
+            exchangeTestUtil.verifyPendingBlocks(exchangeId),
+          );
         });
       });
 

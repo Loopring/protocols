@@ -30,6 +30,7 @@ import "./ExchangeTokens.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeDeposits
 {
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
     using ExchangeAccounts  for ExchangeData.State;
@@ -169,10 +170,7 @@ library ExchangeDeposits
 
         require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
         uint feeSurplus = msg.value.sub(totalRequiredETH);
-
-        if (feeSurplus > 0) {
-            msg.sender.transfer(feeSurplus);
-        }
+        msg.sender.transferETH(feeSurplus, gasleft());
 
         // Transfer the tokens from the owner into this contract
         if (amount > 0 && tokenAddress != address(0)) {

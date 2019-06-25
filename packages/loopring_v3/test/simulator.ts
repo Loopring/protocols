@@ -520,7 +520,7 @@ export class Simulator {
       description: "RebateA",
       token: ring.orderA.tokenIdB,
       from: ring.minerAccountID,
-      to: ring.orderB.accountID,
+      to: ring.orderA.accountID,
       amount: s.rebateA,
       subPayments: [],
     };

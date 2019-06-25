@@ -31,6 +31,8 @@ import "./ExchangeTokens.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeWithdrawals
 {
+    using AddressUtil       for address;
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
     using ExchangeAccounts  for ExchangeData.State;
@@ -126,7 +128,7 @@ library ExchangeWithdrawals
         require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
         // Send surplus of ETH back to the sender
         if (msg.value > S.withdrawalFeeETH) {
-            msg.sender.transfer(msg.value.sub(S.withdrawalFeeETH));
+            msg.sender.transferETH(msg.value.sub(S.withdrawalFeeETH), gasleft());
         }
 
         // Only the account owner can withdraw from the account
@@ -365,24 +367,26 @@ library ExchangeWithdrawals
 
         uint feeAmount = 0;
         uint32 lastRequestTimestamp = 0;
-        uint startIndex = previousBlock.numDepositRequestsCommitted;
-        uint endIndex = requestedBlock.numDepositRequestsCommitted;
-        if(endIndex > startIndex) {
-            feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
-                S.depositChain[startIndex - 1].accumulatedFee
-            );
-            lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
-        } else {
-            startIndex = previousBlock.numWithdrawalRequestsCommitted;
-            endIndex = requestedBlock.numWithdrawalRequestsCommitted;
-
+        {
+            uint startIndex = previousBlock.numDepositRequestsCommitted;
+            uint endIndex = requestedBlock.numDepositRequestsCommitted;
             if(endIndex > startIndex) {
-                feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
-                    S.withdrawalChain[startIndex - 1].accumulatedFee
+                feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
+                    S.depositChain[startIndex - 1].accumulatedFee
                 );
-                lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
+                lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
             } else {
-                revert("BLOCK_HAS_NO_OPERATOR_FEE");
+                startIndex = previousBlock.numWithdrawalRequestsCommitted;
+                endIndex = requestedBlock.numWithdrawalRequestsCommitted;
+
+                if(endIndex > startIndex) {
+                    feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
+                        S.withdrawalChain[startIndex - 1].accumulatedFee
+                    );
+                    lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
+                } else {
+                    revert("BLOCK_HAS_NO_OPERATOR_FEE");
+                }
             }
         }
 
@@ -405,14 +409,9 @@ library ExchangeWithdrawals
         requestedBlock.blockFeeWithdrawn = true;
 
         // Burn part of the fee by sending it to the loopring contract
-        if (feeAmountToBurn > 0) {
-            address payable payableLoopringAddress = address(uint160(address(S.loopring)));
-            payableLoopringAddress.transfer(feeAmountToBurn);
-        }
+        address(S.loopring).transferETH(feeAmountToBurn, gasleft());
         // Transfer the fee to the operator
-        if (feeAmountToOperator > 0) {
-            feeRecipient.transfer(feeAmountToOperator);
-        }
+        feeRecipient.transferETH(feeAmountToOperator, gasleft());
 
         emit BlockFeeWithdrawn(blockIdx, feeAmount);
     }
@@ -498,7 +497,6 @@ library ExchangeWithdrawals
         internal
         returns (bool success)
     {
-        address payable recipient = address(uint160(to));
         address token = S.getTokenAddress(tokenID);
         // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
         uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
@@ -506,10 +504,10 @@ library ExchangeWithdrawals
         if (amount > 0) {
             if (token == address(0)) {
                 // ETH
-                (success, ) = recipient.call.value(amount).gas(gasLimit)("");
+                success = to.sendETH(amount, gasLimit);
             } else {
                 // ERC20 token
-                success = token.safeTransferWithGasLimit(recipient, amount, gasLimit);
+                success = token.safeTransferWithGasLimit(to, amount, gasLimit);
             }
         } else {
             success = true;

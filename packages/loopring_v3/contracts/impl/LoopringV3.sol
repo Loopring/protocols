@@ -32,6 +32,7 @@ import "./ExchangeDeployer.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3, Claimable
 {
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
@@ -391,7 +392,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         if (token == address(0)) {
             // ETH
             uint balance = address(this).balance;
-            recipient.transfer(balance);
+            recipient.transferETH(balance, gasleft());
         } else {
             // ERC20 token
             uint balance = ERC20(token).balanceOf(address(this));

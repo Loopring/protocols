@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.7;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
@@ -31,6 +32,7 @@ import "./ExchangeMode.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeAccounts
 {
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeBalances  for ExchangeData.State;
@@ -108,9 +110,7 @@ library ExchangeAccounts
 
         if (returnFeeSurplus) {
             uint feeSurplus = msg.value.sub(S.accountCreationFeeETH);
-            if (feeSurplus > 0) {
-                msg.sender.transfer(feeSurplus);
-            }
+            msg.sender.transferETH(feeSurplus, gasleft());
         }
 
         accountID = uint24(S.accounts.length);
@@ -148,9 +148,7 @@ library ExchangeAccounts
 
         if (returnFeeSurplus) {
             uint feeSurplus = msg.value.sub(S.accountUpdateFeeETH);
-            if (feeSurplus > 0) {
-                msg.sender.transfer(feeSurplus);
-            }
+            msg.sender.transferETH(feeSurplus, gasleft());
         }
 
         accountID = S.ownerToAccountId[msg.sender] - 1;

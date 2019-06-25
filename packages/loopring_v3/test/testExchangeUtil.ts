@@ -102,6 +102,8 @@ export class ExchangeTestUtil {
   public onchainDataAvailability = true;
   public compressionType = CompressionType.LZ;
 
+  public commitWrongPublicDataOnce = false;
+
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
@@ -380,6 +382,9 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
+    if (order.signature !== undefined) {
+      return;
+    }
     const message = new BitArray();
     message.addNumber(this.exchangeId, 32);
     message.addNumber(order.orderID, 20);
@@ -431,19 +436,23 @@ export class ExchangeTestUtil {
       s: sig.S.toString(),
     };
 
-    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
-    ring.dualAuthASignature = {
-      Rx: dualAuthAsig.R[0].toString(),
-      Ry: dualAuthAsig.R[1].toString(),
-      s: dualAuthAsig.S.toString(),
-    };
+    if (ring.dualAuthASignature === undefined) {
+      const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
+      ring.dualAuthASignature = {
+        Rx: dualAuthAsig.R[0].toString(),
+        Ry: dualAuthAsig.R[1].toString(),
+        s: dualAuthAsig.S.toString(),
+      };
+    }
 
-    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
-    ring.dualAuthBSignature = {
-      Rx: dualAuthBsig.R[0].toString(),
-      Ry: dualAuthBsig.R[1].toString(),
-      s: dualAuthBsig.S.toString(),
-    };
+    if (ring.dualAuthBSignature === undefined) {
+      const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
+      ring.dualAuthBSignature = {
+        Rx: dualAuthBsig.R[0].toString(),
+        Ry: dualAuthBsig.R[1].toString(),
+        s: dualAuthBsig.S.toString(),
+      };
+    }
   }
 
   public signCancel(cancel: Cancel) {
@@ -836,6 +845,10 @@ export class ExchangeTestUtil {
 
   public async commitBlock(operator: Operator, blockType: BlockType, blockSize: number,
                            data: string, filename: string) {
+    if (this.commitWrongPublicDataOnce) {
+      data += "00";
+      this.commitWrongPublicDataOnce = false;
+    }
     console.log("[EVM]PublicData: " + data);
     const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
@@ -1796,7 +1809,7 @@ export class ExchangeTestUtil {
     this.pendingBlocks[this.exchangeId] = [];
   }
 
-  public async withdrawFromMerkleTree(owner: string, token: string, pubKeyX: string, pubKeyY: string) {
+  public async createMerkleTreeInclusionProof(owner: string, token: string) {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
@@ -1812,21 +1825,32 @@ export class ExchangeTestUtil {
     );
     assert(result.status === 0, "create_withdraw_proof failed!");
 
-    // Read in the proof
+    // Read in the Merkle proof
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
+    return data.proof;
+  }
+
+  public async withdrawFromMerkleTreeWithProof(owner: string, token: string, proof: any) {
+    const accountID = await this.getAccountID(owner);
+    const account = this.accounts[this.exchangeId][accountID];
     const tx = await this.exchange.withdrawFromMerkleTreeFor(
       owner,
       token,
-      pubKeyX,
-      pubKeyY,
-      web3.utils.toBN(data.proof.account.nonce),
-      web3.utils.toBN(data.proof.balance.balance),
-      web3.utils.toBN(data.proof.balance.tradingHistoryRoot),
-      data.proof.accountProof,
-      data.proof.balanceProof,
+      account.publicKeyX,
+      account.publicKeyY,
+      web3.utils.toBN(proof.account.nonce),
+      web3.utils.toBN(proof.balance.balance),
+      web3.utils.toBN(proof.balance.tradingHistoryRoot),
+      proof.accountProof,
+      proof.balanceProof,
     );
     logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
+  }
+
+  public async withdrawFromMerkleTree(owner: string, token: string) {
+    const proof = await this.createMerkleTreeInclusionProof(owner, token);
+    await this.withdrawFromMerkleTreeWithProof(owner, token, proof);
   }
 
   public async withdrawFromDepositRequest(requestIdx: number) {

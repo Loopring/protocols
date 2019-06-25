@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo } from "./types";
+import { OrderInfo, RingInfo, Signature } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
@@ -564,7 +564,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Rebate (both orders)", async () => {
+    it("Rebate (both orders, rebate token == operator fee token)", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -584,6 +584,7 @@ contract("Exchange", (accounts: string[]) => {
             maxFeeBips: 0,
             rebateBips: 20,
           },
+        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("LRC"),
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("0", "ether")).neg() },
           orderB: { filledFraction: 0.5 },
@@ -826,6 +827,7 @@ contract("Exchange", (accounts: string[]) => {
 
       ring.orderB.accountID = ring.orderA.accountID;
       ring.orderB.walletAccountID = ring.orderA.walletAccountID;
+      ring.orderB.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderB);
 
       await exchangeTestUtil.sendRing(exchangeID, ring);
@@ -940,14 +942,14 @@ contract("Exchange", (accounts: string[]) => {
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
           },
         orderB:
           {
             tokenS: "LRC",
             tokenB: "ETH",
-            amountS: new BN(web3.utils.toWei("5", "ether")),
-            amountB: new BN(web3.utils.toWei("45", "ether")),
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
           },
       };
 
@@ -957,7 +959,95 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       try {
         await exchangeTestUtil.commitRings(exchangeID);
-        assert(false);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(exchangeID);
+      }
+    });
+
+    it("tokenS == tokenB", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "WETH",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      try {
+        await exchangeTestUtil.commitRings(exchangeID);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(exchangeID);
+      }
+    });
+
+    it("Wrong order signature", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            signature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
+          },
+        orderB:
+          {
+            tokenS: "LRC",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      try {
+        await exchangeTestUtil.commitRings(exchangeID);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(exchangeID);
+      }
+    });
+
+    it("Wrong dual auth signature", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "LRC",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        dualAuthBSignature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      try {
+        await exchangeTestUtil.commitRings(exchangeID);
       } catch {
         exchangeTestUtil.cancelPendingRings(exchangeID);
       }
