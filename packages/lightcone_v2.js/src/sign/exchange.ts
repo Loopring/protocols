@@ -2,14 +2,18 @@ import BN = require('bn.js');
 import eddsa = require('lib/sign/eddsa');
 import config from 'lib/wallet/config';
 
-import {grpcClient} from '../grpc/grpcClient';
-import {DexAccount, OrderInfo, Signature} from '../model/types';
-import Transaction from "../../lib/wallet/ethereum/transaction";
-import * as fm from "../../lib/wallet/common/formatter";
-import {ethereum} from "../../lib/wallet";
-import {WalletAccount} from "../../lib/wallet/ethereum/walletAccount";
-import {Account, GetNextOrderIdReq} from "../../proto_gen/service_dex_pb";
-import {Order, TokenAmounts} from "../../proto_gen/data_order_pb";
+import {grpcClient} from 'src/grpc/grpcClient';
+import {DexAccount, OrderInfo, Signature} from 'src/model/types';
+import Transaction from "lib/wallet/ethereum/transaction";
+import * as fm from "lib/wallet/common/formatter";
+import {ethereum} from "lib/wallet";
+import {WalletAccount} from "lib/wallet/ethereum/walletAccount";
+import {
+    Account,
+    GetNextOrderIdReq,
+    SimpleOrderCancellationReq
+} from "proto_gen/service_dex_pb";
+import {Order, TokenAmounts} from "proto_gen/data_order_pb";
 import {
     AccountID,
     Amount,
@@ -19,8 +23,8 @@ import {
     EdDSASignature,
     OrderID,
     TokenID
-} from "../../proto_gen/data_types_pb";
-import Eth from "../../lib/wallet/ethereum/eth";
+} from "proto_gen/data_types_pb";
+import Eth from "lib/wallet/ethereum/eth";
 
 export class Exchange {
 
@@ -322,7 +326,24 @@ export class Exchange {
     }
 
     public async cancelOrder(orderInfo: OrderInfo) {
+        let simpleOrderCancellationReq = new SimpleOrderCancellationReq();
+        simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeID);
+        simpleOrderCancellationReq.setAccountId(orderInfo.accountID);
+        simpleOrderCancellationReq.setMarketId(orderInfo.tokenIdS);
+        simpleOrderCancellationReq.setOrderUuid(orderInfo.orderID);
 
+        let timeStamp = new Date().getTime();
+        simpleOrderCancellationReq.setTimestamp(timeStamp);
+
+        let bits = Exchange.toBitsBN(fm.toBN(timeStamp), 32);
+        const sig = eddsa.sign(this.currentDexAccount.secretKey, bits);
+        let edDSASignature = new EdDSASignature();
+        edDSASignature.setS(sig.S);
+        edDSASignature.setRx(sig.R[0].toString());
+        edDSASignature.setRy(sig.R[1].toString());
+        simpleOrderCancellationReq.setSig(edDSASignature);
+
+        return grpcClient.cancelOrder(simpleOrderCancellationReq);
     }
 
 }

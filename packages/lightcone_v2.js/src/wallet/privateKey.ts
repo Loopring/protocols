@@ -1,12 +1,12 @@
 import config from 'lib/wallet/config';
 import * as datas from 'lib/wallet/config/data';
 import contracts from 'lib/wallet/ethereum/contracts/Contracts'
-import {KeyAccount} from '../../lib/wallet/ethereum/walletAccount';
-import Transaction from "../../lib/wallet/ethereum/transaction";
-import * as fm from "../../lib/wallet/common/formatter";
-import {ethereum} from "../../lib/wallet";
-import {exchange} from "../sign/exchange";
-import Eth from "../../lib/wallet/ethereum/eth";
+import {KeyAccount} from 'lib/wallet/ethereum/walletAccount';
+import Transaction from "lib/wallet/ethereum/transaction";
+import * as fm from "lib/wallet/common/formatter";
+import {ethereum} from "lib/wallet";
+import {exchange} from "src/sign/exchange";
+import Eth from "lib/wallet/ethereum/eth";
 
 export class PrivateKey {
 

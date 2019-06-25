@@ -1,4 +1,4 @@
-const grpcClient = require("../dist/src/grpc/grpcClient");
+const grpcClient = require("dist/src/grpc/grpcClient");
 
 describe("eddsa sign message test", function () {
     this.timeout(100000);

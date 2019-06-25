@@ -1,5 +1,5 @@
-const eddsa = require("../lib/sign/eddsa");
-const babyJub = require("../lib/sign/babyjub");
+const eddsa = require("lib/sign/eddsa");
+const babyJub = require("lib/sign/babyjub");
 
 function toByteArray(x) {
     var hexString = x.toString(16);
