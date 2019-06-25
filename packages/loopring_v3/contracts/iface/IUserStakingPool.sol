@@ -29,7 +29,7 @@ contract IUserStakingPool
     uint public constant AUCTION_DURATION       = 7  days;
 
     address public lrcAddress;
-    address public pfmAddress;
+    address public pfmAddress; // ProtocolFeeManager address
 
     uint    public numAddresses;
 
