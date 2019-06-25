@@ -111,23 +111,23 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,
-            uint accumulatedDev,
+            uint accumulatedDAOFund,
             uint accumulatedReward,
             uint remainingFees,
             uint remainingBurn,
-            uint remainingDev,
+            uint remainingDAOFund,
             uint remainingReward
         )
     {
         remainingFees = ERC20(lrcAddress).balanceOf(address(this));
-        accumulatedFees = remainingFees.add(claimedReward).add(claimedDev).add(claimedBurn);
+        accumulatedFees = remainingFees.add(claimedReward).add(claimedDAOFund).add(claimedBurn);
 
         accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
-        accumulatedDev = accumulatedFees.mul(DEVPOOL_PERDENTAGE) / 100;
-        accumulatedBurn = accumulatedFees.sub(accumulatedReward).sub(accumulatedDev);
+        accumulatedDAOFund = accumulatedFees.mul(DAO_PERDENTAGE) / 100;
+        accumulatedBurn = accumulatedFees.sub(accumulatedReward).sub(accumulatedDAOFund);
 
         remainingReward = accumulatedReward.sub(claimedReward);
-        remainingDev = accumulatedDev.sub(claimedDev);
+        remainingDAOFund = accumulatedDAOFund.sub(claimedDAOFund);
         remainingBurn = accumulatedBurn.sub(claimedBurn);
     }
 
@@ -137,6 +137,14 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
     {
         require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
         oedaxAddress = _oedaxAddress;
+    }
+
+    function setDAO(address _daoAddress)
+        external
+        onlyOwner
+    {
+        require(_daoAddress != daoAddress, "SAME_ADDRESS");
+        daoAddress = _daoAddress;
     }
 
     function disableOwnerWithdrawal()
@@ -169,27 +177,33 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         emit OwnerWithdrawal(token, amount);
     }
 
-    function withdrawDevPoolAndBurn()
+    function withdrawLRCToDAO()
         external
     {
-        uint remainingBurn;
-        uint remainingDev;
-        (, , , , , remainingBurn, remainingDev, ) = getLRCFeeStats();
-
-        require(BurnableERC20(lrcAddress).burn(remainingBurn), "BURN_FAILURE");
+        require(daoAddress != address(0), "ZERO_DAO_ADDRESS");
+        uint amount;
+        (, , , , , , amount, ) = getLRCFeeStats();
 
         require(
-            lrcAddress.safeTransferFrom(address(this), owner, remainingDev),
+            lrcAddress.safeTransferFrom(address(this), daoAddress, amount),
             "TRANSFER_FAILURE"
         );
 
-        claimedBurn = claimedBurn.add(remainingBurn);
-        claimedDev = claimedDev.add(remainingDev);
-
-        emit LRCDrained(remainingBurn, remainingDev);
+        claimedDAOFund = claimedDAOFund.add(amount);
+        emit DAOFundWithdrawn(amount);
     }
 
-   function settleAuction(address auction)
+    function burnLRC()
+        external
+    {
+        uint amount;
+        (, , , , , amount, , ) = getLRCFeeStats();
+        require(BurnableERC20(lrcAddress).burn(amount), "BURN_FAILURE");
+        claimedBurn = claimedBurn.add(amount);
+        emit LRCBurned(amount);
+    }
+
+    function settleAuction(address auction)
         external
     {
         require(auction != address(0), "ZERO_ADDRESS");
@@ -213,9 +227,11 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
             address payable auctionAddr
         )
     {
-        require(oedaxAddress != address(0), "ZERO_ADDRESS");
+        require(oedaxAddress != address(0), "NO_OEDAX_SET");
         require(amount > 0, "ZERO_AMOUNT");
+
         address tokenB = sellForEther ? address(0) : lrcAddress;
+        require(token != tokenB, "SAME_TOKEN");
 
         IOedax oedax = IOedax(oedaxAddress);
         uint ethStake = oedax.creatorEtherStake();
@@ -233,7 +249,9 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
         );
 
         if (token == address(0)) {
-            auctionAddr.transfer(amount);
+            bool success;
+            (success, ) = auctionAddr.call.value(amount)("");
+            require(success, "TRANSFER_FAILURE");
         } else {
             require(ERC20(token).approve(auctionAddr, amount), "AUTH_FAILED");
             IAuction(auctionAddr).ask(amount);

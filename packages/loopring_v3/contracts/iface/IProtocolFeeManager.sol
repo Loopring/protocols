@@ -21,21 +21,23 @@ pragma solidity 0.5.7;
 contract IProtocolFeeManager
 {
     uint public constant REWARD_PERCENTAGE      = 70;
-    uint public constant DEVPOOL_PERDENTAGE     = 10;
+    uint public constant DAO_PERDENTAGE         = 15;
 
     address public userStakingPoolAddress;
     address public lrcAddress;
     address public oedaxAddress;
+    address public daoAddress;
 
     uint claimedReward;
-    uint claimedDev;
+    uint claimedDAOFund;
     uint claimedBurn;
 
     bool allowOwnerWithdrawal;
 
-    event OwnerWithdrawal(address token, uint amount);
-    event LRCDrained(uint burnedAmount, uint devAmount);
-    event AuctionStarted(address tokenS, address tokenB, address payable auctionAddr);
+    event OwnerWithdrawal (address token, uint amount);
+    event DAOFundWithdrawn(uint amount);
+    event LRCBurned       (uint amount);
+    event AuctionStarted  (address tokenS, address tokenB, address payable auctionAddr);
 
     /// @dev Claim LRC as staking reward to the IUserStakingPool contract.
     ///
@@ -47,12 +49,12 @@ contract IProtocolFeeManager
 
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
-    /// @return accumulatedDev The accumulated amount of LRC to burn.
+    /// @return accumulatedDAOFund The accumulated amount of LRC to burn.
     /// @return accumulatedBurn The accumulated amount of LRC as developer pool.
     /// @return accumulatedReward The accumulated amount of LRC as staking reward.
     /// @return remainingFees The remaining amount of LRC protocol fees.
     /// @return remainingBurn The remaining amount of LRC to burn.
-    /// @return remainingDev The remaining amount of LRC as developer pool.
+    /// @return remainingDAOFund The remaining amount of LRC as developer pool.
     /// @return remainingReward The remaining amount of LRC as staking reward.
     function getLRCFeeStats()
         public
@@ -60,17 +62,21 @@ contract IProtocolFeeManager
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,
-            uint accumulatedDev,
+            uint accumulatedDAOFund,
             uint accumulatedReward,
             uint remainingFees,
             uint remainingBurn,
-            uint remainingDev,
+            uint remainingDAOFund,
             uint remainingReward
         );
 
     /// @dev Set Oedax address, only callable by the owner.
     /// @param _oedaxAddress The address of Oedax contract.
     function setOedax(address _oedaxAddress) external;
+
+    /// @dev Set the Loopring DAO address, only callable by the owner.
+    /// @param _daoAddress The address of the DAO contract.
+    function setDAO(address _daoAddress) external;
 
     /// @dev Permanently disallow owner to withdraw non-LRC protocol fees, only callable by the owner.
     function disableOwnerWithdrawal() external;
@@ -114,7 +120,11 @@ contract IProtocolFeeManager
 
     /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC,
     ///      only callable by the owner.
-    function withdrawDevPoolAndBurn() external;
+    function withdrawLRCToDAO() external;
+
+    /// @dev withdraw LRC for developer pool and burn a predefined amount of LRC,
+    ///      only callable by the owner.
+    function burnLRC() external;
 
     /// @dev Settle a closed Oedax auction,
     function settleAuction(address auction) external;
