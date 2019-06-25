@@ -63,6 +63,7 @@ library ExchangeGenesis
             ExchangeData.BlockState.FINALIZED,
             ExchangeData.BlockType(0),
             0,
+            0,
             uint32(now),
             1,
             1,

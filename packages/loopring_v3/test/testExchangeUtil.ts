@@ -2,17 +2,19 @@ import BN = require("bn.js");
 import childProcess = require("child_process");
 import fs = require("fs");
 import path = require("path");
-import * as pjs from "protocol2-js";
 import { SHA256 } from "sha2";
 import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import babyJub = require("./babyjub");
+import { BitArray } from "./bitarray";
+import { Bitstream } from "./bitstream";
+import { compress, CompressionType } from "./compression";
 import * as constants from "./constants";
 import { Context } from "./context";
 import eddsa = require("./eddsa");
 import { toFloat } from "./float";
-import pedersenHash = require("./pedersenHash");
+import { logDebug, logInfo } from "./logs";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
@@ -32,6 +34,11 @@ function replacer(name: any, val: any) {
   }
 }
 
+interface Range {
+    offset: number;
+    length: number;
+}
+
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
@@ -45,6 +52,7 @@ export class ExchangeTestUtil {
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
+  public lzDecompressor: any;
 
   public lrcAddress: string;
   public wethAddress: string;
@@ -92,6 +100,7 @@ export class ExchangeTestUtil {
   public pendingBlocks: Block[][] = [];
 
   public onchainDataAvailability = true;
+  public compressionType = CompressionType.LZ;
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -293,7 +302,7 @@ export class ExchangeTestUtil {
     const events: any = await this.getEventsFromContract(contract, eventName, web3.eth.blockNumber);
 
     events.forEach((e: any) => {
-      pjs.logDebug("event:", util.inspect(e.args, false, null));
+      logDebug("event:", util.inspect(e.args, false, null));
     });
   }
 
@@ -310,22 +319,6 @@ export class ExchangeTestUtil {
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
 
-  public toBitsBN(value: BN, length: number) {
-    const res = new Array(length);
-    for (let i = 0; i < length; i++) {
-      res[i] = value.testn(i) ? 1 : 0;
-    }
-    return res;
-  }
-
-  public toBitsNumber(value: number, length: number) {
-    return this.toBitsBN(new BN(value), length);
-  }
-
-  public toBitsString(value: string, length: number) {
-    return this.toBitsBN(new BN(value, 10), length);
-  }
-
   public async setupOrder(order: OrderInfo, index: number) {
     if (order.owner === undefined) {
       const accountIndex = index % this.testContext.orderOwners.length;
@@ -340,9 +333,6 @@ export class ExchangeTestUtil {
     }
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = this.testContext.tokenSymbolAddrMap.get(order.tokenB);
-    }
-    if (order.tokenF && !order.tokenF.startsWith("0x")) {
-      order.tokenF = this.testContext.tokenSymbolAddrMap.get(order.tokenF);
     }
     if (!order.validSince) {
       // Set the order validSince time to a bit before the current timestamp;
@@ -371,10 +361,6 @@ export class ExchangeTestUtil {
     order.feeBips = (order.feeBips !== undefined) ? order.feeBips : order.maxFeeBips;
     order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
 
-    const walletIndex = index % this.testContext.wallets.length;
-    order.walletAccountID = (order.walletAccountID !== undefined) ?
-                            order.walletAccountID : this.wallets[order.exchangeID][walletIndex].walletAccountID;
-
     order.orderID = (order.orderID !== undefined) ? order.orderID : index;
 
     order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : 0;
@@ -394,24 +380,23 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
-    const message = this.flattenList([
-      this.toBitsNumber(this.exchangeId, 32),
-      this.toBitsNumber(order.orderID, 20),
-      this.toBitsNumber(order.accountID, 20),
-      this.toBitsString(order.dualAuthPublicKeyX, 254),
-      this.toBitsString(order.dualAuthPublicKeyY, 254),
-      this.toBitsNumber(order.tokenIdS, 8),
-      this.toBitsNumber(order.tokenIdB, 8),
-      this.toBitsBN(order.amountS, 96),
-      this.toBitsBN(order.amountB, 96),
-      this.toBitsNumber(order.allOrNone ? 1 : 0, 1),
-      this.toBitsNumber(order.validSince, 32),
-      this.toBitsNumber(order.validUntil, 32),
-      this.toBitsNumber(order.maxFeeBips, 6),
-      this.toBitsNumber(order.buy ? 1 : 0, 1),
-    ]);
+    const message = new BitArray();
+    message.addNumber(this.exchangeId, 32);
+    message.addNumber(order.orderID, 20);
+    message.addNumber(order.accountID, 20);
+    message.addString(order.dualAuthPublicKeyX, 254);
+    message.addString(order.dualAuthPublicKeyY, 254);
+    message.addNumber(order.tokenIdS, 8);
+    message.addNumber(order.tokenIdB, 8);
+    message.addBN(order.amountS, 96);
+    message.addBN(order.amountB, 96);
+    message.addNumber(order.allOrNone ? 1 : 0, 1);
+    message.addNumber(order.validSince, 32);
+    message.addNumber(order.validUntil, 32);
+    message.addNumber(order.maxFeeBips, 6);
+    message.addNumber(order.buy ? 1 : 0, 1);
     const account = this.accounts[this.exchangeId][order.accountID];
-    const sig = eddsa.sign(account.secretKey, message);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     order.hash = sig.hash;
     order.signature = {
       Rx: sig.R[0].toString(),
@@ -427,35 +412,33 @@ export class ExchangeTestUtil {
     }
     const account = this.accounts[this.exchangeId][ring.minerAccountID];
     const nonce = account.nonce++;
-    const message = this.flattenList([
-      this.toBitsString(ring.orderA.hash, 254),
-      this.toBitsString(ring.orderB.hash, 254),
-      this.toBitsNumber(ring.minerAccountID, 20),
-      this.toBitsNumber(ring.tokenID, 8),
-      this.toBitsBN(ring.fee, 96),
-      this.toBitsNumber(ring.orderA.feeBips, 6),
-      this.toBitsNumber(ring.orderB.feeBips, 6),
-      this.toBitsNumber(ring.orderA.rebateBips, 6),
-      this.toBitsNumber(ring.orderB.rebateBips, 6),
-      this.toBitsNumber(nonce, 32),
-      this.toBitsNumber(0, 1),
-    ]);
-
-    const sig = eddsa.sign(account.secretKey, message);
+    const message = new BitArray();
+    message.addString(ring.orderA.hash, 254);
+    message.addString(ring.orderB.hash, 254);
+    message.addNumber(ring.minerAccountID, 20);
+    message.addNumber(ring.tokenID, 8);
+    message.addBN(ring.fee, 96);
+    message.addNumber(ring.orderA.feeBips, 6);
+    message.addNumber(ring.orderB.feeBips, 6);
+    message.addNumber(ring.orderA.rebateBips, 6);
+    message.addNumber(ring.orderB.rebateBips, 6);
+    message.addNumber(nonce, 32);
+    message.addNumber(0, 1);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     ring.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
     };
 
-    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message);
+    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
     ring.dualAuthASignature = {
       Rx: dualAuthAsig.R[0].toString(),
       Ry: dualAuthAsig.R[1].toString(),
       s: dualAuthAsig.S.toString(),
     };
 
-    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message);
+    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
     ring.dualAuthBSignature = {
       Rx: dualAuthBsig.R[0].toString(),
       Ry: dualAuthBsig.R[1].toString(),
@@ -468,19 +451,18 @@ export class ExchangeTestUtil {
       return;
     }
     const account = this.accounts[this.exchangeId][cancel.accountID];
-    const message = this.flattenList([
-      this.toBitsNumber(this.exchangeId, 32),
-      this.toBitsNumber(cancel.accountID, 20),
-      this.toBitsNumber(cancel.orderTokenID, 8),
-      this.toBitsNumber(cancel.orderID, 20),
-      this.toBitsNumber(cancel.walletAccountID, 20),
-      this.toBitsNumber(cancel.feeTokenID, 8),
-      this.toBitsBN(cancel.fee, 96),
-      this.toBitsNumber(cancel.walletSplitPercentage, 7),
-      this.toBitsNumber(account.nonce++, 32),
-      this.toBitsNumber(0, 2),
-    ]);
-    const sig = eddsa.sign(account.secretKey, message);
+    const message = new BitArray();
+    message.addNumber(this.exchangeId, 32);
+    message.addNumber(cancel.accountID, 20);
+    message.addNumber(cancel.orderTokenID, 8);
+    message.addNumber(cancel.orderID, 20);
+    message.addNumber(cancel.walletAccountID, 20);
+    message.addNumber(cancel.feeTokenID, 8);
+    message.addBN(cancel.fee, 96);
+    message.addNumber(cancel.walletSplitPercentage, 7);
+    message.addNumber(account.nonce++, 32);
+    message.addNumber(0, 2);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     cancel.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
@@ -494,19 +476,18 @@ export class ExchangeTestUtil {
       return;
     }
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
-    const message = this.flattenList([
-      this.toBitsNumber(this.exchangeId, 32),
-      this.toBitsNumber(withdrawal.accountID, 20),
-      this.toBitsNumber(withdrawal.tokenID, 8),
-      this.toBitsBN(withdrawal.amount, 96),
-      this.toBitsNumber(withdrawal.walletAccountID, 20),
-      this.toBitsNumber(withdrawal.feeTokenID, 8),
-      this.toBitsBN(withdrawal.fee, 96),
-      this.toBitsNumber(withdrawal.walletSplitPercentage, 7),
-      this.toBitsNumber(account.nonce++, 32),
-      this.toBitsNumber(0, 1),
-    ]);
-    const sig = eddsa.sign(account.secretKey, message);
+    const message = new BitArray();
+    message.addNumber(this.exchangeId, 32);
+    message.addNumber(withdrawal.accountID, 20);
+    message.addNumber(withdrawal.tokenID, 8);
+    message.addBN(withdrawal.amount, 96);
+    message.addNumber(withdrawal.walletAccountID, 20);
+    message.addNumber(withdrawal.feeTokenID, 8);
+    message.addBN(withdrawal.fee, 96);
+    message.addNumber(withdrawal.walletSplitPercentage, 7);
+    message.addNumber(account.nonce++, 32);
+    message.addNumber(0, 1);
+    const sig = eddsa.sign(account.secretKey, message.getBits());
     withdrawal.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
@@ -658,7 +639,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(amount),
       {from: caller, value: ethToSend},
     );
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
+    // logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -757,7 +738,7 @@ export class ExchangeTestUtil {
         {from: owner, value: withdrawalFee},
       );
     }
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
+    logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawalRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -805,13 +786,13 @@ export class ExchangeTestUtil {
                                                  feeTokenID, fee, walletSplitPercentage);
   }
 
-  public cancelOrder(order: OrderInfo, feeToken: string, fee: BN) {
+  public cancelOrder(order: OrderInfo, walletAccountID: number, feeToken: string, fee: BN) {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.cancelOrderID(order.exchangeID, order.accountID, order.tokenIdS, order.orderID, order.walletAccountID,
-                       feeTokenID, fee, 50);
+    this.cancelOrderID(order.exchangeID, order.accountID, order.tokenIdS, order.orderID,
+                       walletAccountID, feeTokenID, fee, 50);
   }
 
   public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
@@ -855,34 +836,32 @@ export class ExchangeTestUtil {
 
   public async commitBlock(operator: Operator, blockType: BlockType, blockSize: number,
                            data: string, filename: string) {
-    const bitstream = new pjs.Bitstream(data);
-    console.log("[EVM]PublicData: " + bitstream.getData());
-    const exchangeID = bitstream.extractUint32(0);
+    console.log("[EVM]PublicData: " + data);
+    const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
     // Make sure the keys are generated
     await this.generateKeys(filename);
 
-    // const activeOperator = await this.getActiveOperator(exchangeID);
-    // assert.equal(activeOperator.operatorID, operator.operatorID);
-    // console.log("Active operator: " + activeOperator.owner + " " + activeOperator.operatorID);
-
+    const blockVersion = 0;
     const operatorContract = this.operator ? this.operator : this.exchange;
     const tx = await operatorContract.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.toBN(blockSize),
-      web3.utils.hexToBytes(data),
+      web3.utils.toBN(blockVersion),
+      web3.utils.hexToBytes(compressedData),
       web3.utils.hexToBytes("0x"),
       {from: this.exchangeOperator},
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
+    logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
     const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const block: Block = {
       blockIdx,
       filename,
       operator,
+      compressedData,
     };
-    this.pendingBlocks[exchangeID].push(block);
+    this.pendingBlocks[this.exchangeId].push(block);
     return block;
   }
 
@@ -909,16 +888,18 @@ export class ExchangeTestUtil {
       verificationKeyFilename += "cancel";
     }
     verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
-    verificationKeyFilename += block.numElements + "_vk.json";
+    verificationKeyFilename += block.blockSize + "_vk.json";
 
     // Read the verification key and set it in the smart contract
     const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
     const vkFlattened = this.flattenList(this.flattenVK(vk));
     // console.log(vkFlattened);
+    const blockVersion = 0;
     await this.blockVerifier.setVerifyingKey(
       block.blockType,
       block.onchainDataAvailability,
-      block.numElements,
+      block.blockSize,
+      blockVersion,
       vkFlattened,
     );
   }
@@ -946,7 +927,7 @@ export class ExchangeTestUtil {
       proofFlattened,
       {from: this.exchangeOperator},
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+    logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
 
     return proofFilename;
   }
@@ -1013,7 +994,7 @@ export class ExchangeTestUtil {
       // Calculate ending hash
       let endingHash = startingHash;
       for (const deposit of deposits) {
-        const hashData = new pjs.Bitstream();
+        const hashData = new Bitstream();
         hashData.addHex(endingHash);
         hashData.addNumber(deposit.accountID, 3);
         hashData.addBN(new BN(deposit.publicKeyX, 10), 32);
@@ -1045,7 +1026,7 @@ export class ExchangeTestUtil {
       this.validateDeposits(deposits, stateBefore, stateAfter);
 
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
-      const bs = new pjs.Bitstream();
+      const bs = new Bitstream();
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
@@ -1220,7 +1201,7 @@ export class ExchangeTestUtil {
       // Calculate ending hash
       let endingHash = startingHash;
       for (const withdrawal of withdrawals) {
-        const hashData = new pjs.Bitstream();
+        const hashData = new Bitstream();
         hashData.addHex(endingHash);
         hashData.addNumber(withdrawal.accountID, 3);
         hashData.addNumber(withdrawal.tokenID, 1);
@@ -1253,7 +1234,7 @@ export class ExchangeTestUtil {
       const stateAfter = await this.loadExchangeState(exchangeID, currentBlockIdx + 1);
 
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
-      const bs = new pjs.Bitstream();
+      const bs = new Bitstream();
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
@@ -1461,13 +1442,15 @@ export class ExchangeTestUtil {
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
-      const bs = new pjs.Bitstream();
+      const bs = new Bitstream();
       bs.addNumber(exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
       bs.addNumber(ringBlock.timestamp, 4);
       bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
       bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
+
+      const da = new Bitstream();
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const ringSettlement of block.ringSettlements) {
@@ -1476,34 +1459,127 @@ export class ExchangeTestUtil {
           const orderB = ringSettlement.ring.orderB;
 
           const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
-          bs.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
-          bs.addNumber(ring.tokenID, 1);
+          da.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
+          da.addNumber(ring.tokenID, 1);
 
-          bs.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
-          bs.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
+          da.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
+          da.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
 
-          bs.addNumber(orderA.tokenS, 1);
-          bs.addNumber(ring.fFillS_A, 3);
+          da.addNumber(orderA.tokenS, 1);
+          da.addNumber(ring.fFillS_A, 3);
           let buyMask = orderA.buy ? 0b10000000 : 0;
           let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
-          bs.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
+          da.addNumber(buyMask + rebateMask + orderA.feeBips + orderA.rebateBips, 1);
 
-          bs.addNumber(orderB.tokenS, 1);
-          bs.addNumber(ring.fFillS_B, 3);
+          da.addNumber(orderB.tokenS, 1);
+          da.addNumber(ring.fFillS_B, 3);
           buyMask = orderB.buy ? 0b10000000 : 0;
           rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
-          bs.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
+          da.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
         }
       }
 
+      if (block.onchainDataAvailability) {
+        // Apply circuit transfrom
+        const transformedData = this.transformRingSettlementsData(da.getData());
+        bs.addHex(transformedData);
+      }
+
       // Validate state change
-      this.validateRingSettlements(ringBlock, bs, stateBefore, stateAfter);
+      this.validateRingSettlements(ringBlock, bs.getData(), stateBefore, stateAfter);
 
       // Commit the block
       await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
     }
 
     this.pendingRings[exchangeID] = [];
+  }
+
+  public getRingTransformations() {
+    const ranges: Range[][] = [];
+    ranges.push([{offset: 0, length: 5}]);                            // ringMatcherID + fFee + tokenID
+    ranges.push([{offset: 5, length: 5}]);                            // orderA.orderID + orderB.orderID
+    ranges.push([{offset: 10, length: 5}]);                           // orderA.accountID + orderB.accountID
+    ranges.push([{offset: 15, length: 1}, {offset: 20, length: 1}]);  // orderA.tokenS + orderB.tokenS
+    ranges.push([{offset: 16, length: 3}, {offset: 21, length: 3}]);  // orderA.fillS + orderB.fillS
+    ranges.push([{offset: 19, length: 1}]);                           // orderA.data
+    ranges.push([{offset: 24, length: 1}]);                           // orderB.data
+    return ranges;
+  }
+
+  public transformRingSettlementsData(input: string) {
+    // Compress
+    const bs = new Bitstream(input);
+    const compressed = new Bitstream();
+    const ringSize = 25;
+    compressed.addHex(bs.extractData(0, ringSize));
+    for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
+      for (let i = 0; i < 5; i++) {
+        const previousRingData = bs.extractUint8(offset + i - ringSize);
+        const currentRingData = bs.extractUint8(offset + i);
+        const data = previousRingData ^ currentRingData;
+        compressed.addNumber(data, 1);
+      }
+      compressed.addHex(bs.extractData(offset + 5, ringSize - 5));
+    }
+    // Transform
+    const ranges = this.getRingTransformations();
+    const transformed = new Bitstream();
+    for (const subranges of ranges) {
+      for (let offset = 0; offset < compressed.length(); offset += ringSize) {
+        for (const subrange of subranges) {
+          transformed.addHex(compressed.extractData(offset + subrange.offset, subrange.length));
+        }
+      }
+    }
+    return transformed.getData();
+  }
+
+  public replaceAt(data: string, index: number, replacement: string) {
+      return data.substr(0, index) + replacement + data.substr(index + replacement.length);
+  }
+
+  public inverseTransformRingSettlementsData(input: string) {
+    // Inverse Transform
+    const transformed = new Bitstream(input);
+    const ringSize = 25;
+    const numRings = transformed.length() / ringSize;
+    const ranges = this.getRingTransformations();
+    const compressed = new Bitstream();
+    for (let r = 0; r < numRings; r++) {
+      let offset = 0;
+      let ringData = "00".repeat(ringSize);
+      for (const subranges of ranges) {
+        let totalRangeLength = 0;
+        for (const subrange of subranges) {
+          totalRangeLength += subrange.length;
+        }
+        let partialRangeLength = 0;
+        for (const subrange of subranges) {
+          const dataPart = transformed.extractData(
+            offset + totalRangeLength * r + partialRangeLength, subrange.length,
+          );
+          ringData = this.replaceAt(ringData, subrange.offset * 2, dataPart);
+          partialRangeLength += subrange.length;
+        }
+        offset += totalRangeLength * numRings;
+      }
+      compressed.addHex(ringData);
+    }
+
+    // Decompress
+    const bs = new Bitstream();
+    bs.addHex(compressed.extractData(0, ringSize));
+    for (let r = 1; r < numRings; r++) {
+      for (let i = 0; i < 5; i++) {
+        const previousRingData = bs.extractUint8((r - 1) * ringSize + i);
+        const delta = compressed.extractUint8(r * ringSize + i);
+        const reconstructedData = previousRingData ^ delta;
+        bs.addNumber(reconstructedData, 1);
+      }
+      bs.addHex(compressed.extractData(r * ringSize + 5, ringSize - 5));
+    }
+    return bs.getData();
   }
 
   public cancelPendingRings(exchangeID: number) {
@@ -1566,7 +1642,7 @@ export class ExchangeTestUtil {
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
-      const bs = new pjs.Bitstream();
+      const bs = new Bitstream();
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
@@ -1604,7 +1680,7 @@ export class ExchangeTestUtil {
         await this.setBalanceAndApprove(this.exchangeOwner, "LRC", registrationCost);
         // Register the token
         const tx = await this.exchange.registerToken(tokenAddress, {from: this.exchangeOwner});
-        // pjs.logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
+        // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
       }
 
       const tokenID = await this.getTokenID(tokenAddress);
@@ -1654,7 +1730,7 @@ export class ExchangeTestUtil {
 
     // Create the new exchange
     const tx = await this.loopringV3.createExchange(operator, onchainDataAvailability, {from: owner});
-    // pjs.logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+    // logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
 
     const eventArr: any = await this.getEventsFromContract(this.loopringV3, "ExchangeCreated", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -1750,7 +1826,7 @@ export class ExchangeTestUtil {
       data.proof.accountProof,
       data.proof.balanceProof,
     );
-    pjs.logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
+    logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
   }
 
   public async withdrawFromDepositRequest(requestIdx: number) {
@@ -1924,8 +2000,18 @@ export class ExchangeTestUtil {
     }
   }
 
-  public validateRingSettlements(ringBlock: RingBlock, bs: pjs.Bitstream,
+  public validateRingSettlements(ringBlock: RingBlock, onchainData: string,
                                  stateBefore: ExchangeState, stateAfter: ExchangeState) {
+    let bs: Bitstream;
+    if (ringBlock.onchainDataAvailability) {
+      // Reverse circuit transform
+      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
+      const ringData = this.inverseTransformRingSettlementsData("0x" + onchainData.slice(2 + 2 * ringDataStart));
+      bs = new Bitstream(onchainData.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2));
+    } else {
+      bs = new Bitstream(onchainData);
+    }
+
     console.log("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
@@ -2038,7 +2124,7 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, bs: pjs.Bitstream,
+  public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, bs: Bitstream,
                                      stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     const operatorAccountID = withdrawBlock.operatorAccountID;
@@ -2074,7 +2160,7 @@ export class ExchangeTestUtil {
     console.log("----------------------------------------------------");
   }
 
-  public validateOrderCancellations(cancelBlock: CancelBlock, bs: pjs.Bitstream,
+  public validateOrderCancellations(cancelBlock: CancelBlock, bs: Bitstream,
                                     stateBefore: ExchangeState, stateAfter: ExchangeState) {
     console.log("----------------------------------------------------");
     const operatorAccountID = cancelBlock.operatorAccountID;
@@ -2306,6 +2392,8 @@ export class ExchangeTestUtil {
         this.contracts.WETHToken.deployed(),
       ]);
 
+    this.lzDecompressor = await this.contracts.LzDecompressor.new();
+
     this.loopringV3 = loopringV3;
     this.exchangeDeployer = exchangeDeployer;
     this.blockVerifier = blockVerifier;
@@ -2411,9 +2499,9 @@ export class ExchangeTestUtil {
     const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
     if (payment.subPayments.length === 0) {
       const toName = addressBook[payment.to] !== undefined ? addressBook[payment.to] : payment.to;
-      pjs.logDebug(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
+      logDebug(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
-      pjs.logDebug(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
+      logDebug(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
       }

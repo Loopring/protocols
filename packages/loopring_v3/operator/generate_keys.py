@@ -3,16 +3,16 @@ import subprocess
 
 class Struct(object): pass
 
-def generate_keys(blockType, numElements, onchainDataAvailability):
+def generate_keys(blockType, blockSize, onchainDataAvailability):
     block = Struct()
     block.onchainDataAvailability = onchainDataAvailability
     block.blockType = blockType
-    block.numElements = numElements
+    block.blockSize = blockSize
 
     blockJson = json.dumps(block, default=lambda o: o.__dict__, sort_keys=True, indent=4)
     print("blockJson:", blockJson)
 
-    inputFile = "./blocks/block_meta_" + str(blockType) + "_" + str(numElements) + ".json"
+    inputFile = "./blocks/block_meta_" + str(blockType) + "_" + str(blockSize) + ".json"
     f = open(inputFile, "w+")
     f.write(blockJson)
     f.close()

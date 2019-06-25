@@ -115,6 +115,9 @@ library ExchangeData
         // the block is supported.
         uint16 blockSize;
 
+        // The block version (i.e. what circuit version needs to be used to verify the block).
+        uint8  blockVersion;
+
         // The time the block was created.
         uint32 timestamp;
 
