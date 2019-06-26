@@ -112,6 +112,7 @@ contract RoleBasedOperators
             if (operatorAddresses.length == 0) {
                 require(roles & ROOT != 0, "NEED_A_ROOT");
             } else {
+                // require(msg.sender != who, "SELF_OP_FORBIDDEN");
                 require(hasAnyRoles(msg.sender, ROOT), "UNAUTHORIZED");
             }
 
@@ -128,7 +129,7 @@ contract RoleBasedOperators
     }
 
     /// @dev Remove an operator, only callable by operators with ROOT role.
-    /// @param who The opeerator to remove.
+    /// @param who The operator to remove.
     function removeOperator(
         address who
         )
@@ -136,6 +137,7 @@ contract RoleBasedOperators
         onlyOperatorsWithAllRoles(ROOT)
         returns (bool success)
     {
+        // require(msg.sender != who, "SELF_OP_FORBIDDEN");
         Operator storage operator = operatorMap[who];
 
         if (operator.id != 0) {
