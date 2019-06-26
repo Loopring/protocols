@@ -19,7 +19,7 @@ pragma solidity 0.5.7;
 import "../lib/MintableNonTransferableERC20Token.sol";
 
 
-/// @title ReputationToken - Loopring's Reputation token.
+/// @title LOOP - Loopring's Reputation token.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LOOP is MintableNonTransferableERC20Token("Loopring Reputation", "LOOP", 0)
 {
