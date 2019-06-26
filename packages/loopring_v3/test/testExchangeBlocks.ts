@@ -551,6 +551,7 @@ contract("Exchange", (accounts: string[]) => {
                 tokenB: "GTO",
                 amountS: new BN(web3.utils.toWei("100", "ether")),
                 amountB: new BN(web3.utils.toWei("10", "ether")),
+                owner: exchangeTestUtil.testContext.orderOwners[0],
               },
             orderB:
               {
@@ -558,6 +559,7 @@ contract("Exchange", (accounts: string[]) => {
                 tokenB: "WETH",
                 amountS: new BN(web3.utils.toWei("5", "ether")),
                 amountB: new BN(web3.utils.toWei("45", "ether")),
+                owner: exchangeTestUtil.testContext.orderOwners[1],
               },
           };
           await exchangeTestUtil.setupRing(ring);

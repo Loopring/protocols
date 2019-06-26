@@ -116,7 +116,7 @@ export class ExchangeTestUtil {
 
   private dualAuthKeyPair: any;
 
-  private MAX_NUM_EXCHANGES: number = 128;
+  private MAX_NUM_EXCHANGES: number = 256;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
