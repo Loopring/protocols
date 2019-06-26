@@ -6,8 +6,8 @@
     "test": "test"
   },
   "scripts": {
-    "build": "rimraf dist && tsc",
     "build:proto": "rimraf proto_gen && mkdir proto_gen && node lib/grpc/proto",
+    "build": "npm run build:proto && rimraf dist && tsc",
     "lint": "tslint --project tsconfig.json ./src/**/*.ts",
     "test": "mocha"
   },
