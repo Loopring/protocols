@@ -19,7 +19,7 @@ import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
          Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer, ExchangeState, KeyPair,
-         Operator, OrderInfo, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
+         OrderInfo, RingBlock, RingInfo, TradeHistory, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 const bigInt = snarkjs.bigInt;
@@ -63,14 +63,14 @@ export class ExchangeTestUtil {
   public exchangeId: number;
 
   public operator: any;
-  public activeOperator: Operator;
+  public activeOperator: number;
 
   public minerAccountID: number[] = [];
 
   public accounts: Account[][] = [];
 
-  public operators: Operator[] = [];
-  public wallets: Wallet[][] = [];
+  public operators: number[] = [];
+  public wallets: number[][] = [];
 
   public GENESIS_MERKLE_ROOT: BN = new BN("06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3", 16);
 
@@ -165,7 +165,7 @@ export class ExchangeTestUtil {
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
 
-      const wallets: Wallet[] = [];
+      const wallets: number[] = [];
       this.wallets.push(wallets);
 
       const accountsT: Account[] = [];
@@ -236,11 +236,7 @@ export class ExchangeTestUtil {
     const depositInfo = await this.deposit(exchangeID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            this.zeroAddress, new BN(1));
-    const operator: Operator = {
-      owner,
-      accountID: depositInfo.accountID,
-    };
-    return operator;
+    return depositInfo.accountID;
   }
 
   public async createWallet(exchangeID: number, owner: string) {
@@ -249,11 +245,7 @@ export class ExchangeTestUtil {
     const walletDeposit = await this.deposit(exchangeID, owner,
                                              keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                              this.zeroAddress, new BN(0));
-    const wallet: Wallet = {
-      owner,
-      walletAccountID: walletDeposit.accountID,
-    };
-    return wallet;
+    return walletDeposit.accountID;
   }
 
   public async createRingMatcher(exchangeID: number, owner: string) {
@@ -540,9 +532,7 @@ export class ExchangeTestUtil {
     const bIndex = index !== undefined;
     addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.orderA.walletAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.orderB.walletAccountID, "WalletB" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.minerAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
   }
@@ -755,7 +745,7 @@ export class ExchangeTestUtil {
     });
     const withdrawalIdx = items[0][0].toNumber();
 
-    const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+    const walletAccountID = this.wallets[exchangeID][0];
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[exchangeID],
                               accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
                               0, withdrawalIdx, withdrawalFee);
@@ -843,7 +833,7 @@ export class ExchangeTestUtil {
     return [nextBlockIdx, outputFilename];
   }
 
-  public async commitBlock(operator: Operator, blockType: BlockType, blockSize: number,
+  public async commitBlock(operatorId: number, blockType: BlockType, blockSize: number,
                            data: string, filename: string) {
     if (this.commitWrongPublicDataOnce) {
       data += "00";
@@ -871,7 +861,7 @@ export class ExchangeTestUtil {
     const block: Block = {
       blockIdx,
       filename,
-      operator,
+      operatorId,
       compressedData,
     };
     this.pendingBlocks[this.exchangeId].push(block);
@@ -1152,7 +1142,7 @@ export class ExchangeTestUtil {
     this.operator = operator;
   }
 
-  public async setActiveOperator(operator: Operator) {
+  public async setActiveOperator(operator: number) {
     this.activeOperator = operator;
   }
 
@@ -1186,7 +1176,7 @@ export class ExchangeTestUtil {
             accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
-            walletAccountID: onchain ? 0 : this.wallets[exchangeID][0].walletAccountID,
+            walletAccountID: onchain ? 0 : this.wallets[exchangeID][0],
             feeTokenID: 1,
             fee: new BN(0),
             walletSplitPercentage: 0,
@@ -1230,7 +1220,7 @@ export class ExchangeTestUtil {
       const withdrawalBlock: WithdrawBlock = {
         withdrawals,
         onchainDataAvailability: this.onchainDataAvailability,
-        operatorAccountID: onchain ? 0 : operator.accountID,
+        operatorAccountID: onchain ? 0 : operator,
         startHash: onchain ? new BN(startingHash.slice(2), 16) : new BN(0),
         startIndex: onchain ? startIndex : 0,
         count: shutdown ? 0 : (onchain ? numRequestsInBlock : 0),
@@ -1356,7 +1346,7 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+          const walletAccountID = this.wallets[exchangeID][0];
           const dummyRing: RingInfo = {
             orderA:
               {
@@ -1439,7 +1429,7 @@ export class ExchangeTestUtil {
         protocolTakerFeeBips,
         protocolMakerFeeBips,
         exchangeID,
-        operatorAccountID: operator.accountID,
+        operatorAccountID: operator,
       };
 
       // Store state before
@@ -1614,7 +1604,7 @@ export class ExchangeTestUtil {
         if (b < pendingCancels.length) {
           cancels.push(pendingCancels[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+          const walletAccountID = this.wallets[exchangeID][0];
           const dummyCancel: Cancel = {
             accountID: this.dummyAccountId,
             orderTokenID: 0,
@@ -1639,7 +1629,7 @@ export class ExchangeTestUtil {
       const cancelBlock: CancelBlock = {
         cancels,
         onchainDataAvailability: this.onchainDataAvailability,
-        operatorAccountID: operator.accountID,
+        operatorAccountID: operator,
       };
 
       // Store state before
@@ -1719,6 +1709,10 @@ export class ExchangeTestUtil {
     } catch {
       return undefined;
     }
+  }
+
+  public getAccount(accountId: number) {
+    return this.accounts[this.exchangeId][accountId];
   }
 
   public async createExchange(
@@ -1986,7 +1980,7 @@ export class ExchangeTestUtil {
       "LRC",
       new BN(0),
       0,
-      this.wallets[this.exchangeId][0].walletAccountID,
+      this.wallets[this.exchangeId][0],
     );
   }
 

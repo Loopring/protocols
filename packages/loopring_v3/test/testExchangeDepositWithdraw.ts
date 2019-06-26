@@ -489,7 +489,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
         exchangeID, accountID, token, toWithdraw,
-        feeToken, fee, 20, wallet.walletAccountID,
+        feeToken, fee, 20, wallet,
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -524,9 +524,9 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(exchangeID);
 
-      const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
+      await exchangeTestUtil.requestWithdrawalOffchain(
         exchangeID, accountID, token, toWithdraw,
-        feeToken, fee, 40, wallet.walletAccountID,
+        feeToken, fee, 40, wallet,
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -536,6 +536,106 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, 0,
                             accountID, token,
                             owner, balance);
+    });
+
+    it("Offchain withdrawal request (owner == wallet)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID, accountID, token, toWithdraw,
+        feeToken, fee, 20, accountID,
+      );
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance.sub(fee));
+    });
+
+    it("Offchain withdrawal request (owner == operator)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const wallet = exchangeTestUtil.wallets[exchangeID][0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID, accountID, token, toWithdraw,
+        feeToken, fee, 20, wallet,
+      );
+
+      exchangeTestUtil.setActiveOperator(accountID);
+
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance.sub(fee));
+    });
+
+    it("Offchain withdrawal request (owner == wallet == operator)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID, accountID, token, toWithdraw,
+        feeToken, fee, 20, accountID,
+      );
+
+      exchangeTestUtil.setActiveOperator(accountID);
+
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance.sub(fee));
     });
 
     it("Withdraw (normal account)", async () => {
@@ -636,7 +736,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            walletAccountID: walletA.walletAccountID,
+            walletAccountID: walletA,
           },
         orderB:
           {
@@ -644,7 +744,7 @@ contract("Exchange", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
-            walletAccountID: walletB.walletAccountID,
+            walletAccountID: walletB,
           },
       };
 
@@ -657,12 +757,12 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderA.tokenB, ring.orderA.amountB,
-        walletA.owner,
+        exchangeTestUtil.getAccount(walletA).owner,
       );
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderB.tokenB, ring.orderB.amountB,
-        walletB.owner,
+        exchangeTestUtil.getAccount(walletB).owner,
       );
       await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -731,7 +831,7 @@ contract("Exchange", (accounts: string[]) => {
           "LRC",
           new BN(0),
           0,
-          exchangeTestUtil.wallets[exchangeID][0].walletAccountID,
+          exchangeTestUtil.wallets[exchangeID][0],
         );
       }
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
@@ -827,7 +927,7 @@ contract("Exchange", (accounts: string[]) => {
           "LRC",
           new BN(0),
           0,
-          exchangeTestUtil.wallets[exchangeID][0].walletAccountID,
+          exchangeTestUtil.wallets[exchangeID][0],
         );
       }
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
@@ -891,7 +991,7 @@ contract("Exchange", (accounts: string[]) => {
           "LRC",
           new BN(0),
           0,
-          exchangeTestUtil.wallets[exchangeID][0].walletAccountID,
+          exchangeTestUtil.wallets[exchangeID][0],
         );
       }
       const blockIdx = (await exchange.getBlockHeight()).toNumber();

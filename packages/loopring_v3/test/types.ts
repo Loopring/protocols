@@ -170,7 +170,7 @@ export interface CancelBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
-  operator: Operator;
+  operatorId: number;
   compressedData: string;
 }
 
@@ -181,16 +181,6 @@ export interface Account {
   publicKeyY: string;
   secretKey: string;
   nonce: number;
-}
-
-export interface Operator {
-  owner: string;
-  accountID: number;
-}
-
-export interface Wallet {
-  owner: string;
-  walletAccountID: number;
 }
 
 export interface TradeHistory {

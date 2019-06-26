@@ -367,7 +367,8 @@ class RingSettlement(object):
                  balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
                  balanceUpdateA_M, balanceUpdateB_M, balanceUpdateO_M, accountUpdate_M,
                  balanceUpdateA_P, balanceUpdateB_P,
-                 balanceUpdateF_O):
+                 balanceUpdateF_O,
+                 feeToOperator):
         self.ring = ring
 
         self.accountsMerkleRoot = str(accountsMerkleRoot)
@@ -393,6 +394,8 @@ class RingSettlement(object):
 
         self.balanceUpdateF_O = balanceUpdateF_O
 
+        self.feeToOperator = feeToOperator
+
 
 class OnchainWithdrawal(object):
     def __init__(self,
@@ -413,7 +416,7 @@ class OffchainWithdrawal(object):
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
                  balanceUpdateF_O,
-                 nonce):
+                 feeToOperator, nonce):
         self.exchangeID = exchangeID
 
         self.accountID = accountID
@@ -435,6 +438,7 @@ class OffchainWithdrawal(object):
 
         self.balanceUpdateF_O = balanceUpdateF_O
 
+        self.feeToOperator = feeToOperator
         self.nonce = nonce
 
 class Cancellation(object):
@@ -445,7 +449,8 @@ class Cancellation(object):
                  nonce,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateF_W, accountUpdate_W,
-                 balanceUpdateF_O):
+                 balanceUpdateF_O,
+                 feeToOperator):
         self.exchangeID = exchangeID
 
         self.accountID = accountID
@@ -466,6 +471,8 @@ class Cancellation(object):
         self.accountUpdate_W = accountUpdate_W
 
         self.balanceUpdateF_O = balanceUpdateF_O
+
+        self.feeToOperator = feeToOperator
 
 
 class State(object):
@@ -597,7 +604,7 @@ class State(object):
         fillA.B = fillB.S
         fillB.B = fillA.S
 
-        ringFee = roundToFloatValue(ring.fee, Float12Encoding)
+        feeToOperator = roundToFloatValue(ring.fee, Float12Encoding)
 
         '''
         print("fillA.S: " + str(fillA.S))
@@ -681,7 +688,7 @@ class State(object):
 
         balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenB, fee_A - protocolFee_A - rebate_A)
         balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenB, fee_B - protocolFee_B - rebate_B)
-        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -ringFee)
+        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -feeToOperator)
         accountM.nonce += 1
 
         self.updateAccountTree(ring.minerAccountID)
@@ -696,8 +703,7 @@ class State(object):
         ###
 
         # Operator payment
-        balanceUpdateF_O = self.getAccount(context.operatorAccountID).updateBalance(ring.tokenID, ringFee)
-        ###
+        # This is done after all rings are settled
 
         return RingSettlement(ring,
                               accountsMerkleRoot,
@@ -706,7 +712,8 @@ class State(object):
                               balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
                               balanceUpdateA_M, balanceUpdateB_M, balanceUpdateO_M, accountUpdate_M,
                               balanceUpdateA_P, balanceUpdateB_P,
-                              balanceUpdateF_O)
+                              None,
+                              feeToOperator)
 
 
     def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, token, amount):
@@ -844,15 +851,15 @@ class State(object):
         ###
 
         # Operator payment
-        balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
+        # This is done after all withdrawals are processed
 
         withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
                                         walletAccountID, feeTokenID, fee, walletSplitPercentage,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         balanceUpdateF_W, accountUpdate_W,
-                                        balanceUpdateF_O,
-                                        nonce)
+                                        None,
+                                        feeToOperator, nonce)
         return withdrawal
 
     def cancelOrder(self,
@@ -894,7 +901,7 @@ class State(object):
         ###
 
         # Operator payment
-        balanceUpdateF_O = self.getAccount(operatorAccountID).updateBalance(feeTokenID, feeToOperator)
+        # This is done after all cancellations are processed
 
         cancellation = Cancellation(exchangeID,
                                     accountID, orderTokenID, orderID, walletAccountID,
@@ -902,7 +909,8 @@ class State(object):
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     balanceUpdateF_W, accountUpdate_W,
-                                    balanceUpdateF_O)
+                                    None,
+                                    feeToOperator)
         return cancellation
 
     def createWithdrawProof(self, exchangeID, accountID, tokenID):
