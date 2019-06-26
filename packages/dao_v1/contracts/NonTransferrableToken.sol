@@ -31,11 +31,6 @@ contract NonTransferrableToken
     }
 
     mapping (address => Balance) balances;
-    
-    function isOperator(address who)
-        public
-        view
-        returns (bool);
 
     function totalSupply()
         public

@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.7;
 
-import "../lib/Claimable.sol";
+import "lib/Claimable.sol";
 
 
 /// @title NonTransferrableToken

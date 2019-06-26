@@ -1,0 +1,91 @@
+{
+  "name": "loopring_v3",
+  "version": "3.0.0",
+  "description": "Loopring DEX protocol version 3.0",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+http://github.com/Loopring/protocol.git"
+  },
+  "watch": {
+    "compile": {
+      "patterns": [
+        "contracts"
+      ],
+      "extensions": "sol",
+      "delay": 10000
+    }
+  },
+  "scripts": {
+    "watch": "npm-watch compile",
+    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
+    "test": "npm run transpile && truffle test",
+    "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
+    "testdocker": "npm run transpile && truffle test --network docker",
+    "compile": "truffle compile",
+    "build": "./install && yarn run compile",
+    "migrate": "npm run transpile && truffle migrate",
+    "deploy": "npm run migrate --network kovan",
+    "ganache": "./ganache.sh",
+    "coverage": "./node_modules/.bin/solidity-coverage",
+    "truffle": "truffle",
+    "clean": "rm -rf build/contracts",
+    "v": "node -v"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bignumber.js": "^4.0.3",
+    "@types/bluebird": "3.5.24",
+    "@types/lodash": "^4.14.123",
+    "@types/node": "9.3.0",
+    "@types/request-promise-native": "^1.0.15",
+    "ajv": "^6.10.0",
+    "chai": "^4.2.0",
+    "copyfiles": "^2.1.0",
+    "dirty-chai": "^2.0.1",
+    "ganache-cli": "6.2.4",
+    "mocha": "^5.2.0",
+    "node": "8.11.3",
+    "npm": "^6.9.0",
+    "npm-watch": "^0.6.0",
+    "solidity-coverage": "^0.5.11",
+    "solium": "^1.2.4",
+    "tslint": "^5.11.0",
+    "types-bn": "0.0.1",
+    "typescript": "3.1.6",
+    "web3-typescript-typings": "0.10.2",
+    "webpack": "^4.35.0"
+  },
+  "dependencies": {
+    "@types/bitwise-xor": "0.0.30",
+    "any-promise": "1.3.0",
+    "bignumber.js": "^4.1.0",
+    "bitwise-xor": "0.0.0",
+    "blake-hash": "^1.1.0",
+    "bluebird": "^3.5.1",
+    "bn.js": "^4.11.8",
+    "braces": "^2.3.2",
+    "es6-iterator": "^2.0.3",
+    "es6-map": "^0.1.5",
+    "es6-promisify": "^5.0.0",
+    "escape-string-regexp": "^1.0.5",
+    "estraverse": "^4.2.0",
+    "esutils": "^2.0.2",
+    "ethereumjs-abi": "^0.6.5",
+    "ethereumjs-util": "^5.1.5",
+    "event-emitter": "^0.3.5",
+    "events": "^3.0.0",
+    "js-sha3": "^0.8.0",
+    "lodash": "^4.17.5",
+    "protocol2-js": "^0.4.4",
+    "sha2": "^1.0.2",
+    "sha3": "^2.0.0",
+    "snarkjs": "0.1.11",
+    "truffle": "5.0.0",
+    "truffle-hdwallet-provider": "web3-one",
+    "typedarray-to-buffer": "^3.1.5"
+  }
+}
