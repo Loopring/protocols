@@ -29,12 +29,13 @@ import "../thirdparty/Verifier.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract BlockVerifier is IBlockVerifier, Claimable
 {
-    mapping (bool => mapping (uint8 => mapping (uint16 => uint256[18]))) verificationKeys;
+    mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => uint256[18])))) verificationKeys;
 
     function setVerifyingKey(
-        uint8 blockType,
-        bool onchainDataAvailability,
+        uint8  blockType,
+        bool   onchainDataAvailability,
         uint16 blockSize,
+        uint8  blockVersion,
         uint256[18] calldata vk
         )
         external
@@ -46,27 +47,29 @@ contract BlockVerifier is IBlockVerifier, Claimable
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
         for (uint i = 0; i < 18; i++) {
-            verificationKeys[onchainDataAvailability][blockType][blockSize][i] = vk[i];
+            verificationKeys[onchainDataAvailability][blockType][blockSize][blockVersion][i] = vk[i];
         }
     }
 
     function canVerify(
-        uint8 blockType,
-        bool onchainDataAvailability,
-        uint16 blockSize
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
         )
         external
         view
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        return verificationKeys[dataAvailability][blockType][blockSize][0] != 0;
+        return verificationKeys[dataAvailability][blockType][blockSize][blockVersion][0] != 0;
     }
 
     function verifyProof(
-        uint8 blockType,
-        bool onchainDataAvailability,
-        uint16 blockSize,
+        uint8   blockType,
+        bool    onchainDataAvailability,
+        uint16  blockSize,
+        uint8   blockVersion,
         bytes32 publicDataHash,
         uint256[8] calldata proof
         )
@@ -75,7 +78,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][blockSize];
+        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][blockSize][blockVersion];
 
         uint256[14] memory _vk = [
             vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],

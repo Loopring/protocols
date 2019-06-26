@@ -387,8 +387,10 @@ contract IExchange
     /// @param blockType The type of the new block
     /// @param blockSize The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
+    /// @param blockVersion The circuit version to use for verifying the block
     /// @param data The data for this block -
     ///        For all block types:
+    ///            - Compression type: 1 bytes
     ///            - Exchange ID: 4 bytes
     ///            - Old merkle root: 32 bytes
     ///            - New merkle root: 32 bytes
@@ -458,11 +460,33 @@ contract IExchange
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
     ///                - WalletSplitPercentage: 1 byte
+    ///
+    ///        The RING_SETTLEMENT data availability data is further transformed
+    ///        to make it more compressable:
+    ///        - The Ring-matcher account ID, fee amount and token ID (the first 5 bytes) are
+    ///          XORed with the corresponding data from the previous ring
+    ///        - To group more similar data together we don't store all data
+    ///          for a ring next to eachother but group them together for all rings.
+    ///          For ALL rings, sequentially:
+    ///             - Ring-matcher account ID + fee + Token ID
+    ///             - orderA.orderID + orderB.orderID
+    ///             - orderA.accountID + orderB.accountID
+    ///             - orderA.tokenS + orderB.tokenS
+    ///             - orderA.fillS + orderB.fillS
+    ///             - orderA.orderData
+    ///             - orderB.orderData
+    ///
+    ///        The data can be sent on-chain compressed. The data will be decompressed respecting the
+    ///        Compression type (the first byte in 'data'):
+    ///            - Mode 0: No compression. The data following the mode byte is used as is.
+    ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
+    ///                      IDecompressor.decompress() will be called to decompress the following data.
     /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that containts the block data.
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
+        uint8  blockVersion,
         bytes  calldata data,
         bytes  calldata offchainData
         )

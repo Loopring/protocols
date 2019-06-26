@@ -171,6 +171,7 @@ export interface Block {
   blockIdx: number;
   filename: string;
   operator: Operator;
+  compressedData: string;
 }
 
 export interface Account {

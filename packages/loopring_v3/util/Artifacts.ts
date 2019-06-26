@@ -15,6 +15,7 @@ export class Artifacts {
   public TESTToken: any;
   public Operator: any;
   public AccountContract: any;
+  public LzDecompressor: any;
   constructor(artifacts: any) {
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.Exchange = artifacts.require("impl/Exchange");
@@ -31,5 +32,6 @@ export class Artifacts {
     this.TESTToken = artifacts.require("test/tokens/TEST");
     this.Operator = artifacts.require("test/Operator");
     this.AccountContract = artifacts.require("test/AccountContract");
+    this.LzDecompressor = artifacts.require("test/LzDecompressor");
   }
 }

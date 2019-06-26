@@ -233,7 +233,7 @@ contract ProtocolFeeManager is IProtocolFeeManager, Claimable
 
         auctionAddr = oedax.createAuction.value(ethStake)(
             tokenS,  // askToken
-            tokenB, // bidToken
+            tokenB,  // bidToken
             minAskAmount,
             minBidAmount,
             P,
