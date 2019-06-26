@@ -37,8 +37,6 @@ module.exports = function(deployer, network, accounts) {
       }
     );
 
-    await oedax.setTokenRank(FOO.address, numToBN(100), {from: accounts[0]});
-    await oedax.setTokenRank(BAR.address, numToBN(200), {from: accounts[0]});
     const auction1 = await oedax.createAuction(
       FOO.address,  // askToken
       BAR.address,  // bidToken
@@ -71,8 +69,6 @@ module.exports = function(deployer, network, accounts) {
       }
     );
 
-    await oedax.setTokenRank(TESTA.address, numToBN(300), {from: accounts[0]});
-    await oedax.setTokenRank(TESTB.address, numToBN(400), {from: accounts[0]});
     const auction3 = await oedax.createAuction(
       TESTA.address,
       TESTB.address,

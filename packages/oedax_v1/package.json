@@ -22,7 +22,6 @@
   "scripts": {
     "watch": "npm-watch compile",
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
-    "pretest": "tslint --project .",
     "test": "npm run transpile && truffle test",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
@@ -54,7 +53,7 @@
     "npm-watch": "^0.6.0",
     "solidity-coverage": "^0.5.11",
     "solium": "^1.2.4",
-    "tslint": "5.11.0",
+    "tslint": "^5.18.0",
     "types-bn": "0.0.1",
     "typescript": "3.1.6",
     "web3-typescript-typings": "0.10.2",
