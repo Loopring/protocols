@@ -454,7 +454,7 @@ export class Simulator {
 
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
-      operatorAccountID, ring.minerAccountID, ring.tokenID, ringFee,
+      operatorAccountID, ring.ringMatcherAccountID, ring.tokenID, ringFee,
       fillA.S, fillB.S,
       ring.orderA.buy, ring.orderB.buy,
       ring.orderA.tokenIdS, ring.orderB.tokenIdS,
@@ -495,15 +495,15 @@ export class Simulator {
     const ringMatcherPayments: DetailedTokenTransfer = {
       description: "Ring-Matcher",
       token: 0,
-      from: ring.minerAccountID,
-      to: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
+      to: ring.ringMatcherAccountID,
       amount: new BN(0),
       subPayments: [],
     };
     const payProtocolFeeA: DetailedTokenTransfer = {
       description: "ProtocolFeeA",
       token: ring.orderA.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: 0,
       amount: s.protocolFeeA,
       subPayments: [],
@@ -511,7 +511,7 @@ export class Simulator {
     const payProtocolFeeB: DetailedTokenTransfer = {
       description: "ProtocolFeeB",
       token: ring.orderB.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: 0,
       amount: s.protocolFeeB,
       subPayments: [],
@@ -519,7 +519,7 @@ export class Simulator {
     const payRebateA: DetailedTokenTransfer = {
       description: "RebateA",
       token: ring.orderA.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: ring.orderA.accountID,
       amount: s.rebateA,
       subPayments: [],
@@ -527,7 +527,7 @@ export class Simulator {
     const payRebateB: DetailedTokenTransfer = {
       description: "RebateB",
       token: ring.orderB.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: ring.orderB.accountID,
       amount: s.rebateB,
       subPayments: [],
@@ -535,7 +535,7 @@ export class Simulator {
     const operatorFee: DetailedTokenTransfer = {
       description: "OperatorFee",
       token: ring.tokenID,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: operatorAccountID,
       amount: ringFee,
       subPayments: [],
@@ -701,7 +701,7 @@ export class Simulator {
       description: "Fee@" + order.feeBips + "Bips",
       token: order.tokenIdB,
       from: order.accountID,
-      to: ring.minerAccountID,
+      to: ring.ringMatcherAccountID,
       amount: fee,
       subPayments: [],
     };

@@ -65,7 +65,7 @@ export class ExchangeTestUtil {
   public operator: any;
   public activeOperator: number;
 
-  public minerAccountID: number[] = [];
+  public ringMatcherAccountID: number[] = [];
 
   public accounts: Account[][] = [];
 
@@ -217,7 +217,7 @@ export class ExchangeTestUtil {
 
     this.operators[exchangeID] = await this.createOperator(exchangeID, this.testContext.operators[0]);
 
-    this.minerAccountID[exchangeID] = await this.createRingMatcher(
+    this.ringMatcherAccountID[exchangeID] = await this.createRingMatcher(
       exchangeID,
       this.testContext.ringMatchers[0],
     );
@@ -255,10 +255,10 @@ export class ExchangeTestUtil {
     // Make an account for the ringmatcher
     const keyPair = this.getKeyPairEDDSA();
     await LRC.addBalance(owner, balance);
-    const minerDeposit = await this.deposit(exchangeID, owner,
-                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                            lrcAddress, balance);
-    return minerDeposit.accountID;
+    const ringMatcherDeposit = await this.deposit(exchangeID, owner,
+                                                  keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                  lrcAddress, balance);
+    return ringMatcherDeposit.accountID;
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -305,8 +305,8 @@ export class ExchangeTestUtil {
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
-    ring.minerAccountID = (ring.minerAccountID !== undefined) ?
-                          ring.minerAccountID : this.minerAccountID[ring.orderA.exchangeID];
+    ring.ringMatcherAccountID = (ring.ringMatcherAccountID !== undefined) ?
+                                ring.ringMatcherAccountID : this.ringMatcherAccountID[ring.orderA.exchangeID];
     ring.tokenID = (ring.tokenID !== undefined) ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
@@ -402,15 +402,15 @@ export class ExchangeTestUtil {
   }
 
   public signRing(ring: RingInfo) {
-    if (ring.signature !== undefined) {
+    if (ring.ringMatcherSignature !== undefined) {
       return;
     }
-    const account = this.accounts[this.exchangeId][ring.minerAccountID];
+    const account = this.accounts[this.exchangeId][ring.ringMatcherAccountID];
     const nonce = account.nonce++;
     const message = new BitArray();
     message.addString(ring.orderA.hash, 254);
     message.addString(ring.orderB.hash, 254);
-    message.addNumber(ring.minerAccountID, 20);
+    message.addNumber(ring.ringMatcherAccountID, 20);
     message.addNumber(ring.tokenID, 8);
     message.addBN(ring.fee, 96);
     message.addNumber(ring.orderA.feeBips, 6);
@@ -420,7 +420,7 @@ export class ExchangeTestUtil {
     message.addNumber(nonce, 32);
     message.addNumber(0, 1);
     const sig = eddsa.sign(account.secretKey, message.getBits());
-    ring.signature = {
+    ring.ringMatcherSignature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
@@ -531,7 +531,7 @@ export class ExchangeTestUtil {
     addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.minerAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.ringMatcherAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
   }
 
@@ -1398,7 +1398,7 @@ export class ExchangeTestUtil {
                 amountS: new BN(1),
                 amountB: new BN(1),
               },
-            minerAccountID: this.minerAccountID[exchangeID],
+              ringMatcherAccountID: this.ringMatcherAccountID[exchangeID],
             tokenID: 0,
             fee: new BN(0),
           };
@@ -1460,7 +1460,7 @@ export class ExchangeTestUtil {
           const orderB = ringSettlement.ring.orderB;
 
           const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
-          da.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
+          da.addNumber((ring.ringMatcherAccountID * (2 ** 12)) + fRingFee, 4);
           da.addNumber(ring.tokenID, 1);
 
           da.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);

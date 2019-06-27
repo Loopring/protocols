@@ -160,7 +160,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -229,8 +229,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -279,7 +279,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -346,8 +346,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -413,8 +413,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -482,7 +482,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -556,7 +556,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderB.tokenB, ring.orderB.amountB);
+      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -594,8 +594,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderA.tokenB, ring.orderA.amountB);
-      await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderB.tokenB, ring.orderB.amountB);
+      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderA.tokenB, ring.orderA.amountB);
+      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -954,7 +954,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      ring.minerAccountID = ring.orderA.accountID;
+      ring.ringMatcherAccountID = ring.orderA.accountID;
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -1014,8 +1014,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      assert.equal(ringA.minerAccountID, ringB.minerAccountID, "ringMatcher needs to remain the same between rings");
-      exchangeTestUtil.setActiveOperator(ringA.minerAccountID);
+      assert.equal(ringA.ringMatcherAccountID, ringB.ringMatcherAccountID,
+                   "ringMatcher needs to remain the same between rings");
+      exchangeTestUtil.setActiveOperator(ringA.ringMatcherAccountID);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -1078,7 +1079,7 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      ring.minerAccountID = ring.orderA.accountID;
+      ring.ringMatcherAccountID = ring.orderA.accountID;
 
       ring.orderB.accountID = ring.orderA.accountID;
       ring.orderB.walletAccountID = ring.orderA;

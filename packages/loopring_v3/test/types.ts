@@ -70,11 +70,11 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  minerAccountID?: number;
+  ringMatcherAccountID?: number;
   tokenID?: number;
   fee?: BN;
 
-  signature?: Signature;
+  ringMatcherSignature?: Signature;
   dualAuthASignature?: Signature;
   dualAuthBSignature?: Signature;
 

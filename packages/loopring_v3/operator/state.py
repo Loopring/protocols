@@ -350,10 +350,10 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, minerAccountID, tokenID, fee, nonce):
+    def __init__(self, orderA, orderB, ringMatcherAccountID, tokenID, fee, nonce):
         self.orderA = orderA
         self.orderB = orderB
-        self.minerAccountID = int(minerAccountID)
+        self.ringMatcherAccountID = int(ringMatcherAccountID)
         self.tokenID = int(tokenID)
         self.fee = str(fee)
         self.nonce = int(nonce)
@@ -680,21 +680,21 @@ class State(object):
         ###
 
         # Update ringmatcher
-        accountM = self.getAccount(ring.minerAccountID)
+        accountM = self.getAccount(ring.ringMatcherAccountID)
 
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.minerAccountID))
-        proof = self._accountsTree.createProof(ring.minerAccountID)
+        accountBefore = copyAccountInfo(self.getAccount(ring.ringMatcherAccountID))
+        proof = self._accountsTree.createProof(ring.ringMatcherAccountID)
 
         balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenB, fee_A - protocolFee_A - rebate_A)
         balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenB, fee_B - protocolFee_B - rebate_B)
         balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -feeToOperator)
         accountM.nonce += 1
 
-        self.updateAccountTree(ring.minerAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.minerAccountID))
+        self.updateAccountTree(ring.ringMatcherAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(ring.ringMatcherAccountID))
         rootAfter = self._accountsTree._root
-        accountUpdate_M = AccountUpdateData(ring.minerAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_M = AccountUpdateData(ring.ringMatcherAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # Protocol fee payment

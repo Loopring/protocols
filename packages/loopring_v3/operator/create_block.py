@@ -96,15 +96,15 @@ def orderFromJSON(jOrder, state):
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
-    minerAccountID = int(jRing["minerAccountID"])
+    ringMatcherAccountID = int(jRing["ringMatcherAccountID"])
     tokenID = int(jRing["tokenID"])
     fee = int(jRing["fee"])
 
-    minerAccount = state.getAccount(minerAccountID)
+    ringMatcherAccount = state.getAccount(ringMatcherAccountID)
 
-    ring = Ring(orderA, orderB, minerAccountID, tokenID, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, ringMatcherAccountID, tokenID, fee, ringMatcherAccount.nonce)
 
-    ring.minerSignature = jRing["signature"]
+    ring.ringMatcherSignature = jRing["ringMatcherSignature"]
     ring.dualAuthASignature = jRing["dualAuthASignature"]
     ring.dualAuthBSignature = jRing["dualAuthBSignature"]
 
