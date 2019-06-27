@@ -196,3 +196,7 @@ export function toFixed(number, precision, ceil) {
 
     throw new Error('Unsupported type');
 }
+
+export default {
+    
+};

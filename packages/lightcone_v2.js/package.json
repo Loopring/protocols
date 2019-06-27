@@ -20,6 +20,7 @@
     "type": "git",
     "url": "git@github.com:Loopring/loopr-app-sdk.git"
   },
+  "main": "index.js",
   "license": "ISC",
   "dependencies": {
     "async-validator": "1.8.2",

@@ -12,7 +12,7 @@ import {
 import {isValidateMnemonic, mnemonictoPrivatekey} from './ethereum/mnemonic';
 import {decryptKeystoreToPkey, pkeyToKeystore} from './ethereum/keystore';
 
-export {
+export default {
     privateKeytoPublic,
     publicKeytoAddress,
     privateKeytoAddress,
