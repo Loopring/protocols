@@ -29,7 +29,7 @@ pragma solidity 0.5.7;
 contract IProtocolFeeManager
 {
     uint public constant REWARD_PERCENTAGE      = 70;
-    uint public constant DAO_PERDENTAGE         = 15;
+    uint public constant DAO_PERDENTAGE         = 20;
 
     address public userStakingPoolAddress;
     address public lrcAddress;
