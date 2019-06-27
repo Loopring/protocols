@@ -154,15 +154,17 @@ library ExchangeAccounts
         accountID = S.ownerToAccountId[msg.sender] - 1;
         ExchangeData.Account storage account = S.accounts[accountID];
 
-        account.pubKeyX = pubKeyX;
-        account.pubKeyY = pubKeyY;
+        if (account.pubKeyX != pubKeyX || account.pubKeyY != pubKeyY) {
+            account.pubKeyX = pubKeyX;
+            account.pubKeyY = pubKeyY;
 
-        emit AccountUpdated(
-            msg.sender,
-            accountID,
-            pubKeyX,
-            pubKeyY
-        );
+            emit AccountUpdated(
+                msg.sender,
+                accountID,
+                pubKeyX,
+                pubKeyY
+            );
+        }
     }
 
     // == Internal Functions ==

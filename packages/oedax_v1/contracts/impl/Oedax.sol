@@ -35,8 +35,6 @@ contract Oedax is IOedax, NoDefaultFunc
     constructor()
         public
     {
-        // set ETH to the highest rank.
-        setTokenRank(address(0x0), 1 << 255);
     }
 
     modifier onlyAuction {
@@ -88,17 +86,6 @@ contract Oedax is IOedax, NoDefaultFunc
         emit SettingsUpdated();
     }
 
-    function setTokenRank(
-        address token,
-        uint    rank
-        )
-        public
-        onlyOwner
-    {
-        tokenRankMap[token] = rank;
-        emit TokenRankUpdated(token, rank);
-    }
-
     function createAuction(
         address askToken,
         address bidToken,
@@ -117,11 +104,7 @@ contract Oedax is IOedax, NoDefaultFunc
         require(msg.value >= creatorEtherStake, "insuffcient ETH fee");
         require(curveAddress != address(0x0), "empty curve");
         require(T2 >= minDuration && T2 <= maxDuration, "invalid duration");
-        require(
-            tokenRankMap[bidToken] >= tokenRankMap[askToken],
-            "bid (quote) token must have a higher or the same rank than ask (base) token"
-        );
-
+        
         uint auctionId = auctions.length + 1;
 
         Auction auction = new Auction(
