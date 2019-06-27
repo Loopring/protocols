@@ -20,7 +20,7 @@ contract("Exchange", (accounts: string[]) => {
     exchange = exchangeTestUtil.exchange;
   });
 
-  describe.only("Reentrancy", function() {
+  describe("Reentrancy", function() {
     this.timeout(0);
 
     // Load IExchange ABI

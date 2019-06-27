@@ -729,7 +729,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it.only("Withdraw block fee (withdrawal block - in time)", async () => {
+        it("Withdraw block fee (withdrawal block - in time)", async () => {
           await createExchange();
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
@@ -760,7 +760,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it.only("Withdraw block fee (withdrawal block - fined)", async () => {
+        it("Withdraw block fee (withdrawal block - fined)", async () => {
           await createExchange();
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
@@ -792,7 +792,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it.only("Withdraw block fee (withdrawal block - no reward)", async () => {
+        it("Withdraw block fee (withdrawal block - no reward)", async () => {
           await createExchange();
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
