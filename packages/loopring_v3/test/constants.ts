@@ -26,3 +26,4 @@ export const Float8Encoding: FloatEncoding = {
 };
 
 export const emptyBytes = web3.utils.hexToBytes("0x");
+export const zeroAddress = "0x" + "00".repeat(20);

@@ -93,8 +93,6 @@ export class ExchangeTestUtil {
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
 
-  public zeroAddress = "0x" + "00".repeat(20);
-
   public contracts = new Artifacts(artifacts);
 
   public pendingBlocks: Block[][] = [];
@@ -213,7 +211,7 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(exchangeID, this.testContext.deployer,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           this.zeroAddress, new BN(1));
+                                           constants.zeroAddress, new BN(1));
     this.dummyAccountId = depositInfo.accountID;
     this.dummyAccountKeyPair = keyPair;
 
@@ -235,7 +233,7 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(exchangeID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           this.zeroAddress, new BN(1));
+                                           constants.zeroAddress, new BN(1));
     return depositInfo.accountID;
   }
 
@@ -244,7 +242,7 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const walletDeposit = await this.deposit(exchangeID, owner,
                                              keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                             this.zeroAddress, new BN(0));
+                                             constants.zeroAddress, new BN(0));
     return walletDeposit.accountID;
   }
 
@@ -612,7 +610,7 @@ export class ExchangeTestUtil {
     const fees = await this.exchange.getFees();
     let ethToSend = fees._depositFeeETH.add(fees._accountCreationFeeETH);
     if (amount.gt(0)) {
-      if (token !== this.zeroAddress) {
+      if (token !== constants.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
         await Token.setBalance(
           owner,
@@ -1673,7 +1671,7 @@ export class ExchangeTestUtil {
 
   public async registerTokens() {
     for (const token of this.testContext.allTokens) {
-      const tokenAddress = (token === null) ? this.zeroAddress : token.address;
+      const tokenAddress = (token === null) ? constants.zeroAddress : token.address;
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
@@ -1861,7 +1859,7 @@ export class ExchangeTestUtil {
     if (owner !== this.testContext.deployer) {
       // Burn complete existing balance
       const existingBalance = await this.getOnchainBalance(owner, token);
-      await Token.transfer(this.zeroAddress, existingBalance, {from: owner});
+      await Token.transfer(constants.zeroAddress, existingBalance, {from: owner});
     }
     await Token.transfer(owner, amount, {from: this.testContext.deployer});
     await Token.approve(contractAddress, amount, {from: owner});
@@ -1916,7 +1914,7 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    if (token === this.zeroAddress) {
+    if (token === constants.zeroAddress) {
       return new BN(await web3.eth.getBalance(owner));
     } else {
       const Token = await this.contracts.DummyToken.at(token);
@@ -2446,7 +2444,7 @@ export class ExchangeTestUtil {
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 
-    tokenSymbolAddrMap.set("ETH", this.zeroAddress);
+    tokenSymbolAddrMap.set("ETH", constants.zeroAddress);
     tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
@@ -2458,13 +2456,13 @@ export class ExchangeTestUtil {
 
     for (const token of allTokens) {
       if (token === null) {
-        tokenAddrDecimalsMap.set(this.zeroAddress, 18);
+        tokenAddrDecimalsMap.set(constants.zeroAddress, 18);
       } else {
         tokenAddrDecimalsMap.set(token.address, (await token.decimals()));
       }
     }
 
-    tokenAddrSymbolMap.set(this.zeroAddress, "ETH");
+    tokenAddrSymbolMap.set(constants.zeroAddress, "ETH");
     tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
@@ -2474,7 +2472,7 @@ export class ExchangeTestUtil {
     tokenAddrSymbolMap.set(this.contracts.INDBToken.address, "INDB");
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
-    tokenAddrInstanceMap.set(this.zeroAddress, null);
+    tokenAddrInstanceMap.set(constants.zeroAddress, null);
     tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
     tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);

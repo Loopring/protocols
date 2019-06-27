@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, RingInfo } from "./types";
@@ -128,7 +129,7 @@ contract("Exchange", (accounts: string[]) => {
         }
         if (!bAccountReset && (account.publicKeyX !== "0" || account.publicKeyY !== "0" || account.nonce !== 0)) {
           await exchangeTestUtil.requestShutdownWithdrawal(
-            exchangeId, accountID, exchangeTestUtil.zeroAddress, new BN(0),
+            exchangeId, accountID, constants.zeroAddress, new BN(0),
           );
         }
       }

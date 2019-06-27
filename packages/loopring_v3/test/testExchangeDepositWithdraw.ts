@@ -295,7 +295,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
+      const accountCreationFee = fees._accountCreationFeeETH;
 
       // No ETH sent
       await expectThrow(
@@ -306,12 +306,12 @@ contract("Exchange", (accounts: string[]) => {
       // Not enough ETH
       await expectThrow(
         exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY,
-          {from: owner, value: acountCreationFee.sub(new BN(1))}),
+          {from: owner, value: accountCreationFee.sub(new BN(1))}),
         "INSUFFICIENT_FEE",
       );
 
       // Everything correct
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
       assert(accountID > 0);
     });
 
@@ -325,12 +325,12 @@ contract("Exchange", (accounts: string[]) => {
 
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
+      const accountCreationFee = fees._accountCreationFeeETH;
       const depositFee = fees._depositFeeETH;
       const updateFee = fees._accountUpdateFeeETH;
 
       // Create the account
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
 
       // No ETH sent
       await expectThrow(
@@ -394,11 +394,11 @@ contract("Exchange", (accounts: string[]) => {
 
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
+      const accountCreationFee = fees._accountCreationFeeETH;
       const depositFee = fees._depositFeeETH;
 
       // Create the account
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
 
       // No ETH sent
       await expectThrow(
@@ -1035,14 +1035,14 @@ contract("Exchange", (accounts: string[]) => {
 
         // The correct deposit fee expected by the contract
         const fees = await exchange.getFees();
-        const acountCreationFee = fees._accountCreationFeeETH;
+        const accountCreationFee = fees._accountCreationFeeETH;
 
         // Make sure the owner has enough tokens
         await exchangeTestUtil.setBalanceAndApprove(owner, tokenA, amount.mul(new BN(10)));
         await exchangeTestUtil.setBalanceAndApprove(owner, tokenB, amount.mul(new BN(10)));
 
         // Everything correct
-        await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+        await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
 
         // Disable token deposit for GTO
         await exchange.disableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner});
