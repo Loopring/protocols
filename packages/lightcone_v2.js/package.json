@@ -1,6 +1,6 @@
 {
   "name": "loopr-app-sdk",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Loopring javascript library for Lightcone 2.0",
   "directories": {
     "test": "test"
