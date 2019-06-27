@@ -452,6 +452,10 @@ export class Simulator {
     fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
     const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
+    // Validate
+    this.validateOrder(exchangeState, ring.orderA, false, fillA.S, fillA.B, valid);
+    this.validateOrder(exchangeState, ring.orderB, true, fillB.S, fillB.B, valid);
+
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
       operatorAccountID, ring.ringMatcherAccountID, ring.tokenID, ringFee,
@@ -713,7 +717,52 @@ export class Simulator {
     return detailedTransfers;
   }
 
-  private getMaxFillAmounts(order: OrderInfo, accountData: any) {
+  private validateOrder(exchangeState: ExchangeState, order: OrderInfo, makerOrder: boolean,
+                        fillS: BN, fillB: BN,
+                        valid: boolean) {
+    const account = exchangeState.accounts[order.accountID];
+    assert(account.balances[order.tokenIdS].balance.gte(fillS), "can never spend more than balance");
+
+    if (valid) {
+      const tradeHistory = this.getTradeHistory(order, account);
+      if (tradeHistory.cancelled) {
+        assert(fillS.isZero(), "fillS needS to be 0 when the order is cancelled");
+        assert(fillB.isZero(), "fillB needS to be 0 when the order is cancelled");
+      } else {
+        if (!fillS.isZero() || !fillB.isZero()) {
+          const targetRate = order.amountS.mul(new BN(10000)).div(order.amountB);
+          const rate = fillS.mul(new BN(10000)).div(fillB);
+          if (makerOrder) {
+            assert(targetRate.sub(rate).abs().lte(new BN(1)), "maker rate needs to match order rate");
+          } else {
+            assert(rate.lte(targetRate.add(new BN(1))), "taker rate needs to be equal or better than order rate");
+          }
+        }
+        if (order.buy) {
+          assert(fillB.lte(order.amountB), "can never buy more than specified in the order");
+          if (tradeHistory.filled.lte(order.amountB)) {
+            assert(tradeHistory.filled.add(fillB).lte(order.amountB), "can never buy more than specified in the order");
+          } else {
+            assert(fillS.isZero(), "fillS needS to be 0 when filled target is reached already");
+            assert(fillB.isZero(), "fillB needS to be 0 when filled target is reached already");
+          }
+        } else {
+          assert(fillS.lte(order.amountS), "can never sell more than specified in the order");
+          if (tradeHistory.filled.lte(order.amountS)) {
+            assert(tradeHistory.filled.add(fillS).lte(order.amountS), "can never buy more than specified in the order");
+          } else {
+            assert(fillS.isZero(), "fillS needS to be 0 when filled target is reached already");
+            assert(fillB.isZero(), "fillB needS to be 0 when filled target is reached already");
+          }
+        }
+      }
+    } else {
+      assert(fillS.isZero(), "fillS needS to be 0 when the trade is invalid");
+      assert(fillB.isZero(), "fillB needS to be 0 when the trade is invalid");
+    }
+  }
+
+  private getTradeHistory(order: OrderInfo, accountData: any) {
     const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     if (!tradeHistory) {
@@ -723,20 +772,24 @@ export class Simulator {
       };
     }
     // Trade history trimming
-    let filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
+    const filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
     const cancelled = (tradeHistory.orderID === order.orderID) ? tradeHistory.cancelled :
                       (tradeHistory.orderID < order.orderID) ? false : true;
+    return {filled, cancelled};
+  }
 
+  private getMaxFillAmounts(order: OrderInfo, accountData: any) {
+    const tradeHistory = this.getTradeHistory(order, accountData);
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
 
     let remainingS = new BN(0);
     if (order.buy) {
-      filled = order.amountB.lt(filled) ? order.amountB : filled;
-      const remainingB = cancelled ? new BN(0) : order.amountB.sub(filled);
+      const filled = order.amountB.lt(tradeHistory.filled) ? order.amountB : tradeHistory.filled;
+      const remainingB = tradeHistory.cancelled ? new BN(0) : order.amountB.sub(filled);
       remainingS = remainingB.mul(order.amountS).div(order.amountB);
     } else {
-      filled = order.amountS.lt(filled) ? order.amountS : filled;
-      remainingS = cancelled ? new BN(0) : order.amountS.sub(filled);
+      const filled = order.amountS.lt(tradeHistory.filled) ? order.amountS : tradeHistory.filled;
+      remainingS = tradeHistory.cancelled ? new BN(0) : order.amountS.sub(filled);
     }
     const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
     const fillAmountB = fillAmountS.mul(order.amountB).div(order.amountS);
