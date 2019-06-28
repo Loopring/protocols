@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import { Bitstream } from "./bitstream";
 import * as constants from "./constants";
 import { fromFloat, roundToFloatValue } from "./float";
+import { logDebug, logInfo } from "./logs";
 import { AccountLeaf, Balance, Cancel, Deposit, DetailedTokenTransfer, ExchangeState, OrderInfo,
          RingInfo, RingSettlementSimulatorReport, SimulatorReport,
          TradeHistory, WithdrawalRequest } from "./types";
@@ -435,7 +436,7 @@ export class Simulator {
       matchResult = this.match(ring.orderB, fillB, ring.orderA, fillA);
       fillA.B = fillB.S;
     }
-    console.log("spread:     " + matchResult.spread.toString(10));
+    logDebug("spread:     " + matchResult.spread.toString(10));
 
     let valid = matchResult.matchable;
     valid = valid && this.checkValid(ring.orderA, fillA.S, fillA.B, timestamp);
@@ -888,7 +889,7 @@ export class Simulator {
 
   private ensure(valid: boolean, description: string) {
     if (!valid) {
-      console.log(description);
+      logInfo(description);
     }
     return valid;
   }

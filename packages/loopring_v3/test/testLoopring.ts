@@ -146,7 +146,7 @@ contract("Loopring", (accounts: string[]) => {
   });
 
   describe("Owner", () => {
-    it("should be able to withdraw 'The Burn'", async () => {
+    it("should be able to withdraw the protocol fees", async () => {
       const user = exchangeTestUtil.testContext.orderOwners[0];
       const amountA = new BN(web3.utils.toWei("1.23", "ether"));
       const amountB = new BN(web3.utils.toWei("456", "ether"));
@@ -168,7 +168,7 @@ contract("Loopring", (accounts: string[]) => {
   });
 
   describe("anyone", () => {
-    it("should not be able to withdraw 'The Burn'", async () => {
+    it("should not be able to withdraw the protocol fees", async () => {
       const user = exchangeTestUtil.testContext.orderOwners[0];
       const amountA = new BN(web3.utils.toWei("1.23", "ether"));
       const amountB = new BN(web3.utils.toWei("456", "ether"));

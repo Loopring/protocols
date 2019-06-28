@@ -212,7 +212,7 @@ contract("Exchange", (accounts: string[]) => {
 
     // Distribute the withdrawals
     const tx = await exchange.distributeWithdrawals(blockIdx, numWithdrawals, {from});
-    console.log("\x1b[46m%s\x1b[0m", "[DistributeWithdrawals] Gas used: " + tx.receipt.gasUsed);
+    // console.log("\x1b[46m%s\x1b[0m", "[DistributeWithdrawals] Gas used: " + tx.receipt.gasUsed);
 
     // Check balances owners
     const balanceOwnerAfter: BN[] = [];

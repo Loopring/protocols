@@ -14,7 +14,7 @@ import * as constants from "./constants";
 import { Context } from "./context";
 import eddsa = require("./eddsa");
 import { toFloat } from "./float";
-import { logDebug, logInfo } from "./logs";
+import { doDebugLogging, logDebug, logInfo } from "./logs";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
@@ -294,7 +294,7 @@ export class ExchangeTestUtil {
     const events: any = await this.getEventsFromContract(contract, eventName, web3.eth.blockNumber);
 
     events.forEach((e: any) => {
-      logDebug("event:", util.inspect(e.args, false, null));
+      logInfo("event:", util.inspect(e.args, false, null));
     });
   }
 
@@ -824,7 +824,7 @@ export class ExchangeTestUtil {
     const result = childProcess.spawnSync(
       "python3",
       ["operator/create_block.py", "" + exchangeID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "create_block failed: " + blockType);
 
@@ -837,7 +837,7 @@ export class ExchangeTestUtil {
       data += "00";
       this.commitWrongPublicDataOnce = false;
     }
-    console.log("[EVM]PublicData: " + data);
+    logDebug("[EVM]PublicData: " + data);
     const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
     // Make sure the keys are generated
@@ -872,7 +872,7 @@ export class ExchangeTestUtil {
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-createkeys", blockFilename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "generateKeys failed: " + blockFilename);
 
@@ -912,7 +912,7 @@ export class ExchangeTestUtil {
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-prove", blockFilename, proofFilename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "verifyBlock failed: " + blockFilename);
 
@@ -1207,9 +1207,9 @@ export class ExchangeTestUtil {
         hashData.addNumber(withdrawal.accountID, 3);
         hashData.addNumber(withdrawal.tokenID, 1);
         hashData.addBN(withdrawal.amount, 12);
-        console.log("withdrawal.accountID: " + withdrawal.accountID);
-        console.log("withdrawal.tokenID: " + withdrawal.tokenID);
-        console.log("withdrawal.amount: " + withdrawal.amount.toString(10));
+        logInfo("withdrawal.accountID: " + withdrawal.accountID);
+        logInfo("withdrawal.tokenID: " + withdrawal.tokenID);
+        logInfo("withdrawal.amount: " + withdrawal.amount.toString(10));
         endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
       }
 
@@ -1319,7 +1319,7 @@ export class ExchangeTestUtil {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
       const amount = items[0][2].div(web3.utils.toBN(10 ** decimals)).toString(10);
-      console.log("Withdrawn: " + to + ": " + amount + " " + tokenSymbol);
+      logInfo("Withdrawn: " + to + ": " + amount + " " + tokenSymbol);
     }
 
     this.pendingWithdrawals = [];
@@ -1797,7 +1797,7 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockIdx),
       {from: this.exchangeOperator},
     );
-    console.log("Reverted to block " + (blockIdx - 1));
+    logInfo("Reverted to block " + (blockIdx - 1));
     this.pendingBlocks[this.exchangeId] = [];
   }
 
@@ -1813,7 +1813,7 @@ export class ExchangeTestUtil {
       "python3",
       ["operator/create_withdraw_proof.py",
       "" + exchangeID, "" + blockIdx, "" + accountID, "" + tokenID, filename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "create_withdraw_proof failed!");
 
@@ -2028,7 +2028,7 @@ export class ExchangeTestUtil {
       bs = new Bitstream(onchainData);
     }
 
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
     let latestState = stateBefore;
@@ -2055,11 +2055,11 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateDeposits(deposits: Deposit[], stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     let latestState = stateBefore;
     for (const deposit of deposits) {
       const simulator = new Simulator();
@@ -2087,15 +2087,15 @@ export class ExchangeTestUtil {
         bNewAccount = true;
       }
 
-      console.log("> Account " + deposit.accountID + (bNewAccount ? " (NEW ACCOUNT)" : ""));
+      logInfo("> Account " + deposit.accountID + (bNewAccount ? " (NEW ACCOUNT)" : ""));
       if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
-        console.log("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+        logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
       }
       if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
-        console.log("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+        logInfo("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
       }
       if (accountBefore.nonce !== accountAfter.nonce) {
-        console.log("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
+        logInfo("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
       }
       for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
         if (!accountBefore.balances[i].balance.eq(accountAfter.balances[i].balance)) {
@@ -2109,12 +2109,12 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateOnchainWithdrawals(withdrawBlock: WithdrawBlock,
                                     stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     let latestState = stateBefore;
     const shutdown = withdrawBlock.count === 0;
     for (const withdrawal of withdrawBlock.withdrawals) {
@@ -2137,12 +2137,12 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, bs: Bitstream,
                                      stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     const operatorAccountID = withdrawBlock.operatorAccountID;
     let latestState = stateBefore;
     for (const [withdrawalIndex, withdrawal] of withdrawBlock.withdrawals.entries()) {
@@ -2173,12 +2173,12 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateOrderCancellations(cancelBlock: CancelBlock, bs: Bitstream,
                                     stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     const operatorAccountID = cancelBlock.operatorAccountID;
     let latestState = stateBefore;
     for (const [cancelIndex, cancel] of cancelBlock.cancels.entries()) {
@@ -2201,7 +2201,7 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public async loadExchangeStateForRingBlock(exchangeID: number, blockIdx: number, ringBlock: RingBlock) {
@@ -2238,7 +2238,7 @@ export class ExchangeTestUtil {
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalance = balance.div(web3.utils.toBN(10 ** decimals)).toString(10);
-    console.log(accountID + ": " + prettyBalance + " " + tokenSymbol);
+    logInfo(accountID + ": " + prettyBalance + " " + tokenSymbol);
   }
 
   public prettyPrintBalanceChange(accountID: number, tokenID: number, balanceBefore: BN, balanceAfter: BN) {
@@ -2247,9 +2247,9 @@ export class ExchangeTestUtil {
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalanceBefore = balanceBefore.div(web3.utils.toBN(10 ** decimals)).toString(10);
     const prettyBalanceAfter = balanceAfter.div(web3.utils.toBN(10 ** decimals)).toString(10);
-    console.log(accountID + ": " +
-                prettyBalanceBefore + " " + tokenSymbol + " -> " +
-                prettyBalanceAfter + " " + tokenSymbol);
+    logInfo(accountID + ": " +
+            prettyBalanceBefore + " " + tokenSymbol + " -> " +
+            prettyBalanceAfter + " " + tokenSymbol);
   }
 
   public async depositExchangeStakeChecked(amount: BN, owner: string) {
@@ -2515,9 +2515,9 @@ export class ExchangeTestUtil {
     const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
     if (payment.subPayments.length === 0) {
       const toName = addressBook[payment.to] !== undefined ? addressBook[payment.to] : payment.to;
-      logDebug(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
+      logInfo(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
-      logDebug(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
+      logInfo(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
       }
@@ -2561,7 +2561,7 @@ export class ExchangeTestUtil {
     const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.buy ? order.amountB : order.amountS);
     const filledBeforePretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, before.filled);
     const filledAfterPretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, after.filled);
-    console.log(
+    logInfo(
       description + ": " + filledBeforePretty + " -> " + filledAfterPretty +
       " (" + filledBeforePercentage.toString(10) + "% -> " + filledAfterPercentage.toString(10) + "%)" +
       " (" + this.getPrettyCancelled(before.cancelled) + " -> " + this.getPrettyCancelled(after.cancelled) + ")",
