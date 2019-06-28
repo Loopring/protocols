@@ -2,8 +2,8 @@ import BN = require('bn.js');
 import eddsa = require('lib/sign/eddsa');
 import config from 'lib/wallet/config';
 
-import {grpcClient} from 'src/grpc/grpcClient';
-import {DexAccount, OrderInfo, Signature} from 'src/model/types';
+import {grpcClientService} from 'src/grpc/grpcClientService';
+import {DexAccount, OrderInfo, Signature} from '../model/types';
 import Transaction from "lib/wallet/ethereum/transaction";
 import * as fm from "lib/wallet/common/formatter";
 import {ethereum} from "lib/wallet";
@@ -76,7 +76,7 @@ export class Exchange {
             this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice).then((rawTx: Transaction) => {
                     const signedTx = wallet.signEthereumTx(rawTx);
                     wallet.sendTransaction(new Eth(''), signedTx).then(() => { // TODO: config
-                        grpcClient.getAccount(wallet.getAddress()).then((account: Account) => {
+                        grpcClientService.getAccount(wallet.getAddress()).then((account: Account) => {
                             const dexAccount = new DexAccount();
                             dexAccount.nonce = 0;
                             dexAccount.owner = wallet.getAddress();
@@ -212,7 +212,7 @@ export class Exchange {
         const getNextOrderIdReq = new GetNextOrderIdReq();
         getNextOrderIdReq.setTokenSellId(order.tokenIdS);
         getNextOrderIdReq.setAccountId(this.currentDexAccount.accountID);
-        const nextOrderId = await grpcClient.getNextOrderId(getNextOrderIdReq);
+        const nextOrderId = await grpcClientService.getNextOrderId(getNextOrderIdReq);
         order.orderID = (order.orderID !== undefined) ? order.orderID : nextOrderId.getValue();
 
         order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : this.exchangeID;
@@ -322,7 +322,7 @@ export class Exchange {
         const tradingSig = Exchange.genSignature(orderInfo.signature);
         order.setTradingSig(tradingSig);
 
-        return grpcClient.submitOrder(order);
+        return grpcClientService.submitOrder(order);
     }
 
     public async cancelOrder(orderInfo: OrderInfo) {
@@ -343,7 +343,7 @@ export class Exchange {
         edDSASignature.setRy(sig.R[1].toString());
         simpleOrderCancellationReq.setSig(edDSASignature);
 
-        return grpcClient.cancelOrder(simpleOrderCancellationReq);
+        return grpcClientService.cancelOrder(simpleOrderCancellationReq);
     }
 
 }

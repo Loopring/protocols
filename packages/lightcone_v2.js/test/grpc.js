@@ -1,4 +1,4 @@
-const grpcClient = require("dist/src/grpc/grpcClient").grpcClient;
+const grpcClientService = require("src/grpc/grpcClientService").createClient();
 
 describe("eddsa sign message test", function () {
     this.timeout(100000);
@@ -8,7 +8,6 @@ describe("eddsa sign message test", function () {
 
     it("Sign a single 10 bytes from 0 to 9", async () => {
 
-        grpcClient.getNonce(0);
-
+        grpcClientService.getNonce(0);
     });
 });

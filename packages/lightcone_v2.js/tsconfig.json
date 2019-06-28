@@ -6,13 +6,15 @@
     "module": "commonjs",
     "target": "es6",
     "baseUrl": ".",
-    "allowJs": true
+    "allowJs": true,
+    "esModuleInterop": true
   },
   "include": [
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
     "src/**/*",
     "lib/**/*",
-    "test/**/*"
+    "test/**/*",
+    "proto_gen/**/*"
   ]
 }
