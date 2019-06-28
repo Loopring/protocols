@@ -1,5 +1,4 @@
 import {credentials, Metadata, ServiceError} from 'grpc';
-
 import { DexServiceClient } from '../../proto_gen/service_dex_grpc_pb';
 import { GetNextOrderIdReq } from '../../proto_gen/service_dex_pb';
 import { grpcClientService } from './grpcClientService';

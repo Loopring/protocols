@@ -1,4 +1,4 @@
-import { expectThrow } from "protocol2-js";
+import { expectThrow } from "./expectThrow";
 
 const Ownable = artifacts.require("Ownable");
 

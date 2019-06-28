@@ -13,3 +13,5 @@ ganache_account_keys.txt
 __pycache__
 *.pyc
 .idea/
+genkeys/
+EDDSA_KeyPair.json

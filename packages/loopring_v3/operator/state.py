@@ -510,10 +510,6 @@ class State(object):
     def getMaxFillAmounts(self, order):
         account = self.getAccount(order.accountID)
         tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
-        order.tradeHistoryFilled = str(tradeHistory.filled)
-        order.tradeHistoryCancelled = int(tradeHistory.cancelled)
-        order.tradeHistoryOrderID = int(tradeHistory.orderID)
-        order.nonce = int(account.nonce)
 
         # Trade history trimming
         bNew = tradeHistory.orderID < order.orderID

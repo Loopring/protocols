@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as pjs from "protocol2-js";
+import { Bitstream } from "./bitstream";
 import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
@@ -123,13 +123,14 @@ contract("Exchange", (accounts: string[]) => {
       describe("commitBlock", () => {
         it("should not be able to commit unsupported blocks", async () => {
           await createExchange(false);
-          await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, new Array(18).fill(1));
-          const bs = new pjs.Bitstream();
+          await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, 0, new Array(18).fill(1));
+          const bs = new Bitstream();
+          bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 1, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 1, 0, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "CANNOT_VERIFY_BLOCK",
           );
@@ -137,13 +138,14 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit block from different exchanges", async () => {
           await createExchange(false);
-          await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, new Array(18).fill(1));
-          const bs = new pjs.Bitstream();
+          await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, 0, new Array(18).fill(1));
+          const bs = new Bitstream();
+          bs.addNumber(0, 1);
           bs.addNumber(exchangeId + 1, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 2, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "INVALID_EXCHANGE_ID",
           );
@@ -151,13 +153,14 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit blocks starting from a wrong merkle root state", async () => {
           await createExchange(false);
-          await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, new Array(18).fill(1));
-          const bs = new pjs.Bitstream();
+          await exchangeTestUtil.blockVerifier.setVerifyingKey(0, true, 2, 0, new Array(18).fill(1));
+          const bs = new Bitstream();
+          bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 2, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "INVALID_MERKLE_ROOT",
           );
@@ -166,19 +169,20 @@ contract("Exchange", (accounts: string[]) => {
         it("should not be able to commit settlement blocks with an invalid timestamp", async () => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(
-            BlockType.RING_SETTLEMENT, true, 2, new Array(18).fill(1),
+            BlockType.RING_SETTLEMENT, true, 2, 0, new Array(18).fill(1),
           );
           // Timestamp too early
           {
             let timestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
             timestamp -= (exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1);
-            const bs = new pjs.Bitstream();
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
             bs.addNumber(exchangeId, 4);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
             );
@@ -187,13 +191,14 @@ contract("Exchange", (accounts: string[]) => {
           {
             let timestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
             timestamp += (exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15);
-            const bs = new pjs.Bitstream();
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
             bs.addNumber(exchangeId, 4);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
             );
@@ -203,16 +208,16 @@ contract("Exchange", (accounts: string[]) => {
         it("should not be able to commit deposit/on-chain withdrawal blocks with invalid data", async () => {
           await createExchange(false);
           await exchangeTestUtil.blockVerifier.setVerifyingKey(
-            BlockType.DEPOSIT, false, 2, new Array(18).fill(1),
+            BlockType.DEPOSIT, false, 2, 0, new Array(18).fill(1),
           );
           await exchangeTestUtil.blockVerifier.setVerifyingKey(
-            BlockType.DEPOSIT, false, 8, new Array(18).fill(1),
+            BlockType.DEPOSIT, false, 8, 0, new Array(18).fill(1),
           );
           await exchangeTestUtil.blockVerifier.setVerifyingKey(
-            BlockType.ONCHAIN_WITHDRAWAL, false, 2, new Array(18).fill(1),
+            BlockType.ONCHAIN_WITHDRAWAL, false, 2, 0, new Array(18).fill(1),
           );
           await exchangeTestUtil.blockVerifier.setVerifyingKey(
-            BlockType.ONCHAIN_WITHDRAWAL, false, 8, new Array(18).fill(1),
+            BlockType.ONCHAIN_WITHDRAWAL, false, 8, 0, new Array(18).fill(1),
           );
           const numRequests = 4;
           // Do some deposit
@@ -248,7 +253,8 @@ contract("Exchange", (accounts: string[]) => {
 
             // startIdx != numRequestsCommitted
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
+              bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
@@ -257,14 +263,15 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex + 1, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
             }
             // count > blockSize
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
+              bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
@@ -273,14 +280,15 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(4, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
             }
             // startIdx + count > depositChain.length
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
+              bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
@@ -289,14 +297,15 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(8, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 8, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 8, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
             }
             // Wrong starting hash
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
+              bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
@@ -305,14 +314,15 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_STARTING_HASH",
               );
             }
             // Wrong ending hash
             {
-              const bs = new pjs.Bitstream();
+              const bs = new Bitstream();
+              bs.addNumber(0, 1);
               bs.addNumber(exchangeId, 4);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
               bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
@@ -321,7 +331,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_ENDING_HASH",
               );
@@ -707,7 +717,7 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
         // Try to commit a block
         await expectThrow(
-          exchange.commitBlock(0, 2, web3.utils.hexToBytes("0x0"), constants.emptyBytes,
+          exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes("0x0"), constants.emptyBytes,
           {from: exchangeTestUtil.testContext.orderOwners[0]}),
           "UNAUTHORIZED",
         );

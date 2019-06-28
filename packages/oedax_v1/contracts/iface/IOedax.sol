@@ -26,11 +26,6 @@ contract IOedax is Ownable
     event SettingsUpdated(
     );
 
-    event TokenRankUpdated(
-        address token,
-        uint    rank
-    );
-
     event AuctionCreated (
         uint    auctionId,
         address auctionAddr
@@ -77,8 +72,6 @@ contract IOedax is Ownable
     // user_address => list_of_auctions_participated
     mapping (address => address[]) public userAuctions;
 
-    mapping (address => uint) public tokenRankMap;
-
     // price history
     // bid_token => ask_token => list_of_trade_history
     mapping (address => mapping(address => TradeHistory[])) public tradeHistory;
@@ -115,30 +108,15 @@ contract IOedax is Ownable
         // onlyOwner
         ;
 
-    /// @dev Set a token's rank. By default, all token has id 0.
-    ///     We require the rank of an auction's bid token must be higher
-    ///     than the rank of its ask token. In Oedax, Ether (address 0x0) has
-    ///     the highest rank.
-    ///     Only Oedax owner can invoke this method.
-    /// @param token The token's address.
-    /// @param rank The token's rank.
-    function setTokenRank(
-        address token,
-        uint    rank
-        )
-        public
-        // onlyOwner
-        ;
-
     /// @dev Create a new auction
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
-    /// @param bidToken The bid (quote) token. Bid-token must have a higher rank than ask-token.
+    /// @param bidToken The bid (quote) token.
     /// @param minAskAmount The minimum ask amount.
     /// @param minBidAmount The minimum bid amount.
     /// @param P Numerator part of the target price `p`.
     /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T1 The maximum auction duration in second.
+    /// @param T1 The minimum auction duration in second.
     /// @param T2 The maximum auction duration in second.
     /// @return auctionAddr Auction address.
     function createAuction(
