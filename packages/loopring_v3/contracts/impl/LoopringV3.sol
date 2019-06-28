@@ -342,7 +342,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         emit ProtocolFeeStakeWithdrawn(exchangeId, amount);
     }
 
-    function withdrawProtocolFees(
+    function withdrawProtocolFeesFromExchange(
         uint exchangeId,
         address tokenAddress
         )
@@ -350,6 +350,27 @@ contract LoopringV3 is ILoopringV3, Claimable
         payable
     {
         IExchange(exchanges[exchangeId - 1].exchangeAddress).withdraw.value(msg.value)(tokenAddress, ~uint96(0));
+    }
+
+    function withdrawProtocolFees(
+        address token,
+        address payable recipient
+        )
+        external
+        onlyOwner
+    {
+        if (token == address(0)) {
+            // ETH
+            uint balance = address(this).balance;
+            recipient.transferETH(balance, gasleft());
+        } else {
+            // ERC20 token
+            uint balance = ERC20(token).balanceOf(address(this));
+            if (token == lrcAddress) {
+                balance = balance.sub(totalStake);
+            }
+            require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
+        }
     }
 
     function getProtocolFeeValues(
@@ -380,27 +401,6 @@ contract LoopringV3 is ILoopringV3, Claimable
         makerFeeBips = calculateProtocolFee(
             minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
         );
-    }
-
-    function withdrawTheBurn(
-        address token,
-        address payable recipient
-        )
-        external
-        onlyOwner
-    {
-        if (token == address(0)) {
-            // ETH
-            uint balance = address(this).balance;
-            recipient.transferETH(balance, gasleft());
-        } else {
-            // ERC20 token
-            uint balance = ERC20(token).balanceOf(address(this));
-            if (token == lrcAddress) {
-                balance = balance.sub(totalStake);
-            }
-            require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
-        }
     }
 
     function()

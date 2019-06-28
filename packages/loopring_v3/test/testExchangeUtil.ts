@@ -721,7 +721,7 @@ export class ExchangeTestUtil {
     // Submit the withdraw request
     let tx;
     if (accountID === 0) {
-      tx = await this.loopringV3.withdrawProtocolFees(
+      tx = await this.loopringV3.withdrawProtocolFeesFromExchange(
         exchangeID,
         token,
         {from: owner, value: withdrawalFee},

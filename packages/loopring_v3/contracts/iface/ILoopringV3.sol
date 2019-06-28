@@ -230,15 +230,26 @@ contract ILoopringV3
         )
         external;
 
-    /// @dev Withdraw
+    /// @dev Requests the withdrawal of the protocol fees from an exchange
     /// @param exchangeId The id of the exchange to withdraw the fees from
     /// @param tokenAddress The token to withdraw the fees for
-    function withdrawProtocolFees(
+    function withdrawProtocolFeesFromExchange(
         uint exchangeId,
         address tokenAddress
         )
         external
         payable;
+
+    /// @dev Withdraw all protocol fees to the designated address.
+    ///      Fees first need to be withdrawn from an exchange using
+    ///      withdrawProtocolFeesFromExchange.
+    /// @param  token The address of the token. Use 0x0 for Ether.
+    /// @param  recipient The address to receive the tokens.
+    function withdrawProtocolFees(
+        address token,
+        address payable recipient
+        )
+        external;
 
     /// @dev Get the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
@@ -253,15 +264,6 @@ contract ILoopringV3
         external
         view
         returns (uint8 takerFeeBips, uint8 makerFeeBips);
-
-    /// @dev Withdraw all protocol fees to the designated address.
-    /// @param  token The address of the token. Use 0x0 for Ether.
-    /// @param  recipient The address to receive the tokens.
-    function withdrawTheBurn(
-        address token,
-        address payable recipient
-        )
-        external;
 
     /// @dev Allow ETH to be sent directly to this contract (to collect the protocol fees)
     function()

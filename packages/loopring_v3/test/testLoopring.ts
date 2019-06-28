@@ -13,14 +13,14 @@ contract("Loopring", (accounts: string[]) => {
     loopring = exchangeTestUtil.loopringV3;
   });
 
-  const withdrawTheBurnChecked = async (token: string, recipient: string, expectedAmount: BN) => {
+  const withdrawProtocolFeesChecked = async (token: string, recipient: string, expectedAmount: BN) => {
     const tokenAddress = exchangeTestUtil.getTokenAddress(token);
 
     const balanceRecipientBefore = await exchangeTestUtil.getOnchainBalance(recipient, tokenAddress);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, tokenAddress);
 
-    await loopring.withdrawTheBurn(tokenAddress, recipient,
-                                   {from: exchangeTestUtil.testContext.deployer, gasPrice: 0});
+    await loopring.withdrawProtocolFees(tokenAddress, recipient,
+                                        {from: exchangeTestUtil.testContext.deployer, gasPrice: 0});
 
     const balanceRecipientAfter = await exchangeTestUtil.getOnchainBalance(recipient, tokenAddress);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, tokenAddress);
@@ -161,9 +161,9 @@ contract("Loopring", (accounts: string[]) => {
       // Withdraw
       const recipient = exchangeTestUtil.testContext.orderOwners[1];
       // ETH
-      await withdrawTheBurnChecked("ETH", recipient, amountA);
+      await withdrawProtocolFeesChecked("ETH", recipient, amountA);
       // WETH
-      await withdrawTheBurnChecked("WETH", recipient, amountB);
+      await withdrawProtocolFeesChecked("WETH", recipient, amountB);
     });
   });
 
@@ -184,12 +184,12 @@ contract("Loopring", (accounts: string[]) => {
       const recipient = exchangeTestUtil.testContext.orderOwners[1];
       // ETH
       await expectThrow(
-        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("ETH"), recipient, {from: recipient}),
+        loopring.withdrawProtocolFees(exchangeTestUtil.getTokenAddress("ETH"), recipient, {from: recipient}),
         "UNAUTHORIZED",
       );
       // WETH
       await expectThrow(
-        loopring.withdrawTheBurn(exchangeTestUtil.getTokenAddress("WETH"), recipient, {from: recipient}),
+        loopring.withdrawProtocolFees(exchangeTestUtil.getTokenAddress("WETH"), recipient, {from: recipient}),
         "UNAUTHORIZED",
       );
     });
