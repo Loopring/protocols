@@ -72,7 +72,7 @@ library AddressUtil
         internal
         returns (bool success)
     {
-        success = sendETH(to, amount, gasLimit);
+        success = to.sendETH(amount, gasLimit);
         require(success, "TRANSFER_FAILURE");
     }
 }
