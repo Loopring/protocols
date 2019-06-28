@@ -733,7 +733,8 @@ export class Simulator {
           const targetRate = order.amountS.mul(new BN(10000)).div(order.amountB);
           const rate = fillS.mul(new BN(10000)).div(fillB);
           if (makerOrder) {
-            assert(targetRate.sub(rate).abs().lte(new BN(1)), "maker rate needs to match order rate");
+            assert(Math.abs(targetRate.toNumber()/rate.toNumber() - 1) < (1 / 10000),
+                   "maker rate needs to match order rate");
           } else {
             assert(rate.lte(targetRate.add(new BN(1))), "taker rate needs to be equal or better than order rate");
           }
