@@ -210,5 +210,39 @@ contract("Loopring", (accounts: string[]) => {
         "UNAUTHORIZED",
       );
     });
+
+    it("should not be able to set the update the settings", async () => {
+      await expectThrow(
+        loopring.updateSettings(
+          loopring.address,
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("0.02", "ether")),
+          new BN(web3.utils.toWei("10000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether")),
+          new BN(web3.utils.toWei("1", "ether")),
+          new BN(web3.utils.toWei("250000", "ether")),
+          new BN(web3.utils.toWei("1000000", "ether")),
+          new BN(web3.utils.toWei("50000", "ether")),
+          new BN(web3.utils.toWei("10", "ether")),
+          {from: exchangeTestUtil.testContext.orderOwners[0]},
+        ),
+        "UNAUTHORIZED",
+      );
+    });
+
+    it("should not be able to set the update the protocol fee settings", async () => {
+      await expectThrow(
+        loopring.updateProtocolFeeSettings(
+          25,
+          50,
+          10,
+          25,
+          new BN(web3.utils.toWei("25000000", "ether")),
+          new BN(web3.utils.toWei("10000000", "ether")),
+          {from: exchangeTestUtil.testContext.orderOwners[0]},
+        ),
+        "UNAUTHORIZED",
+      );
+    });
   });
 });

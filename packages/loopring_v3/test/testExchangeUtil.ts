@@ -1036,9 +1036,19 @@ export class ExchangeTestUtil {
       bs.addNumber(startIndex, 4);
       bs.addNumber(numRequestsInBlock, 4);
 
+      const numAvailableSlotsBefore = await this.exchange.getNumAvailableDepositSlots();
+      const numDepositRequestsProcessedBefore = await this.exchange.getNumDepositRequestsProcessed();
+
       // Commit the block
       const operator = await this.getActiveOperator(exchangeID);
       const blockInfo = await this.commitBlock(operator, BlockType.DEPOSIT, blockSize, bs.getData(), blockFilename);
+
+      const numAvailableSlotsAfter = await this.exchange.getNumAvailableDepositSlots();
+      const numDepositRequestsProcessedAfter = await this.exchange.getNumDepositRequestsProcessed();
+      assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.add(new BN(numRequestsInBlock))),
+             "num available deposit slots should be increased by the number of deposit requests processed");
+      assert(numDepositRequestsProcessedAfter.eq(numDepositRequestsProcessedBefore.add(new BN(numRequestsInBlock))),
+             "total num deposits processed should be increased by the number of deposit requests processed");
 
       blockInfos.push(blockInfo);
     }
@@ -1266,8 +1276,29 @@ export class ExchangeTestUtil {
         this.validateOffchainWithdrawals(withdrawalBlock, bs, stateBefore, stateAfter);
       }
 
+      const numAvailableSlotsBefore = await this.exchange.getNumAvailableWithdrawalSlots();
+      const numWithdrawalRequestsProcessedBefore = await this.exchange.getNumWithdrawalRequestsProcessed();
+
       // Commit the block
       await this.commitBlock(operator, blockType, blockSize, bs.getData(), blockFilename);
+
+      const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
+      const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
+      if (onchain) {
+        assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.add(new BN(numRequestsInBlock))),
+               "num available withdrawal slots should be increased by the number of withdrawal requests processed");
+        assert(
+          numWithdrawalRequestsProcessedAfter.eq(numWithdrawalRequestsProcessedBefore.add(new BN(numRequestsInBlock))),
+          "total num withdrawals processed should be increased by the number of withdrawal requests processed",
+        );
+      } else {
+        assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore),
+               "num available withdrawal slots should remain the same");
+        assert(
+          numWithdrawalRequestsProcessedAfter.eq(numWithdrawalRequestsProcessedBefore),
+          "total num withdrawals processed should remain the same",
+        );
+      }
 
       // Add as a pending withdrawal
       let withdrawalIdx = 0;
