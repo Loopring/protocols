@@ -226,7 +226,8 @@ library OrderHelper {
         valid = valid && (order.tokenTypeS == Data.TokenType.ERC20 && order.trancheS == 0x0);
         valid = valid && (order.tokenTypeB == Data.TokenType.ERC20 && order.trancheB == 0x0);
         valid = valid && (order.tokenTypeFee == Data.TokenType.ERC20);
-        valid = valid && (order.transferDataS.length == 0);
+        // Allow order.transferDataS to be used for dApps building on Loopring
+        // valid = valid && (order.transferDataS.length == 0);
 
         valid = valid && (order.validSince <= now); // order is too early to match
 
