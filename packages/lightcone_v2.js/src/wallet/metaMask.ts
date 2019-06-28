@@ -2,7 +2,7 @@ import Web3 from 'web3';
 
 import {MetaMaskAccount} from 'lib/wallet/ethereum/walletAccount';
 import Transaction from 'lib/wallet/ethereum/transaction';
-import walletUtil = require('lib/wallet/WalletUtils');
+import { fromMetaMask } from 'lib/wallet/WalletUtils';
 import {exchange} from "src/sign/exchange";
 import Eth from "lib/wallet/ethereum/eth";
 
@@ -15,7 +15,7 @@ export class MetaMask {
 
     public constructor() {
         this.web3 = new Web3(Web3.givenProvider || 'http://localhost:8545'); // TODO: replace for ruby
-        this.account = walletUtil.fromMetaMask(this.web3);
+        this.account = fromMetaMask(this.web3);
         this.address = this.account.getAddress();
         this.ethNode = new Eth('') // TODO: config
     }

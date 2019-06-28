@@ -32,17 +32,9 @@ metadata.add('foo', 'bar2');
 
 async function example(): Promise<void> {
     client.getNextOrderId(param, (err: ServiceError | null, res: UInt32Value) => {
+        console.log('hello world')
         console.log(res.getValue())
     });
-
-    const getNextOrderIdRes: UInt32Value = await grpcClientService.getNextOrderId(param);
-    const value: number | undefined = getNextOrderIdRes.getValue();
-    if (value) {
-        console.log('getNextOrderId:', value);
-    }
-
-    const sayMetadata: UInt32Value = await grpcClientService.getNextOrderId(param, metadata);
-    console.log(sayMetadata.getValue());
 }
 
 example().catch((err: Error) => console.log(err));
