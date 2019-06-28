@@ -1,5 +1,10 @@
 # Deployment on Ethereum
 
+## v2.2-dolimite [main-net]:
+- Source code: https://github.com/Loopring/protocols/tree/master/packages/loopring_v2/deployment-source/v2.2-dolomite
+- RingSubmitter: [0x0b0C6A9094b4eA68B5c41b28fb493feB6D665Db4](https://etherscan.io/address/0x0b0c6a9094b4ea68b5c41b28fb493feb6d665db4)
+- other contracts are the same as v2.2-release [main-net]
+
 ## v2.2-release [main-net]:
 - Source code: https://github.com/Loopring/protocol2/releases/tag/v2.1-st20
 - creater: [0x6d4ee35d70ad6331000e370f079ad7df52e75005](https://etherscan.io/address/0x6d4ee35d70ad6331000e370f079ad7df52e75005)
