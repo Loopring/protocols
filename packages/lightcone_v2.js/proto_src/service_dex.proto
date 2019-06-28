@@ -255,12 +255,12 @@ message OffchainWithdrawalalRes {
 }
 
 message SimpleOrderCancellationReq {
-    uint32 exchange_id  = 1;
-    uint64 account_id   = 2;
-    uint64 order_uuid   = 3;
-    uint64 market_id    = 4; // 32 + 32
-    uint64 timestamp    = 5;
-    string sig          = 6;
+    uint32 exchange_id                = 1;
+    uint64 account_id                 = 2;
+    uint64 order_uuid                 = 3;
+    uint64 market_id                  = 4; // 32 + 32
+    uint64 timestamp                  = 5;
+    types.EdDSASignature sig          = 6;
 }
 
 // Error handling: https://github.com/avinassh/grpc-errors

@@ -3,8 +3,8 @@ import Web3 from 'web3';
 import {MetaMaskAccount} from 'lib/wallet/ethereum/walletAccount';
 import Transaction from 'lib/wallet/ethereum/transaction';
 import walletUtil = require('lib/wallet/WalletUtils');
-import {exchange} from "../sign/exchange";
-import Eth from "../../lib/wallet/ethereum/eth";
+import {exchange} from "src/sign/exchange";
+import Eth from "lib/wallet/ethereum/eth";
 
 export class MetaMask {
 
