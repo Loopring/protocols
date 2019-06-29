@@ -237,11 +237,6 @@ Order
     rebateBips: number,
 
     signature: Signature,
-
-    # The data in the trade history of tokenS before they are updated
-    tradeHistoryFilled: string,
-    tradeHistoryCancelled: number,
-    tradeHistoryOrderID: number,
 }
 
 class Ring
@@ -250,7 +245,6 @@ class Ring
     orderB: Order,
 
     ringMatcherAccountID: number,
-    feeRecipientAccountID: number,
     tokenID: number,
     fee: string,
     nonce: number,
