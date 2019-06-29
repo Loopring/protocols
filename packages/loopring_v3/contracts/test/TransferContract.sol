@@ -42,7 +42,10 @@ contract TransferContract {
         )
         external
     {
-        require(token.safeTransferWithGasLimit(to, value, gasLimit), "TRANSFER_FAILURE");
+        require(
+            token.safeTransferWithGasLimit(to, value, gasLimit),
+            "TRANSFER_FAILURE"
+        );
     }
 
     function safeTransferFromWithGasLimit(
@@ -54,7 +57,10 @@ contract TransferContract {
         )
         external
     {
-        require(token.safeTransferFromWithGasLimit(from, to, value, gasLimit), "TRANSFER_FAILURE");
+        require(
+            token.safeTransferFromWithGasLimit(from, to, value, gasLimit),
+            "TRANSFER_FAILURE"
+        );
     }
 
     function sendETH(

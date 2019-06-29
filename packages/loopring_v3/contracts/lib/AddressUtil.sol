@@ -60,7 +60,6 @@ library AddressUtil
         }
         address payable recipient = to.toPayable();
         (success, ) = recipient.call.value(amount).gas(gasLimit)("");
-        return success;
     }
 
     // Works like address.transfer but with a customizable gas limit

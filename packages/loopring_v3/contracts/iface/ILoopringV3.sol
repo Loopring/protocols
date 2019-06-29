@@ -246,10 +246,10 @@ contract ILoopringV3
     ///
     ///      This function can only be called by the owner of this contract.
     ///
-    /// @param  token The address of the token. Use 0x0 for Ether.
+    /// @param  tokenAddress The address of the token. Use 0x0 for Ether.
     /// @param  recipient The address to receive the tokens.
     function withdrawProtocolFees(
-        address token,
+        address tokenAddress,
         address payable recipient
         )
         external;

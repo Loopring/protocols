@@ -353,23 +353,23 @@ contract LoopringV3 is ILoopringV3, Claimable
     }
 
     function withdrawProtocolFees(
-        address token,
+        address tokenAddress,
         address payable recipient
         )
         external
         onlyOwner
     {
-        if (token == address(0)) {
+        if (tokenAddress == address(0)) {
             // ETH
             uint balance = address(this).balance;
             recipient.transferETH(balance, gasleft());
         } else {
             // ERC20 token
-            uint balance = ERC20(token).balanceOf(address(this));
-            if (token == lrcAddress) {
+            uint balance = ERC20(tokenAddress).balanceOf(address(this));
+            if (tokenAddress == lrcAddress) {
                 balance = balance.sub(totalStake);
             }
-            require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
+            require(tokenAddress.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
         }
     }
 
