@@ -232,7 +232,7 @@ contract ILoopringV3
 
     /// @dev Requests the withdrawal of the protocol fees from an exchange
     /// @param exchangeId The id of the exchange to withdraw the fees from
-    /// @param tokenAddress The token to withdraw the fees for
+    /// @param tokenAddress The token to withdraw the fees for. Use 0x0 for Ether.
     function withdrawProtocolFeesFromExchange(
         uint exchangeId,
         address tokenAddress
@@ -243,6 +243,9 @@ contract ILoopringV3
     /// @dev Withdraw all protocol fees to the designated address.
     ///      Fees first need to be withdrawn from an exchange using
     ///      withdrawProtocolFeesFromExchange.
+    ///
+    ///      This function can only be called by the owner of this contract.
+    ///
     /// @param  token The address of the token. Use 0x0 for Ether.
     /// @param  recipient The address to receive the tokens.
     function withdrawProtocolFees(

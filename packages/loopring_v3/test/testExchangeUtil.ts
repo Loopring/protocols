@@ -1285,10 +1285,11 @@ export class ExchangeTestUtil {
       const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
       const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
       if (onchain) {
-        assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.add(new BN(numRequestsInBlock))),
+        const numRequestsProcessed = shutdown ? new BN(0) : new BN(numRequestsInBlock);
+        assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.add(numRequestsProcessed)),
                "num available withdrawal slots should be increased by the number of withdrawal requests processed");
         assert(
-          numWithdrawalRequestsProcessedAfter.eq(numWithdrawalRequestsProcessedBefore.add(new BN(numRequestsInBlock))),
+          numWithdrawalRequestsProcessedAfter.eq(numWithdrawalRequestsProcessedBefore.add(numRequestsProcessed)),
           "total num withdrawals processed should be increased by the number of withdrawal requests processed",
         );
       } else {

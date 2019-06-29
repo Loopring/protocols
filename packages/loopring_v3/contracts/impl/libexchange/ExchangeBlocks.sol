@@ -95,8 +95,8 @@ library ExchangeBlocks
         );
 
         // Check if the proof for this block is too early
-        // We limit the gap between the last finalized block and the last verfied block to limit
-        // the number of blocks that can be finalized when a single block is verified
+        // We limit the gap between the last finalized block and the last verified block to limit
+        // the number of blocks that can become finalized when a single block is verified
         require(
             blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
             "PROOF_TOO_EARLY"
