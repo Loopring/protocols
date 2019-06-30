@@ -3,8 +3,9 @@
     "outDir": "dist",
     "sourceMap": true,
     "noImplicitAny": false,  // Enable when it's ready.
-    "strictNullChecks": false,
-    "noImplicitThis": false,
+    "strictNullChecks": false,  // may not use
+    "noImplicitThis": false,  // may not use
+    "resolveJsonModule": true,
     "module": "commonjs",
     "target": "es6",
     "baseUrl": ".",

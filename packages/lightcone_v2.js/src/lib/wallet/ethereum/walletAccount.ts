@@ -26,7 +26,7 @@ import EthTransaction from 'ethereumjs-tx';
 import * as MetaMask from './metaMask';
 import Wallet from 'ethereumjs-wallet';
 
-const wallets = require('../config/wallets.json.js');
+import wallets from '../config/wallets.json';
 const LoopringWallet = wallets.find(
     wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
 export const path = LoopringWallet.dpath;
