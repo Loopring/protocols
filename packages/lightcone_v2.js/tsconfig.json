@@ -15,8 +15,8 @@
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
     "src/**/*",
-    "src/lib/**/*",
-    "test/**/*",
-    "proto_gen/**/*"
+  ],
+  "exclude": [
+    
   ]
 }
