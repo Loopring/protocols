@@ -6,7 +6,7 @@
     "test": "test"
   },
   "scripts": {
-    "build:proto": "rimraf proto_gen && mkdir proto_gen && node lib/grpc/proto",
+    "build:proto": "rimraf proto_gen && mkdir proto_gen && node src/lib/grpc/proto",
     "build": "npm run build:proto && rimraf dist && tsc",
     "lint": "tslint --project tsconfig.json ./src/**/*.ts",
     "client": "node dist/src/grpc/grpcClient.js",

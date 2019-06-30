@@ -1,5 +1,5 @@
 import fetch from 'dva/fetch';
-import settings from 'settings'
+import settings from './settings'
 
 const data = require('./data');
 const config = data.configs;

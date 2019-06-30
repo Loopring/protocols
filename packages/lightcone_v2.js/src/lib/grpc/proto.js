@@ -1,3 +1,5 @@
+// proto.js is to generate proto_gen, not used in any typescript.
+
 const path = require('path');
 const shell = require('shelljs');
 const rimraf = require('rimraf');
@@ -6,7 +8,7 @@ process.env.PATH += (path.delimiter + path.join(process.cwd(), 'node_modules', '
 
 const PROTO_DIR = path.join(__dirname, '../../proto_src');
 const MODEL_DIR = path.join(__dirname, '../../proto_gen');
-const PROTOC_GEN_TS_PATH = path.join(__dirname, '../../node_modules/.bin/protoc-gen-ts');
+const PROTOC_GEN_TS_PATH = path.join(__dirname, '../../../node_modules/.bin/protoc-gen-ts');
 
 rimraf.sync(`${MODEL_DIR}/*`);
 

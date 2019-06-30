@@ -1,4 +1,4 @@
-const loopring = require('./lib/wallet/index');
+const loopring = require('./src/lib/wallet/index');
 
 module.exports = {
     common: loopring.common,

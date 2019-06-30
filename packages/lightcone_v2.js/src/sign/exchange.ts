@@ -1,19 +1,19 @@
 import BN = require('bn.js');
-import eddsa = require('lib/sign/eddsa');
-import config from 'lib/wallet/config';
+import { generateKeyPair, sign } from 'src/lib/sign/eddsa';
+import config from 'src/lib/wallet/config';
 
 import {grpcClientService} from 'src/grpc/grpcClientService';
 import {DexAccount, OrderInfo, Signature} from '../model/types';
-import Transaction from "lib/wallet/ethereum/transaction";
-import * as fm from "lib/wallet/common/formatter";
-import {ethereum} from "lib/wallet";
-import {WalletAccount} from "lib/wallet/ethereum/walletAccount";
+import Transaction from "src/lib/wallet/ethereum/transaction";
+import * as fm from "src/lib/wallet/common/formatter";
+import {ethereum} from "src/lib/wallet";
+import {WalletAccount} from "src/lib/wallet/ethereum/walletAccount";
 import {
     Account,
     GetNextOrderIdReq,
     SimpleOrderCancellationReq
-} from "proto_gen/service_dex_pb";
-import {Order, TokenAmounts} from "proto_gen/data_order_pb";
+} from "src/proto_gen/service_dex_pb";
+import {Order, TokenAmounts} from "src/proto_gen/data_order_pb";
 import {
     AccountID,
     Amount,
@@ -23,8 +23,8 @@ import {
     EdDSASignature,
     OrderID,
     TokenID
-} from "proto_gen/data_types_pb";
-import Eth from "lib/wallet/ethereum/eth";
+} from "src/proto_gen/data_types_pb";
+import Eth from "src/lib/wallet/ethereum/eth";
 
 export class Exchange {
 
@@ -72,7 +72,7 @@ export class Exchange {
 
     public async createAccount(wallet: WalletAccount, gasPrice: number) {
         if (this.accounts.get(wallet) == null) {
-            const keyPair = eddsa.generateKeyPair();
+            const keyPair = generateKeyPair();
             this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice).then((rawTx: Transaction) => {
                     const signedTx = wallet.signEthereumTx(rawTx);
                     wallet.sendTransaction(new Eth(''), signedTx).then(() => { // TODO: config
@@ -183,7 +183,7 @@ export class Exchange {
             Exchange.toBitsNumber(order.maxFeeBips, 6),
             Exchange.toBitsNumber(order.buy ? 1 : 0, 1)
         ]);
-        const sig = eddsa.sign(this.currentDexAccount.secretKey, message);
+        const sig = sign(this.currentDexAccount.secretKey, message);
         order.hash = sig.hash;
         order.signature = {
             Rx: sig.R[0].toString(),
@@ -200,7 +200,7 @@ export class Exchange {
             order.tokenB = config.getTokenBySymbol(order.tokenB).address;
         }
         if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
-            const keyPair = eddsa.generateKeyPair();
+            const keyPair = generateKeyPair();
             order.dualAuthPublicKeyX = keyPair.publicKeyX;
             order.dualAuthPublicKeyY = keyPair.publicKeyY;
             order.dualAuthSecretKey = keyPair.secretKey;
@@ -336,7 +336,7 @@ export class Exchange {
         simpleOrderCancellationReq.setTimestamp(timeStamp);
 
         let bits = Exchange.toBitsBN(fm.toBN(timeStamp), 32);
-        const sig = eddsa.sign(this.currentDexAccount.secretKey, bits);
+        const sig = sign(this.currentDexAccount.secretKey, bits);
         let edDSASignature = new EdDSASignature();
         edDSASignature.setS(sig.S);
         edDSASignature.setRx(sig.R[0].toString());

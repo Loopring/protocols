@@ -1,3 +1,5 @@
+// @ts-ignore
+/* ts-disable */
 import validator from './validator';
 import {
     addHexPrefix,
@@ -24,7 +26,7 @@ import EthTransaction from 'ethereumjs-tx';
 import * as MetaMask from './metaMask';
 import Wallet from 'ethereumjs-wallet';
 
-const wallets = require('../config/wallets.json');
+const wallets = require('../config/wallets.json.js');
 const LoopringWallet = wallets.find(
     wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
 export const path = LoopringWallet.dpath;
@@ -152,7 +154,10 @@ export function createMnemonic(strength) {
 
 // Hack: Failed to import in react web app
 export class WalletAccount {
-    // getAddress();
+    // Hack: to use in typescript
+    getAddress() {
+        return "1";
+    };
 
     // /**
     //  * @description sign
@@ -167,9 +172,9 @@ export class WalletAccount {
     //  * @param rawTx
     //  * @returns {string}
     //  */
-    // signEthereumTx(rawTx) {
-    //     throw Error('unimplemented');
-    // }
+    signEthereumTx(rawTx) {
+        throw Error('unimplemented');
+    }
 
     // /**
     //  * @description Returns given order along with r, s, v
@@ -187,9 +192,9 @@ export class WalletAccount {
     //     throw Error('unimplemented');
     // }
 
-    // sendTransaction(ethNode, signedTx) {
-    //     return ethNode.sendRawTransaction(signedTx);
-    // }
+    sendTransaction(ethNode, signedTx) {
+        return ethNode.sendRawTransaction(signedTx);
+    }
 }
 
 export class KeyAccount extends WalletAccount {
@@ -284,7 +289,7 @@ export class MetaMaskAccount extends WalletAccount {
 
     async signMessage(message) {
         const result = await MetaMask.signMessage(this.web3, this.account, message);
-        if (!result.error) {
+        if (!result['error']) {
             return result.result;
         } else {
             throw new Error(result.error.message);

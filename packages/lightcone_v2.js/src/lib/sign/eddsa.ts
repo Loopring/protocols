@@ -11,7 +11,7 @@ exports.unpackSignature = unpackSignature;
 exports.pruneBuffer = pruneBuffer;
 exports.generateKeyPair = generateKeyPair;
 
-function pruneBuffer(_buff) {
+export function pruneBuffer(_buff) {
     const buff = Buffer.from(_buff);
     buff[0] = buff[0] & 0xF8;
     buff[31] = buff[31] & 0x7F;
@@ -19,13 +19,13 @@ function pruneBuffer(_buff) {
     return buff;
 }
 
-function prv2pub(prv) {
+export function prv2pub(prv) {
     const sBuff = pruneBuffer(createBlakeHash("blake512").update(prv).digest().slice(0, 32));
     let s = bigInt.leBuff2int(sBuff);
     return babyJub.mulPointEscalar(babyJub.Base8, s.shr(3));
 }
 
-function toBitsBigInt(value, length) {
+export function toBitsBigInt(value, length) {
     const res = new Array(length);
     for (let i = 0; i < length; i++) {
         res[i] = (value.and(new bigInt("1").shl(i)).isZero()) ? 0 : 1;
@@ -33,11 +33,11 @@ function toBitsBigInt(value, length) {
     return res;
 }
 
-function toBitsArray(l) {
+export function toBitsArray(l) {
     return [].concat.apply([], l);
 }
 
-function bitsToBigInt(bits) {
+export function bitsToBigInt(bits) {
     value = bigInt(0);
     for (let i = 0; i < bits.length; i++) {
         value = value.add(bigInt(bits[i]).shl(i));
@@ -45,11 +45,11 @@ function bitsToBigInt(bits) {
     return value;
 }
 
-function getRandomInt(max) {
+export function getRandomInt(max) {
     return Math.floor(Math.random() * max);
 }
 
-function generateKeyPair() {
+export function generateKeyPair() {
     // TODO: secure random number generation
     const randomNumber = getRandomInt(218882428718390);
     let secretKey = bigInt(randomNumber.toString(10));
@@ -63,7 +63,7 @@ function generateKeyPair() {
     };
 }
 
-function sign(strKey, bits) {
+export function sign(strKey, bits) {
     const key = bigInt(strKey);
     const prv = bigInt.leInt2Buff(key, 32);
     const msg = bigInt.leInt2Buff(bitsToBigInt(bits), Math.floor(bits.length + 7) / 8);
@@ -116,7 +116,7 @@ function sign(strKey, bits) {
     };
 }
 
-function verify(msg, sig, A) {
+export function verify(msg, sig, A) {
     // Check parameters
     if (typeof sig != "object") return false;
     if (!Array.isArray(sig.R8)) return false;
@@ -141,13 +141,13 @@ function verify(msg, sig, A) {
     return true;
 }
 
-function packSignature(sig) {
+export function packSignature(sig) {
     const R8p = babyJub.packPoint(sig.R8);
     const Sp = bigInt.leInt2Buff(sig.S, 32);
     return Buffer.concat([R8p, Sp]);
 }
 
-function unpackSignature(sigBuff) {
+export function unpackSignature(sigBuff) {
     return {
         R8: babyJub.unpackPoint(sigBuff.slice(0, 32)),
         S: bigInt.leBuff2int(sigBuff.slice(32, 64))

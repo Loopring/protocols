@@ -2,7 +2,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "sourceMap": true,
-    "noImplicitAny": true,
+    "noImplicitAny": false,  // Enable when it's ready.
+    "strictNullChecks": false,
+    "noImplicitThis": false,
     "module": "commonjs",
     "target": "es6",
     "baseUrl": ".",
@@ -13,7 +15,7 @@
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
     "src/**/*",
-    "lib/**/*",
+    "src/lib/**/*",
     "test/**/*",
     "proto_gen/**/*"
   ]
