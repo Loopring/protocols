@@ -14,7 +14,7 @@ const authCred: CallCredentials = credentials.createFromMetadataGenerator((param
 });
 const client: GreeterClient = new GreeterClient('localhost:50051', credentials.combineChannelCredentials(baseCred, authCred));
 */
-const client: DexServiceClient = new DexServiceClient('localhost:8980', credentials.createInsecure());
+const client: DexServiceClient = new DexServiceClient('18.179.197.168:5000', credentials.createInsecure());
 
 let argv: string = 'world';
 if (process.argv.length >= 3) {
