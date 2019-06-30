@@ -14,6 +14,8 @@ const authCred: CallCredentials = credentials.createFromMetadataGenerator((param
 });
 const client: GreeterClient = new GreeterClient('localhost:50051', credentials.combineChannelCredentials(baseCred, authCred));
 */
+
+// 18.179.197.168:5000 is temperate gRPC server we hosted on AWS.
 const client: DexServiceClient = new DexServiceClient('18.179.197.168:5000', credentials.createInsecure());
 
 let argv: string = 'world';
