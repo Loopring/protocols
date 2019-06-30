@@ -65,8 +65,8 @@ export async function signEthereumTx(web3, account, rawTx) {
     const ethTx = new EthTransaction(rawTx);
     const hash = toHex(ethTx.hash(false));
     const response = await sign(web3, account, hash);
-    if (!response.error) {
-        const signature = response.result;
+    if (!response['error']) {
+        const signature = response['result'];
         signature.v += ethTx._chainId * 2 + 8;
         Object.assign(ethTx, signature);
         return {result: toHex(ethTx.serialize())};

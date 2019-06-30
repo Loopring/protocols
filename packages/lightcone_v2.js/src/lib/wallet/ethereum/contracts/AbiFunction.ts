@@ -3,6 +3,15 @@ import {addHexPrefix, clearHexPrefix, toBuffer, toHex} from '../../common/format
 import BN from 'bn.js';
 
 export default class AbiFunction {
+
+    name: string
+    inputTypes: string[]
+    inputs: any[]
+    outputTypes: string[]
+    outputs: any[]
+    constant: string
+    methodAbiHash: string
+
     constructor({inputs, name, outputs, constant}) {
         this.name = name;
         this.inputTypes = inputs.map(({type}) => type);

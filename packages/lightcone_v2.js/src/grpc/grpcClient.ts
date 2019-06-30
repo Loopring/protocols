@@ -1,6 +1,6 @@
 import {credentials, Metadata, ServiceError} from 'grpc';
-import { DexServiceClient } from '../../proto_gen/service_dex_grpc_pb';
-import { GetNextOrderIdReq } from '../../proto_gen/service_dex_pb';
+import { DexServiceClient } from 'src/proto_gen/service_dex_grpc_pb';
+import { GetNextOrderIdReq } from 'src/proto_gen/service_dex_pb';
 import { UInt32Value } from "google-protobuf/google/protobuf/wrappers_pb";
 
 /* // https://github.com/grpc/grpc-node/issues/543#issuecomment-427487420

@@ -4,6 +4,9 @@ import Response from '../common/response';
 import code from '../common/code';
 
 export default class Eth {
+
+    host: string
+
     constructor(host) {
         this.host = host;
     }
@@ -54,10 +57,10 @@ export function getTransactionCount(host, {address, tag}) {
     }
     const params = [address, tag];
     const body = {};
-    body.method = 'eth_getTransactionCount';
-    body.params = params;
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_getTransactionCount';
+    body['params'] = params;
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body
@@ -72,10 +75,10 @@ export function getTransactionCount(host, {address, tag}) {
  */
 export function sendRawTransaction(host, signedTx) {
     const body = {};
-    body.method = 'eth_sendRawTransaction';
-    body.params = [signedTx];
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_sendRawTransaction';
+    body['params'] = [signedTx];
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body
@@ -90,10 +93,10 @@ export function sendRawTransaction(host, signedTx) {
 export function getGasPrice(host) {
     const params = [];
     const body = {};
-    body.method = 'eth_gasPrice';
-    body.params = params;
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_gasPrice';
+    body['params'] = params;
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body
@@ -108,10 +111,10 @@ export function getGasPrice(host) {
  */
 export function estimateGas(host, tx) {
     const body = {};
-    body.method = 'eth_estimateGas';
-    body.params = [tx];
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_estimateGas';
+    body['params'] = [tx];
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body
@@ -137,10 +140,10 @@ export function getAccountBalance(host, {address, tag}) {
     }
     const params = [address, tag];
     const body = {};
-    body.method = 'eth_getBalance';
-    body.params = params;
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_getBalance';
+    body['params'] = params;
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body
@@ -161,10 +164,10 @@ export function getTransactionByhash(host, hash) {
     }
     const params = [hash];
     const body = {};
-    body.method = 'eth_getTransactionByHash';
-    body.params = params;
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_getTransactionByHash';
+    body['params'] = params;
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body
@@ -189,10 +192,10 @@ export function call(host, {tx, tag}) {
     }
     const params = [tx, tag];
     const body = {};
-    body.method = 'eth_call';
-    body.params = params;
-    body.id = id();
-    body.jsonrpc = '2.0';
+    body['method'] = 'eth_call';
+    body['params'] = params;
+    body['id'] = id();
+    body['jsonrpc'] = '2.0';
     return request(host, {
         method: 'post',
         body

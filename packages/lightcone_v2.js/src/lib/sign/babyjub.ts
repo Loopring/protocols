@@ -1,5 +1,4 @@
-const bn128 = require("snarkjs").bn128;
-const bigInt = require("snarkjs").bigInt;
+import { bn128, bigInt } from 'snarkjs'
 
 exports.addPoint = addPoint;
 exports.mulPointEscalar = mulPointEscalar;

@@ -1,5 +1,6 @@
+import { bigInt } from 'snarkjs'
+
 const createBlakeHash = require("blake-hash");
-const bigInt = require("snarkjs").bigInt;
 const babyJub = require("./babyjub");
 const pedersenHash = require("./pedersenHash").hash;
 
@@ -38,7 +39,7 @@ export function toBitsArray(l) {
 }
 
 export function bitsToBigInt(bits) {
-    value = bigInt(0);
+    let value = bigInt(0);
     for (let i = 0; i < bits.length; i++) {
         value = value.add(bigInt(bits[i]).shl(i));
     }

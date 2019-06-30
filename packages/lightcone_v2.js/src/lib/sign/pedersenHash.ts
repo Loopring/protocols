@@ -1,5 +1,5 @@
-const bn128 = require("snarkjs").bn128;
-const bigInt = require("snarkjs").bigInt;
+import { bn128, bigInt } from 'snarkjs'
+
 const babyJub = require("./babyjub");
 const createBlakeHash = require("blake-hash");
 
@@ -64,7 +64,7 @@ let bases = [];
 function getBasePoint(pointIdx) {
     if (pointIdx < bases.length) return bases[pointIdx];
 
-    basePoints = [
+    let basePoints = [
         [
             bigInt("17434558536782967610340762605448133754549234172198748128207635616973179917758"),
             bigInt("13809929214859773185494095338070573446620668786591540427529120055108311408601"),
@@ -161,7 +161,3 @@ function buffer2bits(buff) {
     }
     return res;
 }
-
-
-
-

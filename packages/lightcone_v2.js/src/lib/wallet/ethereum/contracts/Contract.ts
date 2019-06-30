@@ -3,6 +3,9 @@ import {toHex} from '../../common/formatter';
 import {methodID} from 'ethereumjs-abi';
 
 export default class Contract {
+
+    abiFunctions: any
+
     constructor(abi) {
         const funAbi = abi.filter(({type}) => type === 'function');
         this.abiFunctions = funAbi.reduce((acc, item) => {
