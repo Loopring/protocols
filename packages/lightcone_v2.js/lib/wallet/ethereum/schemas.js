@@ -1,4 +1,4 @@
-import basicSchemas from '../common/validator_schemas'
+import basicSchemas from '../common/schemas'
 
 let standSchemas = {
     BASIC_TX: {
@@ -126,11 +126,5 @@ let standSchemas = {
     }
 };
 
+// Hack: What is standSchemas?
 export default standSchemas
-
-
-
-
-
-
-

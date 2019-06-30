@@ -1,6 +1,8 @@
 import validator from '../common/validator'
 import request from '../common/request'
-import {generateAbiData} from './abi';
+
+// FIXME: abi is not included in the project.
+// import {generateAbiData} from './abi';
 import {configs} from "../config/data";
 import {toBuffer} from "../common/formatter";
 import {rawDecode} from 'ethereumjs-abi'
@@ -108,6 +110,8 @@ export async function getTransactionRecipt(hash) {
     })
 }
 
+// FIXME: abi is not included in the project.
+/*
 export function generateBindAddressTx({projectId, address, gasPrice, gasLimit, nonce, chainId}) {
     const tx = {};
     tx.to = configs.bindContractAddress;
@@ -219,6 +223,7 @@ export function addParticipant({feeRecipient, signer, to, gasPrice, gasLimit, no
     }
     return tx
 }
+*/
 
 export function isValidEthAddress(address) {
     try {

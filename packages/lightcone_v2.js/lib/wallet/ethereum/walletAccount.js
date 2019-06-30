@@ -150,45 +150,46 @@ export function createMnemonic(strength) {
     return generateMnemonic(strength || 256);
 }
 
+// Hack: Failed to import in react web app
 export class WalletAccount {
-    getAddress();
+    // getAddress();
 
-    /**
-     * @description sign
-     * @param hash
-     */
-    sign(hash) {
-        throw Error('unimplemented');
-    }
+    // /**
+    //  * @description sign
+    //  * @param hash
+    //  */
+    // sign(hash) {
+    //     throw Error('unimplemented');
+    // }
 
-    /**
-     * @description Returns serialized signed ethereum tx
-     * @param rawTx
-     * @returns {string}
-     */
-    signEthereumTx(rawTx) {
-        throw Error('unimplemented');
-    }
+    // /**
+    //  * @description Returns serialized signed ethereum tx
+    //  * @param rawTx
+    //  * @returns {string}
+    //  */
+    // signEthereumTx(rawTx) {
+    //     throw Error('unimplemented');
+    // }
 
-    /**
-     * @description Returns given order along with r, s, v
-     * @param order
-     */
-    signOrder(order) {
-        throw Error('unimplemented');
-    }
+    // /**
+    //  * @description Returns given order along with r, s, v
+    //  * @param order
+    //  */
+    // signOrder(order) {
+    //     throw Error('unimplemented');
+    // }
 
-    /**
-     * @description Calculates an Ethereum specific signature with: sign(keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))).
-     * @param message string
-     */
-    signMessage(message) {
-        throw Error('unimplemented');
-    }
+    // /**
+    //  * @description Calculates an Ethereum specific signature with: sign(keccak256("\x19Ethereum Signed Message:\n" + len(message) + message))).
+    //  * @param message string
+    //  */
+    // signMessage(message) {
+    //     throw Error('unimplemented');
+    // }
 
-    sendTransaction(ethNode, signedTx) {
-        return ethNode.sendRawTransaction(signedTx);
-    }
+    // sendTransaction(ethNode, signedTx) {
+    //     return ethNode.sendRawTransaction(signedTx);
+    // }
 }
 
 export class KeyAccount extends WalletAccount {

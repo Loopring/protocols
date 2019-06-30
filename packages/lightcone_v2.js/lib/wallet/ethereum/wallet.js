@@ -1,6 +1,6 @@
-import {getTransactionCount} from "utils";
+import {getTransactionCount} from "./utils";
 import {toNumber} from "../common/formatter";
-import validator from 'validator';
+import validator from './validator';
 
 const setWallet = (wallet) => {
     const wallets = localStorage.wallet ? JSON.parse(localStorage.wallet) : [];
