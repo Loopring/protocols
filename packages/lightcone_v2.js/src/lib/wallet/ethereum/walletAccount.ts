@@ -197,7 +197,11 @@ export class WalletAccount {
     }
 }
 
+// Hack: We don't need this one?
 export class KeyAccount extends WalletAccount {
+
+    privateKey: any
+
     /**
      * @property
      * @param privateKey string | Buffer
@@ -262,6 +266,10 @@ export class KeyAccount extends WalletAccount {
 }
 
 export class MetaMaskAccount extends WalletAccount {
+
+    web3: any;
+    account: any;
+
     constructor(web3) {
         super();
         if (web3 && web3.eth.accounts[0]) {
@@ -280,29 +288,28 @@ export class MetaMaskAccount extends WalletAccount {
 
     async sign(hash) {
         const result = await MetaMask.sign(this.web3, this.account, hash);
-        if (!result.error) {
-            return result.result;
+        if (!result['error']) {
+            return result['result'];
         } else {
-            throw new Error(result.error.message);
+            throw new Error(result['error']['message']);
         }
     }
 
     async signMessage(message) {
         const result = await MetaMask.signMessage(this.web3, this.account, message);
         if (!result['error']) {
-            return result.result;
+            return result['result'];
         } else {
-            throw new Error(result.error.message);
+            throw new Error(result['error']['message']);
         }
     }
 
     async signEthereumTx(rawTx) {
-        const result = await MetaMask.signEthereumTx(this.web3, this.account,
-            rawTx);
-        if (!result.error) {
-            return result.result;
+        const result = await MetaMask.signEthereumTx(this.web3, this.account, rawTx);
+        if (!result['error']) {
+            return result['result'];
         } else {
-            throw new Error(result.error.message);
+            throw new Error(result['error']['message']);
         }
     }
 }
