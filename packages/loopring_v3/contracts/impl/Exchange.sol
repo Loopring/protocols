@@ -172,13 +172,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew) = state.createOrUpdateAccount(
+        return updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
-            true
+            address(0),
+            0
         );
     }
 
@@ -491,25 +493,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew) = state.createOrUpdateAccount(
+        return updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
-            false
-        );
-        uint additionalFeeETH;
-        if (isAccountNew) {
-            additionalFeeETH = state.accountCreationFeeETH;
-        } else {
-            additionalFeeETH = state.accountUpdateFeeETH;
-        }
-        state.depositTo(
-            msg.sender,
             token,
-            amount,
-            additionalFeeETH
+            amount
         );
     }
 
@@ -841,5 +833,37 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
+    }
+
+    // == Internal Functions ==
+    function updateAccountAndDepositInternal(
+        uint    pubKeyX,
+        uint    pubKeyY,
+        address token,
+        uint96  amount
+        )
+        internal
+        returns (
+            uint24 accountID,
+            bool   isAccountNew,
+            bool   isAccountUpdated
+        )
+    {
+        (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
+            pubKeyX,
+            pubKeyY
+        );
+        uint additionalFeeETH = 0;
+        if (isAccountNew) {
+            additionalFeeETH = state.accountCreationFeeETH;
+        } else if (isAccountUpdated) {
+            additionalFeeETH = state.accountUpdateFeeETH;
+        }
+        state.depositTo(
+            msg.sender,
+            token,
+            amount,
+            additionalFeeETH
+        );
     }
 }

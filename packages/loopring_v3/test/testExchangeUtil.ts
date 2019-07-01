@@ -611,8 +611,23 @@ export class ExchangeTestUtil {
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
+    // Calculate how much fee needs to be paid
     const fees = await this.exchange.getFees();
-    let ethToSend = fees._depositFeeETH.add(fees._accountCreationFeeETH);
+    let feeETH = fees._depositFeeETH;
+    const currentAccountID = await this.getAccountID(owner);
+    if (currentAccountID === undefined) {
+      feeETH = feeETH.add(fees._accountUpdateFeeETH);
+    } else {
+      const accountData = await this.exchange.getAccount(owner);
+      if (accountData.pubKeyX.toString(10) !== publicKeyX || accountData.pubKeyY.toString(10) !== publicKeyY) {
+        feeETH = feeETH.add(fees._accountUpdateFeeETH);
+      }
+    }
+
+    // Always send a bit too much which we'll get back immediately
+    const feeSurplus = new BN(123);
+    let ethToSend = feeETH.add(feeSurplus);
+
     if (amount.gt(0)) {
       if (token !== constants.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
@@ -633,14 +648,22 @@ export class ExchangeTestUtil {
     // Do the deposit
     const contract = accountContract ? accountContract : this.exchange;
     const caller = accountContract ? this.testContext.orderOwners[0] : owner;
+
+    const callerEthBalanceBefore = await this.getOnchainBalance(caller, constants.zeroAddress);
+
     const tx = await contract.updateAccountAndDeposit(
       new BN(publicKeyX),
       new BN(publicKeyY),
       token,
       web3.utils.toBN(amount),
-      {from: caller, value: ethToSend},
+      {from: caller, value: ethToSend, gasPrice: 0},
     );
     // logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
+
+    // Check if the correct fee amount was paid
+    const callerEthBalanceAfter = await this.getOnchainBalance(caller, constants.zeroAddress);
+    assert(callerEthBalanceAfter.eq(callerEthBalanceBefore.sub(ethToSend).add(feeSurplus)),
+           "fee paid by the depositer needs to match exactly with the fee needed");
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -651,7 +674,7 @@ export class ExchangeTestUtil {
       owner,
       token,
       amount,
-      fee: fees._depositFeeETH,
+      fee: feeETH,
       timestamp: (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp,
       accountID: items[0][0].toNumber(),
       depositIdx: items[0][1].toNumber(),
@@ -719,15 +742,21 @@ export class ExchangeTestUtil {
         numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
-
     const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
+
+    const feeSurplus = new BN(456);
+    const ethToSend = withdrawalFee.add(feeSurplus);
+
+    const caller = (accountID === 0) ? this.exchangeOwner : owner;
+
+    const callerEthBalanceBefore = await this.getOnchainBalance(caller, constants.zeroAddress);
 
     // Submit the withdraw request
     let tx;
     if (accountID === 0) {
       tx = await this.exchange.withdrawProtocolFees(
         token,
-        {from: this.exchangeOwner, value: withdrawalFee},
+        {from: caller, value: ethToSend, gasPrice: 0},
       );
       amount = new BN(2);
       amount = amount.pow(new BN(96)).sub(new BN(1));
@@ -735,10 +764,15 @@ export class ExchangeTestUtil {
       tx = await this.exchange.withdraw(
         token,
         web3.utils.toBN(amount),
-        {from: owner, value: withdrawalFee},
+        {from: caller, value: ethToSend, gasPrice: 0},
       );
     }
-    logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
+    // logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
+
+    // Check if the correct fee amount was paid
+    const callerEthBalanceAfter = await this.getOnchainBalance(caller, constants.zeroAddress);
+    assert(callerEthBalanceAfter.eq(callerEthBalanceBefore.sub(ethToSend).add(feeSurplus)),
+          "fee paid by the withdrawer needs to match exactly with the fee needed");
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawalRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -1968,7 +2002,7 @@ export class ExchangeTestUtil {
     await this.exchange.setFees(
       fees._accountCreationFeeETH,
       fees._accountUpdateFeeETH,
-      fees._depositFeeETH.mul(new BN(2)),
+      fees._depositFeeETH.mul(new BN(4)),
       fees._withdrawalFeeETH,
       {from: this.exchangeOwner},
     );

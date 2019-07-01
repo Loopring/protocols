@@ -101,18 +101,20 @@ library ExchangeDeposits
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
-        ExchangeData.Token storage token = S.tokens[tokenID];
-        require(!token.depositDisabled, "TOKEN_DEPOSIT_DISABLED");
+        require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
+
+        // Total fee to be paid by the user
+        uint feeETH = additionalFeeETH.add(S.depositFeeETH);
 
         transferDeposit(
             S,
             account.owner,
             tokenAddress,
             amount,
-            additionalFeeETH
+            feeETH
         );
 
         // Add the request to the deposit chain
@@ -131,7 +133,7 @@ library ExchangeDeposits
                     amount
                 )
             ),
-            prevRequest.accumulatedFee.add(S.depositFeeETH),
+            prevRequest.accumulatedFee.add(feeETH),
             uint32(now)
         );
         S.depositChain.push(request);
@@ -159,11 +161,11 @@ library ExchangeDeposits
         address accountOwner,
         address tokenAddress,
         uint    amount,
-        uint    additionalFeeETH
+        uint    feeETH
         )
         private
     {
-        uint totalRequiredETH = additionalFeeETH.add(S.depositFeeETH);
+        uint totalRequiredETH = feeETH;
         if (tokenAddress == address(0)) {
             totalRequiredETH = totalRequiredETH.add(amount);
         }

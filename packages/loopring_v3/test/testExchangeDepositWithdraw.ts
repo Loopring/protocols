@@ -19,30 +19,47 @@ contract("Exchange", (accounts: string[]) => {
     assert.equal(accountsData.pubKeyY.toString(10), keyPair.publicKeyY, "pubKeyY needs to match");
   };
 
-  const createOrUpdateAccountChecked = async (keyPair: any, owner: string, fee: BN) => {
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
-    const numAccountsBefore = (await exchange.getNumAccounts()).toNumber();
+  const createOrUpdateAccountChecked = async (keyPair: any, owner: string, fee: BN, isNew: boolean = true) => {
+    const numAvailableSlotsBefore = await exchange.getNumAvailableDepositSlots();
+    const numAccountsBefore = await exchange.getNumAccounts();
 
     await exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY,
       {from: owner, value: fee, gasPrice: 0});
 
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
-    const numAccountsAfter = (await exchange.getNumAccounts()).toNumber();
+    const numAvailableSlotsAfter = await exchange.getNumAvailableDepositSlots();
+    const numAccountsAfter = await exchange.getNumAccounts();
 
-    assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter,
-           "Number of available deposit slots should stay the same");
-    assert.equal(numAccountsBefore + 1, numAccountsAfter,
-           "Number of accounts should be increased by 1");
+    assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.sub(new BN(1))),
+           "Number of available deposit slots should de decreased by 1");
 
-    // Get the AccountCreated event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-      exchange, "AccountCreated", web3.eth.blockNumber,
-    );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.id];
-    });
-    assert.equal(items.length, 1, "A single AccountCreated event should have been emitted");
-    const accountID = items[0][0].toNumber();
+    let accountID: number;
+    if (isNew) {
+      assert(numAccountsAfter.eq(numAccountsBefore.add(new BN(1))),
+            "Number of accounts should be increased by 1");
+
+      // Get the AccountCreated event
+      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+        exchange, "AccountCreated", web3.eth.blockNumber,
+      );
+      const items = eventArr.map((eventObj: any) => {
+        return [eventObj.args.id];
+      });
+      assert.equal(items.length, 1, "A single AccountCreated event should have been emitted");
+      accountID = items[0][0].toNumber();
+    } else {
+      assert(numAccountsAfter.eq(numAccountsBefore),
+            "Number of accounts should remain the same");
+
+      // Get the AccountUpdated event
+      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+        exchange, "AccountUpdated", web3.eth.blockNumber,
+      );
+      const items = eventArr.map((eventObj: any) => {
+        return [eventObj.args.id];
+      });
+      assert.equal(items.length, 1, "A single AccountUpdated event should have been emitted");
+      accountID = items[0][0].toNumber();
+    }
 
     // Check the account info onchain
     await getAccountChecked(owner, accountID, keyPair);
@@ -296,6 +313,8 @@ contract("Exchange", (accounts: string[]) => {
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
       const accountCreationFee = fees._accountCreationFeeETH;
+      const depositFee = fees._depositFeeETH;
+      const totalFee = depositFee.add(accountCreationFee);
 
       // No ETH sent
       await expectThrow(
@@ -306,13 +325,37 @@ contract("Exchange", (accounts: string[]) => {
       // Not enough ETH
       await expectThrow(
         exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY,
-          {from: owner, value: accountCreationFee.sub(new BN(1))}),
+          {from: owner, value: totalFee.sub(new BN(1))}),
         "INSUFFICIENT_FEE",
       );
 
       // Everything correct
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalFee, true);
       assert(accountID > 0);
+    });
+
+    it("Update account", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+
+      // The correct deposit fee expected by the contract
+      const fees = await exchange.getFees();
+      const accountCreationFee = fees._accountCreationFeeETH;
+      const accountUpdateFee = fees._accountUpdateFeeETH;
+      const depositFee = fees._depositFeeETH;
+
+      // Everything correct for account creation
+      const totalCreationFee = depositFee.add(accountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalCreationFee, true);
+      assert(accountID > 0);
+
+      // Update the keys
+      const totalUpdateFee = depositFee.add(accountUpdateFee);
+      const newKeyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const newAccountID = await createOrUpdateAccountChecked(newKeyPair, owner, totalUpdateFee, false);
+      assert(newAccountID === accountID, "Account ID needs to remain the same");
     });
 
     it("ERC20: Deposit", async () => {
@@ -330,7 +373,7 @@ contract("Exchange", (accounts: string[]) => {
       const updateFee = fees._accountUpdateFeeETH;
 
       // Create the account
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, depositFee.add(accountCreationFee));
 
       // No ETH sent
       await expectThrow(
@@ -398,7 +441,7 @@ contract("Exchange", (accounts: string[]) => {
       const depositFee = fees._depositFeeETH;
 
       // Create the account
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee.add(depositFee));
 
       // No ETH sent
       await expectThrow(
@@ -1034,13 +1077,14 @@ contract("Exchange", (accounts: string[]) => {
         // The correct deposit fee expected by the contract
         const fees = await exchange.getFees();
         const accountCreationFee = fees._accountCreationFeeETH;
+        const depositFee = fees._depositFeeETH;
 
         // Make sure the owner has enough tokens
         await exchangeTestUtil.setBalanceAndApprove(owner, tokenA, amount.mul(new BN(10)));
         await exchangeTestUtil.setBalanceAndApprove(owner, tokenB, amount.mul(new BN(10)));
 
         // Everything correct
-        await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee);
+        await createOrUpdateAccountChecked(keyPair, owner, depositFee.add(accountCreationFee));
 
         // Disable token deposit for GTO
         await exchange.disableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner});

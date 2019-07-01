@@ -39,20 +39,21 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawBlockFeeChecked = async (blockIdx: number, operator: string, totalBlockFee: BN,
                                          expectedBlockFee: BN, allowedDelta: BN = new BN(0)) => {
     const token = "ETH";
+    const pfm = await loopring.pfm();
     const balanceOperatorBefore = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, token);
+    const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(pfm, token);
 
     await exchange.withdrawBlockFee(blockIdx, operator, {from: operator, gasPrice: 0});
 
     const balanceOperatorAfter = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const balanceBurnedAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, token);
+    const balanceBurnedAfter = await exchangeTestUtil.getOnchainBalance(pfm, token);
 
     const expectedBurned = totalBlockFee.sub(expectedBlockFee);
 
     assert(balanceOperatorAfter.sub(balanceOperatorBefore.add(expectedBlockFee)).abs().lte(allowedDelta),
-           "Token balance of operator should be increased by rewarded block fee");
+           "Token balance of operator should be increased by expected block fee reward");
     assert(balanceContractAfter.eq(balanceContractBefore.sub(totalBlockFee)),
            "Token balance of exchange should be decreased by total block fee");
     assert(balanceBurnedAfter.sub(balanceBurnedBefore.add(expectedBurned)).abs().lte(allowedDelta),
@@ -747,12 +748,12 @@ contract("Exchange", (accounts: string[]) => {
           const addedTime = exchangeTestUtil.FEE_BLOCK_FINE_START_TIME - 100;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
-          // Commit and verify the deposits
-          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
+          // Commit and verify
           await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
-          // Withdraw the blockFee (half the complete block fee)
+          // Withdraw the blockFee
           const blockIdx = await exchange.getBlockHeight();
           await withdrawBlockFeeChecked(
             blockIdx, exchangeTestUtil.exchangeOperator,
@@ -779,13 +780,13 @@ contract("Exchange", (accounts: string[]) => {
                             exchangeTestUtil.FEE_BLOCK_FINE_MAX_DURATION / 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
-          // Commit and verify the deposits
+          // Commit and verify
           await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchange.getBlockHeight()) - 1;
           await withdrawBlockFeeChecked(
             blockIdx, exchangeTestUtil.exchangeOperator,
             blockFee, blockFee.div(new BN(2)), blockFee.div(new BN(100)),
@@ -811,13 +812,13 @@ contract("Exchange", (accounts: string[]) => {
                             exchangeTestUtil.FEE_BLOCK_FINE_MAX_DURATION * 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
-          // Commit and verify the deposits
+          // Commit and verify
           await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchange.getBlockHeight()) - 1;
           await withdrawBlockFeeChecked(
             blockIdx, exchangeTestUtil.exchangeOperator,
             blockFee, new BN(0), new BN(0),

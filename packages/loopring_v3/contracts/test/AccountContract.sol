@@ -43,7 +43,8 @@ contract AccountContract {
         payable
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         )
     {
         return exchange.updateAccountAndDeposit.value(msg.value)(pubKeyX, pubKeyY, token, amount);

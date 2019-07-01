@@ -177,11 +177,25 @@ contract IExchange
 
     /// @dev Submit an onchain request to create a new account for msg.sender or
     ///      update its existing account by replacing its trading public key.
+    ///      The total fee in ETH that the user needs to pay is:
+    ///          depositFee +
+    ///          (isAccountNew ? accountCreationFee : 0) +
+    ///          (isAccountUpdated ? accountUpdateFee : 0)
+    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create or update the offchain account.
+    ///
+    ///      Calling this method with a different trading public key will effectively
+    ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
+    ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
+    /// @return isAccountUpdated True if this account was updated, false otherwise
     function createOrUpdateAccount(
         uint pubKeyX,
         uint pubKeyY
@@ -190,7 +204,8 @@ contract IExchange
         payable
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         );
 
     // -- Balances --
@@ -560,9 +575,15 @@ contract IExchange
         );
 
     /// @dev Deposit Ether or ERC20 tokens to the sender's account.
-    ///      This function will create a new account if such no account exists
+    ///      This function will create a new account if no account exists
     ///      for msg.sender, or update the existing account with the given trading
     ///      public key when the account exists.
+    ///
+    ///      The total fee in ETH that the user needs to pay is:
+    ///          depositFee +
+    ///          (isAccountNew ? accountCreationFee : 0) +
+    ///          (isAccountUpdated ? accountUpdateFee : 0)
+    ///      If the user sends too much ETH the surplus is immediatly sent back.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -577,6 +598,7 @@ contract IExchange
     /// @param  amount The amount of tokens to deposit
     /// @return accountID The id of the account
     /// @return isAccountNew True if this account is newly created, false if the account existed
+    /// @return isAccountUpdated True if this account was updated, false otherwise
     function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
@@ -587,15 +609,19 @@ contract IExchange
         payable
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         );
 
     /// @dev Deposit Ether or ERC20 tokens to the sender's account.
     ///
+    ///      The total fee in ETH that the user needs to pay is 'depositFee'.
+    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
-    ////
+    ///
     ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
     ///               tokens in total. If that happens, the user may lose token.
     ///               This token balance upper limit, however, is large enought for most scenarios.
@@ -610,6 +636,9 @@ contract IExchange
         payable;
 
     /// @dev Deposit Ether or ERC20 tokens to a recipient account.
+    ///
+    ///      The total fee in ETH that the user needs to pay is 'depositFee'.
+    ///      If the user sends too much ETH the surplus is immediatly sent back.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -668,6 +697,9 @@ contract IExchange
     ///      all the balance, use a very large number for `amount`.
     ///
     ///      Only the owner of the account can request a withdrawal.
+    ///
+    ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
+    ///      If the user sends too much ETH the surplus is immediatly sent back.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
