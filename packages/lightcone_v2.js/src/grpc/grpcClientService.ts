@@ -1,12 +1,12 @@
 import {Empty} from 'google-protobuf/google/protobuf/empty_pb';
 import {StringValue, UInt32Value} from 'google-protobuf/google/protobuf/wrappers_pb';
 import {credentials, Metadata, ServiceError} from 'grpc';
-import {Order} from 'src/proto_gen/data_order_pb';
+import {Order} from '../proto_gen/data_order_pb';
 import {io} from "../model/types";
 import {
     OffchainWithdrawalRequest,
     OrderCancellationRequest
-} from 'src/proto_gen/data_requests_pb';
+} from '../proto_gen/data_requests_pb';
 import { DexServiceClient } from '../proto_gen/service_dex_grpc_pb';
 import {
     Account,

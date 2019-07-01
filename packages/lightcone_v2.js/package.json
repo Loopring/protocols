@@ -6,10 +6,10 @@
     "test": "test"
   },
   "scripts": {
-    "build:proto": "rimraf proto_gen && mkdir proto_gen && node src/lib/grpc/proto",
+    "build:proto": "rimraf src/proto_gen && mkdir src/proto_gen && node src/lib/grpc/proto",
     "build": "npm run build:proto && rimraf dist && tsc",
     "lint": "tslint --project tsconfig.json ./src/**/*.ts",
-    "client": "node dist/src/grpc/grpcClient.js",
+    "client": "node dist/grpc/grpcClient.js",
     "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
   },
   "keywords": [
@@ -33,8 +33,8 @@
     "ethereumjs-tx": "1.3.3",
     "ethereumjs-util": "5.2.0",
     "ethereumjs-wallet": "0.6.0",
-    "google-protobuf": "^3.6.1",
-    "grpc": "^1.17.0",
+    "google-protobuf": "^3.9.0-rc.1",
+    "grpc": "^1.21.1",
     "hdkey": "0.7.1",
     "nodeunit": "^0.11.3",
     "snarkjs": "0.1.11",
