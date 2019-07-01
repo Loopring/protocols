@@ -7,7 +7,7 @@ import {
     OffchainWithdrawalRequest,
     OrderCancellationRequest
 } from 'src/proto_gen/data_requests_pb';
-import {DexServiceClient} from 'src/proto_gen/service_dex_grpc_pb';
+import { DexServiceClient } from '../proto_gen/service_dex_grpc_pb';
 import {
     Account,
     CancelOrderRes,
@@ -35,8 +35,7 @@ import {
  * gRPC GrpcClientService Service
  */
 class GrpcClientService {
-
-    private readonly client: DexServiceClient = new DexServiceClient('127.0.0.1:59480', credentials.createInsecure()); // TODO: config
+    private readonly client: DexServiceClient = new DexServiceClient('18.179.197.168:5000', credentials.createInsecure()); // TODO: config
 
     public async getDexConfigurations(metadata: Metadata = new Metadata()): Promise<DexConfigurations> {
         const empty: Empty = new Empty();

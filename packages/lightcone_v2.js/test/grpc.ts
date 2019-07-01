@@ -1,6 +1,6 @@
 // Hack (ruby): Failed to import src files directly.
-/*
-const grpcClientService = require("src/grpc/grpcClientService").createClient();
+
+import { grpcClientService } from "../src/grpc/grpcClientService";
 
 describe("eddsa sign message test", function () {
     this.timeout(100000);
@@ -13,4 +13,3 @@ describe("eddsa sign message test", function () {
         grpcClientService.getNonce(0);
     });
 });
-*/
