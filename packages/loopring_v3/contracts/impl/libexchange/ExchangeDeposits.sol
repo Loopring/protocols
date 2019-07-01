@@ -110,7 +110,6 @@ library ExchangeDeposits
         uint feeETH = additionalFeeETH.add(S.depositFeeETH);
 
         transferDeposit(
-            S,
             account.owner,
             tokenAddress,
             amount,
@@ -157,7 +156,6 @@ library ExchangeDeposits
     }
 
     function transferDeposit(
-        ExchangeData.State storage S,
         address accountOwner,
         address tokenAddress,
         uint    amount,
