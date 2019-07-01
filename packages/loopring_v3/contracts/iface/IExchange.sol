@@ -664,19 +664,36 @@ contract IExchange
             uint32  timestamp
         );
 
-    // Set the large value for amount to withdraw the complete balance
     /// @dev Submit an onchain request to withdraw Ether or ERC20 tokens. To withdraw
     ///      all the balance, use a very large number for `amount`.
+    ///
+    ///      Only the owner of the account can request a withdrawal.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
-    /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     function withdraw(
         address tokenAddress,
         uint96  amount
+        )
+        external
+        payable;
+
+    /// @dev Submit an onchain request to withdraw Ether or ERC20 tokens from the
+    ///      protocol fees account. The complete balance is always withdrawn.
+    ///
+    ///      Anyone can request a withdrawal of the protocol fees.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    function withdrawProtocolFees(
+        address tokenAddress
         )
         external
         payable;

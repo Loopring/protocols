@@ -38,6 +38,7 @@ contract LoopringV3 is ILoopringV3, Claimable
 
     // -- Constructor --
     constructor(
+        address payable _pfm,
         address _lrcAddress,
         address _wethAddress,
         address _blockVerifierAddress,
@@ -53,9 +54,11 @@ contract LoopringV3 is ILoopringV3, Claimable
         )
         public
     {
+        require(address(0) != _pfm, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
+        pfm = _pfm;
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -122,6 +125,18 @@ contract LoopringV3 is ILoopringV3, Claimable
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
         emit SettingsUpdated(now);
+    }
+
+    function setProtocolFeeManager(
+        address payable _pfm
+        )
+        external
+        onlyOwner
+    {
+        require(_pfm != address(0), "ZERO_ADDRESS");
+        pfm = _pfm;
+
+        emit ProtocolFeeManagerUpdated(pfm);
     }
 
     function createExchange(
@@ -340,37 +355,6 @@ contract LoopringV3 is ILoopringV3, Claimable
             totalStake = totalStake.sub(amount);
         }
         emit ProtocolFeeStakeWithdrawn(exchangeId, amount);
-    }
-
-    function withdrawProtocolFeesFromExchange(
-        uint exchangeId,
-        address tokenAddress
-        )
-        external
-        payable
-    {
-        IExchange(exchanges[exchangeId - 1].exchangeAddress).withdraw.value(msg.value)(tokenAddress, ~uint96(0));
-    }
-
-    function withdrawProtocolFees(
-        address tokenAddress,
-        address payable recipient
-        )
-        external
-        onlyOwner
-    {
-        if (tokenAddress == address(0)) {
-            // ETH
-            uint balance = address(this).balance;
-            recipient.transferETH(balance, gasleft());
-        } else {
-            // ERC20 token
-            uint balance = ERC20(tokenAddress).balanceOf(address(this));
-            if (tokenAddress == lrcAddress) {
-                balance = balance.sub(totalStake);
-            }
-            require(tokenAddress.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
-        }
     }
 
     function getProtocolFeeValues(

@@ -124,11 +124,11 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
                                      accountID: number, token: string,
                                      owner: string, expectedAmount: BN) => {
-    const recipient = (accountID === 0) ? loopring.address : owner;
+    const recipient = (accountID === 0) ? await loopring.pfm() : owner;
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
 
-    await exchange.withdrawFromApprovedWithdrawal(blockIdx, slotIdx);
+    await exchange.withdrawFromApprovedWithdrawal(blockIdx, slotIdx, {from: exchangeTestUtil.testContext.feeRecipients[0]});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
@@ -727,24 +727,20 @@ contract("Exchange", (accounts: string[]) => {
 
       const protocolFees = await exchange.getProtocolFeeValues();
 
-      const walletA = exchangeTestUtil.wallets[exchangeID][0];
-      const walletB = exchangeTestUtil.wallets[exchangeID][1];
       const ring: RingInfo = {
         orderA:
           {
-            tokenS: "WETH",
+            tokenS: "ETH",
             tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountS: new BN(web3.utils.toWei("1", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            walletAccountID: walletA,
           },
         orderB:
           {
             tokenS: "GTO",
-            tokenB: "WETH",
+            tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            walletAccountID: walletB,
+            amountB: new BN(web3.utils.toWei("1", "ether")),
           },
       };
 
@@ -754,6 +750,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      const walletA = exchangeTestUtil.wallets[exchangeID][0];
+      const walletB = exchangeTestUtil.wallets[exchangeID][1];
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderA.tokenB, ring.orderA.amountB,
@@ -775,10 +773,10 @@ contract("Exchange", (accounts: string[]) => {
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
       await withdrawChecked(blockIdx, 0,
                             0, ring.orderA.tokenB,
-                            loopring.address, protocolFeeA);
+                            constants.zeroAddress, protocolFeeA);
       await withdrawChecked(blockIdx, 1,
                             0, ring.orderB.tokenB,
-                            loopring.address, protocolFeeB);
+                            constants.zeroAddress, protocolFeeB);
     });
 
     it("Distribute withdrawals (by operator)", async () => {

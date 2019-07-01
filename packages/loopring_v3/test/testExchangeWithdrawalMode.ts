@@ -1,6 +1,8 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
+import { RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
@@ -29,10 +31,20 @@ contract("Exchange", (accounts: string[]) => {
 
   const withdrawFromMerkleTreeChecked = async (owner: string, token: string,
                                                expectedAmount: BN) => {
-    const balanceBefore = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const recipient = (owner === constants.zeroAddress) ? await loopring.pfm() : owner;
+    const balanceBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     await exchangeTestUtil.withdrawFromMerkleTree(owner, token);
-    const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
+    const balanceAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
+    // console.log("balanceBefore: " + balanceBefore.toString(10));
+    // console.log("balanceAfter: " + balanceAfter.toString(10));
+    // console.log("expectedAmount: " + expectedAmount.toString(10));
     assert(balanceAfter.eq(balanceBefore.add(expectedAmount)), "Balance withdrawn in withdrawal mode incorrect");
+
+    // Try to withdraw again
+    await expectThrow(
+      exchangeTestUtil.withdrawFromMerkleTree(owner, token),
+      "WITHDRAWN_ALREADY",
+    );
   };
 
   const withdrawFromDepositRequestChecked = async (requestIdx: number,
@@ -184,12 +196,6 @@ contract("Exchange", (accounts: string[]) => {
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(owner, token, balance);
-
-      // Try to withdraw again
-      await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
-        "WITHDRAWN_ALREADY",
-      );
     });
 
     it("ETH: withdraw from merkle tree", async () => {
@@ -197,7 +203,6 @@ contract("Exchange", (accounts: string[]) => {
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[exchangeID][0];
       const balance = new BN(web3.utils.toWei("1.7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
 
@@ -222,12 +227,57 @@ contract("Exchange", (accounts: string[]) => {
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(owner, token, balance);
+    });
 
-      // Try to withdraw again
+    it("Withdraw from merkle tree (protocol fee account)", async () => {
+      await createExchange();
+
+      const protocolFees = await exchange.getProtocolFeeValues();
+
+      // Ring with ETH and ERC20
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Expected protocol fees earned
+      const protocolFeeA = ring.orderA.amountB.mul(protocolFees.takerFeeBips).div(new BN(100000));
+      const protocolFeeB = ring.orderB.amountB.mul(protocolFees.makerFeeBips).div(new BN(100000));
+
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTree(owner, token),
-        "WITHDRAWN_ALREADY",
+        exchangeTestUtil.withdrawFromMerkleTree(constants.zeroAddress, ring.orderA.tokenB),
+        "NOT_IN_WITHDRAW_MODE",
       );
+
+      // Request withdrawal onchain
+      await exchangeTestUtil.requestWithdrawalOnchain(exchangeID, 0, ring.orderA.tokenB,
+                                                      protocolFeeA.mul(new BN(2)), constants.zeroAddress);
+
+      // Operator doesn't do anything for a long time
+      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1);
+
+      // We should be in withdrawal mode and able to withdraw directly from the merkle tree
+      await withdrawFromMerkleTreeChecked(constants.zeroAddress, ring.orderA.tokenB, protocolFeeA);
+      await withdrawFromMerkleTreeChecked(constants.zeroAddress, ring.orderB.tokenB, protocolFeeB);
     });
 
     it("Withdraw from deposit block", async () => {

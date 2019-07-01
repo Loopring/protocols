@@ -60,6 +60,10 @@ contract ILoopringV3
         uint            time
     );
 
+    event ProtocolFeeManagerUpdated(
+        address payable pfm
+    );
+
     // == Public Variables ==
     struct Exchange
     {
@@ -90,6 +94,8 @@ contract ILoopringV3
     uint8   public maxProtocolMakerFeeBips;
     uint    public targetProtocolTakerFeeStake;
     uint    public targetProtocolMakerFeeStake;
+
+    address payable public pfm;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
@@ -123,6 +129,16 @@ contract ILoopringV3
         uint8   _maxProtocolMakerFeeBips,
         uint    _targetProtocolTakerFeeStake,
         uint    _targetProtocolMakerFeeStake
+        )
+        external;
+
+    /// @dev Update the protocol fee manager.
+    ///      This function can only be called by the owner of this contract.
+    ///
+    ///      Warning: this new address will be used by existing and
+    ///      new Loopring exchanges.
+    function setProtocolFeeManager(
+        address payable _pfm
         )
         external;
 
@@ -227,30 +243,6 @@ contract ILoopringV3
         uint exchangeId,
         address recipient,
         uint amount
-        )
-        external;
-
-    /// @dev Requests the withdrawal of the protocol fees from an exchange
-    /// @param exchangeId The id of the exchange to withdraw the fees from
-    /// @param tokenAddress The token to withdraw the fees for. Use 0x0 for Ether.
-    function withdrawProtocolFeesFromExchange(
-        uint exchangeId,
-        address tokenAddress
-        )
-        external
-        payable;
-
-    /// @dev Withdraw all protocol fees to the designated address.
-    ///      Fees first need to be withdrawn from an exchange using
-    ///      withdrawProtocolFeesFromExchange.
-    ///
-    ///      This function can only be called by the owner of this contract.
-    ///
-    /// @param  tokenAddress The address of the token. Use 0x0 for Ether.
-    /// @param  recipient The address to receive the tokens.
-    function withdrawProtocolFees(
-        address tokenAddress,
-        address payable recipient
         )
         external;
 

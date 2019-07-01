@@ -54,6 +54,7 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
+  public pfmAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -146,6 +147,9 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("10000000", "ether")),
       {from: this.testContext.deployer},
     );
+
+    this.pfmAddress = this.testContext.deployer;
+    await this.loopringV3.setProtocolFeeManager(this.pfmAddress);
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
@@ -721,10 +725,9 @@ export class ExchangeTestUtil {
     // Submit the withdraw request
     let tx;
     if (accountID === 0) {
-      tx = await this.loopringV3.withdrawProtocolFeesFromExchange(
-        exchangeID,
+      tx = await this.exchange.withdrawProtocolFees(
         token,
-        {from: owner, value: withdrawalFee},
+        {from: this.exchangeOwner, value: withdrawalFee},
       );
       amount = new BN(2);
       amount = amount.pow(new BN(96)).sub(new BN(1));

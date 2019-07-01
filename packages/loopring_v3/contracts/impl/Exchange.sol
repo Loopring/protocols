@@ -578,7 +578,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         (accumulatedHash, accumulatedFee, timestamp) = state.getWithdrawRequest(index);
     }
 
-    // Set the large value for amount to withdraw the complete balance
     function withdraw(
         address token,
         uint96 amount
@@ -587,7 +586,19 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         payable
         nonReentrant
     {
-        state.withdraw(token, amount);
+        uint24 accountID = state.getAccountID(msg.sender);
+        state.withdraw(accountID, token, amount);
+    }
+
+    function withdrawProtocolFees(
+        address token
+        )
+        external
+        payable
+        nonReentrant
+    {
+        // Always request the maximum amount so the complete balance is withdrawn
+        state.withdraw(0, token, ~uint96(0));
     }
 
     function withdrawFromMerkleTree(

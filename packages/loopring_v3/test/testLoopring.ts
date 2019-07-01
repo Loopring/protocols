@@ -13,24 +13,6 @@ contract("Loopring", (accounts: string[]) => {
     loopring = exchangeTestUtil.loopringV3;
   });
 
-  const withdrawProtocolFeesChecked = async (token: string, recipient: string, expectedAmount: BN) => {
-    const tokenAddress = exchangeTestUtil.getTokenAddress(token);
-
-    const balanceRecipientBefore = await exchangeTestUtil.getOnchainBalance(recipient, tokenAddress);
-    const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, tokenAddress);
-
-    await loopring.withdrawProtocolFees(tokenAddress, recipient,
-                                        {from: exchangeTestUtil.testContext.deployer, gasPrice: 0});
-
-    const balanceRecipientAfter = await exchangeTestUtil.getOnchainBalance(recipient, tokenAddress);
-    const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, tokenAddress);
-
-    assert(balanceRecipientAfter.eq(balanceRecipientBefore.add(expectedAmount)),
-           "Token balance of recipient should be increased by amount");
-    assert(balanceContractAfter.eq(balanceContractBefore.sub(expectedAmount)),
-           "Token balance of contract should be decreased by amount");
-  };
-
   const calculateProtocolFee = (minFee: BN, maxFee: BN, stake: BN, targetStake: BN) => {
     const maxReduction = maxFee.sub(minFee);
     let reduction = maxReduction.mul(stake).div(targetStake);
@@ -68,7 +50,7 @@ contract("Loopring", (accounts: string[]) => {
   describe("Staking", function() {
     this.timeout(0);
 
-    describe("Owner", () => {
+    describe("Exchange owner", () => {
       it("should be able to withdraw the protocol fee stake", async () => {
         // Deposit some LRC to stake for the exchange
         const depositer = exchangeTestUtil.testContext.operators[2];
@@ -100,9 +82,7 @@ contract("Loopring", (accounts: string[]) => {
           exchangeTestUtil.exchangeOwner, stakeAmount,
         );
       });
-    });
 
-    describe("Anyone", () => {
       it("should be able to lower the protocol fees", async () => {
         const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
         const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
@@ -146,54 +126,19 @@ contract("Loopring", (accounts: string[]) => {
   });
 
   describe("Owner", () => {
-    it("should be able to withdraw the protocol fees", async () => {
-      const user = exchangeTestUtil.testContext.orderOwners[0];
-      const amountA = new BN(web3.utils.toWei("1.23", "ether"));
-      const amountB = new BN(web3.utils.toWei("456", "ether"));
-      await exchangeTestUtil.setBalanceAndApprove(user, "WETH", amountB, loopring.address);
-      // Transfer some funds to the contract that we can withdraw
-      // ETH
-      await web3.eth.sendTransaction({from: user, to: loopring.address, value: amountA});
-      // WETH
-      const WETH = await exchangeTestUtil.getTokenContract("WETH");
-      await WETH.transfer(loopring.address, amountB, {from: user});
+    it("should be able to set the protocol fee manager", async () => {
+      const pfmBefore = await loopring.pfm();
+      const newPfm = exchangeTestUtil.testContext.orderOwners[2];
+      assert(newPfm !== pfmBefore);
 
-      // Withdraw
-      const recipient = exchangeTestUtil.testContext.orderOwners[1];
-      // ETH
-      await withdrawProtocolFeesChecked("ETH", recipient, amountA);
-      // WETH
-      await withdrawProtocolFeesChecked("WETH", recipient, amountB);
+      await loopring.setProtocolFeeManager(newPfm);
+
+      const pfmAfter = await loopring.pfm();
+      assert(newPfm === pfmAfter, "new pfm should be set");
     });
   });
 
   describe("anyone", () => {
-    it("should not be able to withdraw the protocol fees", async () => {
-      const user = exchangeTestUtil.testContext.orderOwners[0];
-      const amountA = new BN(web3.utils.toWei("1.23", "ether"));
-      const amountB = new BN(web3.utils.toWei("456", "ether"));
-      await exchangeTestUtil.setBalanceAndApprove(user, "WETH", amountB, loopring.address);
-      // Transfer some funds to the contract that we can withdraw
-      // ETH
-      await web3.eth.sendTransaction({from: user, to: loopring.address, value: amountA});
-      // WETH
-      const WETH = await exchangeTestUtil.getTokenContract("WETH");
-      await WETH.transfer(loopring.address, amountB, {from: user});
-
-      // Try to withdraw
-      const recipient = exchangeTestUtil.testContext.orderOwners[1];
-      // ETH
-      await expectThrow(
-        loopring.withdrawProtocolFees(exchangeTestUtil.getTokenAddress("ETH"), recipient, {from: recipient}),
-        "UNAUTHORIZED",
-      );
-      // WETH
-      await expectThrow(
-        loopring.withdrawProtocolFees(exchangeTestUtil.getTokenAddress("WETH"), recipient, {from: recipient}),
-        "UNAUTHORIZED",
-      );
-    });
-
     it("should not be able to burn the stake", async () => {
       await expectThrow(
         loopring.burnExchangeStake(exchangeTestUtil.exchangeId, new BN(0),
@@ -241,6 +186,14 @@ contract("Loopring", (accounts: string[]) => {
           new BN(web3.utils.toWei("10000000", "ether")),
           {from: exchangeTestUtil.testContext.orderOwners[0]},
         ),
+        "UNAUTHORIZED",
+      );
+    });
+
+    it("should not be able to set the protocol fee manager", async () => {
+      const newPfm = exchangeTestUtil.testContext.orderOwners[3];
+      await expectThrow(
+        loopring.setProtocolFeeManager(newPfm, {from: exchangeTestUtil.exchangeOperator}),
         "UNAUTHORIZED",
       );
     });
