@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo } from "./types";
+import { OrderInfo, RingInfo, Signature } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
 
@@ -138,6 +138,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
+      const spread = new BN(web3.utils.toWei("1", "ether"));
       const ringA: RingInfo = {
         orderA: order,
         orderB:
@@ -152,7 +153,7 @@ contract("Exchange", (accounts: string[]) => {
             buy: false,
           },
         expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")) },
+          orderA: { filledFraction: 1.0, spread },
           orderB: { filledFraction: 0.5 },
         },
       };
@@ -160,15 +161,21 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
-      const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
-      const exptectedBalance = order.amountB.sub(expectedFee);
+      // tokenS
+      const exptectedBalanceS = spread;
       await exchangeTestUtil.checkOffchainBalance(
-        order.accountID, order.tokenIdB, exptectedBalance, "Balance unexpected",
+        order.accountID, order.tokenIdS, exptectedBalanceS, "BalanceS unexpected",
+      );
+      // tokenB
+      const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalanceB = order.amountB.sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalanceB, "BalanceB unexpected",
       );
 
       await verify();
@@ -187,6 +194,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
+      const spread = new BN(web3.utils.toWei("5", "ether"));
       const ringA: RingInfo = {
         orderA: order,
         orderB:
@@ -201,7 +209,7 @@ contract("Exchange", (accounts: string[]) => {
             buy: false,
           },
         expected: {
-          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderA: { filledFraction: 0.5, spread },
           orderB: { filledFraction: 1.0 },
         },
       };
@@ -229,16 +237,22 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      // tokenS
+      const exptectedBalanceS = spread;
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdS, exptectedBalanceS, "BalanceS unexpected",
+      );
+      // tokenB
       const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
       const exptectedBalance = order.amountB.sub(expectedFee);
       await exchangeTestUtil.checkOffchainBalance(
-        order.accountID, order.tokenIdB, exptectedBalance, "Balance unexpected",
+        order.accountID, order.tokenIdB, exptectedBalance, "BalanceB unexpected",
       );
 
       await verify();
@@ -248,7 +262,7 @@ contract("Exchange", (accounts: string[]) => {
       const order: OrderInfo = {
         tokenS: "WETH",
         tokenB: "GTO",
-        amountS: new BN(web3.utils.toWei("100", "ether")),
+        amountS: new BN(web3.utils.toWei("1000", "ether")),
         amountB: new BN(web3.utils.toWei("99", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 30,
@@ -257,6 +271,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
+      const spread = new BN(web3.utils.toWei("1", "ether"));
       const ringA: RingInfo = {
         orderA: order,
         orderB:
@@ -264,14 +279,14 @@ contract("Exchange", (accounts: string[]) => {
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("2000", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[1],
             maxFeeBips: 0,
             rebateBips: 20,
             buy: false,
           },
         expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")) },
+          orderA: { filledFraction: 1.0, spread },
           orderB: { filledFraction: 0.5 },
         },
       };
@@ -279,13 +294,20 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      // tokenS
       await exchangeTestUtil.checkOffchainBalance(
-        order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
+        order.accountID, order.tokenIdS, new BN(0), "BalanceS unexpected",
+      );
+      // tokenB
+      const expectedFee = order.amountB.add(spread).mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalance = order.amountB.add(spread).sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalance, "BalanceB unexpected",
       );
 
       await verify();
@@ -296,7 +318,7 @@ contract("Exchange", (accounts: string[]) => {
         tokenS: "WETH",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("100", "ether")),
-        amountB: new BN(web3.utils.toWei("90", "ether")),
+        amountB: new BN(web3.utils.toWei("900", "ether")),
         owner: exchangeTestUtil.testContext.orderOwners[0],
         maxFeeBips: 25,
         rebateBips: 0,
@@ -304,13 +326,14 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
+      const spread = new BN(web3.utils.toWei("50", "ether"));
       const ringA: RingInfo = {
         orderA: order,
         orderB:
           {
             tokenS: "GTO",
             tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("50", "ether")),
+            amountS: new BN(web3.utils.toWei("500", "ether")),
             amountB: new BN(web3.utils.toWei("50", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[1],
             maxFeeBips: 0,
@@ -318,7 +341,7 @@ contract("Exchange", (accounts: string[]) => {
             buy: true,
           },
         expected: {
-          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderA: { filledFraction: 0.5, spread },
           orderB: { filledFraction: 1.0 },
         },
       };
@@ -328,7 +351,7 @@ contract("Exchange", (accounts: string[]) => {
           {
             tokenS: "GTO",
             tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("90", "ether")),
+            amountS: new BN(web3.utils.toWei("900", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
             owner: exchangeTestUtil.testContext.orderOwners[2],
             maxFeeBips: 0,
@@ -346,14 +369,21 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      // tokenS
       await exchangeTestUtil.checkOffchainBalance(
-        order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
+        order.accountID, order.tokenIdS, new BN(0), "BalanceS unexpected",
+      );
+      // tokenB
+      const expectedFee = order.amountB.add(spread).mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalance = order.amountB.add(spread).sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalance, "BalanceB unexpected",
       );
 
       await verify();
@@ -372,6 +402,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
+      const spread = new BN(web3.utils.toWei("5", "ether"));
       const ringA: RingInfo = {
         orderA: order,
         orderB:
@@ -386,7 +417,7 @@ contract("Exchange", (accounts: string[]) => {
             buy: false,
           },
         expected: {
-          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderA: { filledFraction: 0.5, spread },
           orderB: { filledFraction: 1.0 },
         },
       };
@@ -413,12 +444,18 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.minerAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      // tokenS
+      const exptectedBalanceS = spread;
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdS, exptectedBalanceS, "BalanceS unexpected",
+      );
+      // tokenB
       const expectedFee = order.amountB.mul(new BN(order.maxFeeBips)).div(new BN(10000));
       const exptectedBalance = order.amountB.sub(expectedFee);
       await exchangeTestUtil.checkOffchainBalance(
@@ -441,6 +478,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
+      const spread = new BN(web3.utils.toWei("5", "ether"));
       const ringA: RingInfo = {
         orderA: order,
         orderB:
@@ -455,7 +493,7 @@ contract("Exchange", (accounts: string[]) => {
             buy: true,
           },
         expected: {
-          orderA: { filledFraction: 0.5, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderA: { filledFraction: 0.5, spread },
           orderB: { filledFraction: 1.0 },
         },
       };
@@ -482,13 +520,20 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.minerAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      // tokenS
       await exchangeTestUtil.checkOffchainBalance(
-        order.accountID, order.tokenIdS, new BN(0), "Balance unexpected",
+        order.accountID, order.tokenIdS, new BN(0), "BalanceS unexpected",
+      );
+      // tokenB
+      const expectedFee = order.amountB.add(spread).mul(new BN(order.maxFeeBips)).div(new BN(10000));
+      const exptectedBalance = order.amountB.add(spread).sub(expectedFee);
+      await exchangeTestUtil.checkOffchainBalance(
+        order.accountID, order.tokenIdB, exptectedBalance, "BalanceB unexpected",
       );
 
       await verify();
@@ -548,7 +593,7 @@ contract("Exchange", (accounts: string[]) => {
             rebateBips: 10,
           },
         expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("0", "ether")).neg() },
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("0", "ether")) },
           orderB: { filledFraction: 0.5 },
         },
       };
@@ -556,7 +601,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderB.tokenB, ring.orderB.amountB);
+      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -564,7 +609,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("Rebate (both orders)", async () => {
+    it("Rebate (both orders, rebate token == operator fee token)", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -584,8 +629,9 @@ contract("Exchange", (accounts: string[]) => {
             maxFeeBips: 0,
             rebateBips: 20,
           },
+        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("LRC"),
         expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("0", "ether")).neg() },
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("0", "ether")) },
           orderB: { filledFraction: 0.5 },
         },
       };
@@ -593,8 +639,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderA.tokenB, ring.orderA.amountB);
-      await exchangeTestUtil.depositTo(ring.minerAccountID, ring.orderB.tokenB, ring.orderB.amountB);
+      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderA.tokenB, ring.orderA.amountB);
+      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -825,7 +871,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.walletAccountID = ring.orderA.walletAccountID;
+      ring.orderB.walletAccountID = ring.orderA;
+      ring.orderB.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderB);
 
       await exchangeTestUtil.sendRing(exchangeID, ring);
@@ -933,6 +980,167 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
+    it("ring-matcher == order owner", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "LRC",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      ring.ringMatcherAccountID = ring.orderA.accountID;
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
+    it("ring-matcher == operator", async () => {
+      const ringA: RingInfo = {
+        orderA:
+          {
+            tokenS: "ETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("3", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[0],
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "ETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("2", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+      const ringB: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("110", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[2],
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[3],
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("10", "ether")) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
+
+      assert.equal(ringA.ringMatcherAccountID, ringB.ringMatcherAccountID,
+                   "ringMatcher needs to remain the same between rings");
+      exchangeTestUtil.setActiveOperator(ringA.ringMatcherAccountID);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
+    it("operator == order owner", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "LRC",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      exchangeTestUtil.setActiveOperator(ring.orderB.accountID);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
+    it("orderA.owner == orderB.owner == ringMatcher == operator", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("105", "ether")),
+            amountB: new BN(web3.utils.toWei("10", "ether")),
+            balanceS: new BN(web3.utils.toWei("105", "ether")),
+            balanceB: new BN(web3.utils.toWei("10", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("10", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("WETH"),
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("5", "ether")) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      ring.ringMatcherAccountID = ring.orderA.accountID;
+
+      ring.orderB.accountID = ring.orderA.accountID;
+      ring.orderB.walletAccountID = ring.orderA;
+      ring.orderB.signature = undefined;
+      exchangeTestUtil.signOrder(ring.orderB);
+
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      exchangeTestUtil.setActiveOperator(ring.orderA.accountID);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
     it("tokenS/tokenB mismatch", async () => {
       const ring: RingInfo = {
         orderA:
@@ -940,14 +1148,14 @@ contract("Exchange", (accounts: string[]) => {
             tokenS: "ETH",
             tokenB: "GTO",
             amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("10", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
           },
         orderB:
           {
             tokenS: "LRC",
             tokenB: "ETH",
-            amountS: new BN(web3.utils.toWei("5", "ether")),
-            amountB: new BN(web3.utils.toWei("45", "ether")),
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
           },
       };
 
@@ -955,12 +1163,112 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
+      let receivedThrow = false;
       try {
         await exchangeTestUtil.commitRings(exchangeID);
-        assert(false);
       } catch {
         exchangeTestUtil.cancelPendingRings(exchangeID);
+        receivedThrow = true;
       }
+      assert(receivedThrow, "did not receive expected invalid block error");
+    });
+
+    it("tokenS == tokenB", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "WETH",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitRings(exchangeID);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(exchangeID);
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
+    });
+
+    it("Wrong order signature", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            signature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
+          },
+        orderB:
+          {
+            tokenS: "LRC",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitRings(exchangeID);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(exchangeID);
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
+    });
+
+    it("Wrong dual auth signature", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "LRC",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "LRC",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        dualAuthBSignature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitRings(exchangeID);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(exchangeID);
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
     });
 
     it("validUntil < now", async () => {
@@ -1127,6 +1435,66 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
+    it("Reused OrderID (tradeHistory.filled > order.amount)", async () => {
+      const orderID = 79;
+      const ringA: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("1000", "ether")),
+            amountB: new BN(web3.utils.toWei("2000", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[0],
+            orderID,
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("2000", "ether")),
+            amountB: new BN(web3.utils.toWei("1000", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[1],
+          },
+        expected: {
+          orderA: { filledFraction: 1.0, spread: new BN(0) },
+          orderB: { filledFraction: 1.0 },
+        },
+      };
+      const ringB: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[0],
+            orderID: orderID,
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+            owner: exchangeTestUtil.testContext.orderOwners[3],
+          },
+        expected: {
+          orderA: { filledFraction: 0.0, spread: new BN(0) },
+          orderB: { filledFraction: 0.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 

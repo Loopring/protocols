@@ -39,5 +39,6 @@ export function fromFloat(f: number, encoding: FloatEncoding) {
 export function roundToFloatValue(value: BN, encoding: FloatEncoding) {
   const f = toFloat(value, encoding);
   const floatValue = fromFloat(f, encoding);
+  assert(floatValue.lte(value), "float value can never be higher than the original value");
   return floatValue;
 }

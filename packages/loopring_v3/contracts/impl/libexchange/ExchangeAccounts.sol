@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.7;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
@@ -31,6 +32,7 @@ import "./ExchangeMode.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeAccounts
 {
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeBalances  for ExchangeData.State;
@@ -72,46 +74,37 @@ library ExchangeAccounts
     function createOrUpdateAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
-        uint pubKeyY,
-        bool returnFeeSurplus
+        uint pubKeyY
         )
         public
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         )
     {
         // We allow pubKeyX and/or pubKeyY to be 0 for normal accounts to
         // disable offchain request signing.
 
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
-        accountID =  isAccountNew ?
-            createAccount(S, pubKeyX, pubKeyY, returnFeeSurplus):
-            updateAccount(S, pubKeyX, pubKeyY, returnFeeSurplus);
+        if (isAccountNew) {
+            accountID = createAccount(S, pubKeyX, pubKeyY);
+            isAccountUpdated = false;
+        } else {
+            (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
+        }
     }
 
     function createAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
-        uint pubKeyY,
-        bool returnFeeSurplus
+        uint pubKeyY
         )
         private
         returns (uint24 accountID)
     {
-        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
-
         require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
-
-        require(msg.value >= S.accountCreationFeeETH, "INSUFFICIENT_FEE");
-
-        if (returnFeeSurplus) {
-            uint feeSurplus = msg.value.sub(S.accountCreationFeeETH);
-            if (feeSurplus > 0) {
-                msg.sender.transfer(feeSurplus);
-            }
-        }
 
         accountID = uint24(S.accounts.length);
         ExchangeData.Account memory account = ExchangeData.Account(
@@ -134,29 +127,18 @@ library ExchangeAccounts
     function updateAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
-        uint pubKeyY,
-        bool returnFeeSurplus
+        uint pubKeyY
         )
         private
-        returns (uint24 accountID)
+        returns (uint24 accountID, bool isAccountUpdated)
     {
-        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
-
         require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");
-
-        require(msg.value >= S.accountUpdateFeeETH, "INSUFFICIENT_FEE");
-
-        if (returnFeeSurplus) {
-            uint feeSurplus = msg.value.sub(S.accountUpdateFeeETH);
-            if (feeSurplus > 0) {
-                msg.sender.transfer(feeSurplus);
-            }
-        }
 
         accountID = S.ownerToAccountId[msg.sender] - 1;
         ExchangeData.Account storage account = S.accounts[accountID];
 
-        if (account.pubKeyX != pubKeyX || account.pubKeyY != pubKeyY) {
+        isAccountUpdated = (account.pubKeyX != pubKeyX || account.pubKeyY != pubKeyY);
+        if (isAccountUpdated) {
             account.pubKeyX = pubKeyX;
             account.pubKeyY = pubKeyY;
 
@@ -178,8 +160,6 @@ library ExchangeAccounts
         view
         returns (uint24 accountID)
     {
-        require(owner != address(0), "ZERO_ADDRESS");
-
         accountID = S.ownerToAccountId[owner];
         require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
 

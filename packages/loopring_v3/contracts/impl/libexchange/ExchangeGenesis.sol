@@ -85,7 +85,7 @@ library ExchangeGenesis
         // Create an account for the protocol fees. This account is also used
         // for padding deposits and on-chain withdrawal requests.
         ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
-            _loopringAddress,
+            address(0),
             uint256(0),
             uint256(0)
         );

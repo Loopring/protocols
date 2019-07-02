@@ -1,12 +1,19 @@
+export function doInfoLogging() {
+  return process.argv.indexOf("-i") > -1;
+}
+
+export function doDebugLogging() {
+  return process.argv.indexOf("-x") > -1 || doInfoLogging();
+}
 
 export function logInfo(...args: any[]) {
-  if (process.argv.indexOf("-i") > -1 || process.argv.indexOf("-x") > -1) {
+  if (doInfoLogging()) {
     console.log(...args);
   }
 }
 
 export function logDebug(...args: any[]) {
-  if (process.argv.indexOf("-x") > -1) {
+  if (doDebugLogging()) {
     console.log(...args);
   }
 }

@@ -39,20 +39,21 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawBlockFeeChecked = async (blockIdx: number, operator: string, totalBlockFee: BN,
                                          expectedBlockFee: BN, allowedDelta: BN = new BN(0)) => {
     const token = "ETH";
+    const pfm = await loopring.pfm();
     const balanceOperatorBefore = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, token);
+    const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(pfm, token);
 
     await exchange.withdrawBlockFee(blockIdx, operator, {from: operator, gasPrice: 0});
 
     const balanceOperatorAfter = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const balanceBurnedAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, token);
+    const balanceBurnedAfter = await exchangeTestUtil.getOnchainBalance(pfm, token);
 
     const expectedBurned = totalBlockFee.sub(expectedBlockFee);
 
     assert(balanceOperatorAfter.sub(balanceOperatorBefore.add(expectedBlockFee)).abs().lte(allowedDelta),
-           "Token balance of operator should be increased by rewarded block fee");
+           "Token balance of operator should be increased by expected block fee reward");
     assert(balanceContractAfter.eq(balanceContractBefore.sub(totalBlockFee)),
            "Token balance of exchange should be decreased by total block fee");
     assert(balanceBurnedAfter.sub(balanceBurnedBefore.add(expectedBurned)).abs().lte(allowedDelta),
@@ -67,6 +68,13 @@ contract("Exchange", (accounts: string[]) => {
     });
     assert.equal(items[0][0].toNumber(), blockIdx, "Block idx in event not correct");
     assert(items[0][1].eq(totalBlockFee), "Block fee different than expected");
+
+    // Try to withdraw again
+    await expectThrow(
+      exchange.withdrawBlockFee(blockIdx, exchangeTestUtil.exchangeOperator,
+        {from: exchangeTestUtil.exchangeOperator}),
+      "FEE_WITHDRAWN_ALREADY",
+    );
   };
 
   const createExchange = async (bSetupTestState: boolean = true) => {
@@ -201,6 +209,50 @@ contract("Exchange", (accounts: string[]) => {
               exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
+            );
+          }
+        });
+
+        it("should not be able to commit settlement blocks with invalid protocol fees", async () => {
+          await createExchange(false);
+          await exchangeTestUtil.blockVerifier.setVerifyingKey(
+            BlockType.RING_SETTLEMENT, true, 2, 0, new Array(18).fill(1),
+          );
+          const protocolFees = await loopring.getProtocolFeeValues(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.onchainDataAvailability,
+          );
+          const timestamp = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp;
+          // Invalid taker protocol fee
+          {
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
+            bs.addNumber(exchangeId, 4);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addNumber(timestamp, 4);
+            bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
+            bs.addNumber(protocolFees.makerFeeBips, 1);
+            await expectThrow(
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+                                   constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
+              "INVALID_PROTOCOL_FEES",
+            );
+          }
+          // Invalid maker protocol fee
+          {
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
+            bs.addNumber(exchangeId, 4);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
+            bs.addNumber(timestamp, 4);
+            bs.addNumber(protocolFees.takerFeeBips, 1);
+            bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
+            await expectThrow(
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+                                   constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
+              "INVALID_PROTOCOL_FEES",
             );
           }
         });
@@ -458,6 +510,43 @@ contract("Exchange", (accounts: string[]) => {
             );
           }
         });
+
+        it("should not be able to verify a block with incorrect public data", async () => {
+          await createExchange();
+          const ring: RingInfo = {
+            orderA:
+              {
+                tokenS: "WETH",
+                tokenB: "GTO",
+                amountS: new BN(web3.utils.toWei("100", "ether")),
+                amountB: new BN(web3.utils.toWei("200", "ether")),
+              },
+            orderB:
+              {
+                tokenS: "GTO",
+                tokenB: "WETH",
+                amountS: new BN(web3.utils.toWei("200", "ether")),
+                amountB: new BN(web3.utils.toWei("100", "ether")),
+              },
+            expected: {
+              orderA: { filledFraction: 1.0, spread: new BN(0) },
+              orderB: { filledFraction: 1.0 },
+            },
+          };
+
+          await exchangeTestUtil.setupRing(ring);
+          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+          await exchangeTestUtil.sendRing(exchangeId, ring);
+
+          exchangeTestUtil.commitWrongPublicDataOnce = true;
+          await exchangeTestUtil.commitRings(exchangeId);
+
+          await expectThrow(
+            exchangeTestUtil.verifyPendingBlocks(exchangeId),
+          );
+        });
       });
 
       describe("revertBlock", () => {
@@ -470,6 +559,7 @@ contract("Exchange", (accounts: string[]) => {
                 tokenB: "GTO",
                 amountS: new BN(web3.utils.toWei("100", "ether")),
                 amountB: new BN(web3.utils.toWei("10", "ether")),
+                owner: exchangeTestUtil.testContext.orderOwners[0],
               },
             orderB:
               {
@@ -477,6 +567,7 @@ contract("Exchange", (accounts: string[]) => {
                 tokenB: "WETH",
                 amountS: new BN(web3.utils.toWei("5", "ether")),
                 amountB: new BN(web3.utils.toWei("45", "ether")),
+                owner: exchangeTestUtil.testContext.orderOwners[1],
               },
           };
           await exchangeTestUtil.setupRing(ring);
@@ -573,14 +664,7 @@ contract("Exchange", (accounts: string[]) => {
           // Withdraw the block fee
           await withdrawBlockFeeChecked(
             blockIdx, exchangeTestUtil.exchangeOperator,
-            blockFee, blockFee,
-          );
-
-          // Try to withdraw again
-          await expectThrow(
-            exchange.withdrawBlockFee(blockIdx, exchangeTestUtil.exchangeOperator,
-              {from: exchangeTestUtil.exchangeOperator}),
-            "FEE_WITHDRAWN_ALREADY",
+            blockFee, blockFee, new BN(0),
           );
         });
 
@@ -611,8 +695,8 @@ contract("Exchange", (accounts: string[]) => {
           // Withdraw the blockFee (half the complete block fee)
           const blockIdx = await exchange.getBlockHeight();
           await withdrawBlockFeeChecked(
-            blockIdx, exchangeTestUtil.exchangeOperator, blockFee,
-            blockFee.div(new BN(2)), blockFee.div(new BN(100)),
+            blockIdx, exchangeTestUtil.exchangeOperator,
+            blockFee, blockFee.div(new BN(2)), blockFee.div(new BN(100)),
           );
         });
 
@@ -641,8 +725,39 @@ contract("Exchange", (accounts: string[]) => {
           // Withdraw the blockFee (everything burned)
           const blockIdx = await exchange.getBlockHeight();
           await withdrawBlockFeeChecked(
-            blockIdx, exchangeTestUtil.exchangeOperator, blockFee,
-            new BN(0),
+            blockIdx, exchangeTestUtil.exchangeOperator,
+            blockFee, new BN(0), new BN(0),
+          );
+        });
+
+        it("Withdraw block fee (withdrawal block - in time)", async () => {
+          await createExchange();
+          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+          // Do some withdrawals
+          const numWithdrawals = exchangeTestUtil.onchainWithdrawalBlockSizes[0];
+          let blockFee = new BN(0);
+          for (let i = 0; i < numWithdrawals; i++) {
+            const deposit = await exchangeTestUtil.doRandomDeposit();
+            const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+            blockFee = blockFee.add(withdrawal.withdrawalFee);
+          }
+
+          // Wait a bit until a bit before the block fee is reduced
+          const addedTime = exchangeTestUtil.FEE_BLOCK_FINE_START_TIME - 100;
+          await exchangeTestUtil.advanceBlockTimestamp(addedTime);
+
+          // Commit and verify
+          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
+          await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+          // Withdraw the blockFee
+          const blockIdx = await exchange.getBlockHeight();
+          await withdrawBlockFeeChecked(
+            blockIdx, exchangeTestUtil.exchangeOperator,
+            blockFee, blockFee, new BN(0),
           );
         });
 
@@ -665,16 +780,48 @@ contract("Exchange", (accounts: string[]) => {
                             exchangeTestUtil.FEE_BLOCK_FINE_MAX_DURATION / 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
-          // Commit and verify the deposits
+          // Commit and verify
           await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchange.getBlockHeight()) - 1;
           await withdrawBlockFeeChecked(
-            blockIdx, exchangeTestUtil.exchangeOperator, blockFee,
-            blockFee.div(new BN(2)), blockFee.div(new BN(100)),
+            blockIdx, exchangeTestUtil.exchangeOperator,
+            blockFee, blockFee.div(new BN(2)), blockFee.div(new BN(100)),
+          );
+        });
+
+        it("Withdraw block fee (withdrawal block - no reward)", async () => {
+          await createExchange();
+          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+          // Do some withdrawals
+          const numWithdrawals = exchangeTestUtil.onchainWithdrawalBlockSizes[0];
+          let blockFee = new BN(0);
+          for (let i = 0; i < numWithdrawals; i++) {
+            const deposit = await exchangeTestUtil.doRandomDeposit();
+            const withdrawal = await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+            blockFee = blockFee.add(withdrawal.withdrawalFee);
+          }
+
+          // Wait a bit until the operator only gets half the block fee
+          const addedTime = exchangeTestUtil.FEE_BLOCK_FINE_START_TIME +
+                            exchangeTestUtil.FEE_BLOCK_FINE_MAX_DURATION * 2;
+          await exchangeTestUtil.advanceBlockTimestamp(addedTime);
+
+          // Commit and verify
+          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
+          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+          // Withdraw the blockFee (half the complete block fee)
+          const blockIdx = (await exchange.getBlockHeight()) - 1;
+          await withdrawBlockFeeChecked(
+            blockIdx, exchangeTestUtil.exchangeOperator,
+            blockFee, new BN(0), new BN(0),
           );
         });
 

@@ -14,12 +14,12 @@ import * as constants from "./constants";
 import { Context } from "./context";
 import eddsa = require("./eddsa");
 import { toFloat } from "./float";
-import { logDebug, logInfo } from "./logs";
+import { doDebugLogging, logDebug, logInfo } from "./logs";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
          Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer, ExchangeState, KeyPair,
-         Operator, OrderInfo, RingBlock, RingInfo, TradeHistory, Wallet, Withdrawal,
+         OrderInfo, RingBlock, RingInfo, TradeHistory, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
 
 const bigInt = snarkjs.bigInt;
@@ -54,6 +54,7 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
+  public pfmAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -63,14 +64,14 @@ export class ExchangeTestUtil {
   public exchangeId: number;
 
   public operator: any;
-  public activeOperator: Operator;
+  public activeOperator: number;
 
-  public minerAccountID: number[] = [];
+  public ringMatcherAccountID: number[] = [];
 
   public accounts: Account[][] = [];
 
-  public operators: Operator[] = [];
-  public wallets: Wallet[][] = [];
+  public operators: number[] = [];
+  public wallets: number[][] = [];
 
   public GENESIS_MERKLE_ROOT: BN = new BN("06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3", 16);
 
@@ -93,14 +94,14 @@ export class ExchangeTestUtil {
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
 
-  public zeroAddress = "0x" + "00".repeat(20);
-
   public contracts = new Artifacts(artifacts);
 
   public pendingBlocks: Block[][] = [];
 
   public onchainDataAvailability = true;
   public compressionType = CompressionType.LZ;
+
+  public commitWrongPublicDataOnce = false;
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -114,7 +115,7 @@ export class ExchangeTestUtil {
 
   private dualAuthKeyPair: any;
 
-  private MAX_NUM_EXCHANGES: number = 128;
+  private MAX_NUM_EXCHANGES: number = 256;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -147,6 +148,9 @@ export class ExchangeTestUtil {
       {from: this.testContext.deployer},
     );
 
+    this.pfmAddress = this.testContext.deployer;
+    await this.loopringV3.setProtocolFeeManager(this.pfmAddress);
+
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
       this.pendingRings.push(rings);
@@ -163,7 +167,7 @@ export class ExchangeTestUtil {
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
 
-      const wallets: Wallet[] = [];
+      const wallets: number[] = [];
       this.wallets.push(wallets);
 
       const accountsT: Account[] = [];
@@ -211,13 +215,13 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(exchangeID, this.testContext.deployer,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           this.zeroAddress, new BN(1));
+                                           constants.zeroAddress, new BN(1));
     this.dummyAccountId = depositInfo.accountID;
     this.dummyAccountKeyPair = keyPair;
 
     this.operators[exchangeID] = await this.createOperator(exchangeID, this.testContext.operators[0]);
 
-    this.minerAccountID[exchangeID] = await this.createRingMatcher(
+    this.ringMatcherAccountID[exchangeID] = await this.createRingMatcher(
       exchangeID,
       this.testContext.ringMatchers[0],
     );
@@ -233,12 +237,8 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(exchangeID, owner,
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                           this.zeroAddress, new BN(1));
-    const operator: Operator = {
-      owner,
-      accountID: depositInfo.accountID,
-    };
-    return operator;
+                                           constants.zeroAddress, new BN(1));
+    return depositInfo.accountID;
   }
 
   public async createWallet(exchangeID: number, owner: string) {
@@ -246,12 +246,8 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const walletDeposit = await this.deposit(exchangeID, owner,
                                              keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                             this.zeroAddress, new BN(0));
-    const wallet: Wallet = {
-      owner,
-      walletAccountID: walletDeposit.accountID,
-    };
-    return wallet;
+                                             constants.zeroAddress, new BN(0));
+    return walletDeposit.accountID;
   }
 
   public async createRingMatcher(exchangeID: number, owner: string) {
@@ -263,10 +259,10 @@ export class ExchangeTestUtil {
     // Make an account for the ringmatcher
     const keyPair = this.getKeyPairEDDSA();
     await LRC.addBalance(owner, balance);
-    const minerDeposit = await this.deposit(exchangeID, owner,
-                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                            lrcAddress, balance);
-    return minerDeposit.accountID;
+    const ringMatcherDeposit = await this.deposit(exchangeID, owner,
+                                                  keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                  lrcAddress, balance);
+    return ringMatcherDeposit.accountID;
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -302,7 +298,7 @@ export class ExchangeTestUtil {
     const events: any = await this.getEventsFromContract(contract, eventName, web3.eth.blockNumber);
 
     events.forEach((e: any) => {
-      logDebug("event:", util.inspect(e.args, false, null));
+      logInfo("event:", util.inspect(e.args, false, null));
     });
   }
 
@@ -313,8 +309,8 @@ export class ExchangeTestUtil {
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
-    ring.minerAccountID = (ring.minerAccountID !== undefined) ?
-                          ring.minerAccountID : this.minerAccountID[ring.orderA.exchangeID];
+    ring.ringMatcherAccountID = (ring.ringMatcherAccountID !== undefined) ?
+                                ring.ringMatcherAccountID : this.ringMatcherAccountID[ring.orderA.exchangeID];
     ring.tokenID = (ring.tokenID !== undefined) ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
@@ -380,6 +376,9 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
+    if (order.signature !== undefined) {
+      return;
+    }
     const message = new BitArray();
     message.addNumber(this.exchangeId, 32);
     message.addNumber(order.orderID, 20);
@@ -407,15 +406,15 @@ export class ExchangeTestUtil {
   }
 
   public signRing(ring: RingInfo) {
-    if (ring.signature !== undefined) {
+    if (ring.ringMatcherSignature !== undefined) {
       return;
     }
-    const account = this.accounts[this.exchangeId][ring.minerAccountID];
+    const account = this.accounts[this.exchangeId][ring.ringMatcherAccountID];
     const nonce = account.nonce++;
     const message = new BitArray();
     message.addString(ring.orderA.hash, 254);
     message.addString(ring.orderB.hash, 254);
-    message.addNumber(ring.minerAccountID, 20);
+    message.addNumber(ring.ringMatcherAccountID, 20);
     message.addNumber(ring.tokenID, 8);
     message.addBN(ring.fee, 96);
     message.addNumber(ring.orderA.feeBips, 6);
@@ -425,25 +424,29 @@ export class ExchangeTestUtil {
     message.addNumber(nonce, 32);
     message.addNumber(0, 1);
     const sig = eddsa.sign(account.secretKey, message.getBits());
-    ring.signature = {
+    ring.ringMatcherSignature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString(),
     };
 
-    const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
-    ring.dualAuthASignature = {
-      Rx: dualAuthAsig.R[0].toString(),
-      Ry: dualAuthAsig.R[1].toString(),
-      s: dualAuthAsig.S.toString(),
-    };
+    if (ring.dualAuthASignature === undefined) {
+      const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
+      ring.dualAuthASignature = {
+        Rx: dualAuthAsig.R[0].toString(),
+        Ry: dualAuthAsig.R[1].toString(),
+        s: dualAuthAsig.S.toString(),
+      };
+    }
 
-    const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
-    ring.dualAuthBSignature = {
-      Rx: dualAuthBsig.R[0].toString(),
-      Ry: dualAuthBsig.R[1].toString(),
-      s: dualAuthBsig.S.toString(),
-    };
+    if (ring.dualAuthBSignature === undefined) {
+      const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
+      ring.dualAuthBSignature = {
+        Rx: dualAuthBsig.R[0].toString(),
+        Ry: dualAuthBsig.R[1].toString(),
+        s: dualAuthBsig.S.toString(),
+      };
+    }
   }
 
   public signCancel(cancel: Cancel) {
@@ -531,10 +534,8 @@ export class ExchangeTestUtil {
     const bIndex = index !== undefined;
     addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.orderA.walletAccountID, "WalletA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.orderB.walletAccountID, "WalletB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.minerAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
+    addAccount(addressBook, ring.ringMatcherAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
   }
 
@@ -610,10 +611,25 @@ export class ExchangeTestUtil {
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
+    // Calculate how much fee needs to be paid
     const fees = await this.exchange.getFees();
-    let ethToSend = fees._depositFeeETH.add(fees._accountCreationFeeETH);
+    let feeETH = fees._depositFeeETH;
+    const currentAccountID = await this.getAccountID(owner);
+    if (currentAccountID === undefined) {
+      feeETH = feeETH.add(fees._accountUpdateFeeETH);
+    } else {
+      const accountData = await this.exchange.getAccount(owner);
+      if (accountData.pubKeyX.toString(10) !== publicKeyX || accountData.pubKeyY.toString(10) !== publicKeyY) {
+        feeETH = feeETH.add(fees._accountUpdateFeeETH);
+      }
+    }
+
+    // Always send a bit too much which we'll get back immediately
+    const feeSurplus = new BN(123);
+    let ethToSend = feeETH.add(feeSurplus);
+
     if (amount.gt(0)) {
-      if (token !== this.zeroAddress) {
+      if (token !== constants.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
         await Token.setBalance(
           owner,
@@ -632,14 +648,22 @@ export class ExchangeTestUtil {
     // Do the deposit
     const contract = accountContract ? accountContract : this.exchange;
     const caller = accountContract ? this.testContext.orderOwners[0] : owner;
+
+    const callerEthBalanceBefore = await this.getOnchainBalance(caller, constants.zeroAddress);
+
     const tx = await contract.updateAccountAndDeposit(
       new BN(publicKeyX),
       new BN(publicKeyY),
       token,
       web3.utils.toBN(amount),
-      {from: caller, value: ethToSend},
+      {from: caller, value: ethToSend, gasPrice: 0},
     );
     // logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
+
+    // Check if the correct fee amount was paid
+    const callerEthBalanceAfter = await this.getOnchainBalance(caller, constants.zeroAddress);
+    assert(callerEthBalanceAfter.eq(callerEthBalanceBefore.sub(ethToSend).add(feeSurplus)),
+           "fee paid by the depositer needs to match exactly with the fee needed");
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "DepositRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -650,7 +674,7 @@ export class ExchangeTestUtil {
       owner,
       token,
       amount,
-      fee: fees._depositFeeETH,
+      fee: feeETH,
       timestamp: (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp,
       accountID: items[0][0].toNumber(),
       depositIdx: items[0][1].toNumber(),
@@ -718,16 +742,21 @@ export class ExchangeTestUtil {
         numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
-
     const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
+
+    const feeSurplus = new BN(456);
+    const ethToSend = withdrawalFee.add(feeSurplus);
+
+    const caller = (accountID === 0) ? this.exchangeOwner : owner;
+
+    const callerEthBalanceBefore = await this.getOnchainBalance(caller, constants.zeroAddress);
 
     // Submit the withdraw request
     let tx;
     if (accountID === 0) {
-      tx = await this.loopringV3.withdrawProtocolFees(
-        exchangeID,
+      tx = await this.exchange.withdrawProtocolFees(
         token,
-        {from: owner, value: withdrawalFee},
+        {from: caller, value: ethToSend, gasPrice: 0},
       );
       amount = new BN(2);
       amount = amount.pow(new BN(96)).sub(new BN(1));
@@ -735,10 +764,15 @@ export class ExchangeTestUtil {
       tx = await this.exchange.withdraw(
         token,
         web3.utils.toBN(amount),
-        {from: owner, value: withdrawalFee},
+        {from: caller, value: ethToSend, gasPrice: 0},
       );
     }
-    logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
+    // logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
+
+    // Check if the correct fee amount was paid
+    const callerEthBalanceAfter = await this.getOnchainBalance(caller, constants.zeroAddress);
+    assert(callerEthBalanceAfter.eq(callerEthBalanceBefore.sub(ethToSend).add(feeSurplus)),
+          "fee paid by the withdrawer needs to match exactly with the fee needed");
 
     const eventArr: any = await this.getEventsFromContract(this.exchange, "WithdrawalRequested", web3.eth.blockNumber);
     const items = eventArr.map((eventObj: any) => {
@@ -746,7 +780,7 @@ export class ExchangeTestUtil {
     });
     const withdrawalIdx = items[0][0].toNumber();
 
-    const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+    const walletAccountID = this.wallets[exchangeID][0];
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[exchangeID],
                               accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
                               0, withdrawalIdx, withdrawalFee);
@@ -827,16 +861,20 @@ export class ExchangeTestUtil {
     const result = childProcess.spawnSync(
       "python3",
       ["operator/create_block.py", "" + exchangeID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "create_block failed: " + blockType);
 
     return [nextBlockIdx, outputFilename];
   }
 
-  public async commitBlock(operator: Operator, blockType: BlockType, blockSize: number,
+  public async commitBlock(operatorId: number, blockType: BlockType, blockSize: number,
                            data: string, filename: string) {
-    console.log("[EVM]PublicData: " + data);
+    if (this.commitWrongPublicDataOnce) {
+      data += "00";
+      this.commitWrongPublicDataOnce = false;
+    }
+    logDebug("[EVM]PublicData: " + data);
     const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
     // Make sure the keys are generated
@@ -858,7 +896,7 @@ export class ExchangeTestUtil {
     const block: Block = {
       blockIdx,
       filename,
-      operator,
+      operatorId,
       compressedData,
     };
     this.pendingBlocks[this.exchangeId].push(block);
@@ -871,7 +909,7 @@ export class ExchangeTestUtil {
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-createkeys", blockFilename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "generateKeys failed: " + blockFilename);
 
@@ -911,7 +949,7 @@ export class ExchangeTestUtil {
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-prove", blockFilename, proofFilename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "verifyBlock failed: " + blockFilename);
 
@@ -1035,9 +1073,19 @@ export class ExchangeTestUtil {
       bs.addNumber(startIndex, 4);
       bs.addNumber(numRequestsInBlock, 4);
 
+      const numAvailableSlotsBefore = await this.exchange.getNumAvailableDepositSlots();
+      const numDepositRequestsProcessedBefore = await this.exchange.getNumDepositRequestsProcessed();
+
       // Commit the block
       const operator = await this.getActiveOperator(exchangeID);
       const blockInfo = await this.commitBlock(operator, BlockType.DEPOSIT, blockSize, bs.getData(), blockFilename);
+
+      const numAvailableSlotsAfter = await this.exchange.getNumAvailableDepositSlots();
+      const numDepositRequestsProcessedAfter = await this.exchange.getNumDepositRequestsProcessed();
+      assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.add(new BN(numRequestsInBlock))),
+             "num available deposit slots should be increased by the number of deposit requests processed");
+      assert(numDepositRequestsProcessedAfter.eq(numDepositRequestsProcessedBefore.add(new BN(numRequestsInBlock))),
+             "total num deposits processed should be increased by the number of deposit requests processed");
 
       blockInfos.push(blockInfo);
     }
@@ -1139,7 +1187,7 @@ export class ExchangeTestUtil {
     this.operator = operator;
   }
 
-  public async setActiveOperator(operator: Operator) {
+  public async setActiveOperator(operator: number) {
     this.activeOperator = operator;
   }
 
@@ -1173,7 +1221,7 @@ export class ExchangeTestUtil {
             accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
-            walletAccountID: onchain ? 0 : this.wallets[exchangeID][0].walletAccountID,
+            walletAccountID: onchain ? 0 : this.wallets[exchangeID][0],
             feeTokenID: 1,
             fee: new BN(0),
             walletSplitPercentage: 0,
@@ -1206,9 +1254,9 @@ export class ExchangeTestUtil {
         hashData.addNumber(withdrawal.accountID, 3);
         hashData.addNumber(withdrawal.tokenID, 1);
         hashData.addBN(withdrawal.amount, 12);
-        console.log("withdrawal.accountID: " + withdrawal.accountID);
-        console.log("withdrawal.tokenID: " + withdrawal.tokenID);
-        console.log("withdrawal.amount: " + withdrawal.amount.toString(10));
+        logInfo("withdrawal.accountID: " + withdrawal.accountID);
+        logInfo("withdrawal.tokenID: " + withdrawal.tokenID);
+        logInfo("withdrawal.amount: " + withdrawal.amount.toString(10));
         endingHash = "0x" + SHA256(Buffer.from(hashData.getData().slice(2), "hex")).toString("hex");
       }
 
@@ -1217,7 +1265,7 @@ export class ExchangeTestUtil {
       const withdrawalBlock: WithdrawBlock = {
         withdrawals,
         onchainDataAvailability: this.onchainDataAvailability,
-        operatorAccountID: onchain ? 0 : operator.accountID,
+        operatorAccountID: onchain ? 0 : operator,
         startHash: onchain ? new BN(startingHash.slice(2), 16) : new BN(0),
         startIndex: onchain ? startIndex : 0,
         count: shutdown ? 0 : (onchain ? numRequestsInBlock : 0),
@@ -1265,8 +1313,30 @@ export class ExchangeTestUtil {
         this.validateOffchainWithdrawals(withdrawalBlock, bs, stateBefore, stateAfter);
       }
 
+      const numAvailableSlotsBefore = await this.exchange.getNumAvailableWithdrawalSlots();
+      const numWithdrawalRequestsProcessedBefore = await this.exchange.getNumWithdrawalRequestsProcessed();
+
       // Commit the block
       await this.commitBlock(operator, blockType, blockSize, bs.getData(), blockFilename);
+
+      const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
+      const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
+      if (onchain) {
+        const numRequestsProcessed = shutdown ? new BN(0) : new BN(numRequestsInBlock);
+        assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.add(numRequestsProcessed)),
+               "num available withdrawal slots should be increased by the number of withdrawal requests processed");
+        assert(
+          numWithdrawalRequestsProcessedAfter.eq(numWithdrawalRequestsProcessedBefore.add(numRequestsProcessed)),
+          "total num withdrawals processed should be increased by the number of withdrawal requests processed",
+        );
+      } else {
+        assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore),
+               "num available withdrawal slots should remain the same");
+        assert(
+          numWithdrawalRequestsProcessedAfter.eq(numWithdrawalRequestsProcessedBefore),
+          "total num withdrawals processed should remain the same",
+        );
+      }
 
       // Add as a pending withdrawal
       let withdrawalIdx = 0;
@@ -1318,7 +1388,7 @@ export class ExchangeTestUtil {
       const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
       const amount = items[0][2].div(web3.utils.toBN(10 ** decimals)).toString(10);
-      console.log("Withdrawn: " + to + ": " + amount + " " + tokenSymbol);
+      logInfo("Withdrawn: " + to + ": " + amount + " " + tokenSymbol);
     }
 
     this.pendingWithdrawals = [];
@@ -1343,7 +1413,7 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+          const walletAccountID = this.wallets[exchangeID][0];
           const dummyRing: RingInfo = {
             orderA:
               {
@@ -1397,7 +1467,7 @@ export class ExchangeTestUtil {
                 amountS: new BN(1),
                 amountB: new BN(1),
               },
-            minerAccountID: this.minerAccountID[exchangeID],
+              ringMatcherAccountID: this.ringMatcherAccountID[exchangeID],
             tokenID: 0,
             fee: new BN(0),
           };
@@ -1426,7 +1496,7 @@ export class ExchangeTestUtil {
         protocolTakerFeeBips,
         protocolMakerFeeBips,
         exchangeID,
-        operatorAccountID: operator.accountID,
+        operatorAccountID: operator,
       };
 
       // Store state before
@@ -1459,7 +1529,7 @@ export class ExchangeTestUtil {
           const orderB = ringSettlement.ring.orderB;
 
           const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
-          da.addNumber((ring.minerAccountID * (2 ** 12)) + fRingFee, 4);
+          da.addNumber((ring.ringMatcherAccountID * (2 ** 12)) + fRingFee, 4);
           da.addNumber(ring.tokenID, 1);
 
           da.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
@@ -1601,7 +1671,7 @@ export class ExchangeTestUtil {
         if (b < pendingCancels.length) {
           cancels.push(pendingCancels[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0].walletAccountID;
+          const walletAccountID = this.wallets[exchangeID][0];
           const dummyCancel: Cancel = {
             accountID: this.dummyAccountId,
             orderTokenID: 0,
@@ -1626,7 +1696,7 @@ export class ExchangeTestUtil {
       const cancelBlock: CancelBlock = {
         cancels,
         onchainDataAvailability: this.onchainDataAvailability,
-        operatorAccountID: operator.accountID,
+        operatorAccountID: operator,
       };
 
       // Store state before
@@ -1670,7 +1740,7 @@ export class ExchangeTestUtil {
 
   public async registerTokens() {
     for (const token of this.testContext.allTokens) {
-      const tokenAddress = (token === null) ? this.zeroAddress : token.address;
+      const tokenAddress = (token === null) ? constants.zeroAddress : token.address;
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
@@ -1706,6 +1776,10 @@ export class ExchangeTestUtil {
     } catch {
       return undefined;
     }
+  }
+
+  public getAccount(accountId: number) {
+    return this.accounts[this.exchangeId][accountId];
   }
 
   public async createExchange(
@@ -1792,11 +1866,11 @@ export class ExchangeTestUtil {
       web3.utils.toBN(blockIdx),
       {from: this.exchangeOperator},
     );
-    console.log("Reverted to block " + (blockIdx - 1));
+    logInfo("Reverted to block " + (blockIdx - 1));
     this.pendingBlocks[this.exchangeId] = [];
   }
 
-  public async withdrawFromMerkleTree(owner: string, token: string, pubKeyX: string, pubKeyY: string) {
+  public async createMerkleTreeInclusionProof(owner: string, token: string) {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
@@ -1808,25 +1882,36 @@ export class ExchangeTestUtil {
       "python3",
       ["operator/create_withdraw_proof.py",
       "" + exchangeID, "" + blockIdx, "" + accountID, "" + tokenID, filename],
-      {stdio: "inherit"},
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
     );
     assert(result.status === 0, "create_withdraw_proof failed!");
 
-    // Read in the proof
+    // Read in the Merkle proof
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
+    return data.proof;
+  }
+
+  public async withdrawFromMerkleTreeWithProof(owner: string, token: string, proof: any) {
+    const accountID = await this.getAccountID(owner);
+    const account = this.accounts[this.exchangeId][accountID];
     const tx = await this.exchange.withdrawFromMerkleTreeFor(
       owner,
       token,
-      pubKeyX,
-      pubKeyY,
-      web3.utils.toBN(data.proof.account.nonce),
-      web3.utils.toBN(data.proof.balance.balance),
-      web3.utils.toBN(data.proof.balance.tradingHistoryRoot),
-      data.proof.accountProof,
-      data.proof.balanceProof,
+      account.publicKeyX,
+      account.publicKeyY,
+      web3.utils.toBN(proof.account.nonce),
+      web3.utils.toBN(proof.balance.balance),
+      web3.utils.toBN(proof.balance.tradingHistoryRoot),
+      proof.accountProof,
+      proof.balanceProof,
     );
     logInfo("\x1b[46m%s\x1b[0m", "[WithdrawFromMerkleTree] Gas used: " + tx.receipt.gasUsed);
+  }
+
+  public async withdrawFromMerkleTree(owner: string, token: string) {
+    const proof = await this.createMerkleTreeInclusionProof(owner, token);
+    await this.withdrawFromMerkleTreeWithProof(owner, token, proof);
   }
 
   public async withdrawFromDepositRequest(requestIdx: number) {
@@ -1843,7 +1928,7 @@ export class ExchangeTestUtil {
     if (owner !== this.testContext.deployer) {
       // Burn complete existing balance
       const existingBalance = await this.getOnchainBalance(owner, token);
-      await Token.transfer(this.zeroAddress, existingBalance, {from: owner});
+      await Token.transfer(constants.zeroAddress, existingBalance, {from: owner});
     }
     await Token.transfer(owner, amount, {from: this.testContext.deployer});
     await Token.approve(contractAddress, amount, {from: owner});
@@ -1898,7 +1983,7 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    if (token === this.zeroAddress) {
+    if (token === constants.zeroAddress) {
       return new BN(await web3.eth.getBalance(owner));
     } else {
       const Token = await this.contracts.DummyToken.at(token);
@@ -1917,7 +2002,7 @@ export class ExchangeTestUtil {
     await this.exchange.setFees(
       fees._accountCreationFeeETH,
       fees._accountUpdateFeeETH,
-      fees._depositFeeETH.mul(new BN(2)),
+      fees._depositFeeETH.mul(new BN(4)),
       fees._withdrawalFeeETH,
       {from: this.exchangeOwner},
     );
@@ -1962,7 +2047,7 @@ export class ExchangeTestUtil {
       "LRC",
       new BN(0),
       0,
-      this.wallets[this.exchangeId][0].walletAccountID,
+      this.wallets[this.exchangeId][0],
     );
   }
 
@@ -2012,7 +2097,7 @@ export class ExchangeTestUtil {
       bs = new Bitstream(onchainData);
     }
 
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     const operatorAccountID = ringBlock.operatorAccountID;
     const timestamp = ringBlock.timestamp;
     let latestState = stateBefore;
@@ -2039,11 +2124,11 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateDeposits(deposits: Deposit[], stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     let latestState = stateBefore;
     for (const deposit of deposits) {
       const simulator = new Simulator();
@@ -2071,15 +2156,15 @@ export class ExchangeTestUtil {
         bNewAccount = true;
       }
 
-      console.log("> Account " + deposit.accountID + (bNewAccount ? " (NEW ACCOUNT)" : ""));
+      logInfo("> Account " + deposit.accountID + (bNewAccount ? " (NEW ACCOUNT)" : ""));
       if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
-        console.log("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+        logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
       }
       if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
-        console.log("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+        logInfo("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
       }
       if (accountBefore.nonce !== accountAfter.nonce) {
-        console.log("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
+        logInfo("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
       }
       for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
         if (!accountBefore.balances[i].balance.eq(accountAfter.balances[i].balance)) {
@@ -2093,12 +2178,12 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateOnchainWithdrawals(withdrawBlock: WithdrawBlock,
                                     stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     let latestState = stateBefore;
     const shutdown = withdrawBlock.count === 0;
     for (const withdrawal of withdrawBlock.withdrawals) {
@@ -2121,12 +2206,12 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateOffchainWithdrawals(withdrawBlock: WithdrawBlock, bs: Bitstream,
                                      stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     const operatorAccountID = withdrawBlock.operatorAccountID;
     let latestState = stateBefore;
     for (const [withdrawalIndex, withdrawal] of withdrawBlock.withdrawals.entries()) {
@@ -2157,12 +2242,12 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public validateOrderCancellations(cancelBlock: CancelBlock, bs: Bitstream,
                                     stateBefore: ExchangeState, stateAfter: ExchangeState) {
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
     const operatorAccountID = cancelBlock.operatorAccountID;
     let latestState = stateBefore;
     for (const [cancelIndex, cancel] of cancelBlock.cancels.entries()) {
@@ -2185,7 +2270,7 @@ export class ExchangeTestUtil {
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
-    console.log("----------------------------------------------------");
+    logInfo("----------------------------------------------------");
   }
 
   public async loadExchangeStateForRingBlock(exchangeID: number, blockIdx: number, ringBlock: RingBlock) {
@@ -2222,7 +2307,7 @@ export class ExchangeTestUtil {
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalance = balance.div(web3.utils.toBN(10 ** decimals)).toString(10);
-    console.log(accountID + ": " + prettyBalance + " " + tokenSymbol);
+    logInfo(accountID + ": " + prettyBalance + " " + tokenSymbol);
   }
 
   public prettyPrintBalanceChange(accountID: number, tokenID: number, balanceBefore: BN, balanceAfter: BN) {
@@ -2231,9 +2316,9 @@ export class ExchangeTestUtil {
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
     const prettyBalanceBefore = balanceBefore.div(web3.utils.toBN(10 ** decimals)).toString(10);
     const prettyBalanceAfter = balanceAfter.div(web3.utils.toBN(10 ** decimals)).toString(10);
-    console.log(accountID + ": " +
-                prettyBalanceBefore + " " + tokenSymbol + " -> " +
-                prettyBalanceAfter + " " + tokenSymbol);
+    logInfo(accountID + ": " +
+            prettyBalanceBefore + " " + tokenSymbol + " -> " +
+            prettyBalanceAfter + " " + tokenSymbol);
   }
 
   public async depositExchangeStakeChecked(amount: BN, owner: string) {
@@ -2428,7 +2513,7 @@ export class ExchangeTestUtil {
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 
-    tokenSymbolAddrMap.set("ETH", this.zeroAddress);
+    tokenSymbolAddrMap.set("ETH", constants.zeroAddress);
     tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
@@ -2440,13 +2525,13 @@ export class ExchangeTestUtil {
 
     for (const token of allTokens) {
       if (token === null) {
-        tokenAddrDecimalsMap.set(this.zeroAddress, 18);
+        tokenAddrDecimalsMap.set(constants.zeroAddress, 18);
       } else {
         tokenAddrDecimalsMap.set(token.address, (await token.decimals()));
       }
     }
 
-    tokenAddrSymbolMap.set(this.zeroAddress, "ETH");
+    tokenAddrSymbolMap.set(constants.zeroAddress, "ETH");
     tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
@@ -2456,7 +2541,7 @@ export class ExchangeTestUtil {
     tokenAddrSymbolMap.set(this.contracts.INDBToken.address, "INDB");
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
-    tokenAddrInstanceMap.set(this.zeroAddress, null);
+    tokenAddrInstanceMap.set(constants.zeroAddress, null);
     tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
     tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
@@ -2499,9 +2584,9 @@ export class ExchangeTestUtil {
     const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
     if (payment.subPayments.length === 0) {
       const toName = addressBook[payment.to] !== undefined ? addressBook[payment.to] : payment.to;
-      logDebug(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
+      logInfo(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
-      logDebug(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
+      logInfo(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
       }
@@ -2545,7 +2630,7 @@ export class ExchangeTestUtil {
     const filledAfterPercentage = after.filled.mul(new BN(100)).div(order.buy ? order.amountB : order.amountS);
     const filledBeforePretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, before.filled);
     const filledAfterPretty = this.getPrettyAmount(order.buy ? order.tokenIdB : order.tokenIdS, after.filled);
-    console.log(
+    logInfo(
       description + ": " + filledBeforePretty + " -> " + filledAfterPretty +
       " (" + filledBeforePercentage.toString(10) + "% -> " + filledAfterPercentage.toString(10) + "%)" +
       " (" + this.getPrettyCancelled(before.cancelled) + " -> " + this.getPrettyCancelled(after.cancelled) + ")",

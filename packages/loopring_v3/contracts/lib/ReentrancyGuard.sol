@@ -20,19 +20,26 @@ pragma solidity 0.5.7;
 /// @title ReentrancyGuard
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Exposes a modifier that guards a function against reentrancy
+///      Changing the value of the same storage value multiple times in a transaction
+///      is cheap (starting from Istanbul) so there is no need to minimize
+///      the number of times the value is changed
 contract ReentrancyGuard
 {
-    // Start at 1 so we don't have an expensive 0 -> 1 SSTORE
-    uint256 private _guardCounter = 1;
+    // Set to 1 so we don't have an expensive 0 -> 1 SSTORE
+    uint256 private _guardValue = 1;
 
     // Use this modifier on a function to prevent reentrancy
     modifier nonReentrant()
     {
-        _guardCounter += 1;
-        uint256 _counter = _guardCounter;
+        // Check if the guard value has its original value
+        require(_guardValue == 1, "REENTRANCY");
+        // Set the value to something else
+        _guardValue = 2;
+
         // Function body
         _;
-        // Check if the counter remained the same
-        require(_counter == _guardCounter, "REENTRANCY");
+
+        // Set the value back
+        _guardValue = 1;
     }
 }
