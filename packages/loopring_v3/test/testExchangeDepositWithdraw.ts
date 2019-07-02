@@ -413,7 +413,7 @@ contract("Exchange", (accounts: string[]) => {
       const wrongOwner = exchangeTestUtil.testContext.orderOwners[8];
       await expectThrow(
         exchange.deposit(token, amount, {from: wrongOwner, value: depositFee}),
-        "SENDER_HAS_NO_ACCOUNT",
+        "ADDRESS_HAS_NO_ACCOUNT",
       );
 
       // Everything correct
