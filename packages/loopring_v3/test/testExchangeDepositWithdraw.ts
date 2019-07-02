@@ -19,30 +19,47 @@ contract("Exchange", (accounts: string[]) => {
     assert.equal(accountsData.pubKeyY.toString(10), keyPair.publicKeyY, "pubKeyY needs to match");
   };
 
-  const createOrUpdateAccountChecked = async (keyPair: any, owner: string, fee: BN) => {
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
-    const numAccountsBefore = (await exchange.getNumAccounts()).toNumber();
+  const createOrUpdateAccountChecked = async (keyPair: any, owner: string, fee: BN, isNew: boolean = true) => {
+    const numAvailableSlotsBefore = await exchange.getNumAvailableDepositSlots();
+    const numAccountsBefore = await exchange.getNumAccounts();
 
     await exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY,
       {from: owner, value: fee, gasPrice: 0});
 
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
-    const numAccountsAfter = (await exchange.getNumAccounts()).toNumber();
+    const numAvailableSlotsAfter = await exchange.getNumAvailableDepositSlots();
+    const numAccountsAfter = await exchange.getNumAccounts();
 
-    assert.equal(numAvailableSlotsBefore, numAvailableSlotsAfter,
-           "Number of available deposit slots should stay the same");
-    assert.equal(numAccountsBefore + 1, numAccountsAfter,
-           "Number of accounts should be increased by 1");
+    assert(numAvailableSlotsAfter.eq(numAvailableSlotsBefore.sub(new BN(1))),
+           "Number of available deposit slots should de decreased by 1");
 
-    // Get the AccountCreated event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-      exchange, "AccountCreated", web3.eth.blockNumber,
-    );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.id];
-    });
-    assert.equal(items.length, 1, "A single AccountCreated event should have been emitted");
-    const accountID = items[0][0].toNumber();
+    let accountID: number;
+    if (isNew) {
+      assert(numAccountsAfter.eq(numAccountsBefore.add(new BN(1))),
+            "Number of accounts should be increased by 1");
+
+      // Get the AccountCreated event
+      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+        exchange, "AccountCreated", web3.eth.blockNumber,
+      );
+      const items = eventArr.map((eventObj: any) => {
+        return [eventObj.args.id];
+      });
+      assert.equal(items.length, 1, "A single AccountCreated event should have been emitted");
+      accountID = items[0][0].toNumber();
+    } else {
+      assert(numAccountsAfter.eq(numAccountsBefore),
+            "Number of accounts should remain the same");
+
+      // Get the AccountUpdated event
+      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+        exchange, "AccountUpdated", web3.eth.blockNumber,
+      );
+      const items = eventArr.map((eventObj: any) => {
+        return [eventObj.args.id];
+      });
+      assert.equal(items.length, 1, "A single AccountUpdated event should have been emitted");
+      accountID = items[0][0].toNumber();
+    }
 
     // Check the account info onchain
     await getAccountChecked(owner, accountID, keyPair);
@@ -124,11 +141,11 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
                                      accountID: number, token: string,
                                      owner: string, expectedAmount: BN) => {
-    const recipient = (accountID === 0) ? loopring.address : owner;
+    const recipient = (accountID === 0) ? await loopring.pfm() : owner;
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
 
-    await exchange.withdrawFromApprovedWithdrawal(blockIdx, slotIdx);
+    await exchange.withdrawFromApprovedWithdrawal(blockIdx, slotIdx, {from: exchangeTestUtil.testContext.feeRecipients[0]});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
@@ -212,7 +229,7 @@ contract("Exchange", (accounts: string[]) => {
 
     // Distribute the withdrawals
     const tx = await exchange.distributeWithdrawals(blockIdx, numWithdrawals, {from});
-    console.log("\x1b[46m%s\x1b[0m", "[DistributeWithdrawals] Gas used: " + tx.receipt.gasUsed);
+    // console.log("\x1b[46m%s\x1b[0m", "[DistributeWithdrawals] Gas used: " + tx.receipt.gasUsed);
 
     // Check balances owners
     const balanceOwnerAfter: BN[] = [];
@@ -295,7 +312,9 @@ contract("Exchange", (accounts: string[]) => {
 
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
+      const accountCreationFee = fees._accountCreationFeeETH;
+      const depositFee = fees._depositFeeETH;
+      const totalFee = depositFee.add(accountCreationFee);
 
       // No ETH sent
       await expectThrow(
@@ -306,13 +325,37 @@ contract("Exchange", (accounts: string[]) => {
       // Not enough ETH
       await expectThrow(
         exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY,
-          {from: owner, value: acountCreationFee.sub(new BN(1))}),
+          {from: owner, value: totalFee.sub(new BN(1))}),
         "INSUFFICIENT_FEE",
       );
 
       // Everything correct
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalFee, true);
       assert(accountID > 0);
+    });
+
+    it("Update account", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+
+      // The correct deposit fee expected by the contract
+      const fees = await exchange.getFees();
+      const accountCreationFee = fees._accountCreationFeeETH;
+      const accountUpdateFee = fees._accountUpdateFeeETH;
+      const depositFee = fees._depositFeeETH;
+
+      // Everything correct for account creation
+      const totalCreationFee = depositFee.add(accountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalCreationFee, true);
+      assert(accountID > 0);
+
+      // Update the keys
+      const totalUpdateFee = depositFee.add(accountUpdateFee);
+      const newKeyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const newAccountID = await createOrUpdateAccountChecked(newKeyPair, owner, totalUpdateFee, false);
+      assert(newAccountID === accountID, "Account ID needs to remain the same");
     });
 
     it("ERC20: Deposit", async () => {
@@ -325,12 +368,12 @@ contract("Exchange", (accounts: string[]) => {
 
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
+      const accountCreationFee = fees._accountCreationFeeETH;
       const depositFee = fees._depositFeeETH;
       const updateFee = fees._accountUpdateFeeETH;
 
       // Create the account
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, depositFee.add(accountCreationFee));
 
       // No ETH sent
       await expectThrow(
@@ -394,11 +437,11 @@ contract("Exchange", (accounts: string[]) => {
 
       // The correct deposit fee expected by the contract
       const fees = await exchange.getFees();
-      const acountCreationFee = fees._accountCreationFeeETH;
+      const accountCreationFee = fees._accountCreationFeeETH;
       const depositFee = fees._depositFeeETH;
 
       // Create the account
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, accountCreationFee.add(depositFee));
 
       // No ETH sent
       await expectThrow(
@@ -489,7 +532,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
         exchangeID, accountID, token, toWithdraw,
-        feeToken, fee, 20, wallet.walletAccountID,
+        feeToken, fee, 20, wallet,
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -524,9 +567,9 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
       await exchangeTestUtil.commitDeposits(exchangeID);
 
-      const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOffchain(
+      await exchangeTestUtil.requestWithdrawalOffchain(
         exchangeID, accountID, token, toWithdraw,
-        feeToken, fee, 40, wallet.walletAccountID,
+        feeToken, fee, 40, wallet,
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -536,6 +579,106 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, 0,
                             accountID, token,
                             owner, balance);
+    });
+
+    it("Offchain withdrawal request (owner == wallet)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID, accountID, token, toWithdraw,
+        feeToken, fee, 20, accountID,
+      );
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance.sub(fee));
+    });
+
+    it("Offchain withdrawal request (owner == operator)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const wallet = exchangeTestUtil.wallets[exchangeID][0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID, accountID, token, toWithdraw,
+        feeToken, fee, 20, wallet,
+      );
+
+      exchangeTestUtil.setActiveOperator(accountID);
+
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance.sub(fee));
+    });
+
+    it("Offchain withdrawal request (owner == wallet == operator)", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("4", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("5", "ether"));
+      const token = "ETH";
+      const feeToken = "ETH";
+      const fee = new BN(web3.utils.toWei("0.5", "ether"));
+
+      const depositInfo = await exchangeTestUtil.deposit(exchangeID, owner,
+                                                         keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                                         token, balance);
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID, accountID, token, toWithdraw,
+        feeToken, fee, 20, accountID,
+      );
+
+      exchangeTestUtil.setActiveOperator(accountID);
+
+      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, 0,
+                            accountID, token,
+                            owner, balance.sub(fee));
     });
 
     it("Withdraw (normal account)", async () => {
@@ -627,24 +770,20 @@ contract("Exchange", (accounts: string[]) => {
 
       const protocolFees = await exchange.getProtocolFeeValues();
 
-      const walletA = exchangeTestUtil.wallets[exchangeID][0];
-      const walletB = exchangeTestUtil.wallets[exchangeID][1];
       const ring: RingInfo = {
         orderA:
           {
-            tokenS: "WETH",
+            tokenS: "ETH",
             tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountS: new BN(web3.utils.toWei("1", "ether")),
             amountB: new BN(web3.utils.toWei("200", "ether")),
-            walletAccountID: walletA.walletAccountID,
           },
         orderB:
           {
             tokenS: "GTO",
-            tokenB: "WETH",
+            tokenB: "ETH",
             amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            walletAccountID: walletB.walletAccountID,
+            amountB: new BN(web3.utils.toWei("1", "ether")),
           },
       };
 
@@ -654,15 +793,17 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
+      const walletA = exchangeTestUtil.wallets[exchangeID][0];
+      const walletB = exchangeTestUtil.wallets[exchangeID][1];
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderA.tokenB, ring.orderA.amountB,
-        walletA.owner,
+        exchangeTestUtil.getAccount(walletA).owner,
       );
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderB.tokenB, ring.orderB.amountB,
-        walletB.owner,
+        exchangeTestUtil.getAccount(walletB).owner,
       );
       await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -675,10 +816,10 @@ contract("Exchange", (accounts: string[]) => {
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
       await withdrawChecked(blockIdx, 0,
                             0, ring.orderA.tokenB,
-                            loopring.address, protocolFeeA);
+                            constants.zeroAddress, protocolFeeA);
       await withdrawChecked(blockIdx, 1,
                             0, ring.orderB.tokenB,
-                            loopring.address, protocolFeeB);
+                            constants.zeroAddress, protocolFeeB);
     });
 
     it("Distribute withdrawals (by operator)", async () => {
@@ -731,7 +872,7 @@ contract("Exchange", (accounts: string[]) => {
           "LRC",
           new BN(0),
           0,
-          exchangeTestUtil.wallets[exchangeID][0].walletAccountID,
+          exchangeTestUtil.wallets[exchangeID][0],
         );
       }
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
@@ -827,7 +968,7 @@ contract("Exchange", (accounts: string[]) => {
           "LRC",
           new BN(0),
           0,
-          exchangeTestUtil.wallets[exchangeID][0].walletAccountID,
+          exchangeTestUtil.wallets[exchangeID][0],
         );
       }
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
@@ -891,7 +1032,7 @@ contract("Exchange", (accounts: string[]) => {
           "LRC",
           new BN(0),
           0,
-          exchangeTestUtil.wallets[exchangeID][0].walletAccountID,
+          exchangeTestUtil.wallets[exchangeID][0],
         );
       }
       const blockIdx = (await exchange.getBlockHeight()).toNumber();
@@ -935,14 +1076,15 @@ contract("Exchange", (accounts: string[]) => {
 
         // The correct deposit fee expected by the contract
         const fees = await exchange.getFees();
-        const acountCreationFee = fees._accountCreationFeeETH;
+        const accountCreationFee = fees._accountCreationFeeETH;
+        const depositFee = fees._depositFeeETH;
 
         // Make sure the owner has enough tokens
         await exchangeTestUtil.setBalanceAndApprove(owner, tokenA, amount.mul(new BN(10)));
         await exchangeTestUtil.setBalanceAndApprove(owner, tokenB, amount.mul(new BN(10)));
 
         // Everything correct
-        await createOrUpdateAccountChecked(keyPair, owner, acountCreationFee);
+        await createOrUpdateAccountChecked(keyPair, owner, depositFee.add(accountCreationFee));
 
         // Disable token deposit for GTO
         await exchange.disableTokenDeposit(tokenA, {from: exchangeTestUtil.exchangeOwner});

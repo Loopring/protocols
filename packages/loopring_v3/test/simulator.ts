@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import { Bitstream } from "./bitstream";
 import * as constants from "./constants";
 import { fromFloat, roundToFloatValue } from "./float";
+import { logDebug, logInfo } from "./logs";
 import { AccountLeaf, Balance, Cancel, Deposit, DetailedTokenTransfer, ExchangeState, OrderInfo,
          RingInfo, RingSettlementSimulatorReport, SimulatorReport,
          TradeHistory, WithdrawalRequest } from "./types";
@@ -435,7 +436,7 @@ export class Simulator {
       matchResult = this.match(ring.orderB, fillB, ring.orderA, fillA);
       fillA.B = fillB.S;
     }
-    console.log("spread:     " + matchResult.spread.toString(10));
+    logDebug("spread:     " + matchResult.spread.toString(10));
 
     let valid = matchResult.matchable;
     valid = valid && this.checkValid(ring.orderA, fillA.S, fillA.B, timestamp);
@@ -452,9 +453,13 @@ export class Simulator {
     fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
     const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
+    // Validate
+    this.validateOrder(exchangeState, ring.orderA, false, fillA.S, fillA.B, valid);
+    this.validateOrder(exchangeState, ring.orderB, true, fillB.S, fillB.B, valid);
+
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
-      operatorAccountID, ring.minerAccountID, ring.tokenID, ringFee,
+      operatorAccountID, ring.ringMatcherAccountID, ring.tokenID, ringFee,
       fillA.S, fillB.S,
       ring.orderA.buy, ring.orderB.buy,
       ring.orderA.tokenIdS, ring.orderB.tokenIdS,
@@ -495,15 +500,15 @@ export class Simulator {
     const ringMatcherPayments: DetailedTokenTransfer = {
       description: "Ring-Matcher",
       token: 0,
-      from: ring.minerAccountID,
-      to: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
+      to: ring.ringMatcherAccountID,
       amount: new BN(0),
       subPayments: [],
     };
     const payProtocolFeeA: DetailedTokenTransfer = {
       description: "ProtocolFeeA",
       token: ring.orderA.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: 0,
       amount: s.protocolFeeA,
       subPayments: [],
@@ -511,7 +516,7 @@ export class Simulator {
     const payProtocolFeeB: DetailedTokenTransfer = {
       description: "ProtocolFeeB",
       token: ring.orderB.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: 0,
       amount: s.protocolFeeB,
       subPayments: [],
@@ -519,15 +524,15 @@ export class Simulator {
     const payRebateA: DetailedTokenTransfer = {
       description: "RebateA",
       token: ring.orderA.tokenIdB,
-      from: ring.minerAccountID,
-      to: ring.orderB.accountID,
+      from: ring.ringMatcherAccountID,
+      to: ring.orderA.accountID,
       amount: s.rebateA,
       subPayments: [],
     };
     const payRebateB: DetailedTokenTransfer = {
       description: "RebateB",
       token: ring.orderB.tokenIdB,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: ring.orderB.accountID,
       amount: s.rebateB,
       subPayments: [],
@@ -535,7 +540,7 @@ export class Simulator {
     const operatorFee: DetailedTokenTransfer = {
       description: "OperatorFee",
       token: ring.tokenID,
-      from: ring.minerAccountID,
+      from: ring.ringMatcherAccountID,
       to: operatorAccountID,
       amount: ringFee,
       subPayments: [],
@@ -701,7 +706,7 @@ export class Simulator {
       description: "Fee@" + order.feeBips + "Bips",
       token: order.tokenIdB,
       from: order.accountID,
-      to: ring.minerAccountID,
+      to: ring.ringMatcherAccountID,
       amount: fee,
       subPayments: [],
     };
@@ -713,7 +718,53 @@ export class Simulator {
     return detailedTransfers;
   }
 
-  private getMaxFillAmounts(order: OrderInfo, accountData: any) {
+  private validateOrder(exchangeState: ExchangeState, order: OrderInfo, makerOrder: boolean,
+                        fillS: BN, fillB: BN,
+                        valid: boolean) {
+    const account = exchangeState.accounts[order.accountID];
+    assert(account.balances[order.tokenIdS].balance.gte(fillS), "can never spend more than balance");
+
+    if (valid) {
+      const tradeHistory = this.getTradeHistory(order, account);
+      if (tradeHistory.cancelled) {
+        assert(fillS.isZero(), "fillS needS to be 0 when the order is cancelled");
+        assert(fillB.isZero(), "fillB needS to be 0 when the order is cancelled");
+      } else {
+        if (!fillS.isZero() || !fillB.isZero()) {
+          const targetRate = order.amountS.mul(new BN(10000)).div(order.amountB);
+          const rate = fillS.mul(new BN(10000)).div(fillB);
+          if (makerOrder) {
+            assert(targetRate.mul(new BN(10000)).sub(rate.mul(new BN(10000))).abs().lt(rate),
+                   "maker rate needs to match order rate");
+          } else {
+            assert(rate.lte(targetRate.add(new BN(1))), "taker rate needs to be equal or better than order rate");
+          }
+        }
+        if (order.buy) {
+          assert(fillB.lte(order.amountB), "can never buy more than specified in the order");
+          if (tradeHistory.filled.lte(order.amountB)) {
+            assert(tradeHistory.filled.add(fillB).lte(order.amountB), "can never buy more than specified in the order");
+          } else {
+            assert(fillS.isZero(), "fillS needS to be 0 when filled target is reached already");
+            assert(fillB.isZero(), "fillB needS to be 0 when filled target is reached already");
+          }
+        } else {
+          assert(fillS.lte(order.amountS), "can never sell more than specified in the order");
+          if (tradeHistory.filled.lte(order.amountS)) {
+            assert(tradeHistory.filled.add(fillS).lte(order.amountS), "can never buy more than specified in the order");
+          } else {
+            assert(fillS.isZero(), "fillS needS to be 0 when filled target is reached already");
+            assert(fillB.isZero(), "fillB needS to be 0 when filled target is reached already");
+          }
+        }
+      }
+    } else {
+      assert(fillS.isZero(), "fillS needS to be 0 when the trade is invalid");
+      assert(fillB.isZero(), "fillB needS to be 0 when the trade is invalid");
+    }
+  }
+
+  private getTradeHistory(order: OrderInfo, accountData: any) {
     const tradeHistorySlot = order.orderID % (2 ** constants.TREE_DEPTH_TRADING_HISTORY);
     let tradeHistory = accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     if (!tradeHistory) {
@@ -723,20 +774,24 @@ export class Simulator {
       };
     }
     // Trade history trimming
-    let filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
+    const filled = (tradeHistory.orderID < order.orderID) ? new BN(0) : tradeHistory.filled;
     const cancelled = (tradeHistory.orderID === order.orderID) ? tradeHistory.cancelled :
                       (tradeHistory.orderID < order.orderID) ? false : true;
+    return {filled, cancelled};
+  }
 
+  private getMaxFillAmounts(order: OrderInfo, accountData: any) {
+    const tradeHistory = this.getTradeHistory(order, accountData);
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
 
     let remainingS = new BN(0);
     if (order.buy) {
-      filled = order.amountB.lt(filled) ? order.amountB : filled;
-      const remainingB = cancelled ? new BN(0) : order.amountB.sub(filled);
+      const filled = order.amountB.lt(tradeHistory.filled) ? order.amountB : tradeHistory.filled;
+      const remainingB = tradeHistory.cancelled ? new BN(0) : order.amountB.sub(filled);
       remainingS = remainingB.mul(order.amountS).div(order.amountB);
     } else {
-      filled = order.amountS.lt(filled) ? order.amountS : filled;
-      remainingS = cancelled ? new BN(0) : order.amountS.sub(filled);
+      const filled = order.amountS.lt(tradeHistory.filled) ? order.amountS : tradeHistory.filled;
+      remainingS = tradeHistory.cancelled ? new BN(0) : order.amountS.sub(filled);
     }
     const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
     const fillAmountB = fillAmountS.mul(order.amountB).div(order.amountS);
@@ -834,7 +889,7 @@ export class Simulator {
 
   private ensure(valid: boolean, description: string) {
     if (!valid) {
-      console.log(description);
+      logInfo(description);
     }
     return valid;
   }

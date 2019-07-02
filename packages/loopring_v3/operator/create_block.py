@@ -96,15 +96,15 @@ def orderFromJSON(jOrder, state):
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
-    minerAccountID = int(jRing["minerAccountID"])
+    ringMatcherAccountID = int(jRing["ringMatcherAccountID"])
     tokenID = int(jRing["tokenID"])
     fee = int(jRing["fee"])
 
-    minerAccount = state.getAccount(minerAccountID)
+    ringMatcherAccount = state.getAccount(ringMatcherAccountID)
 
-    ring = Ring(orderA, orderB, minerAccountID, tokenID, fee, minerAccount.nonce)
+    ring = Ring(orderA, orderB, ringMatcherAccountID, tokenID, fee, ringMatcherAccount.nonce)
 
-    ring.minerSignature = jRing["signature"]
+    ring.ringMatcherSignature = jRing["ringMatcherSignature"]
     ring.dualAuthASignature = jRing["dualAuthASignature"]
     ring.dualAuthBSignature = jRing["dualAuthBSignature"]
 
@@ -123,9 +123,7 @@ def createRingSettlementBlock(state, data):
     context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
     # Protocol fee payment / Operator payment
-    rootBefore = state._accountsTree._root
     accountBefore_P = copyAccountInfo(state.getAccount(0))
-    accountBefore_O = copyAccountInfo(state.getAccount(block.operatorAccountID))
 
     for ringInfo in data["rings"]:
         ring = ringFromJSON(ringInfo, state)
@@ -133,18 +131,24 @@ def createRingSettlementBlock(state, data):
         block.ringSettlements.append(ringSettlement)
 
     # Protocol fee payment
+    rootBefore = state._accountsTree._root
     proof = state._accountsTree.createProof(0)
     state.updateAccountTree(0)
     accountAfter = copyAccountInfo(state.getAccount(0))
     rootAfter = state._accountsTree._root
     block.accountUpdate_P = AccountUpdateData(0, proof, rootBefore, rootAfter, accountBefore_P, accountAfter)
 
-    # Operator payment
-    proof = state._accountsTree.createProof(block.operatorAccountID)
-    state.updateAccountTree(block.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
+    # Operator payments
+    account = state.getAccount(context.operatorAccountID)
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(context.operatorAccountID))
+    proof = state._accountsTree.createProof(context.operatorAccountID)
+    for ringSettlement in block.ringSettlements:
+        ringSettlement.balanceUpdateF_O = account.updateBalance(ringSettlement.ring.tokenID, ringSettlement.feeToOperator)
+    state.updateAccountTree(context.operatorAccountID)
+    accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))
     rootAfter = state._accountsTree._root
-    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore_O, accountAfter)
+    block.accountUpdate_O = AccountUpdateData(context.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     block.merkleRootAfter = str(state.getRoot())
     return block
@@ -205,10 +209,6 @@ def createOffchainWithdrawalBlock(state, data):
     block.merkleRootBefore = str(state.getRoot())
     block.operatorAccountID = int(data["operatorAccountID"])
 
-    # Operator payment
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
-
     for withdrawalInfo in data["withdrawals"]:
         accountID = int(withdrawalInfo["accountID"])
         tokenID = int(withdrawalInfo["tokenID"])
@@ -223,8 +223,13 @@ def createOffchainWithdrawalBlock(state, data):
         withdrawal.signature = withdrawalInfo["signature"]
         block.withdrawals.append(withdrawal)
 
-    # Operator payment
+    # Operator payments
+    account = state.getAccount(block.operatorAccountID)
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
+    for withdrawal in block.withdrawals:
+        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, withdrawal.feeToOperator)
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -241,10 +246,6 @@ def createOrderCancellationBlock(state, data):
     block.merkleRootBefore = str(state.getRoot())
     block.operatorAccountID = int(data["operatorAccountID"])
 
-    # Operator payment
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
-
     for cancelInfo in data["cancels"]:
         accountID = int(cancelInfo["accountID"])
         orderTokenID = int(cancelInfo["orderTokenID"])
@@ -260,8 +261,13 @@ def createOrderCancellationBlock(state, data):
         cancel.signature = cancelInfo["signature"]
         block.cancels.append(cancel)
 
-    # Operator payment
+    # Operator payments
+    account = state.getAccount(block.operatorAccountID)
+    rootBefore = state._accountsTree._root
+    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
+    for cancel in block.cancels:
+        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, cancel.feeToOperator)
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root

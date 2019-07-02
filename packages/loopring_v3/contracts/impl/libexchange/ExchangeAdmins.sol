@@ -218,7 +218,7 @@ library ExchangeAdmins
         // (i.e. all balances 0 and all other state reset to default values)
         require(S.isInInitialState(), "MERKLE_ROOT_NOT_REVERTED");
 
-        // Another requirement is that te last block needs to be committed
+        // Another requirement is that the last block needs to be committed
         // longer than MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS so the exchange can still be fined for not
         // automatically distributing the withdrawals (the fine is paid from the stake)
         require(

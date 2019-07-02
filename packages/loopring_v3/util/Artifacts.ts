@@ -16,6 +16,7 @@ export class Artifacts {
   public Operator: any;
   public AccountContract: any;
   public LzDecompressor: any;
+  public TransferContract: any;
   constructor(artifacts: any) {
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.Exchange = artifacts.require("impl/Exchange");
@@ -33,5 +34,6 @@ export class Artifacts {
     this.Operator = artifacts.require("test/Operator");
     this.AccountContract = artifacts.require("test/AccountContract");
     this.LzDecompressor = artifacts.require("test/LzDecompressor");
+    this.TransferContract = artifacts.require("test/TransferContract");
   }
 }

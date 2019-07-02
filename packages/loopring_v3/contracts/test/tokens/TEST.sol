@@ -35,6 +35,8 @@ contract TEST is DummyToken {
 
     address public exchangeAddress = address(0);
 
+    bytes public reentrancyCalldata;
+
     uint[16] private dummyStorageVariables;
 
     constructor() DummyToken(
@@ -53,7 +55,7 @@ contract TEST is DummyToken {
         public
         returns (bool)
     {
-        require(_to != address(0), "ZERO_ADDRESS");
+        // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[msg.sender], "INVALID_VALUE");
         // SafeMath.sub will throw if there is not enough balance.
         balances[msg.sender] = balances[msg.sender].sub(_value);
@@ -70,7 +72,7 @@ contract TEST is DummyToken {
         public
         returns (bool)
     {
-        require(_to != address(0), "ZERO_ADDRESS");
+        // require(_to != address(0), "ZERO_ADDRESS");
         require(_value <= balances[_from], "INVALID_VALUE");
         require(_value <= allowed[_from][msg.sender], "INVALID_VALUE");
         balances[_from] = balances[_from].sub(_value);
@@ -87,27 +89,26 @@ contract TEST is DummyToken {
         if (testCase == TEST_NOTHING) {
             return true;
         } else if (testCase == TEST_REENTRANCY) {
-            // Call submitRings without ever throwing
-            /*bytes memory callData = abi.encodeWithSelector(
-                IExchange(exchangeAddress).submitRings.selector,
-                submitRingsData
-            );
-            (bool success, ) = exchangeAddress.call(callData);
+            // Call the exchange function without ever throwing
+            (bool success, ) = exchangeAddress.call(reentrancyCalldata);
             success; // to disable unused local variable warning
 
             // Copy the 100 bytes containing the revert message
             bytes memory returnData = new bytes(100);
             assembly {
-                returndatacopy(add(returnData, 32), 0, 100)
+                if eq(returndatasize(), 100) {
+                    returndatacopy(add(returnData, 32), 0, 100)
+                }
             }
 
-            // Revert reason should match REENTRY
+            // Revert reason should match REENTRANCY
             bytes memory reentryMessageData = abi.encodeWithSelector(
                 bytes4(keccak256("Error(string)")),
-                REENTRY
+                "REENTRANCY"
             );
+
             // Throw here when the results are as expected. This way we know the test was correctly executed.
-            require(keccak256(reentryMessageData) != keccak256(returnData), "REVERT_MESSAGE_OK");*/
+            require(keccak256(reentryMessageData) != keccak256(returnData), "REVERT_MESSAGE_OK");
             return true;
         } else if (testCase == TEST_REQUIRE_FAIL) {
             require(false, "REQUIRE_FAILED");
@@ -137,5 +138,21 @@ contract TEST is DummyToken {
         external
     {
         testCase = _testCase;
+    }
+
+    function setExchangeAddress(
+        address _exchangeAddress
+        )
+        external
+    {
+        exchangeAddress = _exchangeAddress;
+    }
+
+    function setCalldata(
+        bytes calldata _reentrancyCalldata
+        )
+        external
+    {
+        reentrancyCalldata = _reentrancyCalldata;
     }
 }

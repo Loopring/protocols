@@ -32,11 +32,13 @@ import "./ExchangeDeployer.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3, Claimable
 {
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
 
     // -- Constructor --
     constructor(
+        address payable _pfm,
         address _lrcAddress,
         address _wethAddress,
         address _blockVerifierAddress,
@@ -52,9 +54,11 @@ contract LoopringV3 is ILoopringV3, Claimable
         )
         public
     {
+        require(address(0) != _pfm, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
+        pfm = _pfm;
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -121,6 +125,18 @@ contract LoopringV3 is ILoopringV3, Claimable
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
         emit SettingsUpdated(now);
+    }
+
+    function setProtocolFeeManager(
+        address payable _pfm
+        )
+        external
+        onlyOwner
+    {
+        require(_pfm != address(0), "ZERO_ADDRESS");
+        pfm = _pfm;
+
+        emit ProtocolFeeManagerUpdated(pfm);
     }
 
     function createExchange(
@@ -341,16 +357,6 @@ contract LoopringV3 is ILoopringV3, Claimable
         emit ProtocolFeeStakeWithdrawn(exchangeId, amount);
     }
 
-    function withdrawProtocolFees(
-        uint exchangeId,
-        address tokenAddress
-        )
-        external
-        payable
-    {
-        IExchange(exchanges[exchangeId - 1].exchangeAddress).withdraw.value(msg.value)(tokenAddress, ~uint96(0));
-    }
-
     function getProtocolFeeValues(
         uint exchangeId,
         bool onchainDataAvailability
@@ -379,27 +385,6 @@ contract LoopringV3 is ILoopringV3, Claimable
         makerFeeBips = calculateProtocolFee(
             minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
         );
-    }
-
-    function withdrawTheBurn(
-        address token,
-        address payable recipient
-        )
-        external
-        onlyOwner
-    {
-        if (token == address(0)) {
-            // ETH
-            uint balance = address(this).balance;
-            recipient.transfer(balance);
-        } else {
-            // ERC20 token
-            uint balance = ERC20(token).balanceOf(address(this));
-            if (token == lrcAddress) {
-                balance = balance.sub(totalStake);
-            }
-            require(token.safeTransfer(recipient, balance), "TRANSFER_FAILURE");
-        }
     }
 
     function()

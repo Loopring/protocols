@@ -73,6 +73,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         deployer.deploy(
           LoopringV3,
+          accounts[0],
           LRCToken.address,
           WETHToken.address,
           BlockVerifier.address,

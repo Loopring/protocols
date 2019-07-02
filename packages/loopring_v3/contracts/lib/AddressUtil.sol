@@ -17,17 +17,61 @@
 pragma solidity 0.5.7;
 
 
-/// @title Utility Functions for bytes
+/// @title Utility Functions for addresses
 /// @author Daniel Wang - <daniel@loopring.org>
+/// @author Brecht Devos - <brecht@loopring.org>
 library AddressUtil
 {
-    function isContract(address _addr)
-        public
+    using AddressUtil for *;
+
+    function isContract(
+        address addr
+        )
+        internal
         view
         returns (bool)
     {
         uint32 size;
-        assembly { size := extcodesize(_addr) }
+        assembly { size := extcodesize(addr) }
         return (size > 0);
+    }
+
+    function toPayable(
+        address addr
+        )
+        internal
+        pure
+        returns (address payable)
+    {
+        return address(uint160(addr));
+    }
+
+    // Works like address.send but with a customizable gas limit
+    function sendETH(
+        address to,
+        uint    amount,
+        uint    gasLimit
+        )
+        internal
+        returns (bool success)
+    {
+        if (amount == 0) {
+            return true;
+        }
+        address payable recipient = to.toPayable();
+        (success, ) = recipient.call.value(amount).gas(gasLimit)("");
+    }
+
+    // Works like address.transfer but with a customizable gas limit
+    function transferETH(
+        address to,
+        uint    amount,
+        uint    gasLimit
+        )
+        internal
+        returns (bool success)
+    {
+        success = to.sendETH(amount, gasLimit);
+        require(success, "TRANSFER_FAILURE");
     }
 }

@@ -172,13 +172,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew) = state.createOrUpdateAccount(
+        return updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
-            true
+            address(0),
+            0
         );
     }
 
@@ -226,8 +228,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address tokenAddress
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -257,8 +259,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address tokenAddress
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -267,8 +269,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address tokenAddress
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -286,8 +288,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address recipient
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (uint)
     {
         return state.withdrawExchangeStake(recipient);
@@ -298,8 +300,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint amount
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
@@ -374,8 +376,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         bytes calldata offchainData
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
     {
         // Decompress the data here so we can extract the data directly from calldata
         bytes4 selector = IDecompressor(0x0).decompress.selector;
@@ -433,8 +435,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint256[8] calldata proof
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
     {
         state.verifyBlock(blockIdx, proof);
     }
@@ -443,8 +445,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint blockIdx
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
     {
         state.revertBlock(blockIdx);
     }
@@ -491,25 +493,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         returns (
             uint24 accountID,
-            bool   isAccountNew
+            bool   isAccountNew,
+            bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew) = state.createOrUpdateAccount(
+        return updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
-            false
-        );
-        uint additionalFeeETH;
-        if (isAccountNew) {
-            additionalFeeETH = state.accountCreationFeeETH;
-        } else {
-            additionalFeeETH = state.accountUpdateFeeETH;
-        }
-        state.depositTo(
-            msg.sender,
             token,
-            amount,
-            additionalFeeETH
+            amount
         );
     }
 
@@ -578,7 +570,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         (accumulatedHash, accumulatedFee, timestamp) = state.getWithdrawRequest(index);
     }
 
-    // Set the large value for amount to withdraw the complete balance
     function withdraw(
         address token,
         uint96 amount
@@ -587,7 +578,19 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         payable
         nonReentrant
     {
-        state.withdraw(token, amount);
+        uint24 accountID = state.getAccountID(msg.sender);
+        state.withdraw(accountID, token, amount);
+    }
+
+    function withdrawProtocolFees(
+        address token
+        )
+        external
+        payable
+        nonReentrant
+    {
+        // Always request the maximum amount so the complete balance is withdrawn
+        state.withdraw(0, token, ~uint96(0));
     }
 
     function withdrawFromMerkleTree(
@@ -674,8 +677,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address payable feeRecipient
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx, feeRecipient);
@@ -696,8 +699,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address payable _operator
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (address payable oldOperator)
     {
         oldOperator = state.setOperator(_operator);
@@ -710,8 +713,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint _withdrawalFeeETH
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.setFees(
             _accountCreationFeeETH,
@@ -741,16 +744,16 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint durationMinutes
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.startOrContinueMaintenanceMode(durationMinutes);
     }
 
     function stopMaintenanceMode()
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.stopMaintenanceMode();
     }
@@ -791,8 +794,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     function shutdown()
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
@@ -830,5 +833,37 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
+    }
+
+    // == Internal Functions ==
+    function updateAccountAndDepositInternal(
+        uint    pubKeyX,
+        uint    pubKeyY,
+        address token,
+        uint96  amount
+        )
+        internal
+        returns (
+            uint24 accountID,
+            bool   isAccountNew,
+            bool   isAccountUpdated
+        )
+    {
+        (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
+            pubKeyX,
+            pubKeyY
+        );
+        uint additionalFeeETH = 0;
+        if (isAccountNew) {
+            additionalFeeETH = state.accountCreationFeeETH;
+        } else if (isAccountUpdated) {
+            additionalFeeETH = state.accountUpdateFeeETH;
+        }
+        state.depositTo(
+            msg.sender,
+            token,
+            amount,
+            additionalFeeETH
+        );
     }
 }

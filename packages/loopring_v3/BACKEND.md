@@ -232,16 +232,11 @@ Order
     validUntil: number,
     maxFeeBips: number,
     buy: number,
-    
+
     feeBips: number,
     rebateBips: number,
 
     signature: Signature,
-
-    # The data in the trade history of tokenS before they are updated
-    tradeHistoryFilled: string,
-    tradeHistoryCancelled: number,
-    tradeHistoryOrderID: number,
 }
 
 class Ring
@@ -249,13 +244,12 @@ class Ring
     orderA: Order,
     orderB: Order,
 
-    minerAccountID: number,
-    feeRecipientAccountID: number,
+    ringMatcherAccountID: number,
     tokenID: number,
     fee: string,
     nonce: number,
 
-    minerSignature: Signature,
+    ringMatcherSignature: Signature,
     dualAuthASignature: Signature,
     dualAuthBSignature: Signature,
 }
@@ -293,7 +287,7 @@ RingSettlement
     balanceUpdateB_M: BalanceUpdate,
     balanceUpdateO_M: BalanceUpdate,
     accountUpdate_M: AccountUpdate,
-    
+
     # Balance update data for protocol fee payments
     balanceUpdateA_P: BalanceUpdate,
     balanceUpdateB_P: BalanceUpdate,
@@ -311,11 +305,11 @@ RingSettlementBlock
 
     # Timestamp used in this block
     timestamp: number,
-    
+
     # Protocol fees used in this block
     protocolTakerFeeBips: number;
     protocolMakerFeeBips: number;
-    
+
     # Protocol fee account update data (account 0)
     accountUpdate_P: AccountUpdate,
 
@@ -594,8 +588,7 @@ Order
 
 Ring
 {
-    minerAccountID: number,
-    feeRecipientAccountID: number,
+    ringMatcherAccountID: number,
     tokenID: number,
     fee: string,
     orderA: Order,

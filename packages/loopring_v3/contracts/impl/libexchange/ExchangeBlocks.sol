@@ -94,6 +94,14 @@ library ExchangeBlocks
             "BLOCK_VERIFIED_ALREADY"
         );
 
+        // Check if the proof for this block is too early
+        // We limit the gap between the last finalized block and the last verified block to limit
+        // the number of blocks that can become finalized when a single block is verified
+        require(
+            blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
+            "PROOF_TOO_EARLY"
+        );
+
         // Check if we still accept a proof for this block
         require(
             now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
@@ -120,6 +128,7 @@ library ExchangeBlocks
             emit BlockFinalized(blockIdx);
             // The next blocks could become finalized as well so check this now
             // The number of blocks after the specified block index is limited
+            // by MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
             // so we don't have to worry about running out of gas in this loop
             uint nextBlockIdx = blockIdx + 1;
             while (nextBlockIdx < S.blocks.length &&
@@ -344,6 +353,8 @@ library ExchangeBlocks
         } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             // Do nothing
         } else if (blockType == ExchangeData.BlockType.ORDER_CANCELLATION) {
+            // Do nothing
+        } else if (blockType == ExchangeData.BlockType.TRANSFER) {
             // Do nothing
         } else {
             revert("UNSUPPORTED_BLOCK_TYPE");

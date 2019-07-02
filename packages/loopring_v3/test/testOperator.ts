@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, Deposit, Operator, OrderInfo, RingInfo, Wallet } from "./types";
+import { Block, Deposit } from "./types";
 
 contract("Operator", (accounts: string[]) => {
 
@@ -10,7 +10,7 @@ contract("Operator", (accounts: string[]) => {
   let operator: any;
 
   const numSubOperators = 4;
-  let subOperators: Operator[] = [];
+  let subOperators: number[] = [];
 
   interface TestDepositBlock {
     block: Block;
@@ -62,7 +62,7 @@ contract("Operator", (accounts: string[]) => {
         "LRC",
         new BN(0),
         0,
-        exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
+        exchangeTestUtil.wallets[exchangeId][0],
       );
     }
     await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);
@@ -93,6 +93,7 @@ contract("Operator", (accounts: string[]) => {
       {
         // Commit a deposit block
         const activeOperator = await getActiveOperator();
+        const operatorOwner = exchangeTestUtil.getAccount(activeOperator).owner;
         await exchangeTestUtil.setActiveOperator(activeOperator);
         const blockA = await commitDepositBlock();
         await commitWithdrawalBlock(blockA.deposits);
@@ -100,7 +101,7 @@ contract("Operator", (accounts: string[]) => {
         await exchangeTestUtil.verifyPendingBlocks(exchangeId);
         // Distribute the withdrawals on time
         await operator.distributeWithdrawals(
-          blockA.block.blockIdx + 1, blockA.deposits.length, {from: activeOperator.owner},
+          blockA.block.blockIdx + 1, blockA.deposits.length, {from: operatorOwner},
         );
       }
 
@@ -111,6 +112,7 @@ contract("Operator", (accounts: string[]) => {
       {
         // Commit another deposit block
         const activeOperator = await getActiveOperator();
+        const operatorOwner = exchangeTestUtil.getAccount(activeOperator).owner;
         await exchangeTestUtil.setActiveOperator(activeOperator);
         const blockB = await commitDepositBlock();
         await commitWithdrawalBlock(blockB.deposits);
@@ -120,7 +122,7 @@ contract("Operator", (accounts: string[]) => {
         await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
         // This call can also happen directly on the Exchange contract
         await operator.distributeWithdrawals(
-          blockB.block.blockIdx + 1, blockB.deposits.length, {from: activeOperator.owner},
+          blockB.block.blockIdx + 1, blockB.deposits.length, {from: operatorOwner},
         );
       }
     });
@@ -128,12 +130,13 @@ contract("Operator", (accounts: string[]) => {
     it("Withdraw block fee", async () => {
       // Commit a deposit block
       const activeOperator = await getActiveOperator();
+      const operatorOwner = exchangeTestUtil.getAccount(activeOperator).owner;
       await exchangeTestUtil.setActiveOperator(activeOperator);
       const blockA = await commitDepositBlock();
       // Verify all blocks
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
       // Withdraw the block fee
-      await operator.withdrawBlockFee(blockA.block.blockIdx, {from: activeOperator.owner});
+      await operator.withdrawBlockFee(blockA.block.blockIdx, {from: operatorOwner});
     });
 
     it("Revert", async () => {

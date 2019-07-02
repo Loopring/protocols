@@ -30,6 +30,7 @@ import "./ExchangeTokens.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeDeposits
 {
+    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
     using ExchangeAccounts  for ExchangeData.State;
@@ -100,18 +101,19 @@ library ExchangeDeposits
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
-        ExchangeData.Token storage token = S.tokens[tokenID];
-        require(!token.depositDisabled, "TOKEN_DEPOSIT_DISABLED");
+        require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
 
+        // Total fee to be paid by the user
+        uint feeETH = additionalFeeETH.add(S.depositFeeETH);
+
         transferDeposit(
-            S,
             account.owner,
             tokenAddress,
             amount,
-            additionalFeeETH
+            feeETH
         );
 
         // Add the request to the deposit chain
@@ -130,7 +132,7 @@ library ExchangeDeposits
                     amount
                 )
             ),
-            prevRequest.accumulatedFee.add(S.depositFeeETH),
+            prevRequest.accumulatedFee.add(feeETH),
             uint32(now)
         );
         S.depositChain.push(request);
@@ -154,25 +156,21 @@ library ExchangeDeposits
     }
 
     function transferDeposit(
-        ExchangeData.State storage S,
         address accountOwner,
         address tokenAddress,
         uint    amount,
-        uint    additionalFeeETH
+        uint    feeETH
         )
         private
     {
-        uint totalRequiredETH = additionalFeeETH.add(S.depositFeeETH);
+        uint totalRequiredETH = feeETH;
         if (tokenAddress == address(0)) {
             totalRequiredETH = totalRequiredETH.add(amount);
         }
 
         require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
         uint feeSurplus = msg.value.sub(totalRequiredETH);
-
-        if (feeSurplus > 0) {
-            msg.sender.transfer(feeSurplus);
-        }
+        msg.sender.transferETH(feeSurplus, gasleft());
 
         // Transfer the tokens from the owner into this contract
         if (amount > 0 && tokenAddress != address(0)) {

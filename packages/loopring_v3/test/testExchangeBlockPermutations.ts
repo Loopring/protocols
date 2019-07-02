@@ -60,7 +60,7 @@ contract("Exchange", (accounts: string[]) => {
       "LRC",
       new BN(0),
       0,
-      exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
+      exchangeTestUtil.wallets[exchangeId][0],
     );
   };
 
@@ -70,7 +70,7 @@ contract("Exchange", (accounts: string[]) => {
       depositInfo.accountID,
       exchangeTestUtil.getRandomInt(exchangeTestUtil.MAX_NUM_TOKENS),
       exchangeTestUtil.getRandomInt(2 ** constants.TREE_DEPTH_TRADING_HISTORY),
-      exchangeTestUtil.wallets[exchangeId][0].walletAccountID,
+      exchangeTestUtil.wallets[exchangeId][0],
       1,
       new BN(0),
       0,
