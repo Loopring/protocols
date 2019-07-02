@@ -18,8 +18,12 @@ pragma solidity 0.5.7;
 
 import "../iface/IExchange.sol";
 
+import "../lib/MathUint.sol";
+
 
 contract AccountContract {
+
+    using MathUint          for uint;
 
     IExchange exchange;
 
@@ -47,7 +51,16 @@ contract AccountContract {
             bool   isAccountUpdated
         )
     {
-        return exchange.updateAccountAndDeposit.value(msg.value)(pubKeyX, pubKeyY, token, amount);
+        // Send surplus to msg.sender
+        uint balanceBefore = address(this).balance.sub(msg.value);
+        (accountID, isAccountNew, isAccountUpdated) = exchange.updateAccountAndDeposit.value(msg.value)(
+            pubKeyX,
+            pubKeyY,
+            token,
+            amount
+        );
+        uint balanceAfter = address(this).balance;
+        msg.sender.transfer(balanceAfter.sub(balanceBefore));
     }
 
     function withdraw(
@@ -57,7 +70,11 @@ contract AccountContract {
         external
         payable
     {
+        // Send surplus to msg.sender
+        uint balanceBefore = address(this).balance.sub(msg.value);
         exchange.withdraw.value(msg.value)(token, amount);
+        uint balanceAfter = address(this).balance;
+        msg.sender.transfer(balanceAfter.sub(balanceBefore));
     }
 
     function()
