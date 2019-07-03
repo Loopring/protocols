@@ -39,16 +39,16 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawBlockFeeChecked = async (blockIdx: number, operator: string, totalBlockFee: BN,
                                          expectedBlockFee: BN, allowedDelta: BN = new BN(0)) => {
     const token = "ETH";
-    const pfm = await loopring.pfm();
+    const protocolFeeVault = await loopring.protocolFeeVault();
     const balanceOperatorBefore = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(pfm, token);
+    const balanceBurnedBefore = await exchangeTestUtil.getOnchainBalance(protocolFeeVault, token);
 
     await exchange.withdrawBlockFee(blockIdx, operator, {from: operator, gasPrice: 0});
 
     const balanceOperatorAfter = await exchangeTestUtil.getOnchainBalance(operator, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
-    const balanceBurnedAfter = await exchangeTestUtil.getOnchainBalance(pfm, token);
+    const balanceBurnedAfter = await exchangeTestUtil.getOnchainBalance(protocolFeeVault, token);
 
     const expectedBurned = totalBlockFee.sub(expectedBlockFee);
 

@@ -380,7 +380,7 @@ library ExchangeWithdrawals
         requestedBlock.blockFeeWithdrawn = true;
 
         // Burn part of the fee by sending it to the protocol fee manager
-        S.loopring.pfm().transferETH(feeAmountToBurn, gasleft());
+        S.loopring.protocolFeeVault().transferETH(feeAmountToBurn, gasleft());
         // Transfer the fee to the operator
         feeRecipient.transferETH(feeAmountToOperator, gasleft());
 
@@ -472,7 +472,7 @@ library ExchangeWithdrawals
         // If we're withdrawing from the protocol fee account sent the tokens
         // directly to the protocol fee manager
         if (accountID == 0) {
-            to = S.loopring.pfm();
+            to = S.loopring.protocolFeeVault();
         }
 
         address token = S.getTokenAddress(tokenID);

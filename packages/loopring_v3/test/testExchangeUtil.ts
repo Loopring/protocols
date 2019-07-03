@@ -54,7 +54,7 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
-  public pfmAddress: string;
+  public protocolFeeVaultAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -148,8 +148,8 @@ export class ExchangeTestUtil {
       {from: this.testContext.deployer},
     );
 
-    this.pfmAddress = this.testContext.deployer;
-    await this.loopringV3.setProtocolFeeManager(this.pfmAddress);
+    this.protocolFeeVaultAddress = this.testContext.deployer;
+    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress);
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
