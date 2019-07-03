@@ -141,7 +141,7 @@ contract("Exchange", (accounts: string[]) => {
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
                                      accountID: number, token: string,
                                      owner: string, expectedAmount: BN) => {
-    const recipient = (accountID === 0) ? await loopring.pfm() : owner;
+    const recipient = (accountID === 0) ? await loopring.protocolFeeVault() : owner;
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
 

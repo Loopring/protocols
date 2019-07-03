@@ -31,7 +31,7 @@ contract("Exchange", (accounts: string[]) => {
 
   const withdrawFromMerkleTreeChecked = async (owner: string, token: string,
                                                expectedAmount: BN) => {
-    const recipient = (owner === constants.zeroAddress) ? await loopring.pfm() : owner;
+    const recipient = (owner === constants.zeroAddress) ? await loopring.protocolFeeVault() : owner;
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     await exchangeTestUtil.withdrawFromMerkleTree(owner, token);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(recipient, token);
