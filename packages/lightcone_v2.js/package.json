@@ -6,11 +6,11 @@
     "test": "test"
   },
   "scripts": {
-    "build:proto": "rimraf proto_gen && mkdir proto_gen && node lib/grpc/proto",
+    "build:proto": "rimraf src/proto_gen && mkdir src/proto_gen && node src/lib/grpc/proto",
     "build": "npm run build:proto && rimraf dist && tsc",
     "lint": "tslint --project tsconfig.json ./src/**/*.ts",
-    "client": "node dist/src/grpc/grpcClient.js",
-    "test": "mocha"
+    "client": "node dist/grpc/grpcClient.js",
+    "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
   },
   "keywords": [
     "ethereum",
@@ -21,10 +21,11 @@
     "type": "git",
     "url": "git@github.com:Loopring/loopr-app-sdk.git"
   },
-  "main": "index.js",
+  "main": "dist/index.js",
   "license": "ISC",
   "dependencies": {
     "async-validator": "1.8.2",
+    "bignumber.js": "^9.0.0",
     "bip39": "2.5.0",
     "blake-hash": "^1.1.0",
     "bn.js": "^4.11.8",
@@ -32,23 +33,27 @@
     "ethereumjs-tx": "1.3.3",
     "ethereumjs-util": "5.2.0",
     "ethereumjs-wallet": "0.6.0",
-    "grpc": "^1.17.0",
-    "google-protobuf": "^3.6.1",
+    "google-protobuf": "^3.9.0-rc.1",
+    "grpc": "^1.21.1",
     "hdkey": "0.7.1",
     "nodeunit": "^0.11.3",
     "snarkjs": "0.1.11",
     "socket.io-client": "2.0.4",
-    "web3": "^1.0.0-beta.36"
+    "web3": "^1.0.0-beta.36",
+    "whatwg-fetch": "^3.0.0"
   },
   "devDependencies": {
+    "@types/chai": "^4.1.7",
     "@types/google-protobuf": "^3.2.7",
-    "ts-node": "^7.0.1",
+    "@types/mocha": "^5.2.7",
+    "@types/pluralize": "0.0.29",
     "grpc-tools": "^1.6.6",
     "grpc_tools_node_protoc_ts": "^2.5.1",
     "mocha": "^5.2.0",
     "protobufjs": "^6.8.8",
     "rimraf": "^2.6.2",
     "shelljs": "^0.8.3",
+    "ts-node": "^7.0.1",
     "tslint": "^5.12.0",
     "tslint-microsoft-contrib": "^6.2.0",
     "types-bn": "0.0.1",
