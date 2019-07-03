@@ -127,14 +127,14 @@ contract("Loopring", (accounts: string[]) => {
 
   describe("Owner", () => {
     it("should be able to set the protocol fee manager", async () => {
-      const pfmBefore = await loopring.pfm();
-      const newPfm = exchangeTestUtil.testContext.orderOwners[2];
-      assert(newPfm !== pfmBefore);
+      const protocolFeeVaultBefore = await loopring.protocolFeeVault();
+      const newprotocolFeeVault = exchangeTestUtil.testContext.orderOwners[2];
+      assert(newprotocolFeeVault !== protocolFeeVaultBefore);
 
-      await loopring.setProtocolFeeManager(newPfm);
+      await loopring.setProtocolFeeVault(newprotocolFeeVault);
 
-      const pfmAfter = await loopring.pfm();
-      assert(newPfm === pfmAfter, "new pfm should be set");
+      const protocolFeeVaultAfter = await loopring.protocolFeeVault();
+      assert(newprotocolFeeVault === protocolFeeVaultAfter, "new protocolFeeVault should be set");
     });
   });
 
@@ -191,9 +191,9 @@ contract("Loopring", (accounts: string[]) => {
     });
 
     it("should not be able to set the protocol fee manager", async () => {
-      const newPfm = exchangeTestUtil.testContext.orderOwners[3];
+      const newprotocolFeeVault = exchangeTestUtil.testContext.orderOwners[3];
       await expectThrow(
-        loopring.setProtocolFeeManager(newPfm, {from: exchangeTestUtil.exchangeOperator}),
+        loopring.setProtocolFeeVault(newprotocolFeeVault, {from: exchangeTestUtil.exchangeOperator}),
         "UNAUTHORIZED",
       );
     });

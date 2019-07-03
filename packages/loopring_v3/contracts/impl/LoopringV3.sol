@@ -38,7 +38,7 @@ contract LoopringV3 is ILoopringV3, Claimable
 
     // -- Constructor --
     constructor(
-        address payable _pfm,
+        address payable _protocolFeeVault,
         address _lrcAddress,
         address _wethAddress,
         address _blockVerifierAddress,
@@ -54,11 +54,11 @@ contract LoopringV3 is ILoopringV3, Claimable
         )
         public
     {
-        require(address(0) != _pfm, "ZERO_ADDRESS");
+        require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
-        pfm = _pfm;
+        protocolFeeVault = _protocolFeeVault;
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -127,16 +127,16 @@ contract LoopringV3 is ILoopringV3, Claimable
         emit SettingsUpdated(now);
     }
 
-    function setProtocolFeeManager(
-        address payable _pfm
+    function setProtocolFeeVault(
+        address payable _protocolFeeVault
         )
         external
         onlyOwner
     {
-        require(_pfm != address(0), "ZERO_ADDRESS");
-        pfm = _pfm;
+        require(_protocolFeeVault != address(0), "ZERO_ADDRESS");
+        protocolFeeVault = _protocolFeeVault;
 
-        emit ProtocolFeeManagerUpdated(pfm);
+        emit ProtocolFeeVaultUpdated(protocolFeeVault);
     }
 
     function createExchange(

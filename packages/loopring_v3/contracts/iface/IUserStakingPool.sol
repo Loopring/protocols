@@ -29,7 +29,7 @@ contract IUserStakingPool
     uint public constant AUCTION_DURATION       = 7  days;
 
     address public lrcAddress;
-    address public pfmAddress; // ProtocolFeeManager address
+    address public protocolFeeVaultAddress; // ProtocolFeeVault address
 
     uint    public numAddresses;
 
@@ -37,9 +37,9 @@ contract IUserStakingPool
     event LRCWithdrawn    (address user,  uint amount);
     event LRCRewarded     (address user,  uint amount);
 
-    /// @dev Set a new IProtocolFeeManager address, only callable by the owner.
-    /// @param _pfmAddress The new IProtocolFeeManager address.
-    function setProtocolFeeManager(address _pfmAddress)
+    /// @dev Set a new IProtocolFeeVault address, only callable by the owner.
+    /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.
+    function setProtocolFeeVault(address _protocolFeeVaultAddress)
         external
         ;
 

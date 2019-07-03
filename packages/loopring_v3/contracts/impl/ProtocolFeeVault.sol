@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.7;
 
-import "../iface/IProtocolFeeManager.sol";
+import "../iface/IProtocolFeeVault.sol";
 
 import "..//lib/Claimable.sol";
 import "../lib/BurnableERC20.sol";
@@ -68,7 +68,7 @@ contract IAuction {
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ProtocolFeeManager is IProtocolFeeManager, Claimable
+contract ProtocolFeeVault is IProtocolFeeVault, Claimable
 {
     uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using ERC20SafeTransfer for address;
