@@ -85,6 +85,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
             vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
         ];
         uint256[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
+        // Maybe we should strip the highest bits of the hash so we don't have any overflow (uint256/prime field)
         uint256[1] memory publicInputs = [uint256(publicDataHash)];
 
         return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);

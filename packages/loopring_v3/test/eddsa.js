@@ -32,7 +32,7 @@ function prv2pub(prv) {
 function toBitsBigInt(value, length) {
   const res = new Array(length);
   for (let i = 0; i < length; i++) {
-    res[i] = (value.and(new bigInt("1").shl(i)).isZero()) ? 0 : 1;
+    res[i] = (value.and(bigInt("1").shl(i)).isZero()) ? 0 : 1;
   }
   return res;
 }
