@@ -140,7 +140,9 @@ contract("Exchange", (accounts: string[]) => {
 
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
                                      accountID: number, token: string,
-                                     owner: string, expectedAmount: BN) => {
+                                     owner: string, uExpectedAmount: BN) => {
+    const expectedAmount = roundToFloatValue(uExpectedAmount, constants.Float28Encoding);
+
     const recipient = (accountID === 0) ? await loopring.protocolFeeVault() : owner;
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
@@ -527,7 +529,7 @@ contract("Exchange", (accounts: string[]) => {
         exchangeID, accountID, token, toWithdraw, ownerA,
       );
 
-      // Commit the deposit
+      // Commit the withdrawal
       await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -879,6 +881,49 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, 1,
                             0, ring.orderB.tokenB,
                             constants.zeroAddress, protocolFeeB);
+    });
+
+    it("Deposits totalling the balance more than MAX_AMOUNT should be capped to MAX_AMOUNT", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const amount = constants.MAX_AMOUNT.sub(new BN(97));
+      const token = exchangeTestUtil.getTokenAddress("TEST");
+
+      // Deposit
+      await exchangeTestUtil.deposit(exchangeID, owner,
+                                     keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                     token, amount);
+      // Deposit again. This time the amount will be capped to 2**96
+      await exchangeTestUtil.deposit(exchangeID, owner,
+                                     keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                     token, amount);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+      const accountID = await exchangeTestUtil.getAccountID(owner);
+      const account = (await exchangeTestUtil.loadExchangeState(exchangeID)).accounts[accountID];
+      assert(account.balances[tokenID].balance.eq(constants.MAX_AMOUNT), "Balance should be MAX_AMOUNT");
+
+
+      // Do a withdrawal request
+      const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOnchain(
+        exchangeID, accountID, token, constants.MAX_AMOUNT, owner,
+      );
+
+      // Commit the withdrawal
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, witdrawalRequest.slotIdx,
+                            accountID, token,
+                            owner, constants.MAX_AMOUNT);
     });
 
     it("Distribute withdrawals (by operator)", async () => {

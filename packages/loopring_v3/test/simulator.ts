@@ -56,6 +56,9 @@ export class Simulator {
     const account = newExchangeState.accounts[deposit.accountID];
     account.balances[deposit.tokenID].balance =
       account.balances[deposit.tokenID].balance.add(deposit.amount);
+    if (account.balances[deposit.tokenID].balance.gt(constants.MAX_AMOUNT)) {
+      account.balances[deposit.tokenID].balance = constants.MAX_AMOUNT;
+    }
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
 
