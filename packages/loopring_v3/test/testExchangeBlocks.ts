@@ -12,30 +12,6 @@ contract("Exchange", (accounts: string[]) => {
   let exchange: any;
   let loopring: any;
 
-  const revertBlockChecked = async (block: Block) => {
-    const LRC = await exchangeTestUtil.getTokenContract("LRC");
-
-    const revertFineLRC = await loopring.revertFineLRC();
-
-    const blockIdxBefore = (await exchange.getBlockHeight()).toNumber();
-    const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(loopring.address, "LRC");
-    const lrcSupplyBefore = await LRC.totalSupply();
-
-    await exchangeTestUtil.revertBlock(block.blockIdx);
-
-    const blockIdxAfter = (await exchange.getBlockHeight()).toNumber();
-    const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(loopring.address, "LRC");
-    const lrcSupplyAfter = await LRC.totalSupply();
-
-    assert(blockIdxBefore > blockIdxAfter, "blockIdx should have decreased");
-    assert.equal(blockIdxAfter, block.blockIdx - 1, "State should have been reverted to the specified block");
-
-    assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(revertFineLRC)),
-           "LRC balance of exchange needs to be reduced by revertFineLRC");
-    assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(revertFineLRC)),
-           "LRC supply needs to be reduced by revertFineLRC");
-  };
-
   const withdrawBlockFeeChecked = async (blockIdx: number, operator: string, totalBlockFee: BN,
                                          expectedBlockFee: BN, allowedDelta: BN = new BN(0)) => {
     const token = "ETH";
@@ -605,7 +581,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1);
 
           // Revert the block again, now correctly
-          await revertBlockChecked(blocksA[0]);
+          await exchangeTestUtil.revertBlock(blocksA[0].blockIdx);
 
           // Try to commit a block without adding to the stake
           await expectThrow(

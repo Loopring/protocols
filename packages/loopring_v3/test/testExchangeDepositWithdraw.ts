@@ -459,6 +459,33 @@ contract("Exchange", (accounts: string[]) => {
       await depositChecked(accountID, token, amount, owner, depositFee);
     });
 
+    it("Number of open deposits needs to be limited", async () => {
+      await createExchange(false);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      exchangeTestUtil.autoCommit = false;
+
+      // Do all deposits allowed
+      const maxDeposists = exchangeTestUtil.MAX_OPEN_DEPOSIT_REQUESTS;
+      for (let i = 0; i < maxDeposists; i++) {
+        await exchangeTestUtil.doRandomDeposit(undefined, false);
+      }
+
+      // Do another one
+      await expectThrow(
+        exchangeTestUtil.doRandomDeposit(undefined, false),
+        "TOO_MANY_REQUESTS_OPEN",
+      );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Do another one
+      await exchangeTestUtil.doRandomDeposit(undefined, false);
+
+      exchangeTestUtil.autoCommit = true;
+    });
+
     it("Onchain withdrawal request", async () => {
       await createExchange();
 

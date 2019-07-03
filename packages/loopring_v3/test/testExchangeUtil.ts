@@ -17,7 +17,7 @@ import { toFloat } from "./float";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
-import { Account, AccountLeaf, Balance, Block, BlockType, Cancel, CancelBlock,
+import { Account, AccountLeaf, Balance, Block, BlockState, BlockType, Cancel, CancelBlock,
          Deposit, DepositBlock, DepositInfo, DetailedTokenTransfer, ExchangeState, KeyPair,
          OrderInfo, RingBlock, RingInfo, TradeHistory, Withdrawal,
          WithdrawalRequest, WithdrawBlock } from "./types";
@@ -87,6 +87,8 @@ export class ExchangeTestUtil {
   public FEE_BLOCK_FINE_MAX_DURATION: number;
   public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
   public MAX_NUM_TOKENS: number;
+  public MAX_OPEN_DEPOSIT_REQUESTS: number;
+  public MAX_OPEN_WITHDRAWAL_REQUESTS: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
@@ -100,6 +102,8 @@ export class ExchangeTestUtil {
 
   public onchainDataAvailability = true;
   public compressionType = CompressionType.LZ;
+
+  public autoCommit = true;
 
   public commitWrongPublicDataOnce = false;
 
@@ -208,6 +212,8 @@ export class ExchangeTestUtil {
     this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
     this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
     this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
+    this.MAX_OPEN_DEPOSIT_REQUESTS = settings.MAX_OPEN_DEPOSIT_REQUESTS.toNumber();
+    this.MAX_OPEN_WITHDRAWAL_REQUESTS = settings.MAX_OPEN_WITHDRAWAL_REQUESTS.toNumber();
   }
 
   public async setupTestState(exchangeID: number) {
@@ -605,7 +611,7 @@ export class ExchangeTestUtil {
     }
 
     let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
-    if (numAvailableSlots === 0) {
+    if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitDeposits(exchangeID);
       numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
@@ -874,11 +880,16 @@ export class ExchangeTestUtil {
       data += "00";
       this.commitWrongPublicDataOnce = false;
     }
+    const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
     logDebug("[EVM]PublicData: " + data);
+    logDebug("[EVM]PublicDataHash: " + publicDataHash);
+
     const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
     // Make sure the keys are generated
     await this.generateKeys(filename);
+
+    const blockHeightBefore = await this.exchange.getBlockHeight();
 
     const blockVersion = 0;
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -892,7 +903,24 @@ export class ExchangeTestUtil {
     );
     logInfo("\x1b[46m%s\x1b[0m", "[commitBlock] Gas used: " + tx.receipt.gasUsed);
 
+    const blockHeightAfter = await this.exchange.getBlockHeight();
+    assert(blockHeightAfter.eq(blockHeightBefore.add(new BN(1))), "block height should be incremented by 1");
+
+    // Check the BlockCommitted event
+    const eventArr: any = await this.getEventsFromContract(this.exchange, "BlockCommitted", web3.eth.blockNumber);
+    const items = eventArr.map((eventObj: any) => {
+      return {blockIdx: eventObj.args.blockIdx, publicDataHash: eventObj.args.publicDataHash};
+    });
+    assert(items.length === 1, "a single BlockCommitted needs to be emited");
+    assert(blockHeightAfter.eq(items[0].blockIdx), "block index should be equal to block height");
+    assert.equal(items[0].publicDataHash.toString("hex"), publicDataHash, "public data hash needs to match");
+
     const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
+
+    // Check the block data
+    const blockData = await this.exchange.getBlock(blockIdx);
+    assert(blockData.blockState.toNumber() === BlockState.COMMITTED, "block state needs to be COMMITTED");
+
     const block: Block = {
       blockIdx,
       filename,
@@ -959,6 +987,10 @@ export class ExchangeTestUtil {
     // console.log(proof);
     // console.log(this.flattenProof(proof));
 
+    const numBlocksFinalizedBefore = await this.exchange.getNumBlocksFinalized();
+    const blockDataBefore = await this.exchange.getBlock(blockIdx);
+    assert(blockDataBefore.blockState.toNumber() === BlockState.COMMITTED, "block state before needs to be COMMITTED");
+
     const operatorContract = this.operator ? this.operator : this.exchange;
     const tx = await operatorContract.verifyBlock(
       web3.utils.toBN(blockIdx),
@@ -966,6 +998,46 @@ export class ExchangeTestUtil {
       {from: this.exchangeOperator},
     );
     logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+
+    // Check the BlockVerified event
+    {
+      const eventArr: any = await this.getEventsFromContract(this.exchange, "BlockVerified", web3.eth.blockNumber);
+      const items = eventArr.map((eventObj: any) => {
+        return {blockIdx: eventObj.args.blockIdx};
+      });
+      assert(items.length === 1, "a single BlockVerified needs to be emited");
+      assert(items[0].blockIdx.eq(web3.utils.toBN(blockIdx)), "block index should be equal to block idx sent");
+    }
+
+    // Check the block data
+    const blockDataAfter = await this.exchange.getBlock(blockIdx);
+    assert(blockDataAfter.blockState.toNumber() === BlockState.VERIFIED, "block state after needs to be VERIFIED");
+    const numBlocksFinalizedAfter = await this.exchange.getNumBlocksFinalized();
+    const numBlocks = (await this.exchange.getBlockHeight()).toNumber() + 1;
+
+    // Check numBlocksFinalized
+    let numBlockFinalizedExpected = 0;
+    let idx = numBlocksFinalizedBefore.toNumber() + 1;
+    while(idx < numBlocks &&
+          (await this.exchange.getBlock(idx)).blockState.toNumber() === BlockState.VERIFIED) {
+      numBlockFinalizedExpected++;
+      idx++;
+    }
+    assert.equal(numBlocksFinalizedAfter.toNumber(), numBlocksFinalizedBefore.toNumber() + numBlockFinalizedExpected,
+                 "num blocks finalized different than expected");
+
+    // Check for BlockFinalized events
+    {
+      const eventArr: any = await this.getEventsFromContract(this.exchange, "BlockFinalized", web3.eth.blockNumber);
+      const items = eventArr.map((eventObj: any) => {
+        return {blockIdx: eventObj.args.blockIdx};
+      });
+      assert.equal(items.length, numBlockFinalizedExpected, "different number of blocks finalized than expected");
+      const startIdx = numBlocksFinalizedBefore.toNumber() + 1;
+      for (let i = startIdx; i < startIdx + numBlockFinalizedExpected; i++) {
+        assert.equal(items[i - startIdx].blockIdx.toNumber(), i, "finalized blockIdx needs to match");
+      }
+    }
 
     return proofFilename;
   }
@@ -1786,10 +1858,10 @@ export class ExchangeTestUtil {
       owner: string,
       bSetupTestState: boolean = true,
       onchainDataAvailability: boolean = true,
-      accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      depositFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
-      withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.0001", "ether")),
+      accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
+      accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
+      depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
+      withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     ) {
 
     const operator = this.testContext.operators[0];
@@ -1861,11 +1933,36 @@ export class ExchangeTestUtil {
   }
 
   public async revertBlock(blockIdx: number) {
+    const LRC = await this.getTokenContract("LRC");
+
+    const revertFineLRC = await this.loopringV3.revertFineLRC();
+
+    const numBlocksBefore = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksFinalizedBefore = (await this.exchange.getNumBlocksFinalized()).toNumber();
+    const lrcBalanceBefore = await this.getOnchainBalance(this.loopringV3.address, "LRC");
+    const lrcSupplyBefore = await LRC.totalSupply();
+
     const operatorContract = this.operator ? this.operator : this.exchange;
     await operatorContract.revertBlock(
       web3.utils.toBN(blockIdx),
       {from: this.exchangeOperator},
     );
+
+    const numBlocksAfter = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksFinalizedAfter = (await this.exchange.getNumBlocksFinalized()).toNumber();
+    const lrcBalanceAfter = await this.getOnchainBalance(this.loopringV3.address, "LRC");
+    const lrcSupplyAfter = await LRC.totalSupply();
+
+    assert(numBlocksBefore > numBlocksAfter, "numBlocks should be decreased");
+    assert.equal(numBlocksAfter, numBlocksFinalizedAfter,
+                 "numBlocks should have beed decreased to numBlocksFinalized");
+    assert.equal(numBlocksFinalizedAfter, numBlocksFinalizedBefore, "numBlocksFinalized should remain the same");
+
+    assert(lrcBalanceBefore.eq(lrcBalanceAfter.add(revertFineLRC)),
+           "LRC balance of exchange needs to be reduced by revertFineLRC");
+    assert(lrcSupplyBefore.eq(lrcSupplyAfter.add(revertFineLRC)),
+           "LRC supply needs to be reduced by revertFineLRC");
+
     logInfo("Reverted to block " + (blockIdx - 1));
     this.pendingBlocks[this.exchangeId] = [];
   }
@@ -1996,13 +2093,13 @@ export class ExchangeTestUtil {
     assert(balance.eq(expectedBalance), desc);
   }
 
-  public async doRandomDeposit(ownerIndex?: number) {
+  public async doRandomDeposit(ownerIndex?: number, changeFees: boolean = true) {
     // Change the deposit fee
     const fees = await this.exchange.getFees();
     await this.exchange.setFees(
       fees._accountCreationFeeETH,
       fees._accountUpdateFeeETH,
-      fees._depositFeeETH.mul(new BN(4)),
+      fees._depositFeeETH.mul(new BN(changeFees ? 4 : 1)),
       fees._withdrawalFeeETH,
       {from: this.exchangeOwner},
     );
