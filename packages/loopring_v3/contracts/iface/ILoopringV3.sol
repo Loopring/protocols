@@ -60,8 +60,8 @@ contract ILoopringV3
         uint            time
     );
 
-    event ProtocolFeeManagerUpdated(
-        address payable pfm
+    event ProtocolFeeVaultUpdated(
+        address payable protocolFeeVault
     );
 
     // == Public Variables ==
@@ -95,7 +95,7 @@ contract ILoopringV3
     uint    public targetProtocolTakerFeeStake;
     uint    public targetProtocolMakerFeeStake;
 
-    address payable public pfm;
+    address payable public protocolFeeVault;
 
     // == Public Functions ==
     /// @dev Update the global exchange settings.
@@ -137,8 +137,8 @@ contract ILoopringV3
     ///
     ///      Warning: this new address will be used by existing and
     ///      new Loopring exchanges.
-    function setProtocolFeeManager(
-        address payable _pfm
+    function setProtocolFeeVault(
+        address payable _protocolFeeVault
         )
         external;
 

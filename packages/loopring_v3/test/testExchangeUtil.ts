@@ -55,7 +55,7 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
-  public pfmAddress: string;
+  public protocolFeeVaultAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -153,8 +153,8 @@ export class ExchangeTestUtil {
       {from: this.testContext.deployer},
     );
 
-    this.pfmAddress = this.testContext.deployer;
-    await this.loopringV3.setProtocolFeeManager(this.pfmAddress);
+    this.protocolFeeVaultAddress = this.testContext.deployer;
+    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress);
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
@@ -1972,16 +1972,16 @@ export class ExchangeTestUtil {
   public async withdrawBlockFeeChecked(blockIdx: number, operator: string, totalBlockFee: BN,
                                       expectedBlockFee: BN, allowedDelta: BN = new BN(0)) {
     const token = "ETH";
-    const pfm = await this.loopringV3.pfm();
+    const protocolFeeVault = await this.loopringV3.protocolFeeVault();
     const balanceOperatorBefore = await this.getOnchainBalance(operator, token);
     const balanceContractBefore = await this.getOnchainBalance(this.exchange.address, token);
-    const balanceBurnedBefore = await this.getOnchainBalance(pfm, token);
+    const balanceBurnedBefore = await this.getOnchainBalance(protocolFeeVault, token);
 
     await this.exchange.withdrawBlockFee(blockIdx, operator, {from: operator, gasPrice: 0});
 
     const balanceOperatorAfter = await this.getOnchainBalance(operator, token);
     const balanceContractAfter = await this.getOnchainBalance(this.exchange.address, token);
-    const balanceBurnedAfter = await this.getOnchainBalance(pfm, token);
+    const balanceBurnedAfter = await this.getOnchainBalance(protocolFeeVault, token);
 
     const expectedBurned = totalBlockFee.sub(expectedBlockFee);
 

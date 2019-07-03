@@ -17,7 +17,7 @@
 pragma solidity 0.5.7;
 
 import "../iface/IUserStakingPool.sol";
-import "../iface/IProtocolFeeManager.sol";
+import "../iface/IProtocolFeeVault.sol";
 
 import "..//lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -55,12 +55,12 @@ contract UserStakingPool is IUserStakingPool, Claimable
         lrcAddress = _lrcAddress;
     }
 
-    function setProtocolFeeManager(address _pfmAddress)
+    function setProtocolFeeVault(address _protocolFeeVaultAddress)
         external
         onlyOwner
     {
-        require(_pfmAddress != address(0), "ZERO_ADDRESS");
-        pfmAddress = _pfmAddress;
+        require(_protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
+        protocolFeeVaultAddress = _protocolFeeVaultAddress;
     }
 
     function getTotalStaking()
@@ -174,7 +174,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
         (totalPoints, userPoints, claimedAmount) = userOutstandingReward(msg.sender);
 
-        IProtocolFeeManager(pfmAddress).claim(claimedAmount);
+        IProtocolFeeVault(protocolFeeVaultAddress).claim(claimedAmount);
 
         total.stake = total.stake.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
@@ -223,7 +223,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         userPoints = user.stake.mul(now.sub(user.claimedAt));
 
         if (totalPoints != 0 && userPoints != 0) {
-            (, , , , , , , outstandindReward) = IProtocolFeeManager(pfmAddress).getLRCFeeStats();
+            (, , , , , , , outstandindReward) = IProtocolFeeVault(protocolFeeVaultAddress).getLRCFeeStats();
             outstandindReward = outstandindReward.mul(userPoints) / totalPoints;
         }
     }
