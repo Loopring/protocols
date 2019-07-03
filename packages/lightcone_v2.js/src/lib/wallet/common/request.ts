@@ -10,7 +10,7 @@ function checkStatus(response) {
         return response;
     } else {
         const error = new Error(response.statusText);
-        error.response = response;
+        error['response'] = response;
         throw error;
     }
 }
@@ -22,7 +22,7 @@ function checkStatus(response) {
  * @param timeOut
  * @returns {Promise}
  */
-function request(host, options, timeOut) {
+function request(host: string, options: any, timeOut?: number) {
     timeOut = timeOut || 15000;
     const requestPromise = new Promise((resolve) => {
         if (options.body) {

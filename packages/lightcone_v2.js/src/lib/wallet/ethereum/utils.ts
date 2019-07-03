@@ -8,6 +8,9 @@ import {toBuffer} from "../common/formatter";
 import {rawDecode} from 'ethereumjs-abi'
 import {sha3} from 'ethereumjs-util'
 
+// HACK: What is the host in wallet/ethereum?
+const host = 'host';
+
 export async function getTransactionCount(address, tag) {
     try {
         validator.validate({value: address, type: "ADDRESS"})
@@ -24,9 +27,9 @@ export async function getTransactionCount(address, tag) {
     }
     const params = [address, tag];
     const body = {};
-    body.method = 'eth_getTransactionCount';
-    body.params = params;
-    return request({
+    body['method'] = 'eth_getTransactionCount';
+    body['params'] = params;
+    return request(host, {
         method: 'post',
         body,
     })
@@ -35,10 +38,10 @@ export async function getTransactionCount(address, tag) {
 export async function getGasPrice() {
     const params = [];
     const body = {};
-    body.method = 'eth_gasPrice';
-    body.params = params;
+    body['method'] = 'eth_gasPrice';
+    body['params'] = params;
 
-    return request({
+    return request(host, {
         method: 'post',
         body,
     })
@@ -46,9 +49,9 @@ export async function getGasPrice() {
 
 export async function estimateGas(tx) {
     const body = {};
-    body.method = 'eth_estimateGas';
-    body.params = [tx];
-    return request({
+    body['method'] = 'eth_estimateGas';
+    body['params'] = [tx];
+    return request(host, {
         method: 'post',
         body,
     })
@@ -70,9 +73,9 @@ export async function getAccountBalance(address, tag) {
     }
     const params = [address, tag];
     const body = {};
-    body.method = 'eth_getBalance';
-    body.params = params;
-    return request({
+    body['method'] = 'eth_getBalance';
+    body['params'] = params;
+    return request(host, {
         method: 'post',
         body,
     })
@@ -86,9 +89,9 @@ export async function getTransactionByhash(hash) {
     }
     const params = [hash];
     const body = {};
-    body.method = 'eth_getTransactionByHash';
-    body.params = params;
-    return request({
+    body['method'] = 'eth_getTransactionByHash';
+    body['params'] = params;
+    return request(host, {
         method: 'post',
         body,
     })
@@ -102,9 +105,9 @@ export async function getTransactionRecipt(hash) {
     }
     const params = [hash];
     const body = {};
-    body.method = 'eth_getTransactionReceipt';
-    body.params = params;
-    return request({
+    body['method'] = 'eth_getTransactionReceipt';
+    body['params'] = params;
+    return request(host, {
         method: 'post',
         body,
     })

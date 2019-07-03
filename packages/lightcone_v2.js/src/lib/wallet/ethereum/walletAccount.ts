@@ -1,3 +1,5 @@
+// @ts-ignore
+/* ts-disable */
 import validator from './validator';
 import {
     addHexPrefix,
@@ -24,7 +26,7 @@ import EthTransaction from 'ethereumjs-tx';
 import * as MetaMask from './metaMask';
 import Wallet from 'ethereumjs-wallet';
 
-const wallets = require('../config/wallets.json');
+import wallets from '../config/wallets.json';
 const LoopringWallet = wallets.find(
     wallet => trimAll(wallet.name).toLowerCase() === 'loopringwallet');
 export const path = LoopringWallet.dpath;
@@ -152,7 +154,10 @@ export function createMnemonic(strength) {
 
 // Hack: Failed to import in react web app
 export class WalletAccount {
-    // getAddress();
+    // Hack: to use in typescript
+    getAddress() {
+        return "1";
+    };
 
     // /**
     //  * @description sign
@@ -167,9 +172,9 @@ export class WalletAccount {
     //  * @param rawTx
     //  * @returns {string}
     //  */
-    // signEthereumTx(rawTx) {
-    //     throw Error('unimplemented');
-    // }
+    signEthereumTx(rawTx) {
+        throw Error('unimplemented');
+    }
 
     // /**
     //  * @description Returns given order along with r, s, v
@@ -187,12 +192,16 @@ export class WalletAccount {
     //     throw Error('unimplemented');
     // }
 
-    // sendTransaction(ethNode, signedTx) {
-    //     return ethNode.sendRawTransaction(signedTx);
-    // }
+    sendTransaction(ethNode, signedTx) {
+        return ethNode.sendRawTransaction(signedTx);
+    }
 }
 
+// Hack: We don't need this one?
 export class KeyAccount extends WalletAccount {
+
+    privateKey: any
+
     /**
      * @property
      * @param privateKey string | Buffer
@@ -257,6 +266,10 @@ export class KeyAccount extends WalletAccount {
 }
 
 export class MetaMaskAccount extends WalletAccount {
+
+    web3: any;
+    account: any;
+
     constructor(web3) {
         super();
         if (web3 && web3.eth.accounts[0]) {
@@ -275,29 +288,28 @@ export class MetaMaskAccount extends WalletAccount {
 
     async sign(hash) {
         const result = await MetaMask.sign(this.web3, this.account, hash);
-        if (!result.error) {
-            return result.result;
+        if (!result['error']) {
+            return result['result'];
         } else {
-            throw new Error(result.error.message);
+            throw new Error(result['error']['message']);
         }
     }
 
     async signMessage(message) {
         const result = await MetaMask.signMessage(this.web3, this.account, message);
-        if (!result.error) {
-            return result.result;
+        if (!result['error']) {
+            return result['result'];
         } else {
-            throw new Error(result.error.message);
+            throw new Error(result['error']['message']);
         }
     }
 
     async signEthereumTx(rawTx) {
-        const result = await MetaMask.signEthereumTx(this.web3, this.account,
-            rawTx);
-        if (!result.error) {
-            return result.result;
+        const result = await MetaMask.signEthereumTx(this.web3, this.account, rawTx);
+        if (!result['error']) {
+            return result['result'];
         } else {
-            throw new Error(result.error.message);
+            throw new Error(result['error']['message']);
         }
     }
 }

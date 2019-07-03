@@ -1,4 +1,4 @@
-import {configs} from '../../common/config/data'
+import {configs} from './data'
 
 const set = (settings) => {
     localStorage.settings = JSON.stringify(settings)
@@ -15,8 +15,8 @@ const get = () => {
     } else {
         return {
             preference: {
-                language: window.USER_AGENT.getLanguage() || 'en-US',
-                currency: window.USER_AGENT.getLanguage() === 'zh-CN' ? 'CNY' : "USD",
+                language: window['USER_AGENT'].getLanguage() || 'en-US',
+                currency: window['USER_AGENT'].getLanguage() === 'zh-CN' ? 'CNY' : "USD",
                 timezone: "UTC+00:00"
             },
             trading: {

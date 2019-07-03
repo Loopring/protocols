@@ -1,10 +1,10 @@
 import Web3 from 'web3';
 
-import {MetaMaskAccount} from 'lib/wallet/ethereum/walletAccount';
-import Transaction from 'lib/wallet/ethereum/transaction';
-import { fromMetaMask } from 'lib/wallet/WalletUtils';
+import {MetaMaskAccount} from 'src/lib/wallet/ethereum/walletAccount';
+import Transaction from 'src/lib/wallet/ethereum/transaction';
+import { fromMetaMask } from 'src/lib/wallet/WalletUtils';
 import {exchange} from "src/sign/exchange";
-import Eth from "lib/wallet/ethereum/eth";
+import Eth from "src/lib/wallet/ethereum/eth";
 
 export class MetaMask {
 

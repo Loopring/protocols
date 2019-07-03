@@ -1,11 +1,26 @@
-import {generateAbiData} from './abi';
+// FIXME: abi file is not included in project.
+// import {generateAbiData} from './abi';
+
 import validator from './validator';
 import Transaction from './transaction';
 import request from '../common/request';
 import {rawDecode} from 'ethereumjs-abi'
 import {toBuffer} from "../common/formatter";
 
+// HACK: What is the host in wallet/token?
+const host = 'host';
+
 export default class Token {
+
+    address: string
+    symbol: string
+    name: string
+    digits: number
+    unit: number
+    website: string
+    allowance: number
+    precision: number
+    minTradeValue: number
 
     constructor(input) {
         validator.validate({value: input, type: 'BASIC_TOKEN'});
@@ -25,21 +40,21 @@ export default class Token {
     generateTransferTx({to, amount, gasPrice, gasLimit, nonce, chainId}) {
         validator.validate({value: amount, type: "ETH_DATA"});
         const tx = {};
-        tx.to = this.address;
-        tx.value = "0x0";
-        tx.data = generateAbiData({method: "transfer", address: to, amount});
+        tx['to'] = this.address;
+        tx['value'] = "0x0";
+        // tx['data'] = generateAbiData({method: "transfer", address: to, amount});
 
         if (gasPrice) {
-            tx.gasPrice = gasPrice
+            tx['gasPrice'] = gasPrice
         }
         if (gasLimit) {
-            tx.gasLimit = gasLimit
+            tx['gasLimit'] = gasLimit
         }
         if (nonce) {
-            tx.nonce = nonce
+            tx['nonce'] = nonce
         }
         if (chainId) {
-            tx.chainId = chainId
+            tx['chainId'] = chainId
         }
         return tx;
     }
@@ -47,20 +62,20 @@ export default class Token {
     generateApproveTx({spender, amount, gasPrice, gasLimit, nonce, chainId}) {
         validator.validate({value: amount, type: "ETH_DATA"});
         const tx = {};
-        tx.to = this.address;
-        tx.value = "0x0";
-        tx.data = generateAbiData({method: "approve", address: spender, amount});
+        tx['to'] = this.address;
+        tx['value'] = "0x0";
+        // tx['data'] = generateAbiData({method: "approve", address: spender, amount});
         if (gasPrice) {
-            tx.gasPrice = gasPrice
+            tx['gasPrice'] = gasPrice
         }
         if (gasLimit) {
-            tx.gasLimit = gasLimit
+            tx['gasLimit'] = gasLimit
         }
         if (nonce) {
-            tx.nonce = nonce
+            tx['nonce'] = nonce
         }
         if (chainId) {
-            tx.chainId = chainId
+            tx['chainId'] = chainId
         }
         return tx;
     }
@@ -80,7 +95,7 @@ export default class Token {
     async balanceOf(owner, tag) {
         validator.validate({value: owner, type: "ADDRESS"});
         const tx = {to: this.address};
-        tx.data = generateAbiData({method: "balanceOf", address: owner});
+        // tx['data'] = generateAbiData({method: "balanceOf", address: owner});
         tag = tag || "pending";
         if (tag) {
             try {
@@ -91,9 +106,9 @@ export default class Token {
         }
         const params = [tx, tag];
         const body = {};
-        body.method = 'eth_call';
-        body.params = params;
-        return request({
+        body['method'] = 'eth_call';
+        body['params'] = params;
+        return request(host, {
             method: 'post',
             body,
         })
@@ -103,8 +118,8 @@ export default class Token {
         validator.validate({value: owner, type: "ADDRESS"});
         validator.validate({value: spender, type: "ADDRESS"});
         const tx = {};
-        tx.to = this.address;
-        tx.data = generateAbiData({method: "allowance", owner, spender});
+        tx['to'] = this.address;
+        // tx['data'] = generateAbiData({method: "allowance", owner, spender});
         tag = tag || "pending";
         if (tag) {
             try {
@@ -115,9 +130,9 @@ export default class Token {
         }
         const params = [tx, tag];
         const body = {};
-        body.method = 'eth_call';
-        body.params = params;
-        return request({
+        body['method'] = 'eth_call';
+        body['params'] = params;
+        return request(host, {
             method: 'post',
             body,
         })
@@ -125,32 +140,32 @@ export default class Token {
 
     async getName() {
         const response = await this.getConfig('name');
-        const results = rawDecode(['string'], toBuffer(response.result));
+        const results = rawDecode(['string'], toBuffer(response['result']));
         return results.length > 0 ? results[0] : '';
     }
 
     async getSymbol() {
         const response = await this.getConfig('symbol');
-        const results = rawDecode(['string'], toBuffer(response.result));
+        const results = rawDecode(['string'], toBuffer(response['result']));
         return results.length > 0 ? results[0] : '';
     }
 
     async getDecimals() {
         const response = await this.getConfig('decimals');
-        const results = rawDecode(['uint'], toBuffer(response.result));
+        const results = rawDecode(['uint'], toBuffer(response['result']));
         return results.length > 0 ? results[0].toNumber() : -1;
     }
 
     async getConfig(type) {
         const tx = {};
         if (type === "decimals" || type === "symbol" || type === 'name') {
-            tx.to = this.address;
-            tx.data = generateAbiData({method: type});
+            tx['to'] = this.address;
+            // tx['data'] = generateAbiData({method: type});
             const params = [tx, 'latest'];
             const body = {};
-            body.method = 'eth_call';
-            body.params = params;
-            return request({
+            body['method'] = 'eth_call';
+            body['params'] = params;
+            return request(host, {
                 method: 'post',
                 body,
             });

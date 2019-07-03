@@ -1,9 +1,9 @@
 import Contract from './Contract';
 
-const erc20Abi = require('../../config/abis/erc20.json');
-const wethAbi = require('../../config/abis/weth.json');
-const airdropAbi = require('../../config/abis/airdrop.json');
-const exchangeAbi = require('../../config/abis/exchange.json');
+import erc20Abi from '../../config/abis/erc20.json';
+import wethAbi from '../../config/abis/weth.json';
+import airdropAbi from '../../config/abis/airdrop.json';
+import exchangeAbi from '../../config/abis/exchange.json';
 
 const WETH = new Contract(wethAbi);
 const ERC20Token = new Contract(erc20Abi);

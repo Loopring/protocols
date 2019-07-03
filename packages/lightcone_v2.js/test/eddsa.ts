@@ -1,5 +1,6 @@
-const eddsa = require("lib/sign/eddsa");
-const babyJub = require("lib/sign/babyjub");
+// Hack: Failed to import src files directly.
+import { generateKeyPair } from '../src/lib/sign/eddsa';
+const babyJub = require("../src/lib/sign/babyjub");
 
 function toByteArray(x) {
     var hexString = x.toString(16);
@@ -17,7 +18,7 @@ describe("generate key_pair test", function () {
     });
 
     it("Sign a single 10 bytes from 0 to 9", async () => {
-        console.log(eddsa.generateKeyPair());
+        console.log(generateKeyPair());
     });
 });
 
@@ -29,7 +30,7 @@ describe("eddsa sign message test", function () {
 
     it("Sign a single 10 bytes from 0 to 9", async () => {
 
-        console.log(eddsa.generateKeyPair());
+        console.log(generateKeyPair());
 
         var bits
 

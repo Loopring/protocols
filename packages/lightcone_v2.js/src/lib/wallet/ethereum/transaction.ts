@@ -5,27 +5,34 @@ import {getGasPrice, getTransactionCount} from './utils';
 import request from '../common/request'
 import {configs} from "../config/data";
 
+// HACK: What is the host in wallet/ethereum?
+const host = 'host';
+
 export default class Transaction {
+
+    raw: string
+    signed: string
+
     constructor(rawTx) {
         validator.validate({value: rawTx, type: 'BASIC_TX'});
         this.raw = rawTx;
     }
 
     setGasLimit() {
-        this.raw.gasLimit = this.raw.gasLimit || configs['defaultGasLimit']
+        this.raw['gasLimit'] = this.raw['gasLimit'] || configs['defaultGasLimit']
     }
 
     async setGasPrice() {
-        this.raw.gasPrice = this.raw.gasPrice || (await getGasPrice()).result
+        this.raw['gasPrice'] = this.raw['gasPrice'] || (await getGasPrice())['result']
     }
 
     setChainId() {
-        this.raw.chainId = this.raw.chainId || configs['chainId'] || 1
+        this.raw['chainId'] = this.raw['chainId'] || configs['chainId'] || 1
     }
 
     async setNonce(address, tag) {
         tag = tag || 'pending';
-        this.raw.nonce = this.raw.nonce || (await getTransactionCount(address, tag)).result;
+        this.raw['nonce'] = this.raw['nonce'] || (await getTransactionCount(address, tag))['result'];
     }
 
     hash() {
@@ -68,9 +75,9 @@ export default class Transaction {
             await this.sign({privateKey, walletType, path})
         }
         let body = {};
-        body.method = 'eth_sendRawTransaction';
-        body.params = [this.signed];
-        return request({
+        body['method'] = 'eth_sendRawTransaction';
+        body['params'] = [this.signed];
+        return request(host, {
             method: 'post',
             body,
         })
@@ -78,9 +85,9 @@ export default class Transaction {
 
     async sendRawTx(signedTx) {
         let body = {};
-        body.method = 'eth_sendRawTransaction';
-        body.params = [signedTx];
-        return request({
+        body['method'] = 'eth_sendRawTransaction';
+        body['params'] = [signedTx];
+        return request(host, {
             method: 'post',
             body,
         })
@@ -92,9 +99,3 @@ export default class Transaction {
         await this.setGasPrice();
     }
 }
-
-
-
-
-
-
