@@ -539,6 +539,38 @@ contract("Exchange", (accounts: string[]) => {
                             ownerA, toWithdraw);
     });
 
+    it("Number of open onchain withdrawal requests needs to be limited", async () => {
+      await createExchange(false);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Do a deposit
+      const depositInfo = await exchangeTestUtil.doRandomDeposit(undefined, false);
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      exchangeTestUtil.autoCommit = false;
+
+      // Do all withdrawals allowed
+      const maxWithdrawals = exchangeTestUtil.MAX_OPEN_WITHDRAWAL_REQUESTS;
+      for (let i = 0; i < maxWithdrawals; i++) {
+        await exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false);
+      }
+
+      // Do another one
+      await expectThrow(
+        exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false),
+        "TOO_MANY_REQUESTS_OPEN",
+      );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+
+      // Do another one
+      await exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false);
+
+      exchangeTestUtil.autoCommit = true;
+    });
+
     it("Offchain withdrawal request (token == feeToken)", async () => {
       await createExchange();
 

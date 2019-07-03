@@ -12,6 +12,7 @@ import { Bitstream } from "./bitstream";
 import { compress, CompressionType } from "./compression";
 import * as constants from "./constants";
 import { Context } from "./context";
+import { expectThrow } from "./expectThrow";
 import eddsa = require("./eddsa");
 import { toFloat } from "./float";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
@@ -743,7 +744,7 @@ export class ExchangeTestUtil {
     const tokenID = this.tokenAddressToIDMap.get(token);
 
     let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
-    if (numAvailableSlots === 0) {
+    if (this.autoCommit && numAvailableSlots === 0) {
         await this.commitOnchainWithdrawalRequests(exchangeID);
         numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
         assert(numAvailableSlots > 0, "numAvailableSlots > 0");
@@ -989,7 +990,6 @@ export class ExchangeTestUtil {
 
     const numBlocksFinalizedBefore = await this.exchange.getNumBlocksFinalized();
     const blockDataBefore = await this.exchange.getBlock(blockIdx);
-    assert(blockDataBefore.blockState.toNumber() === BlockState.COMMITTED, "block state before needs to be COMMITTED");
 
     const operatorContract = this.operator ? this.operator : this.exchange;
     const tx = await operatorContract.verifyBlock(
@@ -998,6 +998,8 @@ export class ExchangeTestUtil {
       {from: this.exchangeOperator},
     );
     logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+
+    assert(blockDataBefore.blockState.toNumber() === BlockState.COMMITTED, "block state before needs to be COMMITTED");
 
     // Check the BlockVerified event
     {
@@ -1967,6 +1969,47 @@ export class ExchangeTestUtil {
     this.pendingBlocks[this.exchangeId] = [];
   }
 
+  public async withdrawBlockFeeChecked(blockIdx: number, operator: string, totalBlockFee: BN,
+                                      expectedBlockFee: BN, allowedDelta: BN = new BN(0)) {
+    const token = "ETH";
+    const pfm = await this.loopringV3.pfm();
+    const balanceOperatorBefore = await this.getOnchainBalance(operator, token);
+    const balanceContractBefore = await this.getOnchainBalance(this.exchange.address, token);
+    const balanceBurnedBefore = await this.getOnchainBalance(pfm, token);
+
+    await this.exchange.withdrawBlockFee(blockIdx, operator, {from: operator, gasPrice: 0});
+
+    const balanceOperatorAfter = await this.getOnchainBalance(operator, token);
+    const balanceContractAfter = await this.getOnchainBalance(this.exchange.address, token);
+    const balanceBurnedAfter = await this.getOnchainBalance(pfm, token);
+
+    const expectedBurned = totalBlockFee.sub(expectedBlockFee);
+
+    assert(balanceOperatorAfter.sub(balanceOperatorBefore.add(expectedBlockFee)).abs().lte(allowedDelta),
+           "Token balance of operator should be increased by expected block fee reward");
+    assert(balanceContractAfter.eq(balanceContractBefore.sub(totalBlockFee)),
+           "Token balance of exchange should be decreased by total block fee");
+    assert(balanceBurnedAfter.sub(balanceBurnedBefore.add(expectedBurned)).abs().lte(allowedDelta),
+           "Burned amount should be increased by burned block fee");
+
+    // Get the BlockFeeWithdrawn event
+    const eventArr: any = await this.getEventsFromContract(
+      this.exchange, "BlockFeeWithdrawn", web3.eth.blockNumber,
+    );
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.blockIdx, eventObj.args.amount];
+    });
+    assert.equal(items[0][0].toNumber(), blockIdx, "Block idx in event not correct");
+    assert(items[0][1].eq(totalBlockFee), "Block fee different than expected");
+
+    // Try to withdraw again
+    await expectThrow(
+      this.exchange.withdrawBlockFee(blockIdx, this.exchangeOperator,
+        {from: this.exchangeOperator}),
+      "FEE_WITHDRAWN_ALREADY",
+    );
+  };
+
   public async createMerkleTreeInclusionProof(owner: string, token: string) {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
@@ -2115,14 +2158,14 @@ export class ExchangeTestUtil {
                               token, amount);
   }
 
-  public async doRandomOnchainWithdrawal(depositInfo: DepositInfo) {
+  public async doRandomOnchainWithdrawal(depositInfo: DepositInfo, changeFees: boolean = true) {
     // Change the withdrawal fee
     const fees = await this.exchange.getFees();
     await this.exchange.setFees(
       fees._accountCreationFeeETH,
       fees._accountUpdateFeeETH,
       fees._depositFeeETH,
-      fees._withdrawalFeeETH.mul(new BN(2)),
+      fees._withdrawalFeeETH.mul(new BN(changeFees ? 2 : 1)),
       {from: this.exchangeOwner},
     );
 
