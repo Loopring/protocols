@@ -181,7 +181,7 @@ contract IExchange
     ///          depositFee +
     ///          (isAccountNew ? accountCreationFee : 0) +
     ///          (isAccountUpdated ? accountUpdateFee : 0)
-    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -477,11 +477,11 @@ contract IExchange
     ///                - WalletSplitPercentage: 1 byte
     ///
     ///        The RING_SETTLEMENT data availability data is further transformed
-    ///        to make it more compressable:
+    ///        to make it more compressible:
     ///        - The Ring-matcher account ID, fee amount and token ID (the first 5 bytes) are
     ///          XORed with the corresponding data from the previous ring
     ///        - To group more similar data together we don't store all data
-    ///          for a ring next to eachother but group them together for all rings.
+    ///          for a ring next to each other but group them together for all rings.
     ///          For ALL rings, sequentially:
     ///             - Ring-matcher account ID + fee + Token ID
     ///             - orderA.orderID + orderB.orderID
@@ -497,7 +497,7 @@ contract IExchange
     ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
     ///                      IDecompressor.decompress() will be called to decompress the following data.
     /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
-    ///        the multihash of the IPFS file that containts the block data.
+    ///        the multihash of the IPFS file that contains the block data.
     function commitBlock(
         uint8  blockType,
         uint16 blockSize,
@@ -507,7 +507,7 @@ contract IExchange
         )
         external;
 
-    /// @dev Submit a ZK proof onchain to verify a previouly committed block. Submitting an
+    /// @dev Submit a ZK proof onchain to verify a previously committed block. Submitting an
     ///      invalid proof will not change the state of the exchange. Note that proofs can
     ///      be submitted in a different order than the blocks themselves.
     ///
@@ -583,7 +583,7 @@ contract IExchange
     ///          depositFee +
     ///          (isAccountNew ? accountCreationFee : 0) +
     ///          (isAccountUpdated ? accountUpdateFee : 0)
-    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -616,7 +616,7 @@ contract IExchange
     /// @dev Deposit Ether or ERC20 tokens to the sender's account.
     ///
     ///      The total fee in ETH that the user needs to pay is 'depositFee'.
-    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -624,9 +624,9 @@ contract IExchange
     ///
     ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
     ///               tokens in total. If that happens, the user may lose token.
-    ///               This token balance upper limit, however, is large enought for most scenarios.
+    ///               This token balance upper limit, however, is large enough for most scenarios.
     ///
-    /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     function deposit(
         address tokenAddress,
@@ -638,7 +638,7 @@ contract IExchange
     /// @dev Deposit Ether or ERC20 tokens to a recipient account.
     ///
     ///      The total fee in ETH that the user needs to pay is 'depositFee'.
-    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -646,7 +646,7 @@ contract IExchange
     ///
     ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
     ///               tokens in total. If that happens, the user may lose token.
-    ///               This token balance upper limit, however, is large enought for most scenarios.
+    ///               This token balance upper limit, however, is large enough for most scenarios.
     ///
     /// @param recipient The address of the recipient
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
@@ -699,7 +699,7 @@ contract IExchange
     ///      Only the owner of the account can request a withdrawal.
     ///
     ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
-    ///      If the user sends too much ETH the surplus is immediatly sent back.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
     ///
     ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
@@ -731,7 +731,7 @@ contract IExchange
         payable;
 
     /// @dev Allows an account owner to withdraw his funds using the balances stored
-    ///      in the merkle tree. The funds will be sent to the owner of the acount.
+    ///      in the merkle tree. The funds will be sent to the owner of the account.
     ///
     ///      Trading pubKey matching the offchain Merkle tree need to be provided.
     ///      The pubKey may already be reset to 0 when the exchange is shutdown.
@@ -824,7 +824,7 @@ contract IExchange
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
     ///      or offchain) was committed in a block by the operator.
     ///
-    ///      Can be called by anyone. The withdrawan tokens will be sent to
+    ///      Can be called by anyone. The withdrawn tokens will be sent to
     ///      the owner of the account they were withdrawn out.
     ///
     ///      Normally it is should not be needed for users to call this manually.
@@ -946,7 +946,7 @@ contract IExchange
     /// @dev Starts or continues maintenance mode for the specified duration.
     ///      The necessary additional downtime minutes will be purchased. The number of
     ///      downtime minutes still available for use can be checked with getRemainingDowntime().
-    ///      In maintainance mode, all onchain user requests, including account creation,
+    ///      In maintenance mode, all onchain user requests, including account creation,
     ///      account update, deposits, and withdrawal requests are disabled.
     ///
     ///      The remaining downtime time will be extended so that the exchange can stay in
@@ -955,7 +955,7 @@ contract IExchange
     ///      The exchange owner can exit maintenance mode by calling stopMaintenanceMode()
     ///      or by waiting until the remaining downtime is reduced to 0.
     ///
-    ///      Once entering the maintainance mode, the operator should still fulfill his duty
+    ///      Once entering the maintenance mode, the operator should still fulfill his duty
     ///      by submitting blocks and proofs until all pending user requests have been taken
     ///      care of within the required timeouts. In the maintenance mode, operator can no longer
     ///      submit settlement blocks.
@@ -1015,7 +1015,7 @@ contract IExchange
     ///
     ///      Note that the exchange can still enter the withdrawal mode after this function
     ///      has been invoked successfully. To prevent entering the withdrawal mode, exchange
-    ///      operators need to reset the Merkle tree to its initial state by doingwithdrawals
+    ///      operators need to reset the Merkle tree to its initial state by doing withdrawals
     ///      within MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
     ///      seconds.
     ///
@@ -1028,9 +1028,9 @@ contract IExchange
 
     /// @dev Get number of available/processed deposits/withdrawals.
     /// @return numDepositRequestsProcessed The num of the processed deposit requests
-    /// @return numAvailableDepositSlots The number of slots avalable for deposits
+    /// @return numAvailableDepositSlots The number of slots available for deposits
     /// @return numWithdrawalRequestsProcessed The num of processed withdrawal requests
-    /// @return numAvailableWithdrawalSlots The number of slots avalable for withdrawals
+    /// @return numAvailableWithdrawalSlots The number of slots available for withdrawals
     function getRequestStats()
         external
         view

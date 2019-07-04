@@ -148,7 +148,7 @@ contract ILoopringV3
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is created.
     /// @return exchangeId The id of the exchange.
-    /// @return exchangeAddress The address of the newly depolyed exchange contract.
+    /// @return exchangeAddress The address of the newly deployed exchange contract.
     function createExchange(
         address payable operator,
         bool onchainDataAvailability

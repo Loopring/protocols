@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.7;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
@@ -25,7 +26,7 @@ import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
 
 
-/// @title ExchangeAccounts.
+/// @title ExchangeDeposits.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeDeposits
@@ -109,6 +110,7 @@ library ExchangeDeposits
         // Total fee to be paid by the user
         uint feeETH = additionalFeeETH.add(S.depositFeeETH);
 
+        // Transfer the tokens to this contract
         transferDeposit(
             account.owner,
             tokenAddress,

@@ -158,6 +158,18 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.withdrawExchangeStakeChecked(
         exchangeTestUtil.exchangeOwner, currentStakeAmount.add(stakeAmount),
       );
+
+      // Blocks with shutdown withdrawals should not receive any block fee
+      const lastBlockIdx = (await exchange.getBlockHeight()).toNumber();
+      for(let b = currentBlockIdx + 1; b <= lastBlockIdx; b++) {
+        await expectThrow(
+          exchangeTestUtil.withdrawBlockFeeChecked(
+            b, exchangeTestUtil.exchangeOperator,
+            new BN(0), new BN(0), new BN(0),
+          ),
+          "BLOCK_HAS_NO_OPERATOR_FEE",
+        );
+      }
     });
 
     it("Incomplete shutdown", async () => {

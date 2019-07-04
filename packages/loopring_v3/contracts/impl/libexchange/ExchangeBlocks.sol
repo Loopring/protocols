@@ -16,9 +16,7 @@
 */
 pragma solidity 0.5.7;
 
-import "../../lib/BurnableERC20.sol";
 import "../../lib/BytesUtil.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
 import "../../iface/IBlockVerifier.sol";
@@ -108,6 +106,7 @@ library ExchangeBlocks
             "PROOF_TOO_LATE"
         );
 
+        // Verify the proof
         require(
             S.blockVerifier.verifyProof(
                 uint8(specifiedBlock.blockType),
@@ -120,29 +119,21 @@ library ExchangeBlocks
             "INVALID_PROOF"
         );
 
-        // Update state of this block and potentially the following blocks
-        ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
-        if (previousBlock.state == ExchangeData.BlockState.FINALIZED) {
-            specifiedBlock.state = ExchangeData.BlockState.FINALIZED;
-            S.numBlocksFinalized = blockIdx + 1;
-            emit BlockFinalized(blockIdx);
-            // The next blocks could become finalized as well so check this now
-            // The number of blocks after the specified block index is limited
-            // by MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
-            // so we don't have to worry about running out of gas in this loop
-            uint nextBlockIdx = blockIdx + 1;
-            while (nextBlockIdx < S.blocks.length &&
-                S.blocks[nextBlockIdx].state == ExchangeData.BlockState.VERIFIED) {
+        // Mark the block as verified
+        specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
+        emit BlockVerified(blockIdx);
 
-                S.blocks[nextBlockIdx].state = ExchangeData.BlockState.FINALIZED;
-                S.numBlocksFinalized = nextBlockIdx + 1;
-                emit BlockFinalized(nextBlockIdx);
-                nextBlockIdx++;
-            }
-        } else {
-            specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
-            emit BlockVerified(blockIdx);
+        // Update the number of blocks that are finalized
+        // The number of blocks after the specified block index is limited
+        // by MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
+        // so we don't have to worry about running out of gas in this loop
+        uint idx = S.numBlocksFinalized;
+        while (idx < S.blocks.length &&
+            S.blocks[idx].state == ExchangeData.BlockState.VERIFIED) {
+            emit BlockFinalized(idx);
+            idx++;
         }
+        S.numBlocksFinalized = idx;
     }
 
     function revertBlock(
@@ -159,9 +150,8 @@ library ExchangeBlocks
         require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "INVALID_BLOCK_STATE");
 
         // The specified block needs to be the first block not finalized
-        // (this way we always revert to a guaranteed valid block and don't need to revert multiple times)
-        ExchangeData.Block storage previousBlock = S.blocks[uint(blockIdx).sub(1)];
-        require(previousBlock.state == ExchangeData.BlockState.FINALIZED, "PREV_BLOCK_NOT_FINALIZED");
+        // (this way we always revert to a guaranteed valid block and don't revert multiple times)
+        require(blockIdx == S.numBlocksFinalized, "PREV_BLOCK_NOT_FINALIZED");
 
         // Check if this block is verified too late
         require(

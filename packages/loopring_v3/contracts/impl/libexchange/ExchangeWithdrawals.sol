@@ -27,7 +27,7 @@ import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
 
 
-/// @title ExchangeAccounts.
+/// @title ExchangeWithdrawals.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeWithdrawals
@@ -126,9 +126,7 @@ library ExchangeWithdrawals
         // Check ETH value sent, can be larger than the expected withdraw fee
         require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
         // Send surplus of ETH back to the sender
-        if (msg.value > S.withdrawalFeeETH) {
-            msg.sender.transferETH(msg.value.sub(S.withdrawalFeeETH), gasleft());
-        }
+        msg.sender.transferETH(msg.value.sub(S.withdrawalFeeETH), gasleft());
 
         // Add the withdraw to the withdraw chain
         ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
@@ -172,7 +170,6 @@ library ExchangeWithdrawals
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         ExchangeData.Block storage lastFinalizedBlock = S.blocks[S.numBlocksFinalized - 1];
-        assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
 
         uint24 accountID = S.getAccountID(owner);
         uint16 tokenID = S.getTokenID(token);
@@ -213,8 +210,6 @@ library ExchangeWithdrawals
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
         ExchangeData.Block storage lastFinalizedBlock = S.blocks[S.numBlocksFinalized - 1];
-        assert(lastFinalizedBlock.state == ExchangeData.BlockState.FINALIZED);
-
         require(depositIdx >= lastFinalizedBlock.numDepositRequestsCommitted, "REQUEST_INCLUDED_IN_FINALIZED_BLOCK");
 
         // The deposit info is stored at depositIdx - 1
@@ -238,6 +233,7 @@ library ExchangeWithdrawals
 
     function withdrawFromApprovedWithdrawal(
         ExchangeData.State storage S,
+        uint blockIdx,
         ExchangeData.Block storage withdrawBlock,
         uint slotIdx,
         bool allowFailure
@@ -246,9 +242,8 @@ library ExchangeWithdrawals
         returns (bool success)
     {
         require(slotIdx < withdrawBlock.blockSize, "INVALID_SLOT_IDX");
-
         // Only allow withdrawing on finalized blocks
-        require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        require(blockIdx < S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
 
         // Get the withdrawal data from storage for the given slot
         uint[] memory slice = new uint[](2);
@@ -333,7 +328,7 @@ library ExchangeWithdrawals
         ExchangeData.Block storage requestedBlock = S.blocks[blockIdx];
         ExchangeData.Block storage previousBlock = S.blocks[blockIdx - 1];
 
-        require(requestedBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        require(blockIdx < S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         require(requestedBlock.blockFeeWithdrawn == false, "FEE_WITHDRAWN_ALREADY");
 
         uint feeAmount = 0;
@@ -402,12 +397,12 @@ library ExchangeWithdrawals
         require(withdrawBlock.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
                 withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL, "INVALID_BLOCK_TYPE");
         // Only allow withdrawing on finalized blocks
-        require(withdrawBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        require(blockIdx < S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // Check if the withdrawals were already completely distributed
         require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.blockSize, "WITHDRAWALS_ALREADY_DISTRIBUTED");
 
         // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
-        // anyone can do it and get paid a part of the operator stake
+        // anyone can do it and get paid a part of the exchange stake
         bool bOnlyOperator = now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS();
         if (bOnlyOperator) {
             require(msg.sender == S.operator, "UNAUTHORIZED");
@@ -429,6 +424,7 @@ library ExchangeWithdrawals
             // The account owner can always manually withdraw without any limits.
             withdrawFromApprovedWithdrawal(
                 S,
+                blockIdx,
                 withdrawBlock,
                 totalNumWithdrawn,
                 true
@@ -469,7 +465,7 @@ library ExchangeWithdrawals
         returns (bool success)
     {
         address to = S.accounts[accountID].owner;
-        // If we're withdrawing from the protocol fee account sent the tokens
+        // If we're withdrawing from the protocol fee account send the tokens
         // directly to the protocol fee manager
         if (accountID == 0) {
             to = S.loopring.protocolFeeVault();

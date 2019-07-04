@@ -1,5 +1,11 @@
 import BN = require("bn.js");
 
+export enum BlockState {
+  NEW = 0,
+  COMMITTED,
+  VERIFIED,
+}
+
 export enum BlockType {
   RING_SETTLEMENT = 0,
   DEPOSIT,
