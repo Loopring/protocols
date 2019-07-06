@@ -4,8 +4,8 @@ import * as fm from 'src/lib/wallet/common/formatter';
 import config from 'src/lib/wallet/config';
 import * as datas from 'src/lib/wallet/config/data';
 import Contracts from 'src/lib/wallet/ethereum/contracts/Contracts';
-import eth from 'src/lib/wallet/ethereum/eth';
-import transaction from 'src/lib/wallet/ethereum/transaction';
+import Eth from "src/lib/wallet/ethereum/eth";
+import Transaction from "src/lib/wallet/ethereum/transaction";
 import {KeyAccount} from 'src/lib/wallet/ethereum/walletAccount';
 import {exchange} from 'src/sign/exchange';
 
@@ -71,7 +71,7 @@ export class PrivateKey {
         const rawTx = new Transaction({
             to: token.address,
             value: '0x0',
-            data: contracts.ERC20Token.encodeInputs('approve', {
+            data: Contracts.ERC20Token.encodeInputs('approve', {
                 _spender: datas.configs.delegateAddress,
                 _value: amount
             }),
@@ -96,7 +96,7 @@ export class PrivateKey {
         const rawTx = new Transaction({
             to: weth.address,
             value: value,
-            data: contracts.WETH.encodeInputs('deposit', {}),
+            data: Contracts.WETH.encodeInputs('deposit', {}),
             chainId: config.getChainId(),
             nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
             gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
@@ -118,7 +118,7 @@ export class PrivateKey {
         const rawTx = new Transaction({
             to: weth.address,
             value: '0x0',
-            data: contracts.WETH.encodeInputs('withdraw', {
+            data: Contracts.WETH.encodeInputs('withdraw', {
                 wad: value
             }),
             chainId: config.getChainId(),

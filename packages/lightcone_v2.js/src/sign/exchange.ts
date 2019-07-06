@@ -5,8 +5,8 @@ import config from 'src/lib/wallet/config';
 import {grpcClientService} from 'src/grpc/grpcClientService';
 import {ethereum} from 'src/lib/wallet';
 import * as fm from 'src/lib/wallet/common/formatter';
-import eth from 'src/lib/wallet/ethereum/eth';
-import transaction from 'src/lib/wallet/ethereum/transaction';
+import Eth from "src/lib/wallet/ethereum/eth";
+import Transaction from "src/lib/wallet/ethereum/transaction";
 import {WalletAccount} from 'src/lib/wallet/ethereum/walletAccount';
 import {Order, TokenAmounts} from 'src/proto_gen/data_order_pb';
 import {

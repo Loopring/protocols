@@ -1,7 +1,7 @@
 import Web3 from 'web3';
 
-import eth from 'src/lib/wallet/ethereum/eth';
-import transaction from 'src/lib/wallet/ethereum/transaction';
+import Eth from "src/lib/wallet/ethereum/eth";
+import Transaction from "src/lib/wallet/ethereum/transaction";
 import {MetaMaskAccount} from 'src/lib/wallet/ethereum/walletAccount';
 import { fromMetaMask } from 'src/lib/wallet/WalletUtils';
 import {exchange} from 'src/sign/exchange';
