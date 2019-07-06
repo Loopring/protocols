@@ -8,7 +8,7 @@
   "scripts": {
     "build:proto": "rimraf src/proto_gen && mkdir src/proto_gen && node src/lib/grpc/proto",
     "build": "npm run build:proto && rimraf dist && tsc",
-    "lint": "tslint --project tsconfig.json ./src/**/*.ts --fix",
+    "lint": "tslint --project tsconfig.json ./src/**/*.ts  -e \"**/proto_gen/**\" --fix",
     "client": "node dist/grpc/grpcClient.js",
     "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
   },
