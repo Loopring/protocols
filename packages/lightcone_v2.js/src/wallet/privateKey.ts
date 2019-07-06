@@ -1,13 +1,13 @@
 // @ts-ignore
+import {ethereum} from 'src/lib/wallet';
+import * as fm from 'src/lib/wallet/common/formatter';
 import config from 'src/lib/wallet/config';
 import * as datas from 'src/lib/wallet/config/data';
-import contracts from 'src/lib/wallet/ethereum/contracts/Contracts'
+import Contracts from 'src/lib/wallet/ethereum/contracts/Contracts';
+import eth from 'src/lib/wallet/ethereum/eth';
+import transaction from 'src/lib/wallet/ethereum/transaction';
 import {KeyAccount} from 'src/lib/wallet/ethereum/walletAccount';
-import Transaction from "src/lib/wallet/ethereum/transaction";
-import * as fm from "src/lib/wallet/common/formatter";
-import {ethereum} from "src/lib/wallet";
-import {exchange} from "src/sign/exchange";
-import Eth from "src/lib/wallet/ethereum/eth";
+import {exchange} from 'src/sign/exchange';
 
 export class PrivateKey {
 
@@ -33,8 +33,8 @@ export class PrivateKey {
      */
     public async transfer(toAddr: string, symbol: string, amount: number, gasPrice: number) {
         let to, value, data: string;
-        let token = config.getTokenBySymbol(symbol);
-        value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+        const token = config.getTokenBySymbol(symbol);
+        value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
         if (symbol === 'ETH') {
             to = toAddr;
             data = fm.toHex('0x');
@@ -46,7 +46,7 @@ export class PrivateKey {
             });
             value = '0x0';
         }
-        let rawTx = new Transaction({
+        const rawTx = new Transaction({
             to: to,
             value: value,
             data: data,
@@ -56,6 +56,7 @@ export class PrivateKey {
             gasLimit: fm.toHex(config.getGasLimitByType('token_transfer').gasLimit) // TODO: new gas limit
         });
         const signedTx = this.account.signEthereumTx(rawTx);
+
         return this.account.sendTransaction(this.ethNode, signedTx);
     }
 
@@ -80,6 +81,7 @@ export class PrivateKey {
             gasLimit: fm.toHex(config.getGasLimitByType('approve').gasLimit)
         });
         const signedTx = this.account.signEthereumTx(rawTx);
+
         return this.account.sendTransaction(this.ethNode, signedTx);
     }
 
@@ -89,8 +91,8 @@ export class PrivateKey {
      * @param gasPrice in gwei
      */
     public async deposit(amount: number, gasPrice: number) {
-        let weth = config.getTokenBySymbol('WETH');
-        let value = fm.toHex(fm.toBig(amount).times(1e18));
+        const weth = config.getTokenBySymbol('WETH');
+        const value = fm.toHex(fm.toBig(amount).times(1e18));
         const rawTx = new Transaction({
             to: weth.address,
             value: value,
@@ -101,6 +103,7 @@ export class PrivateKey {
             gasLimit: fm.toHex(config.getGasLimitByType('deposit').gasLimit)
         });
         const signedTx = this.account.signEthereumTx(rawTx);
+
         return this.account.sendTransaction(this.ethNode, signedTx);
     }
 
@@ -110,13 +113,13 @@ export class PrivateKey {
      * @param gasPrice in gwei
      */
     public async withdraw(amount: number, gasPrice: number) {
-        let weth = config.getTokenBySymbol('WETH');
-        let value = fm.toHex(fm.toBig(amount).times(1e18));
+        const weth = config.getTokenBySymbol('WETH');
+        const value = fm.toHex(fm.toBig(amount).times(1e18));
         const rawTx = new Transaction({
             to: weth.address,
             value: '0x0',
             data: contracts.WETH.encodeInputs('withdraw', {
-                wad: value,
+                wad: value
             }),
             chainId: config.getChainId(),
             nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
@@ -124,6 +127,7 @@ export class PrivateKey {
             gasLimit: fm.toHex(config.getGasLimitByType('withdraw').gasLimit)
         });
         const signedTx = this.account.signEthereumTx(rawTx);
+
         return this.account.sendTransaction(this.ethNode, signedTx);
     }
 
@@ -136,8 +140,9 @@ export class PrivateKey {
     public async depositTo(symbol: string, amount: number, gasPrice: number) {
         exchange.deposit(symbol, amount, gasPrice).then((rawTx: Transaction) => {
             const signedTx = this.account.signEthereumTx(rawTx);
-            return this.account.sendTransaction(this.ethNode, signedTx)
-        })
+
+            return this.account.sendTransaction(this.ethNode, signedTx);
+        });
     }
 
     /**
@@ -149,10 +154,10 @@ export class PrivateKey {
     public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
         exchange.withdraw(symbol, amount, gasPrice).then((rawTx: Transaction) => {
             const signedTx = this.account.signEthereumTx(rawTx);
-            return this.account.sendTransaction(this.ethNode, signedTx)
-        })
+
+            return this.account.sendTransaction(this.ethNode, signedTx);
+        });
     }
 }
 
 export const privateKey: PrivateKey = new PrivateKey();
-

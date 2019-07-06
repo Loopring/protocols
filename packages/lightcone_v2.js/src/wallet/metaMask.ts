@@ -1,10 +1,10 @@
 import Web3 from 'web3';
 
+import eth from 'src/lib/wallet/ethereum/eth';
+import transaction from 'src/lib/wallet/ethereum/transaction';
 import {MetaMaskAccount} from 'src/lib/wallet/ethereum/walletAccount';
-import Transaction from 'src/lib/wallet/ethereum/transaction';
 import { fromMetaMask } from 'src/lib/wallet/WalletUtils';
-import {exchange} from "src/sign/exchange";
-import Eth from "src/lib/wallet/ethereum/eth";
+import {exchange} from 'src/sign/exchange';
 
 export class MetaMask {
 
@@ -17,31 +17,31 @@ export class MetaMask {
         this.web3 = new Web3(Web3.givenProvider || 'http://localhost:8545'); // TODO: replace for ruby
         this.account = fromMetaMask(this.web3);
         this.address = this.account.getAddress();
-        this.ethNode = new Eth('') // TODO: config
+        this.ethNode = new Eth(''); // TODO: config
     }
 
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
         exchange.createOrUpdateAccount(publicX, publicY, gasPrice).then((rawTx: Transaction) => {
             this.account.signEthereumTx(rawTx).then((signedTx) => {
-                return this.account.sendTransaction(this.ethNode, signedTx)
+                return this.account.sendTransaction(this.ethNode, signedTx);
             });
-        })
+        });
     }
 
     public async depositTo(symbol: string, amount: number, gasPrice: number) {
         exchange.deposit(symbol, amount, gasPrice).then((rawTx: Transaction) => {
             this.account.signEthereumTx(rawTx).then((signedTx) => {
-                return this.account.sendTransaction(this.ethNode, signedTx)
+                return this.account.sendTransaction(this.ethNode, signedTx);
             });
-        })
+        });
     }
 
     public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
         exchange.withdraw(symbol, amount, gasPrice).then((rawTx: Transaction) => {
             this.account.signEthereumTx(rawTx).then((signedTx) => {
-                return this.account.sendTransaction(this.ethNode, signedTx)
+                return this.account.sendTransaction(this.ethNode, signedTx);
             });
-        })
+        });
     }
 }
 

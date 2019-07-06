@@ -3,13 +3,12 @@ import {StringValue, UInt32Value} from 'google-protobuf/google/protobuf/wrappers
 
 import * as grpcWeb from 'grpc-web';
 
+import {io} from '../model/types';
 import {Order} from '../proto_gen/data_order_pb';
-import {io} from "../model/types";
 import {
     OffchainWithdrawalRequest,
     OrderCancellationRequest
 } from '../proto_gen/data_requests_pb.d';
-import { DexServiceClient } from '../proto_gen/Service_dexServiceClientPb';
 import {
     Account,
     CancelOrderRes,
@@ -32,17 +31,19 @@ import {
     SimpleOrderCancellationReq,
     SubmitOrderRes
 } from '../proto_gen/service_dex_pb';
+import { DexServiceClient } from '../proto_gen/Service_dexServiceClientPb';
 
 /**
  * gRPC GrpcClientService Service
  */
 class GrpcClientService {
     // TODO: use localhost for debug
-    private readonly client = new DexServiceClient('http://0.0.0.0:5000', null, null) // TODO: config
+    private readonly client = new DexServiceClient('http://0.0.0.0:5000', null, null); // TODO: config
 
     // Verfied
     public async getDexConfigurations(): Promise<DexConfigurations> {
         const empty: Empty = new Empty();
+
         return new Promise<DexConfigurations>((resolve: Function, reject: Function): void => {
             this.client.getDexConfigurations(empty, {}, (err: grpcWeb.Error, res: DexConfigurations) => {
                 if (err) {

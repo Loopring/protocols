@@ -170,12 +170,12 @@ export interface Block {
 }
 
 export class DexAccount {
-  accountID: number;
-  owner: string;
-  publicKeyX: string;
-  publicKeyY: string;
-  secretKey: string;
-  nonce: number;
+  public accountID: number;
+  public owner: string;
+  public publicKeyX: string;
+  public publicKeyY: string;
+  public secretKey: string;
+  public nonce: number;
 }
 
 export interface Operator {
@@ -240,7 +240,7 @@ export interface DepositInfo {
   depositIdx: number;
 }
 
-export var io : {
+export let io : {
   connect(url: string): Socket;
 };
 
