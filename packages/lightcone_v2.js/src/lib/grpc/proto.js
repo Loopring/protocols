@@ -13,8 +13,15 @@ const PROTOC_GEN_TS_PATH = path.join(__dirname, '../../../node_modules/.bin/prot
 rimraf.sync(`${MODEL_DIR}/*`);
 
 shell.exec('grpc_tools_node_protoc '
+    + `--js_out="import_style=commonjs,binary:${MODEL_DIR}" `
+    + `--grpc-web_out="import_style=typescript,mode=grpcwebtext:${MODEL_DIR}" `
+    + `--proto_path ${PROTO_DIR} ${PROTO_DIR}/*.proto`);
+
+/*
+shell.exec('grpc_tools_node_protoc '
     + `--plugin="protoc-gen-ts=${PROTOC_GEN_TS_PATH}" `
     + `--grpc_out="${MODEL_DIR}" `
     + `--js_out="import_style=commonjs,binary:${MODEL_DIR}" `
     + `--ts_out="${MODEL_DIR}" `
     + `--proto_path ${PROTO_DIR} ${PROTO_DIR}/*.proto`);
+*/
