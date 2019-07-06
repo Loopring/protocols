@@ -1509,6 +1509,8 @@ export class ExchangeTestUtil {
 
                 maxFeeBips: 0,
 
+                buy: true,
+
                 feeBips: 0,
                 rebateBips: 0,
 
@@ -1534,6 +1536,8 @@ export class ExchangeTestUtil {
                 validUntil: 0,
 
                 maxFeeBips: 0,
+
+                buy: true,
 
                 feeBips: 0,
                 rebateBips: 0,

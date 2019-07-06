@@ -9,12 +9,19 @@ from float import *
 from ethsnarks.eddsa import PureEdDSA
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
-from ethsnarks.mimc import mimc_hash
 from ethsnarks.merkletree import MerkleTree
+from ethsnarks.poseidon import poseidon, poseidon_params
+from ethsnarks.field import SNARK_SCALAR_FIELD
+
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 8, 57, b'poseidon', 5)
+poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 3, 8, 57, b'poseidon', 5)
+poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 4, 8, 57, b'poseidon', 5)
 
 TREE_DEPTH_TRADING_HISTORY = 14
 TREE_DEPTH_ACCOUNTS = 20
 TREE_DEPTH_TOKENS = 8
+
+NUM_BITS_TREE = 2
 
 MAX_AMOUNT = 2 ** 96 - 1
 
@@ -62,13 +69,13 @@ class BalanceLeaf(object):
     def __init__(self, balance = 0):
         self.balance = str(balance)
         # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
+        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // NUM_BITS_TREE, NUM_BITS_TREE)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
         # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
 
     def hash(self):
-        return mimc_hash([int(self.balance), int(self._tradingHistoryTree._root)], 1)
+        return poseidon([int(self.balance), int(self._tradingHistoryTree._root)], False, poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
@@ -111,7 +118,7 @@ class BalanceLeaf(object):
 
     def resetTradeHistory(self):
         # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY)
+        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // NUM_BITS_TREE, NUM_BITS_TREE)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
 
@@ -123,7 +130,7 @@ class TradeHistoryLeaf(object):
         self.orderID = orderID
 
     def hash(self):
-        return mimc_hash([int(self.filled), int(self.cancelled), int(self.orderID)], 1)
+        return poseidon([int(self.filled), int(self.cancelled), int(self.orderID)], False, poseidonParamsTradingHistory)
 
     def fromJSON(self, jAccount):
         self.filled = jAccount["filled"]
@@ -138,13 +145,13 @@ class Account(object):
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
         # Balances
-        self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS)
+        self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS // NUM_BITS_TREE, NUM_BITS_TREE)
         self._balancesTree.newTree(BalanceLeaf().hash())
         self._balancesLeafs = {}
         #print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return mimc_hash([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], 1)
+        return poseidon([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], False, poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.secretKey = jAccount["secretKey"]
@@ -239,6 +246,9 @@ class Account(object):
                                  balancesBefore, balancesAfter),
                 tradeHistoryUpdate)
 
+def write_proof(proof):
+    # return [[str(_) for _ in proof_level] for proof_level in proof]
+    return [str(_) for _ in proof]
 
 class TradeHistoryUpdateData(object):
     def __init__(self,
@@ -246,7 +256,7 @@ class TradeHistoryUpdateData(object):
                  rootBefore, rootAfter,
                  before, after):
         self.orderID = int(orderID)
-        self.proof = [str(_) for _ in proof]
+        self.proof = write_proof(proof)
         self.rootBefore = str(rootBefore)
         self.rootAfter = str(rootAfter)
         self.before = before
@@ -258,7 +268,7 @@ class BalanceUpdateData(object):
                  rootBefore, rootAfter,
                  before, after):
         self.tokenID = int(tokenID)
-        self.proof = [str(_) for _ in proof]
+        self.proof = write_proof(proof)
         self.rootBefore = str(rootBefore)
         self.rootAfter = str(rootAfter)
         self.before = before
@@ -270,7 +280,7 @@ class AccountUpdateData(object):
                  rootBefore, rootAfter,
                  before, after):
         self.accountID = int(accountID)
-        self.proof = [str(_) for _ in proof]
+        self.proof = write_proof(proof)
         self.rootBefore = str(rootBefore)
         self.rootAfter = str(rootAfter)
         self.before = before
@@ -483,11 +493,11 @@ class State(object):
     def __init__(self, exchangeID):
         self.exchangeID = int(exchangeID)
         # Accounts
-        self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS)
+        self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS // NUM_BITS_TREE, NUM_BITS_TREE)
         self._accountsTree.newTree(getDefaultAccount().hash())
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
-        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:
