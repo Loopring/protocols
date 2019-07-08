@@ -118,7 +118,6 @@ library ExchangeBlocks
             ),
             "INVALID_PROOF"
         );
-
         // Mark the block as verified
         specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
         emit BlockVerified(blockIdx);

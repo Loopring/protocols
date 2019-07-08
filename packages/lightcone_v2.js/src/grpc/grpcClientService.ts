@@ -46,9 +46,8 @@ class GrpcClientService {
     // Verfied
     public async getDexConfigurations(): Promise<DexConfigurations> {
         const empty: Empty = new Empty();
-
         return new Promise<DexConfigurations>((resolve: Function, reject: Function): void => {
-            this.client.getDexConfigurations(empty, {}, (err: grpcWeb.Error, res: DexConfigurations) => {
+            this.client.getDexConfigurations(empty, null, (err: grpcWeb.Error, res: DexConfigurations) => {
                 if (err) {
                     return reject(err);
                 }

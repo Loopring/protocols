@@ -127,7 +127,6 @@ library ExchangeWithdrawals
         require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
         // Send surplus of ETH back to the sender
         msg.sender.transferETH(msg.value.sub(S.withdrawalFeeETH), gasleft());
-
         // Add the withdraw to the withdraw chain
         ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
         ExchangeData.Request memory request = ExchangeData.Request(
