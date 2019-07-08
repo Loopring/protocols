@@ -43,7 +43,7 @@ contract TEST is DummyToken {
         "TEST_TEST",
         "TEST",
         18,
-        10 ** 27
+        2 ** 128
     ) public
     {
     }

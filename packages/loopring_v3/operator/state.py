@@ -16,6 +16,8 @@ TREE_DEPTH_TRADING_HISTORY = 14
 TREE_DEPTH_ACCOUNTS = 20
 TREE_DEPTH_TOKENS = 8
 
+MAX_AMOUNT = 2 ** 96 - 1
+
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
     c.tradingHistoryRoot = str(leaf._tradingHistoryTree._root)
@@ -177,8 +179,8 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
-        if int(self._balancesLeafs[str(tokenID)].balance) >= 2 ** 96:
-            self._balancesLeafs[str(tokenID)].balance = str((2 ** 96) - 1)
+        if int(self._balancesLeafs[str(tokenID)].balance) > MAX_AMOUNT:
+            self._balancesLeafs[str(tokenID)].balance = str(MAX_AMOUNT)
         if shutdown:
             self._balancesLeafs[str(tokenID)].resetTradeHistory()
 
@@ -202,6 +204,8 @@ class Account(object):
         # Update filled amounts
         tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled, cancelledToStore, orderIDToStore)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
+        if int(self._balancesLeafs[str(tokenID)].balance) > MAX_AMOUNT:
+            self._balancesLeafs[str(tokenID)].balance = str(MAX_AMOUNT)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)

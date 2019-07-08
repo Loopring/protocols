@@ -16,15 +16,10 @@
 */
 pragma solidity 0.5.7;
 
-import "../../lib/AddressUtil.sol";
-import "../../lib/BurnableERC20.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
-import "./ExchangeAccounts.sol";
 import "./ExchangeBalances.sol";
 import "./ExchangeData.sol";
-import "./ExchangeMode.sol";
 
 
 /// @title ExchangeAccounts.
@@ -34,7 +29,6 @@ library ExchangeAccounts
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
-    using ExchangeMode      for ExchangeData.State;
     using ExchangeBalances  for ExchangeData.State;
 
     event AccountCreated(
@@ -70,7 +64,6 @@ library ExchangeAccounts
         pubKeyY = account.pubKeyY;
     }
 
-    // We do allow pubkeyX and/or pubkeyY to be 0.
     function createOrUpdateAccount(
         ExchangeData.State storage S,
         uint pubKeyX,
@@ -161,7 +154,7 @@ library ExchangeAccounts
         returns (uint24 accountID)
     {
         accountID = S.ownerToAccountId[owner];
-        require(accountID != 0, "SENDER_HAS_NO_ACCOUNT");
+        require(accountID != 0, "ADDRESS_HAS_NO_ACCOUNT");
 
         accountID = accountID - 1;
     }

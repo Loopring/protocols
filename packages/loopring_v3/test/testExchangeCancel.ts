@@ -221,5 +221,49 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
+    it("Cancel all orders from an account by changing the account's public key", async () => {
+      const ring: RingInfo = {
+        orderA:
+          {
+            tokenS: "WETH",
+            tokenB: "GTO",
+            amountS: new BN(web3.utils.toWei("100", "ether")),
+            amountB: new BN(web3.utils.toWei("200", "ether")),
+          },
+        orderB:
+          {
+            tokenS: "GTO",
+            tokenB: "WETH",
+            amountS: new BN(web3.utils.toWei("200", "ether")),
+            amountB: new BN(web3.utils.toWei("100", "ether")),
+          },
+        expected: {
+          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
+          orderB: { filledFraction: 0.0 },
+        },
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.commitDeposits(exchangeId);
+
+      await exchangeTestUtil.sendRing(exchangeId, ring);
+
+      // Change the account's public key
+      await exchangeTestUtil.deposit(exchangeId, ring.orderB.owner,
+                                     "0", "0", "0",
+                                     constants.zeroAddress, new BN(0));
+      await exchangeTestUtil.commitDeposits(exchangeId);
+
+      // Try to use the ring
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitRings(this.exchangeID);
+      } catch {
+        exchangeTestUtil.cancelPendingRings(this.exchangeID);
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
+    });
+
   });
 });

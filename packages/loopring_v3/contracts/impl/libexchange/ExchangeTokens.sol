@@ -26,7 +26,7 @@ import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
 
-/// @title ExchangeAccounts.
+/// @title ExchangeTokens.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeTokens

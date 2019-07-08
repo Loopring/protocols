@@ -1,3 +1,4 @@
+import BN = require("bn.js");
 import { FloatEncoding } from "./float";
 
 export const TREE_DEPTH_TRADING_HISTORY = 14;
@@ -8,6 +9,8 @@ export const NUM_BITS_ACCOUNTID = TREE_DEPTH_ACCOUNTS;
 export const NUM_BITS_ORDERID = 20;
 
 export const MAX_NUM_TOKENS = 2 ** 8;
+
+export const MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
 
 export const Float28Encoding: FloatEncoding = {
   numBitsExponent: 5, numBitsMantissa: 23, exponentBase: 10,

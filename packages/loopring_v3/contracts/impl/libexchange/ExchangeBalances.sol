@@ -21,7 +21,7 @@ import "../../lib/MathUint.sol";
 import "../../thirdparty/MiMC.sol";
 
 
-/// @title IManagingMode.
+/// @title ExchangeBalances.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeBalances

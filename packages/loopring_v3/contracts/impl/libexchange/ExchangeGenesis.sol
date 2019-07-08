@@ -26,7 +26,7 @@ import "./ExchangeData.sol";
 import "./ExchangeTokens.sol";
 
 
-/// @title IManagingMode.
+/// @title ExchangeGenesis.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeGenesis
@@ -60,7 +60,7 @@ library ExchangeGenesis
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             0x06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3,
             0x0,
-            ExchangeData.BlockState.FINALIZED,
+            ExchangeData.BlockState.VERIFIED,
             ExchangeData.BlockType(0),
             0,
             0,

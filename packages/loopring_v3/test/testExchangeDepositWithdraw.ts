@@ -140,7 +140,8 @@ contract("Exchange", (accounts: string[]) => {
 
   const withdrawOnceChecked = async (blockIdx: number, slotIdx: number,
                                      accountID: number, token: string,
-                                     owner: string, expectedAmount: BN) => {
+                                     owner: string, uExpectedAmount: BN) => {
+    const expectedAmount = roundToFloatValue(uExpectedAmount, constants.Float28Encoding);
     const recipient = (accountID === 0) ? await loopring.protocolFeeVault() : owner;
     const balanceOwnerBefore = await exchangeTestUtil.getOnchainBalance(recipient, token);
     const balanceContractBefore = await exchangeTestUtil.getOnchainBalance(exchange.address, token);
@@ -358,6 +359,30 @@ contract("Exchange", (accounts: string[]) => {
       assert(newAccountID === accountID, "Account ID needs to remain the same");
     });
 
+    it("Update account", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+
+      // The correct deposit fee expected by the contract
+      const fees = await exchange.getFees();
+      const accountCreationFee = fees._accountCreationFeeETH;
+      const accountUpdateFee = fees._accountUpdateFeeETH;
+      const depositFee = fees._depositFeeETH;
+
+      // Everything correct for account creation
+      const totalCreationFee = depositFee.add(accountCreationFee);
+      const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalCreationFee, true);
+      assert(accountID > 0);
+
+      // Update the keys
+      const totalUpdateFee = depositFee.add(accountUpdateFee);
+      const newKeyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const newAccountID = await createOrUpdateAccountChecked(newKeyPair, owner, totalUpdateFee, false);
+      assert(newAccountID === accountID, "Account ID needs to remain the same");
+    });
+
     it("ERC20: Deposit", async () => {
       await createExchange();
 
@@ -413,7 +438,7 @@ contract("Exchange", (accounts: string[]) => {
       const wrongOwner = exchangeTestUtil.testContext.orderOwners[8];
       await expectThrow(
         exchange.deposit(token, amount, {from: wrongOwner, value: depositFee}),
-        "SENDER_HAS_NO_ACCOUNT",
+        "ADDRESS_HAS_NO_ACCOUNT",
       );
 
       // Everything correct
@@ -459,6 +484,33 @@ contract("Exchange", (accounts: string[]) => {
       await depositChecked(accountID, token, amount, owner, depositFee);
     });
 
+    it("Number of open deposits needs to be limited", async () => {
+      await createExchange(false);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      exchangeTestUtil.autoCommit = false;
+
+      // Do all deposits allowed
+      const maxDeposists = exchangeTestUtil.MAX_OPEN_DEPOSIT_REQUESTS;
+      for (let i = 0; i < maxDeposists; i++) {
+        await exchangeTestUtil.doRandomDeposit(undefined, false);
+      }
+
+      // Do another one
+      await expectThrow(
+        exchangeTestUtil.doRandomDeposit(undefined, false),
+        "TOO_MANY_REQUESTS_OPEN",
+      );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Do another one
+      await exchangeTestUtil.doRandomDeposit(undefined, false);
+
+      exchangeTestUtil.autoCommit = true;
+    });
+
     it("Onchain withdrawal request", async () => {
       await createExchange();
 
@@ -500,7 +552,7 @@ contract("Exchange", (accounts: string[]) => {
         exchangeID, accountID, token, toWithdraw, ownerA,
       );
 
-      // Commit the deposit
+      // Commit the withdrawal
       await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -510,6 +562,38 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, witdrawalRequest.slotIdx,
                             accountID, token,
                             ownerA, toWithdraw);
+    });
+
+    it("Number of open onchain withdrawal requests needs to be limited", async () => {
+      await createExchange(false);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Do a deposit
+      const depositInfo = await exchangeTestUtil.doRandomDeposit(undefined, false);
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      exchangeTestUtil.autoCommit = false;
+
+      // Do all withdrawals allowed
+      const maxWithdrawals = exchangeTestUtil.MAX_OPEN_WITHDRAWAL_REQUESTS;
+      for (let i = 0; i < maxWithdrawals; i++) {
+        await exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false);
+      }
+
+      // Do another one
+      await expectThrow(
+        exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false),
+        "TOO_MANY_REQUESTS_OPEN",
+      );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+
+      // Do another one
+      await exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false);
+
+      exchangeTestUtil.autoCommit = true;
     });
 
     it("Offchain withdrawal request (token == feeToken)", async () => {
@@ -820,6 +904,49 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawChecked(blockIdx, 1,
                             0, ring.orderB.tokenB,
                             constants.zeroAddress, protocolFeeB);
+    });
+
+    it("Deposits totalling the balance more than MAX_AMOUNT should be capped to MAX_AMOUNT", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[0];
+      const amount = constants.MAX_AMOUNT.sub(new BN(97));
+      const token = exchangeTestUtil.getTokenAddress("TEST");
+
+      // Deposit
+      await exchangeTestUtil.deposit(exchangeID, owner,
+                                     keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                     token, amount);
+      // Deposit again. This time the amount will be capped to 2**96
+      await exchangeTestUtil.deposit(exchangeID, owner,
+                                     keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
+                                     token, amount);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
+      const accountID = await exchangeTestUtil.getAccountID(owner);
+      const account = (await exchangeTestUtil.loadExchangeState(exchangeID)).accounts[accountID];
+      assert(account.balances[tokenID].balance.eq(constants.MAX_AMOUNT), "Balance should be MAX_AMOUNT");
+
+
+      // Do a withdrawal request
+      const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOnchain(
+        exchangeID, accountID, token, constants.MAX_AMOUNT, owner,
+      );
+
+      // Commit the withdrawal
+      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+
+      // Withdraw
+      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      await withdrawChecked(blockIdx, witdrawalRequest.slotIdx,
+                            accountID, token,
+                            owner, constants.MAX_AMOUNT);
     });
 
     it("Distribute withdrawals (by operator)", async () => {

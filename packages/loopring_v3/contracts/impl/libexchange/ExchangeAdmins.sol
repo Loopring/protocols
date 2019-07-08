@@ -25,7 +25,7 @@ import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
 
-/// @title ExchangeAccounts.
+/// @title ExchangeAdmins.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeAdmins
@@ -210,8 +210,8 @@ library ExchangeAdmins
 
         // Exchange needs to be shutdown
         require(S.isShutdown(), "EXCHANGE_NOT_SHUTDOWN");
-        // Last block needs to be finalized
-        require(lastBlock.state == ExchangeData.BlockState.FINALIZED, "BLOCK_NOT_FINALIZED");
+        // All blocks needs to be finalized
+        require(S.blocks.length == S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // We also require that all deposit requests are processed
         require(lastBlock.numDepositRequestsCommitted == S.depositChain.length, "DEPOSITS_NOT_PROCESSED");
         // Merkle root needs to be reset to the genesis block

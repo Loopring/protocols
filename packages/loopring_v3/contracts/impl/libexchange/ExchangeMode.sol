@@ -21,7 +21,7 @@ import "../../lib/MathUint.sol";
 import "./ExchangeData.sol";
 
 
-/// @title IManagingMode.
+/// @title ExchangeMode.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeMode
@@ -41,14 +41,12 @@ library ExchangeMode
         // Check if there's a deposit request that's too old
         if (currentBlock.numDepositRequestsCommitted < S.depositChain.length) {
             uint32 requestTimestamp = S.depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
-
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
         }
 
         // Check if there's a withdrawal request that's too old
         if (result == false && currentBlock.numWithdrawalRequestsCommitted < S.withdrawalChain.length) {
             uint32 requestTimestamp = S.withdrawalChain[currentBlock.numWithdrawalRequestsCommitted].timestamp;
-
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
         }
 
@@ -96,7 +94,7 @@ library ExchangeMode
     {
         ExchangeData.Block storage firstBlock = S.blocks[0];
         ExchangeData.Block storage lastBlock = S.blocks[S.blocks.length - 1];
-        return (lastBlock.state == ExchangeData.BlockState.FINALIZED) &&
+        return (S.blocks.length == S.numBlocksFinalized) &&
             (lastBlock.numDepositRequestsCommitted == S.depositChain.length) &&
             (lastBlock.merkleRoot == firstBlock.merkleRoot);
     }
@@ -108,7 +106,7 @@ library ExchangeMode
         view
         returns (bool)
     {
-        // Users requests are possible when the exchange is not in maintenance mode,
+        // User requests are possible when the exchange is not in maintenance mode,
         // the exchange hasn't been shutdown, and the exchange isn't in withdrawal mode
         return !isInMaintenance(S) && !isShutdown(S) && !isInWithdrawalMode(S);
     }
