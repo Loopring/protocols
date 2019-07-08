@@ -1,5 +1,4 @@
-import { GetNextOrderIdReq } from './proto_gen/service_dex_pb';
-import { DexServiceClient } from './proto_gen/service_dex_grpc_pb';
+import { grpcClientService } from './grpc/grpcClientService';
 
 import common from './lib/wallet/common';
 import ethereum from './lib/wallet/ethereum';
@@ -14,8 +13,7 @@ import Utils from './lib/wallet/common/utils';
 
 
 export {
-    GetNextOrderIdReq,
-    DexServiceClient,
+    grpcClientService,
     common,
     ethereum,
     // WalletUtils,

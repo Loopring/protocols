@@ -3,17 +3,12 @@ import { generateKeyPair, sign } from 'src/lib/sign/eddsa';
 import config from 'src/lib/wallet/config';
 
 import {grpcClientService} from 'src/grpc/grpcClientService';
-import {DexAccount, OrderInfo, Signature} from '../model/types';
+import {ethereum} from 'src/lib/wallet';
+import * as fm from 'src/lib/wallet/common/formatter';
+import Eth from "src/lib/wallet/ethereum/eth";
 import Transaction from "src/lib/wallet/ethereum/transaction";
-import * as fm from "src/lib/wallet/common/formatter";
-import {ethereum} from "src/lib/wallet";
-import {WalletAccount} from "src/lib/wallet/ethereum/walletAccount";
-import {
-    Account,
-    GetNextOrderIdReq,
-    SimpleOrderCancellationReq
-} from "src/proto_gen/service_dex_pb";
-import {Order, TokenAmounts} from "src/proto_gen/data_order_pb";
+import {WalletAccount} from 'src/lib/wallet/ethereum/walletAccount';
+import {Order, TokenAmounts} from 'src/proto_gen/data_order_pb';
 import {
     AccountID,
     Amount,
@@ -23,17 +18,22 @@ import {
     EdDSASignature,
     OrderID,
     TokenID
-} from "src/proto_gen/data_types_pb";
-import Eth from "src/lib/wallet/ethereum/eth";
+} from 'src/proto_gen/data_types_pb';
+import {
+    Account,
+    GetNextOrderIdReq,
+    SimpleOrderCancellationReq
+} from 'src/proto_gen/service_dex_pb';
+import {DexAccount, OrderInfo, Signature} from '../model/types';
 
 export class Exchange {
 
-    private exchangeID: number;
-    private exchangeAddr: string;
-    private walletAccountID: number;
+    private readonly exchangeID: number;
+    private readonly exchangeAddr: string;
+    private readonly walletAccountID: number;
     private currentDexAccount: DexAccount;
     private currentWalletAccount: WalletAccount;
-    private accounts: Map<WalletAccount, DexAccount>;
+    private readonly accounts: Map<WalletAccount, DexAccount>;
 
     public constructor() {
         this.exchangeID = 0;  // TODO: config
@@ -47,6 +47,7 @@ export class Exchange {
         for (let i = 0; i < length; i++) {
             res[i] = value.testn(i) ? 1 : 0;
         }
+
         return res;
     }
 
@@ -58,16 +59,46 @@ export class Exchange {
         return Exchange.toBitsBN(new BN(value, 10), length);
     }
 
-    public flattenList = (l: any[]) => {
-        return [].concat.apply([], l);
-    };
+    private static genAmount(amount: BN): Amount {
+        const result = new Amount();
+        result.setValue(fm.toHex(amount));
 
-    private getAccountId() {
-        return this.currentDexAccount.accountID;
+        return result;
     }
 
-    private getAddress() {
-        return this.currentWalletAccount.getAddress();
+    private static genBips(amount: number): Bips {
+        const result = new Bips();
+        result.setValue(amount);
+
+        return result;
+    }
+
+    private static genPubKey(publicX: string, publicY: string): EdDSAPubKey {
+        const result = new EdDSAPubKey();
+        result.setX(publicX);
+        result.setY(publicY);
+
+        return result;
+    }
+
+    private static genPriKey(secret: string): EdDSAPrivKey {
+        const result = new EdDSAPrivKey();
+        result.setValue(secret);
+
+        return result;
+    }
+
+    private static genSignature(signature: Signature): EdDSASignature {
+        const result = new EdDSASignature();
+        result.setRx(signature.Rx);
+        result.setRy(signature.Ry);
+        result.setS(signature.s);
+
+        return result;
+    }
+
+    public flattenList = (l: any[]) => {
+        return [].concat.apply([], l);
     }
 
     public async createAccount(wallet: WalletAccount, gasPrice: number) {
@@ -88,17 +119,18 @@ export class Exchange {
                             this.currentDexAccount = dexAccount;
                             this.currentWalletAccount = wallet;
                         });
-                    })
+                    });
                 }
             );
         }
     }
 
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
-        let data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
+        const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
             pubKeyX: publicX,
             pubKeyY: publicY
         });
+
         return new Transaction({
             to: this.exchangeAddr,
             value: '0x0',
@@ -107,13 +139,13 @@ export class Exchange {
             nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
             gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
             gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
-        })
+        });
     }
 
     public async deposit(symbol: string, amount: number, gasPrice: number) {
         let to, value, data: string;
-        let token = config.getTokenBySymbol(symbol);
-        value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+        const token = config.getTokenBySymbol(symbol);
+        value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
         if (this.currentWalletAccount.getAddress()) {
             if (symbol === 'ETH') {
                 to = this.exchangeAddr;
@@ -126,6 +158,7 @@ export class Exchange {
                 });
                 value = '0x0';
             }
+
             return new Transaction({
                 to: to,
                 value: value,
@@ -140,8 +173,8 @@ export class Exchange {
 
     public async withdraw(symbol: string, amount: number, gasPrice: number) {
         let to, value, data: string;
-        let token = config.getTokenBySymbol(symbol);
-        value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+        const token = config.getTokenBySymbol(symbol);
+        value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
         if (this.getAddress()) {
             if (symbol === 'ETH') {
                 to = this.exchangeAddr;
@@ -154,6 +187,7 @@ export class Exchange {
                 });
                 value = '0x0';
             }
+
             return new Transaction({
                 to: to,
                 value: value,
@@ -193,10 +227,10 @@ export class Exchange {
     }
 
     public async setupOrder(order: OrderInfo) {
-        if (!order.tokenS.startsWith("0x")) {
+        if (!order.tokenS.startsWith('0x')) {
             order.tokenS = config.getTokenBySymbol(order.tokenS).address;
         }
-        if (!order.tokenB.startsWith("0x")) {
+        if (!order.tokenB.startsWith('0x')) {
             order.tokenB = config.getTokenBySymbol(order.tokenB).address;
         }
         if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
@@ -209,10 +243,7 @@ export class Exchange {
         order.tokenIdS = config.getTokenBySymbol(order.tokenS).id;
         order.tokenIdB = config.getTokenBySymbol(order.tokenB).id;
 
-        const getNextOrderIdReq = new GetNextOrderIdReq();
-        getNextOrderIdReq.setTokenSellId(order.tokenIdS);
-        getNextOrderIdReq.setAccountId(this.currentDexAccount.accountID);
-        const nextOrderId = await grpcClientService.getNextOrderId(getNextOrderIdReq);
+        const nextOrderId = await grpcClientService.getNextOrderId(this.currentDexAccount.accountID, order.tokenIdS);
         order.orderID = (order.orderID !== undefined) ? order.orderID : nextOrderId.getValue();
 
         order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : this.exchangeID;
@@ -224,45 +255,12 @@ export class Exchange {
         order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
         order.walletAccountID = (order.walletAccountID !== undefined) ? order.walletAccountID : this.walletAccountID;
 
-        assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
-        assert(order.feeBips < 64, "feeBips >= 64");
-        assert(order.rebateBips < 64, "rebateBips >= 64");
+        assert(order.maxFeeBips < 64, 'maxFeeBips >= 64');
+        assert(order.feeBips < 64, 'feeBips >= 64');
+        assert(order.rebateBips < 64, 'rebateBips >= 64');
 
         // Sign the order
         this.signOrder(order);
-    }
-
-    private static genAmount(amount: BN): Amount {
-        const result = new Amount();
-        result.setValue(fm.toHex(amount));
-        return result
-    }
-
-    private static genBips(amount: number): Bips {
-        const result = new Bips();
-        result.setValue(amount);
-        return result
-    }
-
-    private static genPubKey(publicX: string, publicY: string): EdDSAPubKey {
-        const result = new EdDSAPubKey();
-        result.setX(publicX);
-        result.setY(publicY);
-        return result
-    }
-
-    private static genPriKey(secret: string): EdDSAPrivKey {
-        const result = new EdDSAPrivKey();
-        result.setValue(secret);
-        return result
-    }
-
-    private static genSignature(signature: Signature): EdDSASignature {
-        const result = new EdDSASignature();
-        result.setRx(signature.Rx);
-        result.setRy(signature.Ry);
-        result.setS(signature.s);
-        return result
     }
 
     public async submitOrder(orderInfo: OrderInfo) {
@@ -326,24 +324,32 @@ export class Exchange {
     }
 
     public async cancelOrder(orderInfo: OrderInfo) {
-        let simpleOrderCancellationReq = new SimpleOrderCancellationReq();
+        const simpleOrderCancellationReq = new SimpleOrderCancellationReq();
         simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeID);
         simpleOrderCancellationReq.setAccountId(orderInfo.accountID);
         simpleOrderCancellationReq.setMarketId(orderInfo.tokenIdS);
         simpleOrderCancellationReq.setOrderUuid(orderInfo.orderID);
 
-        let timeStamp = new Date().getTime();
+        const timeStamp = new Date().getTime();
         simpleOrderCancellationReq.setTimestamp(timeStamp);
 
-        let bits = Exchange.toBitsBN(fm.toBN(timeStamp), 32);
+        const bits = Exchange.toBitsBN(fm.toBN(timeStamp), 32);
         const sig = sign(this.currentDexAccount.secretKey, bits);
-        let edDSASignature = new EdDSASignature();
+        const edDSASignature = new EdDSASignature();
         edDSASignature.setS(sig.S);
         edDSASignature.setRx(sig.R[0].toString());
         edDSASignature.setRy(sig.R[1].toString());
         simpleOrderCancellationReq.setSig(edDSASignature);
 
         return grpcClientService.cancelOrder(simpleOrderCancellationReq);
+    }
+
+    private getAccountId() {
+        return this.currentDexAccount.accountID;
+    }
+
+    private getAddress() {
+        return this.currentWalletAccount.getAddress();
     }
 
 }
