@@ -21,8 +21,6 @@ TREE_DEPTH_TRADING_HISTORY = 14
 TREE_DEPTH_ACCOUNTS = 20
 TREE_DEPTH_TOKENS = 8
 
-NUM_BITS_TREE = 2
-
 MAX_AMOUNT = 2 ** 96 - 1
 
 def copyBalanceInfo(leaf):
@@ -69,7 +67,7 @@ class BalanceLeaf(object):
     def __init__(self, balance = 0):
         self.balance = str(balance)
         # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // NUM_BITS_TREE, NUM_BITS_TREE)
+        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // 2, 4)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
         # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
@@ -118,7 +116,7 @@ class BalanceLeaf(object):
 
     def resetTradeHistory(self):
         # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // NUM_BITS_TREE, NUM_BITS_TREE)
+        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // 2, 4)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
 
@@ -145,7 +143,7 @@ class Account(object):
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
         # Balances
-        self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS // NUM_BITS_TREE, NUM_BITS_TREE)
+        self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
         self._balancesLeafs = {}
         #print("Empty balances tree: " + str(self._balancesTree._root))
@@ -493,7 +491,7 @@ class State(object):
     def __init__(self, exchangeID):
         self.exchangeID = int(exchangeID)
         # Accounts
-        self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS // NUM_BITS_TREE, NUM_BITS_TREE)
+        self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS // 2, 4)
         self._accountsTree.newTree(getDefaultAccount().hash())
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()

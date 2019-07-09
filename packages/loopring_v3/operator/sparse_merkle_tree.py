@@ -4,14 +4,15 @@
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonMerkleTreeParams = poseidon_params(SNARK_SCALAR_FIELD, 5, 8, 57, b'poseidon', 5)
+poseidonMerkleTreeParams4 = poseidon_params(SNARK_SCALAR_FIELD, 5, 8, 57, b'poseidon', 5)
+poseidonMerkleTreeParams5 = poseidon_params(SNARK_SCALAR_FIELD, 6, 8, 57, b'poseidon', 5)
 
 class MerkleHasher_Poseidon(object):
-    def __init__(self, tree_depth):
-        self._tree_depth = tree_depth
+    def __init__(self, num_children):
+        self._num_children = num_children
 
     def hash(self, depth, inputs):
-        return poseidon(inputs, False, poseidonMerkleTreeParams)
+        return poseidon(inputs, False, poseidonMerkleTreeParams4 if self._num_children == 4 else poseidonMerkleTreeParams5)
 
 MerkleHasher = MerkleHasher_Poseidon
 
@@ -29,12 +30,11 @@ class EphemDB():
         del self.kv[str(k)]
 
 class SparseMerkleTree(object):
-    def __init__(self, depth, num_bits = 1):
+    def __init__(self, depth, num_children = 2):
         assert depth > 1
         self._depth = depth
-        self._num_bits = num_bits
-        self._num_children = 2 ** num_bits
-        self._hasher = MerkleHasher(self._depth)
+        self._num_children = num_children
+        self._hasher = MerkleHasher(self._num_children)
         self._db = EphemDB()
         self._root = 0
 
@@ -49,10 +49,10 @@ class SparseMerkleTree(object):
     def get(self, key):
         v = self._root
         path = key
-        for i in range(self._depth):
-            child_index = (path >> (self._depth * self._num_bits - self._num_bits)) & (self._num_children - 1)
+        for _ in range(self._depth):
+            child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
             v = self._db.get(v)[child_index]
-            path <<= self._num_bits
+            path *= self._num_children
         return v
 
     def update(self, key, value):
@@ -62,12 +62,12 @@ class SparseMerkleTree(object):
         for i in range(self._depth):
             children = self._db.get(v)
             sidenodes.append(children)
-            child_index = (path >> (self._depth * self._num_bits - self._num_bits)) & (self._num_children - 1)
+            child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
             v = children[child_index]
-            path <<= self._num_bits
+            path *= self._num_children
         v = value
         for i in range(self._depth):
-            child_index = path2 & (self._num_children - 1)
+            child_index = path2 % self._num_children
             leafs = []
             for c in range(self._num_children):
                 if c != child_index:
@@ -76,7 +76,7 @@ class SparseMerkleTree(object):
                     leafs.append(v)
             newv = self._hasher.hash(i, leafs)
             self._db.put(newv, leafs)
-            path2 >>= self._num_bits
+            path2 //= self._num_children
             v = newv
         self._root = v
 
@@ -86,12 +86,12 @@ class SparseMerkleTree(object):
         sidenodes = []
         for i in range(self._depth):
             sidenodes.append([])
-            child_index = (path >> (self._depth * self._num_bits - self._num_bits)) & (self._num_children - 1)
+            child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
             for c in range(self._num_children):
                 if c != child_index:
                     sidenodes[i].append(self._db.get(v)[c])
             v = self._db.get(v)[child_index]
-            path <<= self._num_bits
+            path *= self._num_children
 
         # The circuit expects the proof in the reverse direction from bottom to top
         sidenodes.reverse()
