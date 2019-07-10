@@ -7,12 +7,19 @@ export class BitArray {
     this.data = initialData;
   }
 
+  public addBNWithoutLength(value: BN) {
+    const strBits = Array.from(value.toString(2));
+    const numBits = strBits.map(i => Number(i));
+    this.data.push(...numBits);
+  }
+
   public addBN(value: BN, length: number) {
-    const res = new Array(length);
-    for (let i = 0; i < length; i++) {
-      res[i] = value.testn(i) ? 1 : 0;
+    let bits = value.toString(2);
+    if (length > bits.length) {
+      bits = "0".repeat(length - bits.length) + bits;
     }
-    this.data.push(...res);
+    const numBits = Array.from(bits).map(n => Number(n));
+    this.data.push(...numBits);
   }
 
   public addNumber(value: number, length: number) {
