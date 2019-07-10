@@ -52,7 +52,7 @@ library ExchangeBlocks
         uint    indexed blockIdx
     );
 
-    event ProtocolFeeChanged(
+    event ProtocolFeesUpdated(
         uint8 takerFeeBips,
         uint8 makerFeeBips,
         uint8 previousTakerFeeBips,
@@ -267,7 +267,7 @@ library ExchangeBlocks
                 "INVALID_TIMESTAMP"
             );
             require(
-                validateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
+                validateAndUpdateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
                 "INVALID_PROTOCOL_FEES"
             );
         } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
@@ -395,7 +395,7 @@ library ExchangeBlocks
         emit BlockCommitted(S.blocks.length - 1, publicDataHash);
     }
 
-    function validateProtocolFeeValues(
+    function validateAndUpdateProtocolFeeValues(
         ExchangeData.State storage S,
         uint8 takerFeeBips,
         uint8 makerFeeBips
@@ -414,12 +414,18 @@ library ExchangeBlocks
                 S.onchainDataAvailability
             );
             data.timestamp = uint32(now);
-            emit ProtocolFeeChanged(
-                data.takerFeeBips,
-                data.makerFeeBips,
-                data.previousTakerFeeBips,
-                data.previousMakerFeeBips
-            );
+
+            bool feeUpdated = (data.takerFeeBips != data.previousTakerFeeBips) ||
+                (data.makerFeeBips != data.previousMakerFeeBips);
+
+            if (feeUpdated) {
+                emit ProtocolFeesUpdated(
+                    data.takerFeeBips,
+                    data.makerFeeBips,
+                    data.previousTakerFeeBips,
+                    data.previousMakerFeeBips
+                );
+            }
         }
         // The given fee values are valid if they are the current or previous protocol fee values
         return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||

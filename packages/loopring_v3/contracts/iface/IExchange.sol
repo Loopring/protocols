@@ -114,7 +114,7 @@ contract IExchange
         uint96          amount
     );
 
-    event ProtocolFeeChanged(
+    event ProtocolFeesUpdated(
         uint8 takerFeeBips,
         uint8 makerFeeBips,
         uint8 previousTakerFeeBips,
