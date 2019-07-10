@@ -52,6 +52,13 @@ library ExchangeBlocks
         uint    indexed blockIdx
     );
 
+    event ProtocolFeeChanged(
+        uint8 takerFeeBips,
+        uint8 makerFeeBips,
+        uint8 previousTakerFeeBips,
+        uint8 previousMakerFeeBips
+    );
+
     function commitBlock(
         ExchangeData.State storage S,
         uint8  blockType,
@@ -407,6 +414,12 @@ library ExchangeBlocks
                 S.onchainDataAvailability
             );
             data.timestamp = uint32(now);
+            emit ProtocolFeeChanged(
+                data.takerFeeBips,
+                data.makerFeeBips,
+                data.previousTakerFeeBips,
+                data.previousMakerFeeBips
+            );
         }
         // The given fee values are valid if they are the current or previous protocol fee values
         return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
