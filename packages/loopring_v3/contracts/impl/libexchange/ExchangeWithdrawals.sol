@@ -463,11 +463,15 @@ library ExchangeWithdrawals
         internal
         returns (bool success)
     {
-        address to = S.accounts[accountID].owner;
         // If we're withdrawing from the protocol fee account send the tokens
-        // directly to the protocol fee manager
-        if (accountID == 0) {
+        // directly to the protocol fee vault.
+        // If we're withdrawing to an unknown account (can currently happen while
+        // distributing tokens in shutdown) send the tokens to the protocol fee vault as well.
+        address to;
+        if (accountID == 0 || accountID >= S.accounts.length) {
             to = S.loopring.protocolFeeVault();
+        } else {
+            to = S.accounts[accountID].owner;
         }
 
         address token = S.getTokenAddress(tokenID);
