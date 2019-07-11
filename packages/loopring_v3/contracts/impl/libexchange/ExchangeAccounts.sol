@@ -27,7 +27,6 @@ import "./ExchangeData.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeAccounts
 {
-    using AddressUtil       for address payable;
     using MathUint          for uint;
     using ExchangeBalances  for ExchangeData.State;
 
