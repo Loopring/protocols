@@ -176,6 +176,9 @@ export interface CancelBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
+  blockType: BlockType;
+  blockSize: number;
+  blockVersion: number;
   operatorId: number;
   compressedData: string;
 }

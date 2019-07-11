@@ -513,11 +513,11 @@ contract IExchange
     ///
     ///      This method can be called by anyone with a valid proof.
     ///
-    /// @param blockIdx The 0-based index of the block to be verified with the given proof
-    /// @param proof The ZK proof
-    function verifyBlock(
-        uint blockIdx,
-        uint256[8] calldata proof
+    /// @param blockIndices The 0-based index of the block to be verified with the given proof
+    /// @param proofs The ZK proof for all blockIndices (proofs.length % 8 == 0).
+    function verifyBlocks(
+        uint[] calldata blockIndices,
+        uint256[] calldata proofs
         )
         external;
 

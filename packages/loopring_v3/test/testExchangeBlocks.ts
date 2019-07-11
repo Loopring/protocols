@@ -11,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeId = 0;
   let exchange: any;
   let loopring: any;
-  
+
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
@@ -379,7 +379,7 @@ contract("Exchange", (accounts: string[]) => {
           exchangeTestUtil.shuffle(blocks);
           // Verify all blocks
           for (const block of blocks) {
-            await exchangeTestUtil.verifyBlock(block.blockIdx, block.filename);
+            await exchangeTestUtil.verifyBlocks([block]);
           }
           const numBlocks = (await exchange.getBlockHeight()).toNumber();
           const numBlocksFinalized = (await exchange.getNumBlocksFinalized()).toNumber();
@@ -397,12 +397,12 @@ contract("Exchange", (accounts: string[]) => {
           }
           // Verify all blocks
           for (const block of blocks) {
-            await exchangeTestUtil.verifyBlock(block.blockIdx, block.filename);
+            await exchangeTestUtil.verifyBlocks([block]);
           }
           // Try to verify all blocks agains
           for (const block of blocks) {
             await expectThrow(
-              exchangeTestUtil.verifyBlock(block.blockIdx, block.filename),
+              exchangeTestUtil.verifyBlocks([block]),
               "BLOCK_VERIFIED_ALREADY",
             );
           }
@@ -422,7 +422,7 @@ contract("Exchange", (accounts: string[]) => {
           // Try to verify the blocks
           for (const block of blocks) {
             await expectThrow(
-              exchangeTestUtil.verifyBlock(block.blockIdx, block.filename),
+              exchangeTestUtil.verifyBlocks([block]),
               "PROOF_TOO_LATE",
             );
           }
@@ -440,7 +440,7 @@ contract("Exchange", (accounts: string[]) => {
           // Try to verify the blocks
           for (const block of blocks) {
             await expectThrow(
-              exchange.verifyBlock(block.blockIdx, new Array(8).fill(new BN(123)),
+              exchange.verifyBlocks([block.blockIdx], new Array(8).fill(new BN(123)),
               {from: exchangeTestUtil.exchangeOperator}),
             );
           }
@@ -809,7 +809,7 @@ contract("Exchange", (accounts: string[]) => {
         await createExchange();
         // Try to verify a block
         await expectThrow(
-          exchange.verifyBlock(1, [0, 0, 0, 0, 0, 0, 0, 0],
+          exchange.verifyBlocks([1], [0, 0, 0, 0, 0, 0, 0, 0],
           {from: exchangeTestUtil.testContext.orderOwners[0]}),
           "UNAUTHORIZED",
         );

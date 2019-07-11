@@ -925,6 +925,9 @@ export class ExchangeTestUtil {
     const block: Block = {
       blockIdx,
       filename,
+      blockType,
+      blockSize,
+      blockVersion,
       operatorId,
       compressedData,
     };
@@ -971,53 +974,75 @@ export class ExchangeTestUtil {
     );
   }
 
-  public async verifyBlock(blockIdx: number, blockFilename: string) {
-    const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+  public async verifyBlocks(blocks: Block[]) {
+    if (blocks.length === 0) {
+      return;
+    }
+    // Generate proofs
+    const blockIndices: number[] = [];
+    const proofs: any[] = [];
+    for (const block of blocks) {
+      const blockData = JSON.parse(fs.readFileSync(block.filename, "ascii"));
 
-    const proofFilename = "./blocks/block_" + block.exchangeID + "_" + blockIdx + "_proof.json";
-    const result = childProcess.spawnSync(
-      "build/circuit/dex_circuit",
-      ["-prove", blockFilename, proofFilename],
-      {stdio: doDebugLogging() ? "inherit" : "ignore"},
-    );
-    assert(result.status === 0, "verifyBlock failed: " + blockFilename);
+      const proofFilename = "./blocks/block_" + blockData.exchangeID + "_" + block.blockIdx + "_proof.json";
+      const result = childProcess.spawnSync(
+        "build/circuit/dex_circuit",
+        ["-prove", block.filename, proofFilename],
+        {stdio: doDebugLogging() ? "inherit" : "ignore"},
+      );
+      assert(result.status === 0, "verifyBlock failed: " + block.filename);
 
-    // Read the proof
-    const proof = JSON.parse(fs.readFileSync(proofFilename, "ascii"));
-    const proofFlattened = this.flattenProof(proof);
-    // console.log(proof);
-    // console.log(this.flattenProof(proof));
+      // Read the proof
+      const proof = JSON.parse(fs.readFileSync(proofFilename, "ascii"));
+      const proofFlattened = this.flattenProof(proof);
+      // console.log(proof);
+      // console.log(this.flattenProof(proof));
+
+      blockIndices.push(block.blockIdx);
+      proofs.push(...proofFlattened);
+    }
 
     const numBlocksFinalizedBefore = await this.exchange.getNumBlocksFinalized();
-    const blockDataBefore = await this.exchange.getBlock(blockIdx);
+
+    const blockDataBefore: any[] = [];
+    for (const block of blocks) {
+      blockDataBefore.push(await this.exchange.getBlock(block.blockIdx));
+    }
 
     const operatorContract = this.operator ? this.operator : this.exchange;
-    const tx = await operatorContract.verifyBlock(
-      web3.utils.toBN(blockIdx),
-      proofFlattened,
+    const tx = await operatorContract.verifyBlocks(
+      blockIndices,
+      proofs,
       {from: this.exchangeOperator},
     );
-    logInfo("\x1b[46m%s\x1b[0m", "[verifyBlock] Gas used: " + tx.receipt.gasUsed);
+    logInfo("\x1b[46m%s\x1b[0m", "[verifyBlocks] Gas used: " + tx.receipt.gasUsed);
 
-    assert(blockDataBefore.blockState.toNumber() === BlockState.COMMITTED, "block state before needs to be COMMITTED");
+    // Block state before needs to be COMMITTED
+    for (const blockData of blockDataBefore) {
+      assert(blockData.blockState.toNumber() === BlockState.COMMITTED, "block state before needs to be COMMITTED");
+    }
 
-    // Check the BlockVerified event
+    // Check the BlockVerified event(s)
     {
       const eventArr: any = await this.getEventsFromContract(this.exchange, "BlockVerified", web3.eth.blockNumber);
       const items = eventArr.map((eventObj: any) => {
         return {blockIdx: eventObj.args.blockIdx};
       });
-      assert(items.length === 1, "a single BlockVerified needs to be emited");
-      assert(items[0].blockIdx.eq(web3.utils.toBN(blockIdx)), "block index should be equal to block idx sent");
+      assert(items.length === blocks.length, "a single BlockVerified needs to be emited");
+      for (const [i, block] of blocks.entries()) {
+        assert(items[i].blockIdx.eq(web3.utils.toBN(block.blockIdx)), "block index should be equal to block idx sent");
+      }
     }
 
     // Check the block data
-    const blockDataAfter = await this.exchange.getBlock(blockIdx);
-    assert(blockDataAfter.blockState.toNumber() === BlockState.VERIFIED, "block state after needs to be VERIFIED");
-    const numBlocksFinalizedAfter = await this.exchange.getNumBlocksFinalized();
-    const numBlocks = (await this.exchange.getBlockHeight()).toNumber() + 1;
+    for (const block of blocks) {
+      const blockDataAfter = await this.exchange.getBlock(block.blockIdx);
+      assert(blockDataAfter.blockState.toNumber() === BlockState.VERIFIED, "block state after needs to be VERIFIED");
+    }
 
     // Check numBlocksFinalized
+    const numBlocksFinalizedAfter = await this.exchange.getNumBlocksFinalized();
+    const numBlocks = (await this.exchange.getBlockHeight()).toNumber() + 1;
     let numBlockFinalizedExpected = 0;
     let idx = numBlocksFinalizedBefore.toNumber() + 1;
     while(idx < numBlocks &&
@@ -1041,13 +1066,42 @@ export class ExchangeTestUtil {
       }
     }
 
-    return proofFilename;
+    // return proofFilename;
   }
 
   public async verifyPendingBlocks(exchangeID: number) {
-    for (const block of this.pendingBlocks[exchangeID]) {
-      await this.verifyBlock(block.blockIdx, block.filename);
+    // Sort the blocks for batching
+    const blocks: Block[] = this.pendingBlocks[exchangeID].sort((blockA: Block, blockB: Block) => {
+      const getKey = (block: Block) => {
+        let key = 0;
+        key |= block.blockType;
+        key <<= 16;
+        key |= block.blockSize;
+        key <<= 8;
+        key |= block.blockVersion;
+        return key;
+      };
+      const keyA = getKey(blockA);
+      const keyB = getKey(blockB);
+      return keyA - keyB;
+    });
+    // Verify the blocks batched
+    let batch: Block[] = [];
+    for (let i = 0; i < blocks.length; i++) {
+      if (batch.length === 0) {
+        batch.push(blocks[i]);
+      } else {
+        if (batch[0].blockType === blocks[i].blockType &&
+            batch[0].blockSize === blocks[i].blockSize &&
+            batch[0].blockVersion === blocks[i].blockVersion) {
+          batch.push(blocks[i]);
+        } else {
+          await this.verifyBlocks(batch);
+          batch = [blocks[i]];
+        }
+      }
     }
+    await this.verifyBlocks(batch);
     this.pendingBlocks[exchangeID] = [];
   }
 

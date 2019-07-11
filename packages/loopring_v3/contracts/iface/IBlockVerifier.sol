@@ -58,7 +58,7 @@ contract IBlockVerifier
         view
         returns (bool);
 
-    /// @dev Verifies a block with the given public data and proof.
+    /// @dev Verify blocks with the given public data and proof.
     ///      Verifying a block makes sure all requests handled in the block
     ///      are correctly handled by the operator.
     /// @param blockType The type of block See @BlockType
@@ -66,16 +66,16 @@ contract IBlockVerifier
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @param publicDataHash The hash of all the public data
-    /// @param proof The ZK proof that the block is correct
+    /// @param publicInputs The hash of all the public data of the blocks
+    /// @param proofs The ZK proofs proving that the blocks are correct
     /// @return True if the block is valid, false otherwise
-    function verifyProof(
+    function verifyProofs(
         uint8   blockType,
         bool    onchainDataAvailability,
         uint16  blockSize,
         uint8   blockVersion,
-        bytes32 publicDataHash,
-        uint256[8] calldata proof
+        uint256[] calldata publicInputs,
+        uint256[] calldata proofs
         )
         external
         view

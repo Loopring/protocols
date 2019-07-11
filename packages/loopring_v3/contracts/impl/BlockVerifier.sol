@@ -23,6 +23,7 @@ import "../lib/Claimable.sol";
 import "../impl/libexchange/ExchangeData.sol";
 
 import "../thirdparty/Verifier.sol";
+import "../thirdparty/BatchVerifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
@@ -65,13 +66,13 @@ contract BlockVerifier is IBlockVerifier, Claimable
         return verificationKeys[dataAvailability][blockType][blockSize][blockVersion][0] != 0;
     }
 
-    function verifyProof(
+    function verifyProofs(
         uint8   blockType,
         bool    onchainDataAvailability,
         uint16  blockSize,
         uint8   blockVersion,
-        bytes32 publicDataHash,
-        uint256[8] calldata proof
+        uint256[] calldata publicInputs,
+        uint256[] calldata proofs
         )
         external
         view
@@ -85,10 +86,12 @@ contract BlockVerifier is IBlockVerifier, Claimable
             vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
         ];
         uint256[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
-        // Maybe we should strip the highest bits of the hash so we don't have any overflow (uint256/prime field)
-        uint256[1] memory publicInputs = [uint256(publicDataHash)];
 
-        return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
+        if (publicInputs.length == 1) {
+            return Verifier.Verify(_vk, _vk_gammaABC, proofs, publicInputs);
+        } else {
+            return BatchVerifier.BatchVerify(_vk, _vk_gammaABC, proofs, publicInputs, publicInputs.length);
+        }
     }
 
     function needsDataAvailability(
