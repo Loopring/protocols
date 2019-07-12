@@ -109,13 +109,19 @@ library ParticipationHelper {
         }
 
         if ((p.fillAmountS - p.feeAmountS) >= prevP.fillAmountB) {
-            // The miner (or in a P2P case, the taker) gets the margin
-            p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
-            p.fillAmountS = prevP.fillAmountB + p.feeAmountS;
+            // The taker gets the margin
+            // This is the old way of calculating the margin split. GET RID OF IT so the user wins, always :-)
+            //  p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
+
+            // Margin is given to the user
+            uint marginSplitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
+            p.fillAmountS = prevP.fillAmountB + p.feeAmountS + marginSplitS;
+            p.splitS = 0;
             return true;
         } else {
             return false;
         }
+        
     }
 
     function checkFills(
