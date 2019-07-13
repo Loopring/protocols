@@ -106,25 +106,32 @@ function sign(strKey, bits) {
     };
 }
 
-function verify(msg, sig, A) {
+function verify(bits, sig, pubKey) {
+    const A = [bigInt(pubKey[0]), bigInt(pubKey[1])];
+    const R = [bigInt(sig.Rx), bigInt(sig.Ry)];
+    const S = bigInt(sig.s);
+
     // Check parameters
-    if (typeof sig != "object") return false;
-    if (!Array.isArray(sig.R8)) return false;
-    if (sig.R8.length!= 2) return false;
-    if (!babyJub.inCurve(sig.R8)) return false;
+    if (!Array.isArray(R)) return false;
+    if (R.length!= 2) return false;
+    if (!babyJub.inCurve(R)) return false;
     if (!Array.isArray(A)) return false;
     if (A.length!= 2) return false;
     if (!babyJub.inCurve(A)) return false;
-    if (sig.S>= babyJub.subOrder) return false;
+    // if (S>= babyJub.subOrder) return false;
 
-    const R8p = babyJub.packPoint(sig.R8);
-    const Ap = babyJub.packPoint(A);
-    const hmBuff = pedersenHash(Buffer.concat([R8p, Ap, msg]));
-    const hm = bigInt.leBuff2int(hmBuff);
+    const hash = pedersenHash(toBitsArray(
+        [
+            toBitsBigInt(R[0], 254),
+            toBitsBigInt(A[0], 254),
+            bits,
+        ]
+    ));
+    const hm = bigInt(hash);
 
-    const Pleft = babyJub.mulPointEscalar(babyJub.Base8, sig.S);
-    let Pright = babyJub.mulPointEscalar(A, hm.mul(bigInt("8")));
-    Pright = babyJub.addPoint(sig.R8, Pright);
+    const Pleft = babyJub.mulPointEscalar(babyJub.Base8, S);
+    let Pright = babyJub.mulPointEscalar(A, hm);
+    Pright = babyJub.addPoint(R, Pright);
 
     if (!Pleft[0].equals(Pright[0])) return false;
     if (!Pleft[1].equals(Pright[1])) return false;

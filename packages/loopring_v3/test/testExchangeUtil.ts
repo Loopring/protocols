@@ -410,6 +410,9 @@ export class ExchangeTestUtil {
       s: sig.S.toString(),
     };
     // console.log(order.signature);
+
+    const success = eddsa.verify(message.getBits(), order.signature, [account.publicKeyX, account.publicKeyY]);
+    assert(success, "Failed to verify signature");
   }
 
   public signRing(ring: RingInfo) {
