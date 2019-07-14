@@ -1,9 +1,14 @@
 import tokens from './tokens'
 
-export {tokens};
+import configs from './config.json';
+import paths from './path.json';
+import wallets from './dpath.json';
+import projects from './projects.json';
 
-export const configs = require('./config.json.js');
-export const paths = require('./path.json.js');
-export const wallets = require('./dpath.json.js');
-export const projects = require('./projects.json.js');
-
+export {
+  tokens,
+  configs,
+  paths,
+  wallets,
+  projects
+}

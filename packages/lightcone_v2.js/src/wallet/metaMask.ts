@@ -1,11 +1,12 @@
 import Web3 from 'web3';
 
-import Eth from "src/lib/wallet/ethereum/eth";
-import Transaction from "src/lib/wallet/ethereum/transaction";
-import {MetaMaskAccount} from 'src/lib/wallet/ethereum/walletAccount';
-import { fromMetaMask } from 'src/lib/wallet/WalletUtils';
-import {exchange} from 'src/sign/exchange';
+import Eth from '../lib/wallet/ethereum/eth';
+import Transaction from '../lib/wallet/ethereum/transaction';
+import {MetaMaskAccount} from '../lib/wallet/ethereum/walletAccount';
+import { fromMetaMask } from '../lib/wallet/WalletUtils';
+import {exchange} from '../sign/exchange';
 
+// TODO: implement callback to integrate MetaMask
 export class MetaMask {
 
     public web3: Web3;
@@ -45,4 +46,5 @@ export class MetaMask {
     }
 }
 
-export const metaMask: MetaMask = new MetaMask();
+// Avoid to use metaMask because MetaMask is not ready when the website is loaded.
+// export const metaMask: MetaMask = new MetaMask();
