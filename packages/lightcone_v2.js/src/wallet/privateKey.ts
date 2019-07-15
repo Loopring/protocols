@@ -1,13 +1,13 @@
 // @ts-ignore
-import {ethereum} from 'src/lib/wallet';
-import * as fm from 'src/lib/wallet/common/formatter';
-import config from 'src/lib/wallet/config';
-import * as datas from 'src/lib/wallet/config/data';
-import Contracts from 'src/lib/wallet/ethereum/contracts/Contracts';
-import Eth from "src/lib/wallet/ethereum/eth";
-import Transaction from "src/lib/wallet/ethereum/transaction";
-import {KeyAccount} from 'src/lib/wallet/ethereum/walletAccount';
-import {exchange} from 'src/sign/exchange';
+import {ethereum} from '../lib/wallet';
+import * as fm from '../lib/wallet/common/formatter';
+import config from '../lib/wallet/config';
+import * as datas from '../lib/wallet/config/data';
+import Contracts from '../lib/wallet/ethereum/contracts/Contracts';
+import Eth from '../lib/wallet/ethereum/eth';
+import Transaction from '../lib/wallet/ethereum/transaction';
+import {KeyAccount} from '../lib/wallet/ethereum/walletAccount';
+import {exchange} from '../sign/exchange';
 
 export class PrivateKey {
 

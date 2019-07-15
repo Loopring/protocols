@@ -1,14 +1,15 @@
 import BN = require('bn.js');
-import { generateKeyPair, sign } from 'src/lib/sign/eddsa';
-import config from 'src/lib/wallet/config';
+import { generateKeyPair, sign } from '../lib/sign/eddsa';
+import config from '../lib/wallet/config';
 
-import {grpcClientService} from 'src/grpc/grpcClientService';
-import {ethereum} from 'src/lib/wallet';
-import * as fm from 'src/lib/wallet/common/formatter';
-import Eth from "src/lib/wallet/ethereum/eth";
-import Transaction from "src/lib/wallet/ethereum/transaction";
-import {WalletAccount} from 'src/lib/wallet/ethereum/walletAccount';
-import {Order, TokenAmounts} from 'src/proto_gen/data_order_pb';
+import {grpcClientService} from '../grpc/grpcClientService';
+import {ethereum} from '../lib/wallet';
+import * as fm from '../lib/wallet/common/formatter';
+import Eth from '../lib/wallet/ethereum/eth';
+import Transaction from '../lib/wallet/ethereum/transaction';
+import {WalletAccount} from '../lib/wallet/ethereum/walletAccount';
+import {DexAccount, OrderInfo, Signature} from '../model/types';
+import {Order, TokenAmounts} from '../proto_gen/data_order_pb';
 import {
     AccountID,
     Amount,
@@ -18,13 +19,12 @@ import {
     EdDSASignature,
     OrderID,
     TokenID
-} from 'src/proto_gen/data_types_pb';
+} from '../proto_gen/data_types_pb';
 import {
     Account,
     GetNextOrderIdReq,
     SimpleOrderCancellationReq
-} from 'src/proto_gen/service_dex_pb';
-import {DexAccount, OrderInfo, Signature} from '../model/types';
+} from '../proto_gen/service_dex_pb';
 
 export class Exchange {
 
@@ -102,8 +102,10 @@ export class Exchange {
     }
 
     public async createAccount(wallet: WalletAccount, gasPrice: number) {
+        // TODO: need to check if gasPrice is a reasonable value
         if (this.accounts.get(wallet) == null) {
             const keyPair = generateKeyPair();
+            console.log(keyPair)
             this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice).then((rawTx: Transaction) => {
                     const signedTx = wallet.signEthereumTx(rawTx);
                     wallet.sendTransaction(new Eth(''), signedTx).then(() => { // TODO: config
@@ -126,6 +128,8 @@ export class Exchange {
     }
 
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
+        // FIXME: ethereum.abi.Contracts.ExchangeContract.encodeInputs returns error
+        // Unhandled Rejection (TypeError): name.startsWith is not a function
         const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
             pubKeyX: publicX,
             pubKeyY: publicY

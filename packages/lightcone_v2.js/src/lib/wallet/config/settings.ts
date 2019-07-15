@@ -1,12 +1,12 @@
-import {configs} from './data'
+import { configs } from './data'
 
-const set = (settings) => {
+const set = (settings: any) => {
     localStorage.settings = JSON.stringify(settings)
 };
 const latestContract = configs.contracts[configs.contracts.length - 1];
 const relays = configs.relays;
 let sortedRelays = relays.map((item, i) => {
-    item.id = i;
+    item['id'] = i;
     return item
 });
 const get = () => {
@@ -56,7 +56,7 @@ const getContractVersion = () => {
     }
 };
 
-const setTokensConfig = (tokens) => {
+const setTokensConfig = (tokens: any) => {
     localStorage.tokensConfig = JSON.stringify(tokens)
 };
 
@@ -68,7 +68,7 @@ const getTokensConfig = () => {
     }
 };
 
-const setMarketPairs = (markets) => {
+const setMarketPairs = (markets: any) => {
     localStorage.marketsConfig = JSON.stringify(markets)
 };
 
@@ -80,7 +80,7 @@ const getMarketPairs = () => {
     }
 };
 
-const setMarketR = (markets) => {
+const setMarketR = (markets: any) => {
     localStorage.marketR = JSON.stringify(markets)
 };
 
@@ -92,7 +92,7 @@ const getMarketR = () => {
     }
 };
 
-const setConfigs = (configs) => {
+const setConfigs = (configs: any) => {
     localStorage.configs = JSON.stringify(configs)
 };
 
