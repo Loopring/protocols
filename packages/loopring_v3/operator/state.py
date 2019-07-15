@@ -13,9 +13,9 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 8, 57, b'poseidon', 5)
-poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 3, 8, 57, b'poseidon', 5)
-poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 4, 8, 57, b'poseidon', 5)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
+poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
+poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
 
 TREE_DEPTH_TRADING_HISTORY = 14
 TREE_DEPTH_ACCOUNTS = 20
@@ -495,7 +495,7 @@ class State(object):
         self._accountsTree.newTree(getDefaultAccount().hash())
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
-        print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
+        # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
         with open(filename) as f:

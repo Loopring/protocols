@@ -65,6 +65,7 @@
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
     "blake-hash": "^1.1.0",
+    "blake2b": "^2.1.3",
     "bluebird": "^3.5.1",
     "bn.js": "^4.11.8",
     "braces": "^2.3.2",

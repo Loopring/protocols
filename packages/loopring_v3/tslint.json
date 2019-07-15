@@ -7,7 +7,7 @@
         "exclude": [
             "test/babyjub.js",
             "test/eddsa.js",
-            "test/pedersenHash.js"
+            "test/poseidon.js"
         ]
     },
     "cliOptions":
