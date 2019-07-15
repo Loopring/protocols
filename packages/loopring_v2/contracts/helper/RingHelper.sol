@@ -30,6 +30,18 @@ library RingHelper {
     using MathUint for uint;
     using OrderHelper for Data.Order;
     using ParticipationHelper for Data.Participation;
+    
+    /// @dev   Event emitted when fee rebates are distributed (waiveFeePercentage < 0)
+    ///         _ringHash   The hash of the ring whose order(s) will receive the rebate
+    ///         _orderHash  The hash of the order that will receive the rebate
+    ///         _feeToken   The address of the token that will be paid to the _orderHash's owner
+    ///         _feeAmount  The amount to be paid to the owner
+    event DistributeFeeRebate(
+        bytes32 indexed _ringHash,
+        bytes32 indexed _orderHash,
+        address         _feeToken,
+        uint            _feeAmount
+    );
 
     function updateHash(
         Data.Ring memory ring
@@ -223,7 +235,6 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
-        view
     {
         payFees(ring, ctx, mining);
         transferTokens(ring, ctx, mining.feeRecipient);
@@ -416,7 +427,6 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
-        view
     {
         Data.FeeContext memory feeCtx;
         feeCtx.ring = ring;
@@ -435,7 +445,6 @@ library RingHelper {
         Data.Participation memory p
         )
         internal
-        view
         returns (uint)
     {
         feeCtx.walletPercentage = p.order.P2P ? 100 : (
@@ -469,7 +478,6 @@ library RingHelper {
         uint totalAmount
         )
         internal
-        view
         returns (uint)
     {
         if (totalAmount == 0) {
@@ -600,6 +608,8 @@ library RingHelper {
             if (feeCtx.ring.participations[i].order.waiveFeePercentage < 0) {
                 uint feeToOwner = minerFee
                     .mul(uint(-feeCtx.ring.participations[i].order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
+
+                emit DistributeFeeRebate(feeCtx.ring.hash, feeCtx.ring.participations[i].order.hash, token, feeToOwner);
 
                 feeCtx.ctx.feePtr = addFeePayment(
                     feeCtx.ctx.feeData,
