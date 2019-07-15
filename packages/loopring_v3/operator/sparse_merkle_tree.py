@@ -4,7 +4,7 @@
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonMerkleTreeParams = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
+poseidonMerkleTreeParams = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
 class MerkleHasher_Poseidon(object):
     def __init__(self, num_children):
@@ -12,7 +12,7 @@ class MerkleHasher_Poseidon(object):
         self._num_children = num_children
 
     def hash(self, depth, inputs):
-        return poseidon(inputs, False, poseidonMerkleTreeParams)
+        return poseidon(inputs, poseidonMerkleTreeParams)
 
 MerkleHasher = MerkleHasher_Poseidon
 

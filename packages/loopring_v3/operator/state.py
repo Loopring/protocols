@@ -13,9 +13,9 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
-poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
-poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
 TREE_DEPTH_TRADING_HISTORY = 14
 TREE_DEPTH_ACCOUNTS = 20
@@ -73,7 +73,7 @@ class BalanceLeaf(object):
         # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
 
     def hash(self):
-        return poseidon([int(self.balance), int(self._tradingHistoryTree._root)], False, poseidonParamsBalance)
+        return poseidon([int(self.balance), int(self._tradingHistoryTree._root)], poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
@@ -128,7 +128,7 @@ class TradeHistoryLeaf(object):
         self.orderID = orderID
 
     def hash(self):
-        return poseidon([int(self.filled), int(self.cancelled), int(self.orderID)], False, poseidonParamsTradingHistory)
+        return poseidon([int(self.filled), int(self.cancelled), int(self.orderID)], poseidonParamsTradingHistory)
 
     def fromJSON(self, jAccount):
         self.filled = jAccount["filled"]
@@ -149,7 +149,7 @@ class Account(object):
         #print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], False, poseidonParamsAccount)
+        return poseidon([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.secretKey = jAccount["secretKey"]
