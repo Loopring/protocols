@@ -234,8 +234,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12]  calldata balanceMerkleProof
         )
         external
         pure
@@ -764,8 +764,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12]  calldata balanceMerkleProof
         )
         external;
 
@@ -799,8 +799,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12]  calldata balanceMerkleProof
         )
         external;
 
