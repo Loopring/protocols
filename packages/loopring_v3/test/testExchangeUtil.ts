@@ -77,7 +77,7 @@ export class ExchangeTestUtil {
   public operators: number[] = [];
   public wallets: number[][] = [];
 
-  public GENESIS_MERKLE_ROOT: BN = new BN("06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3", 16);
+  public GENESIS_MERKLE_ROOT: BN = new BN("2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01", 16);
 
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_AGE_REQUEST_UNTIL_FORCED: number;
