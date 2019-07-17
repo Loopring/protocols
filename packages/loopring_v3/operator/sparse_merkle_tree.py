@@ -83,28 +83,31 @@ class SparseMerkleTree(object):
     def createProof(self, key):
         v = self._root
         path = key
-        sidenodes = []
+        sidenodes = [[] for _ in range(self._depth)]
         for i in range(self._depth):
-            sidenodes.append([])
             child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
             for c in range(self._num_children):
                 if c != child_index:
-                    sidenodes[i].append(self._db.get(v)[c])
+                    sidenodes[self._depth - 1 - i].append(self._db.get(v)[c])
             v = self._db.get(v)[child_index]
             path *= self._num_children
+        proof = [value for sublist in sidenodes for value in sublist]
+        assert(self.verifyProof(proof, key, v))
+        return proof
 
-        # The circuit expects the proof in the reverse direction from bottom to top
-        sidenodes.reverse()
-        return [value for sublist in sidenodes for value in sublist]
-
-    #def verifyProof(self, proof, key, value):
-    #    path = key
-    #    v = value
-    #    for i in range(self._depth):
-    #        if (path & 1):
-    #            newv = self._hasher.hash(i, [proof[-1-i], v])
-    #        else:
-    #            newv = self._hasher.hash(i, [v, proof[-1-i]])
-    #        path >>= self._num_bits
-    #        v = newv
-    #    return self._root == v
+    def verifyProof(self, proof, key, value):
+        path = key
+        v = value
+        proofIdx = 0
+        for i in range(self._depth):
+            inputs = []
+            for c in range(self._num_children):
+                if path % self._num_children == c:
+                    inputs.append(v)
+                else:
+                    inputs.append(proof[proofIdx])
+                    proofIdx += 1
+            newv = self._hasher.hash(i, inputs)
+            path //= self._num_children
+            v = newv
+        return self._root == v
