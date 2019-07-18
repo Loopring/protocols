@@ -1,6 +1,5 @@
 import BN = require("bn.js");
 import childProcess = require("child_process");
-import crypto = require('crypto');
 import fs = require("fs");
 import path = require("path");
 import { performance } from "perf_hooks";
@@ -409,25 +408,19 @@ export class ExchangeTestUtil {
       order.maxFeeBips,
       order.buy ? 1 : 0
     ];
-    const hash = hasher(inputs);
+    order.hash = hasher(inputs).toString(10);
     const endHash = performance.now();
     // console.log("Hash order time: " + (endHash - startHash));
 
     // Create signature
     const startSign = performance.now();
-    const sig = eddsa.sign(account.secretKey, hash);
-    order.hash = sig.hash;
-    order.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
+    order.signature = eddsa.sign(account.secretKey, order.hash);
     const endSign = performance.now();
     // console.log("Sign order time: " + (endSign - startSign));
 
     // Verify signature
     const startVerify = performance.now();
-    const success = eddsa.verify(hash, order.signature, [account.publicKeyX, account.publicKeyY]);
+    const success = eddsa.verify(order.hash, order.signature, [account.publicKeyX, account.publicKeyY]);
     assert(success, "Failed to verify signature");
     const endVerify = performance.now();
     // console.log("Verify order signature time: " + (endVerify - startVerify));
@@ -514,15 +507,10 @@ export class ExchangeTestUtil {
       cancel.walletSplitPercentage,
       account.nonce++,
     ];
-    const hash = hasher(inputs);
+    const hash = hasher(inputs).toString(10);
 
     // Create signature
-    const sig = eddsa.sign(account.secretKey, hash);
-    cancel.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
+    cancel.signature = eddsa.sign(account.secretKey, hash);
 
     // Verify signature
     const success = eddsa.verify(hash, cancel.signature, [account.publicKeyX, account.publicKeyY]);
@@ -549,15 +537,10 @@ export class ExchangeTestUtil {
       withdrawal.walletSplitPercentage,
       account.nonce++,
     ];
-    const hash = hasher(inputs);
+    const hash = hasher(inputs).toString(10);
 
     // Create signature
-    const sig = eddsa.sign(account.secretKey, hash);
-    withdrawal.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
+    withdrawal.signature = eddsa.sign(account.secretKey, hash);
 
     // Verify signature
     const success = eddsa.verify(hash, withdrawal.signature, [account.publicKeyX, account.publicKeyY]);
@@ -619,19 +602,7 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    const entropy = crypto.randomBytes(32);
-    const secretKey = bigInt.leBuff2int(entropy).mod(babyJub.subOrder);
-    const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
-    // console.log(secretKey);
-    // console.log(publicKey);
-
-    const keyPair: KeyPair = {
-      publicKeyX: publicKey[0].toString(10),
-      publicKeyY: publicKey[1].toString(10),
-      secretKey: secretKey.toString(10),
-    };
-    // console.log(keyPair);
-    return keyPair;
+    return eddsa.getKeyPair();
   }
 
   public flattenList = (l: any[]) => {
