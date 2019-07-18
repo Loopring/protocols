@@ -1057,7 +1057,11 @@ contract IExchange
     function getProtocolFeeValues()
         external
         view
-        returns (uint32 timestamp,
-                 uint8 takerFeeBips, uint8 makerFeeBips,
-                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips);
+        returns (
+            uint32 timestamp,
+            uint8 takerFeeBips,
+            uint8 makerFeeBips,
+            uint8 previousTakerFeeBips,
+            uint8 previousMakerFeeBips
+        );
 }

@@ -106,8 +106,7 @@ contract IProtocolFeeVault
         address token,
         uint    amount
         )
-        external
-        ;
+        external;
 
     /// @dev Sell a non-LRC token or Ether to LRC, only callable by the owner.
     /// @param token The token or ether (0x0) to sell.
