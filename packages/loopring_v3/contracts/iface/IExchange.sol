@@ -1059,7 +1059,9 @@ contract IExchange
         view
         returns (
             uint32 timestamp,
-            uint8 takerFeeBips, uint8 makerFeeBips,
-            uint8 previousTakerFeeBips, uint8 previousMakerFeeBips
+            uint8 takerFeeBips,
+            uint8 makerFeeBips,
+            uint8 previousTakerFeeBips,
+            uint8 previousMakerFeeBips
         );
 }
