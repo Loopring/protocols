@@ -163,7 +163,7 @@ library ParticipationHelper {
         p.order.filledAmountS += p.fillAmountS + p.splitS;
 
         // Update spendables
-        uint totalAmountS = p.fillAmountS + p.splitS;
+        uint totalAmountS = p.fillAmountS;
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
