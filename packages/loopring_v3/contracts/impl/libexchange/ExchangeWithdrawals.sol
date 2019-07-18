@@ -127,7 +127,6 @@ library ExchangeWithdrawals
         require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
         // Send surplus of ETH back to the sender
         msg.sender.transferETH(msg.value.sub(S.withdrawalFeeETH), gasleft());
-
         // Add the withdraw to the withdraw chain
         ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
         ExchangeData.Request memory request = ExchangeData.Request(
@@ -464,11 +463,15 @@ library ExchangeWithdrawals
         internal
         returns (bool success)
     {
-        address to = S.accounts[accountID].owner;
         // If we're withdrawing from the protocol fee account send the tokens
-        // directly to the protocol fee manager
-        if (accountID == 0) {
+        // directly to the protocol fee vault.
+        // If we're withdrawing to an unknown account (can currently happen while
+        // distributing tokens in shutdown) send the tokens to the protocol fee vault as well.
+        address to;
+        if (accountID == 0 || accountID >= S.accounts.length) {
             to = S.loopring.protocolFeeVault();
+        } else {
+            to = S.accounts[accountID].owner;
         }
 
         address token = S.getTokenAddress(tokenID);

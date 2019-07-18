@@ -282,7 +282,8 @@ export class MetaMaskAccount extends WalletAccount {
         if (this.web3 && this.web3.eth.accounts[0]) {
             return this.web3.eth.accounts[0];
         } else {
-            throw new Error('Not found MetaMask');
+            // SDK shouldn't throw any error
+            console.warn('Not found MetaMask');
         }
     }
 
@@ -291,6 +292,7 @@ export class MetaMaskAccount extends WalletAccount {
         if (!result['error']) {
             return result['result'];
         } else {
+            // SDK shouldn't throw any error
             throw new Error(result['error']['message']);
         }
     }
@@ -300,6 +302,7 @@ export class MetaMaskAccount extends WalletAccount {
         if (!result['error']) {
             return result['result'];
         } else {
+            // SDK shouldn't throw any error
             throw new Error(result['error']['message']);
         }
     }
@@ -309,6 +312,7 @@ export class MetaMaskAccount extends WalletAccount {
         if (!result['error']) {
             return result['result'];
         } else {
+            // SDK shouldn't throw any error
             throw new Error(result['error']['message']);
         }
     }

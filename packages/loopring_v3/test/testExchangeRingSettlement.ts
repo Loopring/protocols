@@ -1189,6 +1189,7 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
           },
+        dualAuthBSignature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
       };
 
       await exchangeTestUtil.setupRing(ring);
