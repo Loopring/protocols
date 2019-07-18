@@ -394,7 +394,8 @@ library ExchangeWithdrawals
 
         // Check if this is a withdrawal block
         require(withdrawBlock.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-                withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL, "INVALID_BLOCK_TYPE");
+            withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL, "INVALID_BLOCK_TYPE");
+
         // Only allow withdrawing on finalized blocks
         require(blockIdx < S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // Check if the withdrawals were already completely distributed
