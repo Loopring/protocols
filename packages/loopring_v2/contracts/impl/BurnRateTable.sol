@@ -32,7 +32,7 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
     address public lrcAddress = address(0x0);
 
     constructor(
-        address _lrcAddress,
+        address _lrcAddress
         )
         public
     {
