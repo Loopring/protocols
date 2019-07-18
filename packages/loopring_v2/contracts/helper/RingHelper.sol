@@ -98,12 +98,16 @@ library RingHelper {
         Data.Participation memory maker = ring.participations[1];
 
         if (taker.order.isBuy()) {
-            matchParticipants(taker, maker);
+            uint spread = matchRing(taker, maker);
             taker.fillAmountS = maker.fillAmountB; // For BUY orders owner can sell less to get what is wanted (keeps spread)
+            taker.splitS = spread;
         } else {
-            matchParticipants(maker, taker);
+            matchRing(maker, taker);
             taker.fillAmountB = maker.fillAmountS; // For SELL orders owner sells max and can get more than expected (spends spread)
+            taker.splitS = 0;
         }
+
+        maker.splitS = 0;
 
         // Validate matched orders
         for (i = 0; i < ring.size; i++) {
@@ -139,12 +143,13 @@ library RingHelper {
         }
     }
 
-    function matchParticipants(
+    function matchRing(
         Data.Participation memory buyer,
         Data.Participation memory seller
         )
         internal
         pure
+        returns (uint)
     {
         if (buyer.fillAmountB < seller.fillAmountS) {
             // Amount seller wants less than amount maker sells
@@ -154,8 +159,9 @@ library RingHelper {
             buyer.fillAmountB = seller.fillAmountS;
             buyer.fillAmountS = buyer.fillAmountB.mul(buyer.order.amountS) / buyer.order.amountB;
         }
-    
+
         require(buyer.fillAmountS >= seller.fillAmountB, "NOT-MATCHABLE");
+        return buyer.fillAmountS.sub(seller.fillAmountB); // Return spread
     }
 
     function calculateOrderFillAmounts(
@@ -380,15 +386,16 @@ library RingHelper {
             amountSToBuyer
         );
 
+        // NOTICE: Dolomite does not take the margin ever. We still track it for the order's history.
         // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            feeRecipient,
-            p.splitS
-        );
+        // ctx.transferPtr = addTokenTransfer(
+        //     ctx.transferData,
+        //     ctx.transferPtr,
+        //     p.order.tokenS,
+        //     p.order.owner,
+        //     feeRecipient,
+        //     p.splitS
+        // );
     }
 
     function addTokenTransfer(

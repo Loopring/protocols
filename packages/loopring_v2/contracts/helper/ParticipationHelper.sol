@@ -120,10 +120,7 @@ library ParticipationHelper {
             // NOTICE: this line commented as order recipient should receive the margin
             // p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
 
-            // Order recipient receives margin
-            p.splitS = 0;
             p.fillAmountS = prevP.fillAmountB + p.feeAmountS;
-
             return true;
         } else {
             revert('INVALID_FEES');
