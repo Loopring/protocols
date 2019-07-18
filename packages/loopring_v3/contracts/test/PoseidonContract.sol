@@ -34,5 +34,4 @@ contract PoseidonContract {
     {
         return Poseidon.hash_t5f6p52(t0, t1, t2, t3, t4);
     }
-
 }
