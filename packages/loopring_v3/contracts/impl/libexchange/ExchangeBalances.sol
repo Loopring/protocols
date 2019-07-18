@@ -105,13 +105,33 @@ library ExchangeBalances
         uint _id = tokenID;
         for (uint depth = 0; depth < 4; depth++) {
             if (_id & 3 == 0) {
-                balanceItem = hashImpl(balanceItem, balanceMerkleProof[depth*3+0], balanceMerkleProof[depth*3+1], balanceMerkleProof[depth*3+2]);
+                balanceItem = hashImpl(
+                    balanceItem,
+                    balanceMerkleProof[depth * 3],
+                    balanceMerkleProof[depth * 3 + 1],
+                    balanceMerkleProof[depth * 3 + 2]
+                );
             } else if (_id & 3 == 1) {
-                balanceItem = hashImpl(balanceMerkleProof[depth*3+0], balanceItem, balanceMerkleProof[depth*3+1], balanceMerkleProof[depth*3+2]);
+                balanceItem = hashImpl(
+                    balanceMerkleProof[depth * 3],
+                    balanceItem,
+                    balanceMerkleProof[depth * 3 + 1],
+                    balanceMerkleProof[depth * 3 + 2]
+                );
             } else if (_id & 3 == 2) {
-                balanceItem = hashImpl(balanceMerkleProof[depth*3+0], balanceMerkleProof[depth*3+1], balanceItem, balanceMerkleProof[depth*3+2]);
+                balanceItem = hashImpl(
+                    balanceMerkleProof[depth * 3],
+                    balanceMerkleProof[depth * 3 + 1],
+                    balanceItem,
+                    balanceMerkleProof[depth * 3 + 2]
+                );
             } else if (_id & 3 == 3) {
-                balanceItem = hashImpl(balanceMerkleProof[depth*3+0], balanceMerkleProof[depth*3+1], balanceMerkleProof[depth*3+2], balanceItem);
+                balanceItem = hashImpl(
+                    balanceMerkleProof[depth*3],
+                    balanceMerkleProof[depth*3 + 1],
+                    balanceMerkleProof[depth*3 + 2],
+                    balanceItem
+                );
             }
             _id = _id >> 2;
         }
@@ -134,13 +154,33 @@ library ExchangeBalances
         uint _id = accountID;
         for (uint depth = 0; depth < 10; depth++) {
             if (_id & 3 == 0) {
-                accountItem = hashImpl(accountItem, accountMerkleProof[depth*3+0], accountMerkleProof[depth*3+1], accountMerkleProof[depth*3+2]);
+                accountItem = hashImpl(
+                    accountItem,
+                    accountMerkleProof[depth * 3],
+                    accountMerkleProof[depth * 3 + 1],
+                    accountMerkleProof[depth * 3 + 2]
+                );
             } else if (_id & 3 == 1) {
-                accountItem = hashImpl(accountMerkleProof[depth*3+0], accountItem, accountMerkleProof[depth*3+1], accountMerkleProof[depth*3+2]);
+                accountItem = hashImpl(
+                    accountMerkleProof[depth * 3],
+                    accountItem,
+                    accountMerkleProof[depth * 3 + 1],
+                    accountMerkleProof[depth * 3 + 2]
+                );
             } else if (_id & 3 == 2) {
-                accountItem = hashImpl(accountMerkleProof[depth*3+0], accountMerkleProof[depth*3+1], accountItem, accountMerkleProof[depth*3+2]);
+                accountItem = hashImpl(
+                    accountMerkleProof[depth * 3],
+                    accountMerkleProof[depth * 3 + 1],
+                    accountItem,
+                    accountMerkleProof[depth * 3 + 2]
+                );
             } else if (_id & 3 == 3) {
-                accountItem = hashImpl(accountMerkleProof[depth*3+0], accountMerkleProof[depth*3+1], accountMerkleProof[depth*3+2], accountItem);
+                accountItem = hashImpl(
+                    accountMerkleProof[depth * 3],
+                    accountMerkleProof[depth * 3 + 1],
+                    accountMerkleProof[depth * 3 + 2],
+                    accountItem
+                );
             }
             _id = _id >> 2;
         }
