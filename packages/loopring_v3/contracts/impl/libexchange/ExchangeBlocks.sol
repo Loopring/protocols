@@ -346,8 +346,7 @@ library ExchangeBlocks
                 require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
             }
-        } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) 
-        {
+        } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             // Do nothing
         } else if (blockType == ExchangeData.BlockType.ORDER_CANCELLATION) {
             // Do nothing
