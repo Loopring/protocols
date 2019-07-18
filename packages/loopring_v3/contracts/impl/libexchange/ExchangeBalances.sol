@@ -127,9 +127,9 @@ library ExchangeBalances
                 );
             } else if (_id & 3 == 3) {
                 balanceItem = hashImpl(
-                    balanceMerkleProof[depth*3],
-                    balanceMerkleProof[depth*3 + 1],
-                    balanceMerkleProof[depth*3 + 2],
+                    balanceMerkleProof[depth * 3],
+                    balanceMerkleProof[depth * 3 + 1],
+                    balanceMerkleProof[depth * 3 + 2],
                     balanceItem
                 );
             }
