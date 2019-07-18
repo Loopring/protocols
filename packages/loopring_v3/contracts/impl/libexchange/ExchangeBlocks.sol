@@ -346,13 +346,10 @@ library ExchangeBlocks
                 require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
             }
-        } else if (blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
-            // Do nothing
-        } else if (blockType == ExchangeData.BlockType.ORDER_CANCELLATION) {
-            // Do nothing
-        } else if (blockType == ExchangeData.BlockType.TRANSFER) {
-            // Do nothing
-        } else {
+        } else if (
+            blockType != ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL &&
+            blockType != ExchangeData.BlockType.ORDER_CANCELLATION &&
+            blockType != ExchangeData.BlockType.TRANSFER) {
             revert("UNSUPPORTED_BLOCK_TYPE");
         }
 

@@ -66,7 +66,7 @@
     "prettier": "^1.18.2",
     "pretty-quick": "^1.11.1",
     "solidity-coverage": "^0.5.11",
-    "solium": "^1.2.4",
+    "ethlint": "^1.2.4",
     "types-bn": "0.0.1",
     "typescript": "3.1.6",
     "web3-typescript-typings": "0.10.2",

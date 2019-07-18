@@ -18,7 +18,8 @@ pragma solidity 0.5.7;
 
 import "../iface/IProtocolFeeVault.sol";
 
-import "..//lib/Claimable.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/Claimable.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -71,6 +72,8 @@ contract IAuction {
 contract ProtocolFeeVault is IProtocolFeeVault, Claimable
 {
     uint public constant MIN_ETHER_TO_KEEP = 1 ether;
+    using AddressUtil       for address;
+    using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -168,8 +171,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         require(token != lrcAddress, "INVALD_TOKEN");
 
         if (token == address(0)) {
-            address payable recipient = address(uint160(owner));
-            require(recipient.send(amount), "TRANSFER_FAILURE");
+            owner.transferETH(amount, gasleft());
         } else {
             require(token.safeTransfer(owner, amount), "TRANSFER_FAILURE");
         }
@@ -244,9 +246,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         );
 
         if (tokenS == address(0)) {
-            bool success;
-            (success, ) = auctionAddr.call.value(amountS)("");
-            require(success, "TRANSFER_FAILURE");
+            auctionAddr.transferETH(amountS, gasleft());
         } else {
             require(ERC20(tokenS).approve(auctionAddr, amountS), "AUTH_FAILED");
             IAuction(auctionAddr).ask(amountS);
