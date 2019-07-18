@@ -765,7 +765,7 @@ contract IExchange
         uint96  balance,
         uint256 tradeHistoryRoot,
         uint256[30] calldata accountMerkleProof,
-        uint256[12]  calldata balanceMerkleProof
+        uint256[12] calldata balanceMerkleProof
         )
         external;
 
@@ -800,7 +800,7 @@ contract IExchange
         uint96  balance,
         uint256 tradeHistoryRoot,
         uint256[30] calldata accountMerkleProof,
-        uint256[12]  calldata balanceMerkleProof
+        uint256[12] calldata balanceMerkleProof
         )
         external;
 
