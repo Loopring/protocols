@@ -20,7 +20,7 @@ pragma solidity 0.5.7;
 /// @title RoleBasedOperators
 /// @dev A Role-based operator manager.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract RoleBasedOperators 
+contract RoleBasedOperators
 {
     struct Operator {
         uint256 id;
@@ -142,7 +142,7 @@ contract RoleBasedOperators
 
         if (operator.id != 0) {
             uint256 num = operatorAddresses.length;
-            if (operator.id !=  num) {
+            if (operator.id != num) {
                 address lastOperator = operatorAddresses[num - 1];
                 operatorAddresses[operator.id - 1] = lastOperator;
                 operatorMap[lastOperator].id = operator.id;

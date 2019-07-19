@@ -64,16 +64,16 @@ contract UserStakingPool is IUserStakingPool, Claimable
     }
 
     function getTotalStaking()
-        view
         external
+        view
         returns (uint)
     {
         return total.stake;
     }
 
     function getUserStaking(address user)
-        view
         external
+        view
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,
@@ -139,11 +139,11 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function withdraw(uint amount)
         external
-    { 
-        require(userWithdrawalWaitTime(msg.sender) == 0);
+    {
+        require(userWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         Stake storage user = users[msg.sender];
-        require(user.stake >= amount);
+        require(user.stake >= amount, "INSUFFICIENT_FUND");
 
         uint _amount = amount == 0 ? user.stake : amount;
 
@@ -167,7 +167,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         external
         returns (uint claimedAmount)
     {
-        require(userClaimWaitTime(msg.sender) == 0);
+        require(userClaimWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         uint totalPoints;
         uint userPoints;
@@ -191,8 +191,8 @@ contract UserStakingPool is IUserStakingPool, Claimable
     // -- Private Function --
 
     function userWithdrawalWaitTime(address user)
-        view
         private
+        view
         returns (uint _seconds)
     {
         if (users[user].depositedAt.add(MIN_WITHDRAW_DELAY) <= now) return 0;
@@ -200,17 +200,17 @@ contract UserStakingPool is IUserStakingPool, Claimable
     }
 
     function userClaimWaitTime(address user)
-        view
         private
+        view
         returns (uint minutes_)
     {
-       if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
-       else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
+        if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
+        else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
     }
 
     function userOutstandingReward(address userAddress)
-        view
         private
+        view
         returns (
             uint userPoints,
             uint totalPoints,
