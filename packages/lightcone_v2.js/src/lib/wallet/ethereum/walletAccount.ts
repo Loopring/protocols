@@ -200,7 +200,7 @@ export class WalletAccount {
 // Hack: We don't need this one?
 export class KeyAccount extends WalletAccount {
 
-    privateKey: any
+    privateKey: any;
 
     /**
      * @property

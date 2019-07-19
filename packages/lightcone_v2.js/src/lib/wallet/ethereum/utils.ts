@@ -1,15 +1,11 @@
 import validator from '../common/validator'
 import request from '../common/request'
 
-// FIXME: abi is not included in the project.
-// import {generateAbiData} from './abi';
-import {configs} from "../config/data";
-import {toBuffer} from "../common/formatter";
-import {rawDecode} from 'ethereumjs-abi'
 import {sha3} from 'ethereumjs-util'
 
 // HACK: What is the host in wallet/ethereum?
-const host = 'host';
+// const host = 'localhost:8545';
+const host = 'http://localhost:8545';
 
 export async function getTransactionCount(address, tag) {
     try {
