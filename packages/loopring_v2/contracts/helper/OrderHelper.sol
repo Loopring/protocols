@@ -224,9 +224,16 @@ library OrderHelper {
 
         // We only support ERC20 for now
         valid = valid && (order.tokenTypeS == Data.TokenType.ERC20 && order.trancheS == 0x0);
-        valid = valid && (order.tokenTypeB == Data.TokenType.ERC20 && order.trancheB == 0x0);
         valid = valid && (order.tokenTypeFee == Data.TokenType.ERC20);
-        // Allow order.transferDataS to be used for dApps building on Loopring
+
+        // NOTICE: replaced to allow orders to specify market's primary token (to denote order side)
+        // valid = valid && (order.tokenTypeB == Data.TokenType.ERC20 && order.trancheB == 0x0);
+        valid = valid && (order.tokenTypeB == Data.TokenType.ERC20) && (
+            bytes32ToAddress(order.trancheB) == order.tokenB ||
+            bytes32ToAddress(order.trancheB) == order.tokenS
+        );
+
+        // NOTICE: commented to allow order.transferDataS to be used for dApps building on Loopring
         // valid = valid && (order.transferDataS.length == 0);
 
         valid = valid && (order.validSince <= now); // order is too early to match
@@ -264,6 +271,9 @@ library OrderHelper {
         order.P2P = (order.tokenSFeePercentage > 0 || order.tokenBFeePercentage > 0);
     }
 
+    function isBuy(Data.Order memory order) internal pure returns (bool) {
+        return bytes32ToAddress(order.trancheB) == order.tokenB;
+    }
 
     function checkBrokerSignature(
         Data.Order memory order,
@@ -420,5 +430,9 @@ library OrderHelper {
             tokenSpendable.initialized = true;
         }
         spendable = tokenSpendable.amount.sub(tokenSpendable.reserved);
+    }
+
+    function bytes32ToAddress(bytes32 data) private pure returns (address) {
+        return address(uint160(uint256(data)));
     }
 }

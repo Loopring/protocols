@@ -31,6 +31,18 @@ library RingHelper {
     using OrderHelper for Data.Order;
     using ParticipationHelper for Data.Participation;
 
+    /// @dev   Event emitted when fee rebates are distributed (waiveFeePercentage < 0)
+    ///         _ringHash   The hash of the ring whose order(s) will receive the rebate
+    ///         _orderHash  The hash of the order that will receive the rebate
+    ///         _feeToken   The address of the token that will be paid to the _orderHash's owner
+    ///         _feeAmount  The amount to be paid to the owner
+    event DistributeFeeRebate(
+        bytes32 indexed _ringHash,
+        bytes32 indexed _orderHash,
+        address         _feeToken,
+        uint            _feeAmount
+    );
+
     function updateHash(
         Data.Ring memory ring
         )
@@ -73,7 +85,6 @@ library RingHelper {
         }
 
         uint i;
-        int j;
         uint prevIndex;
 
         for (i = 0; i < ring.size; i++) {
@@ -82,28 +93,23 @@ library RingHelper {
             );
         }
 
-        uint smallest = 0;
-        for (j = int(ring.size) - 1; j >= 0; j--) {
-            prevIndex = (uint(j) + ring.size - 1) % ring.size;
-            smallest = calculateOrderFillAmounts(
-                ctx,
-                ring.participations[uint(j)],
-                ring.participations[prevIndex],
-                uint(j),
-                smallest
-            );
-        }
-        for (j = int(ring.size) - 1; j >= int(smallest); j--) {
-            prevIndex = (uint(j) + ring.size - 1) % ring.size;
-            calculateOrderFillAmounts(
-                ctx,
-                ring.participations[uint(j)],
-                ring.participations[prevIndex],
-                uint(j),
-                smallest
-            );
+        // Match the orders
+        Data.Participation memory taker = ring.participations[0];
+        Data.Participation memory maker = ring.participations[1];
+
+        if (taker.order.isBuy()) {
+            uint spread = matchRing(taker, maker);
+            taker.fillAmountS = maker.fillAmountB; // For BUY orders owner can sell less to get what is wanted (keeps spread)
+            taker.splitS = spread;
+        } else {
+            matchRing(maker, taker);
+            taker.fillAmountB = maker.fillAmountS; // For SELL orders owner sells max and can get more than expected (spends spread)
+            taker.splitS = 0;
         }
 
+        maker.splitS = 0;
+
+        // Validate matched orders
         for (i = 0; i < ring.size; i++) {
             // Check if the fill amounts of the participation are valid
             ring.valid = ring.valid && ring.participations[i].checkFills();
@@ -135,6 +141,27 @@ library RingHelper {
         for (i = 0; i < ring.size; i++) {
             ring.participations[i].order.resetReservations();
         }
+    }
+
+    function matchRing(
+        Data.Participation memory buyer,
+        Data.Participation memory seller
+        )
+        internal
+        pure
+        returns (uint)
+    {
+        if (buyer.fillAmountB < seller.fillAmountS) {
+            // Amount seller wants less than amount maker sells
+            seller.fillAmountS = buyer.fillAmountB;
+            seller.fillAmountB = seller.fillAmountS.mul(seller.order.amountB) / seller.order.amountS;
+        } else {
+            buyer.fillAmountB = seller.fillAmountS;
+            buyer.fillAmountS = buyer.fillAmountB.mul(buyer.order.amountS) / buyer.order.amountB;
+        }
+
+        require(buyer.fillAmountS >= seller.fillAmountB, "NOT-MATCHABLE");
+        return buyer.fillAmountS.sub(seller.fillAmountB); // Return spread
     }
 
     function calculateOrderFillAmounts(
@@ -171,11 +198,22 @@ library RingHelper {
         internal
         pure
     {
-        ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
+        // NOTICE: deprecated logic, rings must be of size 2 now
+        // ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
+        
+        ring.valid = ring.valid && ring.size == 2;
+
+        // Ring must consist of a buy and a sell
+        ring.valid = ring.valid && (
+            (ring.participations[0].order.isBuy() && !ring.participations[1].order.isBuy()) ||
+            (ring.participations[1].order.isBuy() && !ring.participations[0].order.isBuy())
+        );
+
         for (uint i = 0; i < ring.size; i++) {
             uint prev = (i + ring.size - 1) % ring.size;
             ring.valid = ring.valid && ring.participations[i].order.valid;
             ring.valid = ring.valid && ring.participations[i].order.tokenS == ring.participations[prev].order.tokenB;
+            ring.valid = ring.valid && !ring.participations[i].order.P2P; // No longer support P2P orders
         }
     }
 
@@ -223,7 +261,6 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
-        view
     {
         payFees(ring, ctx, mining);
         transferTokens(ring, ctx, mining.feeRecipient);
@@ -349,15 +386,16 @@ library RingHelper {
             amountSToBuyer
         );
 
+        // NOTICE: Dolomite does not take the margin ever. We still track it for the order's history.
         // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            feeRecipient,
-            p.splitS
-        );
+        // ctx.transferPtr = addTokenTransfer(
+        //     ctx.transferData,
+        //     ctx.transferPtr,
+        //     p.order.tokenS,
+        //     p.order.owner,
+        //     feeRecipient,
+        //     p.splitS
+        // );
     }
 
     function addTokenTransfer(
@@ -416,7 +454,6 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
-        view
     {
         Data.FeeContext memory feeCtx;
         feeCtx.ring = ring;
@@ -435,7 +472,6 @@ library RingHelper {
         Data.Participation memory p
         )
         internal
-        view
         returns (uint)
     {
         feeCtx.walletPercentage = p.order.P2P ? 100 : (
@@ -469,7 +505,6 @@ library RingHelper {
         uint totalAmount
         )
         internal
-        view
         returns (uint)
     {
         if (totalAmount == 0) {
@@ -594,12 +629,13 @@ library RingHelper {
         uint minerFee
         )
         internal
-        pure
     {
         for (uint i = 0; i < feeCtx.ring.size; i++) {
             if (feeCtx.ring.participations[i].order.waiveFeePercentage < 0) {
                 uint feeToOwner = minerFee
                     .mul(uint(-feeCtx.ring.participations[i].order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
+
+                emit DistributeFeeRebate(feeCtx.ring.hash, feeCtx.ring.participations[i].order.hash, token, feeToOwner);
 
                 feeCtx.ctx.feePtr = addFeePayment(
                     feeCtx.ctx.feeData,

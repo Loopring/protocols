@@ -83,9 +83,17 @@ library ParticipationHelper {
             p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
         } else {
             // Calculate matching fees
-            p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
             p.feeAmountS = 0;
             p.feeAmountB = 0;
+
+            // Use primary token fill ratio to calculate fee
+            // if it's a BUY order, use the amount B (tokenB is the primary)
+            // if it's a SELL order, use the amount S (tokenS is the primary)
+            if (p.order.isBuy()) {
+                p.feeAmount = p.order.feeAmount.mul(p.fillAmountB) / p.order.amountB;
+            } else {
+                p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
+            }
 
             // If feeToken == tokenB AND owner == tokenRecipient, try to pay using fillAmountB
 
@@ -109,13 +117,16 @@ library ParticipationHelper {
         }
 
         if ((p.fillAmountS - p.feeAmountS) >= prevP.fillAmountB) {
-            // The miner (or in a P2P case, the taker) gets the margin
-            p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
+            // NOTICE: this line commented as order recipient should receive the margin
+            // p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
+
             p.fillAmountS = prevP.fillAmountB + p.feeAmountS;
             return true;
         } else {
+            revert('INVALID_FEES');
             return false;
         }
+        
     }
 
     function checkFills(
@@ -125,18 +136,21 @@ library ParticipationHelper {
         pure
         returns (bool valid)
     {
+        // NOTICE: deprecated logic, order recipient can get better price as they receive margin
         // Check if the rounding error of the calculated fillAmountB is larger than 1%.
         // If that's the case, this partipation in invalid
         // p.fillAmountB := p.fillAmountS.mul(p.order.amountB) / p.order.amountS
-        valid = !MathUint.hasRoundingError(
-            p.fillAmountS,
-            p.order.amountB,
-            p.order.amountS
-        );
+        // valid = !MathUint.hasRoundingError(
+        //     p.fillAmountS,
+        //     p.order.amountB,
+        //     p.order.amountS
+        // );
 
         // We at least need to buy and sell something
-        valid = valid && p.fillAmountS > 0;
+        valid = p.fillAmountS > 0;
         valid = valid && p.fillAmountB > 0;
+
+        require(valid, 'INVALID_FILLS');
     }
 
     function adjustOrderState(
@@ -149,7 +163,7 @@ library ParticipationHelper {
         p.order.filledAmountS += p.fillAmountS + p.splitS;
 
         // Update spendables
-        uint totalAmountS = p.fillAmountS + p.splitS;
+        uint totalAmountS = p.fillAmountS;
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
