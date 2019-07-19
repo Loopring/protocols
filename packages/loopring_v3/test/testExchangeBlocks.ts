@@ -11,6 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeId = 0;
   let exchange: any;
   let loopring: any;
+  let blockVersionGenerator = 128;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
@@ -68,14 +69,15 @@ contract("Exchange", (accounts: string[]) => {
       describe("commitBlock", () => {
         it("should not be able to commit unsupported blocks", async () => {
           await createExchange(false);
-          await exchangeTestUtil.blockVerifier.registerCircuit(0, true, 2, 0, new Array(18).fill(1));
+          const blockVersion = blockVersionGenerator++;
+          await exchangeTestUtil.blockVerifier.registerCircuit(0, true, 2, blockVersion, new Array(18).fill(1));
           const bs = new Bitstream();
           bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 1, 0, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 1, blockVersion + 1, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "CANNOT_VERIFY_BLOCK",
           );
@@ -83,14 +85,15 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit block from different exchanges", async () => {
           await createExchange(false);
-          await exchangeTestUtil.blockVerifier.registerCircuit(0, true, 2, 0, new Array(18).fill(1));
+          const blockVersion = blockVersionGenerator++;
+          await exchangeTestUtil.blockVerifier.registerCircuit(0, true, 2, blockVersion, new Array(18).fill(1));
           const bs = new Bitstream();
           bs.addNumber(0, 1);
           bs.addNumber(exchangeId + 1, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 2, blockVersion, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "INVALID_EXCHANGE_ID",
           );
@@ -98,14 +101,15 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit blocks starting from a wrong merkle root state", async () => {
           await createExchange(false);
-          await exchangeTestUtil.blockVerifier.registerCircuit(0, true, 2, 0, new Array(18).fill(1));
+          const blockVersion = blockVersionGenerator++;
+          await exchangeTestUtil.blockVerifier.registerCircuit(0, true, 2, blockVersion, new Array(18).fill(1));
           const bs = new Bitstream();
           bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
           bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(2)), 32);
           await expectThrow(
-            exchange.commitBlock(0, 2, 0, web3.utils.hexToBytes(bs.getData()),
+            exchange.commitBlock(0, 2, blockVersion, web3.utils.hexToBytes(bs.getData()),
                                  constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
             "INVALID_MERKLE_ROOT",
           );
@@ -113,8 +117,9 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit settlement blocks with an invalid timestamp", async () => {
           await createExchange(false);
+          const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT, true, 2, 0, new Array(18).fill(1),
+            BlockType.RING_SETTLEMENT, true, 2, blockVersion, new Array(18).fill(1),
           );
           // Timestamp too early
           {
@@ -127,7 +132,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, blockVersion, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
             );
@@ -143,7 +148,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, blockVersion, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_TIMESTAMP",
             );
@@ -152,8 +157,9 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit settlement blocks with invalid protocol fees", async () => {
           await createExchange(false);
+          const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT, true, 2, 0, new Array(18).fill(1),
+            BlockType.RING_SETTLEMENT, true, 2, blockVersion, new Array(18).fill(1),
           );
           const protocolFees = await loopring.getProtocolFeeValues(
             exchangeTestUtil.exchangeId,
@@ -171,7 +177,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, blockVersion, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_PROTOCOL_FEES",
             );
@@ -187,7 +193,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
             await expectThrow(
-              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, 0, web3.utils.hexToBytes(bs.getData()),
+              exchange.commitBlock(BlockType.RING_SETTLEMENT, 2, blockVersion, web3.utils.hexToBytes(bs.getData()),
                                    constants.emptyBytes, {from: exchangeTestUtil.exchangeOperator}),
               "INVALID_PROTOCOL_FEES",
             );
@@ -196,17 +202,18 @@ contract("Exchange", (accounts: string[]) => {
 
         it("should not be able to commit deposit/on-chain withdrawal blocks with invalid data", async () => {
           await createExchange(false);
+          const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.DEPOSIT, false, 2, 0, new Array(18).fill(1),
+            BlockType.DEPOSIT, false, 2, blockVersion, new Array(18).fill(1),
           );
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.DEPOSIT, false, 8, 0, new Array(18).fill(1),
+            BlockType.DEPOSIT, false, 8, blockVersion, new Array(18).fill(1),
           );
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.ONCHAIN_WITHDRAWAL, false, 2, 0, new Array(18).fill(1),
+            BlockType.ONCHAIN_WITHDRAWAL, false, 2, blockVersion, new Array(18).fill(1),
           );
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.ONCHAIN_WITHDRAWAL, false, 8, 0, new Array(18).fill(1),
+            BlockType.ONCHAIN_WITHDRAWAL, false, 8, blockVersion, new Array(18).fill(1),
           );
           const numRequests = 4;
           // Do some deposit
@@ -252,7 +259,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex + 1, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, blockVersion, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
@@ -269,7 +276,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(4, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, blockVersion, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
@@ -286,7 +293,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(8, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 8, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 8, blockVersion, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_REQUEST_RANGE",
               );
@@ -303,7 +310,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, blockVersion, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_STARTING_HASH",
               );
@@ -320,7 +327,7 @@ contract("Exchange", (accounts: string[]) => {
               bs.addNumber(startIndex, 4);
               bs.addNumber(2, 4);
               await expectThrow(
-                exchange.commitBlock(blockType, 2, 0, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
+                exchange.commitBlock(blockType, 2, blockVersion, web3.utils.hexToBytes(bs.getData()), constants.emptyBytes,
                 {from: exchangeTestUtil.exchangeOperator}),
                 "INVALID_ENDING_HASH",
               );

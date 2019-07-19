@@ -971,7 +971,7 @@ export class ExchangeTestUtil {
       block.blockType,
       block.onchainDataAvailability,
       block.blockSize,
-      blockVersion
+      blockVersion,
     );
     if (!isRegistered) {
       await this.blockVerifier.registerCircuit(

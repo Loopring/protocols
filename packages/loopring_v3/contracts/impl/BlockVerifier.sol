@@ -132,7 +132,8 @@ contract BlockVerifier is IBlockVerifier, Claimable
         view
         returns (bool)
     {
-        return circuits[onchainDataAvailability][blockType][blockSize][blockVersion].registered;
+        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
+        return circuits[dataAvailability][blockType][blockSize][blockVersion].registered;
     }
 
     function isEnabled(
