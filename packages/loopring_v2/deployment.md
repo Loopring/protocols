@@ -1,8 +1,9 @@
 # Deployment on Ethereum
 
 ## v2.2-dolimite [main-net]:
-- Source code: https://github.com/Loopring/protocols/tree/master/packages/loopring_v2/deployment-source/v2.2-dolomite
-- RingSubmitter: [0x0b0C6A9094b4eA68B5c41b28fb493feB6D665Db4](https://etherscan.io/address/0x0b0c6a9094b4ea68b5c41b28fb493feb6d665db4)
+- Source code: https://github.com/Loopring/protocols/tree/dolomite-deploy/packages/loopring_v2/deployment-source/v2.2-dolomite-patch2
+- BurnRateTable: [0x755B4EbA8bc4FdfB6747e0b3D0888Cfd1B6990a2](https://etherscan.io/address/0x755B4EbA8bc4FdfB6747e0b3D0888Cfd1B6990a2)
+- RingSubmitter: [0x531b8290ecbC416c286aD932FdF8b4C1F5cF26DD](https://etherscan.io/address/0x531b8290ecbC416c286aD932FdF8b4C1F5cF26DD)
 - other contracts are the same as v2.2-release [main-net]
 
 ## v2.2-release [main-net]:
