@@ -107,6 +107,7 @@ export class ExchangeTestUtil {
   public autoCommit = true;
 
   public commitWrongPublicDataOnce = false;
+  public commitWrongProofOnce = false;
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -965,13 +966,22 @@ export class ExchangeTestUtil {
     const vkFlattened = this.flattenList(this.flattenVK(vk));
     // console.log(vkFlattened);
     const blockVersion = 0;
-    await this.blockVerifier.setVerifyingKey(
+
+    const isRegistered = await this.blockVerifier.isRegistered(
       block.blockType,
       block.onchainDataAvailability,
       block.blockSize,
-      blockVersion,
-      vkFlattened,
+      blockVersion
     );
+    if (!isRegistered) {
+      await this.blockVerifier.registerCircuit(
+        block.blockType,
+        block.onchainDataAvailability,
+        block.blockSize,
+        blockVersion,
+        vkFlattened,
+      );
+    }
   }
 
   public async verifyBlocks(blocks: Block[]) {
@@ -1007,6 +1017,12 @@ export class ExchangeTestUtil {
     const blockDataBefore: any[] = [];
     for (const block of blocks) {
       blockDataBefore.push(await this.exchange.getBlock(block.blockIdx));
+    }
+
+    if (this.commitWrongProofOnce) {
+      const proofIdxToModify = this.getRandomInt(proofs.length);
+      proofs[proofIdxToModify] = "0x" + new BN(proofs[proofIdxToModify].slice(2), 16).add(new BN(1)).toString(16);
+      this.commitWrongProofOnce = false;
     }
 
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -1066,7 +1082,7 @@ export class ExchangeTestUtil {
       }
     }
 
-    // return proofFilename;
+    return proofs;
   }
 
   public async verifyPendingBlocks(exchangeID: number) {
@@ -1120,7 +1136,7 @@ export class ExchangeTestUtil {
       pendingDeposits = this.pendingDeposits[exchangeID];
     }
     if (pendingDeposits.length === 0) {
-      return;
+      return [];
     }
 
     let numDepositsDone = 0;
@@ -1525,7 +1541,7 @@ export class ExchangeTestUtil {
   public async commitRings(exchangeID: number) {
     const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
-      return;
+      return [];
     }
 
     // Generate the token transfers for the ring
@@ -1533,6 +1549,7 @@ export class ExchangeTestUtil {
     const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
 
     let numRingsDone = 0;
+    const blocks: Block[] = [];
     while (numRingsDone < pendingRings.length) {
       // Get all rings for the block
       const blockSize = this.getBestBlockSize(pendingRings.length - numRingsDone, this.ringSettlementBlockSizes);
@@ -1687,10 +1704,12 @@ export class ExchangeTestUtil {
       this.validateRingSettlements(ringBlock, bs.getData(), stateBefore, stateAfter);
 
       // Commit the block
-      await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
+      const blockInfo = await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
+      blocks.push(blockInfo);
     }
 
     this.pendingRings[exchangeID] = [];
+    return blocks;
   }
 
   public getRingTransformations() {

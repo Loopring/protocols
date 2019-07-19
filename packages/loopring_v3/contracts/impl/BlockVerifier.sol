@@ -30,9 +30,15 @@ import "../thirdparty/BatchVerifier.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract BlockVerifier is IBlockVerifier, Claimable
 {
-    mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => uint256[18])))) verificationKeys;
+    struct Circuit
+    {
+        bool registered;
+        bool enabled;
+        uint256[18] verificationKey;
+    }
+    mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
 
-    function setVerifyingKey(
+    function registerCircuit(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
@@ -42,28 +48,34 @@ contract BlockVerifier is IBlockVerifier, Claimable
         external
         onlyOwner
     {
-        // While vk[0] could be 0, we don't allow it so we can use this to easily check
-        // if the verification key is set
-        require(vk[0] != 0, "INVALID_DATA");
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
+        Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
+        require(circuit.registered == false, "ALREADY_REGISTERED");
         for (uint i = 0; i < 18; i++) {
-            verificationKeys[onchainDataAvailability][blockType][blockSize][blockVersion][i] = vk[i];
+            circuit.verificationKey[i] = vk[i];
         }
+        circuit.registered = true;
+        circuit.enabled = true;
+
+        emit CircuitRegistered(blockType, onchainDataAvailability, blockSize, blockVersion);
     }
 
-    function canVerify(
+    function disableCircuit(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
         uint8  blockVersion
         )
         external
-        view
-        returns (bool)
+        onlyOwner
     {
-        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        return verificationKeys[dataAvailability][blockType][blockSize][blockVersion][0] != 0;
+        Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
+        require(circuit.registered == true, "NOT_REGISTERED");
+        require(circuit.enabled == true, "ALREADY_DISABLED");
+        circuit.enabled = false;
+
+        emit CircuitDisabled(blockType, onchainDataAvailability, blockSize, blockVersion);
     }
 
     function verifyProofs(
@@ -79,7 +91,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][blockSize][blockVersion];
+        uint256[18] storage vk = circuits[dataAvailability][blockType][blockSize][blockVersion].verificationKey;
 
         uint256[14] memory _vk = [
             vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
@@ -108,5 +120,32 @@ contract BlockVerifier is IBlockVerifier, Claimable
             (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL))
             ? false : onchainDataAvailability
         );
+    }
+
+    function isRegistered(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        view
+        returns (bool)
+    {
+        return circuits[onchainDataAvailability][blockType][blockSize][blockVersion].registered;
+    }
+
+    function isEnabled(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        view
+        returns (bool)
+    {
+        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
+        return circuits[dataAvailability][blockType][blockSize][blockVersion].enabled;
     }
 }

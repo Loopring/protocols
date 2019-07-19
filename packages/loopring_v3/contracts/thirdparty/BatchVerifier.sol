@@ -77,7 +77,7 @@ library BatchVerifier {
             }
             proofsAandC[proofNumber*2] = mul_input[0];
             proofsAandC[proofNumber*2 + 1] = mul_input[1];
-            require(success, "Failed to call a precompile");
+            require(success, "INVALID_PROOF");
         }
 
         // use scalar multiplication and addition to get sum(proof.C[i] * entropy[i])
@@ -95,13 +95,13 @@ library BatchVerifier {
                 // ECMUL, output proofsA
                 success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
             }
-            require(success, "Failed to call a precompile for G1 multiplication for Proof C");
+            require(success, "INVALID_PROOF");
 
             assembly {
                 // ECADD from two elements that are in add_input and output into first two elements of add_input
                 success := staticcall(sub(gas, 2000), 6, add_input, 0x80, add_input, 0x40)
             }
-            require(success, "Failed to call a precompile for G1 addition for Proof C");
+            require(success, "INVALID_PROOF");
         }
 
         proofsAandC[num_proofs*2] = add_input[0];
@@ -131,13 +131,13 @@ library BatchVerifier {
                 // ECMUL, output to the last 2 elements of `add_input`
                 success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
             }
-            require(success, "Failed to call a precompile for G1 multiplication for input accumulator");
+            require(success, "INVALID_PROOF");
 
             assembly {
                 // ECADD from four elements that are in add_input and output into first two elements of add_input
                 success := staticcall(sub(gas, 2000), 6, add_input, 0x80, add_input, 0x40)
             }
-            require(success, "Failed to call a precompile for G1 addition for input accumulator");
+            require(success, "INVALID_PROOF");
         }
 
         finalVksAlphaX[2] = add_input[0];
@@ -153,7 +153,7 @@ library BatchVerifier {
             // ECMUL, output to first 2 elements of finalVKalpha
             success := staticcall(sub(gas, 2000), 7, finalVKalpha, 0x60, finalVKalpha, 0x40)
         }
-        require(success, "Failed to call a precompile for G1 multiplication");
+        require(success, "INVALID_PROOF");
         finalVksAlphaX[0] = finalVKalpha[0];
         finalVksAlphaX[1] = finalVKalpha[1];
     }
@@ -176,7 +176,7 @@ library BatchVerifier {
     {
         require(in_proof.length == num_proofs * 8, "Invalid proofs length for a batch");
         require(proof_inputs.length % num_proofs == 0, "Invalid inputs length for a batch");
-        require( ((vk_gammaABC.length / 2) - 1) == proof_inputs.length / num_proofs );
+        require(((vk_gammaABC.length / 2) - 1) == proof_inputs.length / num_proofs, "Invalid verification key");
 
         // strategy is to accumulate entropy separately for some proof elements
         // (accumulate only for G1, can't in G2) of the pairing equation, as well as input verification key,
@@ -232,7 +232,6 @@ library BatchVerifier {
         assembly {
             success := staticcall(sub(gas, 2000), 8, add(inputs, 0x20), inputsLength, out, 0x20)
         }
-        require(success, "Failed to call pairings functions");
-        return out[0] == 1;
+        return success && out[0] == 1;
     }
 }

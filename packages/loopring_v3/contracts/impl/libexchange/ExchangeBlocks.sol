@@ -133,8 +133,8 @@ library ExchangeBlocks
                 blockVersion = specifiedBlock.blockVersion;
             } else {
                 // We only support batch verifying blocks that use the same verifying key
-                require(blockSize == specifiedBlock.blockSize, "INVALID_BATCH_BLOCK_SIZE");
                 require(blockType == specifiedBlock.blockType, "INVALID_BATCH_BLOCK_TYPE");
+                require(blockSize == specifiedBlock.blockSize, "INVALID_BATCH_BLOCK_SIZE");
                 require(blockVersion == specifiedBlock.blockVersion, "INVALID_BATCH_BLOCK_VERSION");
             }
         }
@@ -156,6 +156,11 @@ library ExchangeBlocks
         for (uint i = 0; i < blockIndices.length; i++) {
             uint blockIdx = blockIndices[i];
             ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+            // Check this again to make sure no block is verified twice in a single call to verifyBlocks
+            require(
+                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
+                "BLOCK_VERIFIED_ALREADY"
+            );
             specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
             emit BlockVerified(blockIdx);
         }
@@ -230,7 +235,7 @@ library ExchangeBlocks
 
         // Check if the block is supported
         require(
-            S.blockVerifier.canVerify(
+            S.blockVerifier.isEnabled(
                 uint8(blockType),
                 S.onchainDataAvailability,
                 blockSize,

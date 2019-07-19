@@ -124,13 +124,17 @@ library Verifier
                 // ECMUL, output to last 2 elements of `add_input`
                 success := staticcall(sub(gas, 2000), 7, mul_input, 0x80, add(add_input, 0x40), 0x60)
             }
-            require(success, "staticcall failed");
+            if (!success) {
+                return false;
+            }
 
             assembly {
                 // ECADD
                 success := staticcall(sub(gas, 2000), 6, add_input, 0xc0, add_input, 0x60)
             }
-            require(success, "staticcall failed");
+            if (!success) {
+                return false;
+            }
         }
 
         uint[24] memory input = [
@@ -155,8 +159,7 @@ library Verifier
         assembly {
             success := staticcall(sub(gas, 2000), 8, input, 768, out, 0x20)
         }
-        require(success, "staticcall failed");
-        return out[0] != 0;
+        return success && out[0] != 0;
     }
 
 

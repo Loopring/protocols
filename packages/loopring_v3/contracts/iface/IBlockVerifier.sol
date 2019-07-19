@@ -21,24 +21,23 @@ pragma solidity 0.5.7;
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IBlockVerifier
 {
-    /// @dev Sets or updates the verifying key for the given block type
-    ///      and permutation.
-    /// @param blockType The type of the block See @BlockType
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @param vk The verification key
-    function setVerifyingKey(
+    // -- Events --
+    event CircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
-        uint8  blockVersion,
-        uint256[18] calldata vk
-        )
-        external;
+        uint8  blockVersion
+    );
 
-    /// @dev Checks if a block with the given parameters can be verified.
+    event CircuitDisabled(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+    );
+
+
+    /// @dev Sets the verifying key for the specified circuit.
     ///      Every block permutation needs its own circuit and thus its own set of
     ///      verification keys. Only a limited number of blocks sizes per block
     ///      type are supported.
@@ -47,16 +46,31 @@ contract IBlockVerifier
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @return True if the block can be verified, false otherwise
-    function canVerify(
+    /// @param vk The verification key
+    function registerCircuit(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion,
+        uint256[18] calldata vk
+        )
+        external;
+
+    /// @dev Disables the use of the specified circuit.
+    ///      This will stop NEW blocks to from using this circuit, blocks that were already committed
+    ///      can still be verified.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    function disableCircuit(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
         uint8  blockVersion
         )
-        external
-        view
-        returns (bool);
+        external;
 
     /// @dev Verify blocks with the given public data and proof.
     ///      Verifying a block makes sure all requests handled in the block
@@ -81,4 +95,37 @@ contract IBlockVerifier
         view
         returns (bool);
 
+    /// @dev Checks if a circuit with the specified parameters is registered.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @return True if the circuit is registered, false otherwise
+    function isRegistered(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        view
+        returns (bool);
+
+    /// @dev Checks if a circuit can still be used to commit new blocks.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @return True if the circuit is enabled, false otherwise
+    function isEnabled(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        view
+        returns (bool);
 }
