@@ -1,7 +1,20 @@
 # Taken and modified from
 # https://github.com/ethereum/research/blob/6ab4a5da40a325c55691dafb6928627fb598e3bd/trie_research/bintrie2/new_bintrie.py
 
-from ethsnarks.merkletree import MerkleHasher_MiMC
+from ethsnarks.poseidon import poseidon, poseidon_params
+from ethsnarks.field import SNARK_SCALAR_FIELD
+
+poseidonMerkleTreeParams = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+
+class MerkleHasher_Poseidon(object):
+    def __init__(self, num_children):
+        assert num_children == 4
+        self._num_children = num_children
+
+    def hash(self, depth, inputs):
+        return poseidon(inputs, poseidonMerkleTreeParams)
+
+MerkleHasher = MerkleHasher_Poseidon
 
 class EphemDB():
     def __init__(self, kv=None):
@@ -17,30 +30,29 @@ class EphemDB():
         del self.kv[str(k)]
 
 class SparseMerkleTree(object):
-    def __init__(self, depth):
+    def __init__(self, depth, num_children = 2):
         assert depth > 1
         self._depth = depth
-        self._hasher = MerkleHasher_MiMC(self._depth)
+        self._num_children = num_children
+        self._hasher = MerkleHasher(self._num_children)
         self._db = EphemDB()
         self._root = 0
 
     def newTree(self, defaultLeafHash):
         h = defaultLeafHash
         for i in range(self._depth):
-            newh = self._hasher.hash_pair(i, h, h)
-            self._db.put(newh, [h, h])
+            newh = self._hasher.hash(i, [h] * self._num_children)
+            self._db.put(newh, [h] * self._num_children)
             h = newh
         self._root = h
 
     def get(self, key):
         v = self._root
         path = key
-        for i in range(self._depth):
-            if (path >> (self._depth - 1)) & 1:
-                v = self._db.get(v)[0]
-            else:
-                v = self._db.get(v)[1]
-            path <<= 1
+        for _ in range(self._depth):
+            child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
+            v = self._db.get(v)[child_index]
+            path *= self._num_children
         return v
 
     def update(self, key, value):
@@ -48,50 +60,54 @@ class SparseMerkleTree(object):
         path = path2 = key
         sidenodes = []
         for i in range(self._depth):
-            if (path >> (self._depth - 1)) & 1:
-                sidenodes.append(self._db.get(v)[0])
-                v = self._db.get(v)[1]
-            else:
-                sidenodes.append(self._db.get(v)[1])
-                v = self._db.get(v)[0]
-            path <<= 1
+            children = self._db.get(v)
+            sidenodes.append(children)
+            child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
+            v = children[child_index]
+            path *= self._num_children
         v = value
         for i in range(self._depth):
-            if (path2 & 1):
-                newv = self._hasher.hash_pair(i, sidenodes[-1], v)
-                self._db.put(newv, [sidenodes[-1], v])
-            else:
-                newv = self._hasher.hash_pair(i, v, sidenodes[-1])
-                self._db.put(newv, [v, sidenodes[-1]])
-            path2 >>= 1
+            child_index = path2 % self._num_children
+            leafs = []
+            for c in range(self._num_children):
+                if c != child_index:
+                    leafs.append(sidenodes[self._depth - 1 - i][c])
+                else:
+                    leafs.append(v)
+            newv = self._hasher.hash(i, leafs)
+            self._db.put(newv, leafs)
+            path2 //= self._num_children
             v = newv
-            sidenodes.pop()
         self._root = v
 
     def createProof(self, key):
         v = self._root
         path = key
-        sidenodes = []
+        sidenodes = [[] for _ in range(self._depth)]
         for i in range(self._depth):
-            if (path >> (self._depth - 1)) & 1:
-                sidenodes.append(self._db.get(v)[0])
-                v = self._db.get(v)[1]
-            else:
-                sidenodes.append(self._db.get(v)[1])
-                v = self._db.get(v)[0]
-            path <<= 1
-        # The circuit expects the proof in the reverse direction from bottom to top
-        sidenodes.reverse()
-        return sidenodes
+            child_index = (path // pow(self._num_children, self._depth - 1)) % self._num_children
+            for c in range(self._num_children):
+                if c != child_index:
+                    sidenodes[self._depth - 1 - i].append(self._db.get(v)[c])
+            v = self._db.get(v)[child_index]
+            path *= self._num_children
+        proof = [value for sublist in sidenodes for value in sublist]
+        assert(self.verifyProof(proof, key, v))
+        return proof
 
     def verifyProof(self, proof, key, value):
         path = key
         v = value
+        proofIdx = 0
         for i in range(self._depth):
-            if (path & 1):
-                newv = self._hasher.hash_pair(i, proof[-1-i], v)
-            else:
-                newv = self._hasher.hash_pair(i, v, proof[-1-i])
-            path >>= 1
+            inputs = []
+            for c in range(self._num_children):
+                if path % self._num_children == c:
+                    inputs.append(v)
+                else:
+                    inputs.append(proof[proofIdx])
+                    proofIdx += 1
+            newv = self._hasher.hash(i, inputs)
+            path //= self._num_children
             v = newv
         return self._root == v

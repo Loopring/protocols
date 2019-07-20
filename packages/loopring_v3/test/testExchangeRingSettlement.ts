@@ -1239,7 +1239,7 @@ contract("Exchange", (accounts: string[]) => {
       assert(receivedThrow, "did not receive expected invalid block error");
     });
 
-    it("Wrong dual auth signature", async () => {
+    it.skip("Wrong dual auth signature", async () => {
       const ring: RingInfo = {
         orderA:
           {
