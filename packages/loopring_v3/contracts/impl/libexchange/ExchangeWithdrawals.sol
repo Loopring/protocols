@@ -161,8 +161,8 @@ library ExchangeWithdrawals
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] memory accountMerkleProof,
-        uint256[8]  memory balanceMerkleProof
+        uint256[30] memory accountMerkleProof,
+        uint256[12] memory balanceMerkleProof
         )
         public
     {
@@ -333,26 +333,26 @@ library ExchangeWithdrawals
         uint feeAmount = 0;
         uint32 lastRequestTimestamp = 0;
         {
-            uint startIndex = previousBlock.numDepositRequestsCommitted;
-            uint endIndex = requestedBlock.numDepositRequestsCommitted;
-            if(endIndex > startIndex) {
-                feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
-                    S.depositChain[startIndex - 1].accumulatedFee
-                );
-                lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
-            } else {
-                startIndex = previousBlock.numWithdrawalRequestsCommitted;
-                endIndex = requestedBlock.numWithdrawalRequestsCommitted;
+        uint startIndex = previousBlock.numDepositRequestsCommitted;
+        uint endIndex = requestedBlock.numDepositRequestsCommitted;
+        if(endIndex > startIndex) {
+            feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
+                S.depositChain[startIndex - 1].accumulatedFee
+            );
+            lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
+        } else {
+            startIndex = previousBlock.numWithdrawalRequestsCommitted;
+            endIndex = requestedBlock.numWithdrawalRequestsCommitted;
 
-                if(endIndex > startIndex) {
-                    feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
-                        S.withdrawalChain[startIndex - 1].accumulatedFee
-                    );
-                    lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
-                } else {
-                    revert("BLOCK_HAS_NO_OPERATOR_FEE");
-                }
+            if(endIndex > startIndex) {
+                feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
+                    S.withdrawalChain[startIndex - 1].accumulatedFee
+                );
+                lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
+            } else {
+                revert("BLOCK_HAS_NO_OPERATOR_FEE");
             }
+        }
         }
 
         // Calculate how much of the fee the operator gets for the block
@@ -393,8 +393,12 @@ library ExchangeWithdrawals
         ExchangeData.Block storage withdrawBlock = S.blocks[blockIdx];
 
         // Check if this is a withdrawal block
-        require(withdrawBlock.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-                withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL, "INVALID_BLOCK_TYPE");
+        require(
+            withdrawBlock.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
+            withdrawBlock.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL,
+            "INVALID_BLOCK_TYPE"
+        );
+
         // Only allow withdrawing on finalized blocks
         require(blockIdx < S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // Check if the withdrawals were already completely distributed
@@ -463,11 +467,15 @@ library ExchangeWithdrawals
         internal
         returns (bool success)
     {
-        address to = S.accounts[accountID].owner;
         // If we're withdrawing from the protocol fee account send the tokens
-        // directly to the protocol fee manager
-        if (accountID == 0) {
+        // directly to the protocol fee vault.
+        // If we're withdrawing to an unknown account (can currently happen while
+        // distributing tokens in shutdown) send the tokens to the protocol fee vault as well.
+        address to;
+        if (accountID == 0 || accountID >= S.accounts.length) {
             to = S.loopring.protocolFeeVault();
+        } else {
+            to = S.accounts[accountID].owner;
         }
 
         address token = S.getTokenAddress(tokenID);

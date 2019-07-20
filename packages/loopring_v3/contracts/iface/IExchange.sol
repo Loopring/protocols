@@ -241,8 +241,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12] calldata balanceMerkleProof
         )
         external
         pure
@@ -344,7 +344,7 @@ contract IExchange
     /// @param  amount The amount of LRC that needs to be withdrawn
     function withdrawProtocolFeeStake(
         address recipient,
-        uint amount
+        uint    amount
         )
         external;
 
@@ -520,10 +520,10 @@ contract IExchange
     ///
     ///      This method can be called by anyone with a valid proof.
     ///
-    /// @param blockIndices The 0-based index of the block to be verified with the given proof
+    /// @param blockIndices The 0-based index of the blocks to be verified with the given proofs
     /// @param proofs The ZK proof for all blockIndices (proofs.length % 8 == 0).
     function verifyBlocks(
-        uint[] calldata blockIndices,
+        uint[]    calldata blockIndices,
         uint256[] calldata proofs
         )
         external;
@@ -771,8 +771,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12] calldata balanceMerkleProof
         )
         external;
 
@@ -806,8 +806,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12] calldata balanceMerkleProof
         )
         external;
 
@@ -1057,7 +1057,11 @@ contract IExchange
     function getProtocolFeeValues()
         external
         view
-        returns (uint32 timestamp,
-                 uint8 takerFeeBips, uint8 makerFeeBips,
-                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips);
+        returns (
+            uint32 timestamp,
+            uint8 takerFeeBips,
+            uint8 makerFeeBips,
+            uint8 previousTakerFeeBips,
+            uint8 previousMakerFeeBips
+        );
 }

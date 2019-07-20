@@ -194,8 +194,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountPath,
-        uint256[8] calldata balancePath
+        uint256[30] calldata accountPath,
+        uint256[12] calldata balancePath
         )
         external
         pure
@@ -600,8 +600,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountPath,
-        uint256[8] calldata balancePath
+        uint256[30] calldata accountPath,
+        uint256[12] calldata balancePath
         )
         external
         nonReentrant
@@ -628,8 +628,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountPath,
-        uint256[8] calldata balancePath
+        uint256[30] calldata accountPath,
+        uint256[12] calldata balancePath
         )
         external
         nonReentrant

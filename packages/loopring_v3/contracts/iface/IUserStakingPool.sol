@@ -40,8 +40,7 @@ contract IUserStakingPool
     /// @dev Set a new IProtocolFeeVault address, only callable by the owner.
     /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.
     function setProtocolFeeVault(address _protocolFeeVaultAddress)
-        external
-        ;
+        external;
 
     /// @dev Return the total number of LRC staked.
     function getTotalStaking()
@@ -56,8 +55,8 @@ contract IUserStakingPool
     /// @return stakeAmount The amount of LRC staked.
     /// @return claimableReward The amount of LRC reward waiting to be claimed.
     function getUserStaking(address user)
-        view
         external
+        view
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,
