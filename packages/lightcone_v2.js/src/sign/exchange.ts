@@ -122,7 +122,11 @@ export class Exchange {
                         });
                     });
                 }
-            );
+            )
+            // We should catch error here.
+            .catch((err) => {
+                console.error('Failed to create.', err);
+            });
         }
     }
 
