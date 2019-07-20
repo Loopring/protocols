@@ -967,13 +967,13 @@ export class ExchangeTestUtil {
     // console.log(vkFlattened);
     const blockVersion = 0;
 
-    const isRegistered = await this.blockVerifier.isRegistered(
+    const isCircuitRegistered = await this.blockVerifier.isCircuitRegistered(
       block.blockType,
       block.onchainDataAvailability,
       block.blockSize,
       blockVersion,
     );
-    if (!isRegistered) {
+    if (!isCircuitRegistered) {
       await this.blockVerifier.registerCircuit(
         block.blockType,
         block.onchainDataAvailability,

@@ -122,7 +122,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         );
     }
 
-    function isRegistered(
+    function isCircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
@@ -136,7 +136,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         return circuits[dataAvailability][blockType][blockSize][blockVersion].registered;
     }
 
-    function isEnabled(
+    function isCircuitEnabled(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,

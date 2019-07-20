@@ -497,7 +497,6 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.commitRings(exchangeId);
 
           const blocks = exchangeTestUtil.pendingBlocks[exchangeId];
-          console.log(blocks);
           assert(blocks.length >= 2, "unexpected number of blocks");
 
           // Randomize the order in which the blocks are verified

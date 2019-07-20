@@ -235,7 +235,7 @@ library ExchangeBlocks
 
         // Check if the block is supported
         require(
-            S.blockVerifier.isEnabled(
+            S.blockVerifier.isCircuitEnabled(
                 uint8(blockType),
                 S.onchainDataAvailability,
                 blockSize,

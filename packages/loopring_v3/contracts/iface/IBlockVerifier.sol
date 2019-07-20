@@ -22,6 +22,7 @@ pragma solidity 0.5.7;
 contract IBlockVerifier
 {
     // -- Events --
+
     event CircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
@@ -36,6 +37,7 @@ contract IBlockVerifier
         uint8  blockVersion
     );
 
+    // -- Public functions --
 
     /// @dev Sets the verifying key for the specified circuit.
     ///      Every block permutation needs its own circuit and thus its own set of
@@ -102,7 +104,7 @@ contract IBlockVerifier
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @return True if the circuit is registered, false otherwise
-    function isRegistered(
+    function isCircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
@@ -119,7 +121,7 @@ contract IBlockVerifier
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @return True if the circuit is enabled, false otherwise
-    function isEnabled(
+    function isCircuitEnabled(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
