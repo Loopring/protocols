@@ -88,6 +88,12 @@ module.exports = function(deployer, network, accounts) {
           0,
         ),
       ]);
+    }).then(() => {
+      console.log("Deployed contracts addresses:");
+      console.log("LoopringV3:", LoopringV3.address);
+      console.log("BlockVerifier:", BlockVerifier.address);
+      console.log("WETHToken:", WETHToken.address);
+      console.log("LRCToken:", LRCToken.address);
     });
   }
 };
