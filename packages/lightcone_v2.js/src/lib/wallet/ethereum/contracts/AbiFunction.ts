@@ -1,4 +1,5 @@
-import {methodID, rawDecode, rawEncode} from 'ethereumjs-abi';
+// Using import {*} from 'ethereumjs-abi'; failed to import ethereumjs-abi
+var abi = require('ethereumjs-abi')
 import {addHexPrefix, clearHexPrefix, toBuffer, toHex} from '../../common/formatter';
 import BN from 'bn.js';
 
@@ -19,7 +20,7 @@ export default class AbiFunction {
         this.outputTypes = outputs.map(({type}) => type);
         this.outputs = outputs;
         this.constant = constant;
-        this.methodAbiHash = toHex(methodID(name, this.inputTypes));
+        this.methodAbiHash = toHex(abi.methodID(name, this.inputTypes));
     }
 
     /**
@@ -29,7 +30,7 @@ export default class AbiFunction {
      */
     encodeInputs(inputs) {
         const abiInputs = this.parseInputs(inputs);
-        return this.methodAbiHash + clearHexPrefix(toHex(rawEncode(this.inputTypes, abiInputs)));
+        return this.methodAbiHash + clearHexPrefix(toHex(abi.rawEncode(this.inputTypes, abiInputs)));
     }
 
     /**
@@ -38,7 +39,7 @@ export default class AbiFunction {
      * @returns {*}
      */
     decodeOutputs(outputs) {
-        return this.parseOutputs(rawDecode(this.outputTypes, toBuffer(outputs)));
+        return this.parseOutputs(abi.rawDecode(this.outputTypes, toBuffer(outputs)));
     }
 
     /**
@@ -47,7 +48,7 @@ export default class AbiFunction {
      * @returns {*}
      */
     decodeEncodedInputs(encoded) {
-        return this.parseOutputs(rawDecode(this.inputTypes, toBuffer(addHexPrefix(encoded))));
+        return this.parseOutputs(abi.rawDecode(this.inputTypes, toBuffer(addHexPrefix(encoded))));
     }
 
     parseInputs(inputs = {}) {

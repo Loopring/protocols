@@ -104,9 +104,9 @@ export class Exchange {
         // TODO: need to check if gasPrice is a reasonable value
         if (this.accounts.get(wallet) == null) {
             const keyPair = generateKeyPair();
-            console.log(keyPair);
             this.currentWalletAccount = wallet;
             this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice).then((rawTx: Transaction) => {
+                    console.log('If you do not see this line of code in test logs, that means test fails.');
                     const signedTx = wallet.signEthereumTx(rawTx);
                     wallet.sendTransaction(new Eth('localhost:8545'), signedTx).then(() => { // TODO: config
                         grpcClientService.getAccount(wallet.getAddress()).then((account: Account) => {
@@ -129,10 +129,12 @@ export class Exchange {
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
         // FIXME: ethereum.abi.Contracts.ExchangeContract.encodeInputs returns error
         // Unhandled Rejection (TypeError): name.startsWith is not a function
+        console.log('Start encode input of createOrUpdateAccount')
         const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
             pubKeyX: fm.toBN(publicX),
             pubKeyY: fm.toBN(publicY)
         });
+        console.log('End encode input of createOrUpdateAccount')
         return new Transaction({
             to: this.exchangeAddr,
             value: '0x0',

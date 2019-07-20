@@ -14,7 +14,7 @@ export class MetaMask {
     public account: MetaMaskAccount;
 
     public constructor() {
-        this.web3 = new Web3(Web3.givenProvider || 'http://localhost:8545'); // TODO: replace for ruby
+        this.web3 = new Web3('http://localhost:8545'); // TODO: replace for ruby
         this.account = fromMetaMask(this.web3);
         this.address = this.account.getAddress();
         this.ethNode = new Eth('http://localhost:8545'); // TODO: config
