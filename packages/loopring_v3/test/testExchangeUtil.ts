@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import childProcess = require("child_process");
 import fs = require("fs");
 import path = require("path");
+import { performance } from "perf_hooks";
 import { SHA256 } from "sha2";
 import snarkjs = require("snarkjs");
 import util = require("util");
@@ -16,6 +17,7 @@ import { expectThrow } from "./expectThrow";
 import eddsa = require("./eddsa");
 import { toFloat } from "./float";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
+import poseidon = require("./poseidon");
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import { Account, AccountLeaf, Balance, Block, BlockState, BlockType, Cancel, CancelBlock,
@@ -74,7 +76,7 @@ export class ExchangeTestUtil {
   public operators: number[] = [];
   public wallets: number[][] = [];
 
-  public GENESIS_MERKLE_ROOT: BN = new BN("06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3", 16);
+  public GENESIS_MERKLE_ROOT: BN = new BN("2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01", 16);
 
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_AGE_REQUEST_UNTIL_FORCED: number;
@@ -386,30 +388,42 @@ export class ExchangeTestUtil {
     if (order.signature !== undefined) {
       return;
     }
-    const message = new BitArray();
-    message.addNumber(this.exchangeId, 32);
-    message.addNumber(order.orderID, 20);
-    message.addNumber(order.accountID, 20);
-    message.addString(order.dualAuthPublicKeyX, 254);
-    message.addString(order.dualAuthPublicKeyY, 254);
-    message.addNumber(order.tokenIdS, 8);
-    message.addNumber(order.tokenIdB, 8);
-    message.addBN(order.amountS, 96);
-    message.addBN(order.amountB, 96);
-    message.addNumber(order.allOrNone ? 1 : 0, 1);
-    message.addNumber(order.validSince, 32);
-    message.addNumber(order.validUntil, 32);
-    message.addNumber(order.maxFeeBips, 6);
-    message.addNumber(order.buy ? 1 : 0, 1);
+
+    const hasher = poseidon.createHash(15, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
-    const sig = eddsa.sign(account.secretKey, message.getBits());
-    order.hash = sig.hash;
-    order.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
-    // console.log(order.signature);
+
+    // Calculate hash
+    const startHash = performance.now();
+    const inputs = [
+      this.exchangeId,
+      order.orderID,
+      order.accountID,
+      order.tokenIdS,
+      order.tokenIdB,
+      order.amountS,
+      order.amountB,
+      order.allOrNone ? 1 : 0,
+      order.validSince,
+      order.validUntil,
+      order.maxFeeBips,
+      order.buy ? 1 : 0
+    ];
+    order.hash = hasher(inputs).toString(10);
+    const endHash = performance.now();
+    // console.log("Hash order time: " + (endHash - startHash));
+
+    // Create signature
+    const startSign = performance.now();
+    order.signature = eddsa.sign(account.secretKey, order.hash);
+    const endSign = performance.now();
+    // console.log("Sign order time: " + (endSign - startSign));
+
+    // Verify signature
+    const startVerify = performance.now();
+    const success = eddsa.verify(order.hash, order.signature, [account.publicKeyX, account.publicKeyY]);
+    assert(success, "Failed to verify signature");
+    const endVerify = performance.now();
+    // console.log("Verify order signature time: " + (endVerify - startVerify));
   }
 
   public signRing(ring: RingInfo) {
@@ -418,7 +432,24 @@ export class ExchangeTestUtil {
     }
     const account = this.accounts[this.exchangeId][ring.ringMatcherAccountID];
     const nonce = account.nonce++;
-    const message = new BitArray();
+
+    ring.ringMatcherSignature = {
+      Rx: "0",
+      Ry: "0",
+      s: "0",
+    };
+    ring.dualAuthASignature = {
+      Rx: "0",
+      Ry: "0",
+      s: "0",
+    };
+    ring.dualAuthBSignature = {
+      Rx: "0",
+      Ry: "0",
+      s: "0",
+    };
+
+    /*const message = new BitArray();
     message.addString(ring.orderA.hash, 254);
     message.addString(ring.orderB.hash, 254);
     message.addNumber(ring.ringMatcherAccountID, 20);
@@ -453,57 +484,67 @@ export class ExchangeTestUtil {
         Ry: dualAuthBsig.R[1].toString(),
         s: dualAuthBsig.S.toString(),
       };
-    }
+    }*/
   }
 
   public signCancel(cancel: Cancel) {
     if (cancel.signature !== undefined) {
       return;
     }
+
+    const hasher = poseidon.createHash(11, 6, 53);
     const account = this.accounts[this.exchangeId][cancel.accountID];
-    const message = new BitArray();
-    message.addNumber(this.exchangeId, 32);
-    message.addNumber(cancel.accountID, 20);
-    message.addNumber(cancel.orderTokenID, 8);
-    message.addNumber(cancel.orderID, 20);
-    message.addNumber(cancel.walletAccountID, 20);
-    message.addNumber(cancel.feeTokenID, 8);
-    message.addBN(cancel.fee, 96);
-    message.addNumber(cancel.walletSplitPercentage, 7);
-    message.addNumber(account.nonce++, 32);
-    message.addNumber(0, 2);
-    const sig = eddsa.sign(account.secretKey, message.getBits());
-    cancel.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
-    // console.log(cancel.signature);
+
+    // Calculate hash
+    const inputs = [
+      this.exchangeId,
+      cancel.accountID,
+      cancel.orderTokenID,
+      cancel.orderID,
+      cancel.walletAccountID,
+      cancel.feeTokenID,
+      cancel.fee,
+      cancel.walletSplitPercentage,
+      account.nonce++,
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    cancel.signature = eddsa.sign(account.secretKey, hash);
+
+    // Verify signature
+    const success = eddsa.verify(hash, cancel.signature, [account.publicKeyX, account.publicKeyY]);
+    assert(success, "Failed to verify signature");
   }
 
   public signWithdrawal(withdrawal: WithdrawalRequest) {
     if (withdrawal.signature !== undefined) {
       return;
     }
+
+    const hasher = poseidon.createHash(11, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
-    const message = new BitArray();
-    message.addNumber(this.exchangeId, 32);
-    message.addNumber(withdrawal.accountID, 20);
-    message.addNumber(withdrawal.tokenID, 8);
-    message.addBN(withdrawal.amount, 96);
-    message.addNumber(withdrawal.walletAccountID, 20);
-    message.addNumber(withdrawal.feeTokenID, 8);
-    message.addBN(withdrawal.fee, 96);
-    message.addNumber(withdrawal.walletSplitPercentage, 7);
-    message.addNumber(account.nonce++, 32);
-    message.addNumber(0, 1);
-    const sig = eddsa.sign(account.secretKey, message.getBits());
-    withdrawal.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
-    // console.log(withdrawal.signature);
+
+    // Calculate hash
+    const inputs = [
+      this.exchangeId,
+      withdrawal.accountID,
+      withdrawal.tokenID,
+      withdrawal.amount,
+      withdrawal.walletAccountID,
+      withdrawal.feeTokenID,
+      withdrawal.fee,
+      withdrawal.walletSplitPercentage,
+      account.nonce++,
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    withdrawal.signature = eddsa.sign(account.secretKey, hash);
+
+    // Verify signature
+    const success = eddsa.verify(hash, withdrawal.signature, [account.publicKeyX, account.publicKeyY]);
+    assert(success, "Failed to verify signature");
   }
 
   public async setOrderBalances(order: OrderInfo) {
@@ -561,24 +602,7 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    // TODO: secure random number generation
-    const randomNumber = this.getRandomInt(218882428718390);
-    let secretKey = bigInt(randomNumber.toString(10));
-    secretKey = secretKey.mod(babyJub.subOrder);
-
-    // const publicKey = eddsa.prv2pub(secretKey);
-    const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
-    // const publicKey = eddsa.prv2pub(Buffer.from(randomNumber.toString(16), "hex"));
-    // console.log(secretKey);
-    // console.log(publicKey);
-
-    const keyPair: KeyPair = {
-      publicKeyX: publicKey[0].toString(10),
-      publicKeyY: publicKey[1].toString(10),
-      secretKey: secretKey.toString(10),
-    };
-    // console.log(keyPair);
-    return keyPair;
+    return eddsa.getKeyPair();
   }
 
   public flattenList = (l: any[]) => {
@@ -1509,6 +1533,8 @@ export class ExchangeTestUtil {
 
                 maxFeeBips: 0,
 
+                buy: true,
+
                 feeBips: 0,
                 rebateBips: 0,
 
@@ -1534,6 +1560,8 @@ export class ExchangeTestUtil {
                 validUntil: 0,
 
                 maxFeeBips: 0,
+
+                buy: true,
 
                 feeBips: 0,
                 rebateBips: 0,

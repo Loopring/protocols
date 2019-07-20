@@ -166,8 +166,8 @@ library ExchangeAccounts
         uint32 nonce,
         uint96 balance,
         uint256 tradeHistoryRoot,
-        uint256[20] memory accountMerkleProof,
-        uint256[8]  memory balanceMerkleProof
+        uint256[30] memory accountMerkleProof,
+        uint256[12] memory balanceMerkleProof
         )
         public
         view

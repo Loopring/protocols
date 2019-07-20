@@ -67,8 +67,10 @@ contract("Exchange", (accounts: string[]) => {
             values.push(web3.utils.hexToBytes("0x"));
           } else if (input.type.startsWith("uint256[8]")) {
             values.push(new Array(8).fill("0"));
-          } else if (input.type.startsWith("uint256[20]")) {
-            values.push(new Array(20).fill("0"));
+          } else if (input.type.startsWith("uint256[12]")) {
+            values.push(new Array(12).fill("0"));
+          } else if (input.type.startsWith("uint256[30]")) {
+            values.push(new Array(30).fill("0"));
           } else {
             values.push("0");
           }

@@ -11,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeId = 0;
   let exchange: any;
   let loopring: any;
-  
+
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],

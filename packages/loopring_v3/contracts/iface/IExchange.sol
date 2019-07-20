@@ -241,8 +241,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12] calldata balanceMerkleProof
         )
         external
         pure
@@ -344,7 +344,7 @@ contract IExchange
     /// @param  amount The amount of LRC that needs to be withdrawn
     function withdrawProtocolFeeStake(
         address recipient,
-        uint amount
+        uint    amount
         )
         external;
 
@@ -523,7 +523,7 @@ contract IExchange
     /// @param blockIdx The 0-based index of the block to be verified with the given proof
     /// @param proof The ZK proof
     function verifyBlock(
-        uint blockIdx,
+        uint       blockIdx,
         uint256[8] calldata proof
         )
         external;
@@ -771,8 +771,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12] calldata balanceMerkleProof
         )
         external;
 
@@ -806,8 +806,8 @@ contract IExchange
         uint32  nonce,
         uint96  balance,
         uint256 tradeHistoryRoot,
-        uint256[20] calldata accountMerkleProof,
-        uint256[8]  calldata balanceMerkleProof
+        uint256[30] calldata accountMerkleProof,
+        uint256[12] calldata balanceMerkleProof
         )
         external;
 
