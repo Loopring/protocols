@@ -1,17 +1,17 @@
 // Using import {*} from 'ethereumjs-abi'; failed to import ethereumjs-abi
-var abi = require('ethereumjs-abi')
+var abi = require('ethereumjs-abi');
 import {addHexPrefix, clearHexPrefix, toBuffer, toHex} from '../../common/formatter';
 import BN from 'bn.js';
 
 export default class AbiFunction {
 
-    name: string
-    inputTypes: string[]
-    inputs: any[]
-    outputTypes: string[]
-    outputs: any[]
-    constant: string
-    methodAbiHash: string
+    name: string;
+    inputTypes: string[];
+    inputs: any[];
+    outputTypes: string[];
+    outputs: any[];
+    constant: string;
+    methodAbiHash: string;
 
     constructor({inputs, name, outputs, constant}) {
         this.name = name;

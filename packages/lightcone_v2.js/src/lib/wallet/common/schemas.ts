@@ -99,6 +99,6 @@ let basicSchemas = {
         required: true,
         enum: [1, 2, 3, 4]
     }
-}
+};
 
 export default basicSchemas
