@@ -7,3 +7,13 @@
 
 # Entrypoint of library
 `src/index.ts`
+
+# How to build a Docker?
+```
+docker build -t lightcone-v2-js -f Dockerfile .
+```
+
+# How to run tests in Docker?
+```
+docker run --rm lightcone-v2-js sh -c 'npm run test'
+```
