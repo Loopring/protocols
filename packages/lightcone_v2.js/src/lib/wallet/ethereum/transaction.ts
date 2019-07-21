@@ -10,8 +10,8 @@ const host = 'host';
 
 export default class Transaction {
 
-    raw: string
-    signed: string
+    raw: string;
+    signed: string;
 
     constructor(rawTx) {
         validator.validate({value: rawTx, type: 'BASIC_TX'});

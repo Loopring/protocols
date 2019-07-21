@@ -6,22 +6,22 @@ import Transaction from './transaction';
 import request from '../common/request';
 import {toBuffer} from "../common/formatter";
 
-var ethereumjs_abi = require('ethereumjs-abi')
+var ethereumjs_abi = require('ethereumjs-abi');
 
 // HACK: What is the host in wallet/token?
 const host = 'host';
 
 export default class Token {
 
-    address: string
-    symbol: string
-    name: string
-    digits: number
-    unit: number
-    website: string
-    allowance: number
-    precision: number
-    minTradeValue: number
+    address: string;
+    symbol: string;
+    name: string;
+    digits: number;
+    unit: number;
+    website: string;
+    allowance: number;
+    precision: number;
+    minTradeValue: number;
 
     constructor(input) {
         validator.validate({value: input, type: 'BASIC_TOKEN'});
