@@ -17,7 +17,6 @@ protoc-gen-grpc-web-1.0.4-linux-x86_64 -o /usr/local/bin/protoc-gen-grpc-web && 
   chmod +x /usr/local/bin/protoc-gen-grpc-web
 
 # Add files
-ADD tslint.json ./tslint.json
 ADD tsconfig.json ./tsconfig.json
 ADD globals.d.ts ./globals.d.ts
 ADD package.json ./package.json
