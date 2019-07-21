@@ -4,8 +4,9 @@
 import validator from './validator';
 import Transaction from './transaction';
 import request from '../common/request';
-import {rawDecode} from 'ethereumjs-abi'
 import {toBuffer} from "../common/formatter";
+
+var ethereumjs_abi = require('ethereumjs-abi')
 
 // HACK: What is the host in wallet/token?
 const host = 'host';
@@ -140,19 +141,19 @@ export default class Token {
 
     async getName() {
         const response = await this.getConfig('name');
-        const results = rawDecode(['string'], toBuffer(response['result']));
+        const results = ethereumjs_abi.rawDecode(['string'], toBuffer(response['result']));
         return results.length > 0 ? results[0] : '';
     }
 
     async getSymbol() {
         const response = await this.getConfig('symbol');
-        const results = rawDecode(['string'], toBuffer(response['result']));
+        const results = ethereumjs_abi.rawDecode(['string'], toBuffer(response['result']));
         return results.length > 0 ? results[0] : '';
     }
 
     async getDecimals() {
         const response = await this.getConfig('decimals');
-        const results = rawDecode(['uint'], toBuffer(response['result']));
+        const results = ethereumjs_abi.rawDecode(['uint'], toBuffer(response['result']));
         return results.length > 0 ? results[0].toNumber() : -1;
     }
 
