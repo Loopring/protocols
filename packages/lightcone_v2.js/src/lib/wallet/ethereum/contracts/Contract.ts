@@ -1,6 +1,6 @@
 import AbiFunction from './AbiFunction';
 import {toHex} from '../../common/formatter';
-import {methodID} from 'ethereumjs-abi';
+var ethereumjs_abi = require('ethereumjs-abi')
 
 export default class Contract {
 
@@ -11,7 +11,7 @@ export default class Contract {
         this.abiFunctions = funAbi.reduce((acc, item) => {
             const inputTypes = item.inputs.map(({type}) => type);
             const key = `${item.name}(${inputTypes.toString()})`;
-            const methodHash = methodID(item.name, inputTypes);
+            const methodHash = ethereumjs_abi.methodID(item.name, inputTypes);
             return ({
                 ...acc,
                 [item.name]: new AbiFunction(item),
