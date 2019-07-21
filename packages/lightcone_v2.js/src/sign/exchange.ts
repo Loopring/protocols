@@ -36,8 +36,8 @@ export class Exchange {
     private readonly accounts: Map<WalletAccount, DexAccount>;
 
     public constructor() {
-        this.exchangeID = 0;  // TODO: config
-        this.exchangeAddr = '0x'; // TODO: config
+        this.exchangeID = 2;  // TODO: config
+        this.exchangeAddr = '0x3d88d9C4adC342cEff41855CF540844268390BE6'; // TODO: config
         this.walletAccountID = 0; // TODO: config
         this.accounts = new Map<WalletAccount, DexAccount>();
     }
@@ -47,7 +47,6 @@ export class Exchange {
         for (let i = 0; i < length; i++) {
             res[i] = value.testn(i) ? 1 : 0;
         }
-
         return res;
     }
 
@@ -99,42 +98,52 @@ export class Exchange {
 
     public flattenList = (l: any[]) => {
         return [].concat.apply([], l);
-    }
+    };
 
+    // JavaScript: Promises and Why Async/Await Wins the Battle
+    // https://hackernoon.com/javascript-promises-and-why-async-await-wins-the-battle-4fc9d15d509f
+    // ES7 async error handling: do it right or die
+    // https://medium.com/@giovannipinto/async-error-handling-forced-to-do-it-right-2817cf9e8b43
     public async createAccount(wallet: WalletAccount, gasPrice: number) {
-        // TODO: need to check if gasPrice is a reasonable value
-        if (this.accounts.get(wallet) == null) {
-            const keyPair = generateKeyPair();
-            console.log(keyPair)
-            this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice).then((rawTx: Transaction) => {
-                    const signedTx = wallet.signEthereumTx(rawTx);
-                    wallet.sendTransaction(new Eth(''), signedTx).then(() => { // TODO: config
-                        grpcClientService.getAccount(wallet.getAddress()).then((account: Account) => {
-                            const dexAccount = new DexAccount();
-                            dexAccount.nonce = 0;
-                            dexAccount.owner = wallet.getAddress();
-                            dexAccount.accountID = account.getAccountId().getValue();
-                            dexAccount.publicKeyX = keyPair.publicKeyX;
-                            dexAccount.publicKeyY = keyPair.publicKeyY;
-                            dexAccount.secretKey = keyPair.secretKey;
-                            this.accounts.set(wallet, dexAccount);
-                            this.currentDexAccount = dexAccount;
-                            this.currentWalletAccount = wallet;
-                        });
+        try {
+            // TODO: need to check if gasPrice is a reasonable value
+            if (this.accounts.get(wallet) == null) {
+                const keyPair = generateKeyPair();
+                this.currentWalletAccount = wallet;
+                let rawTx: Transaction = await this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice)
+                const signedTx = wallet.signEthereumTx(rawTx);
+
+                // TODO: Let's avoid using Promises. Change this part to await.
+                // At least, avoid using a Promise in another Promise.
+                wallet.sendTransaction(new Eth('localhost:8545'), signedTx).then(() => { // TODO: config
+                    grpcClientService.getAccount(wallet.getAddress()).then((account: Account) => {
+                        const dexAccount = new DexAccount();
+                        dexAccount.nonce = 0;
+                        dexAccount.owner = wallet.getAddress();
+                        dexAccount.accountID = account.getAccountId().getValue();
+                        dexAccount.publicKeyX = keyPair.publicKeyX;
+                        dexAccount.publicKeyY = keyPair.publicKeyY;
+                        dexAccount.secretKey = keyPair.secretKey;
+                        this.accounts.set(wallet, dexAccount);
+                        this.currentDexAccount = dexAccount;
                     });
-                }
-            );
+                });
+            }
+        } catch(err) {
+            console.error('Failed to create.', err);
+            throw err;
         }
     }
 
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
         // FIXME: ethereum.abi.Contracts.ExchangeContract.encodeInputs returns error
         // Unhandled Rejection (TypeError): name.startsWith is not a function
+        console.log('Start encode input of createOrUpdateAccount')
         const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
-            pubKeyX: publicX,
-            pubKeyY: publicY
+            pubKeyX: fm.toBN(publicX),
+            pubKeyY: fm.toBN(publicY)
         });
-
+        console.log('End encode input of createOrUpdateAccount')
         return new Transaction({
             to: this.exchangeAddr,
             value: '0x0',
@@ -259,9 +268,9 @@ export class Exchange {
         order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
         order.walletAccountID = (order.walletAccountID !== undefined) ? order.walletAccountID : this.walletAccountID;
 
-        assert(order.maxFeeBips < 64, 'maxFeeBips >= 64');
-        assert(order.feeBips < 64, 'feeBips >= 64');
-        assert(order.rebateBips < 64, 'rebateBips >= 64');
+        // assert(order.maxFeeBips < 64, 'maxFeeBips >= 64');
+        // assert(order.feeBips < 64, 'feeBips >= 64');
+        // assert(order.rebateBips < 64, 'rebateBips >= 64');
 
         // Sign the order
         this.signOrder(order);
