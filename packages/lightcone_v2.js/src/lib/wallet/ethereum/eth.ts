@@ -5,7 +5,7 @@ import code from '../common/code';
 
 export default class Eth {
 
-    host: string
+    host: string;
 
     constructor(host) {
         this.host = host;

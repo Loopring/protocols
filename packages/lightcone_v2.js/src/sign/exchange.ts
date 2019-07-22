@@ -110,12 +110,12 @@ export class Exchange {
             if (this.accounts.get(wallet) == null) {
                 const keyPair = generateKeyPair();
                 this.currentWalletAccount = wallet;
-                let rawTx: Transaction = await this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice)
-                const signedTx = wallet.signEthereumTx(rawTx);
+                let rawTx: Transaction = await this.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, gasPrice);
+                const signedTx = wallet.signEthereumTx(rawTx.raw);
 
                 // TODO: Let's avoid using Promises. Change this part to await.
                 // At least, avoid using a Promise in another Promise.
-                wallet.sendTransaction(new Eth('localhost:8545'), signedTx).then(() => { // TODO: config
+                wallet.sendTransaction(new Eth('http://localhost:8545'), signedTx).then(() => { // TODO: config
                     grpcClientService.getAccount(wallet.getAddress()).then((account: Account) => {
                         const dexAccount = new DexAccount();
                         dexAccount.nonce = 0;
@@ -138,12 +138,12 @@ export class Exchange {
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
         // FIXME: ethereum.abi.Contracts.ExchangeContract.encodeInputs returns error
         // Unhandled Rejection (TypeError): name.startsWith is not a function
-        console.log('Start encode input of createOrUpdateAccount')
+        console.log('Start encode input of createOrUpdateAccount');
         const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
             pubKeyX: fm.toBN(publicX),
             pubKeyY: fm.toBN(publicY)
         });
-        console.log('End encode input of createOrUpdateAccount')
+        console.log('End encode input of createOrUpdateAccount');
         return new Transaction({
             to: this.exchangeAddr,
             value: '0x0',

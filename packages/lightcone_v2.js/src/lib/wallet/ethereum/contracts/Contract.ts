@@ -1,10 +1,10 @@
 import AbiFunction from './AbiFunction';
 import {toHex} from '../../common/formatter';
-var ethereumjs_abi = require('ethereumjs-abi')
+var ethereumjs_abi = require('ethereumjs-abi');
 
 export default class Contract {
 
-    abiFunctions: any
+    abiFunctions: any;
 
     constructor(abi) {
         const funAbi = abi.filter(({type}) => type === 'function');
