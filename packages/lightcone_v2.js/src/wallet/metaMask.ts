@@ -6,7 +6,6 @@ import { MetaMaskAccount } from "../lib/wallet/ethereum/walletAccount";
 import { fromMetaMask } from "../lib/wallet/WalletUtils";
 import { exchange } from "../sign/exchange";
 
-// TODO: implement callback to integrate MetaMask
 export class MetaMask {
   public web3: Web3;
   public address: string;
@@ -14,10 +13,10 @@ export class MetaMask {
   public account: MetaMaskAccount;
 
   public constructor() {
-    this.web3 = new Web3(Web3.givenProvider || "http://localhost:8545"); // TODO: replace for ruby
+    this.web3 = new Web3("http://localhost:8545"); // TODO: replace for ruby
     this.account = fromMetaMask(this.web3);
     this.address = this.account.getAddress();
-    this.ethNode = new Eth(""); // TODO: config
+    this.ethNode = new Eth("http://localhost:8545"); // TODO: config
   }
 
   public async createOrUpdateAccount(
@@ -50,6 +49,3 @@ export class MetaMask {
     });
   }
 }
-
-// Avoid to use metaMask because MetaMask is not ready when the website is loaded.
-// export const metaMask: MetaMask = new MetaMask();
