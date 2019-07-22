@@ -20,11 +20,30 @@ library BatchVerifier {
         return q - (Y % q);
     }
 
+    function getProofEntropy(
+        uint256[] memory in_proof,
+        uint256[] memory proof_inputs,
+        uint proofNumber
+    )
+        internal pure returns (uint256)
+    {
+        return uint256(
+            keccak256(
+                abi.encodePacked(
+                    in_proof[proofNumber*8 + 0], in_proof[proofNumber*8 + 1], in_proof[proofNumber*8 + 2], in_proof[proofNumber*8 + 3],
+                    in_proof[proofNumber*8 + 4], in_proof[proofNumber*8 + 5], in_proof[proofNumber*8 + 6], in_proof[proofNumber*8 + 7],
+                    proof_inputs[proofNumber]
+                )
+            )
+        );
+    }
+
     function accumulate(
         uint256[] memory in_proof,
         uint256[] memory proof_inputs, // public inputs, length is num_inputs * num_proofs
         uint256 num_proofs
     ) internal view returns (
+        bool success,
         uint256[] memory proofsAandC,
         uint256[] memory inputAccumulators
     ) {
@@ -39,11 +58,7 @@ library BatchVerifier {
             } else {
                 // entropy[proofNumber] = uint256(blockhash(block.number - proofNumber)) % q;
                 // Safer entropy:
-                entropy[proofNumber] = uint256(keccak256(abi.encodePacked(
-                    in_proof[proofNumber*8 + 0], in_proof[proofNumber*8 + 1], in_proof[proofNumber*8 + 2], in_proof[proofNumber*8 + 3],
-                    in_proof[proofNumber*8 + 4], in_proof[proofNumber*8 + 5], in_proof[proofNumber*8 + 6], in_proof[proofNumber*8 + 7],
-                    proof_inputs[proofNumber]
-                )));
+                entropy[proofNumber] = getProofEntropy(in_proof, proof_inputs, proofNumber);
             }
             require(entropy[proofNumber] != 0, "Entropy should not be zero");
             // here multiplication by 1 is implied
@@ -57,7 +72,6 @@ library BatchVerifier {
 
         // inputs for scalar multiplication
         uint256[3] memory mul_input;
-        bool success;
 
         // use scalar multiplications to get proof.A[i] * entropy[i]
 
@@ -75,9 +89,11 @@ library BatchVerifier {
                 // success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add(proofsAandC, 0x20), mul(proofNumber, 0x40)), 0x40)
                 success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, mul_input, 0x40)
             }
+            if (!success) {
+                return (false, proofsAandC, inputAccumulators);
+            }
             proofsAandC[proofNumber*2] = mul_input[0];
             proofsAandC[proofNumber*2 + 1] = mul_input[1];
-            require(success, "INVALID_PROOF");
         }
 
         // use scalar multiplication and addition to get sum(proof.C[i] * entropy[i])
@@ -95,13 +111,17 @@ library BatchVerifier {
                 // ECMUL, output proofsA
                 success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
             }
-            require(success, "INVALID_PROOF");
+            if (!success) {
+                return (false, proofsAandC, inputAccumulators);
+            }
 
             assembly {
                 // ECADD from two elements that are in add_input and output into first two elements of add_input
                 success := staticcall(sub(gas, 2000), 6, add_input, 0x80, add_input, 0x40)
             }
-            require(success, "INVALID_PROOF");
+            if (!success) {
+                return (false, proofsAandC, inputAccumulators);
+            }
         }
 
         proofsAandC[num_proofs*2] = add_input[0];
@@ -113,13 +133,13 @@ library BatchVerifier {
         uint256[4] memory vk_gammaABC,
         uint256[] memory inputAccumulators
     ) internal view returns (
+        bool success,
         uint256[4] memory finalVksAlphaX
     ) {
         // Compute the linear combination vk_x using accumulator
         // First two fields are used as the sum and are initially zero
         uint256[4] memory add_input;
         uint256[3] memory mul_input;
-        bool success;
 
         // Performs a sum(gammaABC[i] * inputAccumulator[i])
         for (uint256 i = 0; i < inputAccumulators.length; i++) {
@@ -131,13 +151,17 @@ library BatchVerifier {
                 // ECMUL, output to the last 2 elements of `add_input`
                 success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
             }
-            require(success, "INVALID_PROOF");
+            if (!success) {
+                return (false, finalVksAlphaX);
+            }
 
             assembly {
                 // ECADD from four elements that are in add_input and output into first two elements of add_input
                 success := staticcall(sub(gas, 2000), 6, add_input, 0x80, add_input, 0x40)
             }
-            require(success, "INVALID_PROOF");
+            if (!success) {
+                return (false, finalVksAlphaX);
+            }
         }
 
         finalVksAlphaX[2] = add_input[0];
@@ -153,7 +177,10 @@ library BatchVerifier {
             // ECMUL, output to first 2 elements of finalVKalpha
             success := staticcall(sub(gas, 2000), 7, finalVKalpha, 0x60, finalVKalpha, 0x40)
         }
-        require(success, "INVALID_PROOF");
+        if (!success) {
+            return (false, finalVksAlphaX);
+        }
+
         finalVksAlphaX[0] = finalVKalpha[0];
         finalVksAlphaX[1] = finalVKalpha[1];
     }
@@ -184,11 +211,19 @@ library BatchVerifier {
         // by using 3 + num_proofs pairings only plus 2*num_proofs + (num_inputs+1) + 1 scalar multiplications compared to naive
         // 4*num_proofs pairings and num_proofs*(num_inputs+1) scalar multiplications
 
+        bool valid;
         uint256[] memory proofsAandC;
         uint256[] memory inputAccumulators;
-        (proofsAandC, inputAccumulators) = accumulate(in_proof, proof_inputs, num_proofs);
+        (valid, proofsAandC, inputAccumulators) = accumulate(in_proof, proof_inputs, num_proofs);
+        if (!valid) {
+            return false;
+        }
 
-        uint256[4] memory finalVksAlphaX = prepareBatches(in_vk, vk_gammaABC, inputAccumulators);
+        uint256[4] memory finalVksAlphaX;
+        (valid, finalVksAlphaX) = prepareBatches(in_vk, vk_gammaABC, inputAccumulators);
+        if (!valid) {
+            return false;
+        }
 
         uint256[] memory inputs = new uint256[](6*num_proofs + 18);
         // first num_proofs pairings e(ProofA, ProofB)
