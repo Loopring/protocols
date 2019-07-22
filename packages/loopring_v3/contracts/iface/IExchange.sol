@@ -503,7 +503,7 @@ contract IExchange
     ///            - Mode 0: No compression. The data following the mode byte is used as is.
     ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
     ///                      IDecompressor.decompress() will be called to decompress the following data.
-    /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
+    /// @param offchainData Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
     function commitBlock(
         uint8  blockType,
