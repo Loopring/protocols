@@ -766,6 +766,29 @@ contract("Exchange", (accounts: string[]) => {
             "INVALID_PROOF"
           );
         });
+
+        it("should not be able to verify blocks with wrong call input format", async () => {
+          await createExchange();
+
+          await expectThrow(
+            exchange.verifyBlocks([], [], {
+              from: exchangeTestUtil.exchangeOperator
+            }),
+            "INVALID_INPUT_ARRAYS"
+          );
+          await expectThrow(
+            exchange.verifyBlocks([1, 2], new Array(15).fill(123), {
+              from: exchangeTestUtil.exchangeOperator
+            }),
+            "INVALID_PROOF_ARRAY"
+          );
+          await expectThrow(
+            exchange.verifyBlocks([1, 2], new Array(3 * 8).fill(123), {
+              from: exchangeTestUtil.exchangeOperator
+            }),
+            "INVALID_INPUT_ARRAYS"
+          );
+        });
       });
 
       describe("revertBlock", () => {

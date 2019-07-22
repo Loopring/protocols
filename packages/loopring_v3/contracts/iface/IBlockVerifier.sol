@@ -41,7 +41,7 @@ contract IBlockVerifier
 
     /// @dev Sets the verifying key for the specified circuit.
     ///      Every block permutation needs its own circuit and thus its own set of
-    ///      verification keys. Only a limited number of blocks sizes per block
+    ///      verification keys. Only a limited number of block sizes per block
     ///      type are supported.
     /// @param blockType The type of the block See @BlockType
     /// @param onchainDataAvailability True if the block expects onchain
@@ -59,7 +59,7 @@ contract IBlockVerifier
         external;
 
     /// @dev Disables the use of the specified circuit.
-    ///      This will stop NEW blocks to from using this circuit, blocks that were already committed
+    ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
     ///      can still be verified.
     /// @param blockType The type of the block See @BlockType
     /// @param onchainDataAvailability True if the block expects onchain
@@ -74,7 +74,7 @@ contract IBlockVerifier
         )
         external;
 
-    /// @dev Verify blocks with the given public data and proof.
+    /// @dev Verify blocks with the given public data and proofs.
     ///      Verifying a block makes sure all requests handled in the block
     ///      are correctly handled by the operator.
     /// @param blockType The type of block See @BlockType
