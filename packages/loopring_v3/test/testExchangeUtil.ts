@@ -1307,7 +1307,8 @@ export class ExchangeTestUtil {
       blockSize,
       blockVersion,
       operatorId,
-      compressedData
+      compressedData,
+      publicDataHash
     };
     this.pendingBlocks[this.exchangeId].push(block);
     return block;
@@ -1385,13 +1386,13 @@ export class ExchangeTestUtil {
       assert(result.status === 0, "verifyBlock failed: " + block.filename);
 
       // Read the proof
-      const proof = JSON.parse(fs.readFileSync(proofFilename, "ascii"));
-      const proofFlattened = this.flattenProof(proof);
+      block.proof = this.flattenProof(
+        JSON.parse(fs.readFileSync(proofFilename, "ascii"))
+      );
       // console.log(proof);
-      // console.log(this.flattenProof(proof));
 
       blockIndices.push(block.blockIdx);
-      proofs.push(...proofFlattened);
+      proofs.push(...block.proof);
     }
 
     const numBlocksFinalizedBefore = await this.exchange.getNumBlocksFinalized();
@@ -1554,7 +1555,11 @@ export class ExchangeTestUtil {
     return pendingDeposits;
   }
 
-  public async commitDeposits(exchangeID: number, pendingDeposits?: Deposit[]) {
+  public async commitDeposits(
+    exchangeID: number,
+    pendingDeposits?: Deposit[],
+    forcedBlockSize?: number
+  ) {
     const blockInfos: Block[] = [];
 
     if (pendingDeposits === undefined) {
@@ -1570,10 +1575,12 @@ export class ExchangeTestUtil {
       let numRequestsInBlock = 0;
 
       // Get all deposits for the block
-      const blockSize = this.getBestBlockSize(
-        pendingDeposits.length - numDepositsDone,
-        this.depositBlockSizes
-      );
+      const blockSize = forcedBlockSize
+        ? forcedBlockSize
+        : this.getBestBlockSize(
+            pendingDeposits.length - numDepositsDone,
+            this.depositBlockSizes
+          );
       for (let b = numDepositsDone; b < numDepositsDone + blockSize; b++) {
         if (b < pendingDeposits.length) {
           deposits.push(pendingDeposits[b]);
@@ -2077,7 +2084,7 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
-  public async commitRings(exchangeID: number) {
+  public async commitRings(exchangeID: number, forcedBlockSize?: number) {
     const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
       return [];
@@ -2091,10 +2098,12 @@ export class ExchangeTestUtil {
     const blocks: Block[] = [];
     while (numRingsDone < pendingRings.length) {
       // Get all rings for the block
-      const blockSize = this.getBestBlockSize(
-        pendingRings.length - numRingsDone,
-        this.ringSettlementBlockSizes
-      );
+      const blockSize = forcedBlockSize
+        ? forcedBlockSize
+        : this.getBestBlockSize(
+            pendingRings.length - numRingsDone,
+            this.ringSettlementBlockSizes
+          );
       const rings: RingInfo[] = [];
       for (let b = numRingsDone; b < numRingsDone + blockSize; b++) {
         if (b < pendingRings.length) {

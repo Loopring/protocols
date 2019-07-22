@@ -91,8 +91,10 @@ contract BlockVerifier is IBlockVerifier, Claimable
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        uint256[18] storage vk = circuits[dataAvailability][blockType][blockSize][blockVersion].verificationKey;
+        Circuit storage circuit = circuits[dataAvailability][blockType][blockSize][blockVersion];
+        require(circuit.registered == true, "NOT_REGISTERED");
 
+        uint256[18] storage vk = circuit.verificationKey;
         uint256[14] memory _vk = [
             vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
             vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
@@ -104,22 +106,6 @@ contract BlockVerifier is IBlockVerifier, Claimable
         } else {
             return BatchVerifier.BatchVerify(_vk, _vk_gammaABC, proofs, publicInputs, publicInputs.length);
         }
-    }
-
-    function needsDataAvailability(
-        uint8 blockType,
-        bool onchainDataAvailability
-        )
-        internal
-        pure
-        returns (bool)
-    {
-        // On-chain requests never need data-availability
-        return (
-            (blockType == uint(ExchangeData.BlockType.DEPOSIT)) ||
-            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL))
-            ? false : onchainDataAvailability
-        );
     }
 
     function isCircuitRegistered(
@@ -148,5 +134,21 @@ contract BlockVerifier is IBlockVerifier, Claimable
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         return circuits[dataAvailability][blockType][blockSize][blockVersion].enabled;
+    }
+
+    function needsDataAvailability(
+        uint8 blockType,
+        bool onchainDataAvailability
+        )
+        internal
+        pure
+        returns (bool)
+    {
+        // On-chain requests never need data-availability
+        return (
+            (blockType == uint(ExchangeData.BlockType.DEPOSIT)) ||
+            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL))
+            ? false : onchainDataAvailability
+        );
     }
 }
