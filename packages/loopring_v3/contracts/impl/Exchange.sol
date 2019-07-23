@@ -48,6 +48,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
+    mapping (uint8 => address) blockProcessors;
+
     ExchangeData.State private state;
     // -- Constructor --
     constructor(
@@ -834,6 +836,18 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         makerFeeBips = state.protocolFeeData.makerFeeBips;
         previousTakerFeeBips = state.protocolFeeData.previousTakerFeeBips;
         previousMakerFeeBips = state.protocolFeeData.previousMakerFeeBips;
+    }
+
+    function registerBlockProcessor(
+        uint8 blockType,
+        address processorContract
+    )
+        external
+        nonReentrant
+        onlyOwner
+    {
+        blockProcessors[blockType] = processorContract;
+        emit BlockProcessorRegistered(blockType, processorContract);
     }
 
     // == Internal Functions ==

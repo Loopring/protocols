@@ -121,6 +121,11 @@ contract IExchange
         uint8 previousMakerFeeBips
     );
 
+    event BlockProcessorRegistered(
+        uint8 blockType,
+        address processorContract
+    );
+
     // -- Settings --
     function getGlobalSettings()
         public
@@ -1067,4 +1072,14 @@ contract IExchange
             uint8 previousTakerFeeBips,
             uint8 previousMakerFeeBips
         );
+
+    /// @dev Set block processor for blocks with specified blockType.
+    /// @param blockType blockType
+    /// @param processorContract address of processor contract
+    function registerBlockProcessor(
+        uint8 blockType,
+        address processorContract
+    )
+        external
+
 }
