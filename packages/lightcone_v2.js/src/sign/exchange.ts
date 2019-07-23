@@ -1,45 +1,38 @@
 import BN = require('bn.js');
-import { generateKeyPair, sign } from '../lib/sign/eddsa';
-import config from '../lib/wallet/config';
-
-import {grpcClientService} from '../grpc/grpcClientService';
+import {grpcClientService} from '..';
+import {generateKeyPair, sign} from '../lib/sign/eddsa';
 import {ethereum} from '../lib/wallet';
 import * as fm from '../lib/wallet/common/formatter';
+import config from '../lib/wallet/config';
 import Eth from '../lib/wallet/ethereum/eth';
 import Transaction from '../lib/wallet/ethereum/transaction';
 import {WalletAccount} from '../lib/wallet/ethereum/walletAccount';
 import {DexAccount, OrderInfo, Signature} from '../model/types';
 import {Order, TokenAmounts} from '../proto_gen/data_order_pb';
-import {
-    AccountID,
-    Amount,
-    Bips,
-    EdDSAPrivKey,
-    EdDSAPubKey,
-    EdDSASignature,
-    OrderID,
-    TokenID
-} from '../proto_gen/data_types_pb';
-import {
-    Account,
-    GetNextOrderIdReq,
-    SimpleOrderCancellationReq
-} from '../proto_gen/service_dex_pb';
+import {AccountID, Amount, Bips, EdDSAPrivKey, EdDSAPubKey, EdDSASignature, OrderID, TokenID} from '../proto_gen/data_types_pb';
+import {Account, DexConfigurations, SimpleOrderCancellationReq} from '../proto_gen/service_dex_pb';
 
 export class Exchange {
 
     private readonly exchangeID: number;
     private readonly exchangeAddr: string;
-    private readonly walletAccountID: number;
+    private readonly walletAddressID: number;
     private currentDexAccount: DexAccount;
     private currentWalletAccount: WalletAccount;
+    private dexConfigurations: DexConfigurations;
     private readonly accounts: Map<WalletAccount, DexAccount>;
 
     public constructor() {
         this.exchangeID = 2;  // TODO: config
         this.exchangeAddr = '0x3d88d9C4adC342cEff41855CF540844268390BE6'; // TODO: config
-        this.walletAccountID = 0; // TODO: config
+        this.walletAddressID = 0; // TODO: config
         this.accounts = new Map<WalletAccount, DexAccount>();
+        this.initExchange();
+    }
+
+    private async initExchange() {
+        config.initTokenConfig();
+        this.dexConfigurations = await grpcClientService.getDexConfigurations();
     }
 
     public static toBitsBN(value: BN, length: number) {
@@ -104,7 +97,7 @@ export class Exchange {
     // https://hackernoon.com/javascript-promises-and-why-async-await-wins-the-battle-4fc9d15d509f
     // ES7 async error handling: do it right or die
     // https://medium.com/@giovannipinto/async-error-handling-forced-to-do-it-right-2817cf9e8b43
-    public async createAccount(wallet: WalletAccount, gasPrice: number) {
+    public async updateAccount(wallet: WalletAccount, gasPrice: number) {
         try {
             // TODO: need to check if gasPrice is a reasonable value
             if (this.accounts.get(wallet) == null) {
@@ -129,7 +122,7 @@ export class Exchange {
                     });
                 });
             }
-        } catch(err) {
+        } catch (err) {
             console.error('Failed to create.', err);
             throw err;
         }
@@ -145,91 +138,83 @@ export class Exchange {
         });
         console.log('End encode input of createOrUpdateAccount');
         return new Transaction({
-            to: this.exchangeAddr,
-            value: '0x0',
-            data: data,
-            chainId: config.getChainId(),
-            nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
-            gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-            gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
-        });
+                                   to: this.exchangeAddr,
+                                   // value: this.dexConfigurations.getAccountUpdateFeeEth(),
+                                   value: '0x10000',
+                                   data: data,
+                                   chainId: config.getChainId(),
+                                   nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
+                                   gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+                                   gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
+                               });
     }
 
-    public async deposit(symbol: string, amount: number, gasPrice: number) {
+    public async deposit(wallet: WalletAccount, symbol: string, amount: number, gasPrice: number) {
         let to, value, data: string;
         const token = config.getTokenBySymbol(symbol);
         value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
-        if (this.currentWalletAccount.getAddress()) {
-            if (symbol === 'ETH') {
-                to = this.exchangeAddr;
-                data = fm.toHex('0x');
-            } else {
-                to = token.address;
-                data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('deposit', {
-                    tokenAddress: to,
-                    amount: value
-                });
-                value = '0x0';
-            }
-
-            return new Transaction({
-                to: to,
-                value: value,
-                data: data,
-                chainId: config.getChainId(),
-                nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
-                gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-                gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
+        if (wallet.getAddress()) {
+            this.currentWalletAccount = wallet;
+            to = symbol === 'ETH' ? '0x0' : token.address;
+            data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('deposit', {
+                tokenAddress: to,
+                amount: value
             });
+            return new Transaction({
+                                       to: to,
+                                       // value: this.dexConfigurations.getDepositFeeEth(),
+                                       value: '0x10000',
+                                       data: data,
+                                       chainId: config.getChainId(),
+                                       nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
+                                       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+                                       gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
+                                   });
         }
     }
 
-    public async withdraw(symbol: string, amount: number, gasPrice: number) {
+    public async withdraw(wallet: WalletAccount, symbol: string, amount: number, gasPrice: number) {
         let to, value, data: string;
         const token = config.getTokenBySymbol(symbol);
         value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
-        if (this.getAddress()) {
-            if (symbol === 'ETH') {
-                to = this.exchangeAddr;
-                data = fm.toHex('0x');
-            } else {
-                to = token.address;
-                data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('withdraw', {
-                    tokenAddress: to,
-                    amount: value
-                });
-                value = '0x0';
-            }
+        if (wallet.getAddress()) {
+            this.currentWalletAccount = wallet;
+            to = symbol === 'ETH' ? '0x0' : token.address;
+            data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('withdraw', {
+                tokenAddress: to,
+                amount: value
+            });
 
             return new Transaction({
-                to: to,
-                value: value,
-                data: data,
-                chainId: config.getChainId(),
-                nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
-                gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-                gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
-            });
+                                       to: to,
+                                       // value: this.dexConfigurations.getOnchainWithdrawalFeeEth(),
+                                       value: '0x10000',
+                                       data: data,
+                                       chainId: config.getChainId(),
+                                       nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
+                                       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+                                       gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
+                                   });
         }
     }
 
     public signOrder(order: OrderInfo) {
         const message = this.flattenList([
-            Exchange.toBitsNumber(this.exchangeID, 32),
-            Exchange.toBitsNumber(order.orderID, 20),
-            Exchange.toBitsNumber(order.accountID, 20),
-            Exchange.toBitsString(order.dualAuthPublicKeyX, 254),
-            Exchange.toBitsString(order.dualAuthPublicKeyY, 254),
-            Exchange.toBitsNumber(order.tokenIdS, 8),
-            Exchange.toBitsNumber(order.tokenIdB, 8),
-            Exchange.toBitsBN(order.amountS, 96),
-            Exchange.toBitsBN(order.amountB, 96),
-            Exchange.toBitsNumber(order.allOrNone ? 1 : 0, 1),
-            Exchange.toBitsNumber(order.validSince, 32),
-            Exchange.toBitsNumber(order.validUntil, 32),
-            Exchange.toBitsNumber(order.maxFeeBips, 6),
-            Exchange.toBitsNumber(order.buy ? 1 : 0, 1)
-        ]);
+                                             Exchange.toBitsNumber(this.exchangeID, 32),
+                                             Exchange.toBitsNumber(order.orderID, 20),
+                                             Exchange.toBitsNumber(order.accountID, 20),
+                                             Exchange.toBitsString(order.dualAuthPublicKeyX, 254),
+                                             Exchange.toBitsString(order.dualAuthPublicKeyY, 254),
+                                             Exchange.toBitsNumber(order.tokenIdS, 8),
+                                             Exchange.toBitsNumber(order.tokenIdB, 8),
+                                             Exchange.toBitsBN(order.amountS, 96),
+                                             Exchange.toBitsBN(order.amountB, 96),
+                                             Exchange.toBitsNumber(order.allOrNone ? 1 : 0, 1),
+                                             Exchange.toBitsNumber(order.validSince, 32),
+                                             Exchange.toBitsNumber(order.validUntil, 32),
+                                             Exchange.toBitsNumber(order.maxFeeBips, 6),
+                                             Exchange.toBitsNumber(order.buy ? 1 : 0, 1)
+                                         ]);
         const sig = sign(this.currentDexAccount.secretKey, message);
         order.hash = sig.hash;
         order.signature = {
@@ -266,7 +251,7 @@ export class Exchange {
         order.maxFeeBips = (order.maxFeeBips !== undefined) ? order.maxFeeBips : 20;  // TODO: config
         order.feeBips = (order.feeBips !== undefined) ? order.feeBips : order.maxFeeBips;
         order.rebateBips = (order.rebateBips !== undefined) ? order.rebateBips : 0;
-        order.walletAccountID = (order.walletAccountID !== undefined) ? order.walletAccountID : this.walletAccountID;
+        order.walletAccountID = (order.walletAccountID !== undefined) ? order.walletAccountID : this.walletAddressID;
 
         // assert(order.maxFeeBips < 64, 'maxFeeBips >= 64');
         // assert(order.feeBips < 64, 'feeBips >= 64');

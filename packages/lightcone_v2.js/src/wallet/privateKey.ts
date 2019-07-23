@@ -138,9 +138,8 @@ export class PrivateKey {
      * @param gasPrice in gwei
      */
     public async depositTo(symbol: string, amount: number, gasPrice: number) {
-        exchange.deposit(symbol, amount, gasPrice).then((rawTx: Transaction) => {
+        exchange.deposit(this.account, symbol, amount, gasPrice).then((rawTx: Transaction) => {
             const signedTx = this.account.signEthereumTx(rawTx);
-
             return this.account.sendTransaction(this.ethNode, signedTx);
         });
     }
@@ -152,7 +151,7 @@ export class PrivateKey {
      * @param gasPrice in gwei
      */
     public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
-        exchange.withdraw(symbol, amount, gasPrice).then((rawTx: Transaction) => {
+        exchange.withdraw(this.account, symbol, amount, gasPrice).then((rawTx: Transaction) => {
             const signedTx = this.account.signEthereumTx(rawTx);
 
             return this.account.sendTransaction(this.ethNode, signedTx);
