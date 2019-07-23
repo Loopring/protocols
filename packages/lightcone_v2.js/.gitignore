@@ -1,5 +1,4 @@
 .DS_Store
-package-lock.json
 dist/
 node_modules/
 proto_gen/
