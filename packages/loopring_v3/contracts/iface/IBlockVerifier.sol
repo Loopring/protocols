@@ -50,11 +50,11 @@ contract IBlockVerifier
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
     /// @param vk The verification key
     function registerCircuit(
-        uint8  blockType,
-        bool   onchainDataAvailability,
-        uint16 blockSize,
-        uint8  blockVersion,
-        uint256[18] calldata vk
+        uint8    blockType,
+        bool     onchainDataAvailability,
+        uint16   blockSize,
+        uint8    blockVersion,
+        uint[18] calldata vk
         )
         external;
 
@@ -90,8 +90,8 @@ contract IBlockVerifier
         bool    onchainDataAvailability,
         uint16  blockSize,
         uint8   blockVersion,
-        uint256[] calldata publicInputs,
-        uint256[] calldata proofs
+        uint[]  calldata publicInputs,
+        uint[]  calldata proofs
         )
         external
         view

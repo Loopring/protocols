@@ -160,20 +160,20 @@ library ExchangeAccounts
 
     function isAccountBalanceCorrect(
         ExchangeData.Account storage account,
-        bytes32 merkleRoot,
-        uint24 accountID,
-        uint16 tokenID,
-        uint32 nonce,
-        uint96 balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] memory accountMerkleProof,
-        uint256[12] memory balanceMerkleProof
+        bytes32  merkleRoot,
+        uint24   accountID,
+        uint16   tokenID,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] memory accountMerkleProof,
+        uint[12] memory balanceMerkleProof
         )
         public
         view
     {
         ExchangeBalances.isAccountBalanceCorrect(
-            uint256(merkleRoot),
+            uint(merkleRoot),
             accountID,
             tokenID,
             account.pubKeyX,

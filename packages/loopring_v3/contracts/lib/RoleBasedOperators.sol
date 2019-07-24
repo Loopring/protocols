@@ -23,16 +23,16 @@ pragma solidity 0.5.7;
 contract RoleBasedOperators
 {
     struct Operator {
-        uint256 id;
-        uint256 roles;
+        uint id;
+        uint roles;
     }
 
-    uint256 public constant ROOT = 1;
+    uint public constant ROOT = 1;
 
     address[] public operatorAddresses;
     mapping (address => Operator) public operatorMap;
 
-    event OperatorAdded(address who, uint256 roles);
+    event OperatorAdded(address who, uint roles);
     event OperatorRemoved(address who);
 
     /// @dev Return an address's operator roles.
@@ -43,7 +43,7 @@ contract RoleBasedOperators
         )
         public
         view
-        returns (uint256 roles)
+        returns (uint roles)
     {
         return operatorMap[who].roles;
     }
@@ -53,7 +53,8 @@ contract RoleBasedOperators
     /// @param roleMask The required roles.
     function hasAllRoles(
         address who,
-        uint256 roleMask)
+        uint    roleMask
+        )
         public
         view
         returns (bool)
@@ -67,7 +68,8 @@ contract RoleBasedOperators
     /// @param roleMask The required roles.
     function hasAnyRoles(
         address who,
-        uint256 roleMask)
+        uint    roleMask
+        )
         public
         view
         returns (bool)
@@ -78,7 +80,7 @@ contract RoleBasedOperators
 
     /// @dev Throws if called by any address that does not have all the roles.
     modifier onlyOperatorsWithAllRoles(
-        uint256 roleMask
+        uint roleMask
         )
     {
         require(hasAllRoles(msg.sender, roleMask), "UNAUTHORIZED");
@@ -87,7 +89,7 @@ contract RoleBasedOperators
 
     /// @dev Throws if called by any address that does not have at least one of the roles.
     modifier onlyOperatorsWithAnyRoles(
-        uint256 roleMask
+        uint roleMask
         )
     {
         require(hasAnyRoles(msg.sender, roleMask), "UNAUTHORIZED");
@@ -101,7 +103,8 @@ contract RoleBasedOperators
     /// @param roles The required roles.
     function addOperator(
         address who,
-        uint256 roles)
+        uint    roles
+        )
         public
     {
         require(roles != 0, "NO_ROLES");
@@ -141,7 +144,7 @@ contract RoleBasedOperators
         Operator storage operator = operatorMap[who];
 
         if (operator.id != 0) {
-            uint256 num = operatorAddresses.length;
+            uint num = operatorAddresses.length;
             if (operator.id != num) {
                 address lastOperator = operatorAddresses[num - 1];
                 operatorAddresses[operator.id - 1] = lastOperator;

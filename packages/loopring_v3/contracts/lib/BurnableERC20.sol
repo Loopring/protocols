@@ -24,14 +24,14 @@ import "./ERC20.sol";
 contract BurnableERC20 is ERC20
 {
     function burn(
-        uint256 value
+        uint value
         )
         public
         returns (bool);
 
     function burnFrom(
         address from,
-        uint256 value
+        uint    value
         )
         public
         returns (bool);

@@ -28,11 +28,11 @@ import "./Exchange.sol";
 library ExchangeDeployer
 {
     function deployExchange(
-        uint    exchangeId,
+        uint            exchangeId,
         address payable loopringAddress,
-        address owner,
+        address         owner,
         address payable operator,
-        bool    onchainDataAvailability
+        bool            onchainDataAvailability
         )
         external
         returns (address)

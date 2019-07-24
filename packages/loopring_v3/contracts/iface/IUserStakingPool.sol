@@ -30,7 +30,6 @@ contract IUserStakingPool
 
     address public lrcAddress;
     address public protocolFeeVaultAddress;
-
     uint    public numAddresses;
 
     event LRCStaked       (address user,  uint amount);

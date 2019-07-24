@@ -41,15 +41,15 @@ library ExchangeBlocks
     );
 
     event BlockFinalized(
-        uint    indexed blockIdx
+        uint indexed blockIdx
     );
 
     event BlockVerified(
-        uint    indexed blockIdx
+        uint indexed blockIdx
     );
 
     event Revert(
-        uint    indexed blockIdx
+        uint indexed blockIdx
     );
 
     event ProtocolFeesUpdated(
@@ -64,8 +64,8 @@ library ExchangeBlocks
         uint8  blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes memory data,
-        bytes memory offchainData
+        bytes  memory data,
+        bytes  memory offchainData
         )
         internal  // inline call
     {
@@ -85,7 +85,7 @@ library ExchangeBlocks
     function verifyBlocks(
         ExchangeData.State storage S,
         uint[] memory blockIndices,
-        uint256[] memory proofs
+        uint[] memory proofs
         )
         public
     {
@@ -97,7 +97,7 @@ library ExchangeBlocks
         require(proofs.length % 8 == 0, "INVALID_PROOF_ARRAY");
         require(proofs.length / 8 == blockIndices.length, "INVALID_INPUT_ARRAYS");
 
-        uint256[] memory publicInputs = new uint256[](blockIndices.length);
+        uint[] memory publicInputs = new uint[](blockIndices.length);
         uint16 blockSize;
         ExchangeData.BlockType blockType;
         uint8 blockVersion;
@@ -125,8 +125,8 @@ library ExchangeBlocks
                 "PROOF_TOO_LATE"
             );
 
-            // Maybe we should strip the highest bits of the public input so we don't have any overflow (uint256/prime field)
-            publicInputs[i] = uint256(specifiedBlock.publicDataHash);
+            // Maybe we should strip the highest bits of the public input so we don't have any overflow (uint/prime field)
+            publicInputs[i] = uint(specifiedBlock.publicDataHash);
             if (i == 0) {
                 blockSize = specifiedBlock.blockSize;
                 blockType = specifiedBlock.blockType;
@@ -217,7 +217,7 @@ library ExchangeBlocks
         ExchangeData.BlockType blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes memory data   // This field already has all the dummy (0-valued) requests padded,
+        bytes  memory data   // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed
                             // in this block. This is fine because 0-bytes consume fewer gas.
@@ -325,8 +325,8 @@ library ExchangeBlocks
                     abi.encodePacked(
                         endingHash,
                         uint24(0),
-                        uint256(0),
-                        uint256(0),
+                        uint(0),
+                        uint(0),
                         uint8(0),
                         uint96(0)
                     )

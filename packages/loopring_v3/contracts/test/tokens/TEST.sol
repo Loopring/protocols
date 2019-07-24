@@ -50,7 +50,7 @@ contract TEST is DummyToken {
 
     function transfer(
         address _to,
-        uint256 _value
+        uint _value
         )
         public
         returns (bool)
@@ -67,7 +67,7 @@ contract TEST is DummyToken {
     function transferFrom(
         address _from,
         address _to,
-        uint256 _value
+        uint _value
         )
         public
         returns (bool)

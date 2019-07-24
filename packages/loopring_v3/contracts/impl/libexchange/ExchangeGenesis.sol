@@ -36,10 +36,10 @@ library ExchangeGenesis
 
     function initializeGenesisBlock(
         ExchangeData.State storage S,
-        uint    _id,
+        uint            _id,
         address payable _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability
+        bool            _onchainDataAvailability
         )
         public
     {
@@ -86,8 +86,8 @@ library ExchangeGenesis
         // for padding deposits and on-chain withdrawal requests.
         ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
             address(0),
-            uint256(0),
-            uint256(0)
+            uint(0),
+            uint(0)
         );
 
         S.accounts.push(protocolFeePoolAccount);
