@@ -139,7 +139,7 @@ export class PrivateKey {
      */
     public async depositTo(symbol: string, amount: number, gasPrice: number) {
         exchange.deposit(this.account, symbol, amount, gasPrice).then((rawTx: Transaction) => {
-            const signedTx = this.account.signEthereumTx(rawTx);
+            const signedTx = this.account.signEthereumTx(rawTx.raw);
             return this.account.sendTransaction(this.ethNode, signedTx);
         });
     }
@@ -152,8 +152,7 @@ export class PrivateKey {
      */
     public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
         exchange.withdraw(this.account, symbol, amount, gasPrice).then((rawTx: Transaction) => {
-            const signedTx = this.account.signEthereumTx(rawTx);
-
+            const signedTx = this.account.signEthereumTx(rawTx.raw);
             return this.account.sendTransaction(this.ethNode, signedTx);
         });
     }

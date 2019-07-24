@@ -129,40 +129,14 @@ export class Exchange {
     }
 
     public async createOrUpdateAccount(publicX: string, publicY: string, gasPrice: number) {
-        // FIXME: ethereum.abi.Contracts.ExchangeContract.encodeInputs returns error
-        // Unhandled Rejection (TypeError): name.startsWith is not a function
-        console.log('Start encode input of createOrUpdateAccount');
-        const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
-            pubKeyX: fm.toBN(publicX),
-            pubKeyY: fm.toBN(publicY)
-        });
-        console.log('End encode input of createOrUpdateAccount');
-        return new Transaction({
-                                   to: this.exchangeAddr,
-                                   // value: this.dexConfigurations.getAccountUpdateFeeEth(),
-                                   value: '0x10000',
-                                   data: data,
-                                   chainId: config.getChainId(),
-                                   nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
-                                   gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-                                   gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
-                               });
-    }
-
-    public async deposit(wallet: WalletAccount, symbol: string, amount: number, gasPrice: number) {
-        let to, value, data: string;
-        const token = config.getTokenBySymbol(symbol);
-        value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
-        if (wallet.getAddress()) {
-            this.currentWalletAccount = wallet;
-            to = symbol === 'ETH' ? '0x0' : token.address;
-            data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('deposit', {
-                tokenAddress: to,
-                amount: value
+        try {
+            const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('createOrUpdateAccount', {
+                pubKeyX: fm.toBN(publicX),
+                pubKeyY: fm.toBN(publicY)
             });
             return new Transaction({
-                                       to: to,
-                                       // value: this.dexConfigurations.getDepositFeeEth(),
+                                       to: this.exchangeAddr,
+                                       // value: this.dexConfigurations.getAccountUpdateFeeEth(),
                                        value: '0x10000',
                                        data: data,
                                        chainId: config.getChainId(),
@@ -170,35 +144,73 @@ export class Exchange {
                                        gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
                                        gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
                                    });
+        } catch (err) {
+            console.error('Failed to create.', err);
+            throw err;
+        }
+    }
+
+    public async deposit(wallet: WalletAccount, symbol: string, amount: number, gasPrice: number) {
+        let to, value, data: string;
+        try {
+            const token = config.getTokenBySymbol(symbol);
+            value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
+            if (wallet.getAddress()) {
+                this.currentWalletAccount = wallet;
+                to = symbol === 'ETH' ? '0x0' : token.address;
+                data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('deposit', {
+                    tokenAddress: to,
+                    amount: value
+                });
+                return new Transaction({
+                                           to: to,
+                                           // value: this.dexConfigurations.getDepositFeeEth(),
+                                           value: '0x10000',
+                                           data: data,
+                                           chainId: config.getChainId(),
+                                           nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
+                                           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+                                           gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
+                                       });
+            }
+        } catch (err) {
+            console.error('Failed to create.', err);
+            throw err;
         }
     }
 
     public async withdraw(wallet: WalletAccount, symbol: string, amount: number, gasPrice: number) {
         let to, value, data: string;
-        const token = config.getTokenBySymbol(symbol);
-        value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
-        if (wallet.getAddress()) {
-            this.currentWalletAccount = wallet;
-            to = symbol === 'ETH' ? '0x0' : token.address;
-            data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('withdraw', {
-                tokenAddress: to,
-                amount: value
-            });
+        try {
+            const token = config.getTokenBySymbol(symbol);
+            value = fm.toHex(fm.toBig(amount).times('1e' + token.digits));
+            if (wallet.getAddress()) {
+                this.currentWalletAccount = wallet;
+                to = symbol === 'ETH' ? '0x0' : token.address;
+                data = ethereum.abi.Contracts.ExchangeContract.encodeInputs('withdraw', {
+                    tokenAddress: to,
+                    amount: value
+                });
 
-            return new Transaction({
-                                       to: to,
-                                       // value: this.dexConfigurations.getOnchainWithdrawalFeeEth(),
-                                       value: '0x10000',
-                                       data: data,
-                                       chainId: config.getChainId(),
-                                       nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
-                                       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-                                       gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
-                                   });
+                return new Transaction({
+                                           to: to,
+                                           // value: this.dexConfigurations.getOnchainWithdrawalFeeEth(),
+                                           value: '0x10000',
+                                           data: data,
+                                           chainId: config.getChainId(),
+                                           nonce: fm.toHex((await ethereum.wallet.getNonce(this.getAddress()))),
+                                           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+                                           gasLimit: fm.toHex(config.getGasLimitByType('eth_transfer').gasLimit) // TODO: new gas limit
+                                       });
+            }
+        } catch (err) {
+            console.error('Failed to create.', err);
+            throw err;
         }
     }
 
     public signOrder(order: OrderInfo) {
+
         const message = this.flattenList([
                                              Exchange.toBitsNumber(this.exchangeID, 32),
                                              Exchange.toBitsNumber(order.orderID, 20),
@@ -228,6 +240,7 @@ export class Exchange {
         if (!order.tokenS.startsWith('0x')) {
             order.tokenS = config.getTokenBySymbol(order.tokenS).address;
         }
+
         if (!order.tokenB.startsWith('0x')) {
             order.tokenB = config.getTokenBySymbol(order.tokenB).address;
         }
