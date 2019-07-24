@@ -1189,7 +1189,6 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
           },
-        dualAuthBSignature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
       };
 
       await exchangeTestUtil.setupRing(ring);
@@ -1223,39 +1222,6 @@ contract("Exchange", (accounts: string[]) => {
             amountS: new BN(web3.utils.toWei("100", "ether")),
             amountB: new BN(web3.utils.toWei("100", "ether")),
           },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitRings(exchangeID);
-      } catch {
-        exchangeTestUtil.cancelPendingRings(exchangeID);
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
-    });
-
-    it.skip("Wrong dual auth signature", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "LRC",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-          },
-        orderB:
-          {
-            tokenS: "LRC",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-          },
-        dualAuthBSignature: {Rx: "4564565564545", Ry: "456445648974", s: "445644894"},
       };
 
       await exchangeTestUtil.setupRing(ring);

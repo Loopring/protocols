@@ -80,10 +80,6 @@ export interface RingInfo {
   tokenID?: number;
   fee?: BN;
 
-  ringMatcherSignature?: Signature;
-  dualAuthASignature?: Signature;
-  dualAuthBSignature?: Signature;
-
   expected?: RingExpectation;
 }
 
@@ -96,6 +92,8 @@ export interface RingBlock {
   timestamp?: number;
   exchangeID?: number;
   operatorAccountID?: number;
+
+  signature?: Signature;
 }
 
 export interface Deposit {

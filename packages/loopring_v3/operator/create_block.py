@@ -96,17 +96,8 @@ def orderFromJSON(jOrder, state):
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
-    ringMatcherAccountID = int(jRing["ringMatcherAccountID"])
-    tokenID = int(jRing["tokenID"])
-    fee = int(jRing["fee"])
 
-    ringMatcherAccount = state.getAccount(ringMatcherAccountID)
-
-    ring = Ring(orderA, orderB, ringMatcherAccountID, tokenID, fee, ringMatcherAccount.nonce)
-
-    ring.ringMatcherSignature = jRing["ringMatcherSignature"]
-    ring.dualAuthASignature = jRing["dualAuthASignature"]
-    ring.dualAuthBSignature = jRing["dualAuthBSignature"]
+    ring = Ring(orderA, orderB)
 
     return ring
 
@@ -119,6 +110,7 @@ def createRingSettlementBlock(state, data):
     block.protocolTakerFeeBips = int(data["protocolTakerFeeBips"])
     block.protocolMakerFeeBips = int(data["protocolMakerFeeBips"])
     block.operatorAccountID = int(data["operatorAccountID"])
+    block.signature = data["signature"]
 
     context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
@@ -144,7 +136,8 @@ def createRingSettlementBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(context.operatorAccountID))
     proof = state._accountsTree.createProof(context.operatorAccountID)
     for ringSettlement in block.ringSettlements:
-        ringSettlement.balanceUpdateF_O = account.updateBalance(ringSettlement.ring.tokenID, ringSettlement.feeToOperator)
+        ringSettlement.balanceUpdateA_O = account.updateBalance(ringSettlement.ring.orderA.tokenB, ringSettlement.balanceDeltaA_O)
+        ringSettlement.balanceUpdateB_O = account.updateBalance(ringSettlement.ring.orderB.tokenB, ringSettlement.balanceDeltaB_O)
     state.updateAccountTree(context.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))
     rootAfter = state._accountsTree._root

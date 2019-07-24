@@ -362,13 +362,9 @@ class Order(object):
 
 
 class Ring(object):
-    def __init__(self, orderA, orderB, ringMatcherAccountID, tokenID, fee, nonce):
+    def __init__(self, orderA, orderB):
         self.orderA = orderA
         self.orderB = orderB
-        self.ringMatcherAccountID = int(ringMatcherAccountID)
-        self.tokenID = int(tokenID)
-        self.fee = str(fee)
-        self.nonce = int(nonce)
 
 class RingSettlement(object):
     def __init__(self,
@@ -377,10 +373,8 @@ class RingSettlement(object):
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                  balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
-                 balanceUpdateA_M, balanceUpdateB_M, balanceUpdateO_M, accountUpdate_M,
                  balanceUpdateA_P, balanceUpdateB_P,
-                 balanceUpdateF_O,
-                 feeToOperator):
+                 balanceDeltaA_O, balanceDeltaB_O):
         self.ring = ring
 
         self.accountsMerkleRoot = str(accountsMerkleRoot)
@@ -396,17 +390,11 @@ class RingSettlement(object):
         self.balanceUpdateB_B = balanceUpdateB_B
         self.accountUpdate_B = accountUpdate_B
 
-        self.balanceUpdateA_M = balanceUpdateA_M
-        self.balanceUpdateB_M = balanceUpdateB_M
-        self.balanceUpdateO_M = balanceUpdateO_M
-        self.accountUpdate_M = accountUpdate_M
-
         self.balanceUpdateA_P = balanceUpdateA_P
         self.balanceUpdateB_P = balanceUpdateB_P
 
-        self.balanceUpdateF_O = balanceUpdateF_O
-
-        self.feeToOperator = feeToOperator
+        self.balanceDeltaA_O = balanceDeltaA_O
+        self.balanceDeltaB_O = balanceDeltaB_O
 
 
 class OnchainWithdrawal(object):
@@ -616,8 +604,6 @@ class State(object):
         fillA.B = fillB.S
         fillB.B = fillA.S
 
-        feeToOperator = roundToFloatValue(ring.fee, Float12Encoding)
-
         '''
         print("fillA.S: " + str(fillA.S))
         print("fillA.B: " + str(fillA.B))
@@ -691,41 +677,23 @@ class State(object):
         accountUpdate_B = AccountUpdateData(ring.orderB.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Update ringmatcher
-        accountM = self.getAccount(ring.ringMatcherAccountID)
-
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.ringMatcherAccountID))
-        proof = self._accountsTree.createProof(ring.ringMatcherAccountID)
-
-        balanceUpdateA_M = accountM.updateBalance(ring.orderA.tokenB, fee_A - protocolFee_A - rebate_A)
-        balanceUpdateB_M = accountM.updateBalance(ring.orderB.tokenB, fee_B - protocolFee_B - rebate_B)
-        balanceUpdateO_M = accountM.updateBalance(ring.tokenID, -feeToOperator)
-        accountM.nonce += 1
-
-        self.updateAccountTree(ring.ringMatcherAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.ringMatcherAccountID))
-        rootAfter = self._accountsTree._root
-        accountUpdate_M = AccountUpdateData(ring.ringMatcherAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
-
         # Protocol fee payment
         balanceUpdateA_P = self.getAccount(0).updateBalance(ring.orderA.tokenB, protocolFee_A)
         balanceUpdateB_P = self.getAccount(0).updateBalance(ring.orderB.tokenB, protocolFee_B)
         ###
 
         # Operator payment
-        # This is done after all rings are settled
+        balanceDeltaA_O = fee_A - protocolFee_A - rebate_A
+        balanceDeltaB_O = fee_B - protocolFee_B - rebate_B
+        # The Merkle tree update is done after all rings are settled
 
         return RingSettlement(ring,
                               accountsMerkleRoot,
                               tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                               balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                               balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
-                              balanceUpdateA_M, balanceUpdateB_M, balanceUpdateO_M, accountUpdate_M,
                               balanceUpdateA_P, balanceUpdateB_P,
-                              None,
-                              feeToOperator)
+                              balanceDeltaA_O, balanceDeltaB_O)
 
 
     def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, token, amount):

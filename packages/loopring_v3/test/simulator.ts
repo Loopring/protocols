@@ -343,14 +343,8 @@ export class Simulator {
     offset += 3;
 
     // Jump to the specified ring
-    const ringSize = 25;
+    const ringSize = 20;
     offset += ringIndex * ringSize;
-
-    // Ring data
-    const ringMatcherAccountIdAndRingFee = data.extractUint32(offset);
-    offset += 4;
-    const feeToken = data.extractUint8(offset);
-    offset += 1;
 
     // Order IDs
     const orderIds = data.extractUint40(offset);
@@ -377,9 +371,6 @@ export class Simulator {
     offset += 1;
 
     // Further extraction of packed data
-    const ringMatcherID = Math.floor(ringMatcherAccountIdAndRingFee / (2 ** 12));
-    const fRingFee = ringMatcherAccountIdAndRingFee & 0xFFF;
-
     const orderIdA = Math.floor(orderIds / (2 ** 20));
     const orderIdB = orderIds & 0xFFFFF;
 
@@ -401,14 +392,13 @@ export class Simulator {
     const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
 
     // Decode the float values
-    const ringFee = fromFloat(fRingFee, constants.Float12Encoding);
     const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
     const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
 
     // Update the Merkle tree with the onchain data
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
-      operatorAccountID, ringMatcherID, feeToken, ringFee,
+      operatorAccountID,
       fillSA, fillSB,
       buyA, buyB,
       tokenA, tokenB,
@@ -454,7 +444,6 @@ export class Simulator {
 
     fillA.S = roundToFloatValue(fillA.S, constants.Float24Encoding);
     fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
-    const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
     // Validate
     this.validateOrder(exchangeState, ring.orderA, false, fillA.S, fillA.B, valid);
@@ -462,7 +451,7 @@ export class Simulator {
 
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
-      operatorAccountID, ring.ringMatcherAccountID, ring.tokenID, ringFee,
+      operatorAccountID,
       fillA.S, fillB.S,
       ring.orderA.buy, ring.orderB.buy,
       ring.orderA.tokenIdS, ring.orderB.tokenIdS,
@@ -540,19 +529,10 @@ export class Simulator {
       amount: s.rebateB,
       subPayments: [],
     };
-    const operatorFee: DetailedTokenTransfer = {
-      description: "OperatorFee",
-      token: ring.tokenID,
-      from: ring.ringMatcherAccountID,
-      to: operatorAccountID,
-      amount: ringFee,
-      subPayments: [],
-    };
     ringMatcherPayments.subPayments.push(payProtocolFeeA);
     ringMatcherPayments.subPayments.push(payProtocolFeeB);
     ringMatcherPayments.subPayments.push(payRebateA);
     ringMatcherPayments.subPayments.push(payRebateB);
-    ringMatcherPayments.subPayments.push(operatorFee);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
     detailedTransfers.push(...detailedTransfersA);
@@ -616,7 +596,7 @@ export class Simulator {
   }
 
   public settleRing(exchangeState: ExchangeState, protocolFeeTakerBips: number, protocolFeeMakerBips: number,
-                    operatorId: number, ringMatcherId: number, feeToken: number, ringFee: BN,
+                    operatorId: number,
                     fillSA: BN, fillSB: BN,
                     buyA: boolean, buyB: boolean,
                     tokenA: number, tokenB: number,
@@ -664,20 +644,6 @@ export class Simulator {
       tradeHistoryB.orderID = (orderIdB > tradeHistoryB.orderID) ? orderIdB : tradeHistoryB.orderID;
     }
 
-    // Update ringMatcher
-    const ringMatcher = newExchangeState.accounts[ringMatcherId];
-    // - FeeA
-    ringMatcher.balances[tokenB].balance =
-     ringMatcher.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA).sub(s.rebateA);
-    // - FeeB
-    ringMatcher.balances[tokenA].balance =
-     ringMatcher.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
-    // - Operator fee
-    ringMatcher.balances[feeToken].balance =
-     ringMatcher.balances[feeToken].balance.sub(ringFee);
-    // Increase nonce
-    ringMatcher.nonce++;
-
     // Update protocol fee recipient
     const protocolFeeAccount = newExchangeState.accounts[0];
     // - Order A
@@ -689,8 +655,12 @@ export class Simulator {
 
     // Update operator
     const operator = newExchangeState.accounts[operatorId];
-    operator.balances[feeToken].balance =
-     operator.balances[feeToken].balance.add(ringFee);
+    // - FeeA
+    operator.balances[tokenB].balance =
+      operator.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA).sub(s.rebateA);
+    // - FeeB
+    operator.balances[tokenA].balance =
+      operator.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
 
     return {newExchangeState, s};
   }

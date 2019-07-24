@@ -426,65 +426,31 @@ export class ExchangeTestUtil {
     // console.log("Verify order signature time: " + (endVerify - startVerify));
   }
 
-  public signRing(ring: RingInfo) {
-    if (ring.ringMatcherSignature !== undefined) {
+  public signRingBlock(block: RingBlock, merkleRoot: string) {
+    if (block.signature !== undefined) {
       return;
     }
-    const account = this.accounts[this.exchangeId][ring.ringMatcherAccountID];
-    const nonce = account.nonce++;
 
-    ring.ringMatcherSignature = {
-      Rx: "0",
-      Ry: "0",
-      s: "0",
-    };
-    ring.dualAuthASignature = {
-      Rx: "0",
-      Ry: "0",
-      s: "0",
-    };
-    ring.dualAuthBSignature = {
-      Rx: "0",
-      Ry: "0",
-      s: "0",
-    };
+    const hasher = poseidon.createHash(6, 6, 52);
+    const account = this.accounts[this.exchangeId][block.operatorAccountID];
 
-    /*const message = new BitArray();
-    message.addString(ring.orderA.hash, 254);
-    message.addString(ring.orderB.hash, 254);
-    message.addNumber(ring.ringMatcherAccountID, 20);
-    message.addNumber(ring.tokenID, 8);
-    message.addBN(ring.fee, 96);
-    message.addNumber(ring.orderA.feeBips, 6);
-    message.addNumber(ring.orderB.feeBips, 6);
-    message.addNumber(ring.orderA.rebateBips, 6);
-    message.addNumber(ring.orderB.rebateBips, 6);
-    message.addNumber(nonce, 32);
-    message.addNumber(0, 1);
-    const sig = eddsa.sign(account.secretKey, message.getBits());
-    ring.ringMatcherSignature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
+    // Calculate hash
+    const inputs = [
+      this.exchangeId,
+      block.timestamp,
+      merkleRoot,
+      0,
+      0,
+      // account.nonce++,
+    ];
+    const hash = hasher(inputs).toString(10);
 
-    if (ring.dualAuthASignature === undefined) {
-      const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
-      ring.dualAuthASignature = {
-        Rx: dualAuthAsig.R[0].toString(),
-        Ry: dualAuthAsig.R[1].toString(),
-        s: dualAuthAsig.S.toString(),
-      };
-    }
+    // Create signature
+    block.signature = eddsa.sign(account.secretKey, hash);
 
-    if (ring.dualAuthBSignature === undefined) {
-      const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
-      ring.dualAuthBSignature = {
-        Rx: dualAuthBsig.R[0].toString(),
-        Ry: dualAuthBsig.R[1].toString(),
-        s: dualAuthBsig.S.toString(),
-      };
-    }*/
+    // Verify signature
+    const success = eddsa.verify(hash, block.signature, [account.publicKeyX, account.publicKeyY]);
+    assert(success, "Failed to verify signature");
   }
 
   public signCancel(cancel: Cancel) {
@@ -1581,10 +1547,8 @@ export class ExchangeTestUtil {
       assert(rings.length === blockSize);
       numRingsDone += blockSize;
 
-      // Sign the rings
-      for (const ring of rings) {
-        this.signRing(ring);
-      }
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const currentBlock = await this.exchange.getBlock(currentBlockIdx);
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
@@ -1600,9 +1564,10 @@ export class ExchangeTestUtil {
         exchangeID,
         operatorAccountID: operator,
       };
+      // Sign the block
+      this.signRingBlock(ringBlock, currentBlock.merkleRoot);
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx, ringBlock);
 
       // Create the block
@@ -1629,10 +1594,6 @@ export class ExchangeTestUtil {
           const ring = ringSettlement.ring;
           const orderA = ringSettlement.ring.orderA;
           const orderB = ringSettlement.ring.orderB;
-
-          const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
-          da.addNumber((ring.ringMatcherAccountID * (2 ** 12)) + fRingFee, 4);
-          da.addNumber(ring.tokenID, 1);
 
           da.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
           da.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
@@ -1669,13 +1630,12 @@ export class ExchangeTestUtil {
 
   public getRingTransformations() {
     const ranges: Range[][] = [];
-    ranges.push([{offset: 0, length: 5}]);                            // ringMatcherID + fFee + tokenID
-    ranges.push([{offset: 5, length: 5}]);                            // orderA.orderID + orderB.orderID
-    ranges.push([{offset: 10, length: 5}]);                           // orderA.accountID + orderB.accountID
-    ranges.push([{offset: 15, length: 1}, {offset: 20, length: 1}]);  // orderA.tokenS + orderB.tokenS
-    ranges.push([{offset: 16, length: 3}, {offset: 21, length: 3}]);  // orderA.fillS + orderB.fillS
-    ranges.push([{offset: 19, length: 1}]);                           // orderA.data
-    ranges.push([{offset: 24, length: 1}]);                           // orderB.data
+    ranges.push([{offset: 0, length: 5}]);                            // orderA.orderID + orderB.orderID
+    ranges.push([{offset: 5, length: 5}]);                            // orderA.accountID + orderB.accountID
+    ranges.push([{offset: 10, length: 1}, {offset: 15, length: 1}]);  // orderA.tokenS + orderB.tokenS
+    ranges.push([{offset: 11, length: 3}, {offset: 16, length: 3}]);  // orderA.fillS + orderB.fillS
+    ranges.push([{offset: 14, length: 1}]);                           // orderA.data
+    ranges.push([{offset: 19, length: 1}]);                           // orderB.data
     return ranges;
   }
 
@@ -1683,9 +1643,9 @@ export class ExchangeTestUtil {
     // Compress
     const bs = new Bitstream(input);
     const compressed = new Bitstream();
-    const ringSize = 25;
-    compressed.addHex(bs.extractData(0, ringSize));
-    for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
+    const ringSize = 20;
+    compressed.addHex(bs.extractData(0, bs.length()));
+    /*for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
       for (let i = 0; i < 5; i++) {
         const previousRingData = bs.extractUint8(offset + i - ringSize);
         const currentRingData = bs.extractUint8(offset + i);
@@ -1693,7 +1653,7 @@ export class ExchangeTestUtil {
         compressed.addNumber(data, 1);
       }
       compressed.addHex(bs.extractData(offset + 5, ringSize - 5));
-    }
+    }*/
     // Transform
     const ranges = this.getRingTransformations();
     const transformed = new Bitstream();
@@ -1714,7 +1674,7 @@ export class ExchangeTestUtil {
   public inverseTransformRingSettlementsData(input: string) {
     // Inverse Transform
     const transformed = new Bitstream(input);
-    const ringSize = 25;
+    const ringSize = 20;
     const numRings = transformed.length() / ringSize;
     const ranges = this.getRingTransformations();
     const compressed = new Bitstream();
@@ -1741,8 +1701,8 @@ export class ExchangeTestUtil {
 
     // Decompress
     const bs = new Bitstream();
-    bs.addHex(compressed.extractData(0, ringSize));
-    for (let r = 1; r < numRings; r++) {
+    bs.addHex(compressed.extractData(0, ringSize * numRings));
+    /*for (let r = 1; r < numRings; r++) {
       for (let i = 0; i < 5; i++) {
         const previousRingData = bs.extractUint8((r - 1) * ringSize + i);
         const delta = compressed.extractUint8(r * ringSize + i);
@@ -1750,7 +1710,7 @@ export class ExchangeTestUtil {
         bs.addNumber(reconstructedData, 1);
       }
       bs.addHex(compressed.extractData(r * ringSize + 5, ringSize - 5));
-    }
+    }*/
     return bs.getData();
   }
 
