@@ -429,7 +429,10 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
               revert(0, 0)
           }
         }
-        state.commitBlock(blockType, blockSize, blockVersion, decompressed, offchainData);
+
+        address processor = blockProcessors[blockType];
+        require(processor != address(0), "BLOCK_PROCESSOR_NOT_REGISTERED")
+        state.commitBlock(blockType, blockSize, blockVersion, decompressed, processor);
     }
 
     function verifyBlocks(

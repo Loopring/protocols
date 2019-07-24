@@ -65,15 +65,10 @@ library ExchangeBlocks
         uint16 blockSize,
         uint8  blockVersion,
         bytes memory data,
-        bytes memory offchainData,
         address processor
         )
         internal  // inline call
     {
-        if (S.onchainDataAvailability) {
-            require(offchainData.length == 0, "INVALID_OFFCHAIN_DATA");
-        }
-
         commitBlockInternal(
             S,
             ExchangeData.BlockType(blockType),
@@ -219,10 +214,11 @@ library ExchangeBlocks
         ExchangeData.BlockType blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes memory data   // This field already has all the dummy (0-valued) requests padded,
+        bytes memory data,  // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed
                             // in this block. This is fine because 0-bytes consume fewer gas.
+        address processor
         )
         private
     {
@@ -289,126 +285,6 @@ library ExchangeBlocks
             require(blockType == ExchangeData.BlockType.DEPOSIT, "DEPOSIT_BLOCK_FORCED");
         }
 
-        if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
-            /* require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED"); */
-            /* uint32 inputTimestamp; */
-            /* uint8 protocolTakerFeeBips; */
-            /* uint8 protocolMakerFeeBips; */
-            /* assembly { */
-            /*     inputTimestamp := and(mload(add(data, 72)), 0xFFFFFFFF) */
-            /*     protocolTakerFeeBips := and(mload(add(data, 73)), 0xFF) */
-            /*     protocolMakerFeeBips := and(mload(add(data, 74)), 0xFF) */
-            /* } */
-            /* require( */
-            /*     inputTimestamp > now - ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() && */
-            /*     inputTimestamp < now + ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(), */
-            /*     "INVALID_TIMESTAMP" */
-            /* ); */
-            /* require( */
-            /*     validateAndUpdateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips), */
-            /*     "INVALID_PROTOCOL_FEES" */
-            /* ); */
-        } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
-            uint startIdx = 0;
-            uint count = 0;
-            assembly {
-                startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
-                count := and(mload(add(data, 140)), 0xFFFFFFFF)
-            }
-            require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
-            require (count <= blockSize, "INVALID_REQUEST_RANGE");
-            require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
-
-            bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
-            bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
-            // Pad the block so it's full
-            for (uint i = count; i < blockSize; i++) {
-                endingHash = sha256(
-                    abi.encodePacked(
-                        endingHash,
-                        uint24(0),
-                        uint256(0),
-                        uint256(0),
-                        uint8(0),
-                        uint96(0)
-                    )
-                );
-            }
-            bytes32 inputStartingHash = 0x0;
-            bytes32 inputEndingHash = 0x0;
-            assembly {
-                inputStartingHash := mload(add(data, 100))
-                inputEndingHash := mload(add(data, 132))
-            }
-            require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
-            require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
-
-            numDepositRequestsCommitted += uint32(count);
-        } else if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
-            uint startIdx = 0;
-            uint count = 0;
-            assembly {
-                startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
-                count := and(mload(add(data, 140)), 0xFFFFFFFF)
-            }
-            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
-            require (count <= blockSize, "INVALID_REQUEST_RANGE");
-            require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
-
-            if (S.isShutdown()) {
-                require (count == 0, "INVALID_WITHDRAWAL_COUNT");
-                // Don't check anything here, the operator can do all necessary withdrawals
-                // in any order he wants (the circuit still ensures the withdrawals are valid)
-            } else {
-                require (count > 0, "INVALID_WITHDRAWAL_COUNT");
-                bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
-                bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
-                // Pad the block so it's full
-                for (uint i = count; i < blockSize; i++) {
-                    endingHash = sha256(
-                        abi.encodePacked(
-                            endingHash,
-                            uint24(0),
-                            uint8(0),
-                            uint96(0)
-                        )
-                    );
-                }
-                bytes32 inputStartingHash = 0x0;
-                bytes32 inputEndingHash = 0x0;
-                assembly {
-                    inputStartingHash := mload(add(data, 100))
-                    inputEndingHash := mload(add(data, 132))
-                }
-                require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
-                require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
-                numWithdrawalRequestsCommitted += uint32(count);
-            }
-        } else if (
-            blockType != ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL &&
-            blockType != ExchangeData.BlockType.ORDER_CANCELLATION &&
-            blockType != ExchangeData.BlockType.TRANSFER) {
-            revert("UNSUPPORTED_BLOCK_TYPE");
-        }
-
-        // Hash all the public data to a single value which is used as the input for the circuit
-        bytes32 publicDataHash = data.fastSHA256();
-
-        // Store the approved withdrawal data onchain
-        bytes memory withdrawals = new bytes(0);
-        if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-            blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
-            uint start = 4 + 32 + 32;
-            if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
-                start += 32 + 32 + 4 + 4;
-            }
-            uint length = 7 * blockSize;
-            assembly {
-                withdrawals := add(data, start)
-                mstore(withdrawals, length)
-            }
-        }
-
         // Create a new block with the updated merkle roots
         ExchangeData.Block memory newBlock = ExchangeData.Block(
             merkleRootAfter,
@@ -424,6 +300,8 @@ library ExchangeBlocks
             0,
             withdrawals
         );
+
+        processor.processBlock(S, newBlock, data);
 
         S.blocks.push(newBlock);
 

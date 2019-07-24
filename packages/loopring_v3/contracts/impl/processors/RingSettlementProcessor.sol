@@ -16,19 +16,14 @@
 */
 pragma solidity 0.5.7;
 
-import "../../iface/IBlockProcessor.sol";
-
 /// @title IBlockProcessor
 /// @author Freeman Zhong - <kongliang@loopring.org>
-contract RingSettlementProcessor is IBlockProcessor
+library RingSettlementProcessor
 {
 
     function processBlock(
         ExchangeData.State storage S,
-        uint8  blockType,
-        bool   onchainDataAvailability,
-        uint16 blockSize,
-        uint8  blockVersion,
+        ExchangeData.Block memory newBlock,
         bytes memory data
         )
         external
