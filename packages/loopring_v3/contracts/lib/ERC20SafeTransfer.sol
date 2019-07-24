@@ -26,7 +26,7 @@ library ERC20SafeTransfer
     function safeTransfer(
         address token,
         address to,
-        uint value
+        uint    value
         )
         internal
         returns (bool)
@@ -42,8 +42,8 @@ library ERC20SafeTransfer
     function safeTransferWithGasLimit(
         address token,
         address to,
-        uint value,
-        uint gasLimit
+        uint    value,
+        uint    gasLimit
         )
         internal
         returns (bool)
@@ -66,7 +66,7 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint value
+        uint    value
         )
         internal
         returns (bool)
@@ -84,8 +84,8 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint value,
-        uint gasLimit
+        uint    value,
+        uint    gasLimit
         )
         internal
         returns (bool)
