@@ -432,7 +432,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     function verifyBlocks(
         uint[] calldata blockIndices,
-        uint256[] calldata proofs
+        uint[] calldata proofs
         )
         external
         nonReentrant
