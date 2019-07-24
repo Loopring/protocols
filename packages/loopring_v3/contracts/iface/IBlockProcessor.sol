@@ -33,9 +33,7 @@ contract IBlockProcessor
     /// @param
     function processBlock(
         ExchangeData.State storage S,
-        uint8  blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
+        ExchangeData.Block memory newBlock,
         bytes memory data
         )
         external;
