@@ -73,7 +73,7 @@ contract TransferContract {
         require(to.sendETH(amount, gasLimit), "TRANSFER_FAILURE");
     }
 
-    function setTestßCase(
+    function setTestCase(
         uint8 _testCase
         )
         external
