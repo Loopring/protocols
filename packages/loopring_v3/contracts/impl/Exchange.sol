@@ -827,10 +827,10 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         view
         returns (
             uint32 timestamp,
-            uint8 takerFeeBips,
-            uint8 makerFeeBips,
-            uint8 previousTakerFeeBips,
-            uint8 previousMakerFeeBips
+            uint8  takerFeeBips,
+            uint8  makerFeeBips,
+            uint8  previousTakerFeeBips,
+            uint8  previousMakerFeeBips
         )
     {
         timestamp = state.protocolFeeData.timestamp;

@@ -37,7 +37,7 @@ contract TransferContract {
     function safeTransferWithGasLimit(
         address token,
         address to,
-        uint value,
+        uint    value,
         uint    gasLimit
         )
         external
@@ -52,7 +52,7 @@ contract TransferContract {
         address token,
         address from,
         address to,
-        uint value,
+        uint    value,
         uint    gasLimit
         )
         external
@@ -73,7 +73,7 @@ contract TransferContract {
         require(to.sendETH(amount, gasLimit), "TRANSFER_FAILURE");
     }
 
-    function setTestCase(
+    function setTestßCase(
         uint8 _testCase
         )
         external

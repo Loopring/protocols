@@ -38,13 +38,13 @@ contract ERC20Token is ERC20
     event Transfer(
         address indexed from,
         address indexed to,
-        uint    value
+        uint            value
     );
 
     event Approval(
         address indexed owner,
         address indexed spender,
-        uint value
+        uint            value
     );
 
     constructor(

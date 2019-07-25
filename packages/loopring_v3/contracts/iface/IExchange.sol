@@ -580,7 +580,7 @@ contract IExchange
         view
         returns (
           bytes32 accumulatedHash,
-          uint accumulatedFee,
+          uint    accumulatedFee,
           uint32  timestamp
         );
 
