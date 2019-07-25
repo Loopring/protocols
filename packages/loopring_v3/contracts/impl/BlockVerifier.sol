@@ -36,6 +36,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         bool enabled;
         uint256[18] verificationKey;
     }
+
     mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
 
     function registerCircuit(
@@ -52,13 +53,19 @@ contract BlockVerifier is IBlockVerifier, Claimable
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
         Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == false, "ALREADY_REGISTERED");
+
         for (uint i = 0; i < 18; i++) {
             circuit.verificationKey[i] = vk[i];
         }
         circuit.registered = true;
         circuit.enabled = true;
 
-        emit CircuitRegistered(blockType, onchainDataAvailability, blockSize, blockVersion);
+        emit CircuitRegistered(
+            blockType,
+            onchainDataAvailability, 
+            blockSize,
+            blockVersion
+        );
     }
 
     function disableCircuit(
@@ -73,9 +80,15 @@ contract BlockVerifier is IBlockVerifier, Claimable
         Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
         require(circuit.enabled == true, "ALREADY_DISABLED");
+
         circuit.enabled = false;
 
-        emit CircuitDisabled(blockType, onchainDataAvailability, blockSize, blockVersion);
+        emit CircuitDisabled(
+            blockType,
+            onchainDataAvailability,
+            blockSize,
+            blockVersion
+        );
     }
 
     function verifyProofs(
@@ -104,7 +117,13 @@ contract BlockVerifier is IBlockVerifier, Claimable
         if (publicInputs.length == 1) {
             return Verifier.Verify(_vk, _vk_gammaABC, proofs, publicInputs);
         } else {
-            return BatchVerifier.BatchVerify(_vk, _vk_gammaABC, proofs, publicInputs, publicInputs.length);
+            return BatchVerifier.BatchVerify(
+                _vk,
+                _vk_gammaABC,
+                proofs,
+                publicInputs,
+                publicInputs.length
+            );
         }
     }
 
