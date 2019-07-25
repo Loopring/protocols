@@ -3,7 +3,7 @@ import BN = require("bn.js");
 export enum BlockState {
   NEW = 0,
   COMMITTED,
-  VERIFIED,
+  VERIFIED
 }
 
 export enum BlockType {
@@ -11,7 +11,7 @@ export enum BlockType {
   DEPOSIT,
   ONCHAIN_WITHDRAWAL,
   OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION,
+  ORDER_CANCELLATION
 }
 
 export interface KeyPair {
@@ -176,8 +176,13 @@ export interface CancelBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
+  blockType: BlockType;
+  blockSize: number;
+  blockVersion: number;
   operatorId: number;
   compressedData: string;
+  publicDataHash: string;
+  proof?: string[];
 }
 
 export interface Account {
@@ -197,14 +202,14 @@ export interface TradeHistory {
 
 export interface Balance {
   balance: BN;
-  tradeHistory: {[key: number]: TradeHistory};
+  tradeHistory: { [key: number]: TradeHistory };
 }
 
 export interface AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
-  balances: {[key: number]: Balance};
+  balances: { [key: number]: Balance };
 }
 
 export interface ExchangeState {

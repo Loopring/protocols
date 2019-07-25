@@ -43,13 +43,13 @@ contract Operator {
         exchange.commitBlock(blockType, blockSize, blockVersion, data, offchainData);
     }
 
-    function verifyBlock(
-        uint blockIdx,
-        uint256[8] calldata proof
+    function verifyBlocks(
+        uint[] calldata blockIndices,
+        uint256[] calldata proofs
         )
         external
     {
-        exchange.verifyBlock(blockIdx, proof);
+        exchange.verifyBlocks(blockIndices, proofs);
     }
 
     function revertBlock(

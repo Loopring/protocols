@@ -430,15 +430,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         state.commitBlock(blockType, blockSize, blockVersion, decompressed, offchainData);
     }
 
-    function verifyBlock(
-        uint blockIdx,
-        uint256[8] calldata proof
+    function verifyBlocks(
+        uint[] calldata blockIndices,
+        uint[] calldata proofs
         )
         external
         nonReentrant
         onlyOperator
     {
-        state.verifyBlock(blockIdx, proof);
+        state.verifyBlocks(blockIndices, proofs);
     }
 
     function revertBlock(

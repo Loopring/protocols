@@ -514,17 +514,20 @@ contract IExchange
         )
         external;
 
-    /// @dev Submit a ZK proof onchain to verify a previously committed block. Submitting an
+    /// @dev Submits ZK proofs onchain to verify previously committed blocks. Submitting an
     ///      invalid proof will not change the state of the exchange. Note that proofs can
     ///      be submitted in a different order than the blocks themselves.
     ///
-    ///      This method can be called by anyone with a valid proof.
+    ///      Multiple blocks can be verified at once (in any order) IF they use the same circuit.
+    ///      This function will throw if blocks using different circuits need to be verified.
     ///
-    /// @param blockIdx The 0-based index of the block to be verified with the given proof
-    /// @param proof The ZK proof
-    function verifyBlock(
-        uint       blockIdx,
-        uint256[8] calldata proof
+    ///      This method can only be called by the operator.
+    ///
+    /// @param blockIndices The 0-based index of the blocks to be verified with the given proofs
+    /// @param proofs The ZK proof for all blockIndices (proofs.length % 8 == 0).
+    function verifyBlocks(
+        uint[]    calldata blockIndices,
+        uint256[] calldata proofs
         )
         external;
 

@@ -78,52 +78,88 @@ library ExchangeBlocks
         );
     }
 
-    function verifyBlock(
+    function verifyBlocks(
         ExchangeData.State storage S,
-        uint blockIdx,
-        uint256[8] memory proof
+        uint[] memory blockIndices,
+        uint256[] memory proofs
         )
         public
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
 
-        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-        require(
-            specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
-            "BLOCK_VERIFIED_ALREADY"
-        );
+        // Check input data
+        require(blockIndices.length > 0, "INVALID_INPUT_ARRAYS");
+        require(proofs.length % 8 == 0, "INVALID_PROOF_ARRAY");
+        require(proofs.length / 8 == blockIndices.length, "INVALID_INPUT_ARRAYS");
 
-        // Check if the proof for this block is too early
-        // We limit the gap between the last finalized block and the last verified block to limit
-        // the number of blocks that can become finalized when a single block is verified
-        require(
-            blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
-            "PROOF_TOO_EARLY"
-        );
+        uint256[] memory publicInputs = new uint256[](blockIndices.length);
+        uint16 blockSize;
+        ExchangeData.BlockType blockType;
+        uint8 blockVersion;
+        for (uint i = 0; i < blockIndices.length; i++) {
+            uint blockIdx = blockIndices[i];
 
-        // Check if we still accept a proof for this block
-        require(
-            now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "PROOF_TOO_LATE"
-        );
+            require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+            ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+            require(
+                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
+                "BLOCK_VERIFIED_ALREADY"
+            );
 
-        // Verify the proof
+            // Check if the proof for this block is too early
+            // We limit the gap between the last finalized block and the last verified block to limit
+            // the number of blocks that can become finalized when a single block is verified
+            require(
+                blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
+                "PROOF_TOO_EARLY"
+            );
+
+            // Check if we still accept a proof for this block
+            require(
+                now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+                "PROOF_TOO_LATE"
+            );
+
+            // Maybe we should strip the highest bits of the public input so we don't have any overflow (uint256/prime field)
+            publicInputs[i] = uint256(specifiedBlock.publicDataHash);
+            if (i == 0) {
+                blockSize = specifiedBlock.blockSize;
+                blockType = specifiedBlock.blockType;
+                blockVersion = specifiedBlock.blockVersion;
+            } else {
+                // We only support batch verifying blocks that use the same verifying key
+                require(blockType == specifiedBlock.blockType, "INVALID_BATCH_BLOCK_TYPE");
+                require(blockSize == specifiedBlock.blockSize, "INVALID_BATCH_BLOCK_SIZE");
+                require(blockVersion == specifiedBlock.blockVersion, "INVALID_BATCH_BLOCK_VERSION");
+            }
+        }
+
+        // Verify the proofs
         require(
-            S.blockVerifier.verifyProof(
-                uint8(specifiedBlock.blockType),
+            S.blockVerifier.verifyProofs(
+                uint8(blockType),
                 S.onchainDataAvailability,
-                specifiedBlock.blockSize,
-                specifiedBlock.blockVersion,
-                specifiedBlock.publicDataHash,
-                proof
+                blockSize,
+                blockVersion,
+                publicInputs,
+                proofs
             ),
             "INVALID_PROOF"
         );
-        // Mark the block as verified
-        specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
-        emit BlockVerified(blockIdx);
+
+        // Mark the blocks as verified
+        for (uint i = 0; i < blockIndices.length; i++) {
+            uint blockIdx = blockIndices[i];
+            ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+            // Check this again to make sure no block is verified twice in a single call to verifyBlocks
+            require(
+                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
+                "BLOCK_VERIFIED_ALREADY"
+            );
+            specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
+            emit BlockVerified(blockIdx);
+        }
 
         // Update the number of blocks that are finalized
         // The number of blocks after the specified block index is limited
@@ -195,7 +231,7 @@ library ExchangeBlocks
 
         // Check if the block is supported
         require(
-            S.blockVerifier.canVerify(
+            S.blockVerifier.isCircuitEnabled(
                 uint8(blockType),
                 S.onchainDataAvailability,
                 blockSize,
