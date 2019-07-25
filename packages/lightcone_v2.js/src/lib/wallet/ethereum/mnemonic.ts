@@ -1,5 +1,5 @@
-import {mnemonicToSeed, validateMnemonic} from 'bip39';
-import {fromMasterSeed} from 'hdkey';
+import { mnemonicToSeed, validateMnemonic } from "bip39";
+import { fromMasterSeed } from "hdkey";
 
 /**
  * Decrypt mnemonic into ethereum private key
@@ -8,17 +8,17 @@ import {fromMasterSeed} from 'hdkey';
  * @param dpath string
  */
 export function mnemonictoPrivatekey(mnemonic, dpath, password) {
-    if (dpath) {
-        mnemonic = mnemonic.trim();
-        if (!validateMnemonic(mnemonic)) {
-            throw new Error('Invalid mnemonic');
-        }
-        const seed = mnemonicToSeed(mnemonic, password);
-        const derived = fromMasterSeed(seed).derive(dpath);
-        return derived.privateKey;
-    } else {
-        throw new Error('dpath can\'t be null');
+  if (dpath) {
+    mnemonic = mnemonic.trim();
+    if (!validateMnemonic(mnemonic)) {
+      throw new Error("Invalid mnemonic");
     }
+    const seed = mnemonicToSeed(mnemonic, password);
+    const derived = fromMasterSeed(seed).derive(dpath);
+    return derived.privateKey;
+  } else {
+    throw new Error("dpath can't be null");
+  }
 }
 
 /**
@@ -27,5 +27,5 @@ export function mnemonictoPrivatekey(mnemonic, dpath, password) {
  * @returns {bool}
  */
 export function isValidateMnemonic(phrase) {
-    return validateMnemonic(phrase);
+  return validateMnemonic(phrase);
 }
