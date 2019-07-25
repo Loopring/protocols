@@ -44,7 +44,7 @@
   "devDependencies": {
     "@types/bignumber.js": "^4.0.3",
     "@types/bluebird": "3.5.24",
-    "@types/lodash": "^4.14.123",
+    "@types/lodash": "^4.17.14",
     "@types/node": "9.3.0",
     "@types/request-promise-native": "^1.0.15",
     "@typescript-eslint/eslint-plugin": "^1.12.0",
@@ -93,7 +93,7 @@
     "event-emitter": "^0.3.5",
     "events": "^3.0.0",
     "js-sha3": "^0.8.0",
-    "lodash": "^4.17.5",
+    "lodash": "^4.17.14",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "snarkjs": "0.1.11",

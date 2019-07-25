@@ -34,12 +34,14 @@ import "data_types.proto";
 message DexConfigurations {
     uint64 dex_id = 1;
     string dex_address = 2;
-    string deposit_fee_eth = 3; // FDS
-    string onchain_withdrawal_fee_eth = 4; // FDS
-    types.TokenID offchain_withdrawal_fee_token_id = 5; // 前端无需设计展示，以withdraw token为准
-    string offchain_withdrawal_fee_amount = 6; // FDS
-    string order_cancellation_fee_eth = 7; // FDS
-    bool in_maintainance = 8;
+    string account_creation_fee_eth = 3; // FDS
+    string account_update_fee_eth = 4; // FDS
+    string deposit_fee_eth = 5; // FDS
+    string onchain_withdrawal_fee_eth = 6; // FDS
+    types.TokenID offchain_withdrawal_fee_token_id = 7; // 前端无需设计展示，以withdraw token为准
+    string offchain_withdrawal_fee_amount = 8; // FDS
+    string order_cancellation_fee_eth = 9; // FDS
+    bool in_maintainance = 10;
 }
 
 message TokenInfo {
