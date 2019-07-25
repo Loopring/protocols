@@ -45,7 +45,7 @@ contract Operator {
 
     function verifyBlocks(
         uint[] calldata blockIndices,
-        uint256[] calldata proofs
+        uint[] calldata proofs
         )
         external
     {

@@ -97,8 +97,8 @@ library ExchangeWithdrawals
         view
         returns (
             bytes32 accumulatedHash,
-            uint256 accumulatedFee,
-            uint32 timestamp
+            uint    accumulatedFee,
+            uint32  timestamp
         )
     {
         require(index < S.withdrawalChain.length, "INVALID_INDEX");
@@ -154,15 +154,15 @@ library ExchangeWithdrawals
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTreeFor(
         ExchangeData.State storage S,
-        address owner,
-        address token,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] memory accountMerkleProof,
-        uint256[12] memory balanceMerkleProof
+        address  owner,
+        address  token,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] memory accountMerkleProof,
+        uint[12] memory balanceMerkleProof
         )
         public
     {
@@ -175,7 +175,7 @@ library ExchangeWithdrawals
         require(S.withdrawnInWithdrawMode[owner][token] == false, "WITHDRAWN_ALREADY");
 
         ExchangeBalances.verifyAccountBalance(
-            uint256(lastFinalizedBlock.merkleRoot),
+            uint(lastFinalizedBlock.merkleRoot),
             accountID,
             tokenID,
             pubKeyX,
