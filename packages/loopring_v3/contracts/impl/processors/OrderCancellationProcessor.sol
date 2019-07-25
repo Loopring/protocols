@@ -16,15 +16,17 @@
 */
 pragma solidity 0.5.7;
 
+import "../libexchange/ExchangeData.sol";
+
 /// @title IBlockProcessor
 /// @author Freeman Zhong - <kongliang@loopring.org>
-library OrderCancellationProcessor
+contract OrderCancellationProcessor
 {
 
     function processBlock(
-        ExchangeData.State storage S,
-        ExchangeData.Block memory newBlock,
-        bytes memory data
+        ExchangeData.State calldata S,
+        ExchangeData.Block calldata newBlock,
+        bytes calldata data
         )
         external
     {

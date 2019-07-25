@@ -16,17 +16,22 @@
 */
 pragma solidity 0.5.7;
 
+import "../libexchange/ExchangeData.sol";
+
 /// @title IBlockProcessor
 /// @author Freeman Zhong - <kongliang@loopring.org>
-library OffchainWithdrawalProcessor
+contract OffchainWithdrawalProcessor
 {
     function processBlock(
-        ExchangeData.State storage S,
-        ExchangeData.Block memory newBlock,
-        bytes memory data
+        ExchangeData.State calldata S,
+        ExchangeData.Block calldata newBlock,
+        bytes calldata data
         )
         external
     {
+        uint8 blockType = newBlock.blockType;
+        uint16 blockSize = newBlock.blockSize;
+
         bytes memory withdrawals = new bytes(0);
         uint start = 4 + 32 + 32;
         if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {

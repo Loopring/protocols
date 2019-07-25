@@ -48,7 +48,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
 
-    mapping (uint8 => address) blockProcessors;
+    mapping (uint8 => address) public blockProcessors;
 
     ExchangeData.State private state;
     // -- Constructor --
@@ -431,7 +431,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         }
 
         address processor = blockProcessors[blockType];
-        require(processor != address(0), "BLOCK_PROCESSOR_NOT_REGISTERED")
+        require(processor != address(0), "BLOCK_PROCESSOR_NOT_REGISTERED");
         state.commitBlock(blockType, blockSize, blockVersion, decompressed, processor);
     }
 

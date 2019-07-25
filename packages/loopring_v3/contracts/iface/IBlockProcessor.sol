@@ -22,19 +22,9 @@ import "../impl/libexchange/ExchangeData.sol";
 /// @author Freeman Zhong - <kongliang@loopring.org>
 contract IBlockProcessor
 {
-    // -- Public functions --
-
     /// @dev process specified block identified by blockType
-    /// @param blockType The type of the block See @BlockType
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @param
     function processBlock(
-        ExchangeData.State storage S,
-        ExchangeData.Block memory newBlock,
-        bytes memory data
+        bytes calldata data
         )
         external;
 

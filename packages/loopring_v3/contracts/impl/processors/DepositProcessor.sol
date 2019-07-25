@@ -16,14 +16,17 @@
 */
 pragma solidity 0.5.7;
 
+import "../libexchange/ExchangeData.sol";
+
 /// @title IBlockProcessor
 /// @author Freeman Zhong - <kongliang@loopring.org>
-library DepositProcessor
+contract DepositProcessor
 {
     function processBlock(
-        ExchangeData.State storage S,
-        ExchangeData.Block memory newBlock,
-        bytes memory data
+        ExchangeData.State calldata S,
+        ExchangeData.Block calldata newBlock,
+        uint16  blockSize,
+        bytes calldata data
         )
         external
     {
@@ -33,7 +36,7 @@ library DepositProcessor
             startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
             count := and(mload(add(data, 140)), 0xFFFFFFFF)
         }
-        require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
+        /* require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE"); */
         require (count <= blockSize, "INVALID_REQUEST_RANGE");
         require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
 
@@ -61,8 +64,8 @@ library DepositProcessor
         require(inputStartingHash == startingHash, "INVALID_STARTING_HASH");
         require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
 
-        numDepositRequestsCommitted += uint32(count);
-        newBlock.numDepositRequestsCommitted = numDepositRequestsCommitted;
+        /* numDepositRequestsCommitted += uint32(count); */
+        /* newBlock.numDepositRequestsCommitted = numDepositRequestsCommitted; */
     }
 
 }

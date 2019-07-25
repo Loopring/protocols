@@ -69,14 +69,14 @@ library ExchangeBlocks
         )
         internal  // inline call
     {
-        commitBlockInternal(
-            S,
-            ExchangeData.BlockType(blockType),
-            blockSize,
-            blockVersion,
-            data,
-            processor
-        );
+        /* commitBlockInternal( */
+        /*     S, */
+        /*     ExchangeData.BlockType(blockType), */
+        /*     blockSize, */
+        /*     blockVersion, */
+        /*     data, */
+        /*     processor */
+        /* ); */
     }
 
     function verifyBlocks(
@@ -288,7 +288,7 @@ library ExchangeBlocks
         // Create a new block with the updated merkle roots
         ExchangeData.Block memory newBlock = ExchangeData.Block(
             merkleRootAfter,
-            publicDataHash,
+            bytes32(0),
             ExchangeData.BlockState.COMMITTED,
             blockType,
             blockSize,
@@ -298,14 +298,14 @@ library ExchangeBlocks
             numWithdrawalRequestsCommitted,
             false,
             0,
-            withdrawals
+            new bytes(0)
         );
 
-        processor.processBlock(S, newBlock, data);
+        (bool success, ) = processor.delegatecall(data);
 
         S.blocks.push(newBlock);
 
-        emit BlockCommitted(S.blocks.length - 1, publicDataHash);
+        emit BlockCommitted(S.blocks.length - 1, newBlock.publicDataHash);
     }
 
 

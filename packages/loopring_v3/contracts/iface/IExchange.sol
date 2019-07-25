@@ -1080,6 +1080,6 @@ contract IExchange
         uint8 blockType,
         address processorContract
     )
-        external
+        external;
 
 }
