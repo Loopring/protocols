@@ -4,7 +4,6 @@ transpiled/
 ethsnarks/
 keys/
 blocks/
-package-lock.json
 .DS_Store
 .node-*
 *.log
