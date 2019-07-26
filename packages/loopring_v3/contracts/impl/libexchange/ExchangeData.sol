@@ -149,7 +149,7 @@ library ExchangeData
     struct Request
     {
         bytes32 accumulatedHash;
-        uint256 accumulatedFee;
+        uint    accumulatedFee;
         uint32  timestamp;
     }
 

@@ -25,14 +25,14 @@ contract ERC20
     function totalSupply()
         public
         view
-        returns (uint256);
+        returns (uint);
 
     function balanceOf(
         address who
         )
         public
         view
-        returns (uint256);
+        returns (uint);
 
     function allowance(
         address owner,
@@ -40,11 +40,11 @@ contract ERC20
         )
         public
         view
-        returns (uint256);
+        returns (uint);
 
     function transfer(
         address to,
-        uint256 value
+        uint value
         )
         public
         returns (bool);
@@ -52,14 +52,14 @@ contract ERC20
     function transferFrom(
         address from,
         address to,
-        uint256 value
+        uint    value
         )
         public
         returns (bool);
 
     function approve(
         address spender,
-        uint256 value
+        uint    value
         )
         public
         returns (bool);

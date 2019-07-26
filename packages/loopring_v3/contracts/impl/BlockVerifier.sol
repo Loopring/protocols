@@ -34,17 +34,17 @@ contract BlockVerifier is IBlockVerifier, Claimable
     {
         bool registered;
         bool enabled;
-        uint256[18] verificationKey;
+        uint[18] verificationKey;
     }
 
     mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
 
     function registerCircuit(
-        uint8  blockType,
-        bool   onchainDataAvailability,
-        uint16 blockSize,
-        uint8  blockVersion,
-        uint256[18] calldata vk
+        uint8    blockType,
+        bool     onchainDataAvailability,
+        uint16   blockSize,
+        uint8    blockVersion,
+        uint[18] calldata vk
         )
         external
         onlyOwner
@@ -62,7 +62,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
 
         emit CircuitRegistered(
             blockType,
-            onchainDataAvailability, 
+            onchainDataAvailability,
             blockSize,
             blockVersion
         );
@@ -92,12 +92,12 @@ contract BlockVerifier is IBlockVerifier, Claimable
     }
 
     function verifyProofs(
-        uint8   blockType,
-        bool    onchainDataAvailability,
-        uint16  blockSize,
-        uint8   blockVersion,
-        uint256[] calldata publicInputs,
-        uint256[] calldata proofs
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion,
+        uint[] calldata publicInputs,
+        uint[] calldata proofs
         )
         external
         view
@@ -107,12 +107,12 @@ contract BlockVerifier is IBlockVerifier, Claimable
         Circuit storage circuit = circuits[dataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
 
-        uint256[18] storage vk = circuit.verificationKey;
-        uint256[14] memory _vk = [
+        uint[18] storage vk = circuit.verificationKey;
+        uint[14] memory _vk = [
             vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
             vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
         ];
-        uint256[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
+        uint[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
 
         if (publicInputs.length == 1) {
             return Verifier.Verify(_vk, _vk_gammaABC, proofs, publicInputs);
@@ -157,7 +157,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
 
     function needsDataAvailability(
         uint8 blockType,
-        bool onchainDataAvailability
+        bool  onchainDataAvailability
         )
         internal
         pure

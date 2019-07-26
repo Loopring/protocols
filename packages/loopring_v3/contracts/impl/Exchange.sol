@@ -186,16 +186,16 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     // -- Balances --
     function isAccountBalanceCorrect(
-        uint256 merkleRoot,
-        uint24  accountID,
-        uint16  tokenID,
-        uint256 pubKeyX,
-        uint256 pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] calldata accountPath,
-        uint256[12] calldata balancePath
+        uint     merkleRoot,
+        uint24   accountID,
+        uint16   tokenID,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountPath,
+        uint[12] calldata balancePath
         )
         external
         pure
@@ -372,8 +372,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint8  blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes calldata /*data*/,
-        bytes calldata offchainData
+        bytes  calldata /*data*/,
+        bytes  calldata offchainData
         )
         external
         nonReentrant
@@ -475,7 +475,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         view
         returns (
           bytes32 accumulatedHash,
-          uint256 accumulatedFee,
+          uint    accumulatedFee,
           uint32  timestamp
         )
     {
@@ -563,8 +563,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         view
         returns (
             bytes32 accumulatedHash,
-            uint256 accumulatedFee,
-            uint32 timestamp
+            uint    accumulatedFee,
+            uint32  timestamp
         )
     {
         (accumulatedHash, accumulatedFee, timestamp) = state.getWithdrawRequest(index);
@@ -594,14 +594,14 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function withdrawFromMerkleTree(
-        address token,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] calldata accountPath,
-        uint256[12] calldata balancePath
+        address  token,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountPath,
+        uint[12] calldata balancePath
         )
         external
         nonReentrant
@@ -621,15 +621,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTreeFor(
-        address owner,
-        address token,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] calldata accountPath,
-        uint256[12] calldata balancePath
+        address  owner,
+        address  token,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountPath,
+        uint[12] calldata balancePath
         )
         external
         nonReentrant
@@ -825,9 +825,13 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     function getProtocolFeeValues()
         external
         view
-        returns (uint32 timestamp,
-                 uint8 takerFeeBips, uint8 makerFeeBips,
-                 uint8 previousTakerFeeBips, uint8 previousMakerFeeBips)
+        returns (
+            uint32 timestamp,
+            uint8  takerFeeBips,
+            uint8  makerFeeBips,
+            uint8  previousTakerFeeBips,
+            uint8  previousMakerFeeBips
+        )
     {
         timestamp = state.protocolFeeData.timestamp;
         takerFeeBips = state.protocolFeeData.takerFeeBips;

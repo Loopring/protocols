@@ -28,16 +28,16 @@ library ExchangeBalances
     using MathUint  for uint;
 
     function verifyAccountBalance(
-        uint256 merkleRoot,
-        uint24  accountID,
-        uint16  tokenID,
-        uint256 pubKeyX,
-        uint256 pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] memory accountMerkleProof,
-        uint256[12] memory balanceMerkleProof
+        uint     merkleRoot,
+        uint24   accountID,
+        uint16   tokenID,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] memory accountMerkleProof,
+        uint[12] memory balanceMerkleProof
         )
         public
         pure
@@ -58,23 +58,23 @@ library ExchangeBalances
     }
 
     function isAccountBalanceCorrect(
-        uint256 merkleRoot,
-        uint24  accountID,
-        uint16  tokenID,
-        uint256 pubKeyX,
-        uint256 pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] memory accountMerkleProof,
-        uint256[12] memory balanceMerkleProof
+        uint     merkleRoot,
+        uint24   accountID,
+        uint16   tokenID,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] memory accountMerkleProof,
+        uint[12] memory balanceMerkleProof
         )
         public
         pure
         returns (bool isCorrect)
     {
         // Verify data
-        uint256 calculatedRoot = getBalancesRoot(
+        uint calculatedRoot = getBalancesRoot(
             tokenID,
             balance,
             tradeHistoryRoot,
@@ -92,16 +92,16 @@ library ExchangeBalances
     }
 
     function getBalancesRoot(
-        uint16 tokenID,
-        uint   balance,
-        uint   tradeHistoryRoot,
-        uint256[12] memory balanceMerkleProof
+        uint16   tokenID,
+        uint     balance,
+        uint     tradeHistoryRoot,
+        uint[12] memory balanceMerkleProof
         )
         internal
         pure
-        returns (uint256)
+        returns (uint)
     {
-        uint256 balanceItem = hashImpl(balance, tradeHistoryRoot, 0, 0);
+        uint balanceItem = hashImpl(balance, tradeHistoryRoot, 0, 0);
         uint _id = tokenID;
         for (uint depth = 0; depth < 4; depth++) {
             if (_id & 3 == 0) {
@@ -139,18 +139,18 @@ library ExchangeBalances
     }
 
     function getAccountInternalsRoot(
-        uint24  accountID,
-        uint256 pubKeyX,
-        uint256 pubKeyY,
-        uint256 nonce,
-        uint256 balancesRoot,
-        uint256[30] memory accountMerkleProof
+        uint24   accountID,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint     nonce,
+        uint     balancesRoot,
+        uint[30] memory accountMerkleProof
         )
         internal
         pure
-        returns (uint256)
+        returns (uint)
     {
-        uint256 accountItem = hashImpl(pubKeyX, pubKeyY, nonce, balancesRoot);
+        uint accountItem = hashImpl(pubKeyX, pubKeyY, nonce, balancesRoot);
         uint _id = accountID;
         for (uint depth = 0; depth < 10; depth++) {
             if (_id & 3 == 0) {
@@ -188,14 +188,14 @@ library ExchangeBalances
     }
 
     function hashImpl(
-        uint256 t0,
-        uint256 t1,
-        uint256 t2,
-        uint256 t3
+        uint t0,
+        uint t1,
+        uint t2,
+        uint t3
         )
         internal
         pure
-        returns (uint256)
+        returns (uint)
     {
         return Poseidon.hash_t5f6p52(t0, t1, t2, t3, 0);
     }

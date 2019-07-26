@@ -32,19 +32,19 @@ contract ERC20Token is ERC20
     uint8   public decimals;
     uint    public totalSupply_;
 
-    mapping (address => uint256) balances;
-    mapping (address => mapping (address => uint256)) internal allowed;
+    mapping (address => uint) balances;
+    mapping (address => mapping (address => uint)) internal allowed;
 
     event Transfer(
         address indexed from,
         address indexed to,
-        uint256 value
+        uint            value
     );
 
     event Approval(
         address indexed owner,
         address indexed spender,
-        uint256 value
+        uint            value
     );
 
     constructor(
@@ -81,7 +81,7 @@ contract ERC20Token is ERC20
     function totalSupply()
         public
         view
-        returns (uint256)
+        returns (uint)
     {
         return totalSupply_;
     }
@@ -93,7 +93,7 @@ contract ERC20Token is ERC20
     */
     function transfer(
         address _to,
-        uint256 _value
+        uint    _value
         )
         public
         returns (bool)
@@ -111,14 +111,14 @@ contract ERC20Token is ERC20
     /**
     * @dev Gets the balance of the specified address.
     * @param _owner The address to query the the balance of.
-    * @return An uint256 representing the amount owned by the passed address.
+    * @return An uint representing the amount owned by the passed address.
     */
     function balanceOf(
         address _owner
         )
         public
         view
-        returns (uint256 balance)
+        returns (uint balance)
     {
         return balances[_owner];
     }
@@ -127,12 +127,12 @@ contract ERC20Token is ERC20
      * @dev Transfer tokens from one address to another
      * @param _from address The address which you want to send tokens from
      * @param _to address The address which you want to transfer to
-     * @param _value uint256 the amount of tokens to be transferred
+     * @param _value uint the amount of tokens to be transferred
      */
     function transferFrom(
         address _from,
         address _to,
-        uint256 _value
+        uint    _value
         )
         public
         returns (bool)
@@ -160,7 +160,7 @@ contract ERC20Token is ERC20
      */
     function approve(
         address _spender,
-        uint256 _value
+        uint    _value
         )
         public
         returns (bool)
@@ -174,7 +174,7 @@ contract ERC20Token is ERC20
      * @dev Function to check the amount of tokens that an owner allowed to a spender.
      * @param _owner address The address which owns the funds.
      * @param _spender address The address which will spend the funds.
-     * @return A uint256 specifying the amount of tokens still available for the spender.
+     * @return A uint specifying the amount of tokens still available for the spender.
      */
     function allowance(
         address _owner,
@@ -182,7 +182,7 @@ contract ERC20Token is ERC20
         )
         public
         view
-        returns (uint256)
+        returns (uint)
     {
         return allowed[_owner][_spender];
     }
@@ -199,7 +199,7 @@ contract ERC20Token is ERC20
      */
     function increaseApproval(
         address _spender,
-        uint _addedValue
+        uint    _addedValue
         )
         public
         returns (bool)
@@ -221,7 +221,7 @@ contract ERC20Token is ERC20
      */
     function decreaseApproval(
         address _spender,
-        uint _subtractedValue
+        uint    _subtractedValue
         )
         public
         returns (bool)
