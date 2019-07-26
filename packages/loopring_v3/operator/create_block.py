@@ -8,6 +8,8 @@ import pathlib
 from state import Account, Context, State, Order, Ring, copyAccountInfo, AccountUpdateData
 from ethsnarks.jubjub import Point
 from ethsnarks.field import FQ
+from ethsnarks.poseidon import poseidon, poseidon_params
+from ethsnarks.field import SNARK_SCALAR_FIELD
 
 
 class RingSettlementBlock(object):
@@ -74,6 +76,7 @@ def orderFromJSON(jOrder, state):
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
     maxFeeBips = int(jOrder["maxFeeBips"])
+    label = int(jOrder["label"])
 
     feeBips = int(jOrder["feeBips"])
     rebateBips = int(jOrder["rebateBips"])
@@ -86,7 +89,8 @@ def orderFromJSON(jOrder, state):
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,
-                  maxFeeBips, feeBips, rebateBips)
+                  maxFeeBips, feeBips, rebateBips,
+                  label)
 
     order.signature = jOrder["signature"]
 
@@ -110,7 +114,6 @@ def createRingSettlementBlock(state, data):
     block.protocolTakerFeeBips = int(data["protocolTakerFeeBips"])
     block.protocolMakerFeeBips = int(data["protocolMakerFeeBips"])
     block.operatorAccountID = int(data["operatorAccountID"])
-    block.signature = data["signature"]
 
     context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
@@ -138,6 +141,7 @@ def createRingSettlementBlock(state, data):
     for ringSettlement in block.ringSettlements:
         ringSettlement.balanceUpdateA_O = account.updateBalance(ringSettlement.ring.orderA.tokenB, ringSettlement.balanceDeltaA_O)
         ringSettlement.balanceUpdateB_O = account.updateBalance(ringSettlement.ring.orderB.tokenB, ringSettlement.balanceDeltaB_O)
+    account.nonce += 1
     state.updateAccountTree(context.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -206,13 +210,11 @@ def createOffchainWithdrawalBlock(state, data):
         accountID = int(withdrawalInfo["accountID"])
         tokenID = int(withdrawalInfo["tokenID"])
         amount = int(withdrawalInfo["amount"])
-        walletAccountID = int(withdrawalInfo["walletAccountID"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
-        walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
 
         withdrawal = state.offchainWithdraw(block.exchangeID, accountID, tokenID, amount,
-                                            block.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
+                                            block.operatorAccountID, feeTokenID, fee)
         withdrawal.signature = withdrawalInfo["signature"]
         block.withdrawals.append(withdrawal)
 
@@ -222,7 +224,7 @@ def createOffchainWithdrawalBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for withdrawal in block.withdrawals:
-        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, withdrawal.feeToOperator)
+        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, int(withdrawal.fee))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -243,13 +245,11 @@ def createOrderCancellationBlock(state, data):
         accountID = int(cancelInfo["accountID"])
         orderTokenID = int(cancelInfo["orderTokenID"])
         orderID = int(cancelInfo["orderID"])
-        walletAccountID = int(cancelInfo["walletAccountID"])
         feeTokenID = int(cancelInfo["feeTokenID"])
         fee = int(cancelInfo["fee"])
-        walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
 
         cancel = state.cancelOrder(block.exchangeID, accountID, orderTokenID, orderID,
-                                   walletAccountID, block.operatorAccountID, feeTokenID, fee, walletSplitPercentage)
+                                   block.operatorAccountID, feeTokenID, fee)
 
         cancel.signature = cancelInfo["signature"]
         block.cancels.append(cancel)
@@ -260,7 +260,7 @@ def createOrderCancellationBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for cancel in block.cancels:
-        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, cancel.feeToOperator)
+        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, int(cancel.fee))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -301,7 +301,7 @@ def main(exchangeID, blockIdx, blockType, inputFilename, outputFilename):
     f.close()
 
     # Validate the block
-    subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
+    # subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
     state_filename = "./states/state_" + str(exchangeID) + "_" + str(blockIdx) + ".json"

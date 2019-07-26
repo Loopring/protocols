@@ -314,7 +314,8 @@ class Order(object):
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
-                 maxFeeBips, feeBips, rebateBips):
+                 maxFeeBips, feeBips, rebateBips,
+                 label):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.dualAuthPublicKeyX = str(dualAuthPublicKey.x)
@@ -336,6 +337,7 @@ class Order(object):
         self.validUntil = validUntil
         self.buy = bool(buy)
         self.maxFeeBips = maxFeeBips
+        self.label = int(label)
 
         self.feeBips = feeBips
         self.rebateBips = rebateBips
@@ -412,11 +414,10 @@ class OffchainWithdrawal(object):
     def __init__(self,
                  exchangeID,
                  accountID, tokenID, amountRequested, fAmountWithdrawn,
-                 walletAccountID, feeTokenID, fee, walletSplitPercentage,
+                 feeTokenID, fee,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
-                 balanceUpdateF_W, accountUpdate_W,
                  balanceUpdateF_O,
-                 feeToOperator, nonce):
+                 nonce):
         self.exchangeID = exchangeID
 
         self.accountID = accountID
@@ -424,42 +425,32 @@ class OffchainWithdrawal(object):
         self.amountRequested = str(amountRequested)
         self.fAmountWithdrawn = int(fAmountWithdrawn)
 
-        self.walletAccountID = walletAccountID
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
-        self.walletSplitPercentage = walletSplitPercentage
 
         self.balanceUpdateF_A = balanceUpdateF_A
         self.balanceUpdateW_A = balanceUpdateW_A
         self.accountUpdate_A = accountUpdate_A
 
-        self.balanceUpdateF_W = balanceUpdateF_W
-        self.accountUpdate_W = accountUpdate_W
-
         self.balanceUpdateF_O = balanceUpdateF_O
 
-        self.feeToOperator = feeToOperator
         self.nonce = nonce
 
 class Cancellation(object):
     def __init__(self,
                  exchangeID,
-                 accountID, orderTokenID, orderID, walletAccountID,
-                 feeTokenID, fee, walletSplitPercentage,
+                 accountID, orderTokenID, orderID,
+                 feeTokenID, fee,
                  nonce,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
-                 balanceUpdateF_W, accountUpdate_W,
-                 balanceUpdateF_O,
-                 feeToOperator):
+                 balanceUpdateF_O):
         self.exchangeID = exchangeID
 
         self.accountID = accountID
         self.orderTokenID = orderTokenID
         self.orderID = orderID
-        self.walletAccountID = walletAccountID
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
-        self.walletSplitPercentage = walletSplitPercentage
         self.nonce = nonce
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
@@ -467,12 +458,7 @@ class Cancellation(object):
         self.balanceUpdateF_A = balanceUpdateF_A
         self.accountUpdate_A = accountUpdate_A
 
-        self.balanceUpdateF_W = balanceUpdateF_W
-        self.accountUpdate_W = accountUpdate_W
-
         self.balanceUpdateF_O = balanceUpdateF_O
-
-        self.feeToOperator = feeToOperator
 
 
 class State(object):
@@ -788,11 +774,8 @@ class State(object):
 
     def offchainWithdraw(self,
                          exchangeID, accountID, tokenID, amountRequested,
-                         operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage):
+                         operatorAccountID, feeTokenID, fee):
         feeValue = roundToFloatValue(fee, Float16Encoding)
-
-        feeToWallet = feeValue * walletSplitPercentage // 100
-        feeToOperator = feeValue - feeToWallet
 
         # Update account
         rootBefore = self._accountsTree._root
@@ -817,39 +800,22 @@ class State(object):
         accountUpdate_A = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Update wallet
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(walletAccountID))
-        proof = self._accountsTree.createProof(walletAccountID)
-
-        balanceUpdateF_W = self.getAccount(walletAccountID).updateBalance(feeTokenID, feeToWallet)
-
-        self.updateAccountTree(walletAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(walletAccountID))
-        rootAfter = self._accountsTree._root
-        accountUpdate_W = AccountUpdateData(walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
-
         # Operator payment
         # This is done after all withdrawals are processed
 
         withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
-                                        walletAccountID, feeTokenID, fee, walletSplitPercentage,
+                                        feeTokenID, fee,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
-                                        balanceUpdateF_W, accountUpdate_W,
                                         None,
-                                        feeToOperator, nonce)
+                                        nonce)
         return withdrawal
 
     def cancelOrder(self,
-                    exchangeID, accountID, orderTokenID, orderID, walletAccountID,
-                    operatorAccountID, feeTokenID, fee, walletSplitPercentage):
+                    exchangeID, accountID, orderTokenID, orderID,
+                    operatorAccountID, feeTokenID, fee):
 
         feeValue = roundToFloatValue(fee, Float16Encoding)
-
-        feeToWallet = feeValue * walletSplitPercentage // 100
-        feeToOperator = feeValue - feeToWallet
 
         # Update account
         rootBefore = self._accountsTree._root
@@ -867,30 +833,15 @@ class State(object):
         accountUpdate_A = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Update wallet
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(walletAccountID))
-        proof = self._accountsTree.createProof(walletAccountID)
-
-        balanceUpdateF_W = self.getAccount(walletAccountID).updateBalance(feeTokenID, feeToWallet)
-
-        self.updateAccountTree(walletAccountID)
-        accountAfter = copyAccountInfo(self.getAccount(walletAccountID))
-        rootAfter = self._accountsTree._root
-        accountUpdate_W = AccountUpdateData(walletAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
-
         # Operator payment
         # This is done after all cancellations are processed
 
         cancellation = Cancellation(exchangeID,
-                                    accountID, orderTokenID, orderID, walletAccountID,
-                                    feeTokenID, fee, walletSplitPercentage,
+                                    accountID, orderTokenID, orderID,
+                                    feeTokenID, fee,
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
-                                    balanceUpdateF_W, accountUpdate_W,
-                                    None,
-                                    feeToOperator)
+                                    None)
         return cancellation
 
     def createWithdrawProof(self, exchangeID, accountID, tokenID):

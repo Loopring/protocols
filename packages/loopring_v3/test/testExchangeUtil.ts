@@ -373,9 +373,12 @@ export class ExchangeTestUtil {
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
 
+    order.label = (order.label !== undefined) ? order.label : this.getRandomInt(2**16);
+
     assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
     assert(order.feeBips < 64, "feeBips >= 64");
     assert(order.rebateBips < 64, "rebateBips >= 64");
+    assert(order.label < 2**16, "order.label >= 2**16");
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -389,7 +392,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(15, 6, 53);
+    const hasher = poseidon.createHash(16, 6, 54);
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
@@ -406,7 +409,8 @@ export class ExchangeTestUtil {
       order.validSince,
       order.validUntil,
       order.maxFeeBips,
-      order.buy ? 1 : 0
+      order.buy ? 1 : 0,
+      order.label,
     ];
     order.hash = hasher(inputs).toString(10);
     const endHash = performance.now();
@@ -426,7 +430,7 @@ export class ExchangeTestUtil {
     // console.log("Verify order signature time: " + (endVerify - startVerify));
   }
 
-  public signRingBlock(block: RingBlock, merkleRoot: string) {
+  public signRingBlock(block: any) {
     if (block.signature !== undefined) {
       return;
     }
@@ -436,12 +440,11 @@ export class ExchangeTestUtil {
 
     // Calculate hash
     const inputs = [
-      this.exchangeId,
+      block.exchangeID,
       block.timestamp,
-      merkleRoot,
-      0,
-      0,
-      // account.nonce++,
+      new BN(block.merkleRootBefore, 10),
+      new BN(block.merkleRootAfter, 10),
+      account.nonce++,
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -458,7 +461,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(11, 6, 53);
+    const hasher = poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][cancel.accountID];
 
     // Calculate hash
@@ -467,10 +470,8 @@ export class ExchangeTestUtil {
       cancel.accountID,
       cancel.orderTokenID,
       cancel.orderID,
-      cancel.walletAccountID,
       cancel.feeTokenID,
       cancel.fee,
-      cancel.walletSplitPercentage,
       account.nonce++,
     ];
     const hash = hasher(inputs).toString(10);
@@ -488,7 +489,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(11, 6, 53);
+    const hasher = poseidon.createHash(10, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
 
     // Calculate hash
@@ -497,11 +498,10 @@ export class ExchangeTestUtil {
       withdrawal.accountID,
       withdrawal.tokenID,
       withdrawal.amount,
-      withdrawal.walletAccountID,
       withdrawal.feeTokenID,
       withdrawal.fee,
-      withdrawal.walletSplitPercentage,
       account.nonce++,
+      0,
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -847,7 +847,7 @@ export class ExchangeTestUtil {
     fs.mkdirSync(dirname);
   }
 
-  public async createBlock(exchangeID: number, blockType: number, data: string) {
+  public async createBlock(exchangeID: number, blockType: number, data: string, validate: boolean = true) {
     const nextBlockIdx = (await this.exchange.getBlockHeight()).toNumber() + 1;
     const inputFilename = "./blocks/block_" + exchangeID + "_" + nextBlockIdx + "_info.json";
     const outputFilename = "./blocks/block_" + exchangeID + "_" + nextBlockIdx + ".json";
@@ -855,6 +855,7 @@ export class ExchangeTestUtil {
     this.ensureDirectoryExists(inputFilename);
     fs.writeFileSync(inputFilename, data, "utf8");
 
+    // Create the block
     const result = childProcess.spawnSync(
       "python3",
       ["operator/create_block.py", "" + exchangeID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
@@ -862,7 +863,21 @@ export class ExchangeTestUtil {
     );
     assert(result.status === 0, "create_block failed: " + blockType);
 
+    if (validate) {
+      await this.validateBlock(outputFilename);
+    }
+
     return [nextBlockIdx, outputFilename];
+  }
+
+  public async validateBlock(filename: string) {
+    // Vali
+    const result = childProcess.spawnSync(
+      "build/circuit/dex_circuit",
+      ["-validate", filename],
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
+    );
+    assert(result.status === 0, "validate_block failed: " + filename);
   }
 
   public async commitBlock(operatorId: number, blockType: BlockType, blockSize: number,
@@ -1363,10 +1378,8 @@ export class ExchangeTestUtil {
       if (!onchain && block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const withdrawal of block.withdrawals) {
-          bs.addNumber(withdrawal.walletAccountID, 3);
           bs.addNumber(withdrawal.feeTokenID, 1);
           bs.addNumber(toFloat(new BN(withdrawal.fee), constants.Float16Encoding), 2);
-          bs.addNumber(withdrawal.walletSplitPercentage, 1);
         }
       }
 
@@ -1458,6 +1471,46 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
+  public hashLabels(rings: RingInfo[]) {
+    const labels: number[] =  [];
+    for (const ring of rings) {
+      labels.push(ring.orderA.label);
+      labels.push(ring.orderB.label);
+    }
+
+    const stage1Hasher = poseidon.createHash(96, 6, 56);
+    const stage2Hasher = poseidon.createHash(6, 6, 52);
+
+    const numInputsStage1 = 80;
+    const numInputsStage2 = 4;
+
+    const numStage1Hashes = Math.floor((labels.length + numInputsStage1 - 1) / numInputsStage1);
+    const stage1Hashes: any[] = [];
+    for (let i = 0; i < numStage1Hashes; i++) {
+        const inputs: number[] = [];
+        for (let j = 0; j < numInputsStage1; j++) {
+            const labelIdx = i * numInputsStage1 + j;
+            inputs.push((labelIdx < labels.length) ? labels[labelIdx] : 0);
+        }
+        stage1Hashes.push(stage1Hasher(inputs));
+    }
+
+    const numStage2Hashes = Math.floor((numStage1Hashes + numInputsStage2 - 1) / numInputsStage2);
+    const stage2Hashes: any[] = [];
+    for (let i = 0; i < numStage2Hashes; i++) {
+      const inputs: any[] = [];
+        inputs.push(i == 0 ? 0 : stage2Hashes[stage2Hashes.length - 1]);
+        for (let j = 0; j < numInputsStage2; j++) {
+            const hashIdx = i * numInputsStage2 + j;
+            inputs.push((hashIdx < stage1Hashes.length) ? stage1Hashes[hashIdx] : 0);
+        }
+        stage2Hashes.push(stage2Hasher(inputs));
+    }
+
+    const hash = stage2Hashes[stage2Hashes.length - 1];
+    console.log("[JS] labels hash: " + hash.toString(10));
+  }
+
   public async commitRings(exchangeID: number) {
     const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
@@ -1547,8 +1600,9 @@ export class ExchangeTestUtil {
       assert(rings.length === blockSize);
       numRingsDone += blockSize;
 
+      this.hashLabels(rings);
+
       const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
-      const currentBlock = await this.exchange.getBlock(currentBlockIdx);
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
@@ -1564,20 +1618,26 @@ export class ExchangeTestUtil {
         exchangeID,
         operatorAccountID: operator,
       };
-      // Sign the block
-      this.signRingBlock(ringBlock, currentBlock.merkleRoot);
 
       // Store state before
       const stateBefore = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx, ringBlock);
 
       // Create the block
-      const [blockIdx, blockFilename] = await this.createBlock(exchangeID, 0, JSON.stringify(ringBlock, replacer, 4));
-
-      // Store state after
-      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
+      const [blockIdx, blockFilename] =
+       await this.createBlock(exchangeID, 0, JSON.stringify(ringBlock, replacer, 4), false);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+      // Write the block signature
+      this.signRingBlock(block)
+      fs.writeFileSync(blockFilename, JSON.stringify(block, undefined, 4), "utf8");
+
+      // Validate the block after generating the signature
+      await this.validateBlock(blockFilename);
+
+      // Store state after
+      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
 
       const bs = new Bitstream();
       bs.addNumber(exchangeID, 4);
@@ -1781,12 +1841,10 @@ export class ExchangeTestUtil {
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const cancel of cancels) {
-          bs.addNumber((cancel.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + cancel.walletAccountID, 5);
+          bs.addNumber((cancel.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + cancel.orderID, 5);
           bs.addNumber(cancel.orderTokenID, 1);
-          bs.addNumber(cancel.orderID, 3);
           bs.addNumber(cancel.feeTokenID, 1);
           bs.addNumber(toFloat(cancel.fee, constants.Float16Encoding), 2);
-          bs.addNumber(cancel.walletSplitPercentage, 1);
         }
       }
 

@@ -121,9 +121,9 @@ export class Simulator {
     // Update the Merkle tree with the input data
     const newExchangeState = this.offchainWithdraw(
       exchangeState,
-      operatorAccountID, withdrawal.accountID, withdrawal.walletAccountID,
+      operatorAccountID, withdrawal.accountID,
       withdrawal.tokenID, amountWithdrawn,
-      withdrawal.feeTokenID, fee, withdrawal.walletSplitPercentage,
+      withdrawal.feeTokenID, fee,
     );
 
     const simulatorReport: SimulatorReport = {
@@ -160,18 +160,14 @@ export class Simulator {
     offset += 3;
 
     // Jump to the specified withdrawal
-    const offchainDataSize = 7;
+    const offchainDataSize = 3;
     offset += withdrawalIndex * offchainDataSize;
 
     // Extract offchain data
-    const walletAccountID = bs.extractUint24(offset);
-    offset += 3;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
     const fFee = bs.extractUint16(offset);
     offset += 2;
-    const walletSplitPercentage = bs.extractUint8(offset);
-    offset += 1;
 
     // Further extraction of packed data
     const accountID = Math.floor(accountIdAndAmountWithdrawn / (2 ** 28));
@@ -184,22 +180,19 @@ export class Simulator {
     // Update the Merkle tree with the onchain data
     const newExchangeState = this.offchainWithdraw(
       exchangeState,
-      operatorAccountID, accountID, walletAccountID,
+      operatorAccountID, accountID,
       token, amountWithdrawn,
-      feeToken, fee, walletSplitPercentage,
+      feeToken, fee,
     );
 
     return newExchangeState;
   }
 
   public offchainWithdraw(exchangeState: ExchangeState,
-                          operatorAccountID: number, accountID: number, walletAccountID: number,
+                          operatorAccountID: number, accountID: number,
                           tokenID: number, amountWithdrawn: BN,
-                          feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+                          feeTokenID: number, fee: BN) {
     const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = fee.sub(feeToWallet);
 
     const account = newExchangeState.accounts[accountID];
 
@@ -212,15 +205,10 @@ export class Simulator {
       account.balances[tokenID].balance.sub(amountWithdrawn);
     account.nonce++;
 
-    // Update wallet
-    const wallet = newExchangeState.accounts[walletAccountID];
-    wallet.balances[feeTokenID].balance =
-      wallet.balances[feeTokenID].balance.add(feeToWallet);
-
     // Update operator
     const operator = newExchangeState.accounts[operatorAccountID];
     operator.balances[feeTokenID].balance =
-      operator.balances[feeTokenID].balance.add(feeToOperator);
+      operator.balances[feeTokenID].balance.add(fee);
 
     return newExchangeState;
   }
@@ -237,26 +225,22 @@ export class Simulator {
     offset += 3;
 
     // Jump to the specified withdrawal
-    const onchainDataSize = 13;
+    const onchainDataSize = 9;
     offset += cancelIndex * onchainDataSize;
 
     // Extract onchain data
-    const accountIds = bs.extractUint40(offset);
+    const accountIdAndOrderId = bs.extractUint40(offset);
     offset += 5;
     const orderToken = bs.extractUint8(offset);
     offset += 1;
-    const orderID = bs.extractUint24(offset);
-    offset += 3;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
     const fFee = bs.extractUint16(offset);
     offset += 2;
-    const walletSplitPercentage = bs.extractUint8(offset);
-    offset += 1;
 
     // Further extraction of packed data
-    const accountID = Math.floor(accountIds / (2 ** 20));
-    const walletAccountID = accountIds & 0xFFFFF;
+    const accountID = Math.floor(accountIdAndOrderId / (2 ** 20));
+    const orderID = accountIdAndOrderId & 0xFFFFF;
 
     // Decode the float values
     const fee = fromFloat(fFee, constants.Float16Encoding);
@@ -264,9 +248,9 @@ export class Simulator {
     // Update the Merkle tree with the onchain data
     const newExchangeState = this.cancelOrder(
       exchangeState,
-      operatorAccountID, walletAccountID,
+      operatorAccountID,
       accountID, orderToken, orderID,
-      feeToken, fee, walletSplitPercentage,
+      feeToken, fee,
     );
 
     return newExchangeState;
@@ -278,9 +262,9 @@ export class Simulator {
     // Update the Merkle tree with the input data
     const newExchangeState = this.cancelOrder(
       exchangeState,
-      operatorAccountID, cancel.walletAccountID,
+      operatorAccountID,
       cancel.accountID, cancel.orderTokenID, cancel.orderID,
-      cancel.feeTokenID, fee, cancel.walletSplitPercentage,
+      cancel.feeTokenID, fee,
     );
 
     const simulatorReport: SimulatorReport = {
@@ -291,19 +275,16 @@ export class Simulator {
   }
 
   public cancelOrder(exchangeState: ExchangeState,
-                     operatorAccountID: number, walletAccountID: number,
+                     operatorAccountID: number,
                      accountID: number, orderTokenID: number, orderID: number,
-                     feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+                     feeTokenID: number, fee: BN) {
     const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = fee.sub(feeToWallet);
 
     const account = newExchangeState.accounts[accountID];
 
     // Update balance
-    account.balances[orderTokenID].balance =
-      account.balances[orderTokenID].balance.sub(fee);
+    account.balances[feeTokenID].balance =
+      account.balances[feeTokenID].balance.sub(fee);
     account.nonce++;
 
     // Update trade history
@@ -316,15 +297,10 @@ export class Simulator {
     }
     account.balances[orderTokenID].tradeHistory[orderID].cancelled = true;
 
-    // Update wallet
-    const wallet = newExchangeState.accounts[walletAccountID];
-    wallet.balances[feeTokenID].balance =
-      wallet.balances[feeTokenID].balance.add(feeToWallet);
-
     // Update operator
     const operator = newExchangeState.accounts[operatorAccountID];
     operator.balances[feeTokenID].balance =
-      operator.balances[feeTokenID].balance.add(feeToOperator);
+      operator.balances[feeTokenID].balance.add(fee);
 
     return newExchangeState;
   }
@@ -661,6 +637,8 @@ export class Simulator {
     // - FeeB
     operator.balances[tokenA].balance =
       operator.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
+    // - Increment the nonce
+    operator.nonce++;
 
     return {newExchangeState, s};
   }

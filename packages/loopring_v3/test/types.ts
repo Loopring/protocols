@@ -37,6 +37,7 @@ export interface OrderInfo {
   accountID?: number;
   orderID?: number;
 
+  label?: number;
   dualAuthPublicKeyX?: string;
   dualAuthPublicKeyY?: string;
   dualAuthSecretKey?: string;
