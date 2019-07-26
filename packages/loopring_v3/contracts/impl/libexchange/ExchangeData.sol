@@ -164,6 +164,9 @@ library ExchangeData
     function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
         return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
     }
+    function SNARK_SCALAR_FIELD() internal pure returns (uint256) {
+        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    }
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
     function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
     function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }

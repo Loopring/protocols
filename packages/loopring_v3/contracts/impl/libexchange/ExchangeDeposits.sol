@@ -118,6 +118,10 @@ library ExchangeDeposits
             feeETH
         );
 
+        // Make sure the public key can be stored in the SNARK field
+        require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
+        require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
+
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
         ExchangeData.Request memory request = ExchangeData.Request(

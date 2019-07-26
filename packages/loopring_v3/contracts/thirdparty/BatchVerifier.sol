@@ -23,7 +23,8 @@ library BatchVerifier {
     function getProofEntropy(
         uint256[] memory in_proof,
         uint256[] memory proof_inputs,
-        uint proofNumber
+        uint proofNumber,
+        uint q
     )
         internal pure returns (uint256)
     {
@@ -35,7 +36,7 @@ library BatchVerifier {
                     proof_inputs[proofNumber]
                 )
             )
-        );
+        ) % q;
     }
 
     function accumulate(
@@ -58,12 +59,13 @@ library BatchVerifier {
             } else {
                 // entropy[proofNumber] = uint256(blockhash(block.number - proofNumber)) % q;
                 // Safer entropy:
-                entropy[proofNumber] = getProofEntropy(in_proof, proof_inputs, proofNumber);
+                entropy[proofNumber] = getProofEntropy(in_proof, proof_inputs, proofNumber, q);
             }
             require(entropy[proofNumber] != 0, "Entropy should not be zero");
             // here multiplication by 1 is implied
             inputAccumulators[0] = addmod(inputAccumulators[0], entropy[proofNumber], q);
             for (uint256 i = 0; i < numPublicInputs; i++) {
+                require(proof_inputs[proofNumber * numPublicInputs + i] < q, "INVALID_INPUT");
                 // accumulate the exponent with extra entropy mod q
                 inputAccumulators[i+1] = addmod(inputAccumulators[i+1], mulmod(entropy[proofNumber], proof_inputs[proofNumber * numPublicInputs + i], q), q);
             }
@@ -81,6 +83,7 @@ library BatchVerifier {
         proofsAandC[1] = in_proof[1];
 
         for (uint256 proofNumber = 1; proofNumber < num_proofs; proofNumber++) {
+            require(entropy[proofNumber] < q, "INVALID_INPUT");
             mul_input[0] = in_proof[proofNumber*8];
             mul_input[1] = in_proof[proofNumber*8 + 1];
             mul_input[2] = entropy[proofNumber];
