@@ -23,11 +23,11 @@ library BatchVerifier {
     function getProofEntropy(
         uint256[] memory in_proof,
         uint256[] memory proof_inputs,
-        uint proofNumber,
-        uint q
+        uint proofNumber
     )
         internal pure returns (uint256)
     {
+        // Truncate the 256bit entropy by 3 bits so it fits the scalar field
         return uint256(
             keccak256(
                 abi.encodePacked(
@@ -36,7 +36,7 @@ library BatchVerifier {
                     proof_inputs[proofNumber]
                 )
             )
-        ) % q;
+        ) >> 3;
     }
 
     function accumulate(
@@ -59,7 +59,7 @@ library BatchVerifier {
             } else {
                 // entropy[proofNumber] = uint256(blockhash(block.number - proofNumber)) % q;
                 // Safer entropy:
-                entropy[proofNumber] = getProofEntropy(in_proof, proof_inputs, proofNumber, q);
+                entropy[proofNumber] = getProofEntropy(in_proof, proof_inputs, proofNumber);
             }
             require(entropy[proofNumber] != 0, "Entropy should not be zero");
             // here multiplication by 1 is implied

@@ -1,6 +1,8 @@
 import BN = require("bn.js");
 import crypto = require('crypto');
 import { Artifacts } from "../util/Artifacts";
+import * as constants from "./constants";
+import { expectThrow } from "./expectThrow";
 import poseidon = require("./poseidon");
 
 contract("Poseidon", (accounts: string[]) => {
@@ -10,7 +12,7 @@ contract("Poseidon", (accounts: string[]) => {
 
   const getRand = () => {
     const entropy = crypto.randomBytes(32);
-    return new BN(entropy.toString("hex"), 16);
+    return new BN(entropy.toString("hex"), 16).mod(constants.scalarField);
   };
 
   before(async () => {
@@ -26,6 +28,18 @@ contract("Poseidon", (accounts: string[]) => {
       const hash = await poseidonContract.hash_t5f6p52(t[0], t[1], t[2], t[3], new BN(0));
       const expectedHash = hasher(t);
       assert.equal(hash, expectedHash, "posseidon hash incorrect");
+    }
+
+    // Should not be possible to use an input that is larger than the field
+    for(let i = 0; i < 5; i++) {
+      const inputs: BN[] = [];
+      for(let j = 0; j < 5; j++) {
+        inputs.push((i === j) ? constants.scalarField : new BN(0));
+      }
+      await expectThrow(
+        poseidonContract.hash_t5f6p52(...inputs),
+        "INVALID_INPUT",
+      )
     }
   });
 });

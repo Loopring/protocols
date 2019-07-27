@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, BlockType, DepositInfo, RingInfo } from "./types";
@@ -405,7 +406,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         block.blockSize,
         block.blockVersion,
-        [block.publicDataHash],
+        [block.publicInput],
         block.proof,
         { from: anyone }
       );
@@ -418,7 +419,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        [commitBlocksSize1[0].publicDataHash],
+        [commitBlocksSize1[0].publicInput],
         commitBlocksSize1[1].proof,
         { from: anyone }
       );
@@ -431,11 +432,26 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        [commitBlocksSize1[1].publicDataHash],
+        [commitBlocksSize1[1].publicInput],
         commitBlocksSize1[0].proof,
         { from: anyone }
       );
       assert(!success, "verification should not be succesful");
+    });
+
+    it("should not be able to verify a single block with publicData >= scalar field", async () => {
+      await expectThrow(
+        blockVerifier.verifyProofs(
+          commitBlocksSize1[0].blockType,
+          onchainDataAvailability,
+          commitBlocksSize1[0].blockSize,
+          commitBlocksSize1[0].blockVersion,
+          [constants.scalarField],
+          commitBlocksSize1[0].proof,
+          { from: anyone }
+        ),
+        "INVALID_INPUT",
+      );
     });
 
     it("should not be able to verify a block with an unknown circuit", async () => {
@@ -446,7 +462,7 @@ contract("BlockVerifier", (accounts: string[]) => {
           onchainDataAvailability,
           block.blockSize,
           block.blockVersion,
-          [block.publicDataHash],
+          [block.publicInput],
           block.proof,
           { from: anyone }
         ),
@@ -458,7 +474,7 @@ contract("BlockVerifier", (accounts: string[]) => {
           onchainDataAvailability,
           7,
           block.blockVersion,
-          [block.publicDataHash],
+          [block.publicInput],
           block.proof,
           { from: anyone }
         ),
@@ -470,7 +486,7 @@ contract("BlockVerifier", (accounts: string[]) => {
           onchainDataAvailability,
           block.blockSize,
           1,
-          [block.publicDataHash],
+          [block.publicInput],
           block.proof,
           { from: anyone }
         ),
@@ -484,7 +500,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        commitBlocksSize1.map(x => x.publicDataHash),
+        commitBlocksSize1.map(x => x.publicInput),
         exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
         { from: anyone }
       );
@@ -495,7 +511,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         settlementBlocksSize2[0].blockSize,
         settlementBlocksSize2[0].blockVersion,
-        settlementBlocksSize2.map(x => x.publicDataHash),
+        settlementBlocksSize2.map(x => x.publicInput),
         exchangeTestUtil.flattenList(settlementBlocksSize2.map(x => x.proof)),
         { from: anyone }
       );
@@ -512,7 +528,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        mixedBlocks.map(x => x.publicDataHash),
+        mixedBlocks.map(x => x.publicInput),
         exchangeTestUtil.flattenList(mixedBlocks.map(x => x.proof)),
         { from: anyone }
       );
@@ -536,7 +552,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        commitBlocksSize1.map(x => x.publicDataHash),
+        commitBlocksSize1.map(x => x.publicInput),
         proofs,
         { from: anyone }
       );
@@ -545,13 +561,13 @@ contract("BlockVerifier", (accounts: string[]) => {
 
     it("should not be able to verify multiple blocks of the same circuits with invalid public inputs", async () => {
       // Change a single public input
-      const publicDataHashes = commitBlocksSize1.map(x => x.publicDataHash);
+      const publicInputs = commitBlocksSize1.map(x => x.publicInput);
       const publicDataIdxToModify = exchangeTestUtil.getRandomInt(
-        publicDataHashes.length
+        publicInputs.length
       );
-      publicDataHashes[publicDataIdxToModify] =
+      publicInputs[publicDataIdxToModify] =
         "0x" +
-        new BN(publicDataHashes[publicDataIdxToModify].slice(2), 16)
+        new BN(publicInputs[publicDataIdxToModify].slice(2), 10)
           .add(new BN(1))
           .toString(16);
 
@@ -560,11 +576,33 @@ contract("BlockVerifier", (accounts: string[]) => {
         onchainDataAvailability,
         commitBlocksSize1[0].blockSize,
         commitBlocksSize1[0].blockVersion,
-        publicDataHashes,
+        publicInputs,
         exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
         { from: anyone }
       );
       assert(!success, "verification should not be succesful");
+    });
+
+    it("should not be able to verify multiple blocks of the same circuits with public input > scalar field", async () => {
+      // Change a single public input
+      const publicInputs = commitBlocksSize1.map(x => x.publicInput);
+      const publicDataIdxToModify = exchangeTestUtil.getRandomInt(
+        publicInputs.length
+      );
+      publicInputs[publicDataIdxToModify] = "0x" + constants.scalarField.toString(16);
+
+      await expectThrow(
+        blockVerifier.verifyProofs(
+          commitBlocksSize1[0].blockType,
+          onchainDataAvailability,
+          commitBlocksSize1[0].blockSize,
+          commitBlocksSize1[0].blockVersion,
+          publicInputs,
+          exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
+          { from: anyone }
+        ),
+        "INVALID_INPUT",
+      );
     });
   });
 });

@@ -907,8 +907,10 @@ export class ExchangeTestUtil {
       this.commitWrongPublicDataOnce = false;
     }
     const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
+    const publicInput = new BN(publicDataHash.slice(2), 16).shrn(3).toString(10);
     logDebug("[EVM]PublicData: " + data);
     logDebug("[EVM]PublicDataHash: " + publicDataHash);
+    logDebug("[EVM]PublicInput: " + publicInput);
 
     const compressedData = compress(data, this.compressionType, this.lzDecompressor.address);
 
@@ -956,6 +958,7 @@ export class ExchangeTestUtil {
       operatorId,
       compressedData,
       publicDataHash,
+      publicInput,
     };
     this.pendingBlocks[this.exchangeId].push(block);
     return block;
