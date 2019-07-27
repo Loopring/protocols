@@ -27,7 +27,7 @@ library BatchVerifier {
     )
         internal pure returns (uint256)
     {
-        // Truncate the 256bit entropy by 3 bits so it fits the scalar field
+        // Truncate the least significant 3 bits from the 256bit entropy so it fits the scalar field
         return uint256(
             keccak256(
                 abi.encodePacked(
