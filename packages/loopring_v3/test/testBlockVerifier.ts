@@ -583,7 +583,7 @@ contract("BlockVerifier", (accounts: string[]) => {
       assert(!success, "verification should not be succesful");
     });
 
-    it("should not be able to verify multiple blocks of the same circuits with public input > scalar field", async () => {
+    it("should not be able to verify multiple blocks of the same circuits with public input >= scalar field", async () => {
       // Change a single public input
       const publicInputs = commitBlocksSize1.map(x => x.publicInput);
       const publicDataIdxToModify = exchangeTestUtil.getRandomInt(
