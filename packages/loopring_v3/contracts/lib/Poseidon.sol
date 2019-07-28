@@ -34,6 +34,14 @@ library Poseidon
         pure
         returns (uint)
     {
+        uint q = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+        // Make sure the inputs can be stored in the SNARK field
+        require(t0 < q, "INVALID_INPUT");
+        require(t1 < q, "INVALID_INPUT");
+        require(t2 < q, "INVALID_INPUT");
+        require(t3 < q, "INVALID_INPUT");
+        require(t4 < q, "INVALID_INPUT");
+
         assembly {
             function mix(t0, t1, t2, t3, t4, q) -> nt0, nt1, nt2, nt3, nt4 {
                 nt0 := mulmod(t0, 4977258759536702998522229302103997878600602264560359702680165243908162277980, q)
@@ -94,8 +102,6 @@ library Poseidon
                 nt := mulmod(nt, nt, q)
                 nt := mulmod(t, nt, q)
             }
-
-            let q := 21888242871839275222246405745257275088548364400416034343698204186575808495617
 
             // round 0
             t0, t1, t2, t3, t4 := ark(t0, t1, t2, t3, t4, q, 14397397413755236225575615486459253198602422701513067526754101844196324375522)

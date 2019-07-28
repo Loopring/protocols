@@ -30,3 +30,5 @@ export const Float8Encoding: FloatEncoding = {
 
 export const emptyBytes = web3.utils.hexToBytes("0x");
 export const zeroAddress = "0x" + "00".repeat(20);
+
+export const scalarField = new BN("21888242871839275222246405745257275088548364400416034343698204186575808495617", 10);

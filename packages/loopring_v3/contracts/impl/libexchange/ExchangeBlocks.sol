@@ -122,8 +122,9 @@ library ExchangeBlocks
                 "PROOF_TOO_LATE"
             );
 
-            // Maybe we should strip the highest bits of the public input so we don't have any overflow (uint/prime field)
-            publicInputs[i] = uint(specifiedBlock.publicDataHash);
+            // Strip the 3 least significant bits of the public data hash
+            // so we don't have any overflow in the snark field
+            publicInputs[i] = uint(specifiedBlock.publicDataHash) >> 3;
             if (i == 0) {
                 blockSize = specifiedBlock.blockSize;
                 blockType = specifiedBlock.blockType;

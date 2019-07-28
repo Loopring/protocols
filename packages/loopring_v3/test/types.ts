@@ -182,6 +182,7 @@ export interface Block {
   operatorId: number;
   compressedData: string;
   publicDataHash: string;
+  publicInput: string;
   proof?: string[];
 }
 
