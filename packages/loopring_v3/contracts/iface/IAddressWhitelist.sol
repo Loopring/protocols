@@ -17,9 +17,9 @@
 pragma solidity 0.5.7;
 
 
-/// @title IWhitelist
+/// @title IAddressWhitelist
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IWhitelist
+contract IAddressWhitelist
 {
     /// @dev Check if an address is in a whitelist.
     /// @return Returns true if the address is in the whitelist, false otehrwise.

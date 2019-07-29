@@ -200,7 +200,7 @@ library ExchangeData
         IBlockVerifier blockVerifier;
 
         address lrcAddress;
-        address accountWhitelist;
+        address addressWhitelist; // to manage addresses who can create/update accounts.
 
         uint    totalTimeInMaintenanceSeconds;
         uint    numDowntimeMinutes;

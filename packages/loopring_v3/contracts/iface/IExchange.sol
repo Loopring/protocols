@@ -924,15 +924,15 @@ contract IExchange
         external
         returns (address payable oldOperator);
 
-    /// @dev Set the account whitelist contract address.
-    /// @param accountWhitelist The new whitelist manager's address.
-    ///        Setting this to '0x0' will disable address checking for account creation/update.
-    /// @return oldAccountWhitelist The old Whitelist manager's address
-    function setAccountWhitelist(
-        address accountWhitelist
+    /// @dev Set the address whitelist contract address.
+    /// @param addressWhitelist The new whitelist manager's address.
+    ///        Setting this to '0x0' will disable address checking for account creation.
+    /// @return oldAddressWhitelist The old Whitelist manager's address
+    function setAddressWhitelist(
+        address addressWhitelist
         )
         external
-        returns (address oldAccountWhitelist);
+        returns (address oldAddressWhitelist);
 
     /// @dev Update fee settings.
     ///      This function is only callable by the exchange owner.

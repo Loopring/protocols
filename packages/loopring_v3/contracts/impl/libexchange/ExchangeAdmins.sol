@@ -67,16 +67,16 @@ library ExchangeAdmins
         );
     }
 
-    function setAccountWhitelist(
+    function setAddressWhitelist(
         ExchangeData.State storage S,
-        address _accountWhitelist
+        address _addressWhitelist
         )
         public
-        returns (address oldAccountWhitelist)
+        returns (address oldAddressWhitelist)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        oldAccountWhitelist = S.accountWhitelist;
-        S.accountWhitelist = _accountWhitelist;
+        oldAddressWhitelist = S.addressWhitelist; // allows '0x0'
+        S.addressWhitelist = _addressWhitelist;
     }
 
     function setFees(

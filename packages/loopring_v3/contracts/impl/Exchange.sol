@@ -20,7 +20,7 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IExchange.sol";
-import "../iface/IWhitelist.sol";
+import "../iface/IAddressWhitelist.sol";
 
 import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
@@ -708,15 +708,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         oldOperator = state.setOperator(_operator);
     }
 
-    function setAccountWhitelist(
-        address accountWhitelist
+    function setAddressWhitelist(
+        address addressWhitelist
         )
         external
         nonReentrant
         onlyOwner
-        returns (address oldAccountWhitelist)
+        returns (address oldAddressWhitelist)
     {
-        oldAccountWhitelist = state.setAccountWhitelist(accountWhitelist);
+        oldAddressWhitelist = state.setAddressWhitelist(addressWhitelist);
     }
 
     function setFees(
@@ -866,18 +866,21 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             bool   isAccountUpdated
         )
     {
-        require(
-            msg.sender == owner ||
-            msg.sender == state.operator ||
-            state.accountWhitelist == address(0) ||
-            IWhitelist(state.accountWhitelist).isWhitelisted(msg.sender),
-            "UNAUTHORIZED"
-        );
-
         (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
             pubKeyX,
             pubKeyY
         );
+
+        if (isAccountNew) {
+            require(
+                msg.sender == owner ||
+                msg.sender == state.operator ||
+                state.addressWhitelist == address(0) ||
+                IAddressWhitelist(state.addressWhitelist).isWhitelisted(msg.sender),
+                "UNAUTHORIZED"
+            );
+        }
+
         uint additionalFeeETH = 0;
         if (isAccountNew) {
             additionalFeeETH = state.accountCreationFeeETH;
