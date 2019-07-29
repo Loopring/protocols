@@ -925,9 +925,9 @@ contract IExchange
         returns (address payable oldOperator);
 
     /// @dev Set the address whitelist contract address.
-    /// @param addressWhitelist The new whitelist manager's address.
+    /// @param addressWhitelist The new whitelist contract address.
     ///        Setting this to '0x0' will disable address checking for account creation.
-    /// @return oldAddressWhitelist The old Whitelist manager's address
+    /// @return oldAddressWhitelist The old Whitelist contract address
     function setAddressWhitelist(
         address addressWhitelist
         )
