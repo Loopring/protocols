@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
