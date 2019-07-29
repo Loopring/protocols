@@ -56,6 +56,7 @@ library ExchangeGenesis
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
+        S.addressWhitelist = address(0);
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             ExchangeData.GENESIS_MERKLE_ROOT(),
