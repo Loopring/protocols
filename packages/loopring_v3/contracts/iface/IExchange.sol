@@ -50,6 +50,12 @@ contract IExchange
         address         newOperator
     );
 
+    event AddressWhitelistChanged(
+        uint    indexed exchangeId,
+        address         oldAddressWhitelist,
+        address         newAddressWhitelist
+    );
+
     event FeesUpdated(
         uint    indexed exchangeId,
         uint            accountCreationFeeETH,

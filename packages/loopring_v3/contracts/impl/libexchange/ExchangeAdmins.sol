@@ -40,6 +40,12 @@ library ExchangeAdmins
         address         newOperator
     );
 
+    event AddressWhitelistChanged(
+        uint    indexed exchangeId,
+        address         oldAddressWhitelist,
+        address         newAddressWhitelist
+    );
+
     event FeesUpdated(
         uint    indexed exchangeId,
         uint            accountCreationFeeETH,
@@ -57,6 +63,7 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(address(0) != _operator, "ZERO_ADDRESS");
+        require(S.operator != _operator, "SAME_ADDRESS");
         oldOperator = S.operator;
         S.operator = _operator;
 
@@ -75,8 +82,15 @@ library ExchangeAdmins
         returns (address oldAddressWhitelist)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(S.addressWhitelist != _addressWhitelist, "SAME_ADDRESS");
         oldAddressWhitelist = S.addressWhitelist; // allows '0x0'
         S.addressWhitelist = _addressWhitelist;
+
+        emit AddressWhitelistChanged(
+            S.id,
+            oldAddressWhitelist,
+            _addressWhitelist
+        );
     }
 
     function setFees(
