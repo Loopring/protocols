@@ -238,16 +238,16 @@ contract IExchange
     ///                      1st element of the array.
     /// @return True if the given information is stored in the merkle tree, false otherwise
     function isAccountBalanceCorrect(
-        uint256 merkleRoot,
-        uint24  accountID,
-        uint16  tokenID,
-        uint256 pubKeyX,
-        uint256 pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] calldata accountMerkleProof,
-        uint256[12] calldata balanceMerkleProof
+        uint     merkleRoot,
+        uint24   accountID,
+        uint16   tokenID,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
         )
         external
         pure
@@ -508,7 +508,7 @@ contract IExchange
     ///            - Mode 0: No compression. The data following the mode byte is used as is.
     ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
     ///                      IDecompressor.decompress() will be called to decompress the following data.
-    /// @param offchainData Arbitrary data for off-chain data-availability, i.e.,
+    /// @param offchainData Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
     function commitBlock(
         uint8  blockType,
@@ -531,8 +531,8 @@ contract IExchange
     /// @param blockIndices The 0-based index of the blocks to be verified with the given proofs
     /// @param proofs The ZK proof for all blockIndices (proofs.length % 8 == 0).
     function verifyBlocks(
-        uint[]    calldata blockIndices,
-        uint256[] calldata proofs
+        uint[] calldata blockIndices,
+        uint[] calldata proofs
         )
         external;
 
@@ -585,7 +585,7 @@ contract IExchange
         view
         returns (
           bytes32 accumulatedHash,
-          uint256 accumulatedFee,
+          uint    accumulatedFee,
           uint32  timestamp
         );
 
@@ -704,7 +704,7 @@ contract IExchange
         view
         returns (
             bytes32 accumulatedHash,
-            uint256 accumulatedFee,
+            uint    accumulatedFee,
             uint32  timestamp
         );
 
@@ -773,14 +773,14 @@ contract IExchange
     ///                      token for the account. The deepest hash in the tree is the
     ///                      1st element of the array.
     function withdrawFromMerkleTree(
-        address token,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] calldata accountMerkleProof,
-        uint256[12] calldata balanceMerkleProof
+        address  token,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
         )
         external;
 
@@ -807,15 +807,15 @@ contract IExchange
     ///                      token for the account. The deepest hash in the tree is the
     ///                      1st element of the array.
     function withdrawFromMerkleTreeFor(
-        address owner,
-        address token,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        uint32  nonce,
-        uint96  balance,
-        uint256 tradeHistoryRoot,
-        uint256[30] calldata accountMerkleProof,
-        uint256[12] calldata balanceMerkleProof
+        address  owner,
+        address  token,
+        uint     pubKeyX,
+        uint     pubKeyY,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
         )
         external;
 
@@ -873,7 +873,7 @@ contract IExchange
     /// @param  feeRecipient The address that receives the block fee
     /// @return feeAmount The amount of ETH earned in the block and sent to the operator
     function withdrawBlockFee(
-        uint blockIdx,
+        uint    blockIdx,
         address payable feeRecipient
         )
         external

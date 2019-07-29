@@ -1,10 +1,9 @@
 import BN = require("bn.js");
+import { grpcClientService } from "..";
 import { generateKeyPair, sign } from "../lib/sign/eddsa";
-import config from "../lib/wallet/config";
-
-import { grpcClientService } from "../grpc/grpcClientService";
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
+import config from "../lib/wallet/config";
 import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
@@ -22,23 +21,30 @@ import {
 } from "../proto_gen/data_types_pb";
 import {
   Account,
-  GetNextOrderIdReq,
+  DexConfigurations,
   SimpleOrderCancellationReq
 } from "../proto_gen/service_dex_pb";
 
 export class Exchange {
   private readonly exchangeID: number;
   private readonly exchangeAddr: string;
-  private readonly walletAccountID: number;
+  private readonly walletAddressID: number;
   private currentDexAccount: DexAccount;
   private currentWalletAccount: WalletAccount;
+  private dexConfigurations: DexConfigurations;
   private readonly accounts: Map<WalletAccount, DexAccount>;
 
   public constructor() {
     this.exchangeID = 2; // TODO: config
     this.exchangeAddr = "0x3d88d9C4adC342cEff41855CF540844268390BE6"; // TODO: config
-    this.walletAccountID = 0; // TODO: config
+    this.walletAddressID = 0; // TODO: config
     this.accounts = new Map<WalletAccount, DexAccount>();
+    this.initExchange();
+  }
+
+  private async initExchange() {
+    config.initTokenConfig();
+    this.dexConfigurations = await grpcClientService.getDexConfigurations();
   }
 
   public static toBitsBN(value: BN, length: number) {
@@ -103,7 +109,7 @@ export class Exchange {
   // https://hackernoon.com/javascript-promises-and-why-async-await-wins-the-battle-4fc9d15d509f
   // ES7 async error handling: do it right or die
   // https://medium.com/@giovannipinto/async-error-handling-forced-to-do-it-right-2817cf9e8b43
-  public async createAccount(wallet: WalletAccount, gasPrice: number) {
+  public async updateAccount(wallet: WalletAccount, gasPrice: number) {
     try {
       // TODO: need to check if gasPrice is a reasonable value
       if (this.accounts.get(wallet) == null) {
@@ -148,67 +154,77 @@ export class Exchange {
     publicY: string,
     gasPrice: number
   ) {
-    // FIXME: ethereum.abi.Contracts.ExchangeContract.encodeInputs returns error
-    // Unhandled Rejection (TypeError): name.startsWith is not a function
-    console.log("Start encode input of createOrUpdateAccount");
-    const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
-      "createOrUpdateAccount",
-      {
-        pubKeyX: fm.toBN(publicX),
-        pubKeyY: fm.toBN(publicY)
-      }
-    );
-    console.log("End encode input of createOrUpdateAccount");
-    return new Transaction({
-      to: this.exchangeAddr,
-      value: "0x0",
-      data: data,
-      chainId: config.getChainId(),
-      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
-    });
-  }
-
-  public async deposit(symbol: string, amount: number, gasPrice: number) {
-    let to, value, data: string;
-    const token = config.getTokenBySymbol(symbol);
-    value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
-    if (this.currentWalletAccount.getAddress()) {
-      if (symbol === "ETH") {
-        to = this.exchangeAddr;
-        data = fm.toHex("0x");
-      } else {
-        to = token.address;
-        data = ethereum.abi.Contracts.ExchangeContract.encodeInputs("deposit", {
-          tokenAddress: to,
-          amount: value
-        });
-        value = "0x0";
-      }
-
+    try {
+      const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
+        "createOrUpdateAccount",
+        {
+          pubKeyX: fm.toBN(publicX),
+          pubKeyY: fm.toBN(publicY)
+        }
+      );
       return new Transaction({
-        to: to,
-        value: value,
+        to: this.exchangeAddr,
+        // value: this.dexConfigurations.getAccountUpdateFeeEth(),
+        value: "0x10000",
         data: data,
         chainId: config.getChainId(),
         nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
         gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
         gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
       });
+    } catch (err) {
+      console.error("Failed to create.", err);
+      throw err;
     }
   }
 
-  public async withdraw(symbol: string, amount: number, gasPrice: number) {
+  public async deposit(
+    wallet: WalletAccount,
+    symbol: string,
+    amount: number,
+    gasPrice: number
+  ) {
     let to, value, data: string;
-    const token = config.getTokenBySymbol(symbol);
-    value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
-    if (this.getAddress()) {
-      if (symbol === "ETH") {
-        to = this.exchangeAddr;
-        data = fm.toHex("0x");
-      } else {
-        to = token.address;
+    try {
+      const token = config.getTokenBySymbol(symbol);
+      value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+      if (wallet.getAddress()) {
+        this.currentWalletAccount = wallet;
+        to = symbol === "ETH" ? "0x0" : token.address;
+        data = ethereum.abi.Contracts.ExchangeContract.encodeInputs("deposit", {
+          tokenAddress: to,
+          amount: value
+        });
+        return new Transaction({
+          to: to,
+          // value: this.dexConfigurations.getDepositFeeEth(),
+          value: "0x10000",
+          data: data,
+          chainId: config.getChainId(),
+          nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+          gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+          gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
+        });
+      }
+    } catch (err) {
+      console.error("Failed to create.", err);
+      throw err;
+    }
+  }
+
+  public async withdraw(
+    wallet: WalletAccount,
+    symbol: string,
+    amount: number,
+    gasPrice: number
+  ) {
+    let to, value, data: string;
+    try {
+      const token = config.getTokenBySymbol(symbol);
+      value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+      if (wallet.getAddress()) {
+        this.currentWalletAccount = wallet;
+        to = symbol === "ETH" ? "0x0" : token.address;
         data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
           "withdraw",
           {
@@ -216,18 +232,21 @@ export class Exchange {
             amount: value
           }
         );
-        value = "0x0";
-      }
 
-      return new Transaction({
-        to: to,
-        value: value,
-        data: data,
-        chainId: config.getChainId(),
-        nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-        gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-        gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
-      });
+        return new Transaction({
+          to: to,
+          // value: this.dexConfigurations.getOnchainWithdrawalFeeEth(),
+          value: "0x10000",
+          data: data,
+          chainId: config.getChainId(),
+          nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+          gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+          gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
+        });
+      }
+    } catch (err) {
+      console.error("Failed to create.", err);
+      throw err;
     }
   }
 
@@ -261,6 +280,7 @@ export class Exchange {
     if (!order.tokenS.startsWith("0x")) {
       order.tokenS = config.getTokenBySymbol(order.tokenS).address;
     }
+
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = config.getTokenBySymbol(order.tokenB).address;
     }
@@ -293,7 +313,7 @@ export class Exchange {
     order.walletAccountID =
       order.walletAccountID !== undefined
         ? order.walletAccountID
-        : this.walletAccountID;
+        : this.walletAddressID;
 
     // assert(order.maxFeeBips < 64, 'maxFeeBips >= 64');
     // assert(order.feeBips < 64, 'feeBips >= 64');

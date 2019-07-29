@@ -1231,10 +1231,11 @@ export class ExchangeTestUtil {
       data += "00";
       this.commitWrongPublicDataOnce = false;
     }
-    const publicDataHash =
-      "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
+    const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
+    const publicInput = new BN(publicDataHash.slice(2), 16).shrn(3).toString(10);
     logDebug("[EVM]PublicData: " + data);
     logDebug("[EVM]PublicDataHash: " + publicDataHash);
+    logDebug("[EVM]PublicInput: " + publicInput);
 
     const compressedData = compress(
       data,
@@ -1308,7 +1309,8 @@ export class ExchangeTestUtil {
       blockVersion,
       operatorId,
       compressedData,
-      publicDataHash
+      publicDataHash,
+      publicInput,
     };
     this.pendingBlocks[this.exchangeId].push(block);
     return block;
@@ -1349,7 +1351,7 @@ export class ExchangeTestUtil {
       block.blockType,
       block.onchainDataAvailability,
       block.blockSize,
-      blockVersion
+      blockVersion,
     );
     if (!isCircuitRegistered) {
       await this.blockVerifier.registerCircuit(
@@ -1357,7 +1359,7 @@ export class ExchangeTestUtil {
         block.onchainDataAvailability,
         block.blockSize,
         blockVersion,
-        vkFlattened
+        vkFlattened,
       );
     }
   }
@@ -1372,23 +1374,16 @@ export class ExchangeTestUtil {
     for (const block of blocks) {
       const blockData = JSON.parse(fs.readFileSync(block.filename, "ascii"));
 
-      const proofFilename =
-        "./blocks/block_" +
-        blockData.exchangeID +
-        "_" +
-        block.blockIdx +
-        "_proof.json";
+      const proofFilename = "./blocks/block_" + blockData.exchangeID + "_" + block.blockIdx + "_proof.json";
       const result = childProcess.spawnSync(
         "build/circuit/dex_circuit",
         ["-prove", block.filename, proofFilename],
-        { stdio: doDebugLogging() ? "inherit" : "ignore" }
+        {stdio: doDebugLogging() ? "inherit" : "ignore"},
       );
       assert(result.status === 0, "verifyBlock failed: " + block.filename);
 
       // Read the proof
-      block.proof = this.flattenProof(
-        JSON.parse(fs.readFileSync(proofFilename, "ascii"))
-      );
+      block.proof = this.flattenProof(JSON.parse(fs.readFileSync(proofFilename, "ascii")));
       // console.log(proof);
 
       blockIndices.push(block.blockIdx);
@@ -1404,29 +1399,21 @@ export class ExchangeTestUtil {
 
     if (this.commitWrongProofOnce) {
       const proofIdxToModify = this.getRandomInt(proofs.length);
-      proofs[proofIdxToModify] =
-        "0x" +
-        new BN(proofs[proofIdxToModify].slice(2), 16)
-          .add(new BN(1))
-          .toString(16);
+      proofs[proofIdxToModify] = "0x" + new BN(proofs[proofIdxToModify].slice(2), 16).add(new BN(1)).toString(16);
       this.commitWrongProofOnce = false;
     }
 
     const operatorContract = this.operator ? this.operator : this.exchange;
-    const tx = await operatorContract.verifyBlocks(blockIndices, proofs, {
-      from: this.exchangeOperator
-    });
-    logInfo(
-      "\x1b[46m%s\x1b[0m",
-      "[verifyBlocks] Gas used: " + tx.receipt.gasUsed
+    const tx = await operatorContract.verifyBlocks(
+      blockIndices,
+      proofs,
+      {from: this.exchangeOperator},
     );
+    logInfo("\x1b[46m%s\x1b[0m", "[verifyBlocks] Gas used: " + tx.receipt.gasUsed);
 
     // Block state before needs to be COMMITTED
     for (const blockData of blockDataBefore) {
-      assert(
-        blockData.blockState.toNumber() === BlockState.COMMITTED,
-        "block state before needs to be COMMITTED"
-      );
+      assert(blockData.blockState.toNumber() === BlockState.COMMITTED, "block state before needs to be COMMITTED");
     }
 
     // Check the BlockVerified event(s)
@@ -1439,25 +1426,16 @@ export class ExchangeTestUtil {
       const items = eventArr.map((eventObj: any) => {
         return { blockIdx: eventObj.args.blockIdx };
       });
-      assert(
-        items.length === blocks.length,
-        "a single BlockVerified needs to be emited"
-      );
+      assert(items.length === blocks.length, "a single BlockVerified needs to be emited");
       for (const [i, block] of blocks.entries()) {
-        assert(
-          items[i].blockIdx.eq(web3.utils.toBN(block.blockIdx)),
-          "block index should be equal to block idx sent"
-        );
+        assert(items[i].blockIdx.eq(web3.utils.toBN(block.blockIdx)), "block index should be equal to block idx sent");
       }
     }
 
     // Check the block data
     for (const block of blocks) {
       const blockDataAfter = await this.exchange.getBlock(block.blockIdx);
-      assert(
-        blockDataAfter.blockState.toNumber() === BlockState.VERIFIED,
-        "block state after needs to be VERIFIED"
-      );
+      assert(blockDataAfter.blockState.toNumber() === BlockState.VERIFIED, "block state after needs to be VERIFIED");
     }
 
     // Check numBlocksFinalized
@@ -1509,33 +1487,29 @@ export class ExchangeTestUtil {
 
   public async verifyPendingBlocks(exchangeID: number) {
     // Sort the blocks for batching
-    const blocks: Block[] = this.pendingBlocks[exchangeID].sort(
-      (blockA: Block, blockB: Block) => {
-        const getKey = (block: Block) => {
-          let key = 0;
-          key |= block.blockType;
-          key <<= 16;
-          key |= block.blockSize;
-          key <<= 8;
-          key |= block.blockVersion;
-          return key;
-        };
-        const keyA = getKey(blockA);
-        const keyB = getKey(blockB);
-        return keyA - keyB;
-      }
-    );
+    const blocks: Block[] = this.pendingBlocks[exchangeID].sort((blockA: Block, blockB: Block) => {
+      const getKey = (block: Block) => {
+        let key = 0;
+        key |= block.blockType;
+        key <<= 16;
+        key |= block.blockSize;
+        key <<= 8;
+        key |= block.blockVersion;
+        return key;
+      };
+      const keyA = getKey(blockA);
+      const keyB = getKey(blockB);
+      return keyA - keyB;
+    });
     // Verify the blocks batched
     let batch: Block[] = [];
     for (let i = 0; i < blocks.length; i++) {
       if (batch.length === 0) {
         batch.push(blocks[i]);
       } else {
-        if (
-          batch[0].blockType === blocks[i].blockType &&
-          batch[0].blockSize === blocks[i].blockSize &&
-          batch[0].blockVersion === blocks[i].blockVersion
-        ) {
+        if (batch[0].blockType === blocks[i].blockType &&
+            batch[0].blockSize === blocks[i].blockSize &&
+            batch[0].blockVersion === blocks[i].blockVersion) {
           batch.push(blocks[i]);
         } else {
           await this.verifyBlocks(batch);
@@ -1576,11 +1550,11 @@ export class ExchangeTestUtil {
 
       // Get all deposits for the block
       const blockSize = forcedBlockSize
-        ? forcedBlockSize
-        : this.getBestBlockSize(
-            pendingDeposits.length - numDepositsDone,
-            this.depositBlockSizes
-          );
+      ? forcedBlockSize
+      : this.getBestBlockSize(
+          pendingDeposits.length - numDepositsDone,
+          this.depositBlockSizes
+        );
       for (let b = numDepositsDone; b < numDepositsDone + blockSize; b++) {
         if (b < pendingDeposits.length) {
           deposits.push(pendingDeposits[b]);
@@ -2099,11 +2073,11 @@ export class ExchangeTestUtil {
     while (numRingsDone < pendingRings.length) {
       // Get all rings for the block
       const blockSize = forcedBlockSize
-        ? forcedBlockSize
-        : this.getBestBlockSize(
-            pendingRings.length - numRingsDone,
-            this.ringSettlementBlockSizes
-          );
+      ? forcedBlockSize
+      : this.getBestBlockSize(
+          pendingRings.length - numRingsDone,
+          this.ringSettlementBlockSizes
+        );
       const rings: RingInfo[] = [];
       for (let b = numRingsDone; b < numRingsDone + blockSize; b++) {
         if (b < pendingRings.length) {
@@ -2287,13 +2261,7 @@ export class ExchangeTestUtil {
       );
 
       // Commit the block
-      const blockInfo = await this.commitBlock(
-        operator,
-        BlockType.RING_SETTLEMENT,
-        blockSize,
-        bs.getData(),
-        blockFilename
-      );
+      const blockInfo = await this.commitBlock(operator, BlockType.RING_SETTLEMENT, blockSize, bs.getData(), blockFilename);
       blocks.push(blockInfo);
     }
 

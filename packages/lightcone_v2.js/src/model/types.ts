@@ -1,4 +1,4 @@
-import BN = require('bn.js');
+import BN = require("bn.js");
 
 export enum BlockType {
   RING_SETTLEMENT = 0,
@@ -196,14 +196,14 @@ export interface TradeHistory {
 
 export interface Balance {
   balance: BN;
-  tradeHistory: {[key: number]: TradeHistory};
+  tradeHistory: { [key: number]: TradeHistory };
 }
 
 export interface AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
-  balances: {[key: number]: Balance};
+  balances: { [key: number]: Balance };
 }
 
 export interface Realm {
@@ -240,7 +240,7 @@ export interface DepositInfo {
   depositIdx: number;
 }
 
-export let io : {
+export let io: {
   connect(url: string): Socket;
 };
 

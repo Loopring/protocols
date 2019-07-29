@@ -1,44 +1,17 @@
+// This code is taken from https://github.com/HarryR/ethsnarks/blob/master/contracts/Verifier.sol
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates
 
 pragma solidity 0.5.7;
 
-import "./Pairing.sol";
-
 library Verifier
 {
-    using Pairing for Pairing.G1Point;
-    using Pairing for Pairing.G2Point;
-
     function ScalarField ()
-        public
+        internal
         pure
         returns (uint256)
     {
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
-
-    struct VerifyingKey
-    {
-        Pairing.G1Point alpha;
-        Pairing.G2Point beta;
-        Pairing.G2Point gamma;
-        Pairing.G2Point delta;
-        Pairing.G1Point[] gammaABC;
-    }
-
-    struct Proof
-    {
-        Pairing.G1Point A;
-        Pairing.G2Point B;
-        Pairing.G1Point C;
-    }
-
-    struct ProofWithInput
-    {
-        Proof proof;
-        uint256[] input;
-    }
-
 
     function NegateY( uint256 Y )
         internal pure returns (uint256)
@@ -102,6 +75,7 @@ library Verifier
         view
         returns (bool)
     {
+        uint256 snark_scalar_field = 21888242871839275222246405745257275088548364400416034343698204186575808495617;
         require(((vk_gammaABC.length / 2) - 1) == proof_inputs.length, "INVALID_VALUE");
 
         // Compute the linear combination vk_x
@@ -116,6 +90,7 @@ library Verifier
 
         // Performs a sum of gammaABC[0] + sum[ gammaABC[i+1]^proof_inputs[i] ]
         for (uint i = 0; i < proof_inputs.length; i++) {
+            require(proof_inputs[i] < snark_scalar_field, "INVALID_INPUT");
             mul_input[0] = vk_gammaABC[m++];
             mul_input[1] = vk_gammaABC[m++];
             mul_input[2] = proof_inputs[i];
@@ -160,42 +135,5 @@ library Verifier
             success := staticcall(sub(gas, 2000), 8, input, 768, out, 0x20)
         }
         return success && out[0] != 0;
-    }
-
-
-    function Verify(
-        VerifyingKey memory vk,
-        ProofWithInput memory pwi
-        )
-        internal
-        view
-        returns (bool)
-    {
-        return Verify(vk, pwi.proof, pwi.input);
-    }
-
-
-    function Verify(
-        VerifyingKey memory vk,
-        Proof memory proof,
-        uint256[] memory input
-        )
-        internal
-        view
-        returns (bool)
-    {
-        require(input.length + 1 == vk.gammaABC.length, "INVALID_VALUE");
-
-        // Compute the linear combination vk_x
-        Pairing.G1Point memory vk_x = vk.gammaABC[0];
-        for (uint i = 0; i < input.length; i++)
-            vk_x = Pairing.pointAdd(vk_x, Pairing.pointMul(vk.gammaABC[i + 1], input[i]));
-
-        // Verify proof
-        return Pairing.pairingProd4(
-            proof.A, proof.B,
-            vk_x.negate(), vk.gamma,
-            proof.C.negate(), vk.delta,
-            vk.alpha.negate(), vk.beta);
     }
 }

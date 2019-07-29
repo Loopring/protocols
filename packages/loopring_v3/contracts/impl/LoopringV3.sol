@@ -107,12 +107,12 @@ contract LoopringV3 is ILoopringV3, Claimable
     }
 
     function updateProtocolFeeSettings(
-        uint8   _minProtocolTakerFeeBips,
-        uint8   _maxProtocolTakerFeeBips,
-        uint8   _minProtocolMakerFeeBips,
-        uint8   _maxProtocolMakerFeeBips,
-        uint    _targetProtocolTakerFeeStake,
-        uint    _targetProtocolMakerFeeStake
+        uint8 _minProtocolTakerFeeBips,
+        uint8 _maxProtocolTakerFeeBips,
+        uint8 _minProtocolMakerFeeBips,
+        uint8 _maxProtocolMakerFeeBips,
+        uint  _targetProtocolTakerFeeStake,
+        uint  _targetProtocolMakerFeeStake
         )
         external
         onlyOwner
@@ -269,9 +269,9 @@ contract LoopringV3 is ILoopringV3, Claimable
     }
 
     function withdrawExchangeStake(
-        uint exchangeId,
+        uint    exchangeId,
         address recipient,
-        uint requestedAmount
+        uint    requestedAmount
         )
         public
         returns (uint amount)
@@ -332,9 +332,9 @@ contract LoopringV3 is ILoopringV3, Claimable
     }
 
     function withdrawProtocolFeeStake(
-        uint exchangeId,
+        uint    exchangeId,
         address recipient,
-        uint amount
+        uint    amount
         )
         external
     {
@@ -363,7 +363,10 @@ contract LoopringV3 is ILoopringV3, Claimable
         )
         external
         view
-        returns (uint8 takerFeeBips, uint8 makerFeeBips)
+        returns (
+            uint8 takerFeeBips,
+            uint8 makerFeeBips
+        )
     {
         Exchange storage exchange = exchanges[exchangeId - 1];
 

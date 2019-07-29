@@ -4,7 +4,7 @@ import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { MetaMaskAccount } from "../lib/wallet/ethereum/walletAccount";
 import { fromMetaMask } from "../lib/wallet/WalletUtils";
-import { exchange } from "../sign/exchange";
+import { exchange } from "..";
 
 export class MetaMask {
   public web3: Web3;
@@ -13,7 +13,7 @@ export class MetaMask {
   public account: MetaMaskAccount;
 
   public constructor() {
-    this.web3 = new Web3("http://localhost:8545"); // TODO: replace for ruby
+    this.web3 = new Web3("http://localhost:8545"); // TODO: config replace for ruby
     this.account = fromMetaMask(this.web3);
     this.address = this.account.getAddress();
     this.ethNode = new Eth("http://localhost:8545"); // TODO: config
@@ -34,18 +34,22 @@ export class MetaMask {
   }
 
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
-    exchange.deposit(symbol, amount, gasPrice).then((rawTx: Transaction) => {
-      this.account.signEthereumTx(rawTx).then(signedTx => {
-        return this.account.sendTransaction(this.ethNode, signedTx);
+    exchange
+      .deposit(this.account, symbol, amount, gasPrice)
+      .then((rawTx: Transaction) => {
+        this.account.signEthereumTx(rawTx).then(signedTx => {
+          return this.account.sendTransaction(this.ethNode, signedTx);
+        });
       });
-    });
   }
 
   public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
-    exchange.withdraw(symbol, amount, gasPrice).then((rawTx: Transaction) => {
-      this.account.signEthereumTx(rawTx).then(signedTx => {
-        return this.account.sendTransaction(this.ethNode, signedTx);
+    exchange
+      .withdraw(this.account, symbol, amount, gasPrice)
+      .then((rawTx: Transaction) => {
+        this.account.signEthereumTx(rawTx).then(signedTx => {
+          return this.account.sendTransaction(this.ethNode, signedTx);
+        });
       });
-    });
   }
 }
