@@ -1,7 +1,7 @@
 // This code is taken from https://github.com/HarryR/ethsnarks/blob/master/contracts/Verifier.sol
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates
 
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 library Verifier
 {

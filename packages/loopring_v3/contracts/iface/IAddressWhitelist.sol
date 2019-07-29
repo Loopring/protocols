@@ -16,17 +16,15 @@
 */
 pragma solidity 0.5.10;
 
-import "../DummyToken.sol";
 
-contract INDA is DummyToken {
-
-    constructor() DummyToken(
-        "INDIVISIBLE_A",
-        "INDA",
-        0,
-        10 ** 27
-    ) public
-    {
-    }
-
+/// @title IAddressWhitelist
+/// @author Daniel Wang  - <daniel@loopring.org>
+contract IAddressWhitelist
+{
+    /// @dev Check if an address is in a whitelist.
+    /// @return Returns true if the address is in the whitelist, false otehrwise.
+    function isWhitelisted(address addr)
+        external
+        view
+        returns (bool);
 }
