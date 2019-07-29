@@ -67,6 +67,18 @@ library ExchangeAdmins
         );
     }
 
+    function setAccountWhitelist(
+        ExchangeData.State storage S,
+        address _accountWhitelist
+        )
+        public
+        returns (address oldAccountWhitelist)
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        oldAccountWhitelist = S.accountWhitelist;
+        S.accountWhitelist = _accountWhitelist;
+    }
+
     function setFees(
         ExchangeData.State storage S,
         uint _accountCreationFeeETH,

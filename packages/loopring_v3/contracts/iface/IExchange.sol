@@ -17,7 +17,7 @@
 pragma solidity 0.5.7;
 
 
-/// @title An Implementation of IExchange.
+/// @title IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange
@@ -923,6 +923,16 @@ contract IExchange
         )
         external
         returns (address payable oldOperator);
+
+    /// @dev Set the account whitelist contract address.
+    /// @param accountWhitelist The new whitelist manager's address.
+    ///        Setting this to '0x0' will disable address checking for account creation/update.
+    /// @return oldAccountWhitelist The old Whitelist manager's address
+    function setAccountWhitelist(
+        address accountWhitelist
+        )
+        external
+        returns (address oldAccountWhitelist);
 
     /// @dev Update fee settings.
     ///      This function is only callable by the exchange owner.

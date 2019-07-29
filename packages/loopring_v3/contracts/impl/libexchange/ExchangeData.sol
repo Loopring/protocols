@@ -200,6 +200,7 @@ library ExchangeData
         IBlockVerifier blockVerifier;
 
         address lrcAddress;
+        address accountWhitelist;
 
         uint    totalTimeInMaintenanceSeconds;
         uint    numDowntimeMinutes;
