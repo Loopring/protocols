@@ -19,8 +19,8 @@ pragma solidity 0.5.7;
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
-import "../iface/IExchange.sol";
 import "../iface/IAddressWhitelist.sol";
+import "../iface/IExchange.sol";
 
 import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
