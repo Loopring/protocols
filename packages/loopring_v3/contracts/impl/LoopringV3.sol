@@ -47,7 +47,7 @@ contract LoopringV3 is ILoopringV3, Claimable
 
     BlockType[] blockTypes;
     mapping (uint8 => BlockType) blockTypeIdMap;
-    mapping (address => uint8)   blockProcessorMap;
+    mapping (address => uint8) blockProcessorMap;
 
     function registerBlockType(
         address blockProcessor
@@ -83,7 +83,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         returns (address)
     {
         BlockType storage blockType = blockTypeIdMap[blockTypeId];
-        require(blockType.enabled, "BLOCK_TYPE_DISABLED");
+        require(blockType.enabled, "INVALID_BLOCK_TYPE_ID");
         return blockType.blockProcessor;
     }
 

@@ -449,12 +449,12 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         private
     {
-        address _addr = state.loopring.getBlockProcessor(blockType);
+        address _processor = state.loopring.getBlockProcessor(blockType);
 
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize)
-            let result := delegatecall(gas, _addr, ptr, calldatasize, 0, 0)
+            let result := delegatecall(gas, _processor, ptr, calldatasize, 0, 0)
             let size := returndatasize
             returndatacopy(ptr, 0, size)
 
