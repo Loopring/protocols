@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 
 /// @title ERC20 safe transfer
@@ -26,7 +26,7 @@ library ERC20SafeTransfer
     function safeTransfer(
         address token,
         address to,
-        uint256 value
+        uint    value
         )
         internal
         returns (bool)
@@ -42,8 +42,8 @@ library ERC20SafeTransfer
     function safeTransferWithGasLimit(
         address token,
         address to,
-        uint256 value,
-        uint gasLimit
+        uint    value,
+        uint    gasLimit
         )
         internal
         returns (bool)
@@ -52,7 +52,7 @@ library ERC20SafeTransfer
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)
 
-        // bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb
+        // bytes4(keccak256("transfer(address,uint)")) = 0xa9059cbb
         bytes memory callData = abi.encodeWithSelector(
             bytes4(0xa9059cbb),
             to,
@@ -66,7 +66,7 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint256 value
+        uint    value
         )
         internal
         returns (bool)
@@ -84,8 +84,8 @@ library ERC20SafeTransfer
         address token,
         address from,
         address to,
-        uint256 value,
-        uint gasLimit
+        uint    value,
+        uint    gasLimit
         )
         internal
         returns (bool)
@@ -94,7 +94,7 @@ library ERC20SafeTransfer
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)
 
-        // bytes4(keccak256("transferFrom(address,address,uint256)")) = 0x23b872dd
+        // bytes4(keccak256("transferFrom(address,address,uint)")) = 0x23b872dd
         bytes memory callData = abi.encodeWithSelector(
             bytes4(0x23b872dd),
             from,

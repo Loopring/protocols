@@ -330,33 +330,21 @@ contract("Exchange", (accounts: string[]) => {
         "INSUFFICIENT_FEE",
       );
 
+      // Invalid public key
+      await expectThrow(
+        exchange.createOrUpdateAccount(constants.scalarField, keyPair.publicKeyY,
+          {from: owner, value: totalFee}),
+        "INVALID_PUBKEY",
+      );
+      await expectThrow(
+        exchange.createOrUpdateAccount(keyPair.publicKeyY, constants.scalarField,
+          {from: owner, value: totalFee}),
+        "INVALID_PUBKEY",
+      );
+
       // Everything correct
       const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalFee, true);
       assert(accountID > 0);
-    });
-
-    it("Update account", async () => {
-      await createExchange();
-
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const owner = exchangeTestUtil.testContext.orderOwners[0];
-
-      // The correct deposit fee expected by the contract
-      const fees = await exchange.getFees();
-      const accountCreationFee = fees._accountCreationFeeETH;
-      const accountUpdateFee = fees._accountUpdateFeeETH;
-      const depositFee = fees._depositFeeETH;
-
-      // Everything correct for account creation
-      const totalCreationFee = depositFee.add(accountCreationFee);
-      const accountID = await createOrUpdateAccountChecked(keyPair, owner, totalCreationFee, true);
-      assert(accountID > 0);
-
-      // Update the keys
-      const totalUpdateFee = depositFee.add(accountUpdateFee);
-      const newKeyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const newAccountID = await createOrUpdateAccountChecked(newKeyPair, owner, totalUpdateFee, false);
-      assert(newAccountID === accountID, "Account ID needs to remain the same");
     });
 
     it("Update account", async () => {

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 
 /// @title ILoopringV3
@@ -216,9 +216,9 @@ contract ILoopringV3
     /// @param  requestedAmount The amount of LRC to withdraw
     /// @return stakedLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
-        uint exchangeId,
+        uint    exchangeId,
         address recipient,
-        uint requestedAmount
+        uint    requestedAmount
         )
         public
         returns (uint amount);
@@ -240,9 +240,9 @@ contract ILoopringV3
     /// @param  recipient The address to receive LRC
     /// @param  amount The amount of LRC to withdraw
     function withdrawProtocolFeeStake(
-        uint exchangeId,
+        uint    exchangeId,
         address recipient,
-        uint amount
+        uint    amount
         )
         external;
 
@@ -258,7 +258,10 @@ contract ILoopringV3
         )
         external
         view
-        returns (uint8 takerFeeBips, uint8 makerFeeBips);
+        returns (
+            uint8 takerFeeBips,
+            uint8 makerFeeBips
+        );
 
     /// @dev Allow ETH to be sent directly to this contract (to collect the protocol fees)
     function()

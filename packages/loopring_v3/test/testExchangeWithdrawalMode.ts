@@ -385,7 +385,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Try to verify a block
       await expectThrow(
-        exchange.verifyBlock(1, [0, 0, 0, 0, 0, 0, 0, 0],
+        exchange.verifyBlocks([1], [0, 0, 0, 0, 0, 0, 0, 0],
         {from: exchangeTestUtil.exchangeOperator}),
         "INVALID_MODE",
       );

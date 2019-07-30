@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 
 /// @title Utility Functions for bytes
@@ -23,7 +23,7 @@ library BytesUtil
 {
     function bytesToBytes32(
         bytes memory b,
-        uint offset
+        uint  offset
         )
         internal
         pure
@@ -34,7 +34,7 @@ library BytesUtil
 
     function bytesToUint(
         bytes memory b,
-        uint offset
+        uint  offset
         )
         internal
         pure
@@ -45,7 +45,7 @@ library BytesUtil
 
     function bytesToAddress(
         bytes memory b,
-        uint offset
+        uint  offset
         )
         internal
         pure
@@ -56,7 +56,7 @@ library BytesUtil
 
     function bytesToUint16(
         bytes memory b,
-        uint offset
+        uint  offset
         )
         internal
         pure
@@ -67,8 +67,8 @@ library BytesUtil
 
     function bytesToUintX(
         bytes memory b,
-        uint offset,
-        uint numBytes
+        uint  offset,
+        uint  numBytes
         )
         private
         pure
@@ -82,7 +82,7 @@ library BytesUtil
 
     function subBytes(
         bytes memory b,
-        uint offset
+        uint  offset
         )
         internal
         pure

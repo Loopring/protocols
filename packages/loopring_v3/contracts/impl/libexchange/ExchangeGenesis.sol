@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "../../lib/MathUint.sol";
 
@@ -86,8 +86,8 @@ library ExchangeGenesis
         // for padding deposits and on-chain withdrawal requests.
         ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
             address(0),
-            uint256(0),
-            uint256(0)
+            uint(0),
+            uint(0)
         );
 
         S.accounts.push(protocolFeePoolAccount);

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "../lib/Poseidon.sol";
 
@@ -22,15 +22,15 @@ import "../lib/Poseidon.sol";
 contract PoseidonContract {
 
     function hash_t5f6p52(
-        uint256 t0,
-        uint256 t1,
-        uint256 t2,
-        uint256 t3,
-        uint256 t4
+        uint t0,
+        uint t1,
+        uint t2,
+        uint t3,
+        uint t4
         )
         external
         pure
-        returns (uint256)
+        returns (uint)
     {
         return Poseidon.hash_t5f6p52(t0, t1, t2, t3, t4);
     }

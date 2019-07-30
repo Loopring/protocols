@@ -14,26 +14,30 @@ module.exports = {
           runs: 100
         }
       },
-      version: "0.5.7"
+      version: "0.5.10"
     }
   },
   networks: {
     live: {
       host: "localhost",
       port: 8546,
-      network_id: '1', // main-net
+      network_id: "1", // main-net
       gasPrice: 5000000000
     },
     testnet: {
       host: "localhost",
       port: 8545,
-      network_id: '2', // main-net
+      network_id: "2", // main-net
       gasPrice: 21000000000
     },
     ropsten: {
       network_id: 3,
       provider: function() {
-        var provider = new HDWalletProvider(mnemonic, "https://ropsten.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
+        var provider = new HDWalletProvider(
+          mnemonic,
+          "https://ropsten.infura.io/hM4sFGiBdqbnGTxk5YT2",
+          1
+        );
         // console.log("addresses:", provider.getAddresses());
         // my address: 0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa
         return provider;
@@ -43,7 +47,11 @@ module.exports = {
     rinkeby: {
       network_id: 4,
       provider: function() {
-        return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
+        return new HDWalletProvider(
+          mnemonic,
+          "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2",
+          1
+        );
       },
       gasPrice: 1000000000,
       gas: 6700000
@@ -51,7 +59,7 @@ module.exports = {
     priv: {
       host: "localhost",
       port: 8545,
-      network_id: '50', // main-net
+      network_id: "50", // main-net
       gasPrice: 5000000000,
       gas: 4500000
     },
@@ -65,9 +73,9 @@ module.exports = {
     coverage: {
       host: "localhost",
       network_id: "*",
-      port: 8555,         // <-- If you change this, also set the port option in .solcover.js.
+      port: 8555, // <-- If you change this, also set the port option in .solcover.js.
       gas: 0xfffffffffff, // <-- Use this high gas value
-      gasPrice: 0x01      // <-- Use this low gas price
+      gasPrice: 0x01 // <-- Use this low gas price
     },
     docker: {
       host: "ganache",
@@ -77,6 +85,6 @@ module.exports = {
       gas: 6700000
     }
   },
-  test_directory: 'transpiled/test',
-  migrations_directory: 'transpiled/migrations',
+  test_directory: "transpiled/test",
+  migrations_directory: "transpiled/migrations"
 };

@@ -4,7 +4,6 @@ transpiled/
 .DS_Store
 .node-*
 *.log
-package-lock.json
 ganache_account_keys.txt
 deployedAddresses.json
 yarn.lock
