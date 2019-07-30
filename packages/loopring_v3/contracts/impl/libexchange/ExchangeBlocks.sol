@@ -18,7 +18,9 @@ pragma solidity 0.5.10;
 
 import "../../lib/BytesUtil.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/ProofVerification.sol";
 
+import "../../iface/IBlockProcessor.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/IDecompressor.sol";
 
@@ -139,11 +141,13 @@ library ExchangeBlocks
 
         // Verify the proofs
         require(
-            S.blockVerifier.verifyProofs(
-                uint8(blockType),
-                S.onchainDataAvailability,
-                blockSize,
-                blockVersion,
+            ProofVerification.verifyProofs(
+                IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)))
+                    .getVerificationKey(
+                        S.onchainDataAvailability,
+                        blockSize,
+                        blockVersion
+                    ),
                 publicInputs,
                 proofs
             ),
@@ -231,16 +235,22 @@ library ExchangeBlocks
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
-        // Check if the block is supported
-        require(
-            S.blockVerifier.isCircuitEnabled(
-                uint8(blockType),
-                S.onchainDataAvailability,
-                blockSize,
-                blockVersion
-            ),
-            "CANNOT_VERIFY_BLOCK"
-        );
+        // IBlockProcessor processor = IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)));
+        // uint[18] memory vk = processor.getVerificationKey(
+        //     S.onchainDataAvailability,
+        //     blockSize,
+        //     blockVersion
+        // );
+        // // Check if the block is supported
+        // require(
+        //     S.blockVerifier.isCircuitEnabled(
+        //         uint8(blockType),
+        //         S.onchainDataAvailability,
+        //         blockSize,
+        //         blockVersion
+        //     ),
+        //     "CANNOT_VERIFY_BLOCK"
+        // );
 
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;

@@ -28,9 +28,9 @@ library ExchangeData
     // -- Enums --
     enum BlockType
     {
-        RING_SETTLEMENT,
         DEPOSIT,
         ONCHAIN_WITHDRAWAL,
+        RING_SETTLEMENT,
         OFFCHAIN_WITHDRAWAL,
         ORDER_CANCELLATION,
         TRANSFER

@@ -40,7 +40,8 @@ contract IBlockProcessor
         uint8  version
         )
         external
-        view;
+        view
+        returns (uint[18] memory);
 }
 
 

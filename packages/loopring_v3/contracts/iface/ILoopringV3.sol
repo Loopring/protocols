@@ -98,6 +98,28 @@ contract ILoopringV3
     address payable public protocolFeeVault;
 
     // == Public Functions ==
+
+
+
+    function registerBlockType(
+        address blockProcessor
+        )
+        external;
+
+    function toggleBlockType(
+        uint8 blockTypeId
+        )
+        external;
+
+    function getBlockProcessor(
+        uint8 blockTypeId
+        )
+        external
+        view
+        returns (address);
+
+
+
     /// @dev Update the global exchange settings.
     ///      This function can only be called by the owner of this contract.
     ///
