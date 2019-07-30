@@ -24,8 +24,8 @@ pragma solidity 0.5.7;
 /// and Ether to sell them for LRC by other means such as using a centralized
 /// exchange. This option will be disabled once Oedax is production ready.
 /// For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
-/// to reward LRC stakers; 15% of them can be withdrawn to the Loopring DAO,
-/// and the remaining 15% can be burned to reduce LRC's total supply.
+/// to reward LRC stakers; 20% of them can be withdrawn to the Loopring DAO,
+/// and the remaining 10% can be burned to reduce LRC's total supply.
 contract IProtocolFeeVault
 {
     uint public constant REWARD_PERCENTAGE      = 70;
