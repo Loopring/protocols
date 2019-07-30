@@ -38,7 +38,7 @@ contract TradeSettlementBlock is BaseBlockProcessor
         uint8 previousMakerFeeBips
     );
 
-    function commitBlock(
+    function processBlock(
         uint8   blockType,
         uint16  blockSize,
         uint8   blockVersion,

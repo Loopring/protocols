@@ -28,7 +28,7 @@ contract DepositBlock is BaseBlockProcessor
 {
     bool public supportOnChainDataAvailability = false;
 
-    function commitBlock(
+    function processBlock(
         uint8   blockType,
         uint16  blockSize,
         uint8   blockVersion,

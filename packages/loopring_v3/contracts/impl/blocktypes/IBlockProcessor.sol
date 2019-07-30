@@ -27,7 +27,7 @@ contract IBlockProcessor
     address public owner;
 
     // This method should be called using DELEGATECALL from inside an IExchange contract.
-    function commitBlock(
+    function processBlock(
         uint8   blockType,
         uint16  blockSize,
         uint8   blockVersion,

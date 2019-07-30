@@ -429,7 +429,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         }
         bytes32 publicDataHash = state.preCommit(blockType, decompressed, offchainData);
 
-        commitBlock(
+        processBlock(
             blockType,
             blockSize,
             blockVersion,
@@ -440,7 +440,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         emit BlockCommitted(state.blocks.length - 1, publicDataHash);
     }
 
-    function commitBlock(
+    function processBlock(
         uint8 blockType,
         uint16  /* blockSize */,
         uint8   /* blockVersion */,
