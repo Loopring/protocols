@@ -427,7 +427,45 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
               revert(0, 0)
           }
         }
-        state.commitBlock(blockType, blockSize, blockVersion, decompressed, offchainData);
+        bytes32 publicDataHash = state.preCommitBlock(
+            blockType,
+            blockSize,
+            blockVersion,
+            decompressed,
+            offchainData
+        );
+
+        commitBlock(
+            blockType,
+            blockSize,
+            blockVersion,
+            publicDataHash,
+            decompressed
+        );
+    }
+
+    function commitBlock(
+        uint8   blockType,
+        uint16  blockSize,
+        uint8   blockVersion,
+        bytes32 publicDataHash,
+        bytes   memory data
+        )
+        internal
+    {
+        address blockProcessor = state.loopring.getBlockProcessor(blockType);
+
+        assembly {
+            let ptr := mload(0x40)
+            calldatacopy(ptr, 0, calldatasize)
+            let result := delegatecall(gas, blockProcessor, ptr, calldatasize, 0, 0)
+            let size := returndatasize
+            returndatacopy(ptr, 0, size)
+
+            switch result
+            case 0 { revert(ptr, size) }
+            default { return(ptr, size) }
+        }
     }
 
     function verifyBlocks(

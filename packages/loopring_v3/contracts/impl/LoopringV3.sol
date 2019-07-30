@@ -16,7 +16,6 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IBlockProcessor.sol";
 import "../iface/ILoopringV3.sol";
 import "../iface/IExchange.sol";
 
@@ -24,6 +23,8 @@ import "../lib/BurnableERC20.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+
+import "./blocks/IBlockProcessor.sol";
 
 import "./ExchangeDeployer.sol";
 

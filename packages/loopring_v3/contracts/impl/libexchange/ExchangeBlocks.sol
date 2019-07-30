@@ -20,9 +20,10 @@ import "../../lib/BytesUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ProofVerification.sol";
 
-import "../../iface/IBlockProcessor.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/IDecompressor.sol";
+
+import "../blocks/IBlockProcessor.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -62,7 +63,7 @@ library ExchangeBlocks
         uint8 previousMakerFeeBips
     );
 
-    function commitBlock(
+    function preCommitBlock(
         ExchangeData.State storage S,
         uint8  blockType,
         uint16 blockSize,
@@ -70,9 +71,10 @@ library ExchangeBlocks
         bytes  memory data,
         bytes  memory /*offchainData*/
         )
-        internal  // inline call
+        internal // inline call
+        returns (bytes32 publicDataHash)
     {
-        commitBlockInternal(
+        return preCommitBlockInternal(
             S,
             blockType,
             blockSize,
@@ -209,7 +211,7 @@ library ExchangeBlocks
     }
 
     // == Internal Functions ==
-    function commitBlockInternal(
+    function preCommitBlockInternal(
         ExchangeData.State storage S,
         uint8  blockType,
         uint16 blockSize,
@@ -220,6 +222,7 @@ library ExchangeBlocks
                             // in this block. This is fine because 0-bytes consume fewer gas.
         )
         private
+        returns (bytes32 publicDataHash)
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -274,24 +277,25 @@ library ExchangeBlocks
         }
 
         // Hash all the public data to a single value which is used as the input for the circuit
-        bytes32 publicDataHash = data.fastSHA256();
+        publicDataHash = data.fastSHA256();
+        emit BlockCommitted(S.blocks.length, publicDataHash);
 
         // TODO(daniel): use DELEGATECALl instead
-        bytes memory withdrawals;
+        // bytes memory withdrawals;
 
-        (
-            numDepositRequestsCommitted,
-            numWithdrawalRequestsCommitted,
-            withdrawals
-        ) = IBlockProcessor(S.loopring.getBlockProcessor(blockType))
-            .processBlock(
-                S.onchainDataAvailability,
-                blockSize,
-                blockVersion,
-                data,
-                numDepositRequestsCommitted,
-                numWithdrawalRequestsCommitted
-            );
+        // (
+        //     numDepositRequestsCommitted,
+        //     numWithdrawalRequestsCommitted,
+        //     withdrawals
+        // ) = IBlockProcessor(S.loopring.getBlockProcessor(blockType))
+        //     .processBlock(
+        //         S.onchainDataAvailability,
+        //         blockSize,
+        //         blockVersion,
+        //         data,
+        //         numDepositRequestsCommitted,
+        //         numWithdrawalRequestsCommitted
+        //     );
 
         // if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
         //     require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
@@ -408,25 +412,25 @@ library ExchangeBlocks
         //     }
         // }
 
+
+
         // Create a new block with the updated merkle roots
-        ExchangeData.Block memory newBlock = ExchangeData.Block(
-            merkleRootAfter,
-            publicDataHash,
-            ExchangeData.BlockState.COMMITTED,
-            blockType,
-            blockSize,
-            blockVersion,
-            uint32(now),
-            numDepositRequestsCommitted,
-            numWithdrawalRequestsCommitted,
-            false,
-            0,
-            withdrawals
-        );
+        // ExchangeData.Block memory newBlock = ExchangeData.Block(
+        //     merkleRootAfter,
+        //     publicDataHash,
+        //     ExchangeData.BlockState.COMMITTED,
+        //     blockType,
+        //     blockSize,
+        //     blockVersion,
+        //     uint32(now),
+        //     numDepositRequestsCommitted,
+        //     numWithdrawalRequestsCommitted,
+        //     false,
+        //     0,
+        //     withdrawals
+        // );
 
-        S.blocks.push(newBlock);
-
-        emit BlockCommitted(S.blocks.length - 1, publicDataHash);
+        // S.blocks.push(newBlock);
     }
 
     function validateAndUpdateProtocolFeeValues(
