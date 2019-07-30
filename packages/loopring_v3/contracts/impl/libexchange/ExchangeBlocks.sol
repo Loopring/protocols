@@ -39,11 +39,6 @@ library ExchangeBlocks
     using ExchangeMode      for ExchangeData.State;
     using ProofVerification for uint[18];
 
-    event BlockCommitted(
-        uint    indexed blockIdx,
-        bytes32 indexed publicDataHash
-    );
-
     event BlockFinalized(
         uint    indexed blockIdx
     );
@@ -260,8 +255,7 @@ library ExchangeBlocks
         }
 
         // Hash all the public data to a single value which is used as the input for the circuit
-        publicDataHash = data.fastSHA256();
-        emit BlockCommitted(S.blocks.length, publicDataHash);
+        return data.fastSHA256();
     }
 
     function isDepositRequestForced(
