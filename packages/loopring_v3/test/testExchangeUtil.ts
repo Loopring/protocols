@@ -69,6 +69,9 @@ export class ExchangeTestUtil {
   public operator: any;
   public activeOperator: number;
 
+  public userstakingpool: any;
+  public protocolfeevault: any;
+
   public ringMatcherAccountID: number[] = [];
 
   public accounts: Account[][] = [];
@@ -2102,6 +2105,11 @@ export class ExchangeTestUtil {
     await Token.approve(contractAddress, amount, {from: owner});
   }
 
+  public async transferBalance(to: string, token: string, amount: BN) {
+    const Token = await this.getTokenContract(token);
+    await Token.transfer(to, amount, { from: this.testContext.deployer });
+  }
+
   public evmIncreaseTime(seconds: number) {
     return new Promise((resolve, reject) => {
       web3.currentProvider.send({
@@ -2644,6 +2652,14 @@ export class ExchangeTestUtil {
         this.contracts.LRCToken.deployed(),
         this.contracts.WETHToken.deployed(),
       ]);
+
+    const [userstakingpool, protocolfeevault] = await Promise.all([
+      this.contracts.UserStakingPool.deployed(),
+      this.contracts.ProtocolFeeVault.deployed()
+    ]);
+
+    this.userstakingpool = userstakingpool;
+    this.protocolfeevault = protocolfeevault;
 
     this.lzDecompressor = await this.contracts.LzDecompressor.new();
 
