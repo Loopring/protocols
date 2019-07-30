@@ -104,7 +104,8 @@ contract ILoopringV3
     function registerBlockType(
         address blockProcessor
         )
-        external;
+        external
+        returns (uint8);
 
     function toggleBlockType(
         uint8 blockTypeId

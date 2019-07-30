@@ -45,7 +45,6 @@ contract IBlockProcessor
         external
         view
         returns (uint[18] memory);
-
 }
 
 

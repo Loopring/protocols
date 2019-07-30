@@ -54,14 +54,10 @@ contract LoopringV3 is ILoopringV3, Claimable
         )
         external
         onlyOwner
+        returns (uint8 blockTypeId)
     {
-        require(blockProcessor != address(0), "ZERO_ADDRESS");
-        require(blockProcessorMap[blockProcessor] == 0, "ALREADY_REGISTERED");
-        require(IBlockProcessor(blockProcessor).owner() == owner, "INVALID_OWNER");
-
-        uint8 blockTypeId = uint8(blockTypes.length + 1);
-        blockProcessorMap[blockProcessor] = blockTypeId;
-        blockTypeIdMap[blockTypeId] = BlockType(blockTypeId, blockProcessor, true);
+        blockTypeId = registerBlockTypeInternal(blockProcessor);
+        require(blockTypeId > 2, "INVALID_BLOCK_TYPE_ID");
     }
 
     function toggleBlockType(
@@ -70,6 +66,8 @@ contract LoopringV3 is ILoopringV3, Claimable
         external
         onlyOwner
     {
+        require(blockTypeId > 2, "INVALID_BLOCK_TYPE_ID");
+
         BlockType storage blockType = blockTypeIdMap[blockTypeId];
         require(blockType.blockProcessor != address(0), "INVALID_BLOCK_TYPE_ID");
 
@@ -103,7 +101,9 @@ contract LoopringV3 is ILoopringV3, Claimable
         uint    _minExchangeStakeWithDataAvailability,
         uint    _minExchangeStakeWithoutDataAvailability,
         uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _withdrawalFineLRC,
+        address _depositBlockProcessor,
+        address _onChainWithdrawalBlockProcessor
         )
         public
     {
@@ -114,6 +114,10 @@ contract LoopringV3 is ILoopringV3, Claimable
         protocolFeeVault = _protocolFeeVault;
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
+
+        // We always assume 1 and 2 are for onchain deposit and withdrawals, respectively.
+        require(1 == registerBlockTypeInternal(_depositBlockProcessor));
+        require(2 == registerBlockTypeInternal(_onChainWithdrawalBlockProcessor));
 
         updateSettingsInternal(
             _blockVerifierAddress,
@@ -449,6 +453,22 @@ contract LoopringV3 is ILoopringV3, Claimable
     {}
 
     // == Internal Functions ==
+    function registerBlockTypeInternal(
+        address blockProcessor
+        )
+        private
+        returns (uint8 blockTypeId)
+    {
+        require(blockTypes.length < 255, "TOO_MANY_BLOCK_TYPES");
+        require(blockProcessor != address(0), "ZERO_ADDRESS");
+        require(blockProcessorMap[blockProcessor] == 0, "ALREADY_REGISTERED");
+        require(IBlockProcessor(blockProcessor).owner() == owner, "INVALID_OWNER");
+
+        blockTypeId = uint8(blockTypes.length + 1);
+        blockProcessorMap[blockProcessor] = blockTypeId;
+        blockTypeIdMap[blockTypeId] = BlockType(blockTypeId, blockProcessor, true);
+    }
+
     function updateSettingsInternal(
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
