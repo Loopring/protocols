@@ -21,6 +21,7 @@ import "../../lib/MathUint.sol";
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/IDecompressor.sol";
+import "../../iface/IBlockProcessor.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -210,12 +211,50 @@ library ExchangeBlocks
     }
 
     // == Internal Functions ==
+
+    function validateAndUpdateProtocolFeeValues(
+        ExchangeData.State storage S,
+        uint8 takerFeeBips,
+        uint8 makerFeeBips
+        )
+        private
+        returns (bool)
+    {
+        ExchangeData.ProtocolFeeData storage data = S.protocolFeeData;
+        if (now > data.timestamp + ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()) {
+            // Store the current protocol fees in the previous protocol fees
+            data.previousTakerFeeBips = data.takerFeeBips;
+            data.previousMakerFeeBips = data.makerFeeBips;
+            // Get the latest protocol fees for this exchange
+            (data.takerFeeBips, data.makerFeeBips) = S.loopring.getProtocolFeeValues(
+                S.id,
+                S.onchainDataAvailability
+            );
+            data.timestamp = uint32(now);
+
+            bool feeUpdated = (data.takerFeeBips != data.previousTakerFeeBips) ||
+                (data.makerFeeBips != data.previousMakerFeeBips);
+
+            if (feeUpdated) {
+                emit ProtocolFeesUpdated(
+                    data.takerFeeBips,
+                    data.makerFeeBips,
+                    data.previousTakerFeeBips,
+                    data.previousMakerFeeBips
+                );
+            }
+        }
+        // The given fee values are valid if they are the current or previous protocol fee values
+        return (takerFeeBips == data.takerFeeBips && makerFeeBips == data.makerFeeBips) ||
+            (takerFeeBips == data.previousTakerFeeBips && makerFeeBips == data.previousMakerFeeBips);
+    }
+
     function commitBlockInternal(
         ExchangeData.State storage S,
         ExchangeData.BlockType blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes  memory data   // This field already has all the dummy (0-valued) requests padded,
+        bytes  memory data, // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed
                             // in this block. This is fine because 0-bytes consume fewer gas.
@@ -422,7 +461,7 @@ library ExchangeBlocks
             new bytes(0)
         );
 
-        (bool success, ) = processor.delegatecall(data);
+        IBlockProcessor(processor).processBlock(blockSize, blockVersion, data);
 
         S.blocks.push(newBlock);
 

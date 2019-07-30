@@ -16,16 +16,15 @@
 */
 pragma solidity 0.5.7;
 
-import "../libexchange/ExchangeData.sol";
+import "../../iface/IBlockProcessor.sol";
 
 /// @title IBlockProcessor
 /// @author Freeman Zhong - <kongliang@loopring.org>
-contract DepositProcessor
+contract DepositProcessor is IBlockProcessor
 {
     function processBlock(
-        ExchangeData.State calldata S,
-        ExchangeData.Block calldata newBlock,
-        uint16  blockSize,
+        uint16 blockSize,
+        uint8  blockVersion,
         bytes calldata data
         )
         external

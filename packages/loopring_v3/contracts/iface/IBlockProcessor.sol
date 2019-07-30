@@ -16,14 +16,14 @@
 */
 pragma solidity 0.5.7;
 
-import "../impl/libexchange/ExchangeData.sol";
-
 /// @title IBlockProcessor
 /// @author Freeman Zhong - <kongliang@loopring.org>
 contract IBlockProcessor
 {
     /// @dev process specified block identified by blockType
     function processBlock(
+        uint16 blockSize,
+        uint8  blockVersion,
         bytes calldata data
         )
         external;
