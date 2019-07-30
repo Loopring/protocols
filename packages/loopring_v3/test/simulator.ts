@@ -477,22 +477,6 @@ export class Simulator {
       amount: new BN(0),
       subPayments: [],
     };
-    const payProtocolFeeA: DetailedTokenTransfer = {
-      description: "ProtocolFeeA",
-      token: ring.orderA.tokenIdB,
-      from: operatorAccountID,
-      to: 0,
-      amount: s.protocolFeeA,
-      subPayments: [],
-    };
-    const payProtocolFeeB: DetailedTokenTransfer = {
-      description: "ProtocolFeeB",
-      token: ring.orderB.tokenIdB,
-      from: operatorAccountID,
-      to: 0,
-      amount: s.protocolFeeB,
-      subPayments: [],
-    };
     const payRebateA: DetailedTokenTransfer = {
       description: "RebateA",
       token: ring.orderA.tokenIdB,
@@ -509,10 +493,26 @@ export class Simulator {
       amount: s.rebateB,
       subPayments: [],
     };
-    ringMatcherPayments.subPayments.push(payProtocolFeeA);
-    ringMatcherPayments.subPayments.push(payProtocolFeeB);
+    const payProtocolFeeA: DetailedTokenTransfer = {
+      description: "ProtocolFeeA",
+      token: ring.orderA.tokenIdB,
+      from: operatorAccountID,
+      to: 0,
+      amount: s.protocolFeeA,
+      subPayments: [],
+    };
+    const payProtocolFeeB: DetailedTokenTransfer = {
+      description: "ProtocolFeeB",
+      token: ring.orderB.tokenIdB,
+      from: operatorAccountID,
+      to: 0,
+      amount: s.protocolFeeB,
+      subPayments: [],
+    };
     ringMatcherPayments.subPayments.push(payRebateA);
     ringMatcherPayments.subPayments.push(payRebateB);
+    ringMatcherPayments.subPayments.push(payProtocolFeeA);
+    ringMatcherPayments.subPayments.push(payProtocolFeeB);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
     detailedTransfers.push(...detailedTransfersA);

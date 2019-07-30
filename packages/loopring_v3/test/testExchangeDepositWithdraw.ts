@@ -803,7 +803,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderA.tokenB, ring.orderA.amountB,

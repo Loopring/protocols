@@ -224,7 +224,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Change the account's public key
       await exchangeTestUtil.deposit(exchangeId, ring.orderB.owner,
-                                     "0", "0", "0",
+                                     "0", "1", "0",
                                      constants.zeroAddress, new BN(0));
       await exchangeTestUtil.commitDeposits(exchangeId);
 
