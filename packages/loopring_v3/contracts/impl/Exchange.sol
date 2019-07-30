@@ -427,15 +427,9 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
               revert(0, 0)
           }
         }
-        bytes32 publicDataHash = state.preCommit(blockType, decompressed, offchainData);
 
-        processBlock(
-            blockType,
-            blockSize,
-            blockVersion,
-            publicDataHash,
-            decompressed
-        );
+        bytes32 publicDataHash = state.preCommit(blockType, decompressed, offchainData);
+        processBlock(blockType, blockSize, blockVersion, publicDataHash, decompressed);
 
         emit BlockCommitted(state.blocks.length - 1, publicDataHash);
     }
