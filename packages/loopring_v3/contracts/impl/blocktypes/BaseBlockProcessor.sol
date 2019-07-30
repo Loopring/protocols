@@ -28,7 +28,7 @@ contract BaseBlockProcessor is IBlockProcessor, Claimable
     bool public supportOnChainDataAvailability;
     ExchangeData.State internal state;
 
-    // TODO(daniel): added management
+    // TODO(daniel): added management Circuit code
 
     struct Circuit
     {
