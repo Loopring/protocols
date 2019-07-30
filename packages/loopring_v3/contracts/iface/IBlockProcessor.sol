@@ -36,9 +36,9 @@ contract IBlockProcessor
         returns (bytes memory withdrawals);
 
     function getVerificationKey(
-        bool   onChainDataAvailability,
         uint16 size,
-        uint8  version
+        uint8  version,
+        bool   onChainDataAvailability
         )
         external
         view

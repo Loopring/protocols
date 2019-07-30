@@ -143,9 +143,9 @@ library ExchangeBlocks
         // Fetch the verification key then verify the proofs
         IBlockProcessor processor = IBlockProcessor(S.loopring.getBlockProcessor(blockType));
         uint[18] memory vk = processor.getVerificationKey(
-            S.onchainDataAvailability,
             blockSize,
-            blockVersion
+            blockVersion,
+            S.onchainDataAvailability
         );
         require(vk.verifyProofs(publicInputs, proofs), "INVALID_PROOF");
 
@@ -229,23 +229,6 @@ library ExchangeBlocks
             S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
-
-        // IBlockProcessor processor = IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)));
-        // uint[18] memory vk = processor.getVerificationKey(
-        //     S.onchainDataAvailability,
-        //     blockSize,
-        //     blockVersion
-        // );
-        // // Check if the block is supported
-        // require(
-        //     S.blockVerifier.isCircuitEnabled(
-        //         uint8(blockType),
-        //         S.onchainDataAvailability,
-        //         blockSize,
-        //         blockVersion
-        //     ),
-        //     "CANNOT_VERIFY_BLOCK"
-        // );
 
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
