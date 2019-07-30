@@ -437,7 +437,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             decompressed
         );
 
-        emit BlockCommitted(state.blocks.length + 1, publicDataHash);
+        emit BlockCommitted(state.blocks.length - 1, publicDataHash);
     }
 
     function commitBlock(
