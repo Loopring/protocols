@@ -61,7 +61,7 @@ library ExchangeGenesis
             ExchangeData.GENESIS_MERKLE_ROOT(),
             0x0,
             ExchangeData.BlockState.VERIFIED,
-            ExchangeData.BlockType(0),
+            0,
             0,
             0,
             uint32(now),

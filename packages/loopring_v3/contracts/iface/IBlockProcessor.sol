@@ -32,7 +32,8 @@ contract IBlockProcessor
         uint8  version,
         bytes  calldata data
         )
-        external;
+        external
+        returns (bytes memory withdrawals);
 
     function getVerificationKey(
         bool   onChainDataAvailability,

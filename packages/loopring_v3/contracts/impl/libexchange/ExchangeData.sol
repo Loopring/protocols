@@ -103,7 +103,7 @@ library ExchangeData
 
         // The type of the block (i.e. what kind of requests were processed).
         // See @BlockType for more information.
-        BlockType blockType;
+        uint8 blockType;
 
         // The number of requests processed in the block. Only a limited number of permutations
         // are available for each block type (because each will need a different circuit
