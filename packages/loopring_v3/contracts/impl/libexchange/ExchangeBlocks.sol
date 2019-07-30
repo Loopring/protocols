@@ -100,7 +100,7 @@ library ExchangeBlocks
             if (numDepositRequestsCommitted < S.depositChain.length) {
                 require(blockType == 1 /* DEPOSIT */, "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
             } else {
-                require(blockType == 2 /*ONCHAIN_WITHDRAWAL*/, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
+                require(blockType == 2 /* ONCHAIN_WITHDRAWAL */, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
             }
         }
 
@@ -108,7 +108,7 @@ library ExchangeBlocks
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
         if (isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
-            require(blockType == 2 /*ONCHAIN_WITHDRAWAL */, "WITHDRAWAL_BLOCK_FORCED");
+            require(blockType == 2 /* ONCHAIN_WITHDRAWAL */, "WITHDRAWAL_BLOCK_FORCED");
         } else if (isDepositRequestForced(S, numDepositRequestsCommitted)) {
             require(blockType == 1 /* DEPOSIT */, "DEPOSIT_BLOCK_FORCED");
         }
