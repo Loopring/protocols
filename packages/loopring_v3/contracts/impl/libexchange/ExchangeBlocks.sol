@@ -139,20 +139,15 @@ library ExchangeBlocks
             }
         }
 
-        // Verify the proofs
-        require(
-            ProofVerification.verifyProofs(
-                IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)))
-                    .getVerificationKey(
-                        S.onchainDataAvailability,
-                        blockSize,
-                        blockVersion
-                    ),
-                publicInputs,
-                proofs
-            ),
-            "INVALID_PROOF"
-        );
+        // Fetch the verification key then verify the proofs
+        uint[18] memory vk = IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)))
+            .getVerificationKey(
+                S.onchainDataAvailability,
+                blockSize,
+                blockVersion
+            );
+
+        require(ProofVerification.verifyProofs(vk, publicInputs, proofs), "INVALID_PROOF");
 
         // Mark the blocks as verified
         for (uint i = 0; i < blockIndices.length; i++) {
