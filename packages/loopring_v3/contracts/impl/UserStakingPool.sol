@@ -168,6 +168,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         returns (uint claimedAmount)
     {
         require(userClaimWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
+        require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
 
         uint totalPoints;
         uint userPoints;
