@@ -468,20 +468,16 @@ contract IExchange
     ///        For OFFCHAIN_WITHDRAWALAL blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every withdrawal:
-    ///                - Wallet account ID: 3 bytes
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
-    ///                - WalletSplitPercentage: 1 byte
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every cancel:
     ///                - Account ID: 2,5 bytes
-    ///                - Wallet Account ID: 2,5 bytes
+    ///                - Order ID: 2,5 bytes
     ///                - Token ID: 1 bytes
-    ///                - Order ID: 3 bytes
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
-    ///                - WalletSplitPercentage: 1 byte
     ///
     ///        The RING_SETTLEMENT data availability data is further transformed
     ///        to make it more compressible:

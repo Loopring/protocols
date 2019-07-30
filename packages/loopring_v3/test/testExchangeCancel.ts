@@ -106,48 +106,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
-    it("Cancel (owner == wallet)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1,
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            orderID: 2,
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 0.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeId, ring);
-
-      await exchangeTestUtil.commitDeposits(exchangeId);
-
-      await exchangeTestUtil.cancelOrder(
-        ring.orderA,
-        "WETH",
-        new BN(web3.utils.toWei("1", "ether"))
-      );
-      await exchangeTestUtil.commitCancels(exchangeId);
-
-      await exchangeTestUtil.commitRings(exchangeId);
-
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
-    });
-
-    it("Cancel (owner == wallet == operator)", async () => {
+    it("Cancel (owner == operator)", async () => {
       const ring: RingInfo = {
         orderA:
           {

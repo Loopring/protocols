@@ -38,9 +38,6 @@ export interface OrderInfo {
   orderID?: number;
 
   label?: number;
-  dualAuthPublicKeyX?: string;
-  dualAuthPublicKeyY?: string;
-  dualAuthSecretKey?: string;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -77,7 +74,6 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  ringMatcherAccountID?: number;
   tokenID?: number;
   fee?: BN;
 

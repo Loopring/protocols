@@ -64,9 +64,6 @@ def orderFromJSON(jOrder, state):
     exchangeID = int(jOrder["exchangeID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
-    dualAuthPublicKeyX = int(jOrder["dualAuthPublicKeyX"])
-    dualAuthPublicKeyY = int(jOrder["dualAuthPublicKeyY"])
-    dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     amountS = int(jOrder["amountS"])
@@ -84,7 +81,6 @@ def orderFromJSON(jOrder, state):
     account = state.getAccount(accountID)
 
     order = Order(Point(account.publicKeyX, account.publicKeyY),
-                  Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
                   exchangeID, orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,

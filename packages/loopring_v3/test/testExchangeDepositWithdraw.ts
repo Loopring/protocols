@@ -809,17 +809,16 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
 
-      const walletA = exchangeTestUtil.wallets[exchangeID][0];
-      const walletB = exchangeTestUtil.wallets[exchangeID][1];
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderA.tokenB, ring.orderA.amountB,
-        exchangeTestUtil.getAccount(walletA).owner,
+        exchangeTestUtil.getAccount(operatorAccountID).owner,
       );
       await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID, 0,
         ring.orderB.tokenB, ring.orderB.amountB,
-        exchangeTestUtil.getAccount(walletB).owner,
+        exchangeTestUtil.getAccount(operatorAccountID).owner,
       );
       await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);

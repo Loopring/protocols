@@ -309,7 +309,6 @@ class WithdrawProof(object):
 class Order(object):
     def __init__(self,
                  publicKey,
-                 dualAuthPublicKey, dualAuthSecretKey,
                  exchangeID, orderID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
@@ -318,9 +317,6 @@ class Order(object):
                  label):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
-        self.dualAuthPublicKeyX = str(dualAuthPublicKey.x)
-        self.dualAuthPublicKeyY = str(dualAuthPublicKey.y)
-        self.dualAuthSecretKey = str(dualAuthSecretKey)
 
         self.exchangeID = int(exchangeID)
         self.orderID = int(orderID)

@@ -69,12 +69,9 @@ export class ExchangeTestUtil {
   public operator: any;
   public activeOperator: number;
 
-  public ringMatcherAccountID: number[] = [];
-
   public accounts: Account[][] = [];
 
   public operators: number[] = [];
-  public wallets: number[][] = [];
 
   public GENESIS_MERKLE_ROOT: BN = new BN("2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01", 16);
 
@@ -120,15 +117,11 @@ export class ExchangeTestUtil {
 
   private orderIDGenerator: number = 0;
 
-  private dualAuthKeyPair: any;
-
   private MAX_NUM_EXCHANGES: number = 256;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-
-    this.dualAuthKeyPair = this.getKeyPairEDDSA();
 
     // Initialize Loopring
     await this.loopringV3.updateSettings(
@@ -173,9 +166,6 @@ export class ExchangeTestUtil {
 
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
-
-      const wallets: number[] = [];
-      this.wallets.push(wallets);
 
       const accountsT: Account[] = [];
       const account: Account = {
@@ -229,16 +219,6 @@ export class ExchangeTestUtil {
     this.dummyAccountKeyPair = keyPair;
 
     this.operators[exchangeID] = await this.createOperator(exchangeID, this.testContext.operators[0]);
-
-    this.ringMatcherAccountID[exchangeID] = await this.createRingMatcher(
-      exchangeID,
-      this.testContext.ringMatchers[0],
-    );
-
-    for (const walletAddress of this.testContext.wallets) {
-      const wallet = await this.createWallet(exchangeID, walletAddress);
-      this.wallets[exchangeID].push(wallet);
-    }
   }
 
   public async createOperator(exchangeID: number, owner: string) {
@@ -248,30 +228,6 @@ export class ExchangeTestUtil {
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            constants.zeroAddress, new BN(1));
     return depositInfo.accountID;
-  }
-
-  public async createWallet(exchangeID: number, owner: string) {
-    // Make an account for the wallet
-    const keyPair = this.getKeyPairEDDSA();
-    const walletDeposit = await this.deposit(exchangeID, owner,
-                                             keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                             constants.zeroAddress, new BN(0));
-    return walletDeposit.accountID;
-  }
-
-  public async createRingMatcher(exchangeID: number, owner: string) {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-
-    const balance = new BN(web3.utils.toWei("1000000", "ether"));
-
-    // Make an account for the ringmatcher
-    const keyPair = this.getKeyPairEDDSA();
-    await LRC.addBalance(owner, balance);
-    const ringMatcherDeposit = await this.deposit(exchangeID, owner,
-                                                  keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                  lrcAddress, balance);
-    return ringMatcherDeposit.accountID;
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -318,8 +274,6 @@ export class ExchangeTestUtil {
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
-    ring.ringMatcherAccountID = (ring.ringMatcherAccountID !== undefined) ?
-                                ring.ringMatcherAccountID : this.ringMatcherAccountID[ring.orderA.exchangeID];
     ring.tokenID = (ring.tokenID !== undefined) ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
@@ -348,12 +302,6 @@ export class ExchangeTestUtil {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
-    }
-    if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
-      const keyPair = this.getKeyPairEDDSA();
-      order.dualAuthPublicKeyX = keyPair.publicKeyX;
-      order.dualAuthPublicKeyY = keyPair.publicKeyY;
-      order.dualAuthSecretKey = keyPair.secretKey;
     }
 
     order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : this.exchangeId;
@@ -550,7 +498,6 @@ export class ExchangeTestUtil {
     addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.ringMatcherAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
   }
 
@@ -1604,29 +1551,20 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0];
           const dummyRing: RingInfo = {
             orderA:
               {
                 exchangeID,
                 orderID: 0,
                 accountID: this.dummyAccountId,
-                walletAccountID,
-
-                dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
-                dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
-                dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
-
                 tokenIdS: 0,
                 tokenIdB: 1,
-
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
-
                 maxFeeBips: 0,
-
                 buy: true,
+                label: 1,
 
                 feeBips: 0,
                 rebateBips: 0,
@@ -1639,22 +1577,14 @@ export class ExchangeTestUtil {
                 exchangeID,
                 orderID: 0,
                 accountID: this.dummyAccountId,
-                walletAccountID,
-
-                dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
-                dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
-                dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
-
                 tokenIdS: 1,
                 tokenIdB: 0,
-
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
-
                 maxFeeBips: 0,
-
                 buy: true,
+                label: 2,
 
                 feeBips: 0,
                 rebateBips: 0,
@@ -1662,7 +1592,6 @@ export class ExchangeTestUtil {
                 amountS: new BN(1),
                 amountB: new BN(1),
               },
-              ringMatcherAccountID: this.ringMatcherAccountID[exchangeID],
             tokenID: 0,
             fee: new BN(0),
           };

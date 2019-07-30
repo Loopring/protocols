@@ -285,7 +285,6 @@ contract("Exchange", (accounts: string[]) => {
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const wallet = exchangeTestUtil.wallets[exchangeID][0];
 
       const tokenA = "LRC";
       const balanceA = new BN(web3.utils.toWei("2300.7", "ether"));

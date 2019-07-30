@@ -161,7 +161,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -237,8 +238,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -294,7 +296,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -369,8 +372,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -444,8 +448,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
-      await exchangeTestUtil.depositTo(ringB.ringMatcherAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -520,7 +525,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.depositTo(ringA.ringMatcherAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -601,7 +607,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderB.tokenB, ring.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -639,8 +646,9 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderA.tokenB, ring.orderA.amountB);
-      await exchangeTestUtil.depositTo(ring.ringMatcherAccountID, ring.orderB.tokenB, ring.orderB.amountB);
+      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      await exchangeTestUtil.depositTo(operatorAccountID, ring.orderA.tokenB, ring.orderA.amountB);
+      await exchangeTestUtil.depositTo(operatorAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
@@ -871,7 +879,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.walletAccountID = ring.orderA;
       ring.orderB.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderB);
 
@@ -980,95 +987,6 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("ring-matcher == order owner", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "LRC",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-          },
-        orderB:
-          {
-            tokenS: "LRC",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-          },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      ring.ringMatcherAccountID = ring.orderA.accountID;
-      await exchangeTestUtil.sendRing(exchangeID, ring);
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
-    });
-
-    it("ring-matcher == operator", async () => {
-      const ringA: RingInfo = {
-        orderA:
-          {
-            tokenS: "ETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("3", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            owner: exchangeTestUtil.testContext.orderOwners[0],
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "ETH",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("2", "ether")),
-            owner: exchangeTestUtil.testContext.orderOwners[1],
-          },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("1", "ether")) },
-          orderB: { filledFraction: 1.0 },
-        },
-      };
-      const ringB: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            owner: exchangeTestUtil.testContext.orderOwners[2],
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            owner: exchangeTestUtil.testContext.orderOwners[3],
-          },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("10", "ether")) },
-          orderB: { filledFraction: 1.0 },
-        },
-      };
-
-      await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.setupRing(ringB);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
-
-      assert.equal(ringA.ringMatcherAccountID, ringB.ringMatcherAccountID,
-                   "ringMatcher needs to remain the same between rings");
-      exchangeTestUtil.setActiveOperator(ringA.ringMatcherAccountID);
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
-    });
-
     it("operator == order owner", async () => {
       const ring: RingInfo = {
         orderA:
@@ -1098,7 +1016,7 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("orderA.owner == orderB.owner == ringMatcher == operator", async () => {
+    it("orderA.owner == orderB.owner == operator", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -1124,10 +1042,8 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      ring.ringMatcherAccountID = ring.orderA.accountID;
 
       ring.orderB.accountID = ring.orderA.accountID;
-      ring.orderB.walletAccountID = ring.orderA;
       ring.orderB.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderB);
 

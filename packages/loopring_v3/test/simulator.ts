@@ -458,27 +458,29 @@ export class Simulator {
     }
 
     const detailedTransfersA = this.getDetailedTransfers(
+      operatorAccountID,
       ring, ring.orderA, ring.orderB,
       fillA.S, fillA.B, s.feeA,
     );
 
     const detailedTransfersB = this.getDetailedTransfers(
+      operatorAccountID,
       ring, ring.orderB, ring.orderA,
       fillB.S, fillB.B, s.feeB,
     );
 
     const ringMatcherPayments: DetailedTokenTransfer = {
-      description: "Ring-Matcher",
+      description: "Operator",
       token: 0,
-      from: ring.ringMatcherAccountID,
-      to: ring.ringMatcherAccountID,
+      from: operatorAccountID,
+      to: operatorAccountID,
       amount: new BN(0),
       subPayments: [],
     };
     const payProtocolFeeA: DetailedTokenTransfer = {
       description: "ProtocolFeeA",
       token: ring.orderA.tokenIdB,
-      from: ring.ringMatcherAccountID,
+      from: operatorAccountID,
       to: 0,
       amount: s.protocolFeeA,
       subPayments: [],
@@ -486,7 +488,7 @@ export class Simulator {
     const payProtocolFeeB: DetailedTokenTransfer = {
       description: "ProtocolFeeB",
       token: ring.orderB.tokenIdB,
-      from: ring.ringMatcherAccountID,
+      from: operatorAccountID,
       to: 0,
       amount: s.protocolFeeB,
       subPayments: [],
@@ -494,7 +496,7 @@ export class Simulator {
     const payRebateA: DetailedTokenTransfer = {
       description: "RebateA",
       token: ring.orderA.tokenIdB,
-      from: ring.ringMatcherAccountID,
+      from: operatorAccountID,
       to: ring.orderA.accountID,
       amount: s.rebateA,
       subPayments: [],
@@ -502,7 +504,7 @@ export class Simulator {
     const payRebateB: DetailedTokenTransfer = {
       description: "RebateB",
       token: ring.orderB.tokenIdB,
-      from: ring.ringMatcherAccountID,
+      from: operatorAccountID,
       to: ring.orderB.accountID,
       amount: s.rebateB,
       subPayments: [],
@@ -645,7 +647,8 @@ export class Simulator {
     return {newExchangeState, s};
   }
 
-  private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
+  private getDetailedTransfers(operatorAccountID: number,
+                               ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
                                fillAmountS: BN, fillAmountB: BN, fee: BN) {
     const sell: DetailedTokenTransfer = {
       description: "Sell",
@@ -659,7 +662,7 @@ export class Simulator {
       description: "Fee@" + order.feeBips + "Bips",
       token: order.tokenIdB,
       from: order.accountID,
-      to: ring.ringMatcherAccountID,
+      to: operatorAccountID,
       amount: fee,
       subPayments: [],
     };
