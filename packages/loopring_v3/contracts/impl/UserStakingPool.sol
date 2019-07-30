@@ -213,8 +213,8 @@ contract UserStakingPool is IUserStakingPool, Claimable
         private
         view
         returns (
-            uint userPoints,
             uint totalPoints,
+            uint userPoints,
             uint outstandindReward
         )
     {
