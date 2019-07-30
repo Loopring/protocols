@@ -57,10 +57,64 @@ library ExchangeBlocks
         bytes  memory data,
         bytes  memory /*offchainData*/
         )
-        internal // inline call
+        internal
+        view
         returns (bytes32 publicDataHash)
     {
-        return preCommitInternal(S, blockType, data);
+        // Exchange cannot be in withdrawal mode
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+
+        // Check if this exchange has a minimal amount of LRC staked
+        require(
+            S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
+            "INSUFFICIENT_EXCHANGE_STAKE"
+        );
+
+        // Extract the exchange ID from the data
+        uint32 exchangeIdInData = 0;
+        assembly {
+            exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
+        }
+        require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
+
+        // Get the current block
+        ExchangeData.Block storage prevBlock = S.blocks[S.blocks.length - 1];
+
+        // Get the old and new Merkle roots
+        bytes32 merkleRootBefore;
+        bytes32 merkleRootAfter;
+        assembly {
+            merkleRootBefore := mload(add(data, 36))
+            merkleRootAfter := mload(add(data, 68))
+        }
+        require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
+
+        uint32 numDepositRequestsCommitted = prevBlock.numDepositRequestsCommitted;
+        uint32 numWithdrawalRequestsCommitted = prevBlock.numWithdrawalRequestsCommitted;
+
+        // When the exchange is shutdown:
+        // - First force all outstanding deposits to be done
+        // - Allow withdrawing using the special shutdown mode of ONCHAIN_WITHDRAWAL (with
+        //   count == 0)
+        if (S.isShutdown()) {
+            if (numDepositRequestsCommitted < S.depositChain.length) {
+                require(blockType == 1 /* DEPOSIT */, "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
+            } else {
+                require(blockType == 2 /*ONCHAIN_WITHDRAWAL*/, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
+            }
+        }
+
+        // Check if the operator is forced to commit a deposit or withdraw block
+        // We give priority to withdrawals. If a withdraw block is forced it needs to
+        // be processed first, even if there is also a deposit block forced.
+        if (isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
+            require(blockType == 2 /*ONCHAIN_WITHDRAWAL */, "WITHDRAWAL_BLOCK_FORCED");
+        } else if (isDepositRequestForced(S, numDepositRequestsCommitted)) {
+            require(blockType == 1 /* DEPOSIT */, "DEPOSIT_BLOCK_FORCED");
+        }
+
+        // Hash all the public data to a single value which is used as the input for the circuit
+        return data.fastSHA256();
     }
 
     function verifyBlocks(
@@ -191,73 +245,6 @@ library ExchangeBlocks
     }
 
     // == Internal Functions ==
-    function preCommitInternal(
-        ExchangeData.State storage S,
-        uint8  blockType,
-        bytes  memory data  // This field already has all the dummy (0-valued) requests padded,
-                            // therefore the size of this field totally depends on
-                            // `blockSize` instead of the actual user requests processed
-                            // in this block. This is fine because 0-bytes consume fewer gas.
-        )
-        private
-        returns (bytes32 publicDataHash)
-    {
-        // Exchange cannot be in withdrawal mode
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-
-        // Check if this exchange has a minimal amount of LRC staked
-        require(
-            S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
-            "INSUFFICIENT_EXCHANGE_STAKE"
-        );
-
-        // Extract the exchange ID from the data
-        uint32 exchangeIdInData = 0;
-        assembly {
-            exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
-        }
-        require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
-
-        // Get the current block
-        ExchangeData.Block storage prevBlock = S.blocks[S.blocks.length - 1];
-
-        // Get the old and new Merkle roots
-        bytes32 merkleRootBefore;
-        bytes32 merkleRootAfter;
-        assembly {
-            merkleRootBefore := mload(add(data, 36))
-            merkleRootAfter := mload(add(data, 68))
-        }
-        require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
-
-        uint32 numDepositRequestsCommitted = prevBlock.numDepositRequestsCommitted;
-        uint32 numWithdrawalRequestsCommitted = prevBlock.numWithdrawalRequestsCommitted;
-
-        // When the exchange is shutdown:
-        // - First force all outstanding deposits to be done
-        // - Allow withdrawing using the special shutdown mode of ONCHAIN_WITHDRAWAL (with
-        //   count == 0)
-        if (S.isShutdown()) {
-            if (numDepositRequestsCommitted < S.depositChain.length) {
-                require(blockType == 1 /* DEPOSIT */, "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
-            } else {
-                require(blockType == 2 /*ONCHAIN_WITHDRAWAL*/, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
-            }
-        }
-
-        // Check if the operator is forced to commit a deposit or withdraw block
-        // We give priority to withdrawals. If a withdraw block is forced it needs to
-        // be processed first, even if there is also a deposit block forced.
-        if (isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
-            require(blockType == 2 /*ONCHAIN_WITHDRAWAL */, "WITHDRAWAL_BLOCK_FORCED");
-        } else if (isDepositRequestForced(S, numDepositRequestsCommitted)) {
-            require(blockType == 1 /* DEPOSIT */, "DEPOSIT_BLOCK_FORCED");
-        }
-
-        // Hash all the public data to a single value which is used as the input for the circuit
-        return data.fastSHA256();
-    }
-
     function isDepositRequestForced(
         ExchangeData.State storage S,
         uint numRequestsCommitted

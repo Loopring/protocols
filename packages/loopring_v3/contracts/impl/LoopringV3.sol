@@ -49,7 +49,6 @@ contract LoopringV3 is ILoopringV3, Claimable
     mapping (uint8 => BlockType) blockTypeIdMap;
     mapping (address => uint8)   blockProcessorMap;
 
-    // TODO(dongw): add a disable method
     function registerBlockType(
         address blockProcessor
         )
