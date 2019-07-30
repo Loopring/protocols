@@ -394,8 +394,8 @@ library ExchangeWithdrawals
 
         // Check if this is a withdrawal block
         require(
-            ExchangeData.BlockType(withdrawBlock.blockType) == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-            ExchangeData.BlockType(withdrawBlock.blockType) == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL,
+            withdrawBlock.blockType == 2 /* ONCHAIN_WITHDRAWAL */ ||
+            withdrawBlock.blockType == 3 /* OFFCHAIN_WITHDRAWAL */,
             "INVALID_BLOCK_TYPE"
         );
 
