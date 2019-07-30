@@ -414,7 +414,7 @@ class OffchainWithdrawal(object):
     def __init__(self,
                  exchangeID,
                  accountID, tokenID, amountRequested, fAmountWithdrawn,
-                 feeTokenID, fee,
+                 feeTokenID, fee, label,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_O,
                  nonce):
@@ -427,6 +427,7 @@ class OffchainWithdrawal(object):
 
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
+        self.label = int(label)
 
         self.balanceUpdateF_A = balanceUpdateF_A
         self.balanceUpdateW_A = balanceUpdateW_A
@@ -440,7 +441,7 @@ class Cancellation(object):
     def __init__(self,
                  exchangeID,
                  accountID, orderTokenID, orderID,
-                 feeTokenID, fee,
+                 feeTokenID, fee, label,
                  nonce,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateF_O):
@@ -451,6 +452,7 @@ class Cancellation(object):
         self.orderID = orderID
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
+        self.label = int(label)
         self.nonce = nonce
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
@@ -774,7 +776,7 @@ class State(object):
 
     def offchainWithdraw(self,
                          exchangeID, accountID, tokenID, amountRequested,
-                         operatorAccountID, feeTokenID, fee):
+                         operatorAccountID, feeTokenID, fee, label):
         feeValue = roundToFloatValue(fee, Float16Encoding)
 
         # Update account
@@ -805,7 +807,7 @@ class State(object):
 
         withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
-                                        feeTokenID, fee,
+                                        feeTokenID, fee, label,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         None,
                                         nonce)
@@ -813,7 +815,7 @@ class State(object):
 
     def cancelOrder(self,
                     exchangeID, accountID, orderTokenID, orderID,
-                    operatorAccountID, feeTokenID, fee):
+                    operatorAccountID, feeTokenID, fee, label):
 
         feeValue = roundToFloatValue(fee, Float16Encoding)
 
@@ -838,7 +840,7 @@ class State(object):
 
         cancellation = Cancellation(exchangeID,
                                     accountID, orderTokenID, orderID,
-                                    feeTokenID, fee,
+                                    feeTokenID, fee, label,
                                     nonce,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     None)

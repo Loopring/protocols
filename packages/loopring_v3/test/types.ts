@@ -121,10 +121,9 @@ export interface WithdrawalRequest {
   tokenID: number;
   amount: BN;
 
-  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
-  walletSplitPercentage: number;
+  label: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
@@ -156,10 +155,9 @@ export interface Cancel {
   accountID: number;
   orderTokenID: number;
   orderID: number;
-  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
-  walletSplitPercentage: number;
+  label?: number;
 
   signature?: Signature;
 }

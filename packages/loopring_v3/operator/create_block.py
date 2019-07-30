@@ -212,9 +212,10 @@ def createOffchainWithdrawalBlock(state, data):
         amount = int(withdrawalInfo["amount"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
+        label = int(withdrawalInfo["label"])
 
         withdrawal = state.offchainWithdraw(block.exchangeID, accountID, tokenID, amount,
-                                            block.operatorAccountID, feeTokenID, fee)
+                                            block.operatorAccountID, feeTokenID, fee, label)
         withdrawal.signature = withdrawalInfo["signature"]
         block.withdrawals.append(withdrawal)
 
@@ -247,9 +248,10 @@ def createOrderCancellationBlock(state, data):
         orderID = int(cancelInfo["orderID"])
         feeTokenID = int(cancelInfo["feeTokenID"])
         fee = int(cancelInfo["fee"])
+        label = int(cancelInfo["label"])
 
         cancel = state.cancelOrder(block.exchangeID, accountID, orderTokenID, orderID,
-                                   block.operatorAccountID, feeTokenID, fee)
+                                   block.operatorAccountID, feeTokenID, fee, label)
 
         cancel.signature = cancelInfo["signature"]
         block.cancels.append(cancel)

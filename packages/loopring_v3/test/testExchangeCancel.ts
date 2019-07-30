@@ -51,8 +51,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
-      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0];
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("1", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
@@ -91,8 +94,11 @@ contract("Exchange", (accounts: string[]) => {
 
       exchangeTestUtil.setActiveOperator(ring.orderB.accountID);
 
-      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0];
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("1", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
@@ -129,8 +135,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
-      const walletAccountID = ring.orderA.accountID;
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("1", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
@@ -169,8 +178,11 @@ contract("Exchange", (accounts: string[]) => {
 
       exchangeTestUtil.setActiveOperator(ring.orderA.accountID);
 
-      const walletAccountID = ring.orderA.accountID;
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("1", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
@@ -207,8 +219,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
-      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0];
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("0", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("0", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;

@@ -7,6 +7,7 @@ export const TREE_DEPTH_TOKENS = 8;
 
 export const NUM_BITS_ACCOUNTID = TREE_DEPTH_ACCOUNTS;
 export const NUM_BITS_ORDERID = 20;
+export const NUM_BITS_LABEL = 32;
 
 export const MAX_NUM_TOKENS = 2 ** 8;
 

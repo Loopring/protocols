@@ -153,7 +153,7 @@ export class Simulator {
     const accountIdAndAmountWithdrawn = bs.extractUint48(offset);
     offset += 6;
 
-    offset = onchainDataOffset + blockSize * onchainDataSize;
+    offset = onchainDataOffset + 32 + blockSize * onchainDataSize;
 
     // General data
     const operatorAccountID = bs.extractUint24(offset);
@@ -218,7 +218,7 @@ export class Simulator {
 
     // General data
     const exchangeID = bs.extractUint32(offset);
-    offset += 4 + 32 + 32;
+    offset += 4 + 32 + 32 + 32;
 
     // General data
     const operatorAccountID = bs.extractUint24(offset);
@@ -315,6 +315,8 @@ export class Simulator {
     offset += 1;
     const protocolFeeMakerBips = data.extractUint8(offset);
     offset += 1;
+    // LabelHash
+    offset += 32;
     const operatorAccountID = data.extractUint24(offset);
     offset += 3;
 
