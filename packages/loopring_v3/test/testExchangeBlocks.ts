@@ -468,6 +468,8 @@ contract("Exchange", (accounts: string[]) => {
 
         it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
           await createExchange();
+          const operatorAccountId = await exchangeTestUtil.getActiveOperator(exchangeId);
+          const operatorAccount = exchangeTestUtil.accounts[exchangeId][operatorAccountId];
           // Prepare a ring
           const ring = await setupRandomRing();
           // Do a deposit
@@ -481,6 +483,8 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.commitRings(exchangeId),
             "DEPOSIT_BLOCK_FORCED"
           );
+          // Revert the nonce of the operator
+          operatorAccount.nonce--;
           // Now also do an on-chain withdrawal
           const accountID = await exchangeTestUtil.getAccountID(
             ring.orderA.owner
@@ -501,6 +505,8 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.commitRings(exchangeId),
             "WITHDRAWAL_BLOCK_FORCED"
           );
+          // Revert the nonce of the operator
+          operatorAccount.nonce--;
           // Commit the withdrawals
           await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
           // Try to commit the rings
@@ -508,6 +514,8 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.commitRings(exchangeId),
             "DEPOSIT_BLOCK_FORCED"
           );
+          // Revert the nonce of the operator
+          operatorAccount.nonce--;
           // Commit the deposits
           await exchangeTestUtil.commitDeposits(exchangeId);
           // Commit the rings

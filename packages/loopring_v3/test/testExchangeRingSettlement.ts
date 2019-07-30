@@ -161,7 +161,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -238,7 +238,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
       await exchangeTestUtil.depositTo(operatorAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
@@ -296,7 +296,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -372,7 +372,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
       await exchangeTestUtil.depositTo(operatorAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
@@ -448,7 +448,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
       await exchangeTestUtil.depositTo(operatorAccountID, ringB.orderB.tokenB, ringB.orderB.amountB);
 
@@ -525,7 +525,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ringA.orderB.tokenB, ringA.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -607,7 +607,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -646,7 +646,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      const operatorAccountID = await this.getActiveOperator(exchangeID);
+      const operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
       await exchangeTestUtil.depositTo(operatorAccountID, ring.orderA.tokenB, ring.orderA.amountB);
       await exchangeTestUtil.depositTo(operatorAccountID, ring.orderB.tokenB, ring.orderB.amountB);
 
