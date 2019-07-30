@@ -30,10 +30,16 @@ contract IBlockProcessor
         bool   onChainDataAvailability,
         uint16 size,
         uint8  version,
-        bytes  calldata data
+        bytes  calldata data,
+        uint32 prevNumDepositRequestsCommitted,
+        uint32 prevNumWithdrawalRequestsCommitted
         )
         external
-        returns (bytes memory withdrawals);
+        returns (
+            uint32 numDepositRequestsCommitted,
+            uint32 numWithdrawalRequestsCommitted,
+            bytes  memory withdrawals
+        );
 
     function getVerificationKey(
         uint16 size,

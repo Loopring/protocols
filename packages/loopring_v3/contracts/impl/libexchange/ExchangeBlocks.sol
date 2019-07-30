@@ -277,8 +277,21 @@ library ExchangeBlocks
         bytes32 publicDataHash = data.fastSHA256();
 
         // TODO(daniel): use DELEGATECALl instead
-        bytes memory withdrawals = IBlockProcessor(S.loopring.getBlockProcessor(blockType))
-            .processBlock(S.onchainDataAvailability, blockSize, blockVersion, data);
+        bytes memory withdrawals;
+
+        (
+            numDepositRequestsCommitted,
+            numWithdrawalRequestsCommitted,
+            withdrawals
+        ) = IBlockProcessor(S.loopring.getBlockProcessor(blockType))
+            .processBlock(
+                S.onchainDataAvailability,
+                blockSize,
+                blockVersion,
+                data,
+                numDepositRequestsCommitted,
+                numWithdrawalRequestsCommitted
+            );
 
         // if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
         //     require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
