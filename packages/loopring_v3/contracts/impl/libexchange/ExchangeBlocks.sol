@@ -36,6 +36,7 @@ library ExchangeBlocks
     using BytesUtil         for bytes;
     using MathUint          for uint;
     using ExchangeMode      for ExchangeData.State;
+    using ProofVerification for uint[18];
 
     event BlockCommitted(
         uint    indexed blockIdx,
@@ -140,14 +141,13 @@ library ExchangeBlocks
         }
 
         // Fetch the verification key then verify the proofs
-        uint[18] memory vk = IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)))
-            .getVerificationKey(
-                S.onchainDataAvailability,
-                blockSize,
-                blockVersion
-            );
-
-        require(ProofVerification.verifyProofs(vk, publicInputs, proofs), "INVALID_PROOF");
+        IBlockProcessor processor = IBlockProcessor(S.loopring.getBlockProcessor(uint8(blockType)));
+        uint[18] memory vk = processor.getVerificationKey(
+            S.onchainDataAvailability,
+            blockSize,
+            blockVersion
+        );
+        require(vk.verifyProofs(publicInputs, proofs), "INVALID_PROOF");
 
         // Mark the blocks as verified
         for (uint i = 0; i < blockIndices.length; i++) {
