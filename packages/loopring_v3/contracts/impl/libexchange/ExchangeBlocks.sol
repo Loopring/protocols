@@ -66,8 +66,6 @@ library ExchangeBlocks
     function preCommitBlock(
         ExchangeData.State storage S,
         uint8  blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
         bytes  memory data,
         bytes  memory /*offchainData*/
         )
@@ -77,8 +75,6 @@ library ExchangeBlocks
         return preCommitBlockInternal(
             S,
             blockType,
-            blockSize,
-            blockVersion,
             data
         );
     }
@@ -214,8 +210,6 @@ library ExchangeBlocks
     function preCommitBlockInternal(
         ExchangeData.State storage S,
         uint8  blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
         bytes  memory data  // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed

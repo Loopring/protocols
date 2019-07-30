@@ -427,13 +427,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
               revert(0, 0)
           }
         }
-        bytes32 publicDataHash = state.preCommitBlock(
-            blockType,
-            blockSize,
-            blockVersion,
-            decompressed,
-            offchainData
-        );
+        bytes32 publicDataHash = state.preCommitBlock(blockType, decompressed, offchainData);
 
         commitBlock(
             blockType,
@@ -445,11 +439,11 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function commitBlock(
-        uint8   blockType,
-        uint16  blockSize,
-        uint8   blockVersion,
-        bytes32 publicDataHash,
-        bytes   memory data
+        uint8 blockType,
+        uint16  /* blockSize */,
+        uint8   /* blockVersion */,
+        bytes32 /* publicDataHash */,
+        bytes memory  /* data */
         )
         internal
     {
