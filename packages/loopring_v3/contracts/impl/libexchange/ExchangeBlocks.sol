@@ -23,7 +23,7 @@ import "../../lib/ProofVerification.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/IDecompressor.sol";
 
-import "../blocks/IBlockProcessor.sol";
+import "../blocktypes/IBlockProcessor.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";

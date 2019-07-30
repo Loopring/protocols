@@ -24,7 +24,7 @@ import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
-import "./blocks/IBlockProcessor.sol";
+import "./blocktypes/IBlockProcessor.sol";
 
 import "./ExchangeDeployer.sol";
 
