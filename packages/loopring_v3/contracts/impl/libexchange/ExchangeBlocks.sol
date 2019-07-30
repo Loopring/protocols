@@ -51,7 +51,7 @@ library ExchangeBlocks
         uint    indexed blockIdx
     );
 
-    function preCommitBlock(
+    function preCommit(
         ExchangeData.State storage S,
         uint8  blockType,
         bytes  memory data,
@@ -60,7 +60,7 @@ library ExchangeBlocks
         internal // inline call
         returns (bytes32 publicDataHash)
     {
-        return preCommitBlockInternal(S, blockType, data);
+        return preCommitInternal(S, blockType, data);
     }
 
     function verifyBlocks(
@@ -191,7 +191,7 @@ library ExchangeBlocks
     }
 
     // == Internal Functions ==
-    function preCommitBlockInternal(
+    function preCommitInternal(
         ExchangeData.State storage S,
         uint8  blockType,
         bytes  memory data  // This field already has all the dummy (0-valued) requests padded,

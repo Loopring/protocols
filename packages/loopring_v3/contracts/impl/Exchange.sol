@@ -427,7 +427,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
               revert(0, 0)
           }
         }
-        bytes32 publicDataHash = state.preCommitBlock(blockType, decompressed, offchainData);
+        bytes32 publicDataHash = state.preCommit(blockType, decompressed, offchainData);
 
         commitBlock(
             blockType,
@@ -449,12 +449,12 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         private
     {
-        address blockProcessor = state.loopring.getBlockProcessor(blockType);
+        address _addr = state.loopring.getBlockProcessor(blockType);
 
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize)
-            let result := delegatecall(gas, blockProcessor, ptr, calldatasize, 0, 0)
+            let result := delegatecall(gas, _addr, ptr, calldatasize, 0, 0)
             let size := returndatasize
             returndatacopy(ptr, 0, size)
 
