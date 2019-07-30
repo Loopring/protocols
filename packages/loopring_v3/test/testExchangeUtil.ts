@@ -1609,7 +1609,7 @@ export class ExchangeTestUtil {
     }
 
     const hash = stage2Hashes[stage2Hashes.length - 1];
-    console.log("[JS] labels hash: " + hash.toString(10));
+    logDebug("[JS] labels hash: " + hash.toString(10));
     return hash;
   }
 
@@ -2410,6 +2410,10 @@ export class ExchangeTestUtil {
       this.logFilledAmountsRing(ring, latestState, simulatorReport.exchangeStateAfter);
       latestState = simulatorReport.exchangeStateAfter;
     }
+
+    // Update operator nonce
+    const operator = latestState.accounts[operatorAccountID];
+    operator.nonce++;
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);

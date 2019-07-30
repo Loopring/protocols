@@ -641,8 +641,6 @@ export class Simulator {
     // - FeeB
     operator.balances[tokenA].balance =
       operator.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
-    // - Increment the nonce
-    operator.nonce++;
 
     return {newExchangeState, s};
   }
