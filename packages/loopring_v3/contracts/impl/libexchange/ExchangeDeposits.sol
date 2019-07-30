@@ -118,6 +118,9 @@ library ExchangeDeposits
             feeETH
         );
 
+        // Make sure we can detect accounts that were not yet created in the circuits
+        // by forcing the pubKeyX to be non-zero.
+        require(account.pubKeyX > 0, "INVALID_PUBKEY");
         // Make sure the public key can be stored in the SNARK field
         require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
         require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");

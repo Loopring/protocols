@@ -330,7 +330,7 @@ contract("Exchange", (accounts: string[]) => {
         "INSUFFICIENT_FEE",
       );
 
-      // Invalid public key
+      // Invalid public key (pubKey > scalarField)
       await expectThrow(
         exchange.createOrUpdateAccount(constants.scalarField, keyPair.publicKeyY,
           {from: owner, value: totalFee}),
@@ -338,6 +338,12 @@ contract("Exchange", (accounts: string[]) => {
       );
       await expectThrow(
         exchange.createOrUpdateAccount(keyPair.publicKeyY, constants.scalarField,
+          {from: owner, value: totalFee}),
+        "INVALID_PUBKEY",
+      );
+       // Invalid public key (pubKey.X == 0)
+       await expectThrow(
+        exchange.createOrUpdateAccount("0", keyPair.publicKeyY,
           {from: owner, value: totalFee}),
         "INVALID_PUBKEY",
       );
