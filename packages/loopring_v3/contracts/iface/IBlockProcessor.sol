@@ -17,14 +17,30 @@
 pragma solidity 0.5.10;
 
 
-/// @title IAddressWhitelist
-/// @author Daniel Wang  - <daniel@loopring.org>
-contract IAddressWhitelist
+/// @title IBlockProcessor
+/// @author Daniel Wang - <daniel@loopring.org>
+/// @author Kongliang Zhong - <kongliang@loopring.org>
+
+contract IBlockProcessor
 {
-    /// @dev Check if an address is in a whitelist.
-    /// @return Returns true if the address is in the whitelist, false otehrwise.
-    function isWhitelisted(address addr)
+    address public owner;
+
+    // This method should be called using DELEGATECALL from inside an IExchange contract.
+    function processBlock(
+        bool   onChainDataAvailability,
+        uint16 size,
+        uint8  version,
+        bytes  calldata data
+        )
+        external;
+
+    function getVerificationKey(
+        bool   onChainDataAvailability,
+        uint16 size,
+        uint8  version
+        )
         external
-        view
-        returns (bool);
+        view;
 }
+
+

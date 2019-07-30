@@ -16,6 +16,7 @@
 */
 pragma solidity 0.5.10;
 
+import "../iface/IBlockProcessor.sol";
 import "../iface/ILoopringV3.sol";
 import "../iface/IExchange.sol";
 
@@ -35,6 +36,58 @@ contract LoopringV3 is ILoopringV3, Claimable
     using AddressUtil       for address payable;
     using MathUint          for uint;
     using ERC20SafeTransfer for address;
+
+    struct BlockType
+    {
+        uint8   blockTypeId;
+        address blockProcessor;
+        bool    enabled;
+    }
+
+    BlockType[] blockTypes;
+    mapping (uint8 => BlockType) blockTypeIdMap;
+    mapping (address => uint8)   blockProcessorMap;
+
+    // TODO(dongw): add a disable method
+    function registerBlockType(
+        address blockProcessor
+        )
+        external
+        onlyOwner
+    {
+        require(blockProcessor != address(0), "ZERO_ADDRESS");
+        require(blockProcessorMap[blockProcessor] == 0, "ALREADY_REGISTERED");
+        require(IBlockProcessor(blockProcessor).owner() == owner, "INVALID_OWNER");
+
+        uint8 blockTypeId = uint8(blockTypes.length + 1);
+        blockProcessorMap[blockProcessor] = blockTypeId;
+        blockTypeIdMap[blockTypeId] = BlockType(blockTypeId, blockProcessor, true);
+    }
+
+    function toggleBlockType(
+        uint8 blockTypeId
+        )
+        external
+        onlyOwner
+    {
+        BlockType storage blockType = blockTypeIdMap[blockTypeId];
+        require(blockType.blockProcessor != address(0), "INVALID_BLOCK_TYPE_ID");
+
+        blockType.enabled = !blockType.enabled;
+        //TODO(daniel): emit event.
+    }
+
+    function getBlockProcessor(
+        uint8 blockTypeId
+        )
+        external
+        view
+        returns (address)
+    {
+        BlockType storage blockType = blockTypeIdMap[blockTypeId];
+        require(blockType.enabled, "BLOCK_TYPE_DISABLED");
+        return blockType.blockProcessor;
+    }
 
     // -- Constructor --
     constructor(
