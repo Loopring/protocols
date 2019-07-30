@@ -445,7 +445,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         bytes32 /* publicDataHash */,
         bytes memory  /* data */
         )
-        internal
+        private
     {
         address blockProcessor = state.loopring.getBlockProcessor(blockType);
 

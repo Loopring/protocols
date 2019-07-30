@@ -72,11 +72,7 @@ library ExchangeBlocks
         internal // inline call
         returns (bytes32 publicDataHash)
     {
-        return preCommitBlockInternal(
-            S,
-            blockType,
-            data
-        );
+        return preCommitBlockInternal(S, blockType, data);
     }
 
     function verifyBlocks(
@@ -317,9 +313,9 @@ library ExchangeBlocks
         //         startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
         //         count := and(mload(add(data, 140)), 0xFFFFFFFF)
         //     }
-        //     require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
-        //     require (count <= blockSize, "INVALID_REQUEST_RANGE");
-        //     require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
+        //     require(startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
+        //     require(count <= blockSize, "INVALID_REQUEST_RANGE");
+        //     require(startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
 
         //     bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
         //     bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
@@ -353,16 +349,16 @@ library ExchangeBlocks
         //         startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
         //         count := and(mload(add(data, 140)), 0xFFFFFFFF)
         //     }
-        //     require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
-        //     require (count <= blockSize, "INVALID_REQUEST_RANGE");
-        //     require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
+        //     require(startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
+        //     require(count <= blockSize, "INVALID_REQUEST_RANGE");
+        //     require(startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
 
         //     if (S.isShutdown()) {
-        //         require (count == 0, "INVALID_WITHDRAWAL_COUNT");
+        //         require(count == 0, "INVALID_WITHDRAWAL_COUNT");
         //         // Don't check anything here, the operator can do all necessary withdrawals
         //         // in any order he wants (the circuit still ensures the withdrawals are valid)
         //     } else {
-        //         require (count > 0, "INVALID_WITHDRAWAL_COUNT");
+        //         require(count > 0, "INVALID_WITHDRAWAL_COUNT");
         //         bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
         //         bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
         //         // Pad the block so it's full
