@@ -179,7 +179,11 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
         total.stake = total.stake.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
-        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
+        if (totalPoints >= userPoints) {
+            total.claimedAt = now.sub(totalPoints.sub(userPoints)/total.stake);
+        } else {
+            total.claimedAt = now;
+        }
 
         Stake storage user = users[msg.sender];
         user.stake = user.stake.add(claimedAmount);
