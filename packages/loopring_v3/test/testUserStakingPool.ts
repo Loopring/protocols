@@ -21,6 +21,12 @@ contract("UserStakingPool", (accounts: string[]) => {
   });
 
   describe("stakeA", () => {
+    it("should not stake if dont have any LRC", async () => {
+      await expectThrow(
+        userstaking.stake(500, { from: owner1 }),
+        "TRANSFER_FAILURE"
+      );
+    });
     it("should not withdraw if haven't staked", async () => {
       await expectThrow(
         userstaking.withdraw(500, { from: owner1 }),
