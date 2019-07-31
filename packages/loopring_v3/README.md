@@ -1,6 +1,7 @@
 # Loopring Protocol (V3) using zkSNARKs
 
 ## About
+
 This is a very early version of Loopring's order-based DEX protocol (version 3.0). The code base is still being tested and is not production ready.
 
 To understand several concepts introduced by the Loopring Protocol, such as order-ring, ring-matching, dual-authoring, free-burning, please read our [whitepaper](https://loopring.org/resources/en_whitepaper.pdf) for Loopring Protocol 2.x.
@@ -34,7 +35,6 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 - Can switch to better hash function
 - and more...
 
-
 ## Build
 
 `npm run build // first time` or `npm run compile` or `npm run watch`.
@@ -48,12 +48,17 @@ make
 ```
 
 ## Run Unit Tests
-* run `npm run ganache` from project's root directory in terminal.
-* run `npm run test` from project's root directory in another terminal window.
-* run single test: `npm run test -- transpiled/test/xxx.js`
-* print info logs in tests: `npm run test -- -i`
-* print more detailed debug logs in tests: `npm run test -- -x`
+
+- run `npm run ganache` from project's root directory in terminal.
+- run `npm run test` from project's root directory in another terminal window.
+- run single test: `npm run test -- transpiled/test/xxx.js`
+- print info logs in tests: `npm run test -- -i`
+- print more detailed debug logs in tests: `npm run test -- -x`
 
 Running all tests takes around 3 hours on a modern PC with a CPU with 4 cores. Creating proofs is computationaly heavy and takes time even when multi-threading is used. Run individual tests when you can.
 
 Verifier/Prover keys are cached in the `keys` folder. When updating the circuits make sure to delete the keys of older circuit versions because this is not automatically detected.
+
+## Contract Deployment
+
+It's recommended to deploy the protocol with **UpgradeabilityProxy**.
