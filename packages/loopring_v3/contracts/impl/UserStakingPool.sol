@@ -180,7 +180,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         total.stake = total.stake.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
         if (totalPoints >= userPoints) {
-            total.claimedAt = now.sub(totalPoints.sub(userPoints)/total.stake);
+            total.claimedAt = now.sub(totalPoints.sub(userPoints) / total.stake);
         } else {
             total.claimedAt = now;
         }
