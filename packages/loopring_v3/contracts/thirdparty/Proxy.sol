@@ -1,4 +1,4 @@
-// This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs/blob/master/upgradeability_using_unstructured_storage/contracts/Proxy.sol
+// This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 
 pragma solidity 0.5.10;
