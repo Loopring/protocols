@@ -61,4 +61,4 @@ Verifier/Prover keys are cached in the `keys` folder. When updating the circuits
 
 ## Contract Deployment
 
-It's recommended to deploy the protocol with **UpgradeabilityProxy**.
+It's recommended to deploy the protocol with **UpgradeabilityProxy**. For more information, please see https://blog.openzeppelin.com/upgradeability-using-unstructured-storage .
