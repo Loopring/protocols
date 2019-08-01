@@ -113,6 +113,12 @@ contract UserStakingPool is IUserStakingPool, Claimable
     {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
+        // automatical claim when possible
+        if (protocolFeeVaultAddress != address(0) &&
+            getUserClaimWaitTime(msg.sender) == 0) {
+            claim();
+        }
+    
         Staking storage user = stakings[msg.sender];
         require(user.balance >= amount, "INSUFFICIENT_FUND");
 
@@ -137,7 +143,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
     }
 
     function claim()
-        external
+        public
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
@@ -147,19 +153,20 @@ contract UserStakingPool is IUserStakingPool, Claimable
         uint userPoints;
 
         (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
-        require(claimedAmount > 0, "ZERO_VALUE");
+        if (claimedAmount > 0) {
 
-        IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
+            IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
-        total.balance = total.balance.add(claimedAmount);
-        total.claimedReward = total.claimedReward.add(claimedAmount);
-        total.claimedAt = (totalPoints >= userPoints) ?
+            total.balance = total.balance.add(claimedAmount);
+            total.claimedReward = total.claimedReward.add(claimedAmount);
+            total.claimedAt = (totalPoints >= userPoints) ?
             now.sub(totalPoints.sub(userPoints) / total.balance) : now;
 
-        Staking storage user = stakings[msg.sender];
-        user.balance = user.balance.add(claimedAmount);
-        user.claimedReward = user.claimedReward.add(claimedAmount);
-        user.claimedAt = now;
+            Staking storage user = stakings[msg.sender];
+            user.balance = user.balance.add(claimedAmount);
+            user.claimedReward = user.claimedReward.add(claimedAmount);
+            user.claimedAt = now;
+        }
 
         emit LRCRewarded(msg.sender, claimedAmount);
     }

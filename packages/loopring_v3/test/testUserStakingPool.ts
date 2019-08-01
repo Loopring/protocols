@@ -100,6 +100,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     });
   });
 
+  for (let i=0; i<2; i++) {
   describe("stakeA&B&C", () => {
     it("set User A balance as 1000", async () => {
       //const amount = new BN(web3.utils.toWei("1000", "ether"));
@@ -215,5 +216,26 @@ contract("UserStakingPool", (accounts: string[]) => {
         assert(reward == 20 || reward == 21 || reward == 22, "User claimed should equal to expected");
       });
     });
+    it("User A withdraw all", async () => {
+      await userstaking.withdraw(0, { from: owner1 });
+    });
+    it("User B withdraw all", async () => {
+      await userstaking.withdraw(0, { from: owner2 });
+    });
+    it("User C withdraw all", async () => {
+      await userstaking.withdraw(0, { from: owner3});
+    });
+    it("ProtocolFeeValut status should as expected", async () => {
+      const feestatus = await protocolfee.getLRCFeeStats();
+      // 30 is in statkeA test
+      assert.equal(feestatus.remainingFees, 30 + (i+1)*36, "ProtocolFeeValut remainingFees should as exptectd");
+      assert.equal(feestatus.remainingReward, 0, "ProtocolFeeValut remainingReward should as exptectd");
+      assert.equal(feestatus.remainingDAOFund, 20 + (i+1)*24, "ProtocolFeeValut remainingDAOFund should as exptectd");
+      assert.equal(feestatus.remainingBurn, 10 +(i+1)*12, "ProtocolFeeValut remainingBurn should as exptectd");
+    });
+    it("advance block timestampe after 30 days", async () => {
+      await exchangeTestUtil.advanceBlockTimestamp(30 * 24 * 60 * 60);
+    });
   });
+  }
 });
