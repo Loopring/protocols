@@ -168,6 +168,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         returns (uint claimedAmount)
     {
         require(userClaimWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
+        require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
 
         uint totalPoints;
         uint userPoints;
@@ -178,7 +179,11 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
         total.stake = total.stake.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
-        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
+        if (totalPoints >= userPoints) {
+            total.claimedAt = now.sub(totalPoints.sub(userPoints) / total.stake);
+        } else {
+            total.claimedAt = now;
+        }
 
         Stake storage user = users[msg.sender];
         user.stake = user.stake.add(claimedAmount);
@@ -212,8 +217,8 @@ contract UserStakingPool is IUserStakingPool, Claimable
         private
         view
         returns (
-            uint userPoints,
             uint totalPoints,
+            uint userPoints,
             uint outstandindReward
         )
     {
