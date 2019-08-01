@@ -93,7 +93,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         userStakingPoolAddress = _userStakingPoolAddress;
     }
 
-    function claim(
+    function claimStakingReward(
         uint    amount
         )
         external
