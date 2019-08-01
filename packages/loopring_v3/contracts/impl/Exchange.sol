@@ -706,25 +706,25 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         nonReentrant
         onlyOwner
-        returns (address payable oldOperator)
+        returns (address payable)
     {
-        oldOperator = state.setOperator(_operator);
+        return state.setOperator(_operator);
     }
 
     function setAddressWhitelist(
         address _addressWhitelist
         )
         external
-        returns (address oldAddressWhitelist)
+        returns (address)
     {
-        oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
+        return state.setAddressWhitelist(_addressWhitelist);
     }
 
     function setFees(
-        uint    _accountCreationFeeETH,
-        uint    _accountUpdateFeeETH,
-        uint    _depositFeeETH,
-        uint    _withdrawalFeeETH
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH
         )
         external
         nonReentrant
@@ -742,10 +742,10 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         view
         returns (
-            uint    _accountCreationFeeETH,
-            uint    _accountUpdateFeeETH,
-            uint    _depositFeeETH,
-            uint    _withdrawalFeeETH
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH
         )
     {
         _accountCreationFeeETH = state.accountCreationFeeETH;

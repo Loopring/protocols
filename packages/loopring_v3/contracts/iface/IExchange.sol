@@ -970,10 +970,10 @@ contract IExchange
         external
         view
         returns (
-            uint    _accountCreationFeeETH,
-            uint    _accountUpdateFeeETH,
-            uint    _depositFeeETH,
-            uint    _withdrawalFeeETH
+            uint _accountCreationFeeETH,
+            uint _accountUpdateFeeETH,
+            uint _depositFeeETH,
+            uint _withdrawalFeeETH
         );
 
     /// @dev Starts or continues maintenance mode for the specified duration.
