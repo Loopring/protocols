@@ -154,7 +154,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         total.balance = total.balance.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
         total.claimedAt = (totalPoints >= userPoints) ?
-            totalPoints.sub(userPoints) / total.balance : now;
+            now.sub(totalPoints.sub(userPoints) / total.balance) : now;
 
         Staking storage user = stakings[msg.sender];
         user.balance = user.balance.add(claimedAmount);
