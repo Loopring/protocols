@@ -50,9 +50,14 @@ contract IExchange
         address         newOperator
     );
 
-    event SettingsUpdated(
+    event AddressWhitelistChanged(
         uint    indexed exchangeId,
-        address         addressWhitelist,
+        address         oldAddressWhitelist,
+        address         newAddressWhitelist
+    );
+
+    event FeesUpdated(
+        uint    indexed exchangeId,
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
@@ -933,14 +938,22 @@ contract IExchange
         external
         returns (address payable oldOperator);
 
+    /// @dev Set the operator address.
+    /// @param _addressWhitelist The new address whitelist address
+    /// @return oldOperator The old address whitelist address
+    function setAddressWhitelist(
+        address _addressWhitelist
+        )
+        external
+        returns (address oldAddressWhitelist);
+
     /// @dev Update fee settings.
     ///      This function is only callable by the exchange owner.
     /// @param _accountCreationFeeETH The fee in ETH for account creation
     /// @param _accountUpdateFeeETH The fee in ETH for account update
     /// @param _depositFeeETH The fee in ETH for deposits
     /// @param _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function updateSettings(
-        address _addressWhitelist,
+    function updateFees(
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -953,11 +966,10 @@ contract IExchange
     /// @return _accountUpdateFeeETH The fee in ETH for account update
     /// @return _depositFeeETH The fee in ETH for deposits
     /// @return _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function getSettings()
+    function getFees()
         external
         view
         returns (
-            address _addressWhitelist,
             uint    _accountCreationFeeETH,
             uint    _accountUpdateFeeETH,
             uint    _depositFeeETH,

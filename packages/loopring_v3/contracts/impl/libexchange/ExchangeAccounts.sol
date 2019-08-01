@@ -88,13 +88,10 @@ library ExchangeAccounts
                     IAddressWhitelist(S.addressWhitelist).isWhitelisted(msg.sender, permission),
                     "ADDRESS_NOT_WHITELISTED"
                 );
-            } else {
-                require(permission.length == 0, "NON_EMPTY_SIG");
             }
             accountID = createAccount(S, pubKeyX, pubKeyY);
             isAccountUpdated = false;
         } else {
-            require(permission.length == 0, "NON_EMPTY_SIG");
             (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
         }
     }

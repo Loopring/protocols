@@ -40,9 +40,14 @@ library ExchangeAdmins
         address         newOperator
     );
 
-    event SettingsUpdated(
+    event AddressWhitelistChanged(
         uint    indexed exchangeId,
-        address         addressWhitelist,
+        address         oldAddressWhitelist,
+        address         newAddressWhitelist
+    );
+
+    event FeesUpdated(
+        uint    indexed exchangeId,
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
@@ -68,9 +73,28 @@ library ExchangeAdmins
         );
     }
 
-    function updateSettings(
+    function setAddressWhitelist(
         ExchangeData.State storage S,
-        address _addressWhitelist,
+        address _addressWhitelist
+        )
+        public
+        returns (address oldAddressWhitelist)
+    {
+        require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(S.addressWhitelist != _addressWhitelist, "SAME_ADDRESS");
+
+        oldAddressWhitelist = S.addressWhitelist;
+        S.addressWhitelist = _addressWhitelist;
+
+        emit AddressWhitelistChanged(
+            S.id,
+            oldAddressWhitelist,
+            _addressWhitelist
+        );
+    }
+
+    function updateFees(
+        ExchangeData.State storage S,
         uint    _accountCreationFeeETH,
         uint    _accountUpdateFeeETH,
         uint    _depositFeeETH,
@@ -84,15 +108,13 @@ library ExchangeAdmins
             "AMOUNT_TOO_LARGE"
         );
 
-        S.addressWhitelist = _addressWhitelist;
         S.accountCreationFeeETH = _accountCreationFeeETH;
         S.accountUpdateFeeETH = _accountUpdateFeeETH;
         S.depositFeeETH = _depositFeeETH;
         S.withdrawalFeeETH = _withdrawalFeeETH;
 
-        emit SettingsUpdated(
+        emit FeesUpdated(
             S.id,
-            _addressWhitelist,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,

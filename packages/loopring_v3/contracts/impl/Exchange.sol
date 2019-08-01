@@ -711,8 +711,16 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         oldOperator = state.setOperator(_operator);
     }
 
-    function updateSettings(
-        address _addressWhitelist,
+    function setAddressWhitelist(
+        address _addressWhitelist
+        )
+        external
+        returns (address oldAddressWhitelist)
+    {
+        oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
+    }
+
+    function updateFees(
         uint    _accountCreationFeeETH,
         uint    _accountUpdateFeeETH,
         uint    _depositFeeETH,
@@ -722,8 +730,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        state.updateSettings(
-            _addressWhitelist,
+        state.updateFees(
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
@@ -731,18 +738,16 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         );
     }
 
-    function getSettings()
+    function getFees()
         external
         view
         returns (
-            address _addressWhitelist,
             uint    _accountCreationFeeETH,
             uint    _accountUpdateFeeETH,
             uint    _depositFeeETH,
             uint    _withdrawalFeeETH
         )
     {
-        _addressWhitelist = state.addressWhitelist;
         _accountCreationFeeETH = state.accountCreationFeeETH;
         _accountUpdateFeeETH = state.accountUpdateFeeETH;
         _depositFeeETH = state.depositFeeETH;

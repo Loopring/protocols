@@ -27,7 +27,6 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
 {
     uint permissionTimeout = 24 hours;
 
-    /// @return decompressedData The decompressed data
     function isWhitelisted(
         address user,
         bytes memory permission

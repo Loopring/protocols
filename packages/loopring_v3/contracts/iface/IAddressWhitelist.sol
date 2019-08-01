@@ -24,7 +24,7 @@ contract IAddressWhitelist
     /// @dev Check if a address is whitelisted.
     /// @param user The user to check if being whitelisted.
     /// @param permission An arbitrary data from caller to indicate permission.
-    /// @return decompressedData The decompressed data
+    /// @return true if the address is whitelisted
     function isWhitelisted(
         address user,
         bytes memory permission
