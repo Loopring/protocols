@@ -712,7 +712,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function updateSettings(
-        bool _permissionedAccountCreation,
+        address _addressWhitelist,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -723,7 +723,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         onlyOwner
     {
         state.updateSettings(
-            _permissionedAccountCreation,
+            _addressWhitelist,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
@@ -735,14 +735,14 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         view
         returns (
-            bool _permissionedAccountCreation,
-            uint _accountCreationFeeETH,
-            uint _accountUpdateFeeETH,
-            uint _depositFeeETH,
-            uint _withdrawalFeeETH
+            address _addressWhitelist,
+            uint    _accountCreationFeeETH,
+            uint    _accountUpdateFeeETH,
+            uint    _depositFeeETH,
+            uint    _withdrawalFeeETH
         )
     {
-        _permissionedAccountCreation = state.permissionedAccountCreation;
+        _addressWhitelist = state.addressWhitelist;
         _accountCreationFeeETH = state.accountCreationFeeETH;
         _accountUpdateFeeETH = state.accountUpdateFeeETH;
         _depositFeeETH = state.depositFeeETH;

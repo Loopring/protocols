@@ -42,7 +42,7 @@ library ExchangeAdmins
 
     event SettingsUpdated(
         uint    indexed exchangeId,
-        bool            permissionedAccountCreation,
+        address         addressWhitelist,
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
@@ -70,11 +70,11 @@ library ExchangeAdmins
 
     function updateSettings(
         ExchangeData.State storage S,
-        bool _permissionedAccountCreation,
-        uint _accountCreationFeeETH,
-        uint _accountUpdateFeeETH,
-        uint _depositFeeETH,
-        uint _withdrawalFeeETH
+        address _addressWhitelist,
+        uint    _accountCreationFeeETH,
+        uint    _accountUpdateFeeETH,
+        uint    _depositFeeETH,
+        uint    _withdrawalFeeETH
         )
         public
     {
@@ -84,7 +84,7 @@ library ExchangeAdmins
             "AMOUNT_TOO_LARGE"
         );
 
-        S.permissionedAccountCreation = _permissionedAccountCreation;
+        S.addressWhitelist = _addressWhitelist;
         S.accountCreationFeeETH = _accountCreationFeeETH;
         S.accountUpdateFeeETH = _accountUpdateFeeETH;
         S.depositFeeETH = _depositFeeETH;
@@ -92,7 +92,7 @@ library ExchangeAdmins
 
         emit SettingsUpdated(
             S.id,
-            _permissionedAccountCreation,
+            _addressWhitelist,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
