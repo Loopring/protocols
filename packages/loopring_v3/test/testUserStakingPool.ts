@@ -47,7 +47,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       await userstaking.stake(1000, { from: owner1 });
       const userstaked = await userstaking.getUserStaking(owner1);
       assert.equal(
-        userstaked.stakeAmount,
+        userstaked.balance,
         1000,
         "User staking should equal to expected"
       );
@@ -133,7 +133,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       await userstaking.stake(1000, { from: owner1 });
       const userstaked = await userstaking.getUserStaking(owner1);
       assert.equal(
-        userstaked.stakeAmount,
+        userstaked.balance,
         1000,
         "User staking should equal to expected"
       );
@@ -145,7 +145,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       await userstaking.stake(1000, { from: owner2 });
       const userstaked = await userstaking.getUserStaking(owner2);
       assert.equal(
-        userstaked.stakeAmount,
+        userstaked.balance,
         1000,
         "User staking should equal to expected"
       );
@@ -157,7 +157,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       await userstaking.stake(1000, { from: owner3 });
       const userstaked = await userstaking.getUserStaking(owner3);
       assert.equal(
-        userstaked.stakeAmount,
+        userstaked.balance,
         1000,
         "User staking should equal to expected"
       );
