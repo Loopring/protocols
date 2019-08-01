@@ -82,8 +82,10 @@ library ExchangeAccounts
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
             if (S.permissionedAccountCreation) {
-                require(permission.length > 0, "EMPTY_SIG");
-                // TODO(daniel): Check the signature.
+                require(
+                    isPermissionValid(permission, now, msg.sender, S.operator),
+                    "INVALID_PERMISSION"
+                );
             } else {
                 require(permission.length == 0, "NON_EMPTY_SIG");
             }
@@ -195,5 +197,51 @@ library ExchangeAccounts
             accountMerkleProof,
             balanceMerkleProof
         );
+    }
+
+    function isPermissionValid(
+        bytes memory permission,
+        uint    currentTime,
+        address user,
+        address signer
+        )
+        internal
+        pure
+        returns (bool)
+    {
+        uint    t;
+        bytes32 r;
+        bytes32 s;
+        uint8   v;
+
+        if (permission.length != 65 + 8) {
+          return false;
+        }
+
+        assembly {
+          t := mload(add(permission, 8)) // first 64 bits as time in second since epoch
+          r := mload(add(permission, 40))
+          s := mload(add(permission, 72))
+          v := and(mload(add(permission, 73)), 255)
+        }
+
+        if (v < 27) {
+          v += 27;
+        }
+
+        if (v != 27 && v != 28) {
+          return false;
+        }
+
+        if (t < currentTime - ExchangeData.ACCOUNT_CREATION_PERMISSION_TIMEOUT()){
+            return false;
+        }
+
+        bytes32 hash = keccak256(abi.encode(
+            "LOOPRING_DEX_ACCOUNT_CREATION",
+            user,
+            t
+        ));
+        return signer == ecrecover(hash, v, r, s);
     }
 }
