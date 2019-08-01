@@ -33,7 +33,6 @@ contract UserStakingPool is IUserStakingPool, Claimable
     using MathUint          for uint;
 
     struct Staking {
-        address user;           // TODO(daniel): remove this field?
         uint    balance;        // Total amount of LRC staked or rewarded
         uint    depositedAt;
         uint    claimedAt;      // timestamp from which more points will be accumulated
@@ -152,8 +151,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         total.balance = total.balance.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
         total.claimedAt = (totalPoints >= userPoints) ?
-            totalPoints.sub(userPoints) / total.balance :
-            now
+            totalPoints.sub(userPoints) / total.balance : now;
 
         Staking storage user = stakings[msg.sender];
         user.balance = user.balance.add(claimedAmount);
