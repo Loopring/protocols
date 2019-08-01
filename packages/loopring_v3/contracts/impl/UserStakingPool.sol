@@ -165,9 +165,9 @@ contract UserStakingPool is IUserStakingPool, Claimable
             user.balance = user.balance.add(claimedAmount);
             user.claimedReward = user.claimedReward.add(claimedAmount);
             user.claimedAt = now;
-
-            emit LRCRewarded(msg.sender, claimedAmount);
         }
+
+        emit LRCRewarded(msg.sender, claimedAmount);
     }
 
     // -- Private Function --
