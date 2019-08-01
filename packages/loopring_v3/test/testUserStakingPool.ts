@@ -101,9 +101,9 @@ contract("UserStakingPool", (accounts: string[]) => {
   });
 
   describe("stakeA&B&C", () => {
-    it("set User A balance as 500", async () => {
+    it("set User A balance as 1000", async () => {
       //const amount = new BN(web3.utils.toWei("1000", "ether"));
-      const amount = new BN(500);
+      const amount = new BN(1000);
       await exchangeTestUtil.setBalanceAndApprove(
         owner1,
         "LRC",
@@ -111,8 +111,8 @@ contract("UserStakingPool", (accounts: string[]) => {
         userstaking.address
       );
     });
-    it("set User B balance as 250", async () => {
-      const amount = new BN(250);
+    it("set User B balance as 1000", async () => {
+      const amount = new BN(1000);
       await exchangeTestUtil.setBalanceAndApprove(
         owner2,
         "LRC",
@@ -120,8 +120,8 @@ contract("UserStakingPool", (accounts: string[]) => {
         userstaking.address
       );
     });
-    it("set User C balance as 250", async () => {
-      const amount = new BN(250);
+    it("set User C balance as 1000", async () => {
+      const amount = new BN(1000);
       await exchangeTestUtil.setBalanceAndApprove(
         owner3,
         "LRC",
@@ -130,37 +130,43 @@ contract("UserStakingPool", (accounts: string[]) => {
       );
     });
     it("should get user A staking equal to staked", async () => {
-      await userstaking.stake(500, { from: owner1 });
+      await userstaking.stake(1000, { from: owner1 });
       const userstaked = await userstaking.getUserStaking(owner1);
       assert.equal(
         userstaked.stakeAmount,
-        500,
+        1000,
         "User staking should equal to expected"
       );
     });
+    it("advance block timestampe after 30 days", async () => {
+      await exchangeTestUtil.advanceBlockTimestamp(30 * 24 * 60 * 60);
+    });
     it("should get user B staking equal to staked", async () => {
-      await userstaking.stake(250, { from: owner2 });
+      await userstaking.stake(1000, { from: owner2 });
       const userstaked = await userstaking.getUserStaking(owner2);
       assert.equal(
         userstaked.stakeAmount,
-        250,
+        1000,
         "User staking should equal to expected"
       );
     });
+    it("advance block timestampe after 30 days", async () => {
+      await exchangeTestUtil.advanceBlockTimestamp(30 * 24 * 60 * 60);
+    });
     it("should get user C staking equal to staked", async () => {
-      await userstaking.stake(250, { from: owner3 });
+      await userstaking.stake(1000, { from: owner3 });
       const userstaked = await userstaking.getUserStaking(owner3);
       assert.equal(
         userstaked.stakeAmount,
-        250,
+        1000,
         "User staking should equal to expected"
       );
     });
-    it("advance block timestampe after MIN_WITHDRAW_DELAY", async () => {
+    it("advance block timestampe after MIN_WITHDRAW_DELAY: 90 days", async () => {
       await exchangeTestUtil.advanceBlockTimestamp(90 * 24 * 60 * 60);
     });
-    it("set protocolfee as 200", async () => {
-      const amount = new BN(200);
+    it("set protocolfee as 120", async () => {
+      const amount = new BN(120);
       await exchangeTestUtil.transferBalance(
         protocolfee.address,
         "LRC",
@@ -176,8 +182,11 @@ contract("UserStakingPool", (accounts: string[]) => {
       );
       const items = eventArr.map((eventObj: any) => {
         const reward = eventObj.args.amount;
-        // 200 * 70%  * (500 / (500 + 250 + 250) as staking reward
-        assert.equal(reward, 70, "User claimed should equal to expected");
+        // 120 * 70%  * (180 / (180 + 120 + 90)) == 35 as staking reward
+        // as A's staking time is 30 + 30 + 90 days, B's staking time is 30 + 90 days and C's staking time is 90 days
+
+        // 34 for round down when div
+        assert(reward == 35 || reward == 34, "User claimed should equal to expected");
       });
     });
     it("should get user B claimed equal as expected", async () => {
@@ -189,8 +198,8 @@ contract("UserStakingPool", (accounts: string[]) => {
       );
       const items = eventArr.map((eventObj: any) => {
         const reward = eventObj.args.amount;
-        // 200 * 70%  * (250 / (500 + 250 + 250) as staking reward
-        assert.equal(reward, 35, "User claimed should equal to expected");
+        // 120 * 70%  * (180 / (180 + 120 + 90)) == 28 as staking reward
+        assert(reward == 27 || reward == 28 || reward == 29, "User claimed should equal to expected");
       });
     });
     it("should get user C claimed equal as expected", async () => {
@@ -202,8 +211,8 @@ contract("UserStakingPool", (accounts: string[]) => {
       );
       const items = eventArr.map((eventObj: any) => {
         const reward = eventObj.args.amount;
-        // 200 * 70%  * (250 / (500 + 250 + 250) as staking reward
-        assert.equal(reward, 35, "User claimed should equal to expected");
+        // 120 * 70%  * (180 / (180 + 120 + 90)) == 21 as staking reward
+        assert(reward == 20 || reward == 21 || reward == 22, "User claimed should equal to expected");
       });
     });
   });
