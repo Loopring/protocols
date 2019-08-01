@@ -114,7 +114,8 @@ contract UserStakingPool is IUserStakingPool, Claimable
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         // automatical claim when possible
-        if (getUserClaimWaitTime(msg.sender) == 0) {
+        if (protocolFeeVaultAddress != address(0） &&
+            getUserClaimWaitTime(msg.sender) == 0) {
             claim();
         }
     
