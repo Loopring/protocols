@@ -713,10 +713,10 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     function updateSettings(
         address _addressWhitelist,
-        uint _accountCreationFeeETH,
-        uint _accountUpdateFeeETH,
-        uint _depositFeeETH,
-        uint _withdrawalFeeETH
+        uint    _accountCreationFeeETH,
+        uint    _accountUpdateFeeETH,
+        uint    _depositFeeETH,
+        uint    _withdrawalFeeETH
         )
         external
         nonReentrant
