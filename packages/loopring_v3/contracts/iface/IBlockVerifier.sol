@@ -14,41 +14,97 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 
 /// @title IBlockVerifier
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IBlockVerifier
 {
-    /// @dev Sets or updates the verifying key for the given block type
-    ///      and permutation.
-    /// @param blockType The type of the block See @BlockType
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @param vk The verification key
-    function setVerifyingKey(
+    // -- Events --
+
+    event CircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
-        uint8  blockVersion,
-        uint256[18] calldata vk
-        )
-        external;
+        uint8  blockVersion
+    );
 
-    /// @dev Checks if a block with the given parameters can be verified.
+    event CircuitDisabled(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+    );
+
+    // -- Public functions --
+
+    /// @dev Sets the verifying key for the specified circuit.
     ///      Every block permutation needs its own circuit and thus its own set of
-    ///      verification keys. Only a limited number of blocks sizes per block
+    ///      verification keys. Only a limited number of block sizes per block
     ///      type are supported.
     /// @param blockType The type of the block See @BlockType
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @return True if the block can be verified, false otherwise
-    function canVerify(
+    /// @param vk The verification key
+    function registerCircuit(
+        uint8    blockType,
+        bool     onchainDataAvailability,
+        uint16   blockSize,
+        uint8    blockVersion,
+        uint[18] calldata vk
+        )
+        external;
+
+    /// @dev Disables the use of the specified circuit.
+    ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
+    ///      can still be verified.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    function disableCircuit(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external;
+
+    /// @dev Verify blocks with the given public data and proofs.
+    ///      Verifying a block makes sure all requests handled in the block
+    ///      are correctly handled by the operator.
+    /// @param blockType The type of block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @param publicInputs The hash of all the public data of the blocks
+    /// @param proofs The ZK proofs proving that the blocks are correct
+    /// @return True if the block is valid, false otherwise
+    function verifyProofs(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion,
+        uint[] calldata publicInputs,
+        uint[] calldata proofs
+        )
+        external
+        view
+        returns (bool);
+
+    /// @dev Checks if a circuit with the specified parameters is registered.
+    /// @param blockType The type of the block See @BlockType
+    /// @param onchainDataAvailability True if the block expects onchain
+    ///        data availability data as public input, false otherwise
+    /// @param blockSize The number of requests handled in the block
+    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @return True if the circuit is registered, false otherwise
+    function isCircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
@@ -58,27 +114,20 @@ contract IBlockVerifier
         view
         returns (bool);
 
-    /// @dev Verifies a block with the given public data and proof.
-    ///      Verifying a block makes sure all requests handled in the block
-    ///      are correctly handled by the operator.
-    /// @param blockType The type of block See @BlockType
+    /// @dev Checks if a circuit can still be used to commit new blocks.
+    /// @param blockType The type of the block See @BlockType
     /// @param onchainDataAvailability True if the block expects onchain
     ///        data availability data as public input, false otherwise
     /// @param blockSize The number of requests handled in the block
     /// @param blockVersion The block version (i.e. which circuit version needs to be used)
-    /// @param publicDataHash The hash of all the public data
-    /// @param proof The ZK proof that the block is correct
-    /// @return True if the block is valid, false otherwise
-    function verifyProof(
-        uint8   blockType,
-        bool    onchainDataAvailability,
-        uint16  blockSize,
-        uint8   blockVersion,
-        bytes32 publicDataHash,
-        uint256[8] calldata proof
+    /// @return True if the circuit is enabled, false otherwise
+    function isCircuitEnabled(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
         )
         external
         view
         returns (bool);
-
 }

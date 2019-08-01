@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "../../lib/BytesUtil.sol";
 import "../../lib/MathUint.sol";
@@ -64,8 +64,8 @@ library ExchangeBlocks
         uint8  blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes memory data,
-        bytes memory offchainData
+        bytes  memory data,
+        bytes  memory /*offchainData*/
         )
         internal  // inline call
     {
@@ -78,52 +78,90 @@ library ExchangeBlocks
         );
     }
 
-    function verifyBlock(
+    function verifyBlocks(
         ExchangeData.State storage S,
-        uint blockIdx,
-        uint256[8] memory proof
+        uint[] memory blockIndices,
+        uint[] memory proofs
         )
         public
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
 
-        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-        require(
-            specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
-            "BLOCK_VERIFIED_ALREADY"
-        );
+        // Check input data
+        require(blockIndices.length > 0, "INVALID_INPUT_ARRAYS");
+        require(proofs.length % 8 == 0, "INVALID_PROOF_ARRAY");
+        require(proofs.length / 8 == blockIndices.length, "INVALID_INPUT_ARRAYS");
 
-        // Check if the proof for this block is too early
-        // We limit the gap between the last finalized block and the last verified block to limit
-        // the number of blocks that can become finalized when a single block is verified
-        require(
-            blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
-            "PROOF_TOO_EARLY"
-        );
+        uint[] memory publicInputs = new uint[](blockIndices.length);
+        uint16 blockSize;
+        ExchangeData.BlockType blockType;
+        uint8 blockVersion;
 
-        // Check if we still accept a proof for this block
-        require(
-            now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "PROOF_TOO_LATE"
-        );
+        for (uint i = 0; i < blockIndices.length; i++) {
+            uint blockIdx = blockIndices[i];
 
-        // Verify the proof
+            require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
+            ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+            require(
+                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
+                "BLOCK_VERIFIED_ALREADY"
+            );
+
+            // Check if the proof for this block is too early
+            // We limit the gap between the last finalized block and the last verified block to limit
+            // the number of blocks that can become finalized when a single block is verified
+            require(
+                blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
+                "PROOF_TOO_EARLY"
+            );
+
+            // Check if we still accept a proof for this block
+            require(
+                now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
+                "PROOF_TOO_LATE"
+            );
+
+            // Strip the 3 least significant bits of the public data hash
+            // so we don't have any overflow in the snark field
+            publicInputs[i] = uint(specifiedBlock.publicDataHash) >> 3;
+            if (i == 0) {
+                blockSize = specifiedBlock.blockSize;
+                blockType = specifiedBlock.blockType;
+                blockVersion = specifiedBlock.blockVersion;
+            } else {
+                // We only support batch verifying blocks that use the same verifying key
+                require(blockType == specifiedBlock.blockType, "INVALID_BATCH_BLOCK_TYPE");
+                require(blockSize == specifiedBlock.blockSize, "INVALID_BATCH_BLOCK_SIZE");
+                require(blockVersion == specifiedBlock.blockVersion, "INVALID_BATCH_BLOCK_VERSION");
+            }
+        }
+
+        // Verify the proofs
         require(
-            S.blockVerifier.verifyProof(
-                uint8(specifiedBlock.blockType),
+            S.blockVerifier.verifyProofs(
+                uint8(blockType),
                 S.onchainDataAvailability,
-                specifiedBlock.blockSize,
-                specifiedBlock.blockVersion,
-                specifiedBlock.publicDataHash,
-                proof
+                blockSize,
+                blockVersion,
+                publicInputs,
+                proofs
             ),
             "INVALID_PROOF"
         );
-        // Mark the block as verified
-        specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
-        emit BlockVerified(blockIdx);
+
+        // Mark the blocks as verified
+        for (uint i = 0; i < blockIndices.length; i++) {
+            uint blockIdx = blockIndices[i];
+            ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
+            // Check this again to make sure no block is verified twice in a single call to verifyBlocks
+            require(
+                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
+                "BLOCK_VERIFIED_ALREADY"
+            );
+            specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
+            emit BlockVerified(blockIdx);
+        }
 
         // Update the number of blocks that are finalized
         // The number of blocks after the specified block index is limited
@@ -177,7 +215,7 @@ library ExchangeBlocks
         ExchangeData.BlockType blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes memory data   // This field already has all the dummy (0-valued) requests padded,
+        bytes  memory data   // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed
                             // in this block. This is fine because 0-bytes consume fewer gas.
@@ -195,7 +233,7 @@ library ExchangeBlocks
 
         // Check if the block is supported
         require(
-            S.blockVerifier.canVerify(
+            S.blockVerifier.isCircuitEnabled(
                 uint8(blockType),
                 S.onchainDataAvailability,
                 blockSize,
@@ -285,8 +323,8 @@ library ExchangeBlocks
                     abi.encodePacked(
                         endingHash,
                         uint24(0),
-                        uint256(0),
-                        uint256(0),
+                        uint(0),
+                        uint(0),
                         uint8(0),
                         uint96(0)
                     )

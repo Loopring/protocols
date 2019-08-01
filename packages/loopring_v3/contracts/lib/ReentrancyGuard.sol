@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 
 /// @title ReentrancyGuard
@@ -26,7 +26,7 @@ pragma solidity 0.5.7;
 contract ReentrancyGuard
 {
     // Set to 1 so we don't have an expensive 0 -> 1 SSTORE
-    uint256 private _guardValue = 1;
+    uint private _guardValue = 1;
 
     // Use this modifier on a function to prevent reentrancy
     modifier nonReentrant()

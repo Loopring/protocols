@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
@@ -77,7 +77,7 @@ library ExchangeDeposits
         view
         returns (
           bytes32 accumulatedHash,
-          uint256 accumulatedFee,
+          uint    accumulatedFee,
           uint32  timestamp
         )
     {
@@ -117,6 +117,10 @@ library ExchangeDeposits
             amount,
             feeETH
         );
+
+        // Make sure the public key can be stored in the SNARK field
+        require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
+        require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
 
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];

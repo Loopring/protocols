@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity 0.5.10;
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
@@ -149,7 +149,7 @@ library ExchangeData
     struct Request
     {
         bytes32 accumulatedHash;
-        uint256 accumulatedFee;
+        uint    accumulatedFee;
         uint32  timestamp;
     }
 
@@ -163,6 +163,11 @@ library ExchangeData
 
     function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
         return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
+    }
+
+    function SNARK_SCALAR_FIELD() internal pure returns (uint) {
+        // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
+        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
     function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
