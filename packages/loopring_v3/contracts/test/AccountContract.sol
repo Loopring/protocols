@@ -42,7 +42,7 @@ contract AccountContract {
         uint    pubKeyY,
         address token,
         uint96  amount,
-        bytes   calldata operatorSig
+        bytes   calldata permission
         )
         external
         payable
@@ -59,7 +59,7 @@ contract AccountContract {
             pubKeyY,
             token,
             amount,
-            operatorSig
+            permission
         );
         uint balanceAfter = address(this).balance;
         msg.sender.transfer(balanceAfter.sub(balanceBefore));

@@ -166,7 +166,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     function createOrUpdateAccount(
         uint  pubKeyX,
         uint  pubKeyY,
-        bytes calldata operatorSig
+        bytes calldata permission
         )
         external
         payable
@@ -182,7 +182,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             pubKeyY,
             address(0),
             0,
-            operatorSig
+            permission
         );
     }
 
@@ -489,7 +489,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint    pubKeyY,
         address token,
         uint96  amount,
-        bytes   calldata operatorSig
+        bytes   calldata permission
         )
         external
         payable
@@ -505,7 +505,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             pubKeyY,
             token,
             amount,
-            operatorSig
+            permission
         );
     }
 
@@ -854,7 +854,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint    pubKeyY,
         address token,
         uint96  amount,
-        bytes   memory operatorSig
+        bytes   memory permission
         )
         internal
         returns (
@@ -866,7 +866,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
             pubKeyX,
             pubKeyY,
-            operatorSig
+            permission
         );
         uint additionalFeeETH = 0;
         if (isAccountNew) {

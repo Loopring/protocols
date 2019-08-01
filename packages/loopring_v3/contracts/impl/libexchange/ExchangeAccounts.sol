@@ -67,7 +67,7 @@ library ExchangeAccounts
         ExchangeData.State storage S,
         uint  pubKeyX,
         uint  pubKeyY,
-        bytes memory operatorSig
+        bytes memory permission
         )
         public
         returns (
@@ -82,15 +82,15 @@ library ExchangeAccounts
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
             if (S.permissionedAccountCreation) {
-                require(operatorSig.length > 0, "EMPTY_SIG");
+                require(permission.length > 0, "EMPTY_SIG");
                 // TODO(daniel): Check the signature.
             } else {
-                require(operatorSig.length == 0, "NON_EMPTY_SIG");
+                require(permission.length == 0, "NON_EMPTY_SIG");
             }
             accountID = createAccount(S, pubKeyX, pubKeyY);
             isAccountUpdated = false;
         } else {
-            require(operatorSig.length == 0, "NON_EMPTY_SIG");
+            require(permission.length == 0, "NON_EMPTY_SIG");
             (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
         }
     }
