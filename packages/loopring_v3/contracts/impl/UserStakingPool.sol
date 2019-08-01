@@ -149,7 +149,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
         (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
         require(claimedAmount > 0, "ZERO_VALUE");
 
-        IProtocolFeeVault(protocolFeeVaultAddress).claim(claimedAmount);
+        IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
         total.balance = total.balance.add(claimedAmount);
         total.claimedReward = total.claimedReward.add(claimedAmount);
