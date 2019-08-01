@@ -81,7 +81,7 @@ library ExchangeAccounts
 
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
-            if (S.needOperatorSignatureToCreateAccount) {
+            if (S.permissionedAccountCreation) {
                 require(operatorSig.length > 0, "EMPTY_SIG");
                 // TODO(daniel): Check the signature.
             } else {

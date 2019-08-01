@@ -42,7 +42,7 @@ library ExchangeAdmins
 
     event SettingsUpdated(
         uint    indexed exchangeId,
-        bool            needOperatorSignatureToCreateAccount,
+        bool            permissionedAccountCreation,
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
@@ -70,7 +70,7 @@ library ExchangeAdmins
 
     function updateSettings(
         ExchangeData.State storage S,
-        bool _needOperatorSignatureToCreateAccount,
+        bool _permissionedAccountCreation,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -84,7 +84,7 @@ library ExchangeAdmins
             "AMOUNT_TOO_LARGE"
         );
 
-        S.needOperatorSignatureToCreateAccount = _needOperatorSignatureToCreateAccount;
+        S.permissionedAccountCreation = _permissionedAccountCreation;
         S.accountCreationFeeETH = _accountCreationFeeETH;
         S.accountUpdateFeeETH = _accountUpdateFeeETH;
         S.depositFeeETH = _depositFeeETH;
@@ -92,7 +92,7 @@ library ExchangeAdmins
 
         emit SettingsUpdated(
             S.id,
-            _needOperatorSignatureToCreateAccount,
+            _permissionedAccountCreation,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,

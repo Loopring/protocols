@@ -201,7 +201,7 @@ contract IExchange
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
     /// @param  operatorSig The operator's signature to allow the creation of new accounts.
-    ///                     when `needOperatorSignatureToCreateAccount` is true. For account
+    ///                     when `permissionedAccountCreation` is true. For account
     ///                     update, please always set this to `new bytes(0)`.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
@@ -609,7 +609,7 @@ contract IExchange
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @param  operatorSig The operator's signature to allow the creation of new accounts,
-    ///                     when `needOperatorSignatureToCreateAccount` is true. For account
+    ///                     when `permissionedAccountCreation` is true. For account
     ///                     updates, please always set this to `new bytes(0)`.
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param  amount The amount of tokens to deposit
@@ -939,7 +939,7 @@ contract IExchange
     /// @param _depositFeeETH The fee in ETH for deposits
     /// @param _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
     function updateSettings(
-        bool _needOperatorSignatureToCreateAccount,
+        bool _permissionedAccountCreation,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -956,7 +956,7 @@ contract IExchange
         external
         view
         returns (
-            bool _needOperatorSignatureToCreateAccount,
+            bool _permissionedAccountCreation,
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,

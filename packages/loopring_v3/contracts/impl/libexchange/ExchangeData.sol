@@ -205,7 +205,7 @@ library ExchangeData
         uint    numDowntimeMinutes;
         uint    downtimeStart;
 
-        bool    needOperatorSignatureToCreateAccount;
+        bool    permissionedAccountCreation;
         uint    accountCreationFeeETH;
         uint    accountUpdateFeeETH;
         uint    depositFeeETH;
