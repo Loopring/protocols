@@ -152,21 +152,22 @@ contract UserStakingPool is IUserStakingPool, Claimable
         uint userPoints;
 
         (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
-        require(claimedAmount > 0, "ZERO_VALUE");
+        if (claimedAmount > 0) {
 
-        IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
+            IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
-        total.balance = total.balance.add(claimedAmount);
-        total.claimedReward = total.claimedReward.add(claimedAmount);
-        total.claimedAt = (totalPoints >= userPoints) ?
+            total.balance = total.balance.add(claimedAmount);
+            total.claimedReward = total.claimedReward.add(claimedAmount);
+            total.claimedAt = (totalPoints >= userPoints) ?
             now.sub(totalPoints.sub(userPoints) / total.balance) : now;
 
-        Staking storage user = stakings[msg.sender];
-        user.balance = user.balance.add(claimedAmount);
-        user.claimedReward = user.claimedReward.add(claimedAmount);
-        user.claimedAt = now;
+            Staking storage user = stakings[msg.sender];
+            user.balance = user.balance.add(claimedAmount);
+            user.claimedReward = user.claimedReward.add(claimedAmount);
+            user.claimedAt = now;
 
-        emit LRCRewarded(msg.sender, claimedAmount);
+            emit LRCRewarded(msg.sender, claimedAmount);
+        }
     }
 
     // -- Private Function --
