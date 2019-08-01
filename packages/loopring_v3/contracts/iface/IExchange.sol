@@ -200,9 +200,9 @@ contract IExchange
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
-    /// @param  operatorSig The operator's signature to allow the creation of such account.
+    /// @param  operatorSig The operator's signature to allow the creation of new accounts.
     ///                     when `needOperatorSignatureToCreateAccount` is true. For account
-    ///                     update, set this to `new bytes(0)`.
+    ///                     update, please always set this to `new bytes(0)`.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
@@ -608,9 +608,9 @@ contract IExchange
     ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
-    /// @param  operatorSig The operator's signature to allow the creation of such account.
+    /// @param  operatorSig The operator's signature to allow the creation of new accounts,
     ///                     when `needOperatorSignatureToCreateAccount` is true. For account
-    ///                     update, set this to `new bytes(0)`.
+    ///                     updates, please always set this to `new bytes(0)`.
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param  amount The amount of tokens to deposit
     /// @return accountID The id of the account
