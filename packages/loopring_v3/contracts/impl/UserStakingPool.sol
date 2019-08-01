@@ -113,27 +113,19 @@ contract UserStakingPool is IUserStakingPool, Claimable
     {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
+        // automatical claim when possible
+        if (getUserClaimWaitTime(msg.sender) == 0) {
+            claim();
+        }
+    
         Staking storage user = stakings[msg.sender];
         require(user.balance >= amount, "INSUFFICIENT_FUND");
 
         uint _amount = (amount == 0) ? user.balance : amount;
         require(_amount > 0, "ZERO_VALUE");
 
-        // force claim when withdraw
-        if (getUserClaimWaitTime(msg.sender) == 0) {
-            uint claimedAmount = claim();
-            if (amount == 0) {
-                _amount += claimedAmount;
-            }
-        }
-
         total.balance = total.balance.sub(_amount);
         user.balance = user.balance.sub(_amount);
-
-        if (user.balance == 0) {
-            numAddresses -= 1;
-            delete stakings[msg.sender];
-        }
 
         // transfer LRC to user
         require(
