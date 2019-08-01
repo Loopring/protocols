@@ -93,7 +93,7 @@ library ExchangeAdmins
         );
     }
 
-    function updateFees(
+    function setFees(
         ExchangeData.State storage S,
         uint    _accountCreationFeeETH,
         uint    _accountUpdateFeeETH,

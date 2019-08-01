@@ -720,7 +720,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
     }
 
-    function updateFees(
+    function setFees(
         uint    _accountCreationFeeETH,
         uint    _accountUpdateFeeETH,
         uint    _depositFeeETH,
@@ -730,7 +730,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        state.updateFees(
+        state.setFees(
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,

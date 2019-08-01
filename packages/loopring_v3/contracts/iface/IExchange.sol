@@ -953,7 +953,7 @@ contract IExchange
     /// @param _accountUpdateFeeETH The fee in ETH for account update
     /// @param _depositFeeETH The fee in ETH for deposits
     /// @param _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function updateFees(
+    function setFees(
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
