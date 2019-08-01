@@ -19,11 +19,6 @@
       "delay": 10000
     }
   },
-  "husky": {
-    "hooks": {
-      "pre-commit": "pretty-quick --staged"
-    }
-  },
   "scripts": {
     "watch": "npm-watch compile",
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
