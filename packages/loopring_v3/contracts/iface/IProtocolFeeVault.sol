@@ -63,7 +63,7 @@ contract IProtocolFeeVault
     ///      the IUserStakingPool contract.
     ///
     /// @param amount The amount of LRC to be claimed.
-    function claim(uint amount) external;
+    function claimStakingReward(uint amount) external;
 
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
