@@ -95,10 +95,10 @@ library ExchangeAdmins
 
     function setFees(
         ExchangeData.State storage S,
-        uint    _accountCreationFeeETH,
-        uint    _accountUpdateFeeETH,
-        uint    _depositFeeETH,
-        uint    _withdrawalFeeETH
+        uint _accountCreationFeeETH,
+        uint _accountUpdateFeeETH,
+        uint _depositFeeETH,
+        uint _withdrawalFeeETH
         )
         public
     {
