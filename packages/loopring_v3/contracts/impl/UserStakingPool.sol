@@ -126,10 +126,10 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
         total.balance = total.balance.sub(_amount);
         user.balance = user.balance.sub(_amount);
-        
-        if (user.balance == 0) {	
-            numAddresses -= 1;	
-            delete stakings[msg.sender];	
+
+        if (user.balance == 0) {
+            numAddresses -= 1;
+            delete stakings[msg.sender];
         }
 
         // transfer LRC to user
