@@ -119,6 +119,14 @@ contract UserStakingPool is IUserStakingPool, Claimable
         uint _amount = (amount == 0) ? user.balance : amount;
         require(_amount > 0, "ZERO_VALUE");
 
+        // force claim when withdraw
+        if (getUserClaimWaitTime(msg.sender) == 0) {
+            uint claimedAmount = claim();
+            if (amount == 0) {
+                _amount += claimedAmount;
+            }
+        }
+
         total.balance = total.balance.sub(_amount);
         user.balance = user.balance.sub(_amount);
 
@@ -137,7 +145,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
     }
 
     function claim()
-        external
+        public
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
