@@ -341,7 +341,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(16, 6, 54);
+    const hasher = poseidon.createHash(14, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
@@ -407,7 +407,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(10, 6, 53);
+    const hasher = poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][cancel.accountID];
 
     // Calculate hash
@@ -436,7 +436,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(10, 6, 53);
+    const hasher = poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
 
     // Calculate hash
@@ -1579,40 +1579,22 @@ export class ExchangeTestUtil {
   }
 
   public hashLabels(labels: number[]) {
-    const stage1Hasher = poseidon.createHash(48, 6, 55);
-    const stage2Hasher = poseidon.createHash(6, 6, 52);
+    const hasher = poseidon.createHash(66, 6, 56);
+    const numInputs = 64;
 
-    const numInputsStage1 = 40;
-    const numInputsStage2 = 4;
-
-    const numStage1Hashes = Math.floor(
-      (labels.length + numInputsStage1 - 1) / numInputsStage1
-    );
-    const stage1Hashes: any[] = [];
-    for (let i = 0; i < numStage1Hashes; i++) {
+    const numStages = Math.floor((labels.length + numInputs - 1) / numInputs);
+    const stageHashes: any[] = [];
+    for (let i = 0; i < numStages; i++) {
       const inputs: number[] = [];
-      for (let j = 0; j < numInputsStage1; j++) {
-        const labelIdx = i * numInputsStage1 + j;
+      inputs.push(i == 0 ? 0 : stageHashes[stageHashes.length - 1]);
+      for (let j = 0; j < numInputs; j++) {
+        const labelIdx = i * numInputs + j;
         inputs.push(labelIdx < labels.length ? labels[labelIdx] : 0);
       }
-      stage1Hashes.push(stage1Hasher(inputs));
+      stageHashes.push(hasher(inputs));
     }
 
-    const numStage2Hashes = Math.floor(
-      (numStage1Hashes + numInputsStage2 - 1) / numInputsStage2
-    );
-    const stage2Hashes: any[] = [];
-    for (let i = 0; i < numStage2Hashes; i++) {
-      const inputs: any[] = [];
-      inputs.push(i == 0 ? 0 : stage2Hashes[stage2Hashes.length - 1]);
-      for (let j = 0; j < numInputsStage2; j++) {
-        const hashIdx = i * numInputsStage2 + j;
-        inputs.push(hashIdx < stage1Hashes.length ? stage1Hashes[hashIdx] : 0);
-      }
-      stage2Hashes.push(stage2Hasher(inputs));
-    }
-
-    const hash = stage2Hashes[stage2Hashes.length - 1];
+    const hash = stageHashes[stageHashes.length - 1];
     logDebug("[JS] labels hash: " + hash.toString(10));
     return hash;
   }
