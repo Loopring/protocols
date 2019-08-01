@@ -457,19 +457,37 @@ export class Simulator {
       }
     }
 
+    const paymentsA: DetailedTokenTransfer = {
+      description: "OwnerA",
+      token: 0,
+      from: operatorAccountID,
+      to: operatorAccountID,
+      amount: new BN(0),
+      subPayments: [],
+    };
     const detailedTransfersA = this.getDetailedTransfers(
       operatorAccountID,
       ring, ring.orderA, ring.orderB,
       fillA.S, fillA.B, s.feeA,
     );
+    paymentsA.subPayments.push(...detailedTransfersA);
 
+    const paymentsB: DetailedTokenTransfer = {
+      description: "OwnerB",
+      token: 0,
+      from: operatorAccountID,
+      to: operatorAccountID,
+      amount: new BN(0),
+      subPayments: [],
+    };
     const detailedTransfersB = this.getDetailedTransfers(
       operatorAccountID,
       ring, ring.orderB, ring.orderA,
       fillB.S, fillB.B, s.feeB,
     );
+    paymentsB.subPayments.push(...detailedTransfersB);
 
-    const ringMatcherPayments: DetailedTokenTransfer = {
+    const paymentsOperator: DetailedTokenTransfer = {
       description: "Operator",
       token: 0,
       from: operatorAccountID,
@@ -509,15 +527,15 @@ export class Simulator {
       amount: s.protocolFeeB,
       subPayments: [],
     };
-    ringMatcherPayments.subPayments.push(payRebateA);
-    ringMatcherPayments.subPayments.push(payRebateB);
-    ringMatcherPayments.subPayments.push(payProtocolFeeA);
-    ringMatcherPayments.subPayments.push(payProtocolFeeB);
+    paymentsOperator.subPayments.push(payRebateA);
+    paymentsOperator.subPayments.push(payRebateB);
+    paymentsOperator.subPayments.push(payProtocolFeeA);
+    paymentsOperator.subPayments.push(payProtocolFeeB);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
-    detailedTransfers.push(...detailedTransfersA);
-    detailedTransfers.push(...detailedTransfersB);
-    detailedTransfers.push(ringMatcherPayments);
+    detailedTransfers.push(paymentsA);
+    detailedTransfers.push(paymentsB);
+    detailedTransfers.push(paymentsOperator);
 
     const simulatorReport: RingSettlementSimulatorReport = {
       exchangeStateBefore: exchangeState,

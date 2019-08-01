@@ -308,15 +308,15 @@ class WithdrawProof(object):
 
 class Order(object):
     def __init__(self,
-                 publicKey,
+                 publicKeyX, publicKeyY,
                  exchangeID, orderID, accountID,
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
                  maxFeeBips, feeBips, rebateBips,
                  label):
-        self.publicKeyX = str(publicKey.x)
-        self.publicKeyY = str(publicKey.y)
+        self.publicKeyX = str(publicKeyX)
+        self.publicKeyY = str(publicKeyY)
 
         self.exchangeID = int(exchangeID)
         self.orderID = int(orderID)

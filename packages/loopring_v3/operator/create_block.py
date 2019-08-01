@@ -6,10 +6,6 @@ import subprocess
 import json
 import pathlib
 from state import Account, Context, State, Order, Ring, copyAccountInfo, AccountUpdateData
-from ethsnarks.jubjub import Point
-from ethsnarks.field import FQ
-from ethsnarks.poseidon import poseidon, poseidon_params
-from ethsnarks.field import SNARK_SCALAR_FIELD
 
 
 class RingSettlementBlock(object):
@@ -80,7 +76,7 @@ def orderFromJSON(jOrder, state):
 
     account = state.getAccount(accountID)
 
-    order = Order(Point(account.publicKeyX, account.publicKeyY),
+    order = Order(account.publicKeyX, account.publicKeyY,
                   exchangeID, orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,

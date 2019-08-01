@@ -379,20 +379,17 @@ export class ExchangeTestUtil {
     // console.log("Verify order signature time: " + (endVerify - startVerify));
   }
 
-  public signRingBlock(block: any) {
+  public signRingBlock(block: any, publicDataInput: any) {
     if (block.signature !== undefined) {
       return;
     }
 
-    const hasher = poseidon.createHash(6, 6, 52);
+    const hasher = poseidon.createHash(3, 6, 51);
     const account = this.accounts[this.exchangeId][block.operatorAccountID];
 
     // Calculate hash
     const inputs = [
-      block.exchangeID,
-      block.timestamp,
-      new BN(block.merkleRootBefore, 10),
-      new BN(block.merkleRootAfter, 10),
+      new BN(publicDataInput, 10),
       account.nonce++,
     ];
     const hash = hasher(inputs).toString(10);
@@ -881,8 +878,14 @@ export class ExchangeTestUtil {
     return [nextBlockIdx, outputFilename];
   }
 
+  public getPublicDataHashAndInput(data: string) {
+    const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
+    const publicInput = new BN(publicDataHash.slice(2), 16).shrn(3).toString(10);
+    return {publicDataHash, publicInput};
+  }
+
   public async validateBlock(filename: string) {
-    // Vali
+    // Validate the block
     const result = childProcess.spawnSync(
       "build/circuit/dex_circuit",
       ["-validate", filename],
@@ -897,8 +900,9 @@ export class ExchangeTestUtil {
       data += "00";
       this.commitWrongPublicDataOnce = false;
     }
-    const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
-    const publicInput = new BN(publicDataHash.slice(2), 16).shrn(3).toString(10);
+    const publicDataHashAndInput = this.getPublicDataHashAndInput(data);
+    const publicDataHash = publicDataHashAndInput.publicDataHash;
+    const publicInput = publicDataHashAndInput.publicInput;
     logDebug("[EVM]PublicData: " + data);
     logDebug("[EVM]PublicDataHash: " + publicDataHash);
     logDebug("[EVM]PublicInput: " + publicInput);
@@ -1725,16 +1729,7 @@ export class ExchangeTestUtil {
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
-      // Write the block signature
-      this.signRingBlock(block)
-      fs.writeFileSync(blockFilename, JSON.stringify(block, undefined, 4), "utf8");
-
-      // Validate the block after generating the signature
-      await this.validateBlock(blockFilename);
-
-      // Store state after
-      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
-
+      // Pack the data that needs to be committed onchain
       const bs = new Bitstream();
       bs.addNumber(exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
@@ -1743,7 +1738,6 @@ export class ExchangeTestUtil {
       bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
       bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
       bs.addBN(new BN(labelHash, 10), 32);
-
       const da = new Bitstream();
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
@@ -1768,12 +1762,22 @@ export class ExchangeTestUtil {
           da.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
         }
       }
-
       if (block.onchainDataAvailability) {
         // Apply circuit transfrom
         const transformedData = this.transformRingSettlementsData(da.getData());
         bs.addHex(transformedData);
       }
+
+      // Write the block signature
+      const publicDataHashAndInput = this.getPublicDataHashAndInput(bs.getData());
+      this.signRingBlock(block, publicDataHashAndInput.publicInput);
+      fs.writeFileSync(blockFilename, JSON.stringify(block, undefined, 4), "utf8");
+
+      // Validate the block after generating the signature
+      await this.validateBlock(blockFilename);
+
+      // Store state after
+      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
 
       // Validate state change
       this.validateRingSettlements(ringBlock, bs.getData(), stateBefore, stateAfter);
@@ -2879,7 +2883,7 @@ export class ExchangeTestUtil {
       const toName = addressBook[payment.to] !== undefined ? addressBook[payment.to] : payment.to;
       logInfo(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
-      logInfo(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
+      logInfo(whiteSpace + "+ " + " [" + description + "] ");
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
       }

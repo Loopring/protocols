@@ -22,7 +22,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Cancel", function() {
     this.timeout(0);
 
-    it("Cancel", async () => {
+    it("Cancel (orderToken != feeToken)", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -49,12 +49,16 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeId, ring);
 
+      const feeToken = "LRC";
+      const feeAmount = new BN(web3.utils.toWei("1.5", "ether"))
+      await exchangeTestUtil.depositTo(ring.orderB.accountID, feeToken, feeAmount);
+
       await exchangeTestUtil.commitDeposits(exchangeId);
 
       await exchangeTestUtil.cancelOrder(
-        ring.orderA,
-        "WETH",
-        new BN(web3.utils.toWei("1", "ether"))
+        ring.orderB,
+        feeToken,
+        feeAmount,
       );
       await exchangeTestUtil.commitCancels(exchangeId);
 
@@ -63,7 +67,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
-    it("Cancel (owner == operator)", async () => {
+    it("Cancel (orderToken == feeToken)", async () => {
       const ring: RingInfo = {
         orderA:
           {
@@ -91,8 +95,6 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeId, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeId);
-
-      exchangeTestUtil.setActiveOperator(ring.orderB.accountID);
 
       await exchangeTestUtil.cancelOrder(
         ring.orderA,
