@@ -187,6 +187,7 @@ library ExchangeData
     function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
+    function ACCOUNT_CREATION_PERMISSION_TIMEOUT() internal pure returns (uint32) { return 1 days; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
