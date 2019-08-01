@@ -164,8 +164,9 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function createOrUpdateAccount(
-        uint pubKeyX,
-        uint pubKeyY
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes calldata operatorSig
         )
         external
         payable
@@ -180,7 +181,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             pubKeyX,
             pubKeyY,
             address(0),
-            0
+            0,
+            operatorSig
         );
     }
 
@@ -486,7 +488,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata operatorSig
         )
         external
         payable
@@ -501,7 +504,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             pubKeyX,
             pubKeyY,
             token,
-            amount
+            amount,
+            operatorSig
         );
     }
 
@@ -707,7 +711,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         oldOperator = state.setOperator(_operator);
     }
 
-    function setFees(
+    function updateSettings(
+        bool _needOperatorSignatureToCreateAccount,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -717,7 +722,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         nonReentrant
         onlyOwner
     {
-        state.setFees(
+        state.updateSettings(
+            _needOperatorSignatureToCreateAccount,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
@@ -725,16 +731,18 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         );
     }
 
-    function getFees()
+    function getSettings()
         external
         view
         returns (
+            bool _needOperatorSignatureToCreateAccount,
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,
             uint _withdrawalFeeETH
         )
     {
+        _needOperatorSignatureToCreateAccount = state.needOperatorSignatureToCreateAccount;
         _accountCreationFeeETH = state.accountCreationFeeETH;
         _accountUpdateFeeETH = state.accountUpdateFeeETH;
         _depositFeeETH = state.depositFeeETH;
@@ -845,7 +853,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
-        uint96  amount
+        uint96  amount,
+        bytes   memory operatorSig
         )
         internal
         returns (
@@ -856,7 +865,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     {
         (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
             pubKeyX,
-            pubKeyY
+            pubKeyY,
+            operatorSig
         );
         uint additionalFeeETH = 0;
         if (isAccountNew) {

@@ -52,7 +52,7 @@ library ExchangeBlocks
         uint    indexed blockIdx
     );
 
-    event ProtocolFeesUpdated(
+    event ProtocolSettingsUpdated(
         uint8 takerFeeBips,
         uint8 makerFeeBips,
         uint8 previousTakerFeeBips,
@@ -450,7 +450,7 @@ library ExchangeBlocks
                 (data.makerFeeBips != data.previousMakerFeeBips);
 
             if (feeUpdated) {
-                emit ProtocolFeesUpdated(
+                emit ProtocolSettingsUpdated(
                     data.takerFeeBips,
                     data.makerFeeBips,
                     data.previousTakerFeeBips,

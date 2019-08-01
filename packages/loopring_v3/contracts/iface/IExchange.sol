@@ -50,7 +50,7 @@ contract IExchange
         address         newOperator
     );
 
-    event FeesUpdated(
+    event SettingsUpdated(
         uint    indexed exchangeId,
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
@@ -114,7 +114,7 @@ contract IExchange
         uint96          amount
     );
 
-    event ProtocolFeesUpdated(
+    event ProtocolSettingsUpdated(
         uint8 takerFeeBips,
         uint8 makerFeeBips,
         uint8 previousTakerFeeBips,
@@ -200,12 +200,16 @@ contract IExchange
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
+    /// @param  operatorSig The operator's signature to allow the creation of such account.
+    ///                     when `needOperatorSignatureToCreateAccount` is true. For account
+    ///                     update, set this to `new bytes(0)`.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
     function createOrUpdateAccount(
-        uint pubKeyX,
-        uint pubKeyY
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes calldata operatorSig
         )
         external
         payable
@@ -604,6 +608,9 @@ contract IExchange
     ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
+    /// @param  operatorSig The operator's signature to allow the creation of such account.
+    ///                     when `needOperatorSignatureToCreateAccount` is true. For account
+    ///                     update, set this to `new bytes(0)`.
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param  amount The amount of tokens to deposit
     /// @return accountID The id of the account
@@ -613,7 +620,8 @@ contract IExchange
         uint    pubKeyX,
         uint    pubKeyY,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata operatorSig
         )
         external
         payable
@@ -930,7 +938,8 @@ contract IExchange
     /// @param _accountUpdateFeeETH The fee in ETH for account update
     /// @param _depositFeeETH The fee in ETH for deposits
     /// @param _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function setFees(
+    function updateSettings(
+        bool _needOperatorSignatureToCreateAccount,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -943,10 +952,11 @@ contract IExchange
     /// @return _accountUpdateFeeETH The fee in ETH for account update
     /// @return _depositFeeETH The fee in ETH for deposits
     /// @return _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function getFees()
+    function getSettings()
         external
         view
         returns (
+            bool _needOperatorSignatureToCreateAccount,
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,

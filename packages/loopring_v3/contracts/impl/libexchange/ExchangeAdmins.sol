@@ -40,8 +40,9 @@ library ExchangeAdmins
         address         newOperator
     );
 
-    event FeesUpdated(
+    event SettingsUpdated(
         uint    indexed exchangeId,
+        bool            needOperatorSignatureToCreateAccount,
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
@@ -67,8 +68,9 @@ library ExchangeAdmins
         );
     }
 
-    function setFees(
+    function updateSettings(
         ExchangeData.State storage S,
+        bool _needOperatorSignatureToCreateAccount,
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
@@ -82,13 +84,15 @@ library ExchangeAdmins
             "AMOUNT_TOO_LARGE"
         );
 
+        S.needOperatorSignatureToCreateAccount = _needOperatorSignatureToCreateAccount;
         S.accountCreationFeeETH = _accountCreationFeeETH;
         S.accountUpdateFeeETH = _accountUpdateFeeETH;
         S.depositFeeETH = _depositFeeETH;
         S.withdrawalFeeETH = _withdrawalFeeETH;
 
-        emit FeesUpdated(
+        emit SettingsUpdated(
             S.id,
+            _needOperatorSignatureToCreateAccount,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
