@@ -205,7 +205,7 @@ contract("Exchange", (accounts: string[]) => {
       keyPair.publicKeyY,
       token,
       amount,
-      "",
+      constants.emptyBytes,
       { from: owner, value: ethValue, gasPrice: 0 }
     );
 

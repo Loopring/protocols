@@ -24,7 +24,7 @@ contract("Exchange", (accounts: string[]) => {
 
   describe("Reentrancy", function() {
     this.timeout(0);
-    /*
+
     // Load IExchange ABI
     const ABIPath = "ABI/version30/";
     const exchangeABI = JSON.parse(
@@ -101,7 +101,7 @@ contract("Exchange", (accounts: string[]) => {
             new BN(0),
             testTokenAddress,
             web3.utils.toBN(amount),
-            0x0,
+            constants.emptyBytes,
             { from: owner, value: ethToSend }
           ),
           "INSUFFICIENT_FUND"
@@ -114,10 +114,10 @@ contract("Exchange", (accounts: string[]) => {
           new BN(0),
           testTokenAddress,
           web3.utils.toBN(amount),
-          0x0,
+          constants.emptyBytes,
           { from: owner, value: ethToSend }
         );
       });
-    }*/
+    }
   });
 });
