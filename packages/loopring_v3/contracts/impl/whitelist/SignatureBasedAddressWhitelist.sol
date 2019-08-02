@@ -50,16 +50,16 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
           v := and(mload(add(permission, 73)), 255)
         }
 
+        if (t < now - PERMISSION_TIMEOUT){
+            return false;
+        }
+
         if (v < 27) {
           v += 27;
         }
 
         if (v != 27 && v != 28) {
           return false;
-        }
-
-        if (t < now - PERMISSION_TIMEOUT){
-            return false;
         }
 
         bytes32 hash = keccak256(abi.encode(
