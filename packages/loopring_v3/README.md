@@ -35,23 +35,17 @@ After Istanbul:
 - Support offchain order cancellation and order time-to-live settings (inherited from 2.0)
 - Allow partial order matching (aka partial fill) and offchain order-scaling (inherited from 2.0)
 - Multiple circuit permutations for different request batch sizes
-- Use any ERC20 token or Ether as the trading fee to reduce friction（inherited from 2.0)
-- DEX can buy down fee token burn rate (inherited from 2.0)
-- An enhanced version of dual authoring prevent orders/trades from being stolen by a middleman (enhanced on top of 2.0)
-- On current Ethereum mainnet, throughput is about 60 trades/second with on-chain data-availability, and ~350 trades/second without data-availability -- which can be further optimized in the near future.
+- Use tokens/ether traded as trading fee
 - A built-in mechanism to force DEX operators to fulfill duties in time (especially for handling deposits and withdrawals)
-- Support DEX operators to stake tokens to "buy" credit
+- Support DEX operators to stake tokens to lower down protocol fees
 - Support a "maintenance mode" for DEX operators to upgrade backends within a time window
 - Support a unique feature called Order Aliasing (new to 3.0)
 - 100% secure for end users, even when DEX operators are evil (same as 2.0)
+- whitelist support through customizable sub-contract
 - and more...
 
 ## Challenges
-
 - SNARKs require trusted setups
-- Circuits not yet audited (smart contract auditing should be easy and we are very experienced)
-- Can switch to better hash function
-- and more...
 
 ## Build
 
