@@ -207,7 +207,7 @@ contract IExchange
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
     /// @param  permission Data used for checking address whitelisting prior to
-                           account creation.
+    ///                    account creation.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
@@ -614,7 +614,7 @@ contract IExchange
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @param  permission Data used for checking address whitelisting prior to
-                           account creation.
+    ///                    account creation.
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param  amount The amount of tokens to deposit
     /// @return accountID The id of the account
