@@ -29,10 +29,9 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
 
     function isWhitelisted(
         address user,
-        bytes memory permission
+        bytes   calldata permission
         )
         public
-        view
         returns (bool)
     {
         uint    t;
