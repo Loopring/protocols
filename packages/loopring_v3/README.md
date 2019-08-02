@@ -13,16 +13,16 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 |  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
 | :----- |:-------------: |:---------------:| :-------------:|
 | Trades per Ethereum Block | 26      | 5350 |      92000|
-| Trades per Second | 2      | 350        |           6150 |
-| Cost per Trade | 300,000 gas | 1500 gas | 87 gas|
+| Trades per Second | ~2      | 350        |           6150 |
+| Cost per Trade | ~300,000 gas | 1500 gas | 87 gas|
 
 After Istanbul:
 
 |  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
 | :----- |:-------------: |:---------------:| :-------------:|
 | Trades per Ethereum Block | 26      | 20800 |      140000|
-| Trades per Second | 2      | 1400        |           9350 |
-| Cost per Trade | 300,000 gas | 385 gas | 57 gas|
+| Trades per Second | ~2      | 1400        |           9350 |
+| Cost per Trade | ~300,000 gas | 385 gas | 57 gas|
 
 * *Cost in USD per Trade* in the table does not cover off-chain proof generation.
 
