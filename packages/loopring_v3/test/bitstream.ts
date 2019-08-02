@@ -24,8 +24,12 @@ export class Bitstream {
     if (this.data.length === 0) {
       return [];
     } else {
-      assert.equal(this.length() % 32, 0, "Bitstream not compatible with bytes32[]");
-      return this.data.match(/.{1,64}/g).map((element) => "0x" + element);
+      assert.equal(
+        this.length() % 32,
+        0,
+        "Bitstream not compatible with bytes32[]"
+      );
+      return this.data.match(/.{1,64}/g).map(element => "0x" + element);
     }
   }
 
@@ -42,9 +46,9 @@ export class Bitstream {
   public addNumber(x: number, numBytes = 4) {
     // Check if we need to encode this number as negative
     if (x < 0) {
-        const encoded = abi.rawEncode(["int256"], [x.toString(10)]);
-        const hex = encoded.toString("hex").slice(-(numBytes * 2));
-        return this.addHex(hex);
+      const encoded = abi.rawEncode(["int256"], [x.toString(10)]);
+      const hex = encoded.toString("hex").slice(-(numBytes * 2));
+      return this.addHex(hex);
     } else {
       return this.addBigNumber(new BigNumber(x), numBytes);
     }
@@ -123,7 +127,9 @@ export class Bitstream {
     const start = offset * 2;
     const end = start + length * 2;
     if (this.data.length < end) {
-      throw new Error("substring index out of range:[" + start + ", " + end + "]");
+      throw new Error(
+        "substring index out of range:[" + start + ", " + end + "]"
+      );
     }
     return this.data.slice(start, end);
   }
@@ -141,12 +147,17 @@ export class Bitstream {
 
   private padString(x: string, targetLength: number) {
     if (x.length > targetLength) {
-      throw Error("0x" + x + " is too big to fit in the requested length (" + targetLength + ")");
+      throw Error(
+        "0x" +
+          x +
+          " is too big to fit in the requested length (" +
+          targetLength +
+          ")"
+      );
     }
     while (x.length < targetLength) {
       x = "0" + x;
     }
     return x;
   }
-
 }

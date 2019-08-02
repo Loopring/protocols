@@ -450,7 +450,7 @@ contract("BlockVerifier", (accounts: string[]) => {
           commitBlocksSize1[0].proof,
           { from: anyone }
         ),
-        "INVALID_INPUT",
+        "INVALID_INPUT"
       );
     });
 
@@ -589,7 +589,8 @@ contract("BlockVerifier", (accounts: string[]) => {
       const publicDataIdxToModify = exchangeTestUtil.getRandomInt(
         publicInputs.length
       );
-      publicInputs[publicDataIdxToModify] = "0x" + constants.scalarField.toString(16);
+      publicInputs[publicDataIdxToModify] =
+        "0x" + constants.scalarField.toString(16);
 
       await expectThrow(
         blockVerifier.verifyProofs(
@@ -601,7 +602,7 @@ contract("BlockVerifier", (accounts: string[]) => {
           exchangeTestUtil.flattenList(commitBlocksSize1.map(x => x.proof)),
           { from: anyone }
         ),
-        "INVALID_INPUT",
+        "INVALID_INPUT"
       );
     });
   });

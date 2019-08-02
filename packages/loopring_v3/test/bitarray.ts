@@ -26,5 +26,4 @@ export class BitArray {
   public getBits() {
     return this.data;
   }
-
 }

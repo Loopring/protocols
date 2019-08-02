@@ -468,8 +468,11 @@ contract("Exchange", (accounts: string[]) => {
 
         it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
           await createExchange();
-          const operatorAccountId = await exchangeTestUtil.getActiveOperator(exchangeId);
-          const operatorAccount = exchangeTestUtil.accounts[exchangeId][operatorAccountId];
+          const operatorAccountId = await exchangeTestUtil.getActiveOperator(
+            exchangeId
+          );
+          const operatorAccount =
+            exchangeTestUtil.accounts[exchangeId][operatorAccountId];
           // Prepare a ring
           const ring = await setupRandomRing();
           // Do a deposit
