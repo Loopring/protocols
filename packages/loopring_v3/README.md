@@ -8,6 +8,24 @@ To understand several concepts introduced by the Loopring Protocol, such as orde
 
 To understand the overall design for Loopring 3.0, including Ethereum smart contracts and zkSNARKs circuits, please refer to the [DESIGN](https://github.com/Loopring/protocols/blob/master/packages/loopring_v3/DESIGN.md) doc. The design of the backend relayer system is and will not be covered by this document. We welcome any feedback regarding the design and our implementation, feel free to [email us](mailto:daniel@loopring.org) or submit pull requests.
 
+### Performance
+
+|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
+| :----- |:-------------: |:---------------:| :-------------:|
+| Trades per Ethereum Block | 26      | 5350 |      92000|
+| Trades per Second | 2      | 350        |           6150 |
+| Cost per Trade | 300,000 gas | 1500 gas | 87 gas|
+
+After Istanbul:
+
+|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
+| :----- |:-------------: |:---------------:| :-------------:|
+| Trades per Ethereum Block | 26      | 20800 |      140000|
+| Trades per Second | 2      | 1400        |           9350 |
+| Cost per Trade | 300,000 gas | 385 gas | 57 gas|
+
+* *Cost in USD per Trade* in the table does not cover off-chain proof generation.
+
 ## Top Features
 
 - Onchain data-availability (DEXes can opt out for even greater throughput & lower cost)
