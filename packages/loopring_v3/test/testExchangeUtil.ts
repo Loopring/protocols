@@ -602,6 +602,7 @@ export class ExchangeTestUtil {
       new BN(publicKeyY),
       token,
       web3.utils.toBN(amount),
+      constants.emptyBytes,
       {from: caller, value: ethToSend, gasPrice: 0},
     );
     // logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);

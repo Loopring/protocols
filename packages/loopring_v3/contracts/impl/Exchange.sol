@@ -164,8 +164,9 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     }
 
     function createOrUpdateAccount(
-        uint pubKeyX,
-        uint pubKeyY
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes calldata permission
         )
         external
         payable
@@ -180,7 +181,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             pubKeyX,
             pubKeyY,
             address(0),
-            0
+            0,
+            permission
         );
     }
 
@@ -486,7 +488,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata permission
         )
         external
         payable
@@ -501,7 +504,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             pubKeyX,
             pubKeyY,
             token,
-            amount
+            amount,
+            permission
         );
     }
 
@@ -702,9 +706,18 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         nonReentrant
         onlyOwner
-        returns (address payable oldOperator)
+        returns (address payable)
     {
-        oldOperator = state.setOperator(_operator);
+        return state.setOperator(_operator);
+    }
+
+    function setAddressWhitelist(
+        address _addressWhitelist
+        )
+        external
+        returns (address)
+    {
+        return state.setAddressWhitelist(_addressWhitelist);
     }
 
     function setFees(
@@ -845,7 +858,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
-        uint96  amount
+        uint96  amount,
+        bytes   memory permission
         )
         internal
         returns (
@@ -856,7 +870,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     {
         (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
             pubKeyX,
-            pubKeyY
+            pubKeyY,
+            permission
         );
         uint additionalFeeETH = 0;
         if (isAccountNew) {

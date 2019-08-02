@@ -101,6 +101,7 @@ contract("Exchange", (accounts: string[]) => {
             new BN(0),
             testTokenAddress,
             web3.utils.toBN(amount),
+            constants.emptyBytes,
             { from: owner, value: ethToSend }
           ),
           "INSUFFICIENT_FUND"
@@ -113,6 +114,7 @@ contract("Exchange", (accounts: string[]) => {
           new BN(0),
           testTokenAddress,
           web3.utils.toBN(amount),
+          constants.emptyBytes,
           { from: owner, value: ethToSend }
         );
       });

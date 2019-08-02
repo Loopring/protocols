@@ -118,7 +118,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
             getUserClaimWaitTime(msg.sender) == 0) {
             claim();
         }
-    
+
         Staking storage user = stakings[msg.sender];
         require(user.balance >= amount, "INSUFFICIENT_FUND");
 
