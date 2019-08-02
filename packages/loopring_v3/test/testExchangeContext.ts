@@ -7,10 +7,10 @@ export class ExchangeTestContext {
   public ringMatchers: string[];
   public feeRecipients: string[];
 
-  public tokenSymbolAddrMap: Map<string, string>;   // key: symbol, value: addr
-  public tokenAddrSymbolMap: Map<string, string>;   // key: addr, value: symbol
+  public tokenSymbolAddrMap: Map<string, string>; // key: symbol, value: addr
+  public tokenAddrSymbolMap: Map<string, string>; // key: addr, value: symbol
   public tokenAddrDecimalsMap: Map<string, number>; // key: addr, value: decimals
-  public tokenAddrInstanceMap: Map<string, any>;    // key: addr, value: contract
+  public tokenAddrInstanceMap: Map<string, any>; // key: addr, value: contract
   public allTokens: any[];
 
   constructor(
@@ -25,10 +25,10 @@ export class ExchangeTestContext {
     tokenAddrSymbolMap: Map<string, string>,
     tokenAddrDecimalsMap: Map<string, number>,
     tokenAddrInstanceMap: Map<string, any>,
-    allTokens: any[]) {
+    allTokens: any[]
+  ) {
     this.deployer = deployer;
-    this.stateOwners = stateOwners,
-    this.operators = operators;
+    (this.stateOwners = stateOwners), (this.operators = operators);
     this.orderOwners = orderOwners;
     this.wallets = wallets;
     this.ringMatchers = ringMatchers;

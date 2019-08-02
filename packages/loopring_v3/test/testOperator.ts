@@ -3,7 +3,6 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, Deposit } from "./types";
 
 contract("Operator", (accounts: string[]) => {
-
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let exchangeId = 0;
@@ -17,13 +16,16 @@ contract("Operator", (accounts: string[]) => {
     deposits: Deposit[];
   }
 
-  before( async () => {
+  before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
   });
 
   beforeEach(async () => {
-    exchangeId = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    exchangeId = await exchangeTestUtil.createExchange(
+      exchangeTestUtil.testContext.stateOwners[0],
+      true
+    );
     exchange = exchangeTestUtil.exchange;
     operator = await exchangeTestUtil.contracts.Operator.new(exchange.address);
     await exchangeTestUtil.setOperatorContract(operator);
@@ -31,7 +33,8 @@ contract("Operator", (accounts: string[]) => {
     subOperators = [];
     for (let i = 0; i < numSubOperators; i++) {
       const subOperator = await exchangeTestUtil.createOperator(
-        exchangeId, exchangeTestUtil.testContext.operators[i],
+        exchangeId,
+        exchangeTestUtil.testContext.operators[i]
       );
       subOperators.push(subOperator);
     }
@@ -43,11 +46,14 @@ contract("Operator", (accounts: string[]) => {
   const commitDepositBlock = async () => {
     await exchangeTestUtil.doRandomDeposit(exchangeId);
     const pendingDeposits = exchangeTestUtil.getPendingDeposits(exchangeId);
-    const blocks = await exchangeTestUtil.commitDeposits(exchangeId, pendingDeposits);
+    const blocks = await exchangeTestUtil.commitDeposits(
+      exchangeId,
+      pendingDeposits
+    );
     assert(blocks.length === 1);
     const block: TestDepositBlock = {
       block: blocks[0],
-      deposits: pendingDeposits,
+      deposits: pendingDeposits
     };
     return block;
   };
@@ -62,7 +68,7 @@ contract("Operator", (accounts: string[]) => {
         "LRC",
         new BN(0),
         0,
-        exchangeTestUtil.wallets[exchangeId][0],
+        exchangeTestUtil.wallets[exchangeId][0]
       );
     }
     await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);
@@ -101,7 +107,9 @@ contract("Operator", (accounts: string[]) => {
         await exchangeTestUtil.verifyPendingBlocks(exchangeId);
         // Distribute the withdrawals on time
         await operator.distributeWithdrawals(
-          blockA.block.blockIdx + 1, blockA.deposits.length, {from: operatorOwner},
+          blockA.block.blockIdx + 1,
+          blockA.deposits.length,
+          { from: operatorOwner }
         );
       }
 
@@ -119,10 +127,14 @@ contract("Operator", (accounts: string[]) => {
         // Verify all blocks
         await exchangeTestUtil.verifyPendingBlocks(exchangeId);
         // Distribute the withdrawals too late
-        await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1);
+        await exchangeTestUtil.advanceBlockTimestamp(
+          exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        );
         // This call can also happen directly on the Exchange contract
         await operator.distributeWithdrawals(
-          blockB.block.blockIdx + 1, blockB.deposits.length, {from: operatorOwner},
+          blockB.block.blockIdx + 1,
+          blockB.deposits.length,
+          { from: operatorOwner }
         );
       }
     });
@@ -136,7 +148,9 @@ contract("Operator", (accounts: string[]) => {
       // Verify all blocks
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
       // Withdraw the block fee
-      await operator.withdrawBlockFee(blockA.block.blockIdx, {from: operatorOwner});
+      await operator.withdrawBlockFee(blockA.block.blockIdx, {
+        from: operatorOwner
+      });
     });
 
     it("Revert", async () => {
@@ -145,19 +159,29 @@ contract("Operator", (accounts: string[]) => {
       // Commit a deposit block
       const blockA = await commitDepositBlock();
       // Wait until we can't submit the proof anymore
-      await exchangeTestUtil.advanceBlockTimestamp(exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1);
+      await exchangeTestUtil.advanceBlockTimestamp(
+        exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1
+      );
       // Revert the block
       await exchangeTestUtil.revertBlock(blockA.block.blockIdx);
       // Deposit extra LRC to stake for the exchange
       const depositer = exchangeTestUtil.testContext.operators[2];
       const stakeAmount = await exchangeTestUtil.loopringV3.revertFineLRC();
-      await exchangeTestUtil.setBalanceAndApprove(depositer, "LRC", stakeAmount, exchangeTestUtil.loopringV3.address);
-      await exchangeTestUtil.loopringV3.depositExchangeStake(exchangeId, stakeAmount, {from: depositer});
+      await exchangeTestUtil.setBalanceAndApprove(
+        depositer,
+        "LRC",
+        stakeAmount,
+        exchangeTestUtil.loopringV3.address
+      );
+      await exchangeTestUtil.loopringV3.depositExchangeStake(
+        exchangeId,
+        stakeAmount,
+        { from: depositer }
+      );
       // Now commit the deposits again
       await exchangeTestUtil.commitDeposits(exchangeId, blockA.deposits);
       // Verify all blocks
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
-
   });
 });

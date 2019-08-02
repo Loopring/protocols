@@ -2,16 +2,13 @@ import fs = require("fs");
 import Web3 = require("web3");
 
 export class Context {
-
   public blockNumber: number;
   public blockTimestamp: number;
   public lrcAddress: string;
 
   public ERC20Contract: any;
 
-  constructor(blockNumber: number,
-              blockTimestamp: number,
-              lrcAddress: string) {
+  constructor(blockNumber: number, blockTimestamp: number, lrcAddress: string) {
     this.blockNumber = blockNumber;
     this.blockTimestamp = blockTimestamp;
     this.lrcAddress = lrcAddress;
@@ -25,5 +22,4 @@ export class Context {
 
     this.ERC20Contract = new web3.eth.Contract(JSON.parse(erc20Abi));
   }
-
 }
