@@ -205,6 +205,7 @@ library ExchangeData
         uint    numDowntimeMinutes;
         uint    downtimeStart;
 
+        address addressWhitelist;
         uint    accountCreationFeeETH;
         uint    accountUpdateFeeETH;
         uint    depositFeeETH;

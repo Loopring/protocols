@@ -110,7 +110,7 @@ contract("Exchange", (accounts: string[]) => {
 
     const ethValue = (token === "ETH") ? amount.add(depositFee) : depositFee;
     await exchange.updateAccountAndDeposit(keyPair.publicKeyX, keyPair.publicKeyY,
-                                           token, amount, {from: owner, value: ethValue, gasPrice: 0});
+                                           token, amount, constants.emptyBytes, {from: owner, value: ethValue, gasPrice: 0});
 
     const balanceOwnerAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     const balanceContractAfter = await exchangeTestUtil.getOnchainBalance(exchange.address, token);

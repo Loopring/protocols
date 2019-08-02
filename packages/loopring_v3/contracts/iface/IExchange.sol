@@ -50,6 +50,12 @@ contract IExchange
         address         newOperator
     );
 
+    event AddressWhitelistChanged(
+        uint    indexed exchangeId,
+        address         oldAddressWhitelist,
+        address         newAddressWhitelist
+    );
+
     event FeesUpdated(
         uint    indexed exchangeId,
         uint            accountCreationFeeETH,
@@ -200,12 +206,15 @@ contract IExchange
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
+    /// @param  permission Data used for checking address whitelisting prior to
+    ///                    account creation.
     /// @return accountID The account's ID
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
     function createOrUpdateAccount(
-        uint pubKeyX,
-        uint pubKeyY
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes calldata permission
         )
         external
         payable
@@ -596,6 +605,8 @@ contract IExchange
     ///
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
+    /// @param  permission Data used for checking address whitelisting prior to
+    ///                    account creation.
     /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param  amount The amount of tokens to deposit
     /// @return accountID The id of the account
@@ -605,7 +616,8 @@ contract IExchange
         uint    pubKeyX,
         uint    pubKeyY,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata permission
         )
         external
         payable
@@ -915,6 +927,15 @@ contract IExchange
         )
         external
         returns (address payable oldOperator);
+
+    /// @dev Set the operator address.
+    /// @param _addressWhitelist The new address whitelist address
+    /// @return oldOperator The old address whitelist address
+    function setAddressWhitelist(
+        address _addressWhitelist
+        )
+        external
+        returns (address oldAddressWhitelist);
 
     /// @dev Update fee settings.
     ///      This function is only callable by the exchange owner.

@@ -18,6 +18,8 @@ pragma solidity 0.5.10;
 
 import "../../lib/MathUint.sol";
 
+import "../../iface/IAddressWhitelist.sol";
+
 import "./ExchangeBalances.sol";
 import "./ExchangeData.sol";
 
@@ -65,8 +67,9 @@ library ExchangeAccounts
 
     function createOrUpdateAccount(
         ExchangeData.State storage S,
-        uint pubKeyX,
-        uint pubKeyY
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes memory permission
         )
         public
         returns (
@@ -80,6 +83,12 @@ library ExchangeAccounts
 
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
+            if (S.addressWhitelist != address(0)) {
+                require(
+                    IAddressWhitelist(S.addressWhitelist).isWhitelisted(msg.sender, permission),
+                    "ADDRESS_NOT_WHITELISTED"
+                );
+            }
             accountID = createAccount(S, pubKeyX, pubKeyY);
             isAccountUpdated = false;
         } else {
