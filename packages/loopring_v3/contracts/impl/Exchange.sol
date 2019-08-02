@@ -715,6 +715,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address _addressWhitelist
         )
         external
+        nonReentrant
+        onlyOwner
         returns (address)
     {
         return state.setAddressWhitelist(_addressWhitelist);

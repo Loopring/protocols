@@ -46,6 +46,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchange.createOrUpdateAccount(
       keyPair.publicKeyX,
       keyPair.publicKeyY,
+      constants.emptyBytes,
       { from: owner, value: fee, gasPrice: 0 }
     );
 
@@ -558,18 +559,28 @@ contract("Exchange", (accounts: string[]) => {
 
       // No ETH sent
       await expectThrow(
-        exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, {
-          from: owner,
-          value: new BN(0)
-        }),
+        exchange.createOrUpdateAccount(
+          keyPair.publicKeyX,
+          keyPair.publicKeyY,
+          constants.emptyBytes,
+          {
+            from: owner,
+            value: new BN(0)
+          }
+        ),
         "INSUFFICIENT_FEE"
       );
       // Not enough ETH
       await expectThrow(
-        exchange.createOrUpdateAccount(keyPair.publicKeyX, keyPair.publicKeyY, {
-          from: owner,
-          value: totalFee.sub(new BN(1))
-        }),
+        exchange.createOrUpdateAccount(
+          keyPair.publicKeyX,
+          keyPair.publicKeyY,
+          constants.emptyBytes,
+          {
+            from: owner,
+            value: totalFee.sub(new BN(1))
+          }
+        ),
         "INSUFFICIENT_FEE"
       );
 
@@ -578,6 +589,7 @@ contract("Exchange", (accounts: string[]) => {
         exchange.createOrUpdateAccount(
           constants.scalarField,
           keyPair.publicKeyY,
+          constants.emptyBytes,
           { from: owner, value: totalFee }
         ),
         "INVALID_PUBKEY"
@@ -586,16 +598,22 @@ contract("Exchange", (accounts: string[]) => {
         exchange.createOrUpdateAccount(
           keyPair.publicKeyY,
           constants.scalarField,
+          constants.emptyBytes,
           { from: owner, value: totalFee }
         ),
         "INVALID_PUBKEY"
       );
       // Invalid public key (pubKey.X == 0)
       await expectThrow(
-        exchange.createOrUpdateAccount("0", keyPair.publicKeyY, {
-          from: owner,
-          value: totalFee
-        }),
+        exchange.createOrUpdateAccount(
+          "0",
+          keyPair.publicKeyY,
+          constants.emptyBytes,
+          {
+            from: owner,
+            value: totalFee
+          }
+        ),
         "INVALID_PUBKEY"
       );
 

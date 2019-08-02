@@ -928,9 +928,10 @@ contract IExchange
         external
         returns (address payable oldOperator);
 
-    /// @dev Set the operator address.
-    /// @param _addressWhitelist The new address whitelist address
-    /// @return oldOperator The old address whitelist address
+    /// @dev Set the address whitelist contract address.
+    ///      Can only be called by the exchange owner.
+    /// @param _addressWhitelist The new address whitelist contract address
+    /// @return oldAddressWhitelist The old address whitelist contract address
     function setAddressWhitelist(
         address _addressWhitelist
         )
