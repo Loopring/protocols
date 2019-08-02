@@ -121,9 +121,9 @@ export class Simulator {
     // Update the Merkle tree with the input data
     const newExchangeState = this.offchainWithdraw(
       exchangeState,
-      operatorAccountID, withdrawal.accountID, withdrawal.walletAccountID,
+      operatorAccountID, withdrawal.accountID,
       withdrawal.tokenID, amountWithdrawn,
-      withdrawal.feeTokenID, fee, withdrawal.walletSplitPercentage,
+      withdrawal.feeTokenID, fee,
     );
 
     const simulatorReport: SimulatorReport = {
@@ -153,25 +153,21 @@ export class Simulator {
     const accountIdAndAmountWithdrawn = bs.extractUint48(offset);
     offset += 6;
 
-    offset = onchainDataOffset + blockSize * onchainDataSize;
+    offset = onchainDataOffset + 32 + blockSize * onchainDataSize;
 
     // General data
     const operatorAccountID = bs.extractUint24(offset);
     offset += 3;
 
     // Jump to the specified withdrawal
-    const offchainDataSize = 7;
+    const offchainDataSize = 3;
     offset += withdrawalIndex * offchainDataSize;
 
     // Extract offchain data
-    const walletAccountID = bs.extractUint24(offset);
-    offset += 3;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
     const fFee = bs.extractUint16(offset);
     offset += 2;
-    const walletSplitPercentage = bs.extractUint8(offset);
-    offset += 1;
 
     // Further extraction of packed data
     const accountID = Math.floor(accountIdAndAmountWithdrawn / (2 ** 28));
@@ -184,22 +180,19 @@ export class Simulator {
     // Update the Merkle tree with the onchain data
     const newExchangeState = this.offchainWithdraw(
       exchangeState,
-      operatorAccountID, accountID, walletAccountID,
+      operatorAccountID, accountID,
       token, amountWithdrawn,
-      feeToken, fee, walletSplitPercentage,
+      feeToken, fee,
     );
 
     return newExchangeState;
   }
 
   public offchainWithdraw(exchangeState: ExchangeState,
-                          operatorAccountID: number, accountID: number, walletAccountID: number,
+                          operatorAccountID: number, accountID: number,
                           tokenID: number, amountWithdrawn: BN,
-                          feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+                          feeTokenID: number, fee: BN) {
     const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = fee.sub(feeToWallet);
 
     const account = newExchangeState.accounts[accountID];
 
@@ -212,15 +205,10 @@ export class Simulator {
       account.balances[tokenID].balance.sub(amountWithdrawn);
     account.nonce++;
 
-    // Update wallet
-    const wallet = newExchangeState.accounts[walletAccountID];
-    wallet.balances[feeTokenID].balance =
-      wallet.balances[feeTokenID].balance.add(feeToWallet);
-
     // Update operator
     const operator = newExchangeState.accounts[operatorAccountID];
     operator.balances[feeTokenID].balance =
-      operator.balances[feeTokenID].balance.add(feeToOperator);
+      operator.balances[feeTokenID].balance.add(fee);
 
     return newExchangeState;
   }
@@ -230,33 +218,29 @@ export class Simulator {
 
     // General data
     const exchangeID = bs.extractUint32(offset);
-    offset += 4 + 32 + 32;
+    offset += 4 + 32 + 32 + 32;
 
     // General data
     const operatorAccountID = bs.extractUint24(offset);
     offset += 3;
 
     // Jump to the specified withdrawal
-    const onchainDataSize = 13;
+    const onchainDataSize = 9;
     offset += cancelIndex * onchainDataSize;
 
     // Extract onchain data
-    const accountIds = bs.extractUint40(offset);
+    const accountIdAndOrderId = bs.extractUint40(offset);
     offset += 5;
     const orderToken = bs.extractUint8(offset);
     offset += 1;
-    const orderID = bs.extractUint24(offset);
-    offset += 3;
     const feeToken = bs.extractUint8(offset);
     offset += 1;
     const fFee = bs.extractUint16(offset);
     offset += 2;
-    const walletSplitPercentage = bs.extractUint8(offset);
-    offset += 1;
 
     // Further extraction of packed data
-    const accountID = Math.floor(accountIds / (2 ** 20));
-    const walletAccountID = accountIds & 0xFFFFF;
+    const accountID = Math.floor(accountIdAndOrderId / (2 ** 20));
+    const orderID = accountIdAndOrderId & 0xFFFFF;
 
     // Decode the float values
     const fee = fromFloat(fFee, constants.Float16Encoding);
@@ -264,9 +248,9 @@ export class Simulator {
     // Update the Merkle tree with the onchain data
     const newExchangeState = this.cancelOrder(
       exchangeState,
-      operatorAccountID, walletAccountID,
+      operatorAccountID,
       accountID, orderToken, orderID,
-      feeToken, fee, walletSplitPercentage,
+      feeToken, fee,
     );
 
     return newExchangeState;
@@ -278,9 +262,9 @@ export class Simulator {
     // Update the Merkle tree with the input data
     const newExchangeState = this.cancelOrder(
       exchangeState,
-      operatorAccountID, cancel.walletAccountID,
+      operatorAccountID,
       cancel.accountID, cancel.orderTokenID, cancel.orderID,
-      cancel.feeTokenID, fee, cancel.walletSplitPercentage,
+      cancel.feeTokenID, fee,
     );
 
     const simulatorReport: SimulatorReport = {
@@ -291,19 +275,16 @@ export class Simulator {
   }
 
   public cancelOrder(exchangeState: ExchangeState,
-                     operatorAccountID: number, walletAccountID: number,
+                     operatorAccountID: number,
                      accountID: number, orderTokenID: number, orderID: number,
-                     feeTokenID: number, fee: BN, walletSplitPercentage: number) {
+                     feeTokenID: number, fee: BN) {
     const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const feeToWallet = fee.mul(new BN(walletSplitPercentage)).div(new BN(100));
-    const feeToOperator = fee.sub(feeToWallet);
 
     const account = newExchangeState.accounts[accountID];
 
     // Update balance
-    account.balances[orderTokenID].balance =
-      account.balances[orderTokenID].balance.sub(fee);
+    account.balances[feeTokenID].balance =
+      account.balances[feeTokenID].balance.sub(fee);
     account.nonce++;
 
     // Update trade history
@@ -316,15 +297,10 @@ export class Simulator {
     }
     account.balances[orderTokenID].tradeHistory[orderID].cancelled = true;
 
-    // Update wallet
-    const wallet = newExchangeState.accounts[walletAccountID];
-    wallet.balances[feeTokenID].balance =
-      wallet.balances[feeTokenID].balance.add(feeToWallet);
-
     // Update operator
     const operator = newExchangeState.accounts[operatorAccountID];
     operator.balances[feeTokenID].balance =
-      operator.balances[feeTokenID].balance.add(feeToOperator);
+      operator.balances[feeTokenID].balance.add(fee);
 
     return newExchangeState;
   }
@@ -339,18 +315,14 @@ export class Simulator {
     offset += 1;
     const protocolFeeMakerBips = data.extractUint8(offset);
     offset += 1;
+    // LabelHash
+    offset += 32;
     const operatorAccountID = data.extractUint24(offset);
     offset += 3;
 
     // Jump to the specified ring
-    const ringSize = 25;
+    const ringSize = 20;
     offset += ringIndex * ringSize;
-
-    // Ring data
-    const ringMatcherAccountIdAndRingFee = data.extractUint32(offset);
-    offset += 4;
-    const feeToken = data.extractUint8(offset);
-    offset += 1;
 
     // Order IDs
     const orderIds = data.extractUint40(offset);
@@ -377,9 +349,6 @@ export class Simulator {
     offset += 1;
 
     // Further extraction of packed data
-    const ringMatcherID = Math.floor(ringMatcherAccountIdAndRingFee / (2 ** 12));
-    const fRingFee = ringMatcherAccountIdAndRingFee & 0xFFF;
-
     const orderIdA = Math.floor(orderIds / (2 ** 20));
     const orderIdB = orderIds & 0xFFFFF;
 
@@ -401,14 +370,13 @@ export class Simulator {
     const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
 
     // Decode the float values
-    const ringFee = fromFloat(fRingFee, constants.Float12Encoding);
     const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
     const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
 
     // Update the Merkle tree with the onchain data
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
-      operatorAccountID, ringMatcherID, feeToken, ringFee,
+      operatorAccountID,
       fillSA, fillSB,
       buyA, buyB,
       tokenA, tokenB,
@@ -454,7 +422,6 @@ export class Simulator {
 
     fillA.S = roundToFloatValue(fillA.S, constants.Float24Encoding);
     fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
-    const ringFee = roundToFloatValue(ring.fee, constants.Float12Encoding);
 
     // Validate
     this.validateOrder(exchangeState, ring.orderA, false, fillA.S, fillA.B, valid);
@@ -462,7 +429,7 @@ export class Simulator {
 
     const {newExchangeState, s} = this.settleRing(
       exchangeState, protocolFeeTakerBips, protocolFeeMakerBips,
-      operatorAccountID, ring.ringMatcherAccountID, ring.tokenID, ringFee,
+      operatorAccountID,
       fillA.S, fillB.S,
       ring.orderA.buy, ring.orderB.buy,
       ring.orderA.tokenIdS, ring.orderB.tokenIdS,
@@ -490,44 +457,48 @@ export class Simulator {
       }
     }
 
-    const detailedTransfersA = this.getDetailedTransfers(
-      ring, ring.orderA, ring.orderB,
-      fillA.S, fillA.B, s.feeA,
-    );
-
-    const detailedTransfersB = this.getDetailedTransfers(
-      ring, ring.orderB, ring.orderA,
-      fillB.S, fillB.B, s.feeB,
-    );
-
-    const ringMatcherPayments: DetailedTokenTransfer = {
-      description: "Ring-Matcher",
+    const paymentsA: DetailedTokenTransfer = {
+      description: "OwnerA",
       token: 0,
-      from: ring.ringMatcherAccountID,
-      to: ring.ringMatcherAccountID,
+      from: operatorAccountID,
+      to: operatorAccountID,
       amount: new BN(0),
       subPayments: [],
     };
-    const payProtocolFeeA: DetailedTokenTransfer = {
-      description: "ProtocolFeeA",
-      token: ring.orderA.tokenIdB,
-      from: ring.ringMatcherAccountID,
-      to: 0,
-      amount: s.protocolFeeA,
+    const detailedTransfersA = this.getDetailedTransfers(
+      operatorAccountID,
+      ring, ring.orderA, ring.orderB,
+      fillA.S, fillA.B, s.feeA,
+    );
+    paymentsA.subPayments.push(...detailedTransfersA);
+
+    const paymentsB: DetailedTokenTransfer = {
+      description: "OwnerB",
+      token: 0,
+      from: operatorAccountID,
+      to: operatorAccountID,
+      amount: new BN(0),
       subPayments: [],
     };
-    const payProtocolFeeB: DetailedTokenTransfer = {
-      description: "ProtocolFeeB",
-      token: ring.orderB.tokenIdB,
-      from: ring.ringMatcherAccountID,
-      to: 0,
-      amount: s.protocolFeeB,
+    const detailedTransfersB = this.getDetailedTransfers(
+      operatorAccountID,
+      ring, ring.orderB, ring.orderA,
+      fillB.S, fillB.B, s.feeB,
+    );
+    paymentsB.subPayments.push(...detailedTransfersB);
+
+    const paymentsOperator: DetailedTokenTransfer = {
+      description: "Operator",
+      token: 0,
+      from: operatorAccountID,
+      to: operatorAccountID,
+      amount: new BN(0),
       subPayments: [],
     };
     const payRebateA: DetailedTokenTransfer = {
       description: "RebateA",
       token: ring.orderA.tokenIdB,
-      from: ring.ringMatcherAccountID,
+      from: operatorAccountID,
       to: ring.orderA.accountID,
       amount: s.rebateA,
       subPayments: [],
@@ -535,29 +506,36 @@ export class Simulator {
     const payRebateB: DetailedTokenTransfer = {
       description: "RebateB",
       token: ring.orderB.tokenIdB,
-      from: ring.ringMatcherAccountID,
+      from: operatorAccountID,
       to: ring.orderB.accountID,
       amount: s.rebateB,
       subPayments: [],
     };
-    const operatorFee: DetailedTokenTransfer = {
-      description: "OperatorFee",
-      token: ring.tokenID,
-      from: ring.ringMatcherAccountID,
-      to: operatorAccountID,
-      amount: ringFee,
+    const payProtocolFeeA: DetailedTokenTransfer = {
+      description: "ProtocolFeeA",
+      token: ring.orderA.tokenIdB,
+      from: operatorAccountID,
+      to: 0,
+      amount: s.protocolFeeA,
       subPayments: [],
     };
-    ringMatcherPayments.subPayments.push(payProtocolFeeA);
-    ringMatcherPayments.subPayments.push(payProtocolFeeB);
-    ringMatcherPayments.subPayments.push(payRebateA);
-    ringMatcherPayments.subPayments.push(payRebateB);
-    ringMatcherPayments.subPayments.push(operatorFee);
+    const payProtocolFeeB: DetailedTokenTransfer = {
+      description: "ProtocolFeeB",
+      token: ring.orderB.tokenIdB,
+      from: operatorAccountID,
+      to: 0,
+      amount: s.protocolFeeB,
+      subPayments: [],
+    };
+    paymentsOperator.subPayments.push(payRebateA);
+    paymentsOperator.subPayments.push(payRebateB);
+    paymentsOperator.subPayments.push(payProtocolFeeA);
+    paymentsOperator.subPayments.push(payProtocolFeeB);
 
     const detailedTransfers: DetailedTokenTransfer[] = [];
-    detailedTransfers.push(...detailedTransfersA);
-    detailedTransfers.push(...detailedTransfersB);
-    detailedTransfers.push(ringMatcherPayments);
+    detailedTransfers.push(paymentsA);
+    detailedTransfers.push(paymentsB);
+    detailedTransfers.push(paymentsOperator);
 
     const simulatorReport: RingSettlementSimulatorReport = {
       exchangeStateBefore: exchangeState,
@@ -616,7 +594,7 @@ export class Simulator {
   }
 
   public settleRing(exchangeState: ExchangeState, protocolFeeTakerBips: number, protocolFeeMakerBips: number,
-                    operatorId: number, ringMatcherId: number, feeToken: number, ringFee: BN,
+                    operatorId: number,
                     fillSA: BN, fillSB: BN,
                     buyA: boolean, buyB: boolean,
                     tokenA: number, tokenB: number,
@@ -664,20 +642,6 @@ export class Simulator {
       tradeHistoryB.orderID = (orderIdB > tradeHistoryB.orderID) ? orderIdB : tradeHistoryB.orderID;
     }
 
-    // Update ringMatcher
-    const ringMatcher = newExchangeState.accounts[ringMatcherId];
-    // - FeeA
-    ringMatcher.balances[tokenB].balance =
-     ringMatcher.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA).sub(s.rebateA);
-    // - FeeB
-    ringMatcher.balances[tokenA].balance =
-     ringMatcher.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
-    // - Operator fee
-    ringMatcher.balances[feeToken].balance =
-     ringMatcher.balances[feeToken].balance.sub(ringFee);
-    // Increase nonce
-    ringMatcher.nonce++;
-
     // Update protocol fee recipient
     const protocolFeeAccount = newExchangeState.accounts[0];
     // - Order A
@@ -689,13 +653,18 @@ export class Simulator {
 
     // Update operator
     const operator = newExchangeState.accounts[operatorId];
-    operator.balances[feeToken].balance =
-     operator.balances[feeToken].balance.add(ringFee);
+    // - FeeA
+    operator.balances[tokenB].balance =
+      operator.balances[tokenB].balance.add(s.feeA).sub(s.protocolFeeA).sub(s.rebateA);
+    // - FeeB
+    operator.balances[tokenA].balance =
+      operator.balances[tokenA].balance.add(s.feeB).sub(s.protocolFeeB).sub(s.rebateB);
 
     return {newExchangeState, s};
   }
 
-  private getDetailedTransfers(ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
+  private getDetailedTransfers(operatorAccountID: number,
+                               ring: RingInfo, order: OrderInfo, orderTo: OrderInfo,
                                fillAmountS: BN, fillAmountB: BN, fee: BN) {
     const sell: DetailedTokenTransfer = {
       description: "Sell",
@@ -709,7 +678,7 @@ export class Simulator {
       description: "Fee@" + order.feeBips + "Bips",
       token: order.tokenIdB,
       from: order.accountID,
-      to: ring.ringMatcherAccountID,
+      to: operatorAccountID,
       amount: fee,
       subPayments: [],
     };

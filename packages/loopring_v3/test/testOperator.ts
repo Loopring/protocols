@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import * as constants from "./constants";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, Deposit } from "./types";
 
@@ -61,8 +62,7 @@ contract("Operator", (accounts: string[]) => {
         deposit.amount,
         "LRC",
         new BN(0),
-        0,
-        exchangeTestUtil.wallets[exchangeId][0],
+        exchangeTestUtil.getRandomInt(2 ** constants.NUM_BITS_LABEL)
       );
     }
     await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);

@@ -72,12 +72,9 @@ export class ExchangeTestUtil {
   public userstakingpool: any;
   public protocolfeevault: any;
 
-  public ringMatcherAccountID: number[] = [];
-
   public accounts: Account[][] = [];
 
   public operators: number[] = [];
-  public wallets: number[][] = [];
 
   public GENESIS_MERKLE_ROOT: BN = new BN("2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01", 16);
 
@@ -124,15 +121,11 @@ export class ExchangeTestUtil {
 
   private orderIDGenerator: number = 0;
 
-  private dualAuthKeyPair: any;
-
   private MAX_NUM_EXCHANGES: number = 256;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-
-    this.dualAuthKeyPair = this.getKeyPairEDDSA();
 
     // Initialize Loopring
     await this.loopringV3.updateSettings(
@@ -177,9 +170,6 @@ export class ExchangeTestUtil {
 
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
-
-      const wallets: number[] = [];
-      this.wallets.push(wallets);
 
       const accountsT: Account[] = [];
       const account: Account = {
@@ -233,16 +223,6 @@ export class ExchangeTestUtil {
     this.dummyAccountKeyPair = keyPair;
 
     this.operators[exchangeID] = await this.createOperator(exchangeID, this.testContext.operators[0]);
-
-    this.ringMatcherAccountID[exchangeID] = await this.createRingMatcher(
-      exchangeID,
-      this.testContext.ringMatchers[0],
-    );
-
-    for (const walletAddress of this.testContext.wallets) {
-      const wallet = await this.createWallet(exchangeID, walletAddress);
-      this.wallets[exchangeID].push(wallet);
-    }
   }
 
   public async createOperator(exchangeID: number, owner: string) {
@@ -252,30 +232,6 @@ export class ExchangeTestUtil {
                                            keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
                                            constants.zeroAddress, new BN(1));
     return depositInfo.accountID;
-  }
-
-  public async createWallet(exchangeID: number, owner: string) {
-    // Make an account for the wallet
-    const keyPair = this.getKeyPairEDDSA();
-    const walletDeposit = await this.deposit(exchangeID, owner,
-                                             keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                             constants.zeroAddress, new BN(0));
-    return walletDeposit.accountID;
-  }
-
-  public async createRingMatcher(exchangeID: number, owner: string) {
-    const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
-    const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
-
-    const balance = new BN(web3.utils.toWei("1000000", "ether"));
-
-    // Make an account for the ringmatcher
-    const keyPair = this.getKeyPairEDDSA();
-    await LRC.addBalance(owner, balance);
-    const ringMatcherDeposit = await this.deposit(exchangeID, owner,
-                                                  keyPair.secretKey, keyPair.publicKeyX, keyPair.publicKeyY,
-                                                  lrcAddress, balance);
-    return ringMatcherDeposit.accountID;
   }
 
   public assertNumberEqualsWithPrecision(n1: number, n2: number, precision: number = 8) {
@@ -322,8 +278,6 @@ export class ExchangeTestUtil {
     if (bSetupOrderB) {
       await this.setupOrder(ring.orderB, this.orderIDGenerator++);
     }
-    ring.ringMatcherAccountID = (ring.ringMatcherAccountID !== undefined) ?
-                                ring.ringMatcherAccountID : this.ringMatcherAccountID[ring.orderA.exchangeID];
     ring.tokenID = (ring.tokenID !== undefined) ? ring.tokenID : (await this.getTokenIdFromNameOrAddress("LRC"));
     ring.fee = ring.fee ? ring.fee : new BN(web3.utils.toWei("1", "ether"));
   }
@@ -353,12 +307,6 @@ export class ExchangeTestUtil {
       const blockNumber = await web3.eth.getBlockNumber();
       order.validUntil = (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
     }
-    if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
-      const keyPair = this.getKeyPairEDDSA();
-      order.dualAuthPublicKeyX = keyPair.publicKeyX;
-      order.dualAuthPublicKeyY = keyPair.publicKeyY;
-      order.dualAuthSecretKey = keyPair.secretKey;
-    }
 
     order.exchangeID = (order.exchangeID !== undefined) ? order.exchangeID : this.exchangeId;
 
@@ -377,9 +325,12 @@ export class ExchangeTestUtil {
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
 
+    order.label = (order.label !== undefined) ? order.label : this.getRandomInt(2**16);
+
     assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
     assert(order.feeBips < 64, "feeBips >= 64");
     assert(order.rebateBips < 64, "rebateBips >= 64");
+    assert(order.label < 2**16, "order.label >= 2**16");
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -393,7 +344,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(15, 6, 53);
+    const hasher = poseidon.createHash(14, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
@@ -410,7 +361,8 @@ export class ExchangeTestUtil {
       order.validSince,
       order.validUntil,
       order.maxFeeBips,
-      order.buy ? 1 : 0
+      order.buy ? 1 : 0,
+      order.label,
     ];
     order.hash = hasher(inputs).toString(10);
     const endHash = performance.now();
@@ -430,65 +382,27 @@ export class ExchangeTestUtil {
     // console.log("Verify order signature time: " + (endVerify - startVerify));
   }
 
-  public signRing(ring: RingInfo) {
-    if (ring.ringMatcherSignature !== undefined) {
+  public signRingBlock(block: any, publicDataInput: any) {
+    if (block.signature !== undefined) {
       return;
     }
-    const account = this.accounts[this.exchangeId][ring.ringMatcherAccountID];
-    const nonce = account.nonce++;
 
-    ring.ringMatcherSignature = {
-      Rx: "0",
-      Ry: "0",
-      s: "0",
-    };
-    ring.dualAuthASignature = {
-      Rx: "0",
-      Ry: "0",
-      s: "0",
-    };
-    ring.dualAuthBSignature = {
-      Rx: "0",
-      Ry: "0",
-      s: "0",
-    };
+    const hasher = poseidon.createHash(3, 6, 51);
+    const account = this.accounts[this.exchangeId][block.operatorAccountID];
 
-    /*const message = new BitArray();
-    message.addString(ring.orderA.hash, 254);
-    message.addString(ring.orderB.hash, 254);
-    message.addNumber(ring.ringMatcherAccountID, 20);
-    message.addNumber(ring.tokenID, 8);
-    message.addBN(ring.fee, 96);
-    message.addNumber(ring.orderA.feeBips, 6);
-    message.addNumber(ring.orderB.feeBips, 6);
-    message.addNumber(ring.orderA.rebateBips, 6);
-    message.addNumber(ring.orderB.rebateBips, 6);
-    message.addNumber(nonce, 32);
-    message.addNumber(0, 1);
-    const sig = eddsa.sign(account.secretKey, message.getBits());
-    ring.ringMatcherSignature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString(),
-    };
+    // Calculate hash
+    const inputs = [
+      new BN(publicDataInput, 10),
+      account.nonce++,
+    ];
+    const hash = hasher(inputs).toString(10);
 
-    if (ring.dualAuthASignature === undefined) {
-      const dualAuthAsig = eddsa.sign(ring.orderA.dualAuthSecretKey, message.getBits());
-      ring.dualAuthASignature = {
-        Rx: dualAuthAsig.R[0].toString(),
-        Ry: dualAuthAsig.R[1].toString(),
-        s: dualAuthAsig.S.toString(),
-      };
-    }
+    // Create signature
+    block.signature = eddsa.sign(account.secretKey, hash);
 
-    if (ring.dualAuthBSignature === undefined) {
-      const dualAuthBsig = eddsa.sign(ring.orderB.dualAuthSecretKey, message.getBits());
-      ring.dualAuthBSignature = {
-        Rx: dualAuthBsig.R[0].toString(),
-        Ry: dualAuthBsig.R[1].toString(),
-        s: dualAuthBsig.S.toString(),
-      };
-    }*/
+    // Verify signature
+    const success = eddsa.verify(hash, block.signature, [account.publicKeyX, account.publicKeyY]);
+    assert(success, "Failed to verify signature");
   }
 
   public signCancel(cancel: Cancel) {
@@ -496,7 +410,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(11, 6, 53);
+    const hasher = poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][cancel.accountID];
 
     // Calculate hash
@@ -505,11 +419,10 @@ export class ExchangeTestUtil {
       cancel.accountID,
       cancel.orderTokenID,
       cancel.orderID,
-      cancel.walletAccountID,
       cancel.feeTokenID,
       cancel.fee,
-      cancel.walletSplitPercentage,
-      account.nonce++,
+      cancel.label,
+      account.nonce++
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -526,7 +439,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(11, 6, 53);
+    const hasher = poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
 
     // Calculate hash
@@ -535,11 +448,10 @@ export class ExchangeTestUtil {
       withdrawal.accountID,
       withdrawal.tokenID,
       withdrawal.amount,
-      withdrawal.walletAccountID,
       withdrawal.feeTokenID,
       withdrawal.fee,
-      withdrawal.walletSplitPercentage,
-      account.nonce++,
+      withdrawal.label,
+      account.nonce++
     ];
     const hash = hasher(inputs).toString(10);
 
@@ -587,7 +499,6 @@ export class ExchangeTestUtil {
     addAccount(addressBook, 0, "ProtocolFeePool");
     addAccount(addressBook, ring.orderA.accountID, "OwnerA" + (bIndex ? "[" + index + "]" : ""));
     addAccount(addressBook, ring.orderB.accountID, "OwnerB" + (bIndex ? "[" + index + "]" : ""));
-    addAccount(addressBook, ring.ringMatcherAccountID, "RingMatcher" + (bIndex ? "[" + index + "]" : ""));
     return addressBook;
   }
 
@@ -747,9 +658,15 @@ export class ExchangeTestUtil {
                               token, amount);
   }
 
-  public async requestWithdrawalOffchain(exchangeID: number, accountID: number, token: string, amount: BN,
-                                         feeToken: string, fee: BN, walletSplitPercentage: number,
-                                         walletAccountID: number) {
+  public async requestWithdrawalOffchain(
+    exchangeID: number,
+    accountID: number,
+    token: string,
+    amount: BN,
+    feeToken: string,
+    fee: BN,
+    label: number
+  ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
@@ -758,10 +675,18 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.addWithdrawalRequest(this.pendingOffchainWithdrawalRequests[exchangeID], accountID, tokenID, amount,
-                              walletAccountID, feeTokenID, fee, walletSplitPercentage);
-    return this.pendingOffchainWithdrawalRequests[exchangeID]
-           [this.pendingOffchainWithdrawalRequests[exchangeID].length - 1];
+    this.addWithdrawalRequest(
+      this.pendingOffchainWithdrawalRequests[exchangeID],
+      accountID,
+      tokenID,
+      amount,
+      feeTokenID,
+      fee,
+      label
+    );
+    return this.pendingOffchainWithdrawalRequests[exchangeID][
+      this.pendingOffchainWithdrawalRequests[exchangeID].length - 1
+    ];
   }
 
   public async requestWithdrawalOnchain(exchangeID: number, accountID: number, token: string,
@@ -815,12 +740,20 @@ export class ExchangeTestUtil {
     });
     const withdrawalIdx = items[0][0].toNumber();
 
-    const walletAccountID = this.wallets[exchangeID][0];
-    this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[exchangeID],
-                              accountID, tokenID, amount, walletAccountID, tokenID, new BN(0),
-                              0, withdrawalIdx, withdrawalFee);
-    return this.pendingOnchainWithdrawalRequests[exchangeID]
-           [this.pendingOnchainWithdrawalRequests[exchangeID].length - 1];
+    this.addWithdrawalRequest(
+      this.pendingOnchainWithdrawalRequests[exchangeID],
+      accountID,
+      tokenID,
+      amount,
+      tokenID,
+      new BN(0),
+      0,
+      withdrawalIdx,
+      withdrawalFee
+    );
+    return this.pendingOnchainWithdrawalRequests[exchangeID][
+      this.pendingOnchainWithdrawalRequests[exchangeID].length - 1
+    ];
   }
 
   public async requestShutdownWithdrawal(exchangeID: number, accountID: number, token: string, amount: BN) {
@@ -830,8 +763,7 @@ export class ExchangeTestUtil {
     const tokenID = this.tokenAddressToIDMap.get(token);
 
     this.addWithdrawalRequest(this.pendingOnchainWithdrawalRequests[exchangeID],
-                              accountID, tokenID, amount, 0, tokenID, new BN(0),
-                              0, 0);
+                              accountID, tokenID, amount, tokenID, new BN(0), 0);
     return this.pendingOnchainWithdrawalRequests[exchangeID]
            [this.pendingOnchainWithdrawalRequests[exchangeID].length - 1];
   }
@@ -842,34 +774,75 @@ export class ExchangeTestUtil {
     deposits.push({accountID, depositIdx, secretKey, publicKeyX, publicKeyY, tokenID, amount});
   }
 
-  public addCancel(cancels: Cancel[], accountID: number, orderTokenID: number, orderID: number,
-                   walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    cancels.push({accountID, orderTokenID, orderID, walletAccountID, feeTokenID, fee, walletSplitPercentage});
+  public addCancel(
+    cancels: Cancel[],
+    accountID: number,
+    orderTokenID: number,
+    orderID: number,
+    feeTokenID: number,
+    fee: BN,
+    label: number
+  ) {
+    cancels.push({ accountID, orderTokenID, orderID, feeTokenID, fee, label });
   }
 
-  public cancelOrderID(exchangeID: number, accountID: number,
-                       orderTokenID: number, orderID: number,
-                       walletAccountID: number,
-                       feeTokenID: number, fee: BN, walletSplitPercentage: number) {
-    this.addCancel(this.pendingCancels[exchangeID], accountID, orderTokenID, orderID, walletAccountID,
-                                                 feeTokenID, fee, walletSplitPercentage);
+  public cancelOrderID(
+    exchangeID: number,
+    accountID: number,
+    orderTokenID: number,
+    orderID: number,
+    feeTokenID: number,
+    fee: BN,
+    label: number
+  ) {
+    this.addCancel(
+      this.pendingCancels[exchangeID],
+      accountID,
+      orderTokenID,
+      orderID,
+      feeTokenID,
+      fee,
+      label
+    );
   }
 
-  public cancelOrder(order: OrderInfo, walletAccountID: number, feeToken: string, fee: BN) {
+  public cancelOrder(order: OrderInfo, feeToken: string, fee: BN) {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.cancelOrderID(order.exchangeID, order.accountID, order.tokenIdS, order.orderID,
-                       walletAccountID, feeTokenID, fee, 50);
+    this.cancelOrderID(
+      order.exchangeID,
+      order.accountID,
+      order.tokenIdS,
+      order.orderID,
+      feeTokenID,
+      fee,
+      order.label
+    );
   }
 
-  public addWithdrawalRequest(withdrawalRequests: WithdrawalRequest[],
-                              accountID: number, tokenID: number, amount: BN,
-                              walletAccountID: number, feeTokenID: number, fee: BN, walletSplitPercentage: number,
-                              withdrawalIdx?: number, withdrawalFee?: BN) {
-    withdrawalRequests.push({accountID, tokenID, amount, walletAccountID,
-                             feeTokenID, fee, walletSplitPercentage, withdrawalIdx, withdrawalFee});
+  public addWithdrawalRequest(
+    withdrawalRequests: WithdrawalRequest[],
+    accountID: number,
+    tokenID: number,
+    amount: BN,
+    feeTokenID: number,
+    fee: BN,
+    label: number,
+    withdrawalIdx?: number,
+    withdrawalFee?: BN
+  ) {
+    withdrawalRequests.push({
+      accountID,
+      tokenID,
+      amount,
+      feeTokenID,
+      fee,
+      label,
+      withdrawalIdx,
+      withdrawalFee
+    });
   }
 
   public sendRing(exchangeID: number, ring: RingInfo) {
@@ -885,7 +858,7 @@ export class ExchangeTestUtil {
     fs.mkdirSync(dirname);
   }
 
-  public async createBlock(exchangeID: number, blockType: number, data: string) {
+  public async createBlock(exchangeID: number, blockType: number, data: string, validate: boolean = true) {
     const nextBlockIdx = (await this.exchange.getBlockHeight()).toNumber() + 1;
     const inputFilename = "./blocks/block_" + exchangeID + "_" + nextBlockIdx + "_info.json";
     const outputFilename = "./blocks/block_" + exchangeID + "_" + nextBlockIdx + ".json";
@@ -893,6 +866,7 @@ export class ExchangeTestUtil {
     this.ensureDirectoryExists(inputFilename);
     fs.writeFileSync(inputFilename, data, "utf8");
 
+    // Create the block
     const result = childProcess.spawnSync(
       "python3",
       ["operator/create_block.py", "" + exchangeID, "" + nextBlockIdx, "" + blockType, inputFilename, outputFilename],
@@ -900,7 +874,27 @@ export class ExchangeTestUtil {
     );
     assert(result.status === 0, "create_block failed: " + blockType);
 
+    if (validate) {
+      await this.validateBlock(outputFilename);
+    }
+
     return [nextBlockIdx, outputFilename];
+  }
+
+  public getPublicDataHashAndInput(data: string) {
+    const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
+    const publicInput = new BN(publicDataHash.slice(2), 16).shrn(3).toString(10);
+    return {publicDataHash, publicInput};
+  }
+
+  public async validateBlock(filename: string) {
+    // Validate the block
+    const result = childProcess.spawnSync(
+      "build/circuit/dex_circuit",
+      ["-validate", filename],
+      {stdio: doDebugLogging() ? "inherit" : "ignore"},
+    );
+    assert(result.status === 0, "validate_block failed: " + filename);
   }
 
   public async commitBlock(operatorId: number, blockType: BlockType, blockSize: number,
@@ -909,8 +903,9 @@ export class ExchangeTestUtil {
       data += "00";
       this.commitWrongPublicDataOnce = false;
     }
-    const publicDataHash = "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
-    const publicInput = new BN(publicDataHash.slice(2), 16).shrn(3).toString(10);
+    const publicDataHashAndInput = this.getPublicDataHashAndInput(data);
+    const publicDataHash = publicDataHashAndInput.publicDataHash;
+    const publicInput = publicDataHashAndInput.publicInput;
     logDebug("[EVM]PublicData: " + data);
     logDebug("[EVM]PublicDataHash: " + publicDataHash);
     logDebug("[EVM]PublicInput: " + publicInput);
@@ -1403,16 +1398,22 @@ export class ExchangeTestUtil {
             accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
-            walletAccountID: onchain ? 0 : this.wallets[exchangeID][0],
             feeTokenID: 1,
             fee: new BN(0),
-            walletSplitPercentage: 0,
+            label: 0
           };
           withdrawals.push(dummyWithdrawalRequest);
         }
       }
       assert(withdrawals.length === blockSize);
       numWithdrawalsDone += blockSize;
+
+      // Hash the labels
+      const labels: number[] = [];
+      for (const withdrawal of withdrawals) {
+        labels.push(withdrawal.label);
+      }
+      const labelHash = this.hashLabels(labels);
 
       if (!onchain) {
         // Sign the offchain withdrawals
@@ -1478,17 +1479,21 @@ export class ExchangeTestUtil {
         bs.addNumber(withdrawal.tokenID, 1);
         bs.addNumber((withdrawal.accountID * (2 ** 28)) + withdrawal.fAmountWithdrawn, 6);
       }
-      if (!onchain && block.onchainDataAvailability) {
-        bs.addNumber(block.operatorAccountID, 3);
-        for (const withdrawal of block.withdrawals) {
-          bs.addNumber(withdrawal.walletAccountID, 3);
-          bs.addNumber(withdrawal.feeTokenID, 1);
-          bs.addNumber(toFloat(new BN(withdrawal.fee), constants.Float16Encoding), 2);
-          bs.addNumber(withdrawal.walletSplitPercentage, 1);
+      if (!onchain) {
+        bs.addBN(new BN(labelHash, 10), 32);
+        if (block.onchainDataAvailability) {
+          bs.addNumber(block.operatorAccountID, 3);
+          for (const withdrawal of block.withdrawals) {
+            bs.addNumber(withdrawal.feeTokenID, 1);
+            bs.addNumber(
+              toFloat(new BN(withdrawal.fee), constants.Float16Encoding),
+              2
+            );
+          }
         }
       }
 
-       // Validate state change
+      // Validate state change
       if (onchain) {
         this.validateOnchainWithdrawals(withdrawalBlock, stateBefore, stateAfter);
       } else {
@@ -1576,6 +1581,27 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
+  public hashLabels(labels: number[]) {
+    const hasher = poseidon.createHash(66, 6, 56);
+    const numInputs = 64;
+
+    const numStages = Math.floor((labels.length + numInputs - 1) / numInputs);
+    const stageHashes: any[] = [];
+    for (let i = 0; i < numStages; i++) {
+      const inputs: number[] = [];
+      inputs.push(i == 0 ? 0 : stageHashes[stageHashes.length - 1]);
+      for (let j = 0; j < numInputs; j++) {
+        const labelIdx = i * numInputs + j;
+        inputs.push(labelIdx < labels.length ? labels[labelIdx] : 0);
+      }
+      stageHashes.push(hasher(inputs));
+    }
+
+    const hash = stageHashes[stageHashes.length - 1];
+    logDebug("[JS] labels hash: " + hash.toString(10));
+    return hash;
+  }
+
   public async commitRings(exchangeID: number, forcedBlockSize?: number) {
     const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
@@ -1601,29 +1627,20 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0];
           const dummyRing: RingInfo = {
             orderA:
               {
                 exchangeID,
                 orderID: 0,
                 accountID: this.dummyAccountId,
-                walletAccountID,
-
-                dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
-                dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
-                dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
-
                 tokenIdS: 0,
                 tokenIdB: 1,
-
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
-
                 maxFeeBips: 0,
-
                 buy: true,
+                label: 1,
 
                 feeBips: 0,
                 rebateBips: 0,
@@ -1636,22 +1653,14 @@ export class ExchangeTestUtil {
                 exchangeID,
                 orderID: 0,
                 accountID: this.dummyAccountId,
-                walletAccountID,
-
-                dualAuthPublicKeyX: this.dualAuthKeyPair.publicKeyX,
-                dualAuthPublicKeyY: this.dualAuthKeyPair.publicKeyY,
-                dualAuthSecretKey: this.dualAuthKeyPair.secretKey,
-
                 tokenIdS: 1,
                 tokenIdB: 0,
-
                 allOrNone: false,
                 validSince: 0,
                 validUntil: 0,
-
                 maxFeeBips: 0,
-
                 buy: true,
+                label: 2,
 
                 feeBips: 0,
                 rebateBips: 0,
@@ -1659,7 +1668,6 @@ export class ExchangeTestUtil {
                 amountS: new BN(1),
                 amountB: new BN(1),
               },
-              ringMatcherAccountID: this.ringMatcherAccountID[exchangeID],
             tokenID: 0,
             fee: new BN(0),
           };
@@ -1671,10 +1679,15 @@ export class ExchangeTestUtil {
       assert(rings.length === blockSize);
       numRingsDone += blockSize;
 
-      // Sign the rings
+      // Hash the labels
+      const labels: number[] = [];
       for (const ring of rings) {
-        this.signRing(ring);
+        labels.push(ring.orderA.label);
+        labels.push(ring.orderB.label);
       }
+      const labelHash = this.hashLabels(labels);
+
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
@@ -1692,18 +1705,16 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx, ringBlock);
 
       // Create the block
-      const [blockIdx, blockFilename] = await this.createBlock(exchangeID, 0, JSON.stringify(ringBlock, replacer, 4));
-
-      // Store state after
-      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
+      const [blockIdx, blockFilename] =
+       await this.createBlock(exchangeID, 0, JSON.stringify(ringBlock, replacer, 4), false);
 
       // Read in the block
       const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
 
+      // Pack the data that needs to be committed onchain
       const bs = new Bitstream();
       bs.addNumber(exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
@@ -1711,7 +1722,7 @@ export class ExchangeTestUtil {
       bs.addNumber(ringBlock.timestamp, 4);
       bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
       bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
-
+      bs.addBN(new BN(labelHash, 10), 32);
       const da = new Bitstream();
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
@@ -1719,10 +1730,6 @@ export class ExchangeTestUtil {
           const ring = ringSettlement.ring;
           const orderA = ringSettlement.ring.orderA;
           const orderB = ringSettlement.ring.orderB;
-
-          const fRingFee = toFloat(new BN(ring.fee), constants.Float12Encoding);
-          da.addNumber((ring.ringMatcherAccountID * (2 ** 12)) + fRingFee, 4);
-          da.addNumber(ring.tokenID, 1);
 
           da.addNumber((orderA.orderID * (2 ** constants.NUM_BITS_ORDERID)) + orderB.orderID, 5);
           da.addNumber((orderA.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + orderB.accountID, 5);
@@ -1740,12 +1747,22 @@ export class ExchangeTestUtil {
           da.addNumber(buyMask + rebateMask + orderB.feeBips + orderB.rebateBips, 1);
         }
       }
-
       if (block.onchainDataAvailability) {
         // Apply circuit transfrom
         const transformedData = this.transformRingSettlementsData(da.getData());
         bs.addHex(transformedData);
       }
+
+      // Write the block signature
+      const publicDataHashAndInput = this.getPublicDataHashAndInput(bs.getData());
+      this.signRingBlock(block, publicDataHashAndInput.publicInput);
+      fs.writeFileSync(blockFilename, JSON.stringify(block, undefined, 4), "utf8");
+
+      // Validate the block after generating the signature
+      await this.validateBlock(blockFilename);
+
+      // Store state after
+      const stateAfter = await this.loadExchangeStateForRingBlock(exchangeID, currentBlockIdx + 1, ringBlock);
 
       // Validate state change
       this.validateRingSettlements(ringBlock, bs.getData(), stateBefore, stateAfter);
@@ -1761,13 +1778,12 @@ export class ExchangeTestUtil {
 
   public getRingTransformations() {
     const ranges: Range[][] = [];
-    ranges.push([{offset: 0, length: 5}]);                            // ringMatcherID + fFee + tokenID
-    ranges.push([{offset: 5, length: 5}]);                            // orderA.orderID + orderB.orderID
-    ranges.push([{offset: 10, length: 5}]);                           // orderA.accountID + orderB.accountID
-    ranges.push([{offset: 15, length: 1}, {offset: 20, length: 1}]);  // orderA.tokenS + orderB.tokenS
-    ranges.push([{offset: 16, length: 3}, {offset: 21, length: 3}]);  // orderA.fillS + orderB.fillS
-    ranges.push([{offset: 19, length: 1}]);                           // orderA.data
-    ranges.push([{offset: 24, length: 1}]);                           // orderB.data
+    ranges.push([{offset: 0, length: 5}]);                            // orderA.orderID + orderB.orderID
+    ranges.push([{offset: 5, length: 5}]);                            // orderA.accountID + orderB.accountID
+    ranges.push([{offset: 10, length: 1}, {offset: 15, length: 1}]);  // orderA.tokenS + orderB.tokenS
+    ranges.push([{offset: 11, length: 3}, {offset: 16, length: 3}]);  // orderA.fillS + orderB.fillS
+    ranges.push([{offset: 14, length: 1}]);                           // orderA.data
+    ranges.push([{offset: 19, length: 1}]);                           // orderB.data
     return ranges;
   }
 
@@ -1775,9 +1791,9 @@ export class ExchangeTestUtil {
     // Compress
     const bs = new Bitstream(input);
     const compressed = new Bitstream();
-    const ringSize = 25;
-    compressed.addHex(bs.extractData(0, ringSize));
-    for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
+    const ringSize = 20;
+    compressed.addHex(bs.extractData(0, bs.length()));
+    /*for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
       for (let i = 0; i < 5; i++) {
         const previousRingData = bs.extractUint8(offset + i - ringSize);
         const currentRingData = bs.extractUint8(offset + i);
@@ -1785,7 +1801,7 @@ export class ExchangeTestUtil {
         compressed.addNumber(data, 1);
       }
       compressed.addHex(bs.extractData(offset + 5, ringSize - 5));
-    }
+    }*/
     // Transform
     const ranges = this.getRingTransformations();
     const transformed = new Bitstream();
@@ -1806,7 +1822,7 @@ export class ExchangeTestUtil {
   public inverseTransformRingSettlementsData(input: string) {
     // Inverse Transform
     const transformed = new Bitstream(input);
-    const ringSize = 25;
+    const ringSize = 20;
     const numRings = transformed.length() / ringSize;
     const ranges = this.getRingTransformations();
     const compressed = new Bitstream();
@@ -1833,8 +1849,8 @@ export class ExchangeTestUtil {
 
     // Decompress
     const bs = new Bitstream();
-    bs.addHex(compressed.extractData(0, ringSize));
-    for (let r = 1; r < numRings; r++) {
+    bs.addHex(compressed.extractData(0, ringSize * numRings));
+    /*for (let r = 1; r < numRings; r++) {
       for (let i = 0; i < 5; i++) {
         const previousRingData = bs.extractUint8((r - 1) * ringSize + i);
         const delta = compressed.extractUint8(r * ringSize + i);
@@ -1842,7 +1858,7 @@ export class ExchangeTestUtil {
         bs.addNumber(reconstructedData, 1);
       }
       bs.addHex(compressed.extractData(r * ringSize + 5, ringSize - 5));
-    }
+    }*/
     return bs.getData();
   }
 
@@ -1865,15 +1881,13 @@ export class ExchangeTestUtil {
         if (b < pendingCancels.length) {
           cancels.push(pendingCancels[b]);
         } else {
-          const walletAccountID = this.wallets[exchangeID][0];
           const dummyCancel: Cancel = {
             accountID: this.dummyAccountId,
             orderTokenID: 0,
             orderID: 0,
-            walletAccountID,
             feeTokenID: 1,
             fee: new BN(0),
-            walletSplitPercentage: 0,
+            label: 0
           };
           cancels.push(dummyCancel);
         }
@@ -1881,6 +1895,12 @@ export class ExchangeTestUtil {
       assert(cancels.length === blockSize);
       numCancelsDone += blockSize;
 
+      // Hash the labels
+      const labels: number[] = [];
+      for (const cancel of cancels) {
+        labels.push(cancel.label);
+      }
+      const labelHash = this.hashLabels(labels);
       // Sign the order cancelations
       for (const cancel of cancels) {
         this.signCancel(cancel);
@@ -1910,15 +1930,14 @@ export class ExchangeTestUtil {
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
+      bs.addBN(new BN(labelHash, 10), 32);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const cancel of cancels) {
-          bs.addNumber((cancel.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + cancel.walletAccountID, 5);
+          bs.addNumber((cancel.accountID * (2 ** constants.NUM_BITS_ACCOUNTID)) + cancel.orderID, 5);
           bs.addNumber(cancel.orderTokenID, 1);
-          bs.addNumber(cancel.orderID, 3);
           bs.addNumber(cancel.feeTokenID, 1);
           bs.addNumber(toFloat(cancel.fee, constants.Float16Encoding), 2);
-          bs.addNumber(cancel.walletSplitPercentage, 1);
         }
       }
 
@@ -2311,8 +2330,7 @@ export class ExchangeTestUtil {
       this.getRandomAmount(),
       "LRC",
       new BN(0),
-      0,
-      this.wallets[this.exchangeId][0],
+      0
     );
   }
 
@@ -2355,7 +2373,7 @@ export class ExchangeTestUtil {
     let bs: Bitstream;
     if (ringBlock.onchainDataAvailability) {
       // Reverse circuit transform
-      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
+      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 32 + 3;
       const ringData = this.inverseTransformRingSettlementsData("0x" + onchainData.slice(2 + 2 * ringDataStart));
       bs = new Bitstream(onchainData.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2));
     } else {
@@ -2386,6 +2404,10 @@ export class ExchangeTestUtil {
       this.logFilledAmountsRing(ring, latestState, simulatorReport.exchangeStateAfter);
       latestState = simulatorReport.exchangeStateAfter;
     }
+
+    // Update operator nonce
+    const operator = latestState.accounts[operatorAccountID];
+    operator.nonce++;
 
     // Verify resulting state
     this.compareStates(stateAfter, latestState);
@@ -2859,7 +2881,7 @@ export class ExchangeTestUtil {
       const toName = addressBook[payment.to] !== undefined ? addressBook[payment.to] : payment.to;
       logInfo(whiteSpace + "- " + " [" + description + "] " + prettyAmount + " -> " + toName);
     } else {
-      logInfo(whiteSpace + "+ " + " [" + description + "] " + prettyAmount);
+      logInfo(whiteSpace + "+ " + " [" + description + "] ");
       for (const subPayment of payment.subPayments) {
         this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
       }
