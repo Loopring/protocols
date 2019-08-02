@@ -25,7 +25,7 @@ import "../../iface/IAddressWhitelist.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
 {
-    uint permissionTimeout = 24 hours;
+    uint public constant PERMISSION_TIMEOUT = 24 hours;
 
     function isWhitelisted(
         address user,
@@ -59,7 +59,7 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
           return false;
         }
 
-        if (t < now - permissionTimeout){
+        if (t < now - PERMISSION_TIMEOUT){
             return false;
         }
 
