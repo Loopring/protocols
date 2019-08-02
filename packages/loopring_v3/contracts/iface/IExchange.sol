@@ -429,6 +429,7 @@ contract IExchange
     ///            - timestamp used in the block: 4 bytes
     ///            - protocolTakerFeeBips: 1 bytes
     ///            - protocolMakerFeeBips: 1 bytes
+    ///            - Label hash: 32 bytes
     ///        For DEPOSIT blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
@@ -448,8 +449,9 @@ contract IExchange
     ///                - Token ID: 1 bytes
     ///                - Account ID: 2,5 bytes
     ///                - Amount: 3,5 bytes
+    ///            - Label hash: 32 bytes
     ///        For ORDER_CANCELLATION blocks add the following data:
-    ///            - None
+    ///            - Label hash: 32 bytes
     ///
     ///        The 'onchain data availability' data (if enabled) is added
     ///        at the end. This allows anyone to recreate the merkle tree
@@ -458,9 +460,6 @@ contract IExchange
     ///        For RING_SETTLEMENT blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
-    ///                - Ring-matcher account ID: 2,5 bytes
-    ///                - Fee amount: 1,5 bytes
-    ///                - Token ID (fee to operator): 1 bytes
     ///                - OrderA.orderID: 2,5 bytes
     ///                - OrderB.orderID: 2,5 bytes
     ///                - OrderA.accountID: 2,5 bytes
@@ -477,29 +476,22 @@ contract IExchange
     ///        For OFFCHAIN_WITHDRAWALAL blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every withdrawal:
-    ///                - Wallet account ID: 3 bytes
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
-    ///                - WalletSplitPercentage: 1 byte
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every cancel:
     ///                - Account ID: 2,5 bytes
-    ///                - Wallet Account ID: 2,5 bytes
+    ///                - Order ID: 2,5 bytes
     ///                - Token ID: 1 bytes
-    ///                - Order ID: 3 bytes
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
-    ///                - WalletSplitPercentage: 1 byte
     ///
     ///        The RING_SETTLEMENT data availability data is further transformed
     ///        to make it more compressible:
-    ///        - The Ring-matcher account ID, fee amount and token ID (the first 5 bytes) are
-    ///          XORed with the corresponding data from the previous ring
     ///        - To group more similar data together we don't store all data
     ///          for a ring next to each other but group them together for all rings.
     ///          For ALL rings, sequentially:
-    ///             - Ring-matcher account ID + fee + Token ID
     ///             - orderA.orderID + orderB.orderID
     ///             - orderA.accountID + orderB.accountID
     ///             - orderA.tokenS + orderB.tokenS

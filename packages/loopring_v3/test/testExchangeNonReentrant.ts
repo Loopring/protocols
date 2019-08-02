@@ -97,7 +97,7 @@ contract("Exchange", (accounts: string[]) => {
         const ethToSend = accountCreationFee.add(depositFee);
         await expectThrow(
           exchange.updateAccountAndDeposit(
-            new BN(0),
+            new BN(1),
             new BN(0),
             testTokenAddress,
             web3.utils.toBN(amount),
@@ -110,7 +110,7 @@ contract("Exchange", (accounts: string[]) => {
         // Disable the test and deposit again
         await TestToken.setTestCase(await TestToken.TEST_NOTHING());
         exchange.updateAccountAndDeposit(
-          new BN(0),
+          new BN(1),
           new BN(0),
           testTokenAddress,
           web3.utils.toBN(amount),

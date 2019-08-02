@@ -37,9 +37,7 @@ export interface OrderInfo {
   accountID?: number;
   orderID?: number;
 
-  dualAuthPublicKeyX?: string;
-  dualAuthPublicKeyY?: string;
-  dualAuthSecretKey?: string;
+  label?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -76,13 +74,8 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  ringMatcherAccountID?: number;
   tokenID?: number;
   fee?: BN;
-
-  ringMatcherSignature?: Signature;
-  dualAuthASignature?: Signature;
-  dualAuthBSignature?: Signature;
 
   expected?: RingExpectation;
 }
@@ -96,6 +89,8 @@ export interface RingBlock {
   timestamp?: number;
   exchangeID?: number;
   operatorAccountID?: number;
+
+  signature?: Signature;
 }
 
 export interface Deposit {
@@ -122,10 +117,9 @@ export interface WithdrawalRequest {
   tokenID: number;
   amount: BN;
 
-  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
-  walletSplitPercentage: number;
+  label: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
@@ -157,10 +151,9 @@ export interface Cancel {
   accountID: number;
   orderTokenID: number;
   orderID: number;
-  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
-  walletSplitPercentage: number;
+  label?: number;
 
   signature?: Signature;
 }

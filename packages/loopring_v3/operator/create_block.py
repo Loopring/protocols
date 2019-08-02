@@ -6,8 +6,6 @@ import subprocess
 import json
 import pathlib
 from state import Account, Context, State, Order, Ring, copyAccountInfo, AccountUpdateData
-from ethsnarks.jubjub import Point
-from ethsnarks.field import FQ
 
 
 class RingSettlementBlock(object):
@@ -62,9 +60,6 @@ def orderFromJSON(jOrder, state):
     exchangeID = int(jOrder["exchangeID"])
     orderID = int(jOrder["orderID"])
     accountID = int(jOrder["accountID"])
-    dualAuthPublicKeyX = int(jOrder["dualAuthPublicKeyX"])
-    dualAuthPublicKeyY = int(jOrder["dualAuthPublicKeyY"])
-    dualAuthSecretKey = int(jOrder["dualAuthSecretKey"])
     tokenS = int(jOrder["tokenIdS"])
     tokenB = int(jOrder["tokenIdB"])
     amountS = int(jOrder["amountS"])
@@ -74,19 +69,20 @@ def orderFromJSON(jOrder, state):
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
     maxFeeBips = int(jOrder["maxFeeBips"])
+    label = int(jOrder["label"])
 
     feeBips = int(jOrder["feeBips"])
     rebateBips = int(jOrder["rebateBips"])
 
     account = state.getAccount(accountID)
 
-    order = Order(Point(account.publicKeyX, account.publicKeyY),
-                  Point(dualAuthPublicKeyX, dualAuthPublicKeyY), dualAuthSecretKey,
+    order = Order(account.publicKeyX, account.publicKeyY,
                   exchangeID, orderID, accountID,
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,
-                  maxFeeBips, feeBips, rebateBips)
+                  maxFeeBips, feeBips, rebateBips,
+                  label)
 
     order.signature = jOrder["signature"]
 
@@ -96,17 +92,8 @@ def orderFromJSON(jOrder, state):
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
-    ringMatcherAccountID = int(jRing["ringMatcherAccountID"])
-    tokenID = int(jRing["tokenID"])
-    fee = int(jRing["fee"])
 
-    ringMatcherAccount = state.getAccount(ringMatcherAccountID)
-
-    ring = Ring(orderA, orderB, ringMatcherAccountID, tokenID, fee, ringMatcherAccount.nonce)
-
-    ring.ringMatcherSignature = jRing["ringMatcherSignature"]
-    ring.dualAuthASignature = jRing["dualAuthASignature"]
-    ring.dualAuthBSignature = jRing["dualAuthBSignature"]
+    ring = Ring(orderA, orderB)
 
     return ring
 
@@ -144,7 +131,9 @@ def createRingSettlementBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(context.operatorAccountID))
     proof = state._accountsTree.createProof(context.operatorAccountID)
     for ringSettlement in block.ringSettlements:
-        ringSettlement.balanceUpdateF_O = account.updateBalance(ringSettlement.ring.tokenID, ringSettlement.feeToOperator)
+        ringSettlement.balanceUpdateA_O = account.updateBalance(ringSettlement.ring.orderA.tokenB, ringSettlement.balanceDeltaA_O)
+        ringSettlement.balanceUpdateB_O = account.updateBalance(ringSettlement.ring.orderB.tokenB, ringSettlement.balanceDeltaB_O)
+    account.nonce += 1
     state.updateAccountTree(context.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -213,13 +202,12 @@ def createOffchainWithdrawalBlock(state, data):
         accountID = int(withdrawalInfo["accountID"])
         tokenID = int(withdrawalInfo["tokenID"])
         amount = int(withdrawalInfo["amount"])
-        walletAccountID = int(withdrawalInfo["walletAccountID"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
-        walletSplitPercentage = int(withdrawalInfo["walletSplitPercentage"])
+        label = int(withdrawalInfo["label"])
 
         withdrawal = state.offchainWithdraw(block.exchangeID, accountID, tokenID, amount,
-                                            block.operatorAccountID, walletAccountID, feeTokenID, fee, walletSplitPercentage)
+                                            block.operatorAccountID, feeTokenID, fee, label)
         withdrawal.signature = withdrawalInfo["signature"]
         block.withdrawals.append(withdrawal)
 
@@ -229,7 +217,7 @@ def createOffchainWithdrawalBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for withdrawal in block.withdrawals:
-        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, withdrawal.feeToOperator)
+        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, int(withdrawal.fee))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -250,13 +238,12 @@ def createOrderCancellationBlock(state, data):
         accountID = int(cancelInfo["accountID"])
         orderTokenID = int(cancelInfo["orderTokenID"])
         orderID = int(cancelInfo["orderID"])
-        walletAccountID = int(cancelInfo["walletAccountID"])
         feeTokenID = int(cancelInfo["feeTokenID"])
         fee = int(cancelInfo["fee"])
-        walletSplitPercentage = int(cancelInfo["walletSplitPercentage"])
+        label = int(cancelInfo["label"])
 
         cancel = state.cancelOrder(block.exchangeID, accountID, orderTokenID, orderID,
-                                   walletAccountID, block.operatorAccountID, feeTokenID, fee, walletSplitPercentage)
+                                   block.operatorAccountID, feeTokenID, fee, label)
 
         cancel.signature = cancelInfo["signature"]
         block.cancels.append(cancel)
@@ -267,7 +254,7 @@ def createOrderCancellationBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for cancel in block.cancels:
-        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, cancel.feeToOperator)
+        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, int(cancel.fee))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -308,7 +295,7 @@ def main(exchangeID, blockIdx, blockType, inputFilename, outputFilename):
     f.close()
 
     # Validate the block
-    subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
+    # subprocess.check_call(["build/circuit/dex_circuit", "-validate", outputFilename])
 
     pathlib.Path("./states").mkdir(parents=True, exist_ok=True)
     state_filename = "./states/state_" + str(exchangeID) + "_" + str(blockIdx) + ".json"
