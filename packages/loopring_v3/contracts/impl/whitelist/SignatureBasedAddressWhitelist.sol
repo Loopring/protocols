@@ -39,7 +39,7 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
         bytes32 s;
         uint8   v;
 
-        if (permission.length != 65 + 8) {
+        if (permission.length != 73) {
           return false;
         }
 
