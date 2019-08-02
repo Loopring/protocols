@@ -420,6 +420,7 @@ contract IExchange
     ///            - timestamp used in the block: 4 bytes
     ///            - protocolTakerFeeBips: 1 bytes
     ///            - protocolMakerFeeBips: 1 bytes
+    ///            - Label hash: 32 bytes
     ///        For DEPOSIT blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
@@ -439,8 +440,9 @@ contract IExchange
     ///                - Token ID: 1 bytes
     ///                - Account ID: 2,5 bytes
     ///                - Amount: 3,5 bytes
+    ///            - Label hash: 32 bytes
     ///        For ORDER_CANCELLATION blocks add the following data:
-    ///            - None
+    ///            - Label hash: 32 bytes
     ///
     ///        The 'onchain data availability' data (if enabled) is added
     ///        at the end. This allows anyone to recreate the merkle tree
