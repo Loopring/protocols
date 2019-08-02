@@ -29,7 +29,7 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
 
     function isWhitelisted(
         address user,
-        bytes   calldata permission
+        bytes   memory permission
         )
         public
         returns (bool)

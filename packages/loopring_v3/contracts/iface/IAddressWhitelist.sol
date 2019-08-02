@@ -27,7 +27,7 @@ contract IAddressWhitelist
     /// @return true if the address is whitelisted
     function isWhitelisted(
         address user,
-        bytes   calldata permission
+        bytes   memory permission
         )
         public
         returns (bool);
