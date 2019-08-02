@@ -36,7 +36,7 @@ contract IOedax {
     /// @param P Numerator part of the target price `p`.
     /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T1 The maximum auction duration in second.
+    /// @param T1 The minimum auction duration in second.
     /// @param T2 The maximum auction duration in second.
     /// @return auctionAddr Auction address.
     function createAuction(
@@ -93,7 +93,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         userStakingPoolAddress = _userStakingPoolAddress;
     }
 
-    function claim(
+    function claimStakingReward(
         uint    amount
         )
         external

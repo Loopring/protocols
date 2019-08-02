@@ -12,6 +12,8 @@ var ExchangeDeposits = artifacts.require("./impl/libexchange/ExchangeDeposits");
 var ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis");
 var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
 var ExchangeWithdrawals = artifacts.require("./impl/libexchange/ExchangeWithdrawals");
+var UserStakingPool = artifacts.require("./impl/UserStakingPool");
+var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
@@ -87,6 +89,18 @@ module.exports = function(deployer, network, accounts) {
           0,
           0,
         ),
+      ]);
+    }).then(() => {
+      return Promise.all([
+        deployer.deploy(UserStakingPool, LRCToken.address)
+      ]);
+    }).then(() => {
+      return Promise.all([
+        deployer.deploy(
+          ProtocolFeeVault,
+          LRCToken.address,
+          UserStakingPool.address
+        )
       ]);
     }).then(() => {
       console.log("Deployed contracts addresses:");
