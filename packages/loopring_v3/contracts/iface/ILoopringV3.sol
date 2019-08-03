@@ -82,6 +82,7 @@ contract ILoopringV3
     uint    public exchangeCreationCostLRC;
     uint    public maxWithdrawalFee;
     uint    public downtimePriceLRCPerMinute;
+    uint    public downtimePriceMaxPenalty;
     uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
@@ -108,6 +109,7 @@ contract ILoopringV3
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerMinute,
+        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,

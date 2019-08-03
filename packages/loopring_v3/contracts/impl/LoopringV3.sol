@@ -45,6 +45,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerMinute,
+        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -67,6 +68,7 @@ contract LoopringV3 is ILoopringV3, Claimable
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
             _downtimePriceLRCPerMinute,
+            _downtimePriceMaxPenalty,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -82,6 +84,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerMinute,
+        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -97,6 +100,7 @@ contract LoopringV3 is ILoopringV3, Claimable
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
             _downtimePriceLRCPerMinute,
+            _downtimePriceMaxPenalty,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -401,6 +405,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _downtimePriceLRCPerMinute,
+        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -411,11 +416,16 @@ contract LoopringV3 is ILoopringV3, Claimable
         private
     {
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
+        require(
+            _downtimePriceMaxPenalty > 0 && _downtimePriceMaxPenalty < 100,
+            "INVALID_VALUE"
+        );
 
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
         downtimePriceLRCPerMinute = _downtimePriceLRCPerMinute;
+        downtimePriceMaxPenalty = _downtimePriceMaxPenalty;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;

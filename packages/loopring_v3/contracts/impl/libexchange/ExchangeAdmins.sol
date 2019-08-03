@@ -205,7 +205,16 @@ library ExchangeAdmins
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute());
+
+        uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) / (now - S.exchangeCreationTimestamp);
+        uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
+
+        if (penalty == 0) {
+            penalty = 1;
+        } else if (penalty > maxPenalty) {
+            penalty = maxPenalty;
+        }
+        return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute()).mul(penalty);
     }
 
     function getTotalTimeInMaintenanceSeconds(
