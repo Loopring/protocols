@@ -206,7 +206,8 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) / (now - S.exchangeCreationTimestamp);
+        uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) /
+            (now - S.exchangeCreationTimestamp);
 
         if (penalty == 0) {
             penalty = 1;
@@ -216,7 +217,9 @@ library ExchangeAdmins
                 penalty = maxPenalty;
             }
         }
-        return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute()).mul(penalty);
+        return durationMinutes
+            .mul(S.loopring.downtimePriceLRCPerMinute())
+            .mul(penalty);
     }
 
     function getTotalTimeInMaintenanceSeconds(
@@ -250,7 +253,10 @@ library ExchangeAdmins
         // All blocks needs to be finalized
         require(S.blocks.length == S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // We also require that all deposit requests are processed
-        require(lastBlock.numDepositRequestsCommitted == S.depositChain.length, "DEPOSITS_NOT_PROCESSED");
+        require(
+            lastBlock.numDepositRequestsCommitted == S.depositChain.length,
+            "DEPOSITS_NOT_PROCESSED"
+        );
         // Merkle root needs to be reset to the genesis block
         // (i.e. all balances 0 and all other state reset to default values)
         require(S.isInInitialState(), "MERKLE_ROOT_NOT_REVERTED");
