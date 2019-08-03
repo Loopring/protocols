@@ -206,7 +206,7 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        // Initially, the penalty would be the percentage of DEX's downtime.
+        // Initially, the penalty is the percentage of DEX's downtime.
         uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) /
             (now - S.exchangeCreationTimestamp);
 
