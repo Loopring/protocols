@@ -207,12 +207,14 @@ library ExchangeAdmins
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
         uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) / (now - S.exchangeCreationTimestamp);
-        uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
 
         if (penalty == 0) {
             penalty = 1;
-        } else if (penalty > maxPenalty) {
-            penalty = maxPenalty;
+        } else {
+            uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
+            if (penalty > maxPenalty) {
+                penalty = maxPenalty;
+            }
         }
         return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute()).mul(penalty);
     }
