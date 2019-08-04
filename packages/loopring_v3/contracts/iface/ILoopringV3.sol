@@ -104,7 +104,7 @@ contract ILoopringV3
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
-        address _blockVerifierAddress,  // address(0) not allowed
+        address _blockVerifierAddress,   // address(0) not allowed
         address _downtimeCostCalculator, // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
