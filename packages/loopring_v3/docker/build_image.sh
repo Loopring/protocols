@@ -22,7 +22,7 @@ echo "docker_id: $docker_id"
 
 if [ -z "$docker_id" ]; then
     echo "docker id is empty, docker run failed."
-    exit(1)
+    exit 1
 fi
 
 cd ..
