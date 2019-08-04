@@ -22,8 +22,12 @@ pragma solidity 0.5.10;
 contract IDowntimeCostCalculator
 {
     /// @dev Returns the downtime price.
-    /// @return price The price in LRC per minute. Returning 0 to indicate
-    //                purchase failure.
+    /// @param totalTimeInMaintenanceSeconds The total time a DEX has been in maintain mode.
+    /// @param totalDEXLifeTimeSeconds The DEX's total life time since genesis.
+    /// @param numDowntimeMinutes The current downtime balance in minutes before purchase.
+    /// @param exchangeStakedLRC The number of LRC staked by the DEX's owner.
+    /// @param durationToPurchaseMinutes The downtime in minute to purchase.
+    /// @return cost The cost in LRC for purchasing the downtime.
     function getDowntimeCostLRC(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,

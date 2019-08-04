@@ -22,7 +22,7 @@ import "../../lib/MathUint.sol";
 import "../../iface/IDowntimeCostCalculator.sol";
 
 
-/// @title DowntimeCostCalculator
+/// @title The default IDowntimeCostCalculator implementation.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
 {
@@ -89,7 +89,7 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
 
     function getTotalCost(
         uint totalTimeInMaintanance,
-        uint adjustedTotalLifetime,
+        uint totalLifetime,
         uint downtime
         )
         private
@@ -103,18 +103,15 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
             return total.mul(gracePeriodPrice);
         }
 
-        cost = gracePeriods.mul(gracePeriodPrice);
-
         uint timeBeyondGracePeriod = total - gracePeriods;
-
-        uint penalty = timeBeyondGracePeriod.mul(10000) / adjustedTotalLifetime + 100;
+        uint penalty = timeBeyondGracePeriod.mul(10000) / totalLifetime + 100;
         uint _maxPenalty = maxPenalty.mul(100);
 
         if (penalty > _maxPenalty) {
             penalty = _maxPenalty;
         }
 
-        cost = cost.add(
+        gracePeriods.mul(gracePeriodPrice).add(
             timeBeyondGracePeriod.mul(basePrice).mul(penalty) / 100
         );
     }
