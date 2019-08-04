@@ -11,7 +11,7 @@
   Unless required by applicable law or agreed to in writing, software
   distributed under the License is distributed on an "AS IS" BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
+  See the License for tßhe specific language governing permissions and
   limitations under the License.
 */
 pragma solidity 0.5.10;
@@ -19,12 +19,16 @@ pragma solidity 0.5.10;
 
 /// @title IDowntimePriceCalculator
 /// @author Daniel Wang - <daniel@loopring.org>
-contract IDowntimePriceProvider
+contract IDowntimeCostCalculator
 {
     /// @dev Returns the downtime price.
-    /// @return price The price in LRC per minute. Returning 0 to indicate
-    //                purchase failure.
-    function getDowntimePrice(
+    /// @param totalTimeInMaintenanceSeconds The total time a DEX has been in maintain mode.
+    /// @param totalDEXLifeTimeSeconds The DEX's total life time since genesis.
+    /// @param numDowntimeMinutes The current downtime balance in minutes before purchase.
+    /// @param exchangeStakedLRC The number of LRC staked by the DEX's owner.
+    /// @param durationToPurchaseMinutes The downtime in minute to purchase.
+    /// @return cost The cost in LRC for purchasing the downtime.
+    function getDowntimeCostLRC(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,
         uint  numDowntimeMinutes,
@@ -33,5 +37,5 @@ contract IDowntimePriceProvider
         )
         external
         view
-        returns (uint price);
+        returns (uint cost);
 }

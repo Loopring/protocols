@@ -42,7 +42,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address _lrcAddress,
         address _wethAddress,
         address _blockVerifierAddress,
-        address _downtimePriceProvider,
+        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
@@ -64,7 +64,7 @@ contract LoopringV3 is ILoopringV3, Claimable
 
         updateSettingsInternal(
             _blockVerifierAddress,
-            _downtimePriceProvider,
+            _downtimeCostCalculator,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
             _tokenRegistrationFeeLRCBase,
@@ -79,7 +79,7 @@ contract LoopringV3 is ILoopringV3, Claimable
     // == Public Functions ==
     function updateSettings(
         address _blockVerifierAddress,
-        address _downtimePriceProvider,
+        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
@@ -94,7 +94,7 @@ contract LoopringV3 is ILoopringV3, Claimable
     {
         updateSettingsInternal(
             _blockVerifierAddress,
-            _downtimePriceProvider,
+            _downtimeCostCalculator,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
             _tokenRegistrationFeeLRCBase,
@@ -398,7 +398,7 @@ contract LoopringV3 is ILoopringV3, Claimable
     // == Internal Functions ==
     function updateSettingsInternal(
         address _blockVerifierAddress,
-        address _downtimePriceProvider,
+        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
@@ -411,10 +411,10 @@ contract LoopringV3 is ILoopringV3, Claimable
         private
     {
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
-        require(address(0) != _downtimePriceProvider, "ZERO_ADDRESS");
+        require(address(0) != _downtimeCostCalculator, "ZERO_ADDRESS");
 
         blockVerifierAddress = _blockVerifierAddress;
-        _downtimePriceProvider = _downtimePriceProvider;
+        _downtimeCostCalculator = _downtimeCostCalculator;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
