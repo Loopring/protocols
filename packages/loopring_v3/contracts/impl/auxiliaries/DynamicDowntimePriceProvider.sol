@@ -73,8 +73,8 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
             return basePrice;
         }
 
-        if (total > maxNumDowntimeMinutes) {
-            return 0;
+        if (total >= maxNumDowntimeMinutes) {
+            return 0; // disable purchasing
         }
 
         // Initially, the penalty is the percentage of DEX's downtime.

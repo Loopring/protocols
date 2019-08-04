@@ -40,8 +40,7 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
         Claimable()
         public
     {
-        price = _price;
-        maxNumDowntimeMinutes = _maxNumDowntimeMinutes;
+        updateSettings(_price, _maxNumDowntimeMinutes);
     }
 
     function getDowntimePrice(
@@ -55,7 +54,7 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
         view
         returns (uint)
     {
-        if (numDowntimeMinutes.add(durationToPurchaseMinutes) > maxNumDowntimeMinutes) {
+        if (numDowntimeMinutes.add(durationToPurchaseMinutes) >= maxNumDowntimeMinutes) {
             return 0; // disable purchasing
         } else {
             return price;
@@ -66,10 +65,10 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
         uint _price,
         uint _maxNumDowntimeMinutes
         )
-        external
+        public
         onlyOwner
     {
-        require(_price != price || _maxNumDowntimeMinutes != maxNumDowntimeMinutes, "SAME_VALUES");
+        require(_price > 0 && _maxNumDowntimeMinutes > 0, "SAME_VALUES");
 
         emit SettingsChanged(price, maxNumDowntimeMinutes);
 
