@@ -73,7 +73,7 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         returns (uint)
     {
         uint total = numDowntimeMinutes.add(durationToPurchaseMinutes);
-        if (total <= gracePeriodMinutes) {
+        if (total < gracePeriodMinutes) {
             return gracePeriodPrice;
         }
 
