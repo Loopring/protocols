@@ -21,6 +21,8 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
+import "../../iface/IDowntimePriceProvider.sol";
+
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
@@ -206,18 +208,33 @@ library ExchangeAdmins
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
-        // Initially, the penalty is the percentage of DEX's downtime.
-        uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) /
-            (now - S.exchangeCreationTimestamp) + 1;
+        address priceProviderAddr = S.loopring.downtimePriceProvider();
 
-        uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
-        if (penalty > maxPenalty) {
-            penalty = maxPenalty;
+        if (priceProviderAddr == address(0)) {
+            return 0;
         }
 
-        return durationMinutes
-            .mul(S.loopring.downtimePriceLRCPerMinute())
-            .mul(penalty);
+        IDowntimePriceProvider priceProvider = IDowntimePriceProvider(priceProviderAddr);
+        return priceProvider.getDowntimePrice(
+            S.totalTimeInMaintenanceSeconds,
+            now - S.exchangeCreationTimestamp,
+            0, //availableDowntimeMinutes
+            0, //availableDowntimeMinutes
+            durationMinutes
+        );
+
+        // // Initially, the penalty is the percentage of DEX's downtime.
+        // uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) /
+        //     (now - S.exchangeCreationTimestamp) + 1;
+
+        // uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
+        // if (penalty > maxPenalty) {
+        //     penalty = maxPenalty;
+        // }
+
+        // return durationMinutes
+        //     .mul(S.loopring.downtimePriceLRCPerMinute())
+        //     .mul(penalty);
     }
 
     function getTotalTimeInMaintenanceSeconds(

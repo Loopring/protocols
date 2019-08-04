@@ -42,10 +42,9 @@ contract LoopringV3 is ILoopringV3, Claimable
         address _lrcAddress,
         address _wethAddress,
         address _blockVerifierAddress,
+        address _downtimePriceProvider,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
-        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -65,10 +64,9 @@ contract LoopringV3 is ILoopringV3, Claimable
 
         updateSettingsInternal(
             _blockVerifierAddress,
+            _downtimePriceProvider,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
-            _downtimePriceLRCPerMinute,
-            _downtimePriceMaxPenalty,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -81,10 +79,9 @@ contract LoopringV3 is ILoopringV3, Claimable
     // == Public Functions ==
     function updateSettings(
         address _blockVerifierAddress,
+        address _downtimePriceProvider,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
-        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -97,10 +94,9 @@ contract LoopringV3 is ILoopringV3, Claimable
     {
         updateSettingsInternal(
             _blockVerifierAddress,
+            _downtimePriceProvider,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
-            _downtimePriceLRCPerMinute,
-            _downtimePriceMaxPenalty,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -402,10 +398,9 @@ contract LoopringV3 is ILoopringV3, Claimable
     // == Internal Functions ==
     function updateSettingsInternal(
         address _blockVerifierAddress,
+        address _downtimePriceProvider,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
-        uint    _downtimePriceMaxPenalty,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -416,16 +411,11 @@ contract LoopringV3 is ILoopringV3, Claimable
         private
     {
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
-        require(
-            _downtimePriceMaxPenalty > 0 && _downtimePriceMaxPenalty < 100,
-            "INVALID_VALUE"
-        );
 
         blockVerifierAddress = _blockVerifierAddress;
+        _downtimePriceProvider = _downtimePriceProvider;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
-        downtimePriceLRCPerMinute = _downtimePriceLRCPerMinute;
-        downtimePriceMaxPenalty = _downtimePriceMaxPenalty;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
