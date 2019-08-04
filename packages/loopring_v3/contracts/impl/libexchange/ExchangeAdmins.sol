@@ -208,16 +208,13 @@ library ExchangeAdmins
 
         // Initially, the penalty is the percentage of DEX's downtime.
         uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) /
-            (now - S.exchangeCreationTimestamp);
+            (now - S.exchangeCreationTimestamp) + 1;
 
-        if (penalty == 0) {
-            penalty = 1;
-        } else {
-            uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
-            if (penalty > maxPenalty) {
-                penalty = maxPenalty;
-            }
+        uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
+        if (penalty > maxPenalty) {
+            penalty = maxPenalty;
         }
+
         return durationMinutes
             .mul(S.loopring.downtimePriceLRCPerMinute())
             .mul(penalty);
