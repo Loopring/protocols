@@ -23,7 +23,7 @@ import "../../iface/IDowntimePriceProvider.sol";
 
 /// @title An simple implementation of IDowntimePriceProvider.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILinearDowntimePriceProvider is IDowntimePriceProvider, Claimable
+contract IFixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
 {
     uint public price = 0;
 
