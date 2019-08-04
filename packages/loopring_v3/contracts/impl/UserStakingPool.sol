@@ -45,11 +45,10 @@ contract UserStakingPool is IUserStakingPool, Claimable
     constructor(
         address _lrcAddress
         )
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
-
-        owner = msg.sender;
         lrcAddress = _lrcAddress;
     }
 

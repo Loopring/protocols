@@ -37,11 +37,11 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
         uint _price,
         uint _maxNumDowntimeMinutes
         )
+        Claimable()
         public
     {
         price = _price;
         maxNumDowntimeMinutes = _maxNumDowntimeMinutes;
-        owner = msg.sender;
     }
 
     function getDowntimePrice(
