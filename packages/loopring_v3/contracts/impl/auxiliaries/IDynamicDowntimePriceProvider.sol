@@ -49,8 +49,8 @@ contract IDynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
     function getDowntimePrice(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,
-        uint  /* availableDowntimeMinutes */,
-        uint  /* amountOfLRCStakedbyOwner */,
+        uint  /* numDowntimeMinutes */,
+        uint  /* exchangeStakedLRC */,
         uint  /* durationToPurchaseMinutes */
         )
         external

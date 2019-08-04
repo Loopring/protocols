@@ -218,8 +218,8 @@ library ExchangeAdmins
         uint price = priceProvider.getDowntimePrice(
             S.totalTimeInMaintenanceSeconds,
             now - S.exchangeCreationTimestamp,
-            0, //availableDowntimeMinutes
-            0, //availableDowntimeMinutes
+            S.numDowntimeMinutes,
+            S.loopring.getExchangeStake(S.id),
             durationMinutes
         );
 
