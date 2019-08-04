@@ -32,7 +32,7 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
     uint public basePrice;
     uint public maxPenalty;
 
-    event SettingsUpdated(uint basePrice, uint maxPenalty);
+    event SettingsUpdated(uint oldBasePrice, uint oldMaxPenalty);
 
     constructor(
         uint _basePrice,
@@ -78,10 +78,10 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         require(_basePrice > 0 && _maxPenalty > 0, "ZERO_VALUE");
         require(_basePrice != basePrice || _maxPenalty != maxPenalty, "SAME_SETTINGS");
 
+        emit SettingsUpdated(basePrice, maxPenalty);
+
         basePrice = _basePrice;
         maxPenalty = _maxPenalty;
-
-        emit SettingsUpdated(basePrice, maxPenalty);
     }
 
 }

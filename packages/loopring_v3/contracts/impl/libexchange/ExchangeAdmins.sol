@@ -221,7 +221,7 @@ library ExchangeAdmins
             durationMinutes
         );
 
-        require(price > 0, "ZERO_DOWNTIME_PRICE");
+        require(price > 0, "PURCHASE_PROHIBITED");
         return price.mul(durationMinutes);
     }
 

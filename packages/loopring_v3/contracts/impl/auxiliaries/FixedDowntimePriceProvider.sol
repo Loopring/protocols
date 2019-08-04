@@ -17,6 +17,7 @@
 pragma solidity 0.5.10;
 
 import "../../lib/Claimable.sol";
+import "../../lib/MathUint.sol";
 
 import "../../iface/IDowntimePriceProvider.sol";
 
@@ -25,41 +26,54 @@ import "../../iface/IDowntimePriceProvider.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
 {
-    uint public price;
+    using MathUint for uint;
 
-    event PriceChanged(uint oldPrice, uint newPrice);
+    uint public price;
+    uint public maxDowntime;
+
+    event SettingsChanged(uint oldPrice, uint oldMaxDowntime);
 
     constructor(
-        uint _price
+        uint _price,
+        uint _maxDowntime
         )
         public
     {
-        require(_price > 0, "ZERO_PRICE");
         price = _price;
+        maxDowntime = _maxDowntime;
         owner = msg.sender;
     }
 
     function getDowntimePrice(
         uint  /* totalTimeInMaintenanceSeconds */,
         uint  /* totalDEXLifeTimeSeconds */,
-        uint  /* numDowntimeMinutes */,
+        uint  numDowntimeMinutes,
         uint  /* exchangeStakedLRC */,
-        uint  /* durationToPurchaseMinutes */
+        uint  durationToPurchaseMinutes
         )
         external
         view
         returns (uint)
     {
-        return price;
+        if (numDowntimeMinutes.add(durationToPurchaseMinutes) > maxDowntime) {
+            return 0; // disable purchasing
+        } else {
+            return price;
+        }
     }
 
-    function setPrice(uint _price)
-      external
-      onlyOwner
+    function updateSettings(
+        uint _price,
+        uint _maxDowntime
+        )
+        external
+        onlyOwner
     {
-        require(_price > 0, "ZERO_PRICE");
-        require(_price != price, "SAME_PRICE");
-        emit PriceChanged(price, _price);
+        require(_price != price || _maxDowntime != maxDowntime, "SAME_VALUES");
+
+        emit SettingsChanged(price, maxDowntime);
+
         price = _price;
+        maxDowntime = _maxDowntime;
     }
 }

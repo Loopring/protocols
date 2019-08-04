@@ -22,7 +22,8 @@ pragma solidity 0.5.10;
 contract IDowntimePriceProvider
 {
     /// @dev Returns the downtime price.
-    /// @return price The price in LRC per minute. The price shall never be zero.
+    /// @return price The price in LRC per minute. Returning 0 to indicate
+    //                purchase failure.
     function getDowntimePrice(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,
