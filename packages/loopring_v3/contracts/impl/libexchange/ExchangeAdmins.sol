@@ -21,7 +21,7 @@ import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/NoDefaultFunc.sol";
 
-import "../../iface/IDowntimePriceProvider.sol";
+import "../../iface/IDowntimeCostCalculator.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -209,19 +209,16 @@ library ExchangeAdmins
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(durationMinutes > 0, "ZERO_VALUE");
 
-        address priceProviderAddr = S.loopring.downtimePriceProvider();
-        assert(priceProviderAddr != address(0));
+        address costCalculatorAddr = S.loopring.downtimeCostCalculator();
+        assert(costCalculatorAddr != address(0));
 
-        uint price = IDowntimePriceProvider(priceProviderAddr).getDowntimePrice(
+        return IDowntimeCostCalculator(costCalculatorAddr).getDowntimeCostLRC(
             S.totalTimeInMaintenanceSeconds,
             now - S.exchangeCreationTimestamp,
             S.numDowntimeMinutes,
             S.loopring.getExchangeStake(S.id),
             durationMinutes
         );
-
-        require(price > 0, "PURCHASE_PROHIBITED");
-        return price.mul(durationMinutes);
     }
 
     function getTotalTimeInMaintenanceSeconds(

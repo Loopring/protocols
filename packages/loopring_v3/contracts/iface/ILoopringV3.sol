@@ -79,7 +79,7 @@ contract ILoopringV3
     address public wethAddress;
     address public exchangeDeployerAddress;
     address public blockVerifierAddress;
-    address public downtimePriceProvider;
+    address public downtimeCostCalculator;
     uint    public exchangeCreationCostLRC;
     uint    public maxWithdrawalFee;
     uint    public withdrawalFineLRC;
@@ -105,7 +105,7 @@ contract ILoopringV3
     ///      new Loopring exchanges.
     function updateSettings(
         address _blockVerifierAddress,  // address(0) not allowed
-        address _downtimePriceProvider, // address(0) not allowed
+        address _downtimeCostCalculator, // address(0) not allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
