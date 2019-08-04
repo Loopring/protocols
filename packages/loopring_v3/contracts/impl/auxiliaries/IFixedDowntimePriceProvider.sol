@@ -25,9 +25,18 @@ import "../../iface/IDowntimePriceProvider.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IFixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
 {
-    uint public price = 0;
+    uint public price;
 
     event PriceChanged(uint oldPrice, uint newPrice);
+
+    constructor(
+        uint _price
+        )
+        public
+    {
+        owner = msg.sender;
+        price = _price;
+    }
 
     function getDowntimePrice(
         uint  /* totalTimeInMaintenanceSeconds */,

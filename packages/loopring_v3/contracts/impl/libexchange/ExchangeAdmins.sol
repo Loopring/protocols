@@ -215,7 +215,7 @@ library ExchangeAdmins
         }
 
         IDowntimePriceProvider priceProvider = IDowntimePriceProvider(priceProviderAddr);
-        return priceProvider.getDowntimePrice(
+        uint price = priceProvider.getDowntimePrice(
             S.totalTimeInMaintenanceSeconds,
             now - S.exchangeCreationTimestamp,
             0, //availableDowntimeMinutes
@@ -223,18 +223,7 @@ library ExchangeAdmins
             durationMinutes
         );
 
-        // // Initially, the penalty is the percentage of DEX's downtime.
-        // uint penalty = S.totalTimeInMaintenanceSeconds.mul(100) /
-        //     (now - S.exchangeCreationTimestamp) + 1;
-
-        // uint maxPenalty = S.loopring.downtimePriceMaxPenalty();
-        // if (penalty > maxPenalty) {
-        //     penalty = maxPenalty;
-        // }
-
-        // return durationMinutes
-        //     .mul(S.loopring.downtimePriceLRCPerMinute())
-        //     .mul(penalty);
+        return price.mul(durationMinutes);
     }
 
     function getTotalTimeInMaintenanceSeconds(
