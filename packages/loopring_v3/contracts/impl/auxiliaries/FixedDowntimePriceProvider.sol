@@ -29,18 +29,18 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
     using MathUint for uint;
 
     uint public price;
-    uint public maxDowntime;
+    uint public maxNumDowntimeMinutes;
 
-    event SettingsChanged(uint oldPrice, uint oldMaxDowntime);
+    event SettingsChanged(uint oldPrice, uint oldMaxNumDowntimeMinutes);
 
     constructor(
         uint _price,
-        uint _maxDowntime
+        uint _maxNumDowntimeMinutes
         )
         public
     {
         price = _price;
-        maxDowntime = _maxDowntime;
+        maxNumDowntimeMinutes = _maxNumDowntimeMinutes;
         owner = msg.sender;
     }
 
@@ -55,7 +55,7 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
         view
         returns (uint)
     {
-        if (numDowntimeMinutes.add(durationToPurchaseMinutes) > maxDowntime) {
+        if (numDowntimeMinutes.add(durationToPurchaseMinutes) > maxNumDowntimeMinutes) {
             return 0; // disable purchasing
         } else {
             return price;
@@ -64,16 +64,16 @@ contract FixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
 
     function updateSettings(
         uint _price,
-        uint _maxDowntime
+        uint _maxNumDowntimeMinutes
         )
         external
         onlyOwner
     {
-        require(_price != price || _maxDowntime != maxDowntime, "SAME_VALUES");
+        require(_price != price || _maxNumDowntimeMinutes != maxNumDowntimeMinutes, "SAME_VALUES");
 
-        emit SettingsChanged(price, maxDowntime);
+        emit SettingsChanged(price, maxNumDowntimeMinutes);
 
         price = _price;
-        maxDowntime = _maxDowntime;
+        maxNumDowntimeMinutes = _maxNumDowntimeMinutes;
     }
 }
