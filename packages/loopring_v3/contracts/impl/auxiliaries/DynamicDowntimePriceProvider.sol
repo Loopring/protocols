@@ -99,7 +99,12 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         require(_basePrice > 0 && _maxPenalty > 0 && _maxNumDowntimeMinutes > 0, "ZERO_VALUE");
         require(_gracePeriodMinutes < _maxNumDowntimeMinutes, "INVALID_GRACE_PERIOD");
 
-        emit SettingsUpdated(basePrice, maxPenalty, gracePeriodMinutes, maxNumDowntimeMinutes);
+        emit SettingsUpdated(
+            basePrice,
+            maxPenalty,
+            gracePeriodMinutes,
+            maxNumDowntimeMinutes
+        );
 
         basePrice = _basePrice;
         maxPenalty = _maxPenalty;
