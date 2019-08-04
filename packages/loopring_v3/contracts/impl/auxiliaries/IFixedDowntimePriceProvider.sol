@@ -34,8 +34,9 @@ contract IFixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
         )
         public
     {
-        owner = msg.sender;
+        require(_price > 0, "ZERO_PRICE");
         price = _price;
+        owner = msg.sender;
     }
 
     function getDowntimePrice(
@@ -56,7 +57,8 @@ contract IFixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
       external
       onlyOwner
     {
-        require(_price != price, "SAME_VALUE");
+        require(_price > 0, "ZERO_PRICE");
+        require(_price != price, "SAME_PRICE");
         emit PriceChanged(price, _price);
         price = _price;
     }

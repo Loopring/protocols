@@ -210,11 +210,9 @@ library ExchangeAdmins
 
         address priceProviderAddr = S.loopring.downtimePriceProvider();
 
-        if (priceProviderAddr == address(0)) {
-            return 0;
-        }
-
+        assert(priceProviderAddr != address(0));
         IDowntimePriceProvider priceProvider = IDowntimePriceProvider(priceProviderAddr);
+
         uint price = priceProvider.getDowntimePrice(
             S.totalTimeInMaintenanceSeconds,
             now - S.exchangeCreationTimestamp,
@@ -223,6 +221,7 @@ library ExchangeAdmins
             durationMinutes
         );
 
+        require(price > 0, "ZERO_DOWNTIME_PRICE");
         return price.mul(durationMinutes);
     }
 

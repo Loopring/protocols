@@ -40,10 +40,11 @@ contract IDynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         )
         public
     {
-        require(_maxPenalty > 0, "ZERO_VALUE");
-        owner = msg.sender;
+        require(_basePrice > 0 && _maxPenalty > 0, "ZERO_VALUE");
+
         basePrice = _basePrice;
         maxPenalty = _maxPenalty;
+        owner = msg.sender;
     }
 
     function getDowntimePrice(
@@ -74,7 +75,8 @@ contract IDynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         external
         onlyOwner
     {
-        require(_basePrice != basePrice || _maxPenalty != maxPenalty, "SAME_VALUE");
+        require(_basePrice > 0 && _maxPenalty > 0, "ZERO_VALUE");
+        require(_basePrice != basePrice || _maxPenalty != maxPenalty, "SAME_SETTINGS");
 
         basePrice = _basePrice;
         maxPenalty = _maxPenalty;

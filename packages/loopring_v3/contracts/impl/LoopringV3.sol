@@ -411,6 +411,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         private
     {
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
+        require(address(0) != _downtimePriceProvider, "ZERO_ADDRESS");
 
         blockVerifierAddress = _blockVerifierAddress;
         _downtimePriceProvider = _downtimePriceProvider;
