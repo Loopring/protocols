@@ -207,13 +207,12 @@ library ExchangeAdmins
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
+        require(durationMinutes > 0, "ZERO_VALUE");
 
         address priceProviderAddr = S.loopring.downtimePriceProvider();
-
         assert(priceProviderAddr != address(0));
-        IDowntimePriceProvider priceProvider = IDowntimePriceProvider(priceProviderAddr);
 
-        uint price = priceProvider.getDowntimePrice(
+        uint price = IDowntimePriceProvider(priceProviderAddr).getDowntimePrice(
             S.totalTimeInMaintenanceSeconds,
             now - S.exchangeCreationTimestamp,
             S.numDowntimeMinutes,
