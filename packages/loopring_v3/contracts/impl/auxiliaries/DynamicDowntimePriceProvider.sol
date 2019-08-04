@@ -31,12 +31,14 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
     uint public basePrice;
     uint public maxPenalty;
     uint public gracePeriodMinutes;
+    uint public gracePeriodPrice;
     uint public maxNumDowntimeMinutes;
 
     event SettingsUpdated(
         uint oldBasePrice,
         uint oldMaxPenalty,
         uint oldGracePeriodMinutes,
+        uint oldGracePeriodPrice,
         uint oldMaxNumDowntimeMinutes
     );
 
@@ -44,6 +46,7 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         uint _basePrice,
         uint _maxPenalty,
         uint _gracePeriodMinutes,
+        uint _gracePeriodPrice,
         uint _maxNumDowntimeMinutes
         )
         Claimable()
@@ -53,6 +56,7 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
             _basePrice,
             _maxPenalty,
             _gracePeriodMinutes,
+            _gracePeriodPrice,
             _maxNumDowntimeMinutes
         );
     }
@@ -70,7 +74,7 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
     {
         uint total = numDowntimeMinutes.add(durationToPurchaseMinutes);
         if (total <= gracePeriodMinutes) {
-            return basePrice;
+            return gracePeriodPrice;
         }
 
         if (total >= maxNumDowntimeMinutes) {
@@ -91,24 +95,31 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         uint _basePrice,
         uint _maxPenalty,
         uint _gracePeriodMinutes,
+        uint _gracePeriodPrice,
         uint _maxNumDowntimeMinutes
         )
         public
         onlyOwner
     {
-        require(_basePrice > 0 && _maxPenalty > 0 && _maxNumDowntimeMinutes > 0, "ZERO_VALUE");
+        require(
+            _basePrice > 0 && _maxPenalty > 0 &&
+            _gracePeriodPrice > 0 && _maxNumDowntimeMinutes > 0,
+            "ZERO_VALUE"
+        );
         require(_gracePeriodMinutes < _maxNumDowntimeMinutes, "INVALID_GRACE_PERIOD");
 
         emit SettingsUpdated(
             basePrice,
             maxPenalty,
             gracePeriodMinutes,
+            gracePeriodPrice,
             maxNumDowntimeMinutes
         );
 
         basePrice = _basePrice;
         maxPenalty = _maxPenalty;
         gracePeriodMinutes = _gracePeriodMinutes;
+        gracePeriodPrice = _gracePeriodPrice;
         maxNumDowntimeMinutes = _maxNumDowntimeMinutes;
     }
 
