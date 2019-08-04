@@ -27,8 +27,7 @@ contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
 
-   constructor()
-        public
+    constructor() public
     {
         owner = msg.sender;
     }
