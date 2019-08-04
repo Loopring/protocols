@@ -48,7 +48,6 @@ contract IFixedDowntimePriceProvider is IDowntimePriceProvider, Claimable
       onlyOwner
     {
         require(_price != price, "SAME_VALUE");
-
         emit PriceChanged(price, _price);
         price = _price;
     }
