@@ -5,7 +5,8 @@ import { sha3 } from "ethereumjs-util";
 
 // HACK: What is the host in wallet/ethereum?
 // const host = 'localhost:8545';
-const host = "http://localhost:8545";
+const host =
+  "http://a9649c5e4b66b11e985860aa2b459f18-1745823248.us-west-2.elb.amazonaws.com:8545";
 
 export async function getTransactionCount(address, tag) {
   try {
