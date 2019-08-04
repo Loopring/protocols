@@ -2,8 +2,8 @@ var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeDeployer = artifacts.require("./impl/ExchangeDeployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-var DowntimePriceProvider = artifacts.require(
-  "./impl/auxiliaries/FixedDowntimePriceProvider.sol"
+var DowntimeCostCalculator = artifacts.require(
+  "./impl/auxiliaries/DowntimeCostCalculator.sol"
 );
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
@@ -89,7 +89,7 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.deploy(ExchangeDeployer),
           deployer.deploy(BlockVerifier),
-          deployer.deploy(DowntimePriceProvider)
+          deployer.deploy(DowntimeCostCalculator)
         ]);
       })
       .then(() => {
@@ -103,7 +103,7 @@ module.exports = function(deployer, network, accounts) {
             LRCToken.address,
             WETHToken.address,
             BlockVerifier.address,
-            DowntimePriceProvider.address,
+            DowntimeCostCalculator.address,
             0,
             0,
             0,
@@ -133,7 +133,7 @@ module.exports = function(deployer, network, accounts) {
         console.log("Deployed contracts addresses:");
         console.log("LoopringV3:", LoopringV3.address);
         console.log("BlockVerifier:", BlockVerifier.address);
-        console.log("DowntimePriceProvider:", DowntimePriceProvider.address);
+        console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
         console.log("WETHToken:", WETHToken.address);
         console.log("LRCToken:", LRCToken.address);
       });
