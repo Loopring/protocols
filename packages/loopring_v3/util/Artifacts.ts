@@ -3,6 +3,7 @@ export class Artifacts {
   public Exchange: any;
   public ExchangeDeployer: any;
   public BlockVerifier: any;
+  public DowntimeCostCalculator: any;
   public DummyToken: any;
   public LRCToken: any;
   public GTOToken: any;
@@ -24,6 +25,9 @@ export class Artifacts {
     this.Exchange = artifacts.require("impl/Exchange");
     this.ExchangeDeployer = artifacts.require("impl/ExchangeDeployer");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
+    this.DowntimeCostCalculator = artifacts.require(
+      "test/DowntimeCostCalculator"
+    );
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
     this.GTOToken = artifacts.require("test/tokens/GTO");

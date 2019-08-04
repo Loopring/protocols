@@ -80,6 +80,7 @@ export class ExchangeTestUtil {
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
+  public downtimeCostCalculator: any;
   public lzDecompressor: any;
 
   public protocolFeeVaultAddress: string;
@@ -158,7 +159,7 @@ export class ExchangeTestUtil {
     // Initialize Loopring
     await this.loopringV3.updateSettings(
       this.blockVerifier.address,
-      new BN(web3.utils.toWei("1000", "ether")),
+      this.downtimeCostCalculator.address,
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("2000", "ether")),
@@ -3639,12 +3640,14 @@ export class ExchangeTestUtil {
       loopringV3,
       exchangeDeployer,
       blockVerifier,
+      downtimeCostCalculator,
       lrcToken,
       wethToken
     ] = await Promise.all([
       this.contracts.LoopringV3.deployed(),
       this.contracts.ExchangeDeployer.deployed(),
       this.contracts.BlockVerifier.deployed(),
+      this.contracts.DowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
     ]);
@@ -3662,6 +3665,7 @@ export class ExchangeTestUtil {
     this.loopringV3 = loopringV3;
     this.exchangeDeployer = exchangeDeployer;
     this.blockVerifier = blockVerifier;
+    this.downtimeCostCalculator = downtimeCostCalculator;
 
     this.lrcAddress = lrcToken.address;
     this.wethAddress = wethToken.address;
