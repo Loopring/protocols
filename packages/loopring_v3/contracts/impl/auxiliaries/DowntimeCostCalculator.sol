@@ -87,36 +87,6 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
         return newCost > oldCost ? newCost - oldCost : 0;
     }
 
-    function getTotalCost(
-        uint totalTimeInMaintanance,
-        uint totalLifetime,
-        uint downtime
-        )
-        private
-        view
-        returns (uint cost)
-    {
-        require(downtime <= maxAwailableDowntime, "PURCHASE_PROHIBITED");
-        uint total = totalTimeInMaintanance.add(downtime);
-
-        if (total <= gracePeriods) {
-            return total.mul(gracePeriodPrice);
-        }
-
-        uint timeBeyondGracePeriod = total - gracePeriods;
-        uint penalty = timeBeyondGracePeriod.mul(10000) / totalLifetime + 100;
-        uint _maxPenalty = maxPenalty.mul(100);
-
-        if (penalty > _maxPenalty) {
-            penalty = _maxPenalty;
-        }
-
-        gracePeriods.mul(gracePeriodPrice).add(
-            timeBeyondGracePeriod.mul(basePrice).mul(penalty) / 100
-        );
-    }
-
-
     function updateSettings(
         uint _basePrice,
         uint _maxPenalty,
@@ -149,4 +119,32 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
         maxAwailableDowntime = _maxAwailableDowntime;
     }
 
+    function getTotalCost(
+        uint totalTimeInMaintanance,
+        uint totalLifetime,
+        uint downtime
+        )
+        private
+        view
+        returns (uint)
+    {
+        require(downtime <= maxAwailableDowntime, "PURCHASE_PROHIBITED");
+        uint total = totalTimeInMaintanance.add(downtime);
+
+        if (total <= gracePeriods) {
+            return total.mul(gracePeriodPrice);
+        }
+
+        uint timeBeyondGracePeriod = total - gracePeriods;
+        uint penalty = timeBeyondGracePeriod.mul(10000) / totalLifetime + 100;
+        uint _maxPenalty = maxPenalty.mul(100);
+
+        if (penalty > _maxPenalty) {
+            penalty = _maxPenalty;
+        }
+
+        return gracePeriods.mul(gracePeriodPrice).add(
+            timeBeyondGracePeriod.mul(basePrice).mul(penalty) / 100
+        );
+    }
 }
