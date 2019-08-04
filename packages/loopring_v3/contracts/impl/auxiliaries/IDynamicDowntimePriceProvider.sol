@@ -58,8 +58,7 @@ contract IDynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         returns (uint)
     {
         // Initially, the penalty is the percentage of DEX's downtime.
-        uint penalty = totalTimeInMaintenanceSeconds.mul(100) /
-            totalDEXLifeTimeSeconds + 1;
+        uint penalty = totalTimeInMaintenanceSeconds.mul(100) / totalDEXLifeTimeSeconds + 1;
 
         if (penalty > maxPenalty) {
             penalty = maxPenalty;
