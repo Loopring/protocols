@@ -24,7 +24,6 @@ import "../../iface/IDowntimePriceProvider.sol";
 
 /// @title An simple implementation of IDowntimePriceProvider.
 /// @author Daniel Wang  - <daniel@loopring.org>
-/// TODO(daniel): re-implement this based on feedback from Brecht.
 contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
 {
     using MathUint for uint;
@@ -97,16 +96,8 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         public
         onlyOwner
     {
-        require(
-            _basePrice > 0 && _maxPenalty > 0 &&
-            _gracePeriodMinutes > 0 && _maxNumDowntimeMinutes > 0,
-            "ZERO_VALUE"
-        );
-
-        require(
-            _gracePeriodMinutes < _maxNumDowntimeMinutes,
-            "INVALID_GRACE_PERIOD"
-        );
+        require(_basePrice > 0 && _maxPenalty > 0 && _maxNumDowntimeMinutes > 0, "ZERO_VALUE");
+        require(_gracePeriodMinutes < _maxNumDowntimeMinutes, "INVALID_GRACE_PERIOD");
 
         emit SettingsUpdated(basePrice, maxPenalty, gracePeriodMinutes, maxNumDowntimeMinutes);
 
