@@ -22,7 +22,7 @@ import "../../lib/MathUint.sol";
 import "../../iface/IDowntimePriceProvider.sol";
 
 
-/// @title An simple implementation of IDowntimePriceProvider.
+/// @title DynamicDowntimePriceProvider
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
 {
