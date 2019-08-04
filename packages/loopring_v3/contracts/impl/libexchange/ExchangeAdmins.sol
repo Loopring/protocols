@@ -210,7 +210,9 @@ library ExchangeAdmins
         require(durationMinutes > 0, "ZERO_VALUE");
 
         address costCalculatorAddr = S.loopring.downtimeCostCalculator();
-        assert(costCalculatorAddr != address(0));
+        if (costCalculatorAddr == address(0)) {
+            return 0;
+        }
 
         return IDowntimeCostCalculator(costCalculatorAddr).getDowntimeCostLRC(
             S.totalTimeInMaintenanceSeconds,
