@@ -30,7 +30,7 @@ contract IDowntimePriceProvider
         uint  amountOfLRCStakedbyOwner,
         uint  durationToPurchaseMinutes
         )
-    external
-    view
-    returns (uint price);
+        external
+        view
+        returns (uint price);
 }
