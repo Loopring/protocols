@@ -31,33 +31,53 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
 
     uint public basePrice;
     uint public maxPenalty;
+    uint public gracePeriodMinutes;
+    uint public maxNumDowntimeMinutes;
 
-    event SettingsUpdated(uint oldBasePrice, uint oldMaxPenalty);
+    event SettingsUpdated(
+        uint oldBasePrice,
+        uint oldMaxPenalty,
+        uint oldGracePeriodMinutes,
+        uint oldMaxNumDowntimeMinutes
+    );
 
     constructor(
         uint _basePrice,
-        uint _maxPenalty
+        uint _maxPenalty,
+        uint _gracePeriodMinutes,
+        uint _maxNumDowntimeMinutes
         )
         public
     {
-        require(_basePrice > 0 && _maxPenalty > 0, "ZERO_VALUE");
-
-        basePrice = _basePrice;
-        maxPenalty = _maxPenalty;
         owner = msg.sender;
+        updateSettings(
+            _basePrice,
+            _maxPenalty,
+            _gracePeriodMinutes,
+            _maxNumDowntimeMinutes
+        );
     }
 
     function getDowntimePrice(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,
-        uint  /* numDowntimeMinutes */,
+        uint  numDowntimeMinutes,
         uint  /* exchangeStakedLRC */,
-        uint  /* durationToPurchaseMinutes */
+        uint  durationToPurchaseMinutes
         )
         external
         view
         returns (uint)
     {
+        uint total = numDowntimeMinutes.add(durationToPurchaseMinutes);
+        if (total <= gracePeriodMinutes) {
+            return basePrice;
+        }
+
+        if (total > maxNumDowntimeMinutes) {
+            return 0;
+        }
+
         // Initially, the penalty is the percentage of DEX's downtime.
         uint penalty = totalTimeInMaintenanceSeconds.mul(100) / totalDEXLifeTimeSeconds + 1;
 
@@ -70,18 +90,30 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
 
     function updateSettings(
         uint _basePrice,
-        uint _maxPenalty
+        uint _maxPenalty,
+        uint _gracePeriodMinutes,
+        uint _maxNumDowntimeMinutes
         )
-        external
+        public
         onlyOwner
     {
-        require(_basePrice > 0 && _maxPenalty > 0, "ZERO_VALUE");
-        require(_basePrice != basePrice || _maxPenalty != maxPenalty, "SAME_SETTINGS");
+        require(
+            _basePrice > 0 && _maxPenalty > 0 &&
+            _gracePeriodMinutes > 0 && _maxNumDowntimeMinutes > 0,
+            "ZERO_VALUE"
+        );
 
-        emit SettingsUpdated(basePrice, maxPenalty);
+        require(
+            _gracePeriodMinutes < _maxNumDowntimeMinutes,
+            "INVALID_GRACE_PERIOD"
+        );
+
+        emit SettingsUpdated(basePrice, maxPenalty, gracePeriodMinutes, maxNumDowntimeMinutes);
 
         basePrice = _basePrice;
         maxPenalty = _maxPenalty;
+        gracePeriodMinutes = _gracePeriodMinutes;
+        maxNumDowntimeMinutes = _maxNumDowntimeMinutes;
     }
 
 }
