@@ -46,6 +46,7 @@ contract DynamicDowntimePriceProvider is IDowntimePriceProvider, Claimable
         uint _gracePeriodMinutes,
         uint _maxNumDowntimeMinutes
         )
+        Ownable()
         public
     {
         owner = msg.sender;
