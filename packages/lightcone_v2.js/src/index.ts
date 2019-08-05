@@ -1,4 +1,5 @@
 import { grpcClientService } from "./grpc/grpcClientService";
+import { RestApiServer } from "./api/restApiServer";
 
 import common from "./lib/wallet/common";
 import ethereum from "./lib/wallet/ethereum";
@@ -12,6 +13,7 @@ import { privateKey } from "./wallet/privateKey";
 
 export {
   grpcClientService,
+  RestApiServer,
   common,
   ethereum,
   exchange,

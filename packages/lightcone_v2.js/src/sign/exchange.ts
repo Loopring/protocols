@@ -125,7 +125,12 @@ export class Exchange {
         // TODO: Let's avoid using Promises. Change this part to await.
         // At least, avoid using a Promise in another Promise.
         wallet
-          .sendTransaction(new Eth("http://localhost:8545"), signedTx)
+          .sendTransaction(
+            new Eth(
+              "http://a9649c5e4b66b11e985860aa2b459f18-1745823248.us-west-2.elb.amazonaws.com:8545"
+            ),
+            signedTx
+          )
           .then(() => {
             // TODO: config
             grpcClientService
