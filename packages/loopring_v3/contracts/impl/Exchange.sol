@@ -50,9 +50,19 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     ExchangeData.State private state;
 
-    // -- Constructor --
-    constructor() public {}
+    modifier onlyOperator()
+    {
+        require(msg.sender == state.operator, "UNAUTHORIZED");
+        _;
+    }
 
+    modifier onlyWhenUninitialized()
+    {
+        require(state.id == 0, "INITIALIZED");
+        _;
+    }
+
+    // -- Initialization --
     function initialize(
         uint    _id,
         address payable _loopringAddress,
@@ -61,6 +71,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         bool    _onchainDataAvailability
         )
         external
+        onlyWhenUninitialized
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
@@ -71,12 +82,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
             _operator,
             _onchainDataAvailability
         );
-    }
-
-    modifier onlyOperator()
-    {
-        require(msg.sender == state.operator, "UNAUTHORIZED");
-        _;
     }
 
     // -- Settings --
