@@ -23,6 +23,7 @@ import "../lib/BurnableERC20.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "./ExchangeDeployer.sol";
 
@@ -146,6 +147,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         bool    onchainDataAvailability
         )
         external
+        nonReentrant
         returns (uint exchangeId)
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
