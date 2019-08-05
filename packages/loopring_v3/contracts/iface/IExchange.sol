@@ -346,7 +346,7 @@ contract IExchange
         external
         returns (uint);
 
-    /// @dev Withdraws all tokens/ether not owned by the users, such ascandies and airdrops.
+    /// @dev Withdraws all tokens/ether not owned by users, e.g., candies, airdrops.
     ///      Can only be called by the exchange owner.
     ///
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.

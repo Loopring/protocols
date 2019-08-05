@@ -263,9 +263,7 @@ library ExchangeAdmins
         address payable recipient
         )
         public
-        returns(
-            uint amount
-        )
+        returns (uint amount)
     {
         require(recipient != address(0), "ZERO_VALUE");
 
