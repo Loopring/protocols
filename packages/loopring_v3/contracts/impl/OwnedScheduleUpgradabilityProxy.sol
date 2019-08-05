@@ -89,8 +89,8 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
     }
 
     function upgrade()
-          public
-          onlyProxyOwner
+        public
+        onlyProxyOwner
     {
         require(scheduledTimestamp() <= now, "TOO_EARLY");
 
@@ -138,33 +138,33 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
     // --- internal & private functions
 
     function setMinWaitingPeriod(
-          uint _minWaitingPeriod
-          )
-          internal
+         uint _minWaitingPeriod
+        )
+        internal
       {
-          bytes32 position = minWaitingPeriodPos;
+        bytes32 position = minWaitingPeriodPos;
         assembly {
             sstore(position, _minWaitingPeriod)
         }
     }
 
     function setScheduledTimestamp(
-          uint _timestamp
-          )
-          internal
+        uint _timestamp
+        )
+        internal
       {
-          bytes32 position = scheduledTimestampPos;
+        bytes32 position = scheduledTimestampPos;
         assembly {
             sstore(position, _timestamp)
         }
     }
 
     function setScheduledImplementation(
-          address _implementation
-          )
-          internal
+        address _implementation
+        )
+        internal
       {
-          bytes32 position = scheduledImplementationPos;
+        bytes32 position = scheduledImplementationPos;
         assembly {
             sstore(position, _implementation)
         }
