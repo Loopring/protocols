@@ -357,7 +357,7 @@ contract IExchange
         address payable recipient
         )
         external
-        returns (uint amount);
+        returns (uint);
 
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can always be called.
