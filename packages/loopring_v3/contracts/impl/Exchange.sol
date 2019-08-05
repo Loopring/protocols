@@ -304,7 +304,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         external
         nonReentrant
         onlyOwner
-        returns(uint amount)
+        returns(uint)
     {
         return state.withdrawBalanceNotOwnedByUsers(tokenAddress, recipient);
     }
