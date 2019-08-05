@@ -61,7 +61,6 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
         );
     }
 
-
     function getDowntimeCostLRC(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,
