@@ -7,125 +7,134 @@ pragma solidity 0.5.10;
 import './OwnedUpgradeabilityProxy.sol';
 
 /**
- * @title OwnedUpgradeabilityProxy
- * @dev This contract combines an upgradeability proxy with basic authorization control functionalities
+ * @title DeclarativeOwnedUpgradabilityProxy
  */
 contract DeclarativeOwnedUpgradabilityProxy is OwnedUpgradeabilityProxy {
-  /**
-  * @dev Event to show ownership has been transferred
-  * @param previousOwner representing the address of the previous owner
-  * @param newOwner representing the address of the new owner
-  */
-  event UpgradeScheduled(address previousOwner, address newOwner);
 
-  // Storage position of the owner of the contract
-  bytes32 private constant pendingImplementationPosition = keccak256("org.loopring.proxy.pending.implementation");
-  bytes32 private constant scheduleTimestampPosition     = keccak256("org.loopring.proxy.schedule.timestamp");
+	event UpgradeScheduled(uint timestamp, address newImplementation);
+	event UpgradeCancelled(uint timestamp);
 
-  /**
-  * @dev the constructor sets the original owner of the contract to the sender account.
-  */
-  constructor() public {
-    setUpgradeabilityOwner(msg.sender);
-  }
+	// Storage position of the owner of the contract
+	bytes32 private constant scheduledImplementationPosition = keccak256("org.loopring.proxy.scheduled.implementation");
+	bytes32 private constant scheduledTimestampPosition      = keccak256("org.loopring.proxy.scheduled.timestamp");
 
-  /**
-  * @dev Throws if called by any account other than the owner.
-  */
-  modifier onlyProxyOwner() {
-    require(msg.sender == proxyOwner());
-    _;
-  }
+	constructor() public OwnedUpgradeabilityProxy() {}
 
-  /**
-   * @dev Tells the address of the owner
-   * @return the address of the owner
-   */
-  function proxyOwner() public view returns (address owner) {
-    bytes32 position = proxyOwnerPosition;
-    assembly {
-      owner := sload(position)
-    }
-  }
+	function scheduleUpgrade(
+		uint 	_timestamp,
+		address _impl
+		)
+		public
+		onlyProxyOwner
+	{
+		require(_timestamp >= now + (30 days),"INVALID_TIMESTAMP");
+		require(_impl != implementation(), "SAME_ADDRESS");
 
-  /**
-   * @dev Sets the scheduled timestamp
-   */
-  function setScheduleTimestamp(uint timestamp, address pendingImplementation) internal {
-    bytes32 position = scheduleTimestampPosition;
-    assembly {
-      sstore(position, timestamp)
-    }
+		setScheduledTimestamp(_timestamp);
+		setScheduledImplementation(_impl);
+		emit UpgradeScheduled(_timestamp, _impl);
+	}
 
-    position = pendingImplementationPosition;
-	assembly {
-      sstore(position, pendingImplementation)
-    }
-  }
+	function cancelScheduledUpgrade()
+		public
+		onlyProxyOwner {
+		require(scheduledImplementation() != address(0), "SAME_ADDRESS");
 
+		setScheduledTimestamp(now);
+		setScheduledImplementation(address(0));
+		emit UpgradeCancelled(now);
+	}
 
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferProxyOwnership(address newOwner) public onlyProxyOwner {
-    require(newOwner != address(0));
-    emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
-    setUpgradeabilityOwner(newOwner);
-  }
+	function scheduledTimestamp()
+		public
+		view
+		returns (uint _timestamp)
+	{
+		bytes32 position = scheduledTimestampPosition;
+	    assembly {
+	        _timestamp := sload(position)
+	    }
+	}
 
-  /**
-   * @dev Allows the proxy owner to upgrade the current version of the proxy.
-   * @param implementation representing the address of the new implementation to be set.
-   */
-  function upgradeTo(address implementation) public onlyProxyOwner {
-    _upgradeTo(implementation);
-  }
+	function scheduledImplementation()
+		public
+		view
+		returns (address _impl)
+	{
+		bytes32 position = scheduledImplementationPosition;
+		assembly {
+		  _impl := sload(position)
+		}
+	}
 
-  /**
-   * @dev Allows the proxy owner to upgrade the current version of the proxy and call the new implementation
-   * to initialize whatever is needed through a low level call.
-   * @param implementation representing the address of the new implementation to be set.
-   * @param data represents the msg.data to bet sent in the low level call. This parameter may include the function
-   * signature of the implementation to be called with the needed payload
-   */
-  function upgradeToAndCall(address implementation, bytes memory data) payable public onlyProxyOwner {
-    upgradeTo(implementation);
-    (bool success, ) = address(this).call.value(msg.value)(data);
-    require(success);
-  }
+    function upgrade()
+  	    public
+  		onlyProxyOwner
+    {
+		require(scheduledTimestamp() <= now, "TOO_EARLY");
 
-   /**
-   * @dev Allows the proxy owner to upgrade the current version of the proxy.
-   * @param implementation representing the address of the new implementation to be set.
-   */
-  function upgradeTo(address implementation) public onlyProxyOwner {
+		address newImplementation = scheduledImplementation();
+		require(newImplementation != address(0), "NO_SCHEDULE");
 
-  	(uint timestamp, address impl) = pendingImplementation();
-	bytes32 position = proxyOwnerPosition;
-    assembly {
-      owner := sload(position)
-    }
-    _upgradeTo(implementation);
-  }
+		_upgradeTo(newImplementation);
 
-   function _upgradeTo() internal {
-   	(uint timestamp, address pendingImpl) = pendingImplementation();
-    address currentImplementation = implementation();
-    require(currentImplementation != pendingImpl);
-    setImplementation(pendingImpl);
-    emit Upgraded(pendingImpl);
-  }
-
-  function pendingImplementation() public view returns (uint timestamp, address impl) {
-	bytes32 position = scheduleTimestampPosition;
-    assembly {
-      timestamp := sload(position)
+		setScheduledTimestamp(now);
+		setScheduledImplementation(address(0));
+		emit Upgraded(newImplementation);
     }
 
-    position = pendingImplementationPosition;
-    assembly {
-      impl := sload(position)
-    }
-  }
+	function upgradeToAndCall(
+		bytes memory data
+		)
+		payable
+		public
+		onlyProxyOwner
+	{
+		upgrade();
+		(bool success, ) = address(this).call.value(msg.value)(data);
+		require(success);
+	}
+
+	function upgradeToAndCall(
+		address /* implementation */,
+		bytes memory /* data */
+		)
+		payable
+		public
+		onlyProxyOwner
+	{
+		revert("use `upgradeToAndCall(bytes memory data)`");
+	}
+
+	function upgradeTo(
+		address /* implementation */
+		)
+		public
+		onlyProxyOwner
+	{
+		revert("use `upgrade()`");
+	}
+
+	// --- internal & private functions
+    function setScheduledTimestamp(
+	  	uint _timestamp
+	  	)
+	  	internal
+  	{
+  		bytes32 position = scheduledTimestampPosition;
+	    assembly {
+	        sstore(position, _timestamp)
+	    }
+	}
+
+	function setScheduledImplementation(
+	  	address _impl
+	  	)
+	  	internal
+  	{
+  		bytes32 position = scheduledImplementationPosition;
+	    assembly {
+	        sstore(position, _impl)
+	    }
+	}
 }
