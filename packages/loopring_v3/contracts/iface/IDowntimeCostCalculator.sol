@@ -17,7 +17,7 @@
 pragma solidity 0.5.10;
 
 
-/// @title IDowntimePriceCalculator
+/// @title IDowntimeCostCalculator
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IDowntimeCostCalculator
 {
