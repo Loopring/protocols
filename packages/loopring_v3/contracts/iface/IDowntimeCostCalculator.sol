@@ -21,7 +21,7 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IDowntimeCostCalculator
 {
-    /// @dev Returns the downtime price.
+    /// @dev Returns the amount LRC required to purchase the given downtime.
     /// @param totalTimeInMaintenanceSeconds The total time a DEX has been in maintain mode.
     /// @param totalDEXLifeTimeSeconds The DEX's total life time since genesis.
     /// @param numDowntimeMinutes The current downtime balance in minutes before purchase.
