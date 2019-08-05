@@ -128,6 +128,7 @@ contract IExchange
     );
 
     // -- Initialization --
+    /// Initialize this exchange. This method can only be called once.
     function initialize(
         address payable _loopringAddress,
         uint    _id,
