@@ -505,9 +505,12 @@ library ExchangeWithdrawals
                 to,
                 uint96(amount)
             );
-        } else if(accountID > 0 || tokenID > 0 || amount > 0) {
+        } else if (accountID > 0 || tokenID > 0 || amount > 0) {
             // Only emit an event when the withdrawal data hasn't been reset yet
             // by a previous successful withdrawal
+
+            S.tokenBalances[token] = S.tokenBalances[token].sub(amount);
+
             emit WithdrawalCompleted(
                 accountID,
                 tokenID,

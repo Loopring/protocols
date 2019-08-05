@@ -297,6 +297,18 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         return state.withdrawExchangeStake(recipient);
     }
 
+    function withdrawBalanceNotOwnedByUsers(
+        address tokenAddress,
+        address payable recipient
+        )
+        external
+        nonReentrant
+        onlyOwner
+        returns(uint amount)
+    {
+        return state.withdrawBalanceNotOwnedByUsers(tokenAddress, recipient);
+    }
+
     function withdrawProtocolFeeStake(
         address recipient,
         uint amount

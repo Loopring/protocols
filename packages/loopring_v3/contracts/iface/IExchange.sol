@@ -346,6 +346,19 @@ contract IExchange
         external
         returns (uint);
 
+    /// @dev Withdraws all tokens/ether not owned by the users, such ascandies and airdrops.
+    ///      Can only be called by the exchange owner.
+    ///
+    /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
+    /// @param recipient The address to send the token or ether.
+    /// @return The amount of token or Ether withdrawn
+    function withdrawBalanceNotOwnedByUsers(
+        address tokenAddress,
+        address payable recipient
+        )
+        external
+        returns (uint amount);
+
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can always be called.
     ///      Can only be called by the exchange owner.

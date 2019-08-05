@@ -256,4 +256,38 @@ library ExchangeAdmins
         uint amount = S.loopring.getExchangeStake(S.id);
         return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
     }
+
+    function withdrawBalanceNotOwnedByUsers(
+        ExchangeData.State storage S,
+        address token,
+        address payable recipient
+        )
+        public
+        returns(
+            uint amount
+        )
+    {
+        require(recipient != address(0), "ZERO_VALUE");
+
+        uint totalBalance = (token == address(0))?
+            address(this).balance :
+            ERC20(token).balanceOf(address(this));
+
+        uint userBalance = S.tokenBalances[token];
+        assert(totalBalance >= userBalance);
+
+        amount = totalBalance - userBalance;
+
+        if (amount > 0) {
+            bool success;
+            if (token == address(0)) {
+                // ETH
+                (success, ) = recipient.call.value(amount)("");
+            } else {
+                // ERC20 token
+                success = token.safeTransfer(recipient, amount);
+            }
+            require(success);
+        }
+    }
 }

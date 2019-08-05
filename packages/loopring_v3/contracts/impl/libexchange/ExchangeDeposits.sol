@@ -154,6 +154,8 @@ library ExchangeDeposits
         );
         S.deposits.push(_deposit);
 
+        S.tokenBalances[tokenAddress] = S.tokenBalances[tokenAddress].add(amount);
+
         emit DepositRequested(
             uint32(S.depositChain.length - 1),
             accountID,
