@@ -27,7 +27,8 @@ import "../lib/MathUint.sol";
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
-contract IOedax {
+contract IOedax
+{
 
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token.
@@ -61,7 +62,8 @@ contract IOedax {
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
-contract IAuction {
+contract IAuction
+{
     function settle() public;
     function ask(uint amount) external returns (uint accepted);
 }

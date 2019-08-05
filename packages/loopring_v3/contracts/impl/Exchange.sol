@@ -49,15 +49,18 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State private state;
+
     // -- Constructor --
-    constructor(
+    constructor() public {}
+
+    function initialize(
         uint    _id,
         address payable _loopringAddress,
         address _owner,
         address payable _operator,
         bool    _onchainDataAvailability
         )
-        public
+        external
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;

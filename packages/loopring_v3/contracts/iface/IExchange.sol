@@ -127,6 +127,16 @@ contract IExchange
         uint8 previousMakerFeeBips
     );
 
+    // -- Initialization --
+    function initialize(
+        uint    _id,
+        address payable _loopringAddress,
+        address _owner,
+        address payable _operator,
+        bool    _onchainDataAvailability
+        )
+        external;
+
     // -- Settings --
     function getGlobalSettings()
         public

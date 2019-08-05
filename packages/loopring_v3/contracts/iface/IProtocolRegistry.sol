@@ -19,7 +19,8 @@ pragma solidity 0.5.10;
 
 /// @title IProtocalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IProtocolRegistry {
+contract IProtocolRegistry
+{
 
     // function getDefaultProtocol()
     //     external
@@ -51,9 +52,11 @@ contract IProtocolRegistry {
         public;
 
     function createExchange(
-        address loopring
+        address loopring,
+        address payable _operator,
+        bool    onchainDataAvailability
         )
-        public
+        external
         returns (
             address exchangeProxy,
             uint    exchangeId

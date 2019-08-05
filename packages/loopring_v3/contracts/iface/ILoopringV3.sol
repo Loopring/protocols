@@ -16,14 +16,15 @@
 */
 pragma solidity 0.5.10;
 
+import "./ILoopring.sol";
 
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopringV3
+contract ILoopringV3 is ILoopring
 {
     // == Events ==
-    event ExchangeCreated(
+    event ExchangeRegistered(
         uint    indexed exchangeId,
         address indexed exchangeAddress,
         address indexed owner,
@@ -141,23 +142,6 @@ contract ILoopringV3
         address payable _protocolFeeVault
         )
         external;
-
-    /// @dev Create a new exchange. msg.sender will become the owner of the new exchange.
-    /// @param  operator The operator address of the exchange who will be responsible for
-    ///         submitting blocks and proofs.
-    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
-    ///         exchange. Note that this value can not be changed once the exchange is created.
-    /// @return exchangeId The id of the exchange.
-    /// @return exchangeAddress The address of the newly deployed exchange contract.
-    function createExchange(
-        address payable operator,
-        bool onchainDataAvailability
-        )
-        external
-        returns (
-            uint exchangeId,
-            address exchangeAddress
-        );
 
     /// @dev Returns whether the Exchange has staked enough to commit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least

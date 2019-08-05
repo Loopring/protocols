@@ -139,16 +139,17 @@ contract LoopringV3 is ILoopringV3, Claimable
         emit ProtocolFeeVaultUpdated(protocolFeeVault);
     }
 
-    function createExchange(
+    function registerExchange(
+        address exchangeAddress,
+        address _owner,
         address payable _operator,
         bool onchainDataAvailability
         )
         external
-        returns (
-            uint exchangeId,
-            address exchangeAddress
-        )
+        returns (uint exchangeId)
     {
+        require(exchangeAddress != address(0), "ZERO_ADDRESS");
+
         // Burn the LRC
         if (exchangeCreationCostLRC > 0) {
             require(
@@ -166,22 +167,18 @@ contract LoopringV3 is ILoopringV3, Claimable
             operator = _operator;
         }
 
-        exchangeAddress = ExchangeDeployer.deployExchange(
+        IExchange exchange = IExchange(exchangeAddress);
+        exchange.initialize(
             exchangeId,
             address(this),
-            msg.sender,
+            _owner,
             operator,
             onchainDataAvailability
         );
 
-        Exchange memory exchange = Exchange(
-            exchangeAddress,
-            0,
-            0
-        );
-        exchanges.push(exchange);
+        exchanges.push(Exchange(exchangeAddress, 0, 0));
 
-        emit ExchangeCreated(
+        emit ExchangeRegistered(
             exchangeId,
             exchangeAddress,
             msg.sender,

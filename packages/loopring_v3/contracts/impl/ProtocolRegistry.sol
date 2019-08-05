@@ -18,12 +18,15 @@ pragma solidity 0.5.10;
 
 import "../lib/Claimable.sol";
 
+import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
+import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry, Claimable {
+contract ProtocolRegistry is IProtocolRegistry, Claimable
+{
     struct Protocol
     {
        address instance;
@@ -64,17 +67,26 @@ contract ProtocolRegistry is IProtocolRegistry, Claimable {
     }
 
     function createExchange(
-        address loopring
+        address loopring,
+        address payable _operator,
+        bool    onchainDataAvailability
         )
-        public
+        external
         returns (
             address exchangeProxy,
             uint    exchangeId
         )
     {
         getProtocol(loopring); // verifies the input
-        // ExchangeProxy proxy = new ExchangeProxy(address(this), loopring);
-        // exchangeProxy = address(proxy);
-        // exchangeId = ILoopring(loopring).registerProxy(exchangeProxy);
+
+        ExchangeProxy proxy = new ExchangeProxy(address(this), loopring);
+        exchangeProxy = address(proxy);
+
+        exchangeId = ILoopring(loopring).registerExchange(
+            exchangeProxy,
+            msg.sender,
+            _operator,
+            onchainDataAvailability
+        );
     }
 }

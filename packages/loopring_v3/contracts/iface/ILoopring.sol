@@ -16,21 +16,16 @@
 */
 pragma solidity 0.5.10;
 
-import "./Exchange.sol";
-
-
-/// @title An Implementation of IExchangeDeployer.
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title ILoopring
 /// @author Daniel Wang  - <daniel@loopring.org>
-/// @dev We created this library to work around the gas limit -- inlining all the
-///      enclosed function directly into LoopringV3 will make LoopringV3 too large
-///      to deploy.
-library ExchangeDeployer
+contract ILoopring
 {
-    function deployExchange()
+    function registerExchange(
+        address exchangeAddress,
+        address _owner,
+        address payable _operator,
+        bool onchainDataAvailability
+        )
         external
-        returns (address)
-    {
-        return address(new Exchange());
-    }
+        returns (uint exchangeId);
 }
