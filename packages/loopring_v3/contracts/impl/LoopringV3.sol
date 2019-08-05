@@ -168,6 +168,8 @@ contract LoopringV3 is ILoopringV3, Claimable
         }
 
         IExchange exchange = IExchange(exchangeAddress);
+
+        // If the exchange has already been initlaized, the following function will fail.
         exchange.initialize(
             address(this),
             exchangeId,

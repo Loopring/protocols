@@ -129,12 +129,19 @@ contract IExchange
 
     // -- Initialization --
     /// Initialize this exchange. This method can only be called once.
+    /// @param  loopringAddress The corresponding ILoopring contract address.
+    /// @param  exchangeId The id of this exchange.
+    /// @param  owner The owner of this exchange.
+    /// @param  operator The operator address of the exchange who will be responsible for
+    ///         submitting blocks and proofs.
+    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
+    ///         exchange. Note that this value can not be changed once the exchange is created.
     function initialize(
-        address payable _loopringAddress,
-        uint    _id,
-        address _owner,
-        address payable _operator,
-        bool    _onchainDataAvailability
+        address payable loopringAddress,
+        uint    exchangeId,
+        address owner,
+        address payable operator,
+        bool    onchainDataAvailability
         )
         external;
 
