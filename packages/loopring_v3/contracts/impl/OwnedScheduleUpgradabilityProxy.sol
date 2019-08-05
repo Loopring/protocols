@@ -15,10 +15,16 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 	event UpgradeCancelled(uint timestamp);
 
 	// Storage position of the owner of the contract
-	bytes32 private constant scheduledImplementationPosition = keccak256("org.loopring.proxy.scheduled.implementation");
-	bytes32 private constant scheduledTimestampPosition = keccak256("org.loopring.proxy.scheduled.timestamp");
+	bytes32 private constant minWaitingPeriodPos = keccak256("org.loopring.proxy.scheduled.min.waiting.period");
+	bytes32 private constant scheduledImplementationPos = keccak256("org.loopring.proxy.scheduled.implementation");
+	bytes32 private constant scheduledTimestampPos = keccak256("org.loopring.proxy.scheduled.timestamp");
 
-	constructor() public OwnedUpgradeabilityProxy() {}
+	constructor(uint minWaitingPeriod)
+		public
+		OwnedUpgradeabilityProxy()
+	{
+		setMinWaitingPeriod(minWaitingPeriod);
+	}
 
 	function scheduleUpgrade(
 		uint 	_timestamp,
@@ -45,12 +51,23 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 		emit UpgradeCancelled(now);
 	}
 
+	function minWaitingPeriod()
+		public
+		view
+		returns (uint _minWaitingPeriod)
+	{
+		bytes32 position = minWaitingPeriodPos;
+	    assembly {
+	        _minWaitingPeriod := sload(position)
+	    }
+	}
+
 	function scheduledTimestamp()
 		public
 		view
 		returns (uint _timestamp)
 	{
-		bytes32 position = scheduledTimestampPosition;
+		bytes32 position = scheduledTimestampPos;
 	    assembly {
 	        _timestamp := sload(position)
 	    }
@@ -61,7 +78,7 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 		view
 		returns (address _impl)
 	{
-		bytes32 position = scheduledImplementationPosition;
+		bytes32 position = scheduledImplementationPos;
 		assembly {
 		  _impl := sload(position)
 		}
@@ -116,12 +133,24 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 	}
 
 	// --- internal & private functions
+
+    function setMinWaitingPeriod(
+	  	uint _minWaitingPeriod
+	  	)
+	  	internal
+  	{
+  		bytes32 position = minWaitingPeriodPos;
+	    assembly {
+	        sstore(position, _minWaitingPeriod)
+	    }
+	}
+
     function setScheduledTimestamp(
 	  	uint _timestamp
 	  	)
 	  	internal
   	{
-  		bytes32 position = scheduledTimestampPosition;
+  		bytes32 position = scheduledTimestampPos;
 	    assembly {
 	        sstore(position, _timestamp)
 	    }
@@ -132,7 +161,7 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 	  	)
 	  	internal
   	{
-  		bytes32 position = scheduledImplementationPosition;
+  		bytes32 position = scheduledImplementationPos;
 	    assembly {
 	        sstore(position, _impl)
 	    }
