@@ -4,19 +4,19 @@
 
 pragma solidity 0.5.10;
 
-import './OwnedUpgradeabilityProxy.sol';
+import '../thirdparty/OwnedUpgradeabilityProxy.sol';
 
 /**
- * @title DeclarativeOwnedUpgradabilityProxy
+ * @title OwnedScheduleUpgradabilityProxy
  */
-contract DeclarativeOwnedUpgradabilityProxy is OwnedUpgradeabilityProxy {
+contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 
 	event UpgradeScheduled(uint timestamp, address newImplementation);
 	event UpgradeCancelled(uint timestamp);
 
 	// Storage position of the owner of the contract
 	bytes32 private constant scheduledImplementationPosition = keccak256("org.loopring.proxy.scheduled.implementation");
-	bytes32 private constant scheduledTimestampPosition      = keccak256("org.loopring.proxy.scheduled.timestamp");
+	bytes32 private constant scheduledTimestampPosition = keccak256("org.loopring.proxy.scheduled.timestamp");
 
 	constructor() public OwnedUpgradeabilityProxy() {}
 
