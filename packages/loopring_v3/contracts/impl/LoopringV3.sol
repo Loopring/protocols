@@ -143,7 +143,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         address exchangeAddress,
         address _owner,
         address payable _operator,
-        bool onchainDataAvailability
+        bool    onchainDataAvailability
         )
         external
         returns (uint exchangeId)

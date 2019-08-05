@@ -33,7 +33,7 @@ contract ILoopring
         address exchangeAddress,
         address owner,
         address payable operator,
-        bool onchainDataAvailability
+        bool    onchainDataAvailability
         )
         external
         returns (uint exchangeId);
