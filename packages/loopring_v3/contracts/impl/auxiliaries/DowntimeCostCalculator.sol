@@ -28,123 +28,124 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
 {
     using MathUint for uint;
 
-    uint public basePrice;
+    uint public basePricePerMinute;
     uint public maxPenalty;
-    uint public gracePeriods;
-    uint public gracePeriodPrice;
-    uint public maxAwailableDowntime;
+    uint public gracePeriodsMinutes;
+    uint public gracePeriodPricePerMinute;
+    uint public maxAwailableDowntimeMinutes;
 
     event SettingsUpdated(
-        uint oldBasePrice,
+        uint oldBasePricePerMinute,
         uint oldMaxPenalty,
         uint oldGracePeriodMinutes,
-        uint oldGracePeriodPrice,
-        uint oldMaxAwailableDowntime
+        uint oldGracePeriodPricePerMinute,
+        uint oldMaxAwailableDowntimeMinutes
     );
 
     constructor(
-        uint _basePrice,
+        uint _basePricePerMinute,
         uint _maxPenalty,
-        uint _gracePeriods,
-        uint _gracePeriodPrice,
-        uint _maxAwailableDowntime
+        uint _gracePeriodsMinutes,
+        uint _gracePeriodPricePerMinute,
+        uint _maxAwailableDowntimeMinutes
         )
         Claimable()
         public
     {
         updateSettings(
-            _basePrice,
+            _basePricePerMinute,
             _maxPenalty,
-            _gracePeriods,
-            _gracePeriodPrice,
-            _maxAwailableDowntime
+            _gracePeriodsMinutes,
+            _gracePeriodPricePerMinute,
+            _maxAwailableDowntimeMinutes
         );
     }
 
+
     function getDowntimeCostLRC(
-        uint  totalTimeInMaintanance,
-        uint  totalLifetime,
-        uint  awailableDowntime,
+        uint  totalTimeInMaintenanceSeconds,
+        uint  totalDEXLifeTimeSeconds,
+        uint  numDowntimeMinutes,
         uint  /* exchangeStakedLRC */,
-        uint  downtimeToPurchase
+        uint  durationToPurchaseMinutes
         )
         external
         view
         returns (uint)
     {
         uint newCost = getTotalCost(
-            totalTimeInMaintanance,
-            totalLifetime,
-            awailableDowntime.add(downtimeToPurchase)
+            totalTimeInMaintenanceSeconds,
+            totalDEXLifeTimeSeconds,
+            numDowntimeMinutes.add(durationToPurchaseMinutes)
         );
 
         uint oldCost = getTotalCost(
-            totalTimeInMaintanance,
-            totalLifetime,
-            awailableDowntime
+            totalTimeInMaintenanceSeconds,
+            totalDEXLifeTimeSeconds,
+            numDowntimeMinutes
         );
 
         return newCost > oldCost ? newCost - oldCost : 0;
     }
 
     function updateSettings(
-        uint _basePrice,
+        uint _basePricePerMinute,
         uint _maxPenalty,
-        uint _gracePeriods,
-        uint _gracePeriodPrice,
-        uint _maxAwailableDowntime
+        uint _gracePeriodsMinutes,
+        uint _gracePeriodPricePerMinute,
+        uint _maxAwailableDowntimeMinutes
         )
         public
         onlyOwner
     {
         require(
-            _basePrice > 0 && _maxPenalty > 0 &&
-            _gracePeriodPrice > 0 && _maxAwailableDowntime > 0,
+            _basePricePerMinute > 0 && _maxPenalty > 0 &&
+            _gracePeriodPricePerMinute > 0 && _maxAwailableDowntimeMinutes > 0,
             "ZERO_VALUE"
         );
-        require(_gracePeriodPrice <= _basePrice, "INVALID_PRICE");
+        require(_gracePeriodPricePerMinute <= _basePricePerMinute, "INVALID_PRICE");
 
         emit SettingsUpdated(
-            basePrice,
+            basePricePerMinute,
             maxPenalty,
-            gracePeriods,
-            gracePeriodPrice,
-            maxAwailableDowntime
+            gracePeriodsMinutes,
+            gracePeriodPricePerMinute,
+            maxAwailableDowntimeMinutes
         );
 
-        basePrice = _basePrice;
+        basePricePerMinute = _basePricePerMinute;
         maxPenalty = _maxPenalty;
-        gracePeriods = _gracePeriods;
-        gracePeriodPrice = _gracePeriodPrice;
-        maxAwailableDowntime = _maxAwailableDowntime;
+        gracePeriodsMinutes = _gracePeriodsMinutes;
+        gracePeriodPricePerMinute = _gracePeriodPricePerMinute;
+        maxAwailableDowntimeMinutes = _maxAwailableDowntimeMinutes;
     }
 
     function getTotalCost(
-        uint totalTimeInMaintanance,
-        uint totalLifetime,
-        uint downtime
+        uint totalTimeInMaintenanceSeconds,
+        uint totalDEXLifeTimeSeconds,
+        uint downtimeMinutes
         )
         private
         view
         returns (uint)
     {
-        require(downtime <= maxAwailableDowntime, "PURCHASE_PROHIBITED");
-        uint total = totalTimeInMaintanance.add(downtime);
+        require(downtimeMinutes <= maxAwailableDowntimeMinutes, "PURCHASE_PROHIBITED");
+        uint totalMinutes = downtimeMinutes.add(totalTimeInMaintenanceSeconds / 60);
 
-        if (total <= gracePeriods) {
-            return total.mul(gracePeriodPrice);
+        if (totalMinutes <= gracePeriodsMinutes) {
+            return totalMinutes.mul(gracePeriodPricePerMinute);
         }
 
-        uint timeBeyondGracePeriod = total - gracePeriods;
-        uint penalty = timeBeyondGracePeriod.mul(10000) / totalLifetime + 100;
+        uint timeBeyondGracePeriodMinutes = totalMinutes - gracePeriodsMinutes;
+        uint penalty = timeBeyondGracePeriodMinutes.mul(60000) / totalDEXLifeTimeSeconds + 100;
         uint _maxPenalty = maxPenalty.mul(100);
 
         if (penalty > _maxPenalty) {
             penalty = _maxPenalty;
         }
 
-        return gracePeriods.mul(gracePeriodPrice).add(
-            timeBeyondGracePeriod.mul(basePrice).mul(penalty) / 100
+        return gracePeriodsMinutes.mul(gracePeriodPricePerMinute).add(
+            timeBeyondGracePeriodMinutes.mul(basePricePerMinute).mul(penalty) / 100
         );
     }
 }
