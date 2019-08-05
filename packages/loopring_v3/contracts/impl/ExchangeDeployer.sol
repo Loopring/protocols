@@ -24,9 +24,13 @@ import "./Exchange.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @dev We created this library to work around the gas limit -- inlining all the
 ///      enclosed function directly into LoopringV3 will make LoopringV3 too large
-///      to deploy.
+///      to deploy. Even if the deployed instance is initialized, it can still be
+///      used it is placed behind a proxy, therefore, he state (data) of the deployed
+///      instance is irrelevant when proxies are used.
 library ExchangeDeployer
 {
+    // Deploy an IExchange instance without initialization.
+
     function deployExchange()
         external
         returns (address)

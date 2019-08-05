@@ -169,8 +169,8 @@ contract LoopringV3 is ILoopringV3, Claimable
 
         IExchange exchange = IExchange(exchangeAddress);
         exchange.initialize(
-            exchangeId,
             address(this),
+            exchangeId,
             _owner,
             operator,
             onchainDataAvailability
