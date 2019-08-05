@@ -481,6 +481,7 @@ library ExchangeWithdrawals
         address token = S.getTokenAddress(tokenID);
         // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
         uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
+
         // Transfer the tokens from the contract to the owner
         if (amount > 0) {
             if (token == address(0)) {
@@ -493,25 +494,28 @@ library ExchangeWithdrawals
         } else {
             success = true;
         }
+
         if (!allowFailure) {
             require(success, "TRANSFER_FAILURE");
         }
 
-        // Emit event
-        if (!success) {
+        if (success) {
+            if (amount > 0) {
+                S.tokenBalances[token] = S.tokenBalances[token].sub(amount);
+            }
+
+            if (accountID > 0 || tokenID > 0 || amount > 0) {
+                // Only emit an event when the withdrawal data hasn't been reset yet
+                // by a previous successful withdrawal
+                emit WithdrawalCompleted(
+                    accountID,
+                    tokenID,
+                    to,
+                    uint96(amount)
+                );
+            }
+        } else {
             emit WithdrawalFailed(
-                accountID,
-                tokenID,
-                to,
-                uint96(amount)
-            );
-        } else if (accountID > 0 || tokenID > 0 || amount > 0) {
-            // Only emit an event when the withdrawal data hasn't been reset yet
-            // by a previous successful withdrawal
-
-            S.tokenBalances[token] = S.tokenBalances[token].sub(amount);
-
-            emit WithdrawalCompleted(
                 accountID,
                 tokenID,
                 to,
