@@ -27,19 +27,19 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator
 {
     using MathUint for uint;
 
-    uint public constant PRICE = 1000 ether;
+    uint public constant PRICE_PER_MINUTE = 1000 ether;
 
     function getDowntimeCostLRC(
-        uint  /* totalTimeInMaintanance */,
-        uint  /* totalLifetime */,
-        uint  /* awailableDowntime */,
+        uint  /* totalTimeInMaintenanceSeconds */,
+        uint  /* totalDEXLifeTimeSeconds */,
+        uint  /* numDowntimeMinutes */,
         uint  /* exchangeStakedLRC */,
-        uint  downtimeToPurchase
+        uint  durationToPurchaseMinutes
         )
         external
         view
         returns (uint)
     {
-        return downtimeToPurchase.mul(PRICE);
+        return durationToPurchaseMinutes.mul(PRICE_PER_MINUTE);
     }
 }
