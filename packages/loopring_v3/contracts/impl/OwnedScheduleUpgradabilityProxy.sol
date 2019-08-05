@@ -11,7 +11,7 @@ import '../thirdparty/OwnedUpgradeabilityProxy.sol';
  */
 contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 
-	event UpgradeScheduled(uint timestamp, address newImplementation);
+	event UpgradeScheduled(uint timestamp, address _implementation);
 	event UpgradeCancelled(uint timestamp);
 
 	// Storage position of the owner of the contract
@@ -19,7 +19,9 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 	bytes32 private constant scheduledImplementationPos = keccak256("org.loopring.proxy.scheduled.implementation");
 	bytes32 private constant scheduledTimestampPos = keccak256("org.loopring.proxy.scheduled.timestamp");
 
-	constructor(uint minWaitingPeriod)
+	constructor(
+		uint minWaitingPeriod
+		)
 		public
 		OwnedUpgradeabilityProxy()
 	{
@@ -28,25 +30,27 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 
 	function scheduleUpgrade(
 		uint 	_timestamp,
-		address _impl
+		address _implementation
 		)
 		public
 		onlyProxyOwner
 	{
-		require(_timestamp >= now + (30 days),"INVALID_TIMESTAMP");
-		require(_impl != implementation(), "SAME_ADDRESS");
+		require(_timestamp >= now + minWaitingPeriod(), "INVALID_TIMESTAMP");
+		require(_implementation != address(0), "ZERO_ADDRESS");
+		require(_implementation != implementation(), "SAME_ADDRESS");
 
 		setScheduledTimestamp(_timestamp);
-		setScheduledImplementation(_impl);
-		emit UpgradeScheduled(_timestamp, _impl);
+		setScheduledImplementation(_implementation);
+		emit UpgradeScheduled(_timestamp, _implementation);
 	}
 
 	function cancelScheduledUpgrade()
 		public
-		onlyProxyOwner {
-		require(scheduledImplementation() != address(0), "SAME_ADDRESS");
+		onlyProxyOwner
+	{
+		require(scheduledImplementation() != address(0), "NOTHING_SCHEDULED");
 
-		setScheduledTimestamp(now);
+		setScheduledTimestamp(0);
 		setScheduledImplementation(address(0));
 		emit UpgradeCancelled(now);
 	}
@@ -76,11 +80,11 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 	function scheduledImplementation()
 		public
 		view
-		returns (address _impl)
+		returns (address _implementation)
 	{
 		bytes32 position = scheduledImplementationPos;
 		assembly {
-		  _impl := sload(position)
+		  _implementation := sload(position)
 		}
 	}
 
@@ -90,14 +94,13 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
     {
 		require(scheduledTimestamp() <= now, "TOO_EARLY");
 
-		address newImplementation = scheduledImplementation();
-		require(newImplementation != address(0), "NO_SCHEDULE");
+		address _implementation = scheduledImplementation();
+		require(_implementation != address(0), "NOTHING_SCHEDULE");
 
-		_upgradeTo(newImplementation);
+		_upgradeTo(_implementation);
 
-		setScheduledTimestamp(now);
+		setScheduledTimestamp(0);
 		setScheduledImplementation(address(0));
-		emit Upgraded(newImplementation);
     }
 
 	function upgradeToAndCall(
@@ -157,13 +160,13 @@ contract OwnedScheduleUpgradabilityProxy is OwnedUpgradeabilityProxy {
 	}
 
 	function setScheduledImplementation(
-	  	address _impl
+	  	address _implementation
 	  	)
 	  	internal
   	{
   		bytes32 position = scheduledImplementationPos;
 	    assembly {
-	        sstore(position, _impl)
+	        sstore(position, _implementation)
 	    }
 	}
 }
