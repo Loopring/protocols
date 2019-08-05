@@ -61,7 +61,6 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
         );
     }
 
-
     function getDowntimeCostLRC(
         uint  totalTimeInMaintenanceSeconds,
         uint  totalDEXLifeTimeSeconds,
@@ -137,7 +136,7 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator, Claimable
         }
 
         uint timeBeyondGracePeriodMinutes = totalMinutes - gracePeriodsMinutes;
-        uint penalty = timeBeyondGracePeriodMinutes.mul(60000) / totalDEXLifeTimeSeconds + 100;
+        uint penalty = timeBeyondGracePeriodMinutes.mul(600000) / totalDEXLifeTimeSeconds + 100;
         uint _maxPenalty = maxPenalty.mul(100);
 
         if (penalty > _maxPenalty) {
