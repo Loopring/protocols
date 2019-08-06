@@ -25,7 +25,7 @@ import "../iface/IProtocolRegistry.sol";
 import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
-/// @dev After the deployment of this contract, an OwnedUpgradeabilityProxy
+/// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
 ///      should be placed in front of this contract to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -155,9 +155,9 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         }
 
         exchangeId = ILoopring(protocol).registerExchange(
-                exchangeAddress,
-                onchainDataAvailability
-            );
+            exchangeAddress,
+            onchainDataAvailability
+        );
 
         emit ExchangeCreated(
             protocol,
