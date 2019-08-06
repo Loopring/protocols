@@ -23,9 +23,11 @@ import "../iface/IAddressWhitelist.sol";
 
 /// @title An Implementation of IAddressWhitelist.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
+contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
+
+    constructor() Claimable() public {}
 
     function isWhitelisted(
         address user,

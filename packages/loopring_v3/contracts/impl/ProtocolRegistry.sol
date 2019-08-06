@@ -29,7 +29,7 @@ import "./ExchangeProxy.sol";
 ///      should be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
+contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
 {
     struct Protocol
     {
@@ -61,6 +61,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         )
         external
         onlyOwner
+        nonReentrant
     {
         (address instance, ) = getProtocol(protocol);
         require(instance != address(0), "INVALID_PROTOCOL");

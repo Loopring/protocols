@@ -28,7 +28,7 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract UserStakingPool is IUserStakingPool, ReentrancyGuard, Claimable
+contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -44,11 +44,10 @@ contract UserStakingPool is IUserStakingPool, ReentrancyGuard, Claimable
     mapping (address => Staking) private stakings;
 
     constructor(address _lrcAddress)
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
-
-        owner = msg.sender;
         lrcAddress = _lrcAddress;
     }
 
