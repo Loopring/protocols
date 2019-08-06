@@ -352,7 +352,7 @@ contract IExchange
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param recipient The address to send the token or ether.
     /// @return The amount of token or Ether withdrawn
-    function withdrawBalanceNotOwnedByUsers(
+    function withdrawTokenNotOwnedByUsers(
         address tokenAddress,
         address payable recipient
         )

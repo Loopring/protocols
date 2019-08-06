@@ -298,7 +298,7 @@ contract Exchange is IExchange, Claimable, NoDefaultFunc, ReentrancyGuard
         return state.withdrawExchangeStake(recipient);
     }
 
-    function withdrawBalanceNotOwnedByUsers(
+    function withdrawTokenNotOwnedByUsers(
         address tokenAddress,
         address payable recipient
         )
@@ -307,7 +307,7 @@ contract Exchange is IExchange, Claimable, NoDefaultFunc, ReentrancyGuard
         onlyOwner
         returns(uint)
     {
-        return state.withdrawBalanceNotOwnedByUsers(tokenAddress, recipient);
+        return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
     }
 
     function withdrawProtocolFeeStake(
