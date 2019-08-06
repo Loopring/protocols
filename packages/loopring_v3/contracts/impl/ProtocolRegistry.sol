@@ -163,7 +163,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = loopring.initializeAndRegisterExchange(
+        exchangeId = loopring.registerExchange(
             exchangeAddress,
             owner,
             operator,

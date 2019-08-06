@@ -86,7 +86,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         return ExchangeV3Deployer.deploy();
     }
 
-    function initializeAndRegisterExchange(
+    function registerExchange(
         address exchangeAddress,
         address owner,
         address payable operator,
