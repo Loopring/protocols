@@ -78,11 +78,53 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         );
     }
 
+    // === ILoopring methods ===
     function deployExchange()
         external
         returns (address)
     {
         return ExchangeV3Deployer.deploy();
+    }
+
+    function registerExchange(
+        address exchangeAddress,
+        bool    onchainDataAvailability
+        )
+        external
+        nonReentrant
+        returns (uint exchangeId)
+    {
+        require(exchangeAddress != address(0), "ZERO_ADDRESS");
+
+        // Burn the LRC
+        if (exchangeCreationCostLRC > 0) {
+            require(
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
+                "BURN_FAILURE"
+            );
+        }
+
+        IExchange exchange = IExchange(exchangeAddress);
+        exchangeId = exchanges.length + 1;
+
+        // If the exchange has already been initlaized, the following function will fail.
+        exchange.initialize(
+            address(this),
+            exchangeId,
+            msg.sender,
+            msg.sender,
+            onchainDataAvailability
+        );
+
+        exchanges.push(Exchange(exchangeAddress, 0, 0));
+
+        emit ExchangeRegistered(
+            exchangeId,
+            exchangeAddress,
+            msg.sender,
+            msg.sender,
+            exchangeCreationCostLRC
+        );
     }
 
     // == Public Functions ==
@@ -146,47 +188,6 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         protocolFeeVault = _protocolFeeVault;
 
         emit ProtocolFeeVaultUpdated(protocolFeeVault);
-    }
-
-    function registerExchange(
-        address exchangeAddress,
-        bool    onchainDataAvailability
-        )
-        external
-        nonReentrant
-        returns (uint exchangeId)
-    {
-        require(exchangeAddress != address(0), "ZERO_ADDRESS");
-
-        // Burn the LRC
-        if (exchangeCreationCostLRC > 0) {
-            require(
-                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
-                "BURN_FAILURE"
-            );
-        }
-
-        IExchange exchange = IExchange(exchangeAddress);
-        exchangeId = exchanges.length + 1;
-
-        // If the exchange has already been initlaized, the following function will fail.
-        exchange.initialize(
-            address(this),
-            exchangeId,
-            msg.sender,
-            msg.sender,
-            onchainDataAvailability
-        );
-
-        exchanges.push(Exchange(exchangeAddress, 0, 0));
-
-        emit ExchangeRegistered(
-            exchangeId,
-            exchangeAddress,
-            msg.sender,
-            msg.sender,
-            exchangeCreationCostLRC
-        );
     }
 
     function canExchangeCommitBlocks(
