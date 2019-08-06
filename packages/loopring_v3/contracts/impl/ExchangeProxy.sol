@@ -22,6 +22,8 @@ import "../thirdparty/Proxy.sol";
 
 
 /// @title ExchangeProxy
+/// @dev This proxy is designed to support transparent upgradeability offered by a
+///      IProtocolRegistry contract.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeProxy is Proxy
 {
