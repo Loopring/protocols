@@ -21,7 +21,7 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry
 {
-    event ExchangeCreated (
+    event ExchangeForged (
         address loopring,
         address exchangeAddress,
         address owner,
@@ -89,7 +89,7 @@ contract IProtocolRegistry
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
-    function createExchange(
+    function forgeExchange(
         bool supportUpgradability,
         bool onchainDataAvailability
         )
@@ -109,7 +109,7 @@ contract IProtocolRegistry
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @return exchangeAddress The new exchange's address.
     /// @return exchangeId The new exchange's ID.
-    function createExchange(
+    function forgeExchange(
         address owner,
         address payable operator,
         address protocol,

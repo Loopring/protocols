@@ -226,6 +226,7 @@ export class ExchangeTestUtil {
     await this.createExchange(
       this.testContext.deployer,
       true,
+      true,
       this.onchainDataAvailability,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
@@ -2491,11 +2492,10 @@ export class ExchangeTestUtil {
     return this.accounts[this.exchangeId][accountId];
   }
 
-  // TODO(daniel):
   public async createExchange(
     owner: string,
-    supportUpgradability: boolean = true,
     bSetupTestState: boolean = true,
+    supportUpgradability: boolean = true,
     onchainDataAvailability: boolean = true,
     accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
@@ -2515,7 +2515,10 @@ export class ExchangeTestUtil {
     });
 
     // Create the new exchange
-    const tx = await this.protocolRegistry.createExchange(
+    const tx = await this.protocolRegistry.forgeExchange(
+      owner,
+      operator,
+      this.loopringV3.address,
       supportUpgradability,
       onchainDataAvailability,
       { from: owner }

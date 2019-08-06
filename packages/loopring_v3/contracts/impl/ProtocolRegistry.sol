@@ -117,7 +117,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         protocols[protocol] = Protocol(instance, version);
     }
 
-    function createExchange(
+    function forgeExchange(
         bool supportUpgradability,
         bool onchainDataAvailability
         )
@@ -127,7 +127,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             uint    exchangeId
         )
     {
-        return createExchange(
+        return forgeExchange(
             msg.sender,
             msg.sender,
             defaultProtocol,
@@ -136,7 +136,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         );
     }
 
-    function createExchange(
+    function forgeExchange(
         address owner,
         address payable operator,
         address protocol,
@@ -170,7 +170,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             onchainDataAvailability
         );
 
-        emit ExchangeCreated(
+        emit ExchangeForged(
             protocol,
             exchangeAddress,
             msg.sender,

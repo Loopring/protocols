@@ -17,7 +17,8 @@ contract("Exchange", (accounts: string[]) => {
     // Fresh Exchange for each test
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
-      true
+      false, // no proxy
+      true // DA
     );
   });
 

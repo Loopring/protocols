@@ -25,6 +25,7 @@ contract("Operator", (accounts: string[]) => {
   beforeEach(async () => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
+      false, // no proxy
       true
     );
     exchange = exchangeTestUtil.exchange;
