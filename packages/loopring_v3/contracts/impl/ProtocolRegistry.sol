@@ -141,7 +141,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         ExchangeProxy proxy = new ExchangeProxy(address(this));
         exchangeProxy = address(proxy);
 
-        assert(proxies[exchangeProxy] == address(0))
+        assert(proxies[exchangeProxy] == address(0));
         proxies[exchangeProxy] = protocol;
 
         exchangeId = ILoopring(protocol).registerExchange(
