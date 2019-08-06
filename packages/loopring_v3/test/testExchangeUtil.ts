@@ -2495,8 +2495,8 @@ export class ExchangeTestUtil {
   public async createExchange(
     owner: string,
     bSetupTestState: boolean = true,
-    supportUpgradability: boolean = true,
     onchainDataAvailability: boolean = true,
+    supportUpgradability: boolean = true,
     accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),

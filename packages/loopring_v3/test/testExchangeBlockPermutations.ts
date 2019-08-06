@@ -88,7 +88,6 @@ contract("Exchange", (accounts: string[]) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
       true,
-      true,
       bDataAvailability
     );
   };
