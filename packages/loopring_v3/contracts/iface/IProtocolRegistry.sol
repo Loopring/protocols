@@ -21,6 +21,8 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry
 {
+    address public defaultProtocol;
+
     event ExchangeForged (
         address loopring,
         address exchangeAddress,
@@ -97,7 +99,16 @@ contract IProtocolRegistry
         returns (
             address exchangeAddress,
             uint    exchangeId
+        )
+    {
+        return forgeExchange(
+            msg.sender,
+            msg.sender,
+            defaultProtocol,
+            supportUpgradability,
+            onchainDataAvailability
         );
+    }
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.

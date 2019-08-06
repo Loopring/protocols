@@ -26,7 +26,7 @@ import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
 /// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
-///      should be placed in front of this contract to ensure upgradeability of
+///      should be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
@@ -39,7 +39,6 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 
     mapping (address => address /* protocol */) public proxies;
     mapping (address => Protocol) private protocols;
-    address private defaultProtocol;
 
     constructor() Claimable() public {}
 
@@ -115,25 +114,6 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         address instance = loopring.deployExchange();
 
         protocols[protocol] = Protocol(instance, version);
-    }
-
-    function forgeExchange(
-        bool supportUpgradability,
-        bool onchainDataAvailability
-        )
-        external
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        )
-    {
-        return forgeExchange(
-            msg.sender,
-            msg.sender,
-            defaultProtocol,
-            supportUpgradability,
-            onchainDataAvailability
-        );
     }
 
     function forgeExchange(
