@@ -1,6 +1,7 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
+var ExchangeProxy = artifacts.require("./impl/ExchangeProxy");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var PrototolRegistry = artifacts.require("./impl/ProtocolRegistry");
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
