@@ -26,6 +26,8 @@ import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
+import "./ExchangeV3Deployer.sol";
+
 
 /// @title An Implementation of ILoopring.
 /// @author Brecht Devos - <brecht@loopring.org>
@@ -74,6 +76,13 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             _revertFineLRC,
             _withdrawalFineLRC
         );
+    }
+
+    function deployExchange()
+        external
+        returns (address)
+    {
+        return ExchangeV3Deployer.deploy();
     }
 
     // == Public Functions ==

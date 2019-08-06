@@ -20,6 +20,12 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopring
 {
+    /// @dev Deploy an new exchange instance without initialization.
+    /// @return exchangeAddress The address of the new exchange.
+    function deployExchange()
+        external
+        returns (address exchangeAddress);
+
     /// @dev Initialize and register an exchange with msg.sender as the owner and operator.
     ///      Note that this function can only be called one per deployed exchange instance.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
