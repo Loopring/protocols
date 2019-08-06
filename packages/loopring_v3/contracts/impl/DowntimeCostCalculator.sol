@@ -16,10 +16,10 @@
 */
 pragma solidity 0.5.10;
 
-import "../../lib/Claimable.sol";
-import "../../lib/MathUint.sol";
+import "../lib/Claimable.sol";
+import "../lib/MathUint.sol";
 
-import "../../iface/IDowntimeCostCalculator.sol";
+import "../iface/IDowntimeCostCalculator.sol";
 
 
 /// @title The default IDowntimeCostCalculator implementation.

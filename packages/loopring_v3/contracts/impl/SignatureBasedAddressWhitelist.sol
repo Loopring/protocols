@@ -16,9 +16,9 @@
 */
 pragma solidity 0.5.10;
 
-import "../../lib/Claimable.sol";
+import "../lib/Claimable.sol";
 
-import "../../iface/IAddressWhitelist.sol";
+import "../iface/IAddressWhitelist.sol";
 
 
 /// @title An Implementation of IAddressWhitelist.
