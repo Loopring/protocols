@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IExchange.sol";
+import "../iface/IExchangeV3.sol";
 
 import "../lib/MathUint.sol";
 
@@ -25,7 +25,7 @@ contract AccountContract {
 
     using MathUint          for uint;
 
-    IExchange exchange;
+    IExchangeV3 exchange;
 
     uint[16] private dummyStorageVariables;
 
@@ -34,7 +34,7 @@ contract AccountContract {
         )
         public
     {
-        exchange = IExchange(_exchangeAddress);
+        exchange = IExchangeV3(_exchangeAddress);
     }
 
     function updateAccountAndDeposit(

@@ -25,6 +25,9 @@ import "../iface/IProtocolRegistry.sol";
 import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
+/// @dev After the deployment of this contract, an OwnedUpgradeabilityProxy
+///      should be placed in front of this contract to ensure upgradeability of
+//       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 {
