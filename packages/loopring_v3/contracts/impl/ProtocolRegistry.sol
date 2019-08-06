@@ -17,6 +17,7 @@
 pragma solidity 0.5.10;
 
 import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
@@ -25,7 +26,7 @@ import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry, Claimable
+contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 {
     struct Protocol
     {
@@ -110,6 +111,7 @@ contract ProtocolRegistry is IProtocolRegistry, Claimable
         bool    onchainDataAvailability
         )
         public
+        nonReentrant
         returns (
             address exchangeProxy,
             uint    exchangeId
