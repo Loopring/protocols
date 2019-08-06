@@ -29,7 +29,7 @@ import "./ExchangeProxy.sol";
 ///      should be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
+contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
 {
     struct Protocol
     {
@@ -61,6 +61,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         )
         external
         onlyOwner
+        nonReentrant
     {
         (address instance, ) = getProtocol(protocol);
         require(instance != address(0), "INVALID_PROTOCOL");
@@ -112,6 +113,12 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 
         ILoopring loopring = ILoopring(protocol);
         address instance = loopring.deployExchange();
+
+        // Initialize the instance in a way that it's onwed by the protocol address itself.
+        // This is to prevent the default instance from being used by any entity.
+        address payable owner = address(uint160(protocol));
+        uint id = loopring.registerExchange(instance, owner, owner, false);
+        require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
 
         protocols[protocol] = Protocol(instance, version);
     }

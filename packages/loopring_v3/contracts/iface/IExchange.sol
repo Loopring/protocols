@@ -137,7 +137,7 @@ contract IExchange
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
-        address payable loopringAddress,
+        address loopringAddress,
         uint    exchangeId,
         address owner,
         address payable operator,

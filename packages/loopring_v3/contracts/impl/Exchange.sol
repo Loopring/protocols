@@ -36,7 +36,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, ReentrancyGuard, Claimable
+contract Exchange is Claimable, ReentrancyGuard, IExchange
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
@@ -62,9 +62,11 @@ contract Exchange is IExchange, ReentrancyGuard, Claimable
         _;
     }
 
+    constructor() public {}
+
     // -- Initialization --
     function initialize(
-        address payable _loopringAddress,
+        address _loopringAddress,
         uint    _id,
         address _owner,
         address payable _operator,
@@ -560,8 +562,7 @@ contract Exchange is IExchange, ReentrancyGuard, Claimable
         return state.getNumWithdrawalRequestsProcessed();
     }
 
-    function getNumAvailableWithdrawalSlots(
-        )
+    function getNumAvailableWithdrawalSlots()
         external
         view
         returns (uint)

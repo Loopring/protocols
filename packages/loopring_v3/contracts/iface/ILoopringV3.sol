@@ -124,12 +124,12 @@ contract ILoopringV3 is ILoopring
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateProtocolFeeSettings(
-        uint8   _minProtocolTakerFeeBips,
-        uint8   _maxProtocolTakerFeeBips,
-        uint8   _minProtocolMakerFeeBips,
-        uint8   _maxProtocolMakerFeeBips,
-        uint    _targetProtocolTakerFeeStake,
-        uint    _targetProtocolMakerFeeStake
+        uint8 _minProtocolTakerFeeBips,
+        uint8 _maxProtocolTakerFeeBips,
+        uint8 _minProtocolMakerFeeBips,
+        uint8 _maxProtocolMakerFeeBips,
+        uint  _targetProtocolTakerFeeStake,
+        uint  _targetProtocolMakerFeeStake
         )
         external;
 
@@ -247,8 +247,13 @@ contract ILoopringV3 is ILoopring
             uint8 makerFeeBips
         );
 
-    /// @dev Allow ETH to be sent directly to this contract (to collect the protocol fees)
-    function()
-        external
-        payable;
+    /// @dev Returns the exchange's protocol fee stake.
+    /// @param  exchangeId The exchange's id.
+    /// @return protocolFeeStake The exchange's protocol fee stake.
+    function getProtocolFeeStake(
+        uint exchangeId
+        )
+        public
+        view
+        returns (uint protocolFeeStake);
 }

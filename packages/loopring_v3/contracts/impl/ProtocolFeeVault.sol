@@ -71,7 +71,7 @@ contract IAuction
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
+contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 {
     uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using AddressUtil       for address;
@@ -83,22 +83,22 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
         address _lrcAddress,
         address _userStakingPoolAddress
         )
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         require(_userStakingPoolAddress != address(0), "ZERO_ADDRESS");
 
-        owner = msg.sender;
         allowOwnerWithdrawal = true;
-
         lrcAddress = _lrcAddress;
         userStakingPoolAddress = _userStakingPoolAddress;
     }
 
     function claimStakingReward(
-        uint    amount
+        uint amount
         )
         external
+        nonReentrant
     {
         require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
 
@@ -139,6 +139,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
     function setOedax(address _oedaxAddress)
         external
         onlyOwner
+        nonReentrant
     {
         require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
         oedaxAddress = _oedaxAddress;
@@ -147,6 +148,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
     function setDAO(address _daoAddress)
         external
         onlyOwner
+        nonReentrant
     {
         require(_daoAddress != daoAddress, "SAME_ADDRESS");
         daoAddress = _daoAddress;
@@ -155,6 +157,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
     function disableOwnerWithdrawal()
         external
         onlyOwner
+        nonReentrant
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
         require(oedaxAddress != address(0x0), "OEDAX_ADDRESS_ZERO");
@@ -168,6 +171,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
         )
         external
         onlyOwner
+        nonReentrant
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
         require(token != lrcAddress, "INVALD_TOKEN");
@@ -183,6 +187,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
 
     function withdrawLRCToDAO()
         external
+        nonReentrant
     {
         require(daoAddress != address(0), "ZERO_DAO_ADDRESS");
         uint amountDAO;
@@ -204,6 +209,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
 
     function settleAuction(address auction)
         external
+        nonReentrant
     {
         require(auction != address(0), "ZERO_ADDRESS");
         IAuction(auction).settle();
@@ -222,6 +228,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
         )
         external
         onlyOwner
+        nonReentrant
         returns (
             address payable auctionAddr
         )

@@ -29,10 +29,10 @@ import "../lib/ReentrancyGuard.sol";
 import "./ExchangeV3Deployer.sol";
 
 
-/// @title An Implementation of ILoopring.
+/// @title LoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
+contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
@@ -54,6 +54,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint    _revertFineLRC,
         uint    _withdrawalFineLRC
         )
+        Claimable()
         public
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
@@ -81,6 +82,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
     // === ILoopring methods ===
     function deployExchange()
         external
+        nonReentrant
         returns (address)
     {
         return ExchangeV3Deployer.deploy();
@@ -143,6 +145,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint    _withdrawalFineLRC
         )
         external
+        nonReentrant
         onlyOwner
     {
         updateSettingsInternal(
@@ -168,6 +171,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint  _targetProtocolMakerFeeStake
         )
         external
+        nonReentrant
         onlyOwner
     {
         minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
@@ -184,6 +188,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         address payable _protocolFeeVault
         )
         external
+        nonReentrant
         onlyOwner
     {
         require(_protocolFeeVault != address(0), "ZERO_ADDRESS");
@@ -302,20 +307,6 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         emit ExchangeStakeWithdrawn(exchangeId, amount);
     }
 
-    function getProtocolFeeStake(
-        uint exchangeId
-        )
-        public
-        view
-        returns (uint)
-    {
-        require(
-            exchangeId > 0 && exchangeId <= exchanges.length,
-            "INVALID_EXCHANGE_ID"
-        );
-        return exchanges[exchangeId - 1].protocolFeeStake;
-    }
-
     function depositProtocolFeeStake(
         uint exchangeId,
         uint amountLRC
@@ -397,6 +388,20 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         makerFeeBips = calculateProtocolFee(
             minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
         );
+    }
+
+    function getProtocolFeeStake(
+        uint exchangeId
+        )
+        public
+        view
+        returns (uint)
+    {
+        require(
+            exchangeId > 0 && exchangeId <= exchanges.length,
+            "INVALID_EXCHANGE_ID"
+        );
+        return exchanges[exchangeId - 1].protocolFeeStake;
     }
 
     // == Internal Functions ==
