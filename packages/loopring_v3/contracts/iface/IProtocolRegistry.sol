@@ -84,7 +84,6 @@ contract IProtocolRegistry
         )
         public;
 
-
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.
     /// @param onchainDataAvailability If the on-chain DA is on
