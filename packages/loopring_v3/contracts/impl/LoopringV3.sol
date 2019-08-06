@@ -414,7 +414,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         require(address(0) != _downtimeCostCalculator, "ZERO_ADDRESS");
 
         blockVerifierAddress = _blockVerifierAddress;
-        _downtimeCostCalculator = _downtimeCostCalculator;
+        downtimeCostCalculator = _downtimeCostCalculator;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
