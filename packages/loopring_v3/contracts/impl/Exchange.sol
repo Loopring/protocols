@@ -66,7 +66,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
 
     // -- Initialization --
     function initialize(
-        address payable _loopringAddress,
+        address _loopringAddress,
         uint    _id,
         address _owner,
         address payable _operator,

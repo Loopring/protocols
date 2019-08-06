@@ -307,20 +307,6 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         emit ExchangeStakeWithdrawn(exchangeId, amount);
     }
 
-    function getProtocolFeeStake(
-        uint exchangeId
-        )
-        public
-        view
-        returns (uint)
-    {
-        require(
-            exchangeId > 0 && exchangeId <= exchanges.length,
-            "INVALID_EXCHANGE_ID"
-        );
-        return exchanges[exchangeId - 1].protocolFeeStake;
-    }
-
     function depositProtocolFeeStake(
         uint exchangeId,
         uint amountLRC
@@ -402,6 +388,20 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         makerFeeBips = calculateProtocolFee(
             minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
         );
+    }
+
+    function getProtocolFeeStake(
+        uint exchangeId
+        )
+        public
+        view
+        returns (uint)
+    {
+        require(
+            exchangeId > 0 && exchangeId <= exchanges.length,
+            "INVALID_EXCHANGE_ID"
+        );
+        return exchanges[exchangeId - 1].protocolFeeStake;
     }
 
     // == Internal Functions ==
