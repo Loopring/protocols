@@ -141,8 +141,6 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
 
     function registerExchange(
         address exchangeAddress,
-        address _owner,
-        address payable _operator,
         bool    onchainDataAvailability
         )
         external
@@ -159,23 +157,15 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             );
         }
 
-        exchangeId = exchanges.length + 1;
-
-        address payable operator;
-        if (address(0) == _operator) {
-            operator = msg.sender;
-        } else {
-            operator = _operator;
-        }
-
         IExchange exchange = IExchange(exchangeAddress);
+        exchangeId = exchanges.length + 1;
 
         // If the exchange has already been initlaized, the following function will fail.
         exchange.initialize(
             address(this),
             exchangeId,
-            _owner,
-            operator,
+            msg.sender,
+            msg.sender,
             onchainDataAvailability
         );
 
@@ -185,7 +175,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             exchangeId,
             exchangeAddress,
             msg.sender,
-            operator,
+            msg.sender,
             exchangeCreationCostLRC
         );
     }

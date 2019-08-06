@@ -20,19 +20,14 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopring
 {
-    /// @dev Initialize and register an exchange.
+    /// @dev Initialize and register an exchange with msg.sender as the owner and operator.
     ///      Note that this function can only be called one per deployed exchange instance.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
-    /// @param  owner The owner of the exchange.
-    /// @param  operator The operator address of the exchange who will be responsible for
-    ///         submitting blocks and proofs.
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is created.
     /// @return exchangeId The id of the exchange.
     function registerExchange(
         address exchangeAddress,
-        address owner,
-        address payable operator,
         bool    onchainDataAvailability
         )
         external

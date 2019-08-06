@@ -107,7 +107,6 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 
     function createExchange(
         address loopring,
-        address payable operator,
         bool    onchainDataAvailability
         )
         public
@@ -124,8 +123,6 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 
         exchangeId = ILoopring(loopring).registerExchange(
             exchangeProxy,
-            msg.sender,
-            operator,
             onchainDataAvailability
         );
     }
