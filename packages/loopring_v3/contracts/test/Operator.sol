@@ -16,19 +16,19 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IExchangeV3.sol";
+import "../iface/IExchange.sol";
 
 
 contract Operator {
 
-    IExchangeV3 exchange;
+    IExchange exchange;
 
     constructor(
         address _exchangeAddress
         )
         public
     {
-        exchange = IExchangeV3(_exchangeAddress);
+        exchange = IExchange(_exchangeAddress);
     }
 
     function commitBlock(

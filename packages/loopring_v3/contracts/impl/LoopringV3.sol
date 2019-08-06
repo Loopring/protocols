@@ -17,7 +17,7 @@
 pragma solidity 0.5.10;
 
 import "../iface/ILoopringV3.sol";
-import "../iface/IExchangeV3.sol";
+import "../iface/IExchange.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
@@ -166,7 +166,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             );
         }
 
-        IExchangeV3 exchange = IExchangeV3(exchangeAddress);
+        IExchange exchange = IExchange(exchangeAddress);
         exchangeId = exchanges.length + 1;
 
         // If the exchange has already been initlaized, the following function will fail.

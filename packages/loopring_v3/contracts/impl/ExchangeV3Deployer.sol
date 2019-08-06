@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.10;
 
-import "./ExchangeV3.sol";
+import "./Exchange.sol";
 
 
 /// @title ExchangeV3Deployer
@@ -31,6 +31,6 @@ library ExchangeV3Deployer
         external
         returns (address)
     {
-        return address(new ExchangeV3());
+        return address(new Exchange());
     }
 }
