@@ -3658,7 +3658,7 @@ export class ExchangeTestUtil {
     ] = await Promise.all([
       this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeDeployer.deployed(),
+      this.contracts.ExchangeV3Deployer.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
