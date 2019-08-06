@@ -125,5 +125,12 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             exchangeProxy,
             onchainDataAvailability
         );
+
+        emit ExchangeCreated(
+            loopring,
+            exchangeProxy,
+            msg.sender,
+            exchangeId
+        );
     }
 }

@@ -21,6 +21,17 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry
 {
+    event ExchangeCreated (
+        address loopring,
+        address exchangeProxy,
+        address owner,
+        uint    exchangeId
+    );
+
+    /// @dev Returns information regarding the default protocol.
+    /// @return loopring The default protocol address.
+    /// @return instance The protocol's default instance.
+    /// @return version The protocol's version number.
     function getDefaultProtocol()
         external
         view
@@ -35,6 +46,10 @@ contract IProtocolRegistry
         )
         external;
 
+    /// @dev Returns information regarding a protocol.
+    /// @param loopring The protocol address.
+    /// @return instance The protocol's default instance.
+    /// @return version The protocol's version number.
     function getProtocol(
         address loopring
         )
@@ -45,6 +60,10 @@ contract IProtocolRegistry
             string memory version
         );
 
+    /// @dev Register a new protocol
+    /// @param loopring The protocol address.
+    /// @param instance The protocol's default instance.
+    /// @param version The protocol's version number.
     function registerProtocol(
         address loopring,
         address instance,
@@ -52,6 +71,12 @@ contract IProtocolRegistry
         )
         public;
 
+
+    /// @dev Create a new exchange using the default protocol with msg.sender
+    ///      as owner and operator.
+    /// @param onchainDataAvailability If the on-chain DA is on
+    /// @return exchangeProxy The new exchange's proxy address.
+    /// @return exchangeId The new exchange's ID.
     function createExchange(
         bool onchainDataAvailability
         )
@@ -61,6 +86,12 @@ contract IProtocolRegistry
             uint    exchangeId
         );
 
+    /// @dev Create a new exchange using a specific protocol with msg.sender
+    ///      as owner and operator.
+    /// @param loopring The protocol's address.
+    /// @param onchainDataAvailability IF the on-chain DA is on
+    /// @return exchangeProxy The new exchange's proxy address.
+    /// @return exchangeId The new exchange's ID.
     function createExchange(
         address loopring,
         address payable operator,
