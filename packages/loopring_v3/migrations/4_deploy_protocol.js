@@ -12,6 +12,7 @@ var ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
 var ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
 var ExchangeDeposits = artifacts.require("./impl/libexchange/ExchangeDeposits");
 var ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis");
+var ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
 var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
 var ExchangeWithdrawals = artifacts.require(
   "./impl/libexchange/ExchangeWithdrawals"
@@ -24,25 +25,33 @@ module.exports = function(deployer, network, accounts) {
     // ignore.
   } else {
     deployer
+
+      .then(() => {
+        return Promise.all([LRCToken.deployed(), WETHToken.deployed()]);
+      })
       .then(() => {
         return Promise.all([
           deployer.deploy(ExchangeData),
-          deployer.deploy(ExchangeBalances),
-          LRCToken.deployed(),
-          WETHToken.deployed()
+          deployer.deploy(ExchangeBalances)
         ]);
       })
       .then(() => {
         return Promise.all([
           deployer.link(ExchangeData, [
             ExchangeAccounts,
+            ExchangeMode,
+            ExchangeAccounts,
             ExchangeAdmins,
             ExchangeBlocks,
-            ExchangeDeposits,
             ExchangeTokens,
             ExchangeGenesis,
+            ExchangeDeposits,
             ExchangeWithdrawals
-          ]),
+          ])
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
           deployer.link(ExchangeBalances, [
             ExchangeAccounts,
             ExchangeWithdrawals
@@ -50,24 +59,41 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        return Promise.all([deployer.deploy(ExchangeTokens)]);
-      })
-      .then(() => {
         return Promise.all([
-          deployer.link(ExchangeTokens, [
-            ExchangeDeposits,
-            ExchangeGenesis,
-            ExchangeWithdrawals
-          ])
+          deployer.deploy(ExchangeMode),
+          deployer.deploy(ExchangeAccounts)
         ]);
       })
       .then(() => {
         return Promise.all([
-          deployer.deploy(ExchangeAccounts),
+          deployer.link(ExchangeMode, [
+            ExchangeAdmins,
+            ExchangeBlocks,
+            ExchangeTokens,
+            ExchangeDeposits,
+            ExchangeWithdrawals
+          ]),
+          deployer.link(ExchangeAccounts, ExchangeGenesis)
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
           deployer.deploy(ExchangeAdmins),
           deployer.deploy(ExchangeBlocks),
-          deployer.deploy(ExchangeDeposits),
+          deployer.deploy(ExchangeTokens)
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
+          deployer.link(ExchangeTokens, ExchangeGenesis),
+          deployer.link(ExchangeTokens, ExchangeDeposits),
+          deployer.link(ExchangeTokens, ExchangeWithdrawals)
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
           deployer.deploy(ExchangeGenesis),
+          deployer.deploy(ExchangeDeposits),
           deployer.deploy(ExchangeWithdrawals)
         ]);
       })
@@ -80,14 +106,15 @@ module.exports = function(deployer, network, accounts) {
           deployer.link(ExchangeData, ExchangeV3Deployer),
           deployer.link(ExchangeDeposits, ExchangeV3Deployer),
           deployer.link(ExchangeGenesis, ExchangeV3Deployer),
+          deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeTokens, ExchangeV3Deployer),
           deployer.link(ExchangeWithdrawals, ExchangeV3Deployer)
         ]);
       })
       .then(() => {
         return Promise.all([
-          deployer.deploy(ExchangeV3Deployer),
-          deployer.deploy(BlockVerifier)
+          deployer.deploy(BlockVerifier),
+          deployer.deploy(ExchangeV3Deployer)
         ]);
       })
       .then(() => {
@@ -95,30 +122,9 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.deploy(
-            LoopringV3,
-            accounts[0],
-            LRCToken.address,
-            WETHToken.address,
-            BlockVerifier.address,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
-          )
-        ]);
-      })
-      .then(() => {
-        return Promise.all([deployer.deploy(ProtocolRegistry)]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(UserStakingPool, LRCToken.address)
+          deployer.deploy(UserStakingPool, LRCToken.address),
+          deployer.deploy(LoopringV3),
+          deployer.deploy(ProtocolRegistry)
         ]);
       })
       .then(() => {
@@ -131,7 +137,29 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
+        return Promise.all([
+          deployer.deploy(
+            LoopringV3,
+            ProtocolFeeVault.address, // accounts[0],
+            LRCToken.address,
+            WETHToken.address,
+            BlockVerifier.address,
+            0, // _exchangeCreationCostLRC
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          )
+        ]);
+      })
+      .then(() => {
         console.log("Deployed contracts addresses:");
+        console.log("UserStakingPool:", UserStakingPool.address);
+        console.log("ProtocolFeeVault:", ProtocolFeeVault.address);
         console.log("ProtocolRegistry:", ProtocolRegistry.address);
         console.log("LoopringV3:", LoopringV3.address);
         console.log("BlockVerifier:", BlockVerifier.address);

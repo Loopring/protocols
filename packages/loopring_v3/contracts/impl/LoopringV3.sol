@@ -29,7 +29,7 @@ import "../lib/ReentrancyGuard.sol";
 import "./ExchangeV3Deployer.sol";
 
 
-/// @title An Implementation of ILoopring.
+/// @title LoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
