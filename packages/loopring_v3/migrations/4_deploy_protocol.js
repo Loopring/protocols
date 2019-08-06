@@ -113,19 +113,17 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
+          deployer.deploy(UserStakingPool, LRCToken.address),
           deployer.deploy(BlockVerifier),
-          deployer.deploy(ExchangeV3Deployer)
+          deployer.deploy(ExchangeV3Deployer),
+          deployer.deploy(ProtocolRegistry)
         ]);
       })
       .then(() => {
         return Promise.all([deployer.link(ExchangeV3Deployer, LoopringV3)]);
       })
       .then(() => {
-        return Promise.all([
-          deployer.deploy(UserStakingPool, LRCToken.address),
-          deployer.deploy(LoopringV3),
-          deployer.deploy(ProtocolRegistry)
-        ]);
+        return Promise.all([deployer.deploy(LoopringV3)]);
       })
       .then(() => {
         return Promise.all([
