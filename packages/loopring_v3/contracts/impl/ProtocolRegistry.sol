@@ -127,10 +127,18 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             uint    exchangeId
         )
     {
-        return createExchange(defaultProtocol, supportUpgradability, onchainDataAvailability);
+        return createExchange(
+            msg.sender,
+            msg.sender,
+            defaultProtocol,
+            supportUpgradability,
+            onchainDataAvailability
+        );
     }
 
     function createExchange(
+        address owner,
+        address payable operator,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
@@ -155,8 +163,10 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = loopring.registerExchange(
+        exchangeId = loopring.initializeAndRegisterExchange(
             exchangeAddress,
+            owner,
+            operator,
             onchainDataAvailability
         );
 
