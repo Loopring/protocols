@@ -21,18 +21,19 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry
 {
+    function getDefaultProtocol()
+        external
+        view
+        returns (
+            address loopring,
+            address instance,
+            string  memory version
+        );
 
-    // function getDefaultProtocol()
-    //     external
-    //     view
-    //     returns (
-    //         address loopring,
-    //         address instance,
-    //         string  version
-    //     );
-
-    // function setDefaultProtocol(address protocol)
-    //     external;
+    function setDefaultProtocol(
+        address loopring
+        )
+        external;
 
     function getProtocol(
         address loopring
@@ -52,11 +53,20 @@ contract IProtocolRegistry
         public;
 
     function createExchange(
-        address loopring,
-        address payable _operator,
-        bool    onchainDataAvailability
+        bool onchainDataAvailability
         )
         external
+        returns (
+            address exchangeProxy,
+            uint    exchangeId
+        );
+
+    function createExchange(
+        address loopring,
+        address payable operator,
+        bool    onchainDataAvailability
+        )
+        public
         returns (
             address exchangeProxy,
             uint    exchangeId

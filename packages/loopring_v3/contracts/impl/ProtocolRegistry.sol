@@ -34,8 +34,34 @@ contract ProtocolRegistry is IProtocolRegistry, Claimable
     }
 
     mapping (address => Protocol) private protocols;
+    address private defaultProtocol;
 
     constructor() Claimable() public {}
+
+    function getDefaultProtocol()
+        external
+        view
+        returns (
+            address loopring,
+            address instance,
+            string  memory version
+        )
+    {
+        require(defaultProtocol != address(0), "NO_DEFAULT");
+        loopring = defaultProtocol;
+        (instance, version) = getProtocol(loopring);
+    }
+
+    function setDefaultProtocol(
+        address loopring
+        )
+        external
+        onlyOwner
+    {
+        (address instance, ) = getProtocol(loopring);
+        require(instance != address(0), "INVALID_PROTOCOL");
+        defaultProtocol = loopring;
+    }
 
     function getProtocol(
         address loopring
@@ -67,11 +93,23 @@ contract ProtocolRegistry is IProtocolRegistry, Claimable
     }
 
     function createExchange(
-        address loopring,
-        address payable _operator,
         bool    onchainDataAvailability
         )
         external
+        returns (
+            address exchangeProxy,
+            uint    exchangeId
+        )
+    {
+        return createExchange(defaultProtocol, msg.sender, onchainDataAvailability);
+    }
+
+    function createExchange(
+        address loopring,
+        address payable operator,
+        bool    onchainDataAvailability
+        )
+        public
         returns (
             address exchangeProxy,
             uint    exchangeId
@@ -85,7 +123,7 @@ contract ProtocolRegistry is IProtocolRegistry, Claimable
         exchangeId = ILoopring(loopring).registerExchange(
             exchangeProxy,
             msg.sender,
-            _operator,
+            operator,
             onchainDataAvailability
         );
     }

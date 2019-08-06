@@ -31,7 +31,7 @@ import "./ExchangeDeployer.sol";
 /// @title An Implementation of ILoopring.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is ILoopringV3, Claimable
+contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
