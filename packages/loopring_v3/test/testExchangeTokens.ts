@@ -75,19 +75,19 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const createExchange = async (bSetupTestState: boolean = true) => {
-    // exchangeID = await exchangeTestUtil.createExchange(
-    //   exchangeTestUtil.testContext.stateOwners[0],
-    //   bSetupTestState
-    // );
-    // exchange = exchangeTestUtil.exchange;
+    exchangeID = await exchangeTestUtil.createExchange(
+      exchangeTestUtil.testContext.stateOwners[0],
+      bSetupTestState
+    );
+    exchange = exchangeTestUtil.exchange;
   };
 
   before(async () => {
-    // exchangeTestUtil = new ExchangeTestUtil();
-    // await exchangeTestUtil.initialize(accounts);
-    // exchange = exchangeTestUtil.exchange;
-    // loopring = exchangeTestUtil.loopringV3;
-    // exchangeID = 1;
+    exchangeTestUtil = new ExchangeTestUtil();
+    await exchangeTestUtil.initialize(accounts);
+    exchange = exchangeTestUtil.exchange;
+    loopring = exchangeTestUtil.loopringV3;
+    exchangeID = 1;
   });
 
   describe("Tokens", function() {

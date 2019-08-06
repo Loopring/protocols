@@ -91,7 +91,7 @@ contract IProtocolRegistry
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
-    function forgeExchange(
+    function forgeExchange1(
         bool supportUpgradability,
         bool onchainDataAvailability
         )

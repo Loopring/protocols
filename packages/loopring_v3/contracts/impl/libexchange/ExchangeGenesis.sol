@@ -47,7 +47,7 @@ library ExchangeGenesis
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
 
-        require(S.id != 0, "INITIALIZED_ALREADY");
+        require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
