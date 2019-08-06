@@ -26,7 +26,7 @@ import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
 /// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
-///      should be placed in front of this contract to ensure upgradeability of
+///      should be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
@@ -39,7 +39,6 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 
     mapping (address => address /* protocol */) public proxies;
     mapping (address => Protocol) private protocols;
-    address private defaultProtocol;
 
     constructor() Claimable() public {}
 
@@ -78,10 +77,11 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             string  memory version
         )
     {
+        require(protocol != address(0), "INVALID_PROTOCOL");
         Protocol storage p = protocols[protocol];
         instance = p.instance;
         version = p.version;
-        require(instance != address(0), "INVALID_PROTOCOL");
+        require(instance != address(0), "INVALID_INSTANCE");
     }
 
     function getProtocol()
@@ -97,13 +97,14 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         Protocol storage p = protocols[protocol];
         instance = p.instance;
         version = p.version;
-        require(instance != address(0), "INVALID_PROTOCOL");
+        require(instance != address(0), "INVALID_INSTANCE");
     }
 
     function registerProtocol(
         address protocol,
         string  memory version
         )
+        nonReentrant
         public
     {
         require(protocol != address(0), "ZERO_ADDRESS");
@@ -115,20 +116,9 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         protocols[protocol] = Protocol(instance, version);
     }
 
-    function createExchange(
-        bool    supportUpgradability,
-        bool    onchainDataAvailability
-        )
-        external
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        )
-    {
-        return createExchange(defaultProtocol, supportUpgradability, onchainDataAvailability);
-    }
-
-    function createExchange(
+    function forgeExchange(
+        address owner,
+        address payable operator,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
@@ -142,24 +132,25 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
     {
         getProtocol(protocol); // verifies the input
 
+        ILoopring loopring = ILoopring(protocol);
         if (supportUpgradability) {
-            ExchangeProxy proxy = new ExchangeProxy(address(this));
-            exchangeAddress = address(proxy);
-
+            // Deploy an exchange proxy
+            exchangeAddress = address(new ExchangeProxy(address(this)));
             assert(proxies[exchangeAddress] == address(0));
             proxies[exchangeAddress] = protocol;
         } else {
             // Deploy a native exchange
-            ILoopring loopring = ILoopring(protocol);
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = ILoopring(protocol).registerExchange(
+        exchangeId = loopring.registerExchange(
             exchangeAddress,
+            owner,
+            operator,
             onchainDataAvailability
         );
 
-        emit ExchangeCreated(
+        emit ExchangeForged(
             protocol,
             exchangeAddress,
             msg.sender,

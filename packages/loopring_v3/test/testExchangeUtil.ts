@@ -77,6 +77,7 @@ export class ExchangeTestUtil {
   public offchainWithdrawalBlockSizes = [4, 8];
   public orderCancellationBlockSizes = [4, 8];
 
+  public protocolRegistry: any;
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
@@ -155,7 +156,14 @@ export class ExchangeTestUtil {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
 
-    // Initialize Loopring
+    // Register LoopringV3 to ProtocolRegistry
+    await this.protocolRegistry.registerProtocol(
+      this.loopringV3.address,
+      "3.0"
+    );
+    await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address);
+
+    // Initialize LoopringV3
     await this.loopringV3.updateSettings(
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
@@ -219,6 +227,7 @@ export class ExchangeTestUtil {
       this.testContext.deployer,
       true,
       this.onchainDataAvailability,
+      true,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
@@ -2487,6 +2496,7 @@ export class ExchangeTestUtil {
     owner: string,
     bSetupTestState: boolean = true,
     onchainDataAvailability: boolean = true,
+    supportUpgradability: boolean = true,
     accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
@@ -2505,8 +2515,11 @@ export class ExchangeTestUtil {
     });
 
     // Create the new exchange
-    const tx = await this.loopringV3.createExchange(
+    const tx = await this.protocolRegistry.forgeExchange(
+      owner,
       operator,
+      this.loopringV3.address,
+      supportUpgradability,
       onchainDataAvailability,
       { from: owner }
     );
@@ -3636,14 +3649,16 @@ export class ExchangeTestUtil {
   // private functions:
   private async createContractContext() {
     const [
+      protocolRegistry,
       loopringV3,
       exchangeDeployer,
       blockVerifier,
       lrcToken,
       wethToken
     ] = await Promise.all([
+      this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeDeployer.deployed(),
+      this.contracts.ExchangeV3Deployer.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
@@ -3659,6 +3674,7 @@ export class ExchangeTestUtil {
 
     this.lzDecompressor = await this.contracts.LzDecompressor.new();
 
+    this.protocolRegistry = protocolRegistry;
     this.loopringV3 = loopringV3;
     this.exchangeDeployer = exchangeDeployer;
     this.blockVerifier = blockVerifier;
