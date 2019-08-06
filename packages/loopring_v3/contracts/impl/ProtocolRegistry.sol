@@ -113,9 +113,8 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         ILoopring loopring = ILoopring(protocol);
         address instance = loopring.deployExchange();
 
-        // Initialize the instance in a way that it's onwed by the
-        // protocol address itself. This is to prevent the default instance is
-        // used by any entity.
+        // Initialize the instance in a way that it's onwed by the protocol address itself.
+        // This is to prevent the default instance from being used by any entity.
         address payable owner = address(uint160(protocol));
         uint id = loopring.registerExchange(instance, owner, owner, false);
         require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
