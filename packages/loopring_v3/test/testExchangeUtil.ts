@@ -226,8 +226,8 @@ export class ExchangeTestUtil {
     await this.createExchange(
       this.testContext.deployer,
       true,
-      true,
       this.onchainDataAvailability,
+      true,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
