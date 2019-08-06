@@ -1,1 +1,0 @@
-[{"constant":false,"inputs":[{"name":"exchangeAddress","type":"address"},{"name":"onchainDataAvailability","type":"bool"}],"name":"registerExchange","outputs":[{"name":"exchangeId","type":"uint256"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]
