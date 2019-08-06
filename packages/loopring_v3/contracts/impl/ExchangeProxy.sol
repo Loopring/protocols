@@ -30,24 +30,19 @@ contract ExchangeProxy is Proxy
     bytes32 private constant registryPosition = keccak256("org.loopring.protocol.exchange.proxy.registry");
     bytes32 private constant loopringPosition = keccak256("org.loopring.protocol.exchange.proxy.loopring");
 
-    constructor(
-        address _registry,
-        address _loopring
-        )
+    constructor(address _registry)
         public
     {
         bytes32 position = registryPosition;
         assembly {
           sstore(position, _registry)
         }
-
-        position = loopringPosition;
-        assembly {
-          sstore(position, _loopring)
-        }
     }
 
-    function registry() public view returns (address _addr)
+    function registry()
+        public
+        view
+        returns (address _addr)
     {
         bytes32 position = registryPosition;
         assembly {
@@ -55,12 +50,12 @@ contract ExchangeProxy is Proxy
         }
     }
 
-    function loopring() public view returns (address _addr)
+    function protocol()
+        public
+        view
+        returns (address _addr)
     {
-        bytes32 position = loopringPosition;
-        assembly {
-          _addr := sload(position)
-        }
+        (_addr, ,) = IProtocolRegistry(registry()).getProtocol();
     }
 
     function implementation()
@@ -68,7 +63,7 @@ contract ExchangeProxy is Proxy
         view
         returns (address _addr)
     {
-        (_addr,) = IProtocolRegistry(registry()).getProtocol(loopring());
+        (, _addr,) = IProtocolRegistry(registry()).getProtocol();
     }
 
     function version()
@@ -76,6 +71,6 @@ contract ExchangeProxy is Proxy
         view
         returns (string memory _ver)
     {
-        (, _ver) = IProtocolRegistry(registry()).getProtocol(loopring());
+        (, , _ver) = IProtocolRegistry(registry()).getProtocol();
     }
 }

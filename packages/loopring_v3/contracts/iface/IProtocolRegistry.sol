@@ -36,22 +36,22 @@ contract IProtocolRegistry
         external
         view
         returns (
-            address loopring,
+            address protocol,
             address instance,
             string  memory version
         );
 
     function setDefaultProtocol(
-        address loopring
+        address protocol
         )
         external;
 
     /// @dev Returns information regarding a protocol.
-    /// @param loopring The protocol address.
+    /// @return protocol The protocol address.
     /// @return instance The protocol's default instance.
     /// @return version The protocol's version number.
     function getProtocol(
-        address loopring
+        address protocol
         )
         public
         view
@@ -60,12 +60,25 @@ contract IProtocolRegistry
             string memory version
         );
 
+    /// @dev Returns the protocol assgined to msg.sender.
+    /// @return protocol The protocol address.
+    /// @return instance The protocol's default instance.
+    /// @return version The protocol's version number.
+    function getProtocol()
+        external
+        view
+        returns (
+            address protocol,
+            address instance,
+            string  memory version
+        );
+
     /// @dev Register a new protocol
-    /// @param loopring The protocol address.
+    /// @param protocol The protocol address.
     /// @param instance The protocol's default instance.
     /// @param version The protocol's version number.
     function registerProtocol(
-        address loopring,
+        address protocol,
         address instance,
         string  memory version
         )
@@ -88,12 +101,12 @@ contract IProtocolRegistry
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
-    /// @param loopring The protocol's address.
+    /// @param protocol The protocol's address.
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @return exchangeProxy The new exchange's proxy address.
     /// @return exchangeId The new exchange's ID.
     function createExchange(
-        address loopring,
+        address protocol,
         address payable operator,
         bool    onchainDataAvailability
         )

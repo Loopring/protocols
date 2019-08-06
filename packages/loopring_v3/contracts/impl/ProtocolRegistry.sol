@@ -37,6 +37,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
        string  version;
     }
 
+    mapping (address => address /* protocol */) public proxies;
     mapping (address => Protocol) private protocols;
     address private defaultProtocol;
 
@@ -46,29 +47,29 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         external
         view
         returns (
-            address loopring,
+            address protocol,
             address instance,
             string  memory version
         )
     {
         require(defaultProtocol != address(0), "NO_DEFAULT");
-        loopring = defaultProtocol;
-        (instance, version) = getProtocol(loopring);
+        protocol = defaultProtocol;
+        (instance, version) = getProtocol(protocol);
     }
 
     function setDefaultProtocol(
-        address loopring
+        address protocol
         )
         external
         onlyOwner
     {
-        (address instance, ) = getProtocol(loopring);
+        (address instance, ) = getProtocol(protocol);
         require(instance != address(0), "INVALID_PROTOCOL");
-        defaultProtocol = loopring;
+        defaultProtocol = protocol;
     }
 
     function getProtocol(
-        address loopring
+        address protocol
         )
         public
         view
@@ -77,23 +78,39 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             string  memory version
         )
     {
-        Protocol storage protocol = protocols[loopring];
-        instance = protocol.instance;
-        version = protocol.version;
+        Protocol storage p = protocols[protocol];
+        instance = p.instance;
+        version = p.version;
+        require(instance != address(0), "INVALID_PROTOCOL");
+    }
+
+    function getProtocol()
+        external
+        view
+        returns (
+            address protocol,
+            address instance,
+            string  memory version
+        )
+    {
+        protocol = proxies[msg.sender];
+        Protocol storage p = protocols[protocol];
+        instance = p.instance;
+        version = p.version;
         require(instance != address(0), "INVALID_PROTOCOL");
     }
 
     function registerProtocol(
-        address loopring,
+        address protocol,
         address instance,
         string  memory version
         )
         public
     {
-        require(loopring != address(0), "ZERO_ADDRESS");
+        require(protocol != address(0), "ZERO_ADDRESS");
         require(instance != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
-        protocols[loopring] = Protocol(instance, version);
+        protocols[protocol] = Protocol(instance, version);
     }
 
     function createExchange(
@@ -109,7 +126,7 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
     }
 
     function createExchange(
-        address loopring,
+        address protocol,
         bool    onchainDataAvailability
         )
         public
@@ -119,18 +136,19 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             uint    exchangeId
         )
     {
-        getProtocol(loopring); // verifies the input
+        getProtocol(protocol); // verifies the input
 
-        ExchangeProxy proxy = new ExchangeProxy(address(this), loopring);
+        ExchangeProxy proxy = new ExchangeProxy(address(this));
         exchangeProxy = address(proxy);
+        proxies[exchangeProxy] = protocol;
 
-        exchangeId = ILoopring(loopring).registerExchange(
+        exchangeId = ILoopring(protocol).registerExchange(
             exchangeProxy,
             onchainDataAvailability
         );
 
         emit ExchangeCreated(
-            loopring,
+            protocol,
             exchangeProxy,
             msg.sender,
             exchangeId
