@@ -19,15 +19,16 @@ pragma solidity 0.5.10;
 import "../iface/IUserStakingPool.sol";
 import "../iface/IProtocolFeeVault.sol";
 
-import "..//lib/Claimable.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract UserStakingPool is IUserStakingPool, Claimable
+contract UserStakingPool is IUserStakingPool, ReentrancyGuard, Claimable
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -42,9 +43,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
     Staking private total;
     mapping (address => Staking) private stakings;
 
-    constructor(
-        address _lrcAddress
-        )
+    constructor(address _lrcAddress)
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
@@ -87,6 +86,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function stake(uint amount)
         external
+        nonReentrant
     {
         require(amount > 0, "ZERO_VALUE");
 
@@ -110,6 +110,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function withdraw(uint amount)
         external
+        nonReentrant
     {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
@@ -144,6 +145,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function claim()
         public
+        nonReentrant
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");

@@ -36,7 +36,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, Claimable, ReentrancyGuard
+contract Exchange is IExchange, ReentrancyGuard, Claimable
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
@@ -71,6 +71,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         bool    _onchainDataAvailability
         )
         external
+        nonReentrant
         onlyWhenUninitialized
     {
         require(address(0) != _owner, "ZERO_ADDRESS");

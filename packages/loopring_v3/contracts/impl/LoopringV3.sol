@@ -19,13 +19,12 @@ pragma solidity 0.5.10;
 import "../iface/ILoopringV3.sol";
 import "../iface/IExchange.sol";
 
+import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
 import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
-
-import "./ExchangeDeployer.sol";
 
 
 /// @title An Implementation of ILoopring.
@@ -226,6 +225,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint amount
         )
         public
+        nonReentrant
         returns (uint burnedLRC)
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
@@ -241,7 +241,9 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
                 BurnableERC20(lrcAddress).burn(burnedLRC),
                 "BURN_FAILURE"
             );
-            exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1].exchangeStake.sub(burnedLRC);
+            exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1]
+                .exchangeStake.sub(burnedLRC);
+
             totalStake = totalStake.sub(burnedLRC);
         }
         emit ExchangeStakeBurned(exchangeId, burnedLRC);
@@ -252,6 +254,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint amountLRC
         )
         external
+        nonReentrant
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
@@ -275,6 +278,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint    requestedAmount
         )
         public
+        nonReentrant
         returns (uint amount)
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
@@ -315,6 +319,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint amountLRC
         )
         external
+        nonReentrant
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
@@ -338,6 +343,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
         uint    amount
         )
         external
+        nonReentrant
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
@@ -390,11 +396,6 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             minProtocolMakerFeeBips, maxProtocolMakerFeeBips, protocolFeeStake, targetProtocolMakerFeeStake
         );
     }
-
-    function()
-        external
-        payable
-    {}
 
     // == Internal Functions ==
     function updateSettingsInternal(

@@ -24,12 +24,12 @@ import "../lib/BurnableERC20.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
 contract IOedax
 {
-
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token.
     /// @param minAskAmount The minimum ask amount.
@@ -71,7 +71,7 @@ contract IAuction
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ProtocolFeeVault is IProtocolFeeVault, Claimable
+contract ProtocolFeeVault is IProtocolFeeVault, ReentrancyGuard, Claimable
 {
     uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using AddressUtil       for address;
