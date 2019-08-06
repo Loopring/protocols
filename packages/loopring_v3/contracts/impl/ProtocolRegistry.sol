@@ -25,7 +25,7 @@ import "../iface/IProtocolRegistry.sol";
 import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
-/// @dev After the deployment of this contract, an OwnedUpgradeabilityProxy
+/// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
 ///      should be placed in front of this contract to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -102,56 +102,66 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
 
     function registerProtocol(
         address protocol,
-        address instance,
         string  memory version
         )
         public
     {
         require(protocol != address(0), "ZERO_ADDRESS");
-        require(instance != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
+
+        ILoopring loopring = ILoopring(protocol);
+        address instance = loopring.deployExchange();
+
         protocols[protocol] = Protocol(instance, version);
     }
 
     function createExchange(
+        bool    supportUpgradability,
         bool    onchainDataAvailability
         )
         external
         returns (
-            address exchangeProxy,
+            address exchangeAddress,
             uint    exchangeId
         )
     {
-        return createExchange(defaultProtocol, msg.sender, onchainDataAvailability);
+        return createExchange(defaultProtocol, supportUpgradability, onchainDataAvailability);
     }
 
     function createExchange(
         address protocol,
+        bool    supportUpgradability,
         bool    onchainDataAvailability
         )
         public
         nonReentrant
         returns (
-            address exchangeProxy,
+            address exchangeAddress,
             uint    exchangeId
         )
     {
         getProtocol(protocol); // verifies the input
 
-        ExchangeProxy proxy = new ExchangeProxy(address(this));
-        exchangeProxy = address(proxy);
+        if (supportUpgradability) {
+            ExchangeProxy proxy = new ExchangeProxy(address(this));
+            exchangeAddress = address(proxy);
 
-        assert(proxies[exchangeProxy] == address(0))
-        proxies[exchangeProxy] = protocol;
+            assert(proxies[exchangeAddress] == address(0));
+            proxies[exchangeAddress] = protocol;
+        } else {
+            // Deploy a native exchange
+            ILoopring loopring = ILoopring(protocol);
+            exchangeAddress = loopring.deployExchange();
+        }
 
         exchangeId = ILoopring(protocol).registerExchange(
-            exchangeProxy,
+            exchangeAddress,
             onchainDataAvailability
         );
 
         emit ExchangeCreated(
             protocol,
-            exchangeProxy,
+            exchangeAddress,
             msg.sender,
             exchangeId
         );

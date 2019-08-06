@@ -23,7 +23,7 @@ contract IProtocolRegistry
 {
     event ExchangeCreated (
         address loopring,
-        address exchangeProxy,
+        address exchangeAddress,
         address owner,
         uint    exchangeId
     );
@@ -75,43 +75,46 @@ contract IProtocolRegistry
 
     /// @dev Register a new protocol
     /// @param protocol The protocol address.
-    /// @param instance The protocol's default instance.
     /// @param version The protocol's version number.
     function registerProtocol(
         address protocol,
-        address instance,
         string  memory version
         )
         public;
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.
+    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    ///        in front of the native exchange contract to support upgradability.
     /// @param onchainDataAvailability If the on-chain DA is on
-    /// @return exchangeProxy The new exchange's proxy address.
+    /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
     function createExchange(
+        bool supportUpgradability,
         bool onchainDataAvailability
         )
         external
         returns (
-            address exchangeProxy,
+            address exchangeAddress,
             uint    exchangeId
         );
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param protocol The protocol's address.
+    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    ///        in front of the native exchange contract to support upgradability.
     /// @param onchainDataAvailability IF the on-chain DA is on
-    /// @return exchangeProxy The new exchange's proxy address.
+    /// @return exchangeAddress The new exchange's address.
     /// @return exchangeId The new exchange's ID.
     function createExchange(
         address protocol,
-        address payable operator,
+        bool    supportUpgradability,
         bool    onchainDataAvailability
         )
         public
         returns (
-            address exchangeProxy,
+            address exchangeAddress,
             uint    exchangeId
         );
 }

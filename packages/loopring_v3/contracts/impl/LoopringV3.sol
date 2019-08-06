@@ -17,7 +17,7 @@
 pragma solidity 0.5.10;
 
 import "../iface/ILoopringV3.sol";
-import "../iface/IExchangeV3.sol";
+import "../iface/IExchange.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
@@ -25,6 +25,8 @@ import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
+
+import "./ExchangeV3Deployer.sol";
 
 
 /// @title An Implementation of ILoopring.
@@ -74,6 +76,13 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             _revertFineLRC,
             _withdrawalFineLRC
         );
+    }
+
+    function deployExchange()
+        external
+        returns (address)
+    {
+        return ExchangeV3Deployer.deploy();
     }
 
     // == Public Functions ==
@@ -157,7 +166,7 @@ contract LoopringV3 is ILoopringV3, ReentrancyGuard, Claimable
             );
         }
 
-        IExchangeV3 exchange = IExchangeV3(exchangeAddress);
+        IExchange exchange = IExchange(exchangeAddress);
         exchangeId = exchanges.length + 1;
 
         // If the exchange has already been initlaized, the following function will fail.
