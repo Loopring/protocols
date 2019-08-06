@@ -135,7 +135,7 @@ contract IExchange
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
-    ///         exchange. Note that this value can not be changed once the exchange is created.
+    ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address payable loopringAddress,
         uint    exchangeId,
