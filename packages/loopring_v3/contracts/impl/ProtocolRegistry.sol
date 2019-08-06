@@ -78,10 +78,11 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
             string  memory version
         )
     {
+        require(protocol != address(0), "INVALID_PROTOCOL");
         Protocol storage p = protocols[protocol];
         instance = p.instance;
         version = p.version;
-        require(instance != address(0), "INVALID_PROTOCOL");
+        require(instance != address(0), "INVALID_INSTANCE");
     }
 
     function getProtocol()
@@ -97,13 +98,14 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
         Protocol storage p = protocols[protocol];
         instance = p.instance;
         version = p.version;
-        require(instance != address(0), "INVALID_PROTOCOL");
+        require(instance != address(0), "INVALID_INSTANCE");
     }
 
     function registerProtocol(
         address protocol,
         string  memory version
         )
+        nonReentrant
         public
     {
         require(protocol != address(0), "ZERO_ADDRESS");
@@ -116,8 +118,8 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
     }
 
     function createExchange(
-        bool    supportUpgradability,
-        bool    onchainDataAvailability
+        bool supportUpgradability,
+        bool onchainDataAvailability
         )
         external
         returns (
@@ -142,19 +144,18 @@ contract ProtocolRegistry is IProtocolRegistry, ReentrancyGuard, Claimable
     {
         getProtocol(protocol); // verifies the input
 
+        ILoopring loopring = ILoopring(protocol);
         if (supportUpgradability) {
-            ExchangeProxy proxy = new ExchangeProxy(address(this));
-            exchangeAddress = address(proxy);
-
+            // Deploy an exchange proxy
+            exchangeAddress = address(new ExchangeProxy(address(this)));
             assert(proxies[exchangeAddress] == address(0));
             proxies[exchangeAddress] = protocol;
         } else {
             // Deploy a native exchange
-            ILoopring loopring = ILoopring(protocol);
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = ILoopring(protocol).registerExchange(
+        exchangeId = loopring.registerExchange(
             exchangeAddress,
             onchainDataAvailability
         );
