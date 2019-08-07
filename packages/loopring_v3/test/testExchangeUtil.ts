@@ -196,6 +196,9 @@ export class ExchangeTestUtil {
       { from: this.testContext.deployer }
     );
 
+    this.protocolFeeVaultAddress = this.testContext.deployer;
+    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress);
+
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
       this.pendingRings.push(rings);
