@@ -59,8 +59,6 @@ contract Exchange is IExchange
         _;
     }
 
-    constructor() public {}
-
     // -- Default function --
     function() external payable
     {

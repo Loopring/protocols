@@ -2536,8 +2536,6 @@ export class ExchangeTestUtil {
     });
     const exchangeAddress = items[0][0];
     const exchangeID = items[0][1].toNumber();
-    logInfo("=====> addr", exchangeAddress);
-    logInfo("=====> id", exchangeID);
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
     this.exchangeOwner = owner;
@@ -2545,40 +2543,39 @@ export class ExchangeTestUtil {
     this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    // TODO(daniel): this op has an reentry!!!
     await this.exchange.setOperator(this.exchangeOperator, {
       from: this.exchangeOwner
     });
 
-    // await this.exchange.setFees(
-    //   accountCreationFeeInETH,
-    //   accountUpdateFeeInETH,
-    //   depositFeeInETH,
-    //   withdrawalFeeInETH,
-    //   { from: this.exchangeOwner }
-    // );
+    await this.exchange.setFees(
+      accountCreationFeeInETH,
+      accountUpdateFeeInETH,
+      depositFeeInETH,
+      withdrawalFeeInETH,
+      { from: this.exchangeOwner }
+    );
 
-    // if (bSetupTestState) {
-    //   await this.registerTokens();
-    //   await this.setupTestState(exchangeID);
-    // }
+    if (bSetupTestState) {
+      await this.registerTokens();
+      await this.setupTestState(exchangeID);
+    }
 
-    // // Deposit some LRC to stake for the exchange
-    // const depositer = this.testContext.operators[2];
-    // const stakeAmount = onchainDataAvailability
-    //   ? await this.loopringV3.minExchangeStakeWithDataAvailability()
-    //   : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
-    // await this.setBalanceAndApprove(
-    //   depositer,
-    //   "LRC",
-    //   stakeAmount,
-    //   this.loopringV3.address
-    // );
+    // Deposit some LRC to stake for the exchange
+    const depositer = this.testContext.operators[2];
+    const stakeAmount = onchainDataAvailability
+      ? await this.loopringV3.minExchangeStakeWithDataAvailability()
+      : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
+    await this.setBalanceAndApprove(
+      depositer,
+      "LRC",
+      stakeAmount,
+      this.loopringV3.address
+    );
 
-    // // Stake it
-    // await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
-    //   from: depositer
-    // });
+    // Stake it
+    await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
+      from: depositer
+    });
 
     return exchangeID;
   }
