@@ -55,7 +55,7 @@ contract Exchange is IExchange
 
     modifier onlyWhenUninitialized()
     {
-        require(state.id == 0, "INITIALIZED");
+        require(owner == address(0) && state.id == 0, "INITIALIZED");
         _;
     }
 
@@ -80,7 +80,6 @@ contract Exchange is IExchange
         // nonReentrant
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
-        owner = _owner;
 
         state.initializeGenesisBlock(
             _id,

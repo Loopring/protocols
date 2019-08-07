@@ -28,6 +28,7 @@ import "./ExchangeV3Deployer.sol";
 
 
 /// @title LoopringV3
+/// @dev This contract does NOT support proxy.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3
@@ -63,12 +64,12 @@ contract LoopringV3 is ILoopringV3
     function deployExchange()
         external
         // nonReentrant
-        returns (address exchangeAddress)
+        returns (address)
     {
-        exchangeAddress = ExchangeV3Deployer.deploy();
+        return ExchangeV3Deployer.deploy();
     }
 
-    function registerExchange(
+    function initializeExchange(
         address exchangeAddress,
         address owner,
         address payable operator,

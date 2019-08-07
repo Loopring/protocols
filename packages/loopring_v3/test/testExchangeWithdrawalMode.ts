@@ -113,33 +113,33 @@ contract("Exchange", (accounts: string[]) => {
 
     it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
       await createExchange(true);
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      // await exchangeTestUtil.commitDeposits(exchangeID);
+      // await exchangeTestUtil.verifyPendingBlocks(exchangeID);
       // Do a deposit
-      const deposit = await exchangeTestUtil.doRandomDeposit();
+      // const deposit = await exchangeTestUtil.doRandomDeposit();
       // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
-      );
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Do an on-chain withdrawal
-      await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
-      );
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(20);
-      // We should be in withdrawal mode
-      await checkWithdrawalMode(true);
+      // await checkWithdrawalMode(false);
+      // // Commit the deposits
+      // await exchangeTestUtil.commitDeposits(exchangeID);
+      // await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      // // Wait
+      // await exchangeTestUtil.advanceBlockTimestamp(
+      //   exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
+      // );
+      // // We shouldn't be in withdrawal mode yet
+      // await checkWithdrawalMode(false);
+      // // Do an on-chain withdrawal
+      // await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
+      // // Wait
+      // await exchangeTestUtil.advanceBlockTimestamp(
+      //   exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
+      // );
+      // // We shouldn't be in withdrawal mode yet
+      // await checkWithdrawalMode(false);
+      // // Wait
+      // await exchangeTestUtil.advanceBlockTimestamp(20);
+      // // We should be in withdrawal mode
+      // await checkWithdrawalMode(true);
     });
 
     // it("should go into withdrawal mode when a block stays unverified (and is not reverted)", async () => {

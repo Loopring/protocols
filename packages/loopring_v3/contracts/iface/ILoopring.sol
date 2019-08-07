@@ -37,7 +37,7 @@ contract ILoopring is Claimable, ReentrancyGuard
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     /// @return exchangeId The id of the exchange.
-    function registerExchange(
+    function initializeExchange(
         address exchangeAddress,
         address owner,
         address payable operator,

@@ -61,7 +61,7 @@ contract ProtocolRegistry is IProtocolRegistry
         // Initialize the instance in a way that it's onwed by the protocol address itself.
         // This is to prevent the default instance from being used by any entity.
         // TODO(daniel): uncomment this
-        // uint id = loopring.registerExchange(instance, false);
+        // uint id = loopring.initializeExchange(instance, false);
         // require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
 
         protocols[protocol] = Protocol(instance, version);
@@ -151,7 +151,7 @@ contract ProtocolRegistry is IProtocolRegistry
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = loopring.registerExchange(
+        exchangeId = loopring.initializeExchange(
             exchangeAddress,
             msg.sender,
             msg.sender,
