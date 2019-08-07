@@ -75,8 +75,8 @@ contract Exchange is IExchange
     // -- Initialization --
     function initialize(
         address _loopringAddress,
-        uint    _id,
         address _owner,
+        uint    _id,
         address payable _operator,
         bool    _onchainDataAvailability
         )

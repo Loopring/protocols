@@ -2515,6 +2515,7 @@ export class ExchangeTestUtil {
     depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether"))
   ) {
+    const operator = this.testContext.operators[0];
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
 
     // Send enough tokens to the owner so the Exchange can be created
@@ -2532,6 +2533,7 @@ export class ExchangeTestUtil {
       onchainDataAvailability,
       { from: owner }
     );
+
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[CreateExchange] Gas used: " + tx.receipt.gasUsed
@@ -2550,14 +2552,13 @@ export class ExchangeTestUtil {
     const exchangeID = items[0][1].toNumber();
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+
+    await this.exchange.setOperator(operator, { from: owner });
+
     this.exchangeOwner = owner;
-    this.exchangeOperator = this.testContext.operators[0];
+    this.exchangeOperator = operator;
     this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
-
-    await this.exchange.setOperator(this.exchangeOperator, {
-      from: this.exchangeOwner
-    });
 
     await this.exchange.setFees(
       accountCreationFeeInETH,

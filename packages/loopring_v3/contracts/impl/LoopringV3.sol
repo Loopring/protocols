@@ -97,8 +97,8 @@ contract LoopringV3 is ILoopringV3
         // If the exchange has already been initlaized, the following function will fail.
         exchange.initialize(
             address(this),
-            exchangeId,
             owner,
+            exchangeId,
             operator,
             onchainDataAvailability
         );

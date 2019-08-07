@@ -156,8 +156,8 @@ contract ProtocolRegistry is IProtocolRegistry
 
         exchangeId = loopring.initializeExchange(
             exchangeAddress,
-            msg.sender,
-            msg.sender,
+            msg.sender,  // owner
+            msg.sender,  // operator
             onchainDataAvailability
         );
 
