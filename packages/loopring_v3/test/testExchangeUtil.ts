@@ -2493,7 +2493,6 @@ export class ExchangeTestUtil {
     return this.accounts[this.exchangeId][accountId];
   }
 
-  // TODO(daniel)
   public async createExchange(
     owner: string,
     bSetupTestState: boolean = true,
@@ -2521,11 +2520,14 @@ export class ExchangeTestUtil {
       onchainDataAvailability,
       { from: owner }
     );
-    // logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+    logInfo(
+      "\x1b[46m%s\x1b[0m",
+      "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    );
 
     const eventArr: any = await this.getEventsFromContract(
-      this.loopringV3,
-      "ExchangeCreated",
+      this.protocolRegistry,
+      "ExchangeForged",
       web3.eth.blockNumber
     );
 
@@ -2534,8 +2536,6 @@ export class ExchangeTestUtil {
     });
     const exchangeAddress = items[0][0];
     const exchangeID = items[0][1].toNumber();
-    logInfo("=====> addr", exchangeAddress);
-    logInfo("=====> id", exchangeID);
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
     this.exchangeOwner = owner;
@@ -2543,7 +2543,7 @@ export class ExchangeTestUtil {
     this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    await this.exchange.setOperator(this.exchangeOwner, {
+    await this.exchange.setOperator(this.exchangeOperator, {
       from: this.exchangeOwner
     });
 
