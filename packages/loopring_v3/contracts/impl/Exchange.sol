@@ -64,6 +64,14 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
 
     constructor() public {}
 
+    // -- Default function --
+    function() external payable
+    {
+        uint96 amount = uint96(msg.value);
+        require(uint(amount) == msg.value, "TOO_LARGE");
+        state.depositTo(msg.sender, address(0), amount, 0);
+    }
+
     // -- Initialization --
     function initialize(
         address _loopringAddress,
@@ -528,12 +536,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         payable
         nonReentrant
     {
-        state.depositTo(
-            msg.sender,
-            token,
-            amount,
-            0
-        );
+        state.depositTo(msg.sender, token, amount, 0);
     }
 
     function depositTo(
@@ -545,12 +548,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         payable
         nonReentrant
     {
-        state.depositTo(
-            recipient,
-            tokenAddress,
-            amount,
-            0
-        );
+        state.depositTo(recipient, tokenAddress, amount, 0);
     }
 
     // -- Withdrawals --
@@ -891,11 +889,6 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         } else if (isAccountUpdated) {
             additionalFeeETH = state.accountUpdateFeeETH;
         }
-        state.depositTo(
-            msg.sender,
-            token,
-            amount,
-            additionalFeeETH
-        );
+        state.depositTo(msg.sender, token, amount, additionalFeeETH);
     }
 }

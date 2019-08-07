@@ -42,6 +42,11 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
 
     constructor() Claimable() public {}
 
+    function() external payable
+    {
+        forgeExchange(true, true);
+    }
+
     function registerProtocol(
         address protocol,
         string  memory version

@@ -95,7 +95,7 @@ contract IProtocolRegistry
         bool supportUpgradability,
         bool onchainDataAvailability
         )
-        external
+        public
         returns (
             address exchangeAddress,
             uint    exchangeId
