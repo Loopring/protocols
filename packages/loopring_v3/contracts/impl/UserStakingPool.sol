@@ -54,7 +54,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     function setProtocolFeeVault(address _protocolFeeVaultAddress)
         external
         onlyOwner
-        nonReentrant
+        // nonReentrant
     {
         require(_protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
         protocolFeeVaultAddress = _protocolFeeVaultAddress;
@@ -86,7 +86,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function stake(uint amount)
         external
-        nonReentrant
+        // nonReentrant
     {
         require(amount > 0, "ZERO_VALUE");
 
@@ -110,7 +110,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function withdraw(uint amount)
         external
-        nonReentrant
+        // nonReentrant
     {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
@@ -145,7 +145,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function claim()
         public
-        nonReentrant
+        // nonReentrant
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");

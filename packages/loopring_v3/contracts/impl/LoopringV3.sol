@@ -63,7 +63,7 @@ contract LoopringV3 is ILoopringV3
     // === ILoopring methods ===
     function deployExchange()
         external
-        nonReentrant
+        // nonReentrant
         returns (address exchangeAddress)
     {
         exchangeAddress = ExchangeV3Deployer.deploy();
@@ -76,7 +76,7 @@ contract LoopringV3 is ILoopringV3
         bool    onchainDataAvailability
         )
         external
-        nonReentrant
+        // nonReentrant
         returns (uint exchangeId)
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
@@ -202,7 +202,7 @@ contract LoopringV3 is ILoopringV3
         uint amount
         )
         public
-        nonReentrant
+        // nonReentrant
         returns (uint burnedLRC)
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
@@ -231,7 +231,7 @@ contract LoopringV3 is ILoopringV3
         uint amountLRC
         )
         external
-        nonReentrant
+        // nonReentrant
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
@@ -255,7 +255,7 @@ contract LoopringV3 is ILoopringV3
         uint    requestedAmount
         )
         public
-        nonReentrant
+        // nonReentrant
         returns (uint amount)
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
@@ -279,7 +279,7 @@ contract LoopringV3 is ILoopringV3
         uint amountLRC
         )
         external
-        nonReentrant
+        // nonReentrant
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
@@ -303,7 +303,7 @@ contract LoopringV3 is ILoopringV3
         uint    amount
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         address exchangeAddress = getExchangeAddress(exchangeId);
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
