@@ -16,20 +16,18 @@
 */
 pragma solidity 0.5.10;
 
-import "../lib/Claimable.sol";
-import "../lib/ReentrancyGuard.sol";
-
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
 import "./ExchangeProxy.sol";
+
 
 /// @title An Implementation of IProtocolRegistry.
 /// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
 ///      should be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
+contract ProtocolRegistry is IProtocolRegistry
 {
     struct Protocol
     {
@@ -51,8 +49,8 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
         address protocol,
         string  memory version
         )
-        nonReentrant
         public
+        nonReentrant
     {
         require(protocol != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
@@ -134,7 +132,7 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
         bool    onchainDataAvailability
         )
         public
-        // nonReentrant
+        nonReentrant
         returns (
             address exchangeAddress,
             uint    exchangeId

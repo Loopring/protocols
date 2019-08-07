@@ -16,11 +16,14 @@
 */
 pragma solidity 0.5.10;
 
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
+
 
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchange
+contract IExchange is Claimable, ReentrancyGuard
 {
     // -- Events --
     // We need to make sure all events defined in exchange/*.sol

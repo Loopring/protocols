@@ -16,10 +16,13 @@
 */
 pragma solidity 0.5.10;
 
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
+
 
 /// @title IProtocalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IProtocolRegistry
+contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
     address public defaultProtocol;
 

@@ -16,9 +16,12 @@
 */
 pragma solidity 0.5.10;
 
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
+
 /// @title ILoopring
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopring
+contract ILoopring is Claimable, ReentrancyGuard
 {
     /// @dev Deploy an new exchange instance without initialization.
     /// @return exchangeAddress The address of the new exchange.

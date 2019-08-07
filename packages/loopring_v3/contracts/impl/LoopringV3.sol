@@ -21,10 +21,9 @@ import "../iface/IExchange.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
-import "../lib/Claimable.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
-import "../lib/ReentrancyGuard.sol";
+
 
 import "./ExchangeV3Deployer.sol";
 
@@ -32,7 +31,7 @@ import "./ExchangeV3Deployer.sol";
 /// @title LoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
+contract LoopringV3 is ILoopringV3
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
@@ -77,7 +76,7 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         bool    onchainDataAvailability
         )
         external
-        // nonReentrant
+        nonReentrant
         returns (uint exchangeId)
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
