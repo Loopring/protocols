@@ -83,7 +83,6 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
-  public protocolFeeVaultAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -162,8 +161,10 @@ export class ExchangeTestUtil {
     this.testContext = await this.createExchangeTestContext(accounts);
 
     // Initialize LoopringV3
+    this.protocolFeeVault = this.testContext.deployer;
+
     await this.loopringV3.updateSettings(
-      this.protocolFeeVault.address,
+      this.protocolFeeVault,
       this.blockVerifier.address,
       new BN(web3.utils.toWei("1000", "ether")),
       new BN(web3.utils.toWei("0.02", "ether")),
@@ -196,9 +197,6 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("10000000", "ether")),
       { from: this.testContext.deployer }
     );
-
-    this.protocolFeeVaultAddress = this.testContext.deployer;
-    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress);
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
