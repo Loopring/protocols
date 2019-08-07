@@ -91,43 +91,65 @@ contract Exchange is IExchange
     }
 
     // -- Settings --
-    function getGlobalSettings()
+    function getConstants()
         public
         pure
         returns (
-            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
-            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
-            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
-            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
-            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
-            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
-            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
-            uint32 FEE_BLOCK_FINE_START_TIME,
-            uint32 FEE_BLOCK_FINE_MAX_DURATION,
-            uint   MAX_NUM_TOKENS,
-            uint   MAX_NUM_ACCOUNTS
+            bytes32  genesisMerkleRoot,
+            uint[19] memory constants
         )
     {
-        return (
-            ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS(),
-            ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS(),
-            ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE(),
-            ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
-            ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
-            ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS(),
-            ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE(),
-            ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA(),
-            ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
-            ExchangeData.FEE_BLOCK_FINE_START_TIME(),
-            ExchangeData.FEE_BLOCK_FINE_MAX_DURATION(),
-            ExchangeData.MAX_NUM_TOKENS(),
-            ExchangeData.MAX_NUM_ACCOUNTS()
-        );
+        genesisMerkleRoot =  ExchangeData.GENESIS_MERKLE_ROOT();
+        constants = [
+            uint(ExchangeData.SNARK_SCALAR_FIELD()),
+            uint(ExchangeData.MAX_NUM_TOKENS()),
+            uint(ExchangeData.MAX_NUM_ACCOUNTS()),
+            uint(ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS()),
+            uint(ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS()),
+            uint(ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS()),
+            uint(ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS()),
+            uint(ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE()),
+            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED()),
+            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()),
+            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE()),
+            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()),
+            uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
+            uint(ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
+            uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
+            uint(ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
+            uint(ExchangeData.GAS_LIMIT_SEND_TOKENS())
+        ];
     }
+
+
+    function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
+        return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
+    }
+    function SNARK_SCALAR_FIELD() internal pure returns (uint) {
+        // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
+        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    }
+    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
+    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
+    function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
+    function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
+    function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
+    function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 15 minutes; }
+    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_BASE() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 15 seconds; }
+    function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 10 minutes; }
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
+    function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
+    function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
+    function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
+    function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
+
 
     // -- Mode --
     function isInWithdrawalMode()

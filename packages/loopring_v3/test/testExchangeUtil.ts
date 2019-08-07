@@ -106,20 +106,25 @@ export class ExchangeTestUtil {
     16
   );
 
-  public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
-  public MAX_AGE_REQUEST_UNTIL_FORCED: number;
-  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
-  public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
-  public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
-  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
-  public MAX_TIME_IN_SHUTDOWN_BASE: number;
-  public MAX_TIME_IN_SHUTDOWN_DELTA: number;
-  public FEE_BLOCK_FINE_START_TIME: number;
-  public FEE_BLOCK_FINE_MAX_DURATION: number;
-  public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
+  public SNARK_SCALAR_FIELD: number;
   public MAX_NUM_TOKENS: number;
+  public MAX_NUM_ACCOUNTS: number;
   public MAX_OPEN_DEPOSIT_REQUESTS: number;
   public MAX_OPEN_WITHDRAWAL_REQUESTS: number;
+  public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
+  public MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS: number;
+  public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
+  public MAX_AGE_REQUEST_UNTIL_FORCED: number;
+  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
+  public MAX_TIME_IN_SHUTDOWN_BASE: number;
+  public MAX_TIME_IN_SHUTDOWN_DELTA: number;
+  public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
+  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public FEE_BLOCK_FINE_START_TIME: number;
+  public FEE_BLOCK_FINE_MAX_DURATION: number;
+  public MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED: number;
+  public GAS_LIMIT_SEND_TOKENS: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
@@ -232,21 +237,29 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
-    const settings = await this.exchange.getGlobalSettings();
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_FORCED = settings.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
-    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE.toNumber();
-    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_BASE = settings.MAX_TIME_IN_SHUTDOWN_BASE.toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_DELTA = settings.MAX_TIME_IN_SHUTDOWN_DELTA.toNumber();
-    this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
-    this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
-    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
-    this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
-    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
-    this.MAX_OPEN_DEPOSIT_REQUESTS = settings.MAX_OPEN_DEPOSIT_REQUESTS.toNumber();
-    this.MAX_OPEN_WITHDRAWAL_REQUESTS = settings.MAX_OPEN_WITHDRAWAL_REQUESTS.toNumber();
+    const result = await this.exchange.getConstants();
+
+    this.SNARK_SCALAR_FIELD = result.constants[0].toNumber;
+    this.MAX_NUM_TOKENS = result.constants[1].toNumber;
+    this.MAX_NUM_ACCOUNTS = result.constants[2].toNumber;
+    this.MAX_OPEN_DEPOSIT_REQUESTS = result.constants[3].toNumber;
+    this.MAX_OPEN_WITHDRAWAL_REQUESTS = result.constants[4].toNumber;
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = result.constants[5].toNumber;
+    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS =
+      result.constants[6].toNumber;
+    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE =
+      result.constants[7].toNumber;
+    this.MAX_AGE_REQUEST_UNTIL_FORCED = result.constants[8].toNumber;
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = result.constants[9].toNumber;
+    this.MAX_TIME_IN_SHUTDOWN_BASE = result.constants[10].toNumber;
+    this.MAX_TIME_IN_SHUTDOWN_DELTA = result.constants[11].toNumber;
+    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = result.constants[12].toNumber;
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = result.constants[13].toNumber;
+    this.FEE_BLOCK_FINE_START_TIME = result.constants[14].toNumber;
+    this.FEE_BLOCK_FINE_MAX_DURATION = result.constants[15].toNumber;
+    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = result.constants[16].toNumber;
+    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = result.constants[17].toNumber;
+    this.GAS_LIMIT_SEND_TOKENS = result.constants[18].toNumber;
   }
 
   public async setupTestState(exchangeID: number) {

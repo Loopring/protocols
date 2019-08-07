@@ -149,24 +149,35 @@ contract IExchange is Claimable, ReentrancyGuard
         external;
 
     // -- Settings --
-    function getGlobalSettings()
+
+    /// @dev Returns constants used in the current implementation.
+    /// @return genesisMerkleRoot The merkle root in the genesis block
+    /// @return constants A list of constants used in the following order:
+    ///   SNARK_SCALAR_FIELD,
+    ///   MAX_NUM_TOKENS,
+    ///   MAX_NUM_ACCOUNTS,
+    ///   MAX_OPEN_DEPOSIT_REQUESTS,
+    ///   MAX_OPEN_WITHDRAWAL_REQUESTS,
+    ///   MAX_PROOF_GENERATION_TIME_IN_SECONDS,
+    ///   MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS,
+    ///   MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
+    ///   MAX_AGE_REQUEST_UNTIL_FORCED,
+    ///   MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
+    ///   MAX_TIME_IN_SHUTDOWN_BASE,
+    ///   MAX_TIME_IN_SHUTDOWN_DELTA,
+    ///   TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
+    ///   MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
+    ///   FEE_BLOCK_FINE_START_TIME,
+    ///   FEE_BLOCK_FINE_MAX_DURATION,
+    ///   MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS,
+    ///   MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED,
+    ///   GAS_LIMIT_SEND_TOKENS
+    function getConstants()
         public
         pure
         returns (
-            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
-            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
-            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
-            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
-            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
-            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
-            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
-            uint32 FEE_BLOCK_FINE_START_TIME,
-            uint32 FEE_BLOCK_FINE_MAX_DURATION,
-            uint   MAX_NUM_TOKENS,
-            uint   MAX_NUM_ACCOUNTS
+            bytes32  genesisMerkleRoot,
+            uint[19] memory constants
         );
 
     // -- Mode --
