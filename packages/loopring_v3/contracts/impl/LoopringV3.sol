@@ -40,42 +40,24 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
 
     // -- Constructor --
     constructor(
-        address payable _protocolFeeVault,
         address _lrcAddress,
         address _wethAddress,
-        address _blockVerifierAddress,
-        uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
-        uint    _tokenRegistrationFeeLRCBase,
-        uint    _tokenRegistrationFeeLRCDelta,
-        uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        address payable _protocolFeeVault,
+        address _blockVerifierAddress
         )
         Claimable()
         public
     {
-        require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
-        protocolFeeVault = _protocolFeeVault;
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
         updateSettingsInternal(
+            _protocolFeeVault,
             _blockVerifierAddress,
-            _exchangeCreationCostLRC,
-            _maxWithdrawalFee,
-            _downtimePriceLRCPerMinute,
-            _tokenRegistrationFeeLRCBase,
-            _tokenRegistrationFeeLRCDelta,
-            _minExchangeStakeWithDataAvailability,
-            _minExchangeStakeWithoutDataAvailability,
-            _revertFineLRC,
-            _withdrawalFineLRC
+            0, 0, 0, 0, 0, 0, 0, 0, 0
         );
     }
 
@@ -90,12 +72,10 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
 
     function registerExchange(
         address exchangeAddress,
-        address owner,
-        address payable operator,
         bool    onchainDataAvailability
         )
         external
-        nonReentrant
+        // nonReentrant
         returns (uint exchangeId)
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
@@ -115,8 +95,8 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         exchange.initialize(
             address(this),
             exchangeId,
-            owner,
-            operator,
+            msg.sender,
+            msg.sender,
             onchainDataAvailability
         );
 
@@ -125,14 +105,15 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         emit ExchangeRegistered(
             exchangeId,
             exchangeAddress,
-            owner,
-            operator,
+            msg.sender,
+            msg.sender,
             exchangeCreationCostLRC
         );
     }
 
     // == Public Functions ==
     function updateSettings(
+        address payable _protocolFeeVault,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
@@ -145,10 +126,10 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         uint    _withdrawalFineLRC
         )
         external
-        nonReentrant
         onlyOwner
     {
         updateSettingsInternal(
+            _protocolFeeVault,
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
@@ -171,7 +152,6 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         uint  _targetProtocolMakerFeeStake
         )
         external
-        nonReentrant
         onlyOwner
     {
         minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
@@ -182,19 +162,6 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         targetProtocolMakerFeeStake = _targetProtocolMakerFeeStake;
 
         emit SettingsUpdated(now);
-    }
-
-    function setProtocolFeeVault(
-        address payable _protocolFeeVault
-        )
-        external
-        nonReentrant
-        onlyOwner
-    {
-        require(_protocolFeeVault != address(0), "ZERO_ADDRESS");
-        protocolFeeVault = _protocolFeeVault;
-
-        emit ProtocolFeeVaultUpdated(protocolFeeVault);
     }
 
     function canExchangeCommitBlocks(
@@ -295,10 +262,7 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         amount = (stakedLRC > requestedAmount) ? requestedAmount : stakedLRC;
         if (amount > 0) {
             require(
-                lrcAddress.safeTransfer(
-                    recipient,
-                    amount
-                ),
+                lrcAddress.safeTransfer(recipient, amount),
                 "WITHDRAWAL_FAILURE"
             );
             exchanges[exchangeId - 1].exchangeStake = exchanges[exchangeId - 1].exchangeStake.sub(amount);
@@ -345,10 +309,7 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         require(amount >= stakedLRC, "INSUFFICIENT_STAKE");
         if (amount > 0) {
             require(
-                lrcAddress.safeTransfer(
-                    recipient,
-                    amount
-                ),
+                lrcAddress.safeTransfer(recipient, amount),
                 "WITHDRAWAL_FAILURE"
             );
             exchanges[exchangeId - 1].protocolFeeStake = exchanges[exchangeId - 1].protocolFeeStake.sub(amount);
@@ -406,6 +367,7 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
 
     // == Internal Functions ==
     function updateSettingsInternal(
+        address payable  _protocolFeeVault,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
@@ -419,8 +381,10 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         )
         private
     {
+        require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
 
+        protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;

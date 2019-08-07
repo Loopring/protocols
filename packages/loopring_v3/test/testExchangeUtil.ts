@@ -159,9 +159,12 @@ export class ExchangeTestUtil {
     // Register LoopringV3 to ProtocolRegistry
     await this.protocolRegistry.registerProtocol(
       this.loopringV3.address,
-      "3.0"
+      "3.0",
+      { from: this.testContext.deployer }
     );
-    await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address);
+    await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address, {
+      from: this.testContext.deployer
+    });
 
     // Initialize LoopringV3
     await this.loopringV3.updateSettings(
@@ -189,7 +192,9 @@ export class ExchangeTestUtil {
     );
 
     this.protocolFeeVaultAddress = this.testContext.deployer;
-    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress);
+    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress, {
+      from: this.testContext.deployer
+    });
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
@@ -2492,6 +2497,7 @@ export class ExchangeTestUtil {
     return this.accounts[this.exchangeId][accountId];
   }
 
+  // TODO(daniel)
   public async createExchange(
     owner: string,
     bSetupTestState: boolean = true,
@@ -2516,8 +2522,6 @@ export class ExchangeTestUtil {
 
     // Create the new exchange
     const tx = await this.protocolRegistry.forgeExchange(
-      owner,
-      operator,
       this.loopringV3.address,
       supportUpgradability,
       onchainDataAvailability,
@@ -2530,11 +2534,14 @@ export class ExchangeTestUtil {
       "ExchangeCreated",
       web3.eth.blockNumber
     );
+
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
     });
     const exchangeAddress = items[0][0];
     const exchangeID = items[0][1].toNumber();
+    logInfo("=====> addr", exchangeAddress);
+    logInfo("=====> id", exchangeID);
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
     this.exchangeOwner = owner;

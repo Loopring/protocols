@@ -42,30 +42,26 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
 
     constructor() Claimable() public {}
 
-    function getDefaultProtocol()
-        external
-        view
-        returns (
-            address protocol,
-            address instance,
-            string  memory version
+    function registerProtocol(
+        address protocol,
+        string  memory version
         )
-    {
-        require(defaultProtocol != address(0), "NO_DEFAULT");
-        protocol = defaultProtocol;
-        (instance, version) = getProtocol(protocol);
-    }
-
-    function setDefaultProtocol(
-        address protocol
-        )
-        external
-        onlyOwner
         nonReentrant
+        public
     {
-        (address instance, ) = getProtocol(protocol);
-        require(instance != address(0), "INVALID_PROTOCOL");
-        defaultProtocol = protocol;
+        require(protocol != address(0), "ZERO_ADDRESS");
+        require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
+
+        ILoopring loopring = ILoopring(protocol);
+        address instance = loopring.deployExchange();
+
+        // Initialize the instance in a way that it's onwed by the protocol address itself.
+        // This is to prevent the default instance from being used by any entity.
+        // TODO(daniel): uncomment this
+        // uint id = loopring.registerExchange(instance, false);
+        // require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
+
+        protocols[protocol] = Protocol(instance, version);
     }
 
     function getProtocol(
@@ -101,37 +97,39 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
         require(instance != address(0), "INVALID_INSTANCE");
     }
 
-    function registerProtocol(
-        address protocol,
-        string  memory version
+    function setDefaultProtocol(
+        address protocol
         )
+        external
+        onlyOwner
         nonReentrant
-        public
     {
-        require(protocol != address(0), "ZERO_ADDRESS");
-        require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
+        (address instance, ) = getProtocol(protocol);
+        require(instance != address(0), "INVALID_PROTOCOL");
+        defaultProtocol = protocol;
+    }
 
-        ILoopring loopring = ILoopring(protocol);
-        address instance = loopring.deployExchange();
-
-        // Initialize the instance in a way that it's onwed by the protocol address itself.
-        // This is to prevent the default instance from being used by any entity.
-        address payable owner = address(uint160(protocol));
-        uint id = loopring.registerExchange(instance, owner, owner, false);
-        require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
-
-        protocols[protocol] = Protocol(instance, version);
+    function getDefaultProtocol()
+        external
+        view
+        returns (
+            address protocol,
+            address instance,
+            string  memory version
+        )
+    {
+        require(defaultProtocol != address(0), "NO_DEFAULT");
+        protocol = defaultProtocol;
+        (instance, version) = getProtocol(protocol);
     }
 
     function forgeExchange(
-        address owner,
-        address payable operator,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
         )
         public
-        nonReentrant
+        // nonReentrant
         returns (
             address exchangeAddress,
             uint    exchangeId
@@ -152,8 +150,6 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
 
         exchangeId = loopring.registerExchange(
             exchangeAddress,
-            owner,
-            operator,
             onchainDataAvailability
         );
 

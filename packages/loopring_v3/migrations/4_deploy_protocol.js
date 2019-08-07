@@ -134,19 +134,10 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.deploy(
             LoopringV3,
-            accounts[0], //ProtocolFeeVault.address, //
             LRCToken.address,
             WETHToken.address,
-            BlockVerifier.address,
-            0, // _exchangeCreationCostLRC
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0,
-            0
+            ProtocolFeeVault.address,
+            BlockVerifier.address
           )
         ]);
       })

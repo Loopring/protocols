@@ -54,10 +54,9 @@ library ExchangeGenesis
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
         S.onchainDataAvailability = _onchainDataAvailability;
+        S.blockVerifier = IBlockVerifier(S.loopring.blockVerifierAddress());
+        S.lrcAddress = S.loopring.lrcAddress();
 
-        ILoopringV3 loopring = ILoopringV3(_loopringAddress);
-        S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
-        S.lrcAddress = loopring.lrcAddress();
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             ExchangeData.GENESIS_MERKLE_ROOT(),
@@ -104,7 +103,7 @@ library ExchangeGenesis
 
         // Call these after the main state has been set up
         S.registerToken(address(0), 0);
-        S.registerToken(loopring.wethAddress(), 0);
+        S.registerToken(S.loopring.wethAddress(), 0);
         S.registerToken(S.lrcAddress, 0);
     }
 }

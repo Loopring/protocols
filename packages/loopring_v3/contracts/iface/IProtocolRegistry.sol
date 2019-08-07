@@ -91,7 +91,7 @@ contract IProtocolRegistry
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
-    function forgeExchange1(
+    function forgeExchange(
         bool supportUpgradability,
         bool onchainDataAvailability
         )
@@ -102,8 +102,6 @@ contract IProtocolRegistry
         )
     {
         return forgeExchange(
-            msg.sender,
-            msg.sender,
             defaultProtocol,
             supportUpgradability,
             onchainDataAvailability
@@ -112,8 +110,6 @@ contract IProtocolRegistry
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
-    /// @param owner The owner of the exchange.
-    /// @param operator The operator of the exchange.
     /// @param protocol The protocol address.
     /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
     ///        in front of the native exchange contract to support upgradability.
@@ -121,8 +117,6 @@ contract IProtocolRegistry
     /// @return exchangeAddress The new exchange's address.
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        address owner,
-        address payable operator,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
