@@ -233,21 +233,21 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
-    // const settings = await this.exchange.getGlobalSettings();
-    // this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
-    // this.MAX_AGE_REQUEST_UNTIL_FORCED = settings.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
-    // this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
-    // this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE.toNumber();
-    // this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
-    // this.MAX_TIME_IN_SHUTDOWN_BASE = settings.MAX_TIME_IN_SHUTDOWN_BASE.toNumber();
-    // this.MAX_TIME_IN_SHUTDOWN_DELTA = settings.MAX_TIME_IN_SHUTDOWN_DELTA.toNumber();
-    // this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
-    // this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
-    // this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
-    // this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
-    // this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
-    // this.MAX_OPEN_DEPOSIT_REQUESTS = settings.MAX_OPEN_DEPOSIT_REQUESTS.toNumber();
-    // this.MAX_OPEN_WITHDRAWAL_REQUESTS = settings.MAX_OPEN_WITHDRAWAL_REQUESTS.toNumber();
+    const settings = await this.exchange.getGlobalSettings();
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_FORCED = settings.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
+    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE.toNumber();
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_BASE = settings.MAX_TIME_IN_SHUTDOWN_BASE.toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_DELTA = settings.MAX_TIME_IN_SHUTDOWN_DELTA.toNumber();
+    this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
+    this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
+    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
+    this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
+    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
+    this.MAX_OPEN_DEPOSIT_REQUESTS = settings.MAX_OPEN_DEPOSIT_REQUESTS.toNumber();
+    this.MAX_OPEN_WITHDRAWAL_REQUESTS = settings.MAX_OPEN_WITHDRAWAL_REQUESTS.toNumber();
   }
 
   public async setupTestState(exchangeID: number) {
