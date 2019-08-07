@@ -24,7 +24,7 @@ import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
 /// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
-///      should be placed in front of it to ensure upgradeability of
+///      can be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry
@@ -38,8 +38,11 @@ contract ProtocolRegistry is IProtocolRegistry
     mapping (address => address /* protocol */) public proxies;
     mapping (address => Protocol) private protocols;
 
+    /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
+    /// @dev The default function will create an upgradabile exchange
+    ///      with on-chain data-availability.
     function() external payable
     {
         forgeExchange(true, true);

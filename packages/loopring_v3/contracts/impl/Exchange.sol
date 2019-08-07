@@ -31,6 +31,8 @@ import "./libexchange/ExchangeWithdrawals.sol";
 
 
 /// @title An Implementation of IExchange.
+/// @dev This contract supports upgradability proxy, therefore its constructor
+///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract Exchange is IExchange
@@ -59,7 +61,10 @@ contract Exchange is IExchange
         _;
     }
 
-    // -- Default function --
+    /// @dev The constructor must do NOTHING to support proxy.
+    constructor() public {}
+
+    /// @dev The default function will do Ether depoeits.
     function() external payable
     {
         uint96 amount = uint96(msg.value);
