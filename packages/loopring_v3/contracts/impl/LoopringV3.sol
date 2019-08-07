@@ -65,13 +65,15 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
     function deployExchange()
         external
         nonReentrant
-        returns (address)
+        returns (address exchangeAddress)
     {
-        return ExchangeV3Deployer.deploy();
+        exchangeAddress = ExchangeV3Deployer.deploy();
     }
 
     function registerExchange(
         address exchangeAddress,
+        address owner,
+        address payable operator,
         bool    onchainDataAvailability
         )
         external
@@ -79,11 +81,13 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         returns (uint exchangeId)
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
+        require(owner != address(0), "ZERO_ADDRESS");
+        require(operator != address(0), "ZERO_ADDRESS");
 
         // Burn the LRC
         if (exchangeCreationCostLRC > 0) {
             require(
-                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
+                BurnableERC20(lrcAddress).burnFrom(owner, exchangeCreationCostLRC),
                 "BURN_FAILURE"
             );
         }
@@ -95,8 +99,8 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         exchange.initialize(
             address(this),
             exchangeId,
-            msg.sender,
-            msg.sender,
+            owner,
+            operator,
             onchainDataAvailability
         );
 
@@ -105,8 +109,8 @@ contract LoopringV3 is Claimable, ReentrancyGuard, ILoopringV3
         emit ExchangeRegistered(
             exchangeId,
             exchangeAddress,
-            msg.sender,
-            msg.sender,
+            owner,
+            operator,
             exchangeCreationCostLRC
         );
     }

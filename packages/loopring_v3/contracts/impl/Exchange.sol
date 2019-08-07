@@ -81,7 +81,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         bool    _onchainDataAvailability
         )
         external
-        // nonReentrant
+        // // nonReentrant
         onlyWhenUninitialized
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
@@ -189,14 +189,14 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew,
             bool   isAccountUpdated
         )
     {
-        return updateAccountAndDepositInternal(
+        (accountID, isAccountNew, isAccountUpdated) = updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
             address(0),
@@ -249,7 +249,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         address tokenAddress
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
         returns (uint16 tokenID)
     {
@@ -280,7 +280,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         address tokenAddress
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
     {
         state.disableTokenDeposit(tokenAddress);
@@ -290,7 +290,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         address tokenAddress
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
     {
         state.enableTokenDeposit(tokenAddress);
@@ -309,11 +309,11 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         address recipient
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
-        returns (uint)
+        returns (uint stake)
     {
-        return state.withdrawExchangeStake(recipient);
+        stake = state.withdrawExchangeStake(recipient);
     }
 
     function withdrawProtocolFeeStake(
@@ -321,7 +321,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint amount
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
     {
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
@@ -329,7 +329,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
 
     function burnExchangeStake()
         external
-        nonReentrant
+        // nonReentrant
     {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
         if(state.isInWithdrawalMode()) {
@@ -397,7 +397,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         bytes  calldata offchainData
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOperator
     {
         // Decompress the data here so we can extract the data directly from calldata
@@ -456,7 +456,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint[] calldata proofs
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOperator
     {
         state.verifyBlocks(blockIndices, proofs);
@@ -466,7 +466,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint blockIdx
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOperator
     {
         state.revertBlock(blockIdx);
@@ -512,7 +512,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -534,7 +534,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
         state.depositTo(msg.sender, token, amount, 0);
     }
@@ -546,7 +546,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
         state.depositTo(recipient, tokenAddress, amount, 0);
     }
@@ -588,7 +588,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
         uint24 accountID = state.getAccountID(msg.sender);
         state.withdraw(accountID, token, amount);
@@ -599,7 +599,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
         // Always request the maximum amount so the complete balance is withdrawn
         state.withdraw(0, token, ~uint96(0));
@@ -616,7 +616,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint[12] calldata balancePath
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             msg.sender,
@@ -644,7 +644,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint[12] calldata balancePath
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             owner,
@@ -663,7 +663,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint depositIdx
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.withdrawFromDepositRequest(depositIdx);
     }
@@ -673,7 +673,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint slotIdx
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         require(blockIdx < state.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = state.blocks[blockIdx];
@@ -690,7 +690,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         address payable feeRecipient
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOperator
         returns (uint feeAmount)
     {
@@ -702,7 +702,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint maxNumWithdrawals
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.distributeWithdrawals(blockIdx, maxNumWithdrawals);
     }
@@ -712,22 +712,22 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         address payable _operator
         )
         external
-        nonReentrant
         onlyOwner
-        returns (address payable)
+        nonReentrant // this op has an reentry!!!
+        returns (address payable oldOperator)
     {
-        return state.setOperator(_operator);
+        oldOperator = state.setOperator(_operator);
     }
 
     function setAddressWhitelist(
         address _addressWhitelist
         )
         external
-        nonReentrant
+        // nonReentrant // this op has an reentry!!!
         onlyOwner
-        returns (address)
+        returns (address oldAddressWhitelist)
     {
-        return state.setAddressWhitelist(_addressWhitelist);
+        oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
     }
 
     function setFees(
@@ -737,7 +737,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint _withdrawalFeeETH
         )
         external
-        nonReentrant
+        // nonReentrant // this op has an reentry!!!
         onlyOwner
     {
         state.setFees(
@@ -768,7 +768,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         uint durationMinutes
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
     {
         state.startOrContinueMaintenanceMode(durationMinutes);
@@ -776,7 +776,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
 
     function stopMaintenanceMode()
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
     {
         state.stopMaintenanceMode();
@@ -818,7 +818,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
 
     function shutdown()
         external
-        nonReentrant
+        // nonReentrant
         onlyOwner
         returns (bool success)
     {

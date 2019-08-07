@@ -29,11 +29,15 @@ contract ILoopring
     /// @dev Initialize and register an exchange with msg.sender as the owner and operator.
     ///      Note that this function can only be called one per deployed exchange instance.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
+    /// @param  owner The owner of the exchange.
+    /// @param  operator The operator of the exchange.
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     /// @return exchangeId The id of the exchange.
     function registerExchange(
         address exchangeAddress,
+        address owner,
+        address payable operator,
         bool    onchainDataAvailability
         )
         external

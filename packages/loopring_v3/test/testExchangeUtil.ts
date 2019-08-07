@@ -2493,7 +2493,6 @@ export class ExchangeTestUtil {
     return this.accounts[this.exchangeId][accountId];
   }
 
-  // TODO(daniel)
   public async createExchange(
     owner: string,
     bSetupTestState: boolean = true,
@@ -2521,11 +2520,14 @@ export class ExchangeTestUtil {
       onchainDataAvailability,
       { from: owner }
     );
-    // logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+    logInfo(
+      "\x1b[46m%s\x1b[0m",
+      "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    );
 
     const eventArr: any = await this.getEventsFromContract(
-      this.loopringV3,
-      "ExchangeCreated",
+      this.protocolRegistry,
+      "ExchangeForged",
       web3.eth.blockNumber
     );
 
@@ -2543,39 +2545,40 @@ export class ExchangeTestUtil {
     this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    await this.exchange.setOperator(this.exchangeOwner, {
+    // TODO(daniel): this op has an reentry!!!
+    await this.exchange.setOperator(this.exchangeOperator, {
       from: this.exchangeOwner
     });
 
-    await this.exchange.setFees(
-      accountCreationFeeInETH,
-      accountUpdateFeeInETH,
-      depositFeeInETH,
-      withdrawalFeeInETH,
-      { from: this.exchangeOwner }
-    );
+    // await this.exchange.setFees(
+    //   accountCreationFeeInETH,
+    //   accountUpdateFeeInETH,
+    //   depositFeeInETH,
+    //   withdrawalFeeInETH,
+    //   { from: this.exchangeOwner }
+    // );
 
-    if (bSetupTestState) {
-      await this.registerTokens();
-      await this.setupTestState(exchangeID);
-    }
+    // if (bSetupTestState) {
+    //   await this.registerTokens();
+    //   await this.setupTestState(exchangeID);
+    // }
 
-    // Deposit some LRC to stake for the exchange
-    const depositer = this.testContext.operators[2];
-    const stakeAmount = onchainDataAvailability
-      ? await this.loopringV3.minExchangeStakeWithDataAvailability()
-      : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
-    await this.setBalanceAndApprove(
-      depositer,
-      "LRC",
-      stakeAmount,
-      this.loopringV3.address
-    );
+    // // Deposit some LRC to stake for the exchange
+    // const depositer = this.testContext.operators[2];
+    // const stakeAmount = onchainDataAvailability
+    //   ? await this.loopringV3.minExchangeStakeWithDataAvailability()
+    //   : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
+    // await this.setBalanceAndApprove(
+    //   depositer,
+    //   "LRC",
+    //   stakeAmount,
+    //   this.loopringV3.address
+    // );
 
-    // Stake it
-    await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
-      from: depositer
-    });
+    // // Stake it
+    // await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
+    //   from: depositer
+    // });
 
     return exchangeID;
   }

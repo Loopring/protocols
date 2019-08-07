@@ -155,6 +155,8 @@ contract ProtocolRegistry is Claimable, ReentrancyGuard, IProtocolRegistry
 
         exchangeId = loopring.registerExchange(
             exchangeAddress,
+            msg.sender,
+            msg.sender,
             onchainDataAvailability
         );
 
