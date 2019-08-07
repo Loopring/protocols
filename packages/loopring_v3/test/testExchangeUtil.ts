@@ -83,7 +83,6 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
-  public protocolFeeVaultAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -95,7 +94,7 @@ export class ExchangeTestUtil {
   public operator: any;
   public activeOperator: number;
 
-  public userstakingpool: any;
+  public userStakingPool: any;
   public protocolFeeVault: any;
 
   public accounts: Account[][] = [];
@@ -3669,12 +3668,12 @@ export class ExchangeTestUtil {
       this.contracts.WETHToken.deployed()
     ]);
 
-    const [userstakingpool, protocolFeeVault] = await Promise.all([
+    const [userStakingPool, protocolFeeVault] = await Promise.all([
       this.contracts.UserStakingPool.deployed(),
       this.contracts.ProtocolFeeVault.deployed()
     ]);
 
-    this.userstakingpool = userstakingpool;
+    this.userStakingPool = userStakingPool;
     this.protocolFeeVault = protocolFeeVault;
 
     this.lzDecompressor = await this.contracts.LzDecompressor.new();
