@@ -73,7 +73,7 @@ contract Exchange is Claimable, ReentrancyGuard, IExchange
         bool    _onchainDataAvailability
         )
         external
-        nonReentrant
+        // nonReentrant
         onlyWhenUninitialized
     {
         require(address(0) != _owner, "ZERO_ADDRESS");

@@ -61,10 +61,6 @@ contract ILoopringV3 is ILoopring
         uint            time
     );
 
-    event ProtocolFeeVaultUpdated(
-        address payable protocolFeeVault
-    );
-
     // == Public Variables ==
     struct Exchange
     {
@@ -105,6 +101,7 @@ contract ILoopringV3 is ILoopring
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
+        address payable _protocolFeeVault,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
@@ -130,16 +127,6 @@ contract ILoopringV3 is ILoopring
         uint8 _maxProtocolMakerFeeBips,
         uint  _targetProtocolTakerFeeStake,
         uint  _targetProtocolMakerFeeStake
-        )
-        external;
-
-    /// @dev Update the protocol fee manager.
-    ///      This function can only be called by the owner of this contract.
-    ///
-    ///      Warning: this new address will be used by existing and
-    ///      new Loopring exchanges.
-    function setProtocolFeeVault(
-        address payable _protocolFeeVault
         )
         external;
 

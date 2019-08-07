@@ -83,8 +83,8 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   before(async () => {
-    // exchangeTestUtil = new ExchangeTestUtil();
-    // await exchangeTestUtil.initialize(accounts);
+    exchangeTestUtil = new ExchangeTestUtil();
+    await exchangeTestUtil.initialize(accounts);
     // exchange = exchangeTestUtil.exchange;
     // loopring = exchangeTestUtil.loopringV3;
     // exchangeID = 1;
