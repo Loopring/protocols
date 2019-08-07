@@ -83,6 +83,7 @@ export class ExchangeTestUtil {
   public blockVerifier: any;
   public lzDecompressor: any;
 
+  public protocolFeeVaultAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
