@@ -72,6 +72,7 @@ contract LoopringV3 is ILoopringV3
         emit ExchangeCreated(exchange);
     }
 
+
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,

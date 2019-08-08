@@ -2538,64 +2538,64 @@ export class ExchangeTestUtil {
       { from: owner }
     );
 
-    logInfo(
-      "\x1b[46m%s\x1b[0m",
-      "[CreateExchange] Gas used: " + tx.receipt.gasUsed
-    );
+    // logInfo(
+    //   "\x1b[46m%s\x1b[0m",
+    //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    // );
 
-    const eventArr: any = await this.getEventsFromContract(
-      this.protocolRegistry,
-      "ExchangeForged",
-      web3.eth.blockNumber
-    );
+    // const eventArr: any = await this.getEventsFromContract(
+    //   this.protocolRegistry,
+    //   "ExchangeForged",
+    //   web3.eth.blockNumber
+    // );
 
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
-    });
+    // const items = eventArr.map((eventObj: any) => {
+    //   return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
+    // });
 
-    const exchangeAddress = items[0][0];
-    const exchangeID = items[0][1].toNumber();
+    // const exchangeAddress = items[0][0];
+    // const exchangeID = items[0][1].toNumber();
 
-    this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+    // this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 
-    await this.exchange.setOperator(operator, { from: owner });
+    // await this.exchange.setOperator(operator, { from: owner });
 
-    this.exchangeOwner = owner;
-    this.exchangeOperator = operator;
-    this.exchangeId = exchangeID;
-    this.onchainDataAvailability = onchainDataAvailability;
+    // this.exchangeOwner = owner;
+    // this.exchangeOperator = operator;
+    // this.exchangeId = exchangeID;
+    // this.onchainDataAvailability = onchainDataAvailability;
 
-    await this.exchange.setFees(
-      accountCreationFeeInETH,
-      accountUpdateFeeInETH,
-      depositFeeInETH,
-      withdrawalFeeInETH,
-      { from: this.exchangeOwner }
-    );
+    // await this.exchange.setFees(
+    //   accountCreationFeeInETH,
+    //   accountUpdateFeeInETH,
+    //   depositFeeInETH,
+    //   withdrawalFeeInETH,
+    //   { from: this.exchangeOwner }
+    // );
 
-    if (bSetupTestState) {
-      await this.registerTokens();
-      await this.setupTestState(exchangeID);
-    }
+    // if (bSetupTestState) {
+    //   await this.registerTokens();
+    //   await this.setupTestState(exchangeID);
+    // }
 
-    // Deposit some LRC to stake for the exchange
-    const depositer = this.testContext.operators[2];
-    const stakeAmount = onchainDataAvailability
-      ? await this.loopringV3.minExchangeStakeWithDataAvailability()
-      : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
-    await this.setBalanceAndApprove(
-      depositer,
-      "LRC",
-      stakeAmount,
-      this.loopringV3.address
-    );
+    // // Deposit some LRC to stake for the exchange
+    // const depositer = this.testContext.operators[2];
+    // const stakeAmount = onchainDataAvailability
+    //   ? await this.loopringV3.minExchangeStakeWithDataAvailability()
+    //   : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
+    // await this.setBalanceAndApprove(
+    //   depositer,
+    //   "LRC",
+    //   stakeAmount,
+    //   this.loopringV3.address
+    // );
 
-    // Stake it
-    await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
-      from: depositer
-    });
+    // // Stake it
+    // await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
+    //   from: depositer
+    // });
 
-    return exchangeID;
+    return 0; //exchangeID;
   }
 
   public getTokenAddress(token: string) {

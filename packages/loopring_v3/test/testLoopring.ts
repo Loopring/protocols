@@ -8,8 +8,8 @@ contract("Loopring", (accounts: string[]) => {
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
-    await exchangeTestUtil.initialize(accounts);
-    loopring = exchangeTestUtil.loopringV3;
+    // await exchangeTestUtil.initialize(accounts);
+    // loopring = exchangeTestUtil.loopringV3;
   });
 
   const calculateProtocolFee = (
@@ -71,117 +71,113 @@ contract("Loopring", (accounts: string[]) => {
     describe("Exchange owner", () => {
       it("should be able to withdraw the protocol fee stake", async () => {
         // Deposit some LRC to stake for the exchange
-        const depositer = exchangeTestUtil.testContext.operators[2];
-        const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
-        await exchangeTestUtil.setBalanceAndApprove(
-          depositer,
-          "LRC",
-          stakeAmount,
-          loopring.address
-        );
-
-        // Stake it
-        await exchangeTestUtil.depositProtocolFeeStakeChecked(
-          stakeAmount,
-          depositer
-        );
-
-        // Try to withdraw it from an unauthorized address on the exchange contract
-        await expectThrow(
-          exchangeTestUtil.exchange.withdrawProtocolFeeStake(
-            exchangeTestUtil.exchangeOwner,
-            stakeAmount,
-            { from: exchangeTestUtil.exchangeOperator }
-          ),
-          "UNAUTHORIZED"
-        );
-
-        // Try to withdraw it from an unauthorized address on the loopring contract
-        await expectThrow(
-          loopring.withdrawProtocolFeeStake(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.exchangeOwner,
-            stakeAmount,
-            { from: exchangeTestUtil.exchangeOwner }
-          ),
-          "UNAUTHORIZED"
-        );
-
-        // Withdraw the exchange stake
-        await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
-          exchangeTestUtil.exchangeOwner,
-          stakeAmount
-        );
+        // const depositer = exchangeTestUtil.testContext.operators[2];
+        // const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+        // await exchangeTestUtil.setBalanceAndApprove(
+        //   depositer,
+        //   "LRC",
+        //   stakeAmount,
+        //   loopring.address
+        // );
+        // // Stake it
+        // await exchangeTestUtil.depositProtocolFeeStakeChecked(
+        //   stakeAmount,
+        //   depositer
+        // );
+        // // Try to withdraw it from an unauthorized address on the exchange contract
+        // await expectThrow(
+        //   exchangeTestUtil.exchange.withdrawProtocolFeeStake(
+        //     exchangeTestUtil.exchangeOwner,
+        //     stakeAmount,
+        //     { from: exchangeTestUtil.exchangeOperator }
+        //   ),
+        //   "UNAUTHORIZED"
+        // );
+        // // Try to withdraw it from an unauthorized address on the loopring contract
+        // await expectThrow(
+        //   loopring.withdrawProtocolFeeStake(
+        //     exchangeTestUtil.exchangeId,
+        //     exchangeTestUtil.exchangeOwner,
+        //     stakeAmount,
+        //     { from: exchangeTestUtil.exchangeOwner }
+        //   ),
+        //   "UNAUTHORIZED"
+        // );
+        // // Withdraw the exchange stake
+        // await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
+        //   exchangeTestUtil.exchangeOwner,
+        //   stakeAmount
+        // );
       });
 
-      it("should be able to lower the protocol fees", async () => {
-        const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
-        const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
-        const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();
-        const maxProtocolMakerFeeBips = await loopring.maxProtocolMakerFeeBips();
-        const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
-        const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
+      // it("should be able to lower the protocol fees", async () => {
+      //   const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
+      //   const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
+      //   const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();
+      //   const maxProtocolMakerFeeBips = await loopring.maxProtocolMakerFeeBips();
+      //   const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
+      //   const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
 
-        // Deposit some LRC to stake for the exchange
-        const depositer = exchangeTestUtil.testContext.operators[2];
-        const totalLRC = targetProtocolTakerFeeStake.mul(new BN(4));
-        await exchangeTestUtil.setBalanceAndApprove(
-          depositer,
-          "LRC",
-          totalLRC,
-          loopring.address
-        );
+      //   // Deposit some LRC to stake for the exchange
+      //   const depositer = exchangeTestUtil.testContext.operators[2];
+      //   const totalLRC = targetProtocolTakerFeeStake.mul(new BN(4));
+      //   await exchangeTestUtil.setBalanceAndApprove(
+      //     depositer,
+      //     "LRC",
+      //     totalLRC,
+      //     loopring.address
+      //   );
 
-        {
-          const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
-          );
-          assert(
-            protocolFees.takerFeeBips.eq(maxProtocolTakerFeeBips),
-            "Wrong protocol taker fees"
-          );
-          assert(
-            protocolFees.makerFeeBips.eq(maxProtocolMakerFeeBips),
-            "Wrong protocol maker fees"
-          );
-        }
+      //   {
+      //     const protocolFees = await loopring.getProtocolFeeValues(
+      //       exchangeTestUtil.exchangeId,
+      //       exchangeTestUtil.onchainDataAvailability
+      //     );
+      //     assert(
+      //       protocolFees.takerFeeBips.eq(maxProtocolTakerFeeBips),
+      //       "Wrong protocol taker fees"
+      //     );
+      //     assert(
+      //       protocolFees.makerFeeBips.eq(maxProtocolMakerFeeBips),
+      //       "Wrong protocol maker fees"
+      //     );
+      //   }
 
-        await exchangeTestUtil.depositProtocolFeeStakeChecked(
-          targetProtocolMakerFeeStake,
-          depositer
-        );
-        await checkProtocolFees();
-        await exchangeTestUtil.depositProtocolFeeStakeChecked(
-          targetProtocolMakerFeeStake,
-          depositer
-        );
-        await checkProtocolFees();
-        await exchangeTestUtil.depositProtocolFeeStakeChecked(
-          targetProtocolTakerFeeStake,
-          depositer
-        );
-        await checkProtocolFees();
-        await exchangeTestUtil.depositProtocolFeeStakeChecked(
-          targetProtocolTakerFeeStake,
-          depositer
-        );
+      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
+      //     targetProtocolMakerFeeStake,
+      //     depositer
+      //   );
+      //   await checkProtocolFees();
+      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
+      //     targetProtocolMakerFeeStake,
+      //     depositer
+      //   );
+      //   await checkProtocolFees();
+      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
+      //     targetProtocolTakerFeeStake,
+      //     depositer
+      //   );
+      //   await checkProtocolFees();
+      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
+      //     targetProtocolTakerFeeStake,
+      //     depositer
+      //   );
 
-        {
-          const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
-          );
-          assert(
-            protocolFees.takerFeeBips.eq(minProtocolTakerFeeBips),
-            "Wrong protocol taker fees"
-          );
-          assert(
-            protocolFees.makerFeeBips.eq(minProtocolMakerFeeBips),
-            "Wrong protocol maker fees"
-          );
-        }
-      });
+      //   {
+      //     const protocolFees = await loopring.getProtocolFeeValues(
+      //       exchangeTestUtil.exchangeId,
+      //       exchangeTestUtil.onchainDataAvailability
+      //     );
+      //     assert(
+      //       protocolFees.takerFeeBips.eq(minProtocolTakerFeeBips),
+      //       "Wrong protocol taker fees"
+      //     );
+      //     assert(
+      //       protocolFees.makerFeeBips.eq(minProtocolMakerFeeBips),
+      //       "Wrong protocol maker fees"
+      //     );
+      //   }
+      // });
     });
   });
 

@@ -143,6 +143,7 @@ contract ProtocolRegistry is IProtocolRegistry
         );
     }
 
+
     function forgeExchange(
         address protocol,
         bool    supportUpgradability,
@@ -193,12 +194,14 @@ contract ProtocolRegistry is IProtocolRegistry
         if (supportUpgradability) {
             // Deploy an exchange proxy
             exchangeAddress = address(new ExchangeProxy(address(this)));
-            assert(exchangeToProtocolMap[exchangeAddress] == address(0));
-            exchangeToProtocolMap[exchangeAddress] = protocol;
+
         } else {
             // Deploy a native exchange
             exchangeAddress = loopring.createExchange();
         }
+
+        assert(exchangeToProtocolMap[exchangeAddress] == address(0));
+        exchangeToProtocolMap[exchangeAddress] = protocol;
 
         loopring.initializeExchange(
             exchangeAddress,

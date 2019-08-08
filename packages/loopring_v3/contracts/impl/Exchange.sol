@@ -79,6 +79,7 @@ contract Exchange is IExchange
         onlyWhenUninitialized
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
+        owner = _owner;
 
         state.initializeGenesisBlock(
             _id,
