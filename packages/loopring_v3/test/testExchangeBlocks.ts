@@ -163,7 +163,7 @@ contract("Exchange", (accounts: string[]) => {
               await web3.eth.getBlockNumber()
             )).timestamp;
             timestamp -=
-              exchangeTestUtil.ExchangeDagta
+              exchangeTestUtil.ExchangeData
                 .TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
             bs.addNumber(0, 1);
@@ -189,7 +189,7 @@ contract("Exchange", (accounts: string[]) => {
               await web3.eth.getBlockNumber()
             )).timestamp;
             timestamp +=
-              exchangeTestUtil.ExchangeDagta
+              exchangeTestUtil.ExchangeData
                 .TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
             bs.addNumber(0, 1);
@@ -971,8 +971,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Wait a bit until the operator only gets half the block fee
           const addedTime =
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_START_TIME +
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_MAX_DURATION / 2;
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_START_TIME +
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION / 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
           // Commit and verify the deposits
@@ -1005,8 +1005,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Wait a bit until the operator only gets half the block fee
           const addedTime =
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_START_TIME +
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_MAX_DURATION +
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_START_TIME +
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION +
             1000;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
@@ -1044,7 +1044,7 @@ contract("Exchange", (accounts: string[]) => {
 
           // Wait a bit until a bit before the block fee is reduced
           const addedTime =
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_START_TIME - 100;
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_START_TIME - 100;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
           // Commit and verify
@@ -1082,8 +1082,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Wait a bit until the operator only gets half the block fee
           const addedTime =
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_START_TIME +
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_MAX_DURATION / 2;
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_START_TIME +
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION / 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
           // Commit and verify
@@ -1121,8 +1121,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Wait a bit until the operator only gets half the block fee
           const addedTime =
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_START_TIME +
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_MAX_DURATION * 2;
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_START_TIME +
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION * 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
           // Commit and verify
@@ -1156,8 +1156,8 @@ contract("Exchange", (accounts: string[]) => {
 
           // Wait a bit until the operator only gets half the block fee
           const addedTime =
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_START_TIME +
-            exchangeTestUtil.ExchangeDagta.FEE_BLOCK_FINE_MAX_DURATION / 2;
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_START_TIME +
+            exchangeTestUtil.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION / 2;
           await exchangeTestUtil.advanceBlockTimestamp(addedTime);
 
           // Commit and verify the deposits

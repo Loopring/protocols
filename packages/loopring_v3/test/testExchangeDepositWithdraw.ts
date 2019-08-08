@@ -1537,7 +1537,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wait the max time only the operator can do it
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.ExchangeDagta.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        exchangeTestUtil.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
       );
 
       // Distribute the withdrawals
@@ -1634,7 +1634,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wait the max time only the operator can do it
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.ExchangeDagta.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        exchangeTestUtil.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
       );
 
       // Continue distributing the withdrawals in multiple parts
