@@ -81,12 +81,12 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         address _lrcAddress,
         address _userStakingPoolAddress
         )
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         require(_userStakingPoolAddress != address(0), "ZERO_ADDRESS");
 
-        owner = msg.sender;
         allowOwnerWithdrawal = true;
 
         lrcAddress = _lrcAddress;

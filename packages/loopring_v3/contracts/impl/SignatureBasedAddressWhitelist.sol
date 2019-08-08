@@ -16,9 +16,9 @@
 */
 pragma solidity 0.5.10;
 
-import "../../lib/Claimable.sol";
+import "../lib/Claimable.sol";
 
-import "../../iface/IAddressWhitelist.sol";
+import "../iface/IAddressWhitelist.sol";
 
 
 /// @title An Implementation of IAddressWhitelist.
@@ -26,6 +26,8 @@ import "../../iface/IAddressWhitelist.sol";
 contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
+
+    constructor() Claimable() public {}
 
     function isWhitelisted(
         address user,
