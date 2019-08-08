@@ -6,7 +6,7 @@ export class Artifacts {
   public ExchangeV3Deployer: any;
   public ExchangeProxy: any;
   public BlockVerifier: any;
-  public FixedPriceDowntimeCostCalculator: any;
+  public FixPriceDowntimeCostCalculator: any;
   public DummyToken: any;
   public LRCToken: any;
   public GTOToken: any;
@@ -32,8 +32,8 @@ export class Artifacts {
     this.ExchangeV3Deployer = artifacts.require("impl/ExchangeV3Deployer");
     this.ExchangeProxy = artifacts.require("impl/ExchangeProxy");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
-    this.FixedPriceDowntimeCostCalculator = artifacts.require(
-      "test/FixedPriceDowntimeCostCalculator"
+    this.FixPriceDowntimeCostCalculator = artifacts.require(
+      "test/FixPriceDowntimeCostCalculator"
     );
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");

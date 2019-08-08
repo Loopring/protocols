@@ -23,7 +23,7 @@ import "../iface/IDowntimeCostCalculator.sol";
 
 /// @title A fixed price IDowntimeCostCalculator implememntation.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract FixedPriceDowntimeCostCalculator is IDowntimeCostCalculator
+contract FixPriceDowntimeCostCalculator is IDowntimeCostCalculator
 {
     using MathUint for uint;
 

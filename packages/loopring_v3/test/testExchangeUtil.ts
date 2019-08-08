@@ -3643,7 +3643,7 @@ export class ExchangeTestUtil {
       this.contracts.LoopringV3.deployed(),
       this.contracts.ExchangeV3Deployer.deployed(),
       this.contracts.BlockVerifier.deployed(),
-      this.contracts.FixedPriceDowntimeCostCalculator.deployed(),
+      this.contracts.FixPriceDowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
     ]);
