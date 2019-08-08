@@ -31,13 +31,15 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
+    address public lrcAddress;
     address public defaultProtocol;
 
     event ExchangeForged (
         address loopring,
         address exchangeAddress,
         address owner,
-        uint    exchangeId
+        uint    exchangeId,
+        uint    amountLRCBurned
     );
 
     /// @dev Returns information regarding the default protocol.

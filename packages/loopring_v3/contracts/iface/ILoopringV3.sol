@@ -28,12 +28,16 @@ import "./ILoopring.sol";
 contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
 {
     // == Events ==
-    event ExchangeRegistered(
+
+    event ExchangeCreated(
+        address indexed exchangeAddress
+    );
+
+    event ExchangeInitialized(
         uint    indexed exchangeId,
         address indexed exchangeAddress,
         address indexed owner,
-        address         operator,
-        uint            burnedLRC
+        address         operator
     );
 
     event ExchangeStakeDeposited(
@@ -82,7 +86,6 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
     address public exchangeDeployerAddress;
     address public blockVerifierAddress;
     address public downtimeCostCalculator;
-    uint    public exchangeCreationCostLRC;
     uint    public maxWithdrawalFee;
     uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;

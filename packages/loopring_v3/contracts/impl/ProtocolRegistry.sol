@@ -16,6 +16,8 @@
 */
 pragma solidity 0.5.10;
 
+import "../lib/BurnableERC20.sol";
+
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
@@ -42,6 +44,16 @@ contract ProtocolRegistry is IProtocolRegistry
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
+    function setLRCAddress(
+        address _lrcAddress
+        )
+        external
+    {
+        require(_lrcAddress != address(0), "ZERO_ADDRESS");
+        require(lrcAddress == address(0), "INITIALIZED_ALREADY");
+        lrcAddress = _lrcAddress;
+    }
+
     function registerProtocol(
         address protocol,
         string  calldata version
@@ -53,13 +65,9 @@ contract ProtocolRegistry is IProtocolRegistry
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
 
         ILoopring loopring = ILoopring(protocol);
-        address instance = loopring.deployExchange();
 
-        // Initialize the instance in a way that it's onwed by the protocol address itself.
-        // This is to prevent the default instance from being used by any entity.
-        // TODO(daniel): uncomment this
-        // uint id = loopring.initializeExchange(instance, false);
-        // require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
+        // Leave this instance uninitialized.
+        address instance = loopring.deployExchange();
 
         protocols[protocol] = Protocol(instance, version);
     }
@@ -179,6 +187,15 @@ contract ProtocolRegistry is IProtocolRegistry
         exchanges.push(exchangeAddress);
 
         ILoopring loopring = ILoopring(protocol);
+        uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
+
+        if (exchangeCreationCostLRC > 0) {
+            require(
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
+                "BURN_FAILURE"
+            );
+        }
+
         if (supportUpgradability) {
             // Deploy an exchange proxy
             exchangeAddress = address(new ExchangeProxy(address(this)));
@@ -201,7 +218,8 @@ contract ProtocolRegistry is IProtocolRegistry
             protocol,
             exchangeAddress,
             msg.sender,
-            exchangeId
+            exchangeId,
+            exchangeCreationCostLRC
         );
     }
 }

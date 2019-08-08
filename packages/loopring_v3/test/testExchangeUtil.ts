@@ -2527,7 +2527,7 @@ export class ExchangeTestUtil {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
     await LRC.addBalance(owner, exchangeCreationCostLRC);
-    await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {
+    await LRC.approve(this.protocolRegistry.address, exchangeCreationCostLRC, {
       from: owner
     });
 
@@ -3707,6 +3707,8 @@ export class ExchangeTestUtil {
 
     this.lrcAddress = lrcToken.address;
     this.wethAddress = wethToken.address;
+
+    await protocolRegistry.setLRCAddress(lrcToken.address);
 
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber))
