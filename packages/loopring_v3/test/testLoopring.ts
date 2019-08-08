@@ -188,9 +188,9 @@ contract("Loopring", (accounts: string[]) => {
   describe("Owner", () => {
     it("should be able to update settings", async () => {
       await loopring.updateSettings(
+        exchangeTestUtil.testContext.orderOwners[1],
+        exchangeTestUtil.testContext.orderOwners[2],
         exchangeTestUtil.testContext.orderOwners[3],
-        exchangeTestUtil.testContext.orderOwners[4],
-        new BN(web3.utils.toWei("1011", "ether")),
         new BN(web3.utils.toWei("0.01", "ether")),
         new BN(web3.utils.toWei("9000", "ether")),
         new BN(web3.utils.toWei("1000", "ether")),
