@@ -171,7 +171,7 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
         uint exchangeId,
         uint amount
         )
-        public
+        external
         returns (uint burnedLRC);
 
     /// @dev Stake more LRC for an exchange.
@@ -196,7 +196,7 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
         address recipient,
         uint    requestedAmount
         )
-        public
+        external
         returns (uint amount);
 
     /// @dev Stake more LRC for an exchange.

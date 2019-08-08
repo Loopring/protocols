@@ -200,7 +200,7 @@ contract LoopringV3 is ILoopringV3
         uint exchangeId,
         uint amount
         )
-        public
+        external
         nonReentrant
         returns (uint burnedLRC)
     {
@@ -256,7 +256,7 @@ contract LoopringV3 is ILoopringV3
         address recipient,
         uint    requestedAmount
         )
-        public
+        external
         nonReentrant
         returns (uint amountLRC)
     {
@@ -405,17 +405,6 @@ contract LoopringV3 is ILoopringV3
         withdrawalFineLRC = _withdrawalFineLRC;
 
         emit SettingsUpdated(now);
-    }
-
-    function getExchangeAddress(
-        uint exchangeId
-        )
-        internal
-        view
-        returns (address exchangeAddress)
-    {
-        exchangeAddress = exchanges[exchangeId].exchangeAddress;
-        require(exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
     }
 
     function calculateProtocolFee(

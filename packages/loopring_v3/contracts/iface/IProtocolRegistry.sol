@@ -90,9 +90,9 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @param version The protocol's version number.
     function registerProtocol(
         address protocol,
-        string  memory version
+        string  calldata version
         )
-        public;
+        external;
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.
@@ -105,18 +105,11 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         bool supportUpgradability,
         bool onchainDataAvailability
         )
-        public
+        external
         returns (
             address exchangeAddress,
             uint    exchangeId
-        )
-    {
-        return forgeExchange(
-            defaultProtocol,
-            supportUpgradability,
-            onchainDataAvailability
         );
-    }
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
@@ -131,7 +124,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         bool    supportUpgradability,
         bool    onchainDataAvailability
         )
-        public
+        external
         returns (
             address exchangeAddress,
             uint    exchangeId

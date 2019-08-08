@@ -51,9 +51,9 @@ contract ProtocolRegistry is IProtocolRegistry
 
     function registerProtocol(
         address protocol,
-        string  memory version
+        string  calldata version
         )
-        public
+        external
         nonReentrant
     {
         require(protocol != address(0), "ZERO_ADDRESS");
@@ -108,8 +108,8 @@ contract ProtocolRegistry is IProtocolRegistry
         address protocol
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         (address instance, ) = getProtocol(protocol);
         require(instance != address(0), "INVALID_PROTOCOL");
@@ -131,12 +131,50 @@ contract ProtocolRegistry is IProtocolRegistry
     }
 
     function forgeExchange(
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        nonReentrant
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        )
+    {
+        return forgeExchangeInternal(
+            defaultProtocol,
+            supportUpgradability,
+            onchainDataAvailability
+        );
+    }
+
+    function forgeExchange(
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
         )
-        public
+        external
         nonReentrant
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        )
+    {
+        return forgeExchangeInternal(
+            protocol,
+            supportUpgradability,
+            onchainDataAvailability
+        );
+    }
+
+    // --- Internal Functions ---
+
+    function forgeExchangeInternal(
+        address protocol,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        private
         returns (
             address exchangeAddress,
             uint    exchangeId
