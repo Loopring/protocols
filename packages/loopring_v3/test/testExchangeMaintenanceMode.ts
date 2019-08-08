@@ -25,6 +25,8 @@ contract("Exchange", (accounts: string[]) => {
     duration: number,
     user: string
   ) => {
+    const price = await downtimeCostCalculator.PRICE_PER_MINUTE();
+
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
     // Total amount LRC needed for the requested duration
