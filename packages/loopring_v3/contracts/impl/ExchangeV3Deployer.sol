@@ -16,16 +16,21 @@
 */
 pragma solidity 0.5.10;
 
+import "./Exchange.sol";
 
-/// @title NoDefaultFunc
-/// @dev Disable default functions.
+
+/// @title ExchangeV3Deployer
 /// @author Brecht Devos - <brecht@loopring.org>
-contract NoDefaultFunc
+/// @author Daniel Wang  - <daniel@loopring.org>
+/// @dev We created this library to work around the gas limit -- inlining all the
+///      enclosed function directly into LoopringV3 will make LoopringV3 too large
+///      to deploy.
+library ExchangeV3Deployer
 {
-    function ()
+    function deploy()
         external
-        payable
+        returns (address)
     {
-        revert("UNSUPPORTED");
+        return address(new Exchange());
     }
 }

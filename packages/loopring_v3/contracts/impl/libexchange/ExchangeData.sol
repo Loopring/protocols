@@ -169,6 +169,7 @@ library ExchangeData
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
+
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
     function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
     function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }

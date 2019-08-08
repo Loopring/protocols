@@ -16,16 +16,18 @@
 */
 pragma solidity 0.5.10;
 
-import "../../lib/Claimable.sol";
+import "../lib/Claimable.sol";
 
-import "../../iface/IAddressWhitelist.sol";
+import "../iface/IAddressWhitelist.sol";
 
 
 /// @title An Implementation of IAddressWhitelist.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract SignatureBasedAddressWhitelist is IAddressWhitelist, Claimable
+contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
+
+    constructor() Claimable() public {}
 
     function isWhitelisted(
         address user,

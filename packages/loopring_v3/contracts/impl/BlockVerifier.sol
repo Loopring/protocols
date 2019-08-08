@@ -19,6 +19,7 @@ pragma solidity 0.5.10;
 import "../iface/IBlockVerifier.sol";
 
 import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "../impl/libexchange/ExchangeData.sol";
 
@@ -28,7 +29,7 @@ import "../thirdparty/BatchVerifier.sol";
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BlockVerifier is IBlockVerifier, Claimable
+contract BlockVerifier is Claimable, ReentrancyGuard, IBlockVerifier
 {
     struct Circuit
     {
@@ -39,6 +40,8 @@ contract BlockVerifier is IBlockVerifier, Claimable
 
     mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
 
+    constructor() Claimable() public {}
+
     function registerCircuit(
         uint8    blockType,
         bool     onchainDataAvailability,
@@ -48,6 +51,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         )
         external
         onlyOwner
+        // nonReentrant
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
@@ -76,6 +80,7 @@ contract BlockVerifier is IBlockVerifier, Claimable
         )
         external
         onlyOwner
+        // nonReentrant
     {
         Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");

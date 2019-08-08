@@ -15,8 +15,8 @@ contract("UserStakingPool", (accounts: string[]) => {
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    userstaking = exchangeTestUtil.userstakingpool;
-    protocolfee = exchangeTestUtil.protocolfeevault;
+    userstaking = exchangeTestUtil.userStakingPool;
+    protocolfee = exchangeTestUtil.protocolFeeVault;
     userstaking.setProtocolFeeVault(protocolfee.address);
   });
 

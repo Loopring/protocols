@@ -16,9 +16,6 @@
 */
 pragma solidity 0.5.10;
 
-import "../lib/Claimable.sol";
-import "../lib/ReentrancyGuard.sol";
-
 import "../iface/IExchange.sol";
 
 import "./libexchange/ExchangeAccounts.sol";
@@ -34,9 +31,11 @@ import "./libexchange/ExchangeWithdrawals.sol";
 
 
 /// @title An Implementation of IExchange.
+/// @dev This contract supports upgradability proxy, therefore its constructor
+///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, Claimable, ReentrancyGuard
+contract Exchange is IExchange
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
@@ -49,18 +48,43 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
     using ExchangeWithdrawals   for ExchangeData.State;
 
     ExchangeData.State private state;
-    // -- Constructor --
-    constructor(
-        uint    _id,
-        address payable _loopringAddress,
+
+    modifier onlyOperator()
+    {
+        require(msg.sender == state.operator, "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyWhenUninitialized()
+    {
+        require(owner == address(0) && state.id == 0, "INITIALIZED");
+        _;
+    }
+
+    /// @dev The constructor must do NOTHING to support proxy.
+    constructor() public {}
+
+    /// @dev The default function will do Ether depoeits.
+    function() external payable
+    {
+        uint96 amount = uint96(msg.value);
+        require(uint(amount) == msg.value, "TOO_LARGE");
+        state.depositTo(msg.sender, address(0), amount, 0);
+    }
+
+    // -- Initialization --
+    function initialize(
+        address _loopringAddress,
         address _owner,
+        uint    _id,
         address payable _operator,
         bool    _onchainDataAvailability
         )
-        public
+        external
+        onlyWhenUninitialized
+        // nonReentrant
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
-        owner = _owner;
 
         state.initializeGenesisBlock(
             _id,
@@ -70,50 +94,66 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         );
     }
 
-    modifier onlyOperator()
-    {
-        require(msg.sender == state.operator, "UNAUTHORIZED");
-        _;
-    }
-
     // -- Settings --
-    function getGlobalSettings()
+    function getConstants()
         public
         pure
         returns (
-            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
-            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
-            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
-            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
-            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
-            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
-            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
-            uint32 FEE_BLOCK_FINE_START_TIME,
-            uint32 FEE_BLOCK_FINE_MAX_DURATION,
-            uint   MAX_NUM_TOKENS,
-            uint   MAX_NUM_ACCOUNTS
+            bytes32  genesisMerkleRoot,
+            uint[19] memory constants
         )
     {
-        return (
-            ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS(),
-            ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS(),
-            ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE(),
-            ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED(),
-            ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE(),
-            ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS(),
-            ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE(),
-            ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA(),
-            ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS(),
-            ExchangeData.FEE_BLOCK_FINE_START_TIME(),
-            ExchangeData.FEE_BLOCK_FINE_MAX_DURATION(),
-            ExchangeData.MAX_NUM_TOKENS(),
-            ExchangeData.MAX_NUM_ACCOUNTS()
-        );
+        genesisMerkleRoot =  ExchangeData.GENESIS_MERKLE_ROOT();
+        constants = [
+            uint(ExchangeData.SNARK_SCALAR_FIELD()),
+            uint(ExchangeData.MAX_NUM_TOKENS()),
+            uint(ExchangeData.MAX_NUM_ACCOUNTS()),
+            uint(ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS()),
+            uint(ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS()),
+            uint(ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS()),
+            uint(ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS()),
+            uint(ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE()),
+            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED()),
+            uint(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()),
+            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE()),
+            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()),
+            uint(ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
+            uint(ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
+            uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
+            uint(ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
+            uint(ExchangeData.GAS_LIMIT_SEND_TOKENS())
+        ];
     }
+
+
+    function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
+        return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
+    }
+    function SNARK_SCALAR_FIELD() internal pure returns (uint) {
+        // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
+        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
+    }
+    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
+    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
+    function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
+    function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
+    function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
+    function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
+    function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 15 minutes; }
+    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_BASE() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 15 seconds; }
+    function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 10 minutes; }
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
+    function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
+    function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
+    function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
+    function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
+
 
     // -- Mode --
     function isInWithdrawalMode()
@@ -170,14 +210,14 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew,
             bool   isAccountUpdated
         )
     {
-        return updateAccountAndDepositInternal(
+        (accountID, isAccountNew, isAccountUpdated) = updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
             address(0),
@@ -230,8 +270,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address tokenAddress
         )
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -261,8 +301,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address tokenAddress
         )
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -271,8 +311,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address tokenAddress
         )
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -290,11 +330,11 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address recipient
         )
         external
-        nonReentrant
         onlyOwner
-        returns (uint)
+        // nonReentrant
+        returns (uint stake)
     {
-        return state.withdrawExchangeStake(recipient);
+        stake = state.withdrawExchangeStake(recipient);
     }
 
     function withdrawProtocolFeeStake(
@@ -302,15 +342,15 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint amount
         )
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
     {
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
 
     function burnExchangeStake()
         external
-        nonReentrant
+        // nonReentrant
     {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
         if(state.isInWithdrawalMode()) {
@@ -378,8 +418,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         bytes  calldata offchainData
         )
         external
-        nonReentrant
         onlyOperator
+        // nonReentrant
     {
         // Decompress the data here so we can extract the data directly from calldata
         bytes4 selector = IDecompressor(0x0).decompress.selector;
@@ -437,8 +477,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint[] calldata proofs
         )
         external
-        nonReentrant
         onlyOperator
+        // nonReentrant
     {
         state.verifyBlocks(blockIndices, proofs);
     }
@@ -447,8 +487,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint blockIdx
         )
         external
-        nonReentrant
         onlyOperator
+        // nonReentrant
     {
         state.revertBlock(blockIdx);
     }
@@ -493,7 +533,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -515,14 +555,9 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
-        state.depositTo(
-            msg.sender,
-            token,
-            amount,
-            0
-        );
+        state.depositTo(msg.sender, token, amount, 0);
     }
 
     function depositTo(
@@ -532,14 +567,9 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
-        state.depositTo(
-            recipient,
-            tokenAddress,
-            amount,
-            0
-        );
+        state.depositTo(recipient, tokenAddress, amount, 0);
     }
 
     // -- Withdrawals --
@@ -551,8 +581,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         return state.getNumWithdrawalRequestsProcessed();
     }
 
-    function getNumAvailableWithdrawalSlots(
-        )
+    function getNumAvailableWithdrawalSlots()
         external
         view
         returns (uint)
@@ -580,7 +609,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
         uint24 accountID = state.getAccountID(msg.sender);
         state.withdraw(accountID, token, amount);
@@ -591,7 +620,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         )
         external
         payable
-        nonReentrant
+        // nonReentrant
     {
         // Always request the maximum amount so the complete balance is withdrawn
         state.withdraw(0, token, ~uint96(0));
@@ -608,7 +637,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint[12] calldata balancePath
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             msg.sender,
@@ -636,7 +665,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint[12] calldata balancePath
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             owner,
@@ -655,7 +684,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint depositIdx
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.withdrawFromDepositRequest(depositIdx);
     }
@@ -665,7 +694,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint slotIdx
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         require(blockIdx < state.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = state.blocks[blockIdx];
@@ -682,8 +711,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address payable feeRecipient
         )
         external
-        nonReentrant
         onlyOperator
+        // nonReentrant
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx, feeRecipient);
@@ -694,7 +723,7 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint maxNumWithdrawals
         )
         external
-        nonReentrant
+        // nonReentrant
     {
         state.distributeWithdrawals(blockIdx, maxNumWithdrawals);
     }
@@ -704,22 +733,22 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         address payable _operator
         )
         external
-        nonReentrant
         onlyOwner
-        returns (address payable)
+        nonReentrant // this op has an reentry!!!
+        returns (address payable oldOperator)
     {
-        return state.setOperator(_operator);
+        // oldOperator = state.setOperator(_operator);
     }
 
     function setAddressWhitelist(
         address _addressWhitelist
         )
         external
-        nonReentrant
         onlyOwner
-        returns (address)
+        // nonReentrant // this op has an reentry!!!
+        returns (address oldAddressWhitelist)
     {
-        return state.setAddressWhitelist(_addressWhitelist);
+        oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
     }
 
     function setFees(
@@ -729,8 +758,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint _withdrawalFeeETH
         )
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant // this op has an reentry!!!
     {
         state.setFees(
             _accountCreationFeeETH,
@@ -760,16 +789,16 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         uint durationMinutes
         )
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
     {
         state.startOrContinueMaintenanceMode(durationMinutes);
     }
 
     function stopMaintenanceMode()
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
     {
         state.stopMaintenanceMode();
     }
@@ -810,8 +839,8 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
 
     function shutdown()
         external
-        nonReentrant
         onlyOwner
+        // nonReentrant
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
@@ -881,11 +910,6 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         } else if (isAccountUpdated) {
             additionalFeeETH = state.accountUpdateFeeETH;
         }
-        state.depositTo(
-            msg.sender,
-            token,
-            amount,
-            additionalFeeETH
-        );
+        state.depositTo(msg.sender, token, amount, additionalFeeETH);
     }
 }
