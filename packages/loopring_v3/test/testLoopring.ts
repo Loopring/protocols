@@ -237,8 +237,9 @@ contract("Loopring", (accounts: string[]) => {
     it("should not be able to set the update the settings", async () => {
       await expectThrow(
         loopring.updateSettings(
-          exchangeTestUtil.testContext.orderOwners[5],
-          exchangeTestUtil.testContext.orderOwners[6],
+          exchangeTestUtil.testContext.orderOwners[1], // fee vault
+          exchangeTestUtil.testContext.orderOwners[2], // block verifier
+          exchangeTestUtil.testContext.orderOwners[3], // downtime cost calculator
           new BN(web3.utils.toWei("1000", "ether")),
           new BN(web3.utils.toWei("0.02", "ether")),
           new BN(web3.utils.toWei("10000", "ether")),

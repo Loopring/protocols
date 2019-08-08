@@ -331,6 +331,18 @@ contract Exchange is IExchange
         return state.withdrawExchangeStake(recipient);
     }
 
+    function withdrawTokenNotOwnedByUsers(
+        address tokenAddress,
+        address payable recipient
+        )
+        external
+        nonReentrant
+        onlyOwner
+        returns(uint)
+    {
+        return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
+    }
+
     function withdrawProtocolFeeStake(
         address recipient,
         uint amount

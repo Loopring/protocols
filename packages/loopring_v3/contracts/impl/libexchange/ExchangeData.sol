@@ -226,6 +226,9 @@ library ExchangeData
         // A map from an account owner to a token to if the balance is withdrawn
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
 
+        // A map from token address to their accumulated balances
+        mapping (address => uint) tokenBalances;
+
         // A block's state will become FINALIZED when and only when this block is VERIFIED
         // and all previous blocks in the chain have become FINALIZED.
         // The genesis block is FINALIZED by default.

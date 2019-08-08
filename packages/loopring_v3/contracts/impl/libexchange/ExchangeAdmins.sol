@@ -20,6 +20,8 @@ import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
+import "../../iface/IDowntimeCostCalculator.sol";
+
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
@@ -204,7 +206,20 @@ library ExchangeAdmins
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        return durationMinutes.mul(S.loopring.downtimePriceLRCPerMinute());
+        require(durationMinutes > 0, "ZERO_VALUE");
+
+        address costCalculatorAddr = S.loopring.downtimeCostCalculator();
+        if (costCalculatorAddr == address(0)) {
+            return 0;
+        }
+
+        return IDowntimeCostCalculator(costCalculatorAddr).getDowntimeCostLRC(
+            S.totalTimeInMaintenanceSeconds,
+            now - S.exchangeCreationTimestamp,
+            S.numDowntimeMinutes,
+            S.loopring.getExchangeStake(S.id),
+            durationMinutes
+        );
     }
 
     function getTotalTimeInMaintenanceSeconds(
@@ -238,7 +253,10 @@ library ExchangeAdmins
         // All blocks needs to be finalized
         require(S.blocks.length == S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // We also require that all deposit requests are processed
-        require(lastBlock.numDepositRequestsCommitted == S.depositChain.length, "DEPOSITS_NOT_PROCESSED");
+        require(
+            lastBlock.numDepositRequestsCommitted == S.depositChain.length,
+            "DEPOSITS_NOT_PROCESSED"
+        );
         // Merkle root needs to be reset to the genesis block
         // (i.e. all balances 0 and all other state reset to default values)
         require(S.isInInitialState(), "MERKLE_ROOT_NOT_REVERTED");
@@ -254,5 +272,27 @@ library ExchangeAdmins
         // Withdraw the complete stake
         uint amount = S.loopring.getExchangeStake(S.id);
         return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
+    }
+
+    function withdrawTokenNotOwnedByUsers(
+        ExchangeData.State storage S,
+        address token,
+        address payable recipient
+        )
+        public
+        returns (uint amount)
+    {
+        require(token != address(0), "ZERO_ADDRESS");
+        require(recipient != address(0), "ZERO_VALUE");
+
+        uint totalBalance = ERC20(token).balanceOf(address(this));
+        uint userBalance = S.tokenBalances[token];
+
+        assert(totalBalance >= userBalance);
+        amount = totalBalance - userBalance;
+
+        if (amount > 0) {
+            require(token.safeTransfer(recipient, amount), "TRANSFER_FAILED");
+        }
     }
 }
