@@ -42,13 +42,6 @@ contract ProtocolRegistry is IProtocolRegistry
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
-    /// @dev The default function will create an upgradabile exchange
-    ///      with on-chain data-availability.
-    function() external payable
-    {
-        forgeExchange(true, true);
-    }
-
     function registerProtocol(
         address protocol,
         string  calldata version

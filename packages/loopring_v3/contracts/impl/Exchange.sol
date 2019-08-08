@@ -66,14 +66,6 @@ contract Exchange is IExchange
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
-    /// @dev The default function will do Ether depoeits.
-    function() external payable nonReentrant
-    {
-        uint96 amount = uint96(msg.value);
-        require(uint(amount) == msg.value, "TOO_LARGE");
-        state.depositTo(msg.sender, address(0), amount, 0);
-    }
-
     // -- Initialization --
     function initialize(
         address _loopringAddress,
@@ -161,25 +153,25 @@ contract Exchange is IExchange
     function isInWithdrawalMode()
         external
         view
-        returns (bool result)
+        returns (bool)
     {
-        result = state.isInWithdrawalMode();
+        return state.isInWithdrawalMode();
     }
 
     function isShutdown()
         external
         view
-        returns (bool result)
+        returns (bool)
     {
-        result = state.isShutdown();
+        return state.isShutdown();
     }
 
     function isInMaintenance()
         external
         view
-        returns (bool result)
+        returns (bool)
     {
-        result = state.isInMaintenance();
+        return state.isInMaintenance();
     }
 
     // -- Accounts --
@@ -202,7 +194,7 @@ contract Exchange is IExchange
             uint   pubKeyY
         )
     {
-        (accountID, pubKeyX, pubKeyY) = state.getAccount(owner);
+        return state.getAccount(owner);
     }
 
     function createOrUpdateAccount(
@@ -219,7 +211,7 @@ contract Exchange is IExchange
             bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew, isAccountUpdated) = updateAccountAndDepositInternal(
+        return updateAccountAndDepositInternal(
             pubKeyX,
             pubKeyY,
             address(0),
@@ -263,9 +255,9 @@ contract Exchange is IExchange
     function getLRCFeeForRegisteringOneMoreToken()
         external
         view
-        returns (uint feeLRC)
+        returns (uint)
     {
-        feeLRC = state.getLRCFeeForRegisteringOneMoreToken();
+        return state.getLRCFeeForRegisteringOneMoreToken();
     }
 
     function registerToken(
@@ -274,9 +266,9 @@ contract Exchange is IExchange
         external
         nonReentrant
         onlyOwner
-        returns (uint16 tokenID)
+        returns (uint16)
     {
-        tokenID = state.registerToken(tokenAddress);
+        return state.registerToken(tokenAddress);
     }
 
     function getTokenID(
@@ -284,9 +276,9 @@ contract Exchange is IExchange
         )
         external
         view
-        returns (uint16 tokenID)
+        returns (uint16)
     {
-        tokenID = state.getTokenID(tokenAddress);
+        return state.getTokenID(tokenAddress);
     }
 
     function getTokenAddress(
@@ -294,9 +286,9 @@ contract Exchange is IExchange
         )
         external
         view
-        returns (address tokenAddress)
+        returns (address)
     {
-        tokenAddress = state.getTokenAddress(tokenID);
+        return state.getTokenAddress(tokenID);
     }
 
     function disableTokenDeposit(
@@ -334,9 +326,9 @@ contract Exchange is IExchange
         external
         nonReentrant
         onlyOwner
-        returns (uint stake)
+        returns (uint)
     {
-        stake = state.withdrawExchangeStake(recipient);
+        return state.withdrawExchangeStake(recipient);
     }
 
     function withdrawProtocolFeeStake(
@@ -523,7 +515,7 @@ contract Exchange is IExchange
           uint32  timestamp
         )
     {
-        (accumulatedHash, accumulatedFee, timestamp) = state.getDepositRequest(index);
+        return state.getDepositRequest(index);
     }
 
     function updateAccountAndDeposit(
@@ -602,7 +594,7 @@ contract Exchange is IExchange
             uint32  timestamp
         )
     {
-        (accumulatedHash, accumulatedFee, timestamp) = state.getWithdrawRequest(index);
+        return state.getWithdrawRequest(index);
     }
 
     function withdraw(
@@ -715,9 +707,9 @@ contract Exchange is IExchange
         external
         nonReentrant
         onlyOperator
-        returns (uint feeAmount)
+        returns (uint)
     {
-        feeAmount = state.withdrawBlockFee(blockIdx, feeRecipient);
+        return state.withdrawBlockFee(blockIdx, feeRecipient);
     }
 
     function distributeWithdrawals(
@@ -737,9 +729,9 @@ contract Exchange is IExchange
         external
         nonReentrant
         onlyOwner
-        returns (address payable oldOperator)
+        returns (address payable)
     {
-        // oldOperator = state.setOperator(_operator);
+        return state.setOperator(_operator);
     }
 
     function setAddressWhitelist(
@@ -748,9 +740,9 @@ contract Exchange is IExchange
         external
         nonReentrant
         onlyOwner
-        returns (address oldAddressWhitelist)
+        returns (address)
     {
-        oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
+       return state.setAddressWhitelist(_addressWhitelist);
     }
 
     function setFees(
@@ -808,9 +800,9 @@ contract Exchange is IExchange
     function getRemainingDowntime()
         external
         view
-        returns (uint durationMinutes)
+        returns (uint)
     {
-        durationMinutes = state.getRemainingDowntime();
+        return state.getRemainingDowntime();
     }
 
     function getDowntimeCostLRC(
@@ -818,25 +810,25 @@ contract Exchange is IExchange
         )
         external
         view
-        returns (uint costLRC)
+        returns (uint)
     {
-        costLRC = state.getDowntimeCostLRC(durationMinutes);
+        return state.getDowntimeCostLRC(durationMinutes);
     }
 
     function getTotalTimeInMaintenanceSeconds()
         external
         view
-        returns (uint timeSeconds)
+        returns (uint)
     {
-        timeSeconds = state.getTotalTimeInMaintenanceSeconds();
+        return state.getTotalTimeInMaintenanceSeconds();
     }
 
     function getExchangeCreationTimestamp()
         external
         view
-        returns (uint timestamp)
+        returns (uint)
     {
-        timestamp = state.exchangeCreationTimestamp;
+        return state.exchangeCreationTimestamp;
     }
 
     function shutdown()

@@ -189,11 +189,11 @@ contract LoopringV3 is ILoopringV3
         )
         public
         view
-        returns (uint exchangeStake)
+        returns (uint)
     {
         Exchange storage exchange = exchanges[exchangeId];
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-        exchangeStake = exchange.exchangeStake;
+        return exchange.exchangeStake;
     }
 
     function burnExchangeStake(
@@ -366,7 +366,7 @@ contract LoopringV3 is ILoopringV3
         )
         public
         view
-        returns (uint protocolFeeStake)
+        returns (uint)
     {
         Exchange storage exchange = exchanges[exchangeId];
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
