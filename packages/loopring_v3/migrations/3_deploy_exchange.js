@@ -98,7 +98,6 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.link(ExchangeData, ExchangeV3Deployer),
           deployer.link(ExchangeBalances, ExchangeV3Deployer),
           deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeAccounts, ExchangeV3Deployer),
@@ -124,7 +123,9 @@ module.exports = function(deployer, network, accounts) {
         console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
       })
       .then(() => {
-        return Promise.all([deployer.deploy(ExchangeV3Deployer)]);
+        return Promise.all([
+          deployer.deploy(ExchangeV3Deployer, { gas: 6700000 })
+        ]);
       })
       .then(() => {
         console.log(">>>>>>>> Deployed contracts addresses:");

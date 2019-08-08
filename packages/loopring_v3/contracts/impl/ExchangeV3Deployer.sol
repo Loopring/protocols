@@ -31,6 +31,7 @@ library ExchangeV3Deployer
         external
         returns (address)
     {
-        return address(new Exchange());
+        Exchange exchange = new Exchange();
+        return address(exchange);
     }
 }

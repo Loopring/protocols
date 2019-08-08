@@ -14,6 +14,9 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer
       .then(() => {
+        return Promise.all([LRCToken.deployed()]);
+      })
+      .then(() => {
         return Promise.all([
           deployer.deploy(BlockVerifier),
           deployer.deploy(DowntimeCostCalculator),
