@@ -132,92 +132,22 @@ contract IExchange is Claimable, ReentrancyGuard
 
     // -- Initialization --
     /// Initialize this exchange. This method can only be called once.
-    /// @param  loopringAddress The corresponding ILoopring contract address.
-    /// @param  exchangeId The id of this exchange.
     /// @param  owner The owner of this exchange.
+    /// @param  exchangeId The id of this exchange.
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
+    /// @param  loopringAddress The corresponding ILoopring contract address.
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
         address loopringAddress,
-        uint    exchangeId,
         address owner,
+        uint    exchangeId,
         address payable operator,
         bool    onchainDataAvailability
         )
         external;
 
-    // -- Settings --
-    function getGlobalSettings()
-        public
-        pure
-        returns (
-            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
-            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
-            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
-            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
-            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
-            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
-            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
-            uint32 FEE_BLOCK_FINE_START_TIME,
-            uint32 FEE_BLOCK_FINE_MAX_DURATION,
-            uint   MAX_NUM_TOKENS,
-            uint   MAX_NUM_ACCOUNTS
-        );
-
-    // -- Mode --
-    /// @dev Whether the exchange is in withdrawal mode.
-    /// @return Returns true if the exchange is in withdrawal mode, else false
-    function isInWithdrawalMode()
-        external
-        view
-        returns (bool);
-
-    /// @dev Whether the exchange is shutdown.
-    /// @return Returns true if the exchange is shutdown, else false
-    function isShutdown()
-        external
-        view
-        returns (bool);
-
-    // -- Accounts --
-
-    /// @dev Gets the number of accounts registered on this exchange.
-    /// @return The number of accounts registered
-    function getNumAccounts()
-        external
-        view
-        returns (uint);
-
-    /// @dev Get the account information for a given address.
-    /// @param  owner The owning address of the account
-    /// @return accountID The account's ID
-    /// @return pubKeyX The first part of the account's trading EdDSA public key
-    /// @return pubKeyY The second part of the account's trading EdDSA public key
-    function getAccount(
-        address owner
-        )
-        external
-        view
-        returns (
-            uint24 accountID,
-            uint   pubKeyX,
-            uint   pubKeyY
-        );
-
-    /// @dev Submit an onchain request to create a new account for msg.sender or
-    ///      update its existing account by replacing its trading public key.
-    ///      The total fee in ETH that the user needs to pay is:
-    ///          depositFee +
-    ///          (isAccountNew ? accountCreationFee : 0) +
-    ///          (isAccountUpdated ? accountUpdateFee : 0)
-    ///      If the user sends too much ETH the surplus is sent back immediately.
-    ///
-    ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create or update the offchain account.
     ///

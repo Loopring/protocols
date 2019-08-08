@@ -24,7 +24,7 @@ import "./ExchangeProxy.sol";
 
 /// @title An Implementation of IProtocolRegistry.
 /// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
-///      should be placed in front of it to ensure upgradeability of
+///      can be placed in front of it to ensure upgradeability of
 //       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry
@@ -35,11 +35,15 @@ contract ProtocolRegistry is IProtocolRegistry
        string  version;
     }
 
-    mapping (address => address /* protocol */) public proxies;
     mapping (address => Protocol) private protocols;
+    mapping (address => address) public exchangeToProtocolMap;
+    address[] public exchanges;
 
+    /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
+    /// @dev The default function will create an upgradabile exchange
+    ///      with on-chain data-availability.
     function() external payable
     {
         forgeExchange(true, true);
@@ -61,7 +65,7 @@ contract ProtocolRegistry is IProtocolRegistry
         // Initialize the instance in a way that it's onwed by the protocol address itself.
         // This is to prevent the default instance from being used by any entity.
         // TODO(daniel): uncomment this
-        // uint id = loopring.registerExchange(instance, false);
+        // uint id = loopring.initializeExchange(instance, false);
         // require(id == uint(1), "DEFAULT_INSTANCE_MUST_HAVE_ID_1");
 
         protocols[protocol] = Protocol(instance, version);
@@ -93,7 +97,7 @@ contract ProtocolRegistry is IProtocolRegistry
             string  memory version
         )
     {
-        protocol = proxies[msg.sender];
+        protocol = exchangeToProtocolMap[msg.sender];
         Protocol storage p = protocols[protocol];
         instance = p.instance;
         version = p.version;
@@ -138,23 +142,27 @@ contract ProtocolRegistry is IProtocolRegistry
             uint    exchangeId
         )
     {
-        getProtocol(protocol); // verifies the input
+        getProtocol(protocol); // verifies protocol is valid
+
+        exchangeId = exchanges.length + 1;
+        exchanges.push(exchangeAddress);
 
         ILoopring loopring = ILoopring(protocol);
         if (supportUpgradability) {
             // Deploy an exchange proxy
             exchangeAddress = address(new ExchangeProxy(address(this)));
-            assert(proxies[exchangeAddress] == address(0));
-            proxies[exchangeAddress] = protocol;
+            assert(exchangeToProtocolMap[exchangeAddress] == address(0));
+            exchangeToProtocolMap[exchangeAddress] = protocol;
         } else {
             // Deploy a native exchange
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = loopring.registerExchange(
+        loopring.initializeExchange(
             exchangeAddress,
-            msg.sender,
-            msg.sender,
+            exchangeId,
+            msg.sender,  // owner
+            msg.sender,  // operator
             onchainDataAvailability
         );
 

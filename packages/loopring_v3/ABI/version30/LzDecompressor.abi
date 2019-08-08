@@ -1,1 +1,0 @@
-[{"constant":true,"inputs":[{"name":"","type":"bytes"}],"name":"decompress","outputs":[{"name":"","type":"bytes"}],"payable":false,"stateMutability":"pure","type":"function"}]
