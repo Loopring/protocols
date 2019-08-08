@@ -157,6 +157,14 @@ contract IExchange is Claimable, ReentrancyGuard
         )
         external;
 
+    function getConstants()
+        public
+        pure
+        returns (
+            bytes32 merkleRoot,
+            uint[19] memory constants
+        );
+
     // -- Mode --
     /// @dev Whether the exchange is in withdrawal mode.
     /// @return Returns true if the exchange is in withdrawal mode, else false

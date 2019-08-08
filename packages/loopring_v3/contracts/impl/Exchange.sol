@@ -89,6 +89,17 @@ contract Exchange is IExchange
         );
     }
 
+    function getConstants()
+        public
+        pure
+        returns (
+            bytes32 merkleRoot,
+            uint[19] memory constants
+        )
+    {
+        return ExchangeData.getConstants();
+    }
+
     // -- Mode --
     function isInWithdrawalMode()
         external

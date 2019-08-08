@@ -98,7 +98,6 @@ export class ExchangeTestUtil {
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
   public protocolRegistry: any;
-  public ExchangeData: any;
 
   public accounts: Account[][] = [];
 
@@ -109,7 +108,7 @@ export class ExchangeTestUtil {
     16
   );
 
-  public SNARK_SCALAR_FIELD: number;
+  // public SNARK_SCALAR_FIELD: number;
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS: number;
   public MAX_OPEN_DEPOSIT_REQUESTS: number;
@@ -162,28 +161,6 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-
-    this.ExchangeData = this.contracts.ExchangeData;
-    // this.GENESIS_MERKLE_ROOT = new BN(await this.ExchangeData.GENESIS_MERKLE_ROOT());
-    this.SNARK_SCALAR_FIELD = await this.ExchangeData.SNARK_SCALAR_FIELD().toNumber();
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = await this.ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS().toNumber();
-    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = await this.ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS().toNumber();
-    this.MAX_OPEN_DEPOSIT_REQUESTS = await this.ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS().toNumber();
-    this.MAX_OPEN_WITHDRAWAL_REQUESTS = await this.ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS().toNumber();
-    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = await this.ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE().toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_FORCED = await this.ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED().toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = await this.ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE().toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_BASE = await this.ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE().toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_DELTA = await this.ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA().toNumber();
-    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = await this.ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS().toNumber();
-    this.MAX_NUM_TOKENS = await this.ExchangeData.MAX_NUM_TOKENS().toNumber();
-    this.MAX_NUM_ACCOUNTS = await this.ExchangeData.MAX_NUM_ACCOUNTS().toNumber();
-    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = await this.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS().toNumber();
-    this.FEE_BLOCK_FINE_START_TIME = await this.ExchangeData.FEE_BLOCK_FINE_START_TIME().toNumber();
-    this.FEE_BLOCK_FINE_MAX_DURATION = await this.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION().toNumber();
-    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = await this.ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS().toNumber();
-    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = await this.ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED().toNumber();
-    this.GAS_LIMIT_SEND_TOKENS = await this.ExchangeData.GAS_LIMIT_SEND_TOKENS().toNumber();
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.deployer;
@@ -263,6 +240,29 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
+
+    const result = await this.exchange.getConstants();
+    // this.GENESIS_MERKLE_ROOT = new BN(result.merkleRoot);
+
+    // this.SNARK_SCALAR_FIELD = result.constants[0].toNumber();
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = result.constants[1].toNumber();
+    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = result.constants[2].toNumber();
+    this.MAX_OPEN_DEPOSIT_REQUESTS = result.constants[3].toNumber();
+    this.MAX_OPEN_WITHDRAWAL_REQUESTS = result.constants[4].toNumber();
+    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = result.constants[5].toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_FORCED = result.constants[6].toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = result.constants[7].toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_BASE = result.constants[8].toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_DELTA = result.constants[9].toNumber();
+    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = result.constants[10].toNumber();
+    this.MAX_NUM_TOKENS = result.constants[11].toNumber();
+    this.MAX_NUM_ACCOUNTS = result.constants[12].toNumber();
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = result.constants[13].toNumber();
+    this.FEE_BLOCK_FINE_START_TIME = result.constants[14].toNumber();
+    this.FEE_BLOCK_FINE_MAX_DURATION = result.constants[15].toNumber();
+    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = result.constants[16].toNumber();
+    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = result.constants[17].toNumber();
+    this.GAS_LIMIT_SEND_TOKENS = result.constants[18].toNumber();
   }
 
   public async setupTestState(exchangeID: number) {
@@ -2542,57 +2542,57 @@ export class ExchangeTestUtil {
     //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
     // );
 
-    // const eventArr: any = await this.getEventsFromContract(
-    //   this.protocolRegistry,
-    //   "ExchangeForged",
-    //   web3.eth.blockNumber
-    // );
+    const eventArr: any = await this.getEventsFromContract(
+      this.protocolRegistry,
+      "ExchangeForged",
+      web3.eth.blockNumber
+    );
 
-    // const items = eventArr.map((eventObj: any) => {
-    //   return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
-    // });
+    const items = eventArr.map((eventObj: any) => {
+      return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
+    });
 
-    // const exchangeAddress = items[0][0];
-    // const exchangeID = items[0][1].toNumber();
+    const exchangeAddress = items[0][0];
+    const exchangeID = items[0][1].toNumber();
 
-    // this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+    this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 
-    // await this.exchange.setOperator(operator, { from: owner });
+    await this.exchange.setOperator(operator, { from: owner });
 
-    // this.exchangeOwner = owner;
-    // this.exchangeOperator = operator;
-    // this.exchangeId = exchangeID;
-    // this.onchainDataAvailability = onchainDataAvailability;
+    this.exchangeOwner = owner;
+    this.exchangeOperator = operator;
+    this.exchangeId = exchangeID;
+    this.onchainDataAvailability = onchainDataAvailability;
 
-    // await this.exchange.setFees(
-    //   accountCreationFeeInETH,
-    //   accountUpdateFeeInETH,
-    //   depositFeeInETH,
-    //   withdrawalFeeInETH,
-    //   { from: this.exchangeOwner }
-    // );
+    await this.exchange.setFees(
+      accountCreationFeeInETH,
+      accountUpdateFeeInETH,
+      depositFeeInETH,
+      withdrawalFeeInETH,
+      { from: this.exchangeOwner }
+    );
 
-    // if (bSetupTestState) {
-    //   await this.registerTokens();
-    //   await this.setupTestState(exchangeID);
-    // }
+    if (bSetupTestState) {
+      await this.registerTokens();
+      await this.setupTestState(exchangeID);
+    }
 
-    // // Deposit some LRC to stake for the exchange
-    // const depositer = this.testContext.operators[2];
-    // const stakeAmount = onchainDataAvailability
-    //   ? await this.loopringV3.minExchangeStakeWithDataAvailability()
-    //   : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
-    // await this.setBalanceAndApprove(
-    //   depositer,
-    //   "LRC",
-    //   stakeAmount,
-    //   this.loopringV3.address
-    // );
+    // Deposit some LRC to stake for the exchange
+    const depositer = this.testContext.operators[2];
+    const stakeAmount = onchainDataAvailability
+      ? await this.loopringV3.minExchangeStakeWithDataAvailability()
+      : await this.loopringV3.minExchangeStakeWithoutDataAvailability();
+    await this.setBalanceAndApprove(
+      depositer,
+      "LRC",
+      stakeAmount,
+      this.loopringV3.address
+    );
 
-    // // Stake it
-    // await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
-    //   from: depositer
-    // });
+    // Stake it
+    await this.loopringV3.depositExchangeStake(exchangeID, stakeAmount, {
+      from: depositer
+    });
 
     return 0; //exchangeID;
   }
