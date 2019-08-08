@@ -203,7 +203,6 @@ library ExchangeAdmins
         uint durationMinutes
         )
         public
-        view
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
