@@ -36,7 +36,7 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.link(AddressUtil, LoopriProtocolFeeVaultngV3),
+          deployer.link(AddressUtil, ProtocolFeeVault),
           deployer.link(ERC20SafeTransfer, ProtocolFeeVault),
           deployer.link(MathUint, ProtocolFeeVault)
         ]);
