@@ -16,7 +16,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log(">>>>>>>> Deployed contracts addresses (deploy_libs):");
         console.log("AddressUtil:", AddressUtil.address);
         console.log("ERC20SafeTransfer:", ERC20SafeTransfer.address);
         console.log("MathUint:", MathUint.address);

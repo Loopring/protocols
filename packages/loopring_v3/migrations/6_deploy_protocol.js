@@ -51,13 +51,12 @@ module.exports = function(deployer, network, accounts) {
             WETHToken.address,
             ProtocolFeeVault.address,
             BlockVerifier.address,
-            DowntimeCostCalculator.address,
-            { gas: 11100000 }
+            DowntimeCostCalculator.address
           )
         ]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log(">>>>>>>> Deployed contracts addresses (deploy_protocol):");
         console.log("LoopringV3:", LoopringV3.address);
       });
   }

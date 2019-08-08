@@ -51,7 +51,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log(">>>>>>>> Deployed contracts addresses (deploy_aux):");
         console.log("BlockVerifier:", BlockVerifier.address);
         console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
         console.log("UserStakingPool:", UserStakingPool.address);
