@@ -110,7 +110,6 @@ export class ExchangeTestUtil {
     16
   );
 
-  public GENESIS_MERKLE_ROOT: number;
   public SNARK_SCALAR_FIELD: number;
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
   public MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS: number;
@@ -246,6 +245,7 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
+    // this.GENESIS_MERKLE_ROOT = new BN(await this.ExchangeData.GENESIS_MERKLE_ROOT );
     this.SNARK_SCALAR_FIELD = await this.ExchangeData.SNARK_SCALAR_FIELD.toNumber();
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = await this.ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
     this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = await this.ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS.toNumber();
