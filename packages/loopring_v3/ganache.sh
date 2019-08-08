@@ -53,5 +53,3 @@ ganache-cli \
     --account="0xb6363ec295018ed93759777139049dbb098734843c311ebb9951c1e93feffcb4,1000000000000000000000"\
     --account="0x3c3cb9b2fcab41e588d5aa0066928f855f2cf09e5c817fc41350eae9cfe8dc36,1000000000000000000000"\
     --acctKeys="ganache_account_keys.txt"
-
-
