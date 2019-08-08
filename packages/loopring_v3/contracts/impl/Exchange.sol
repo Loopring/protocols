@@ -67,7 +67,7 @@ contract Exchange is IExchange
     constructor() public {}
 
     /// @dev The default function will do Ether depoeits.
-    function() external payable
+    function() external payable nonReentrant
     {
         uint96 amount = uint96(msg.value);
         require(uint(amount) == msg.value, "TOO_LARGE");
