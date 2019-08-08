@@ -31,7 +31,7 @@
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",
-    "build": "./install && yarn run compile",
+    "build": "rm -rf keys && ./install && make && yarn run compile",
     "genabi": "node_modules/solc/solcjs --abi contracts/iface/*.sol -o ABI/version30/ --overwrite && node_modules/solc/solcjs --abi contracts/lib/*.sol --allow-paths contracts/iface/*.sol -o ABI/version30/ --overwrite",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
