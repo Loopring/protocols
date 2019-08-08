@@ -1,13 +1,5 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
-var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
-var ExchangeProxy = artifacts.require("./impl/ExchangeProxy");
-var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-var ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
-var DowntimeCostCalculator = artifacts.require(
-  "./test/DowntimeCostCalculator.sol"
-);
-var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
 var ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
 var ExchangeBalances = artifacts.require("./impl/libexchange/ExchangeBalances");
@@ -20,12 +12,12 @@ var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
 var ExchangeWithdrawals = artifacts.require(
   "./impl/libexchange/ExchangeWithdrawals"
 );
-var UserStakingPool = artifacts.require("./impl/UserStakingPool");
-var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
+var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
     // ignore.
+    // TODO(kongliang): we should deploy on mainnet using scripts written here.
   } else {
     deployer
       .then(() => {
@@ -41,13 +33,12 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.link(ExchangeData, [
             ExchangeAccounts,
-            ExchangeMode,
-            ExchangeAccounts,
             ExchangeAdmins,
             ExchangeBlocks,
-            ExchangeTokens,
-            ExchangeGenesis,
             ExchangeDeposits,
+            ExchangeGenesis,
+            ExchangeMode,
+            ExchangeTokens,
             ExchangeWithdrawals
           ])
         ]);
@@ -71,11 +62,15 @@ module.exports = function(deployer, network, accounts) {
           deployer.link(ExchangeMode, [
             ExchangeAdmins,
             ExchangeBlocks,
-            ExchangeTokens,
             ExchangeDeposits,
+            ExchangeTokens,
             ExchangeWithdrawals
           ]),
-          deployer.link(ExchangeAccounts, ExchangeGenesis)
+          deployer.link(ExchangeAccounts, [
+            ExchangeDeposits,
+            ExchangeGenesis,
+            ExchangeWithdrawals
+          ])
         ]);
       })
       .then(() => {
@@ -87,9 +82,11 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.link(ExchangeTokens, ExchangeGenesis),
-          deployer.link(ExchangeTokens, ExchangeDeposits),
-          deployer.link(ExchangeTokens, ExchangeWithdrawals)
+          deployer.link(ExchangeTokens, [
+            ExchangeDeposits,
+            ExchangeGenesis,
+            ExchangeWithdrawals
+          ])
         ]);
       })
       .then(() => {
@@ -101,62 +98,40 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
+          deployer.link(ExchangeBalances, ExchangeV3Deployer),
+          deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeAccounts, ExchangeV3Deployer),
           deployer.link(ExchangeAdmins, ExchangeV3Deployer),
-          deployer.link(ExchangeBalances, ExchangeV3Deployer),
           deployer.link(ExchangeBlocks, ExchangeV3Deployer),
-          deployer.link(ExchangeData, ExchangeV3Deployer),
-          deployer.link(ExchangeDeposits, ExchangeV3Deployer),
-          deployer.link(ExchangeGenesis, ExchangeV3Deployer),
-          deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeTokens, ExchangeV3Deployer),
+          deployer.link(ExchangeGenesis, ExchangeV3Deployer),
+          deployer.link(ExchangeDeposits, ExchangeV3Deployer),
           deployer.link(ExchangeWithdrawals, ExchangeV3Deployer)
         ]);
       })
       .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeV3Deployer),
-          deployer.deploy(BlockVerifier),
-          deployer.deploy(DowntimeCostCalculator),
-          deployer.deploy(ProtocolRegistry),
-          deployer.deploy(UserStakingPool, LRCToken.address)
-        ]);
+        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log("ExchangeData: ", ExchangeData.address);
+        console.log("ExchangeBalances: ", ExchangeBalances.address);
+        console.log("ExchangeMode: ", ExchangeMode.address);
+        console.log("ExchangeAccounts: ", ExchangeAccounts.address);
+        console.log("ExchangeAdmins: ", ExchangeAdmins.address);
+        console.log("ExchangeBlocks: ", ExchangeBlocks.address);
+        console.log("ExchangeTokens: ", ExchangeTokens.address);
+        console.log("ExchangeGenesis: ", ExchangeGenesis.address);
+        console.log("ExchangeDeposits: ", ExchangeDeposits.address);
+        console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
       })
       .then(() => {
         return Promise.all([
-          deployer.deploy(
-            ProtocolFeeVault,
-            LRCToken.address,
-            UserStakingPool.address
-          )
+          deployer.deploy(ExchangeV3Deployer, { gas: 6700000 })
         ]);
       })
       .then(() => {
-        return Promise.all([deployer.link(ExchangeV3Deployer, LoopringV3)]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(
-            LoopringV3,
-            LRCToken.address,
-            WETHToken.address,
-            ProtocolFeeVault.address,
-            BlockVerifier.address,
-            DowntimeCostCalculator.address
-          )
-        ]);
-      })
-      .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses: >>>>>>>>");
+        console.log(">>>>>>>> Deployed contracts addresses:");
         console.log("WETHToken:", WETHToken.address);
         console.log("LRCToken:", LRCToken.address);
-        console.log("UserStakingPool:", UserStakingPool.address);
-        console.log("ProtocolFeeVault:", ProtocolFeeVault.address);
-        console.log("BlockVerifier:", BlockVerifier.address);
-        console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
         console.log("ExchangeV3Deployer:", ExchangeV3Deployer.address);
-        console.log("ProtocolRegistry:", ProtocolRegistry.address);
-        console.log("LoopringV3:", LoopringV3.address);
       });
   }
 };

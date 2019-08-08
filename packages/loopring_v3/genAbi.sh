@@ -19,7 +19,7 @@ node_modules/solc/solcjs \
 mv ABI/version30/contracts_iface_IAddressWhitelist_sol_IAddressWhitelist.abi ABI/version30/IAddressWhitelist.abi
 mv ABI/version30/contracts_iface_IBlockVerifier_sol_IBlockVerifier.abi ABI/version30/IBlockVerifier.abi
 mv ABI/version30/contracts_iface_IDecompressor_sol_IDecompressor.abi ABI/version30/IDecompressor.abi
-// mv ABI/version30/contracts_iface_IDowntimeCostCalculator_sol_IDowntimeCostCalculator.abi ABI/version30/IDowntimeCostCalculator.abi
+mv ABI/version30/contracts_iface_IDowntimeCostCalculator_sol_IDowntimeCostCalculator.abi ABI/version30/IDowntimeCostCalculator.abi
 mv ABI/version30/contracts_iface_IExchange_sol_IExchange.abi ABI/version30/IExchange.abi
 mv ABI/version30/contracts_iface_ILoopringV3_sol_ILoopringV3.abi ABI/version30/ILoopringV3.abi
 mv ABI/version30/contracts_iface_ILoopring_sol_ILoopring.abi ABI/version30/ILoopring.abi
