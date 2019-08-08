@@ -21,7 +21,7 @@ pragma solidity 0.5.10;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopring
 {
-    uint exchangeCreationCostLRC;
+    uint public exchangeCreationCostLRC;
 
     /// @dev Deploy an new exchange instance without initialization.
     /// @return exchangeAddress The address of the new exchange.
