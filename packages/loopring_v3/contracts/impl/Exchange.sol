@@ -728,7 +728,7 @@ contract Exchange is IExchange
         onlyOwner
         returns (address)
     {
-       return state.setAddressWhitelist(_addressWhitelist);
+        return state.setAddressWhitelist(_addressWhitelist);
     }
 
     function setFees(
