@@ -35,8 +35,9 @@ contract ProtocolRegistry is IProtocolRegistry
        string  version;
     }
 
-    mapping (address => address /* protocol */) public proxies;
     mapping (address => Protocol) private protocols;
+    mapping (address => address) public exchangeToProtocolMap;
+    address[] public exchanges;
 
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
@@ -96,7 +97,7 @@ contract ProtocolRegistry is IProtocolRegistry
             string  memory version
         )
     {
-        protocol = proxies[msg.sender];
+        protocol = exchangeToProtocolMap[msg.sender];
         Protocol storage p = protocols[protocol];
         instance = p.instance;
         version = p.version;
@@ -141,21 +142,25 @@ contract ProtocolRegistry is IProtocolRegistry
             uint    exchangeId
         )
     {
-        getProtocol(protocol); // verifies the input
+        getProtocol(protocol); // verifies protocol is valid
+
+        exchangeId = exchanges.length + 1;
+        exchanges.push(exchangeAddress);
 
         ILoopring loopring = ILoopring(protocol);
         if (supportUpgradability) {
             // Deploy an exchange proxy
             exchangeAddress = address(new ExchangeProxy(address(this)));
-            assert(proxies[exchangeAddress] == address(0));
-            proxies[exchangeAddress] = protocol;
+            assert(exchangeToProtocolMap[exchangeAddress] == address(0));
+            exchangeToProtocolMap[exchangeAddress] = protocol;
         } else {
             // Deploy a native exchange
             exchangeAddress = loopring.deployExchange();
         }
 
-        exchangeId = loopring.initializeExchange(
+        loopring.initializeExchange(
             exchangeAddress,
+            exchangeId,
             msg.sender,  // owner
             msg.sender,  // operator
             onchainDataAvailability

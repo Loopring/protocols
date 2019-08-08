@@ -68,7 +68,8 @@ contract ILoopringV3 is ILoopring
         uint    exchangeStake;
         uint    protocolFeeStake;
     }
-    Exchange[] public exchanges;
+
+    mapping (uint => Exchange) internal exchanges;
 
     uint    public totalStake;
 
