@@ -306,6 +306,19 @@ contract IExchange is Claimable, ReentrancyGuard
         external
         returns (uint);
 
+    /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops.
+    ///      Can only be called by the exchange owner.
+    ///
+    /// @param tokenAddress The adderss of the token.
+    /// @param recipient The address to send the token or ether.
+    /// @return The amount of token withdrawn
+    function withdrawTokenNotOwnedByUsers(
+        address tokenAddress,
+        address payable recipient
+        )
+        external
+        returns (uint);
+
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can always be called.
     ///      Can only be called by the exchange owner.

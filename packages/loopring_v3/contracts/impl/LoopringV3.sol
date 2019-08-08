@@ -42,7 +42,8 @@ contract LoopringV3 is ILoopringV3
         address _lrcAddress,
         address _wethAddress,
         address payable _protocolFeeVault,
-        address _blockVerifierAddress
+        address _blockVerifierAddress,
+        address _downtimeCostCalculator
         )
         Claimable()
         public
@@ -56,7 +57,8 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            0, 0, 0, 0, 0, 0, 0, 0, 0
+            _downtimeCostCalculator,
+            0, 0, 0, 0, 0, 0, 0, 0
         );
     }
 
@@ -119,9 +121,9 @@ contract LoopringV3 is ILoopringV3
     function updateSettings(
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
+        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -135,9 +137,9 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
+            _downtimeCostCalculator,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
-            _downtimePriceLRCPerMinute,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -377,9 +379,9 @@ contract LoopringV3 is ILoopringV3
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
+        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -391,12 +393,13 @@ contract LoopringV3 is ILoopringV3
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
+        require(address(0) != _downtimeCostCalculator, "ZERO_ADDRESS");
 
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
+        downtimeCostCalculator = _downtimeCostCalculator;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
-        downtimePriceLRCPerMinute = _downtimePriceLRCPerMinute;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;

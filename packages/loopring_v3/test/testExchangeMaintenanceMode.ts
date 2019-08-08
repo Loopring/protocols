@@ -7,11 +7,17 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let loopring: any;
+  let downtimeCostCalculator: any;
   let exchangeID = 0;
 
   const getDowntimeCost = async (duration: number) => {
-    const downtimePriceLRCPerMinute = await loopring.downtimePriceLRCPerMinute();
-    const cost = new BN(duration).mul(downtimePriceLRCPerMinute);
+    const cost = await downtimeCostCalculator.getDowntimeCostLRC(
+      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
+      new BN(duration)
+    );
     return cost;
   };
 
@@ -25,7 +31,7 @@ contract("Exchange", (accounts: string[]) => {
     const numMinutesLeft = (await exchange.getRemainingDowntime()).toNumber();
     const numMinutesToBuy =
       duration >= numMinutesLeft ? duration - numMinutesLeft : 0;
-    const cost = await exchange.getDowntimeCostLRC(numMinutesToBuy);
+    const cost = await getDowntimeCost(numMinutesToBuy);
 
     const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(
       user,
@@ -118,6 +124,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
     loopring = exchangeTestUtil.loopringV3;
+    downtimeCostCalculator = exchangeTestUtil.downtimeCostCalculator;
     exchangeID = 1;
   });
 
@@ -163,9 +170,7 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // Make sure the exchange owner has enough LRC
-        const maintenanceCost = await exchange.getDowntimeCostLRC(
-          durationMinutes
-        );
+        const maintenanceCost = await getDowntimeCost(durationMinutes);
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
@@ -308,9 +313,7 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // Make sure the exchange owner has enough LRC
-        const maintenanceCost = await exchange.getDowntimeCostLRC(
-          durationMinutes
-        );
+        const maintenanceCost = await getDowntimeCost(durationMinutes);
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
@@ -400,7 +403,7 @@ contract("Exchange", (accounts: string[]) => {
       const duration = 1000;
 
       // Make sure the exchange owner has enough LRC
-      const maintenanceCost = await exchange.getDowntimeCostLRC(duration);
+      const maintenanceCost = await getDowntimeCost(duration);
       await exchangeTestUtil.setBalanceAndApprove(
         exchangeTestUtil.exchangeOwner,
         "LRC",
@@ -439,12 +442,12 @@ contract("Exchange", (accounts: string[]) => {
 
       let duration = 123;
       let expectedCost = await getDowntimeCost(duration);
-      let cost = await exchange.getDowntimeCostLRC(duration);
+      let cost = await getDowntimeCost(duration);
       assert(cost.eq(expectedCost), "Downtime cost not as expected");
 
       duration = 456;
       expectedCost = await getDowntimeCost(duration);
-      cost = await exchange.getDowntimeCostLRC(duration);
+      cost = await getDowntimeCost(duration);
       assert(cost.eq(expectedCost), "Downtime cost not as expected");
     });
   });

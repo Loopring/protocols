@@ -81,9 +81,9 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
     address public wethAddress;
     address public exchangeDeployerAddress;
     address public blockVerifierAddress;
+    address public downtimeCostCalculator;
     uint    public exchangeCreationCostLRC;
     uint    public maxWithdrawalFee;
-    uint    public downtimePriceLRCPerMinute;
     uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
@@ -107,10 +107,10 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
     ///      new Loopring exchanges.
     function updateSettings(
         address payable _protocolFeeVault,
-        address _blockVerifierAddress,
+        address _blockVerifierAddress,   // address(0) not allowed
+        address _downtimeCostCalculator, // address(0) allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
