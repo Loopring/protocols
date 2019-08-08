@@ -5,7 +5,7 @@ var MathUint = artifacts.require("./lib/MathUint.sol");
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-var DowntimeCostCalculator = artifacts.require(
+var FixedPriceDowntimeCostCalculator = artifacts.require(
   "./test/FixedPriceDowntimeCostCalculator.sol"
 );
 var UserStakingPool = artifacts.require("./impl/UserStakingPool");
@@ -30,7 +30,7 @@ module.exports = function(deployer, network, accounts) {
       .then(() => {
         return Promise.all([
           deployer.deploy(BlockVerifier),
-          deployer.deploy(DowntimeCostCalculator),
+          deployer.deploy(FixedPriceDowntimeCostCalculator),
           deployer.deploy(UserStakingPool, LRCToken.address)
         ]);
       })
@@ -53,7 +53,10 @@ module.exports = function(deployer, network, accounts) {
       .then(() => {
         console.log(">>>>>>>> Deployed contracts addresses (deploy_aux):");
         console.log("BlockVerifier:", BlockVerifier.address);
-        console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
+        console.log(
+          "FixedPriceDowntimeCostCalculator:",
+          FixedPriceDowntimeCostCalculator.address
+        );
         console.log("UserStakingPool:", UserStakingPool.address);
         console.log("ProtocolFeeVault:", ProtocolFeeVault.address);
         console.log("");

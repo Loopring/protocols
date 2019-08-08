@@ -6,7 +6,7 @@ var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-var DowntimeCostCalculator = artifacts.require(
+var FixedPriceDowntimeCostCalculator = artifacts.require(
   "./test/DowntimeCostCalculator.sol"
 );
 var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
@@ -31,7 +31,7 @@ module.exports = function(deployer, network, accounts) {
           WETHToken.deployed(),
           ProtocolFeeVault.deployed(),
           BlockVerifier.deployed(),
-          DowntimeCostCalculator.deployed(),
+          FixedPriceDowntimeCostCalculator.deployed(),
           ExchangeV3Deployer.deployed()
         ]);
       })
@@ -51,7 +51,7 @@ module.exports = function(deployer, network, accounts) {
             WETHToken.address,
             ProtocolFeeVault.address,
             BlockVerifier.address,
-            DowntimeCostCalculator.address
+            FixedPriceDowntimeCostCalculator.address
           )
         ]);
       })
