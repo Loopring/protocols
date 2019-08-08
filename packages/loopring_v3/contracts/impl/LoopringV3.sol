@@ -66,9 +66,10 @@ contract LoopringV3 is ILoopringV3
     function deployExchange()
         external
         nonReentrant
-        returns (address)
+        returns (address exchange)
     {
-        return ExchangeV3Deployer.deploy();
+        exchange = ExchangeV3Deployer.deploy();
+        emit ExchangeDeployed(exchange);
     }
 
     function initializeExchange(
@@ -87,14 +88,6 @@ contract LoopringV3 is ILoopringV3
         require(operator != address(0), "ZERO_ADDRESS");
         require(exchanges[exchangeId].exchangeAddress == address(0), "ID_USED_ALREADY");
 
-        // Burn the LRC
-        if (exchangeCreationCostLRC > 0) {
-            require(
-                BurnableERC20(lrcAddress).burnFrom(owner, exchangeCreationCostLRC),
-                "BURN_FAILURE"
-            );
-        }
-
         IExchange exchange = IExchange(exchangeAddress);
 
         // If the exchange has already been initlaized, the following function will fail.
@@ -108,12 +101,11 @@ contract LoopringV3 is ILoopringV3
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
 
-        emit ExchangeRegistered(
+        emit ExchangeInitialized(
             exchangeId,
             exchangeAddress,
             owner,
-            operator,
-            exchangeCreationCostLRC
+            operator
         );
     }
 
