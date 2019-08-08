@@ -17,6 +17,7 @@
 pragma solidity 0.5.10;
 
 import "../lib/Claimable.sol";
+import "../lib/NoDefaultFunc.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IExchange.sol";
@@ -36,7 +37,7 @@ import "./libexchange/ExchangeWithdrawals.sol";
 /// @title An Implementation of IExchange.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract Exchange is IExchange, Claimable, ReentrancyGuard
+contract Exchange is IExchange, Claimable, NoDefaultFunc, ReentrancyGuard
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
@@ -295,6 +296,18 @@ contract Exchange is IExchange, Claimable, ReentrancyGuard
         returns (uint)
     {
         return state.withdrawExchangeStake(recipient);
+    }
+
+    function withdrawTokenNotOwnedByUsers(
+        address tokenAddress,
+        address payable recipient
+        )
+        external
+        nonReentrant
+        onlyOwner
+        returns(uint)
+    {
+        return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
     }
 
     function withdrawProtocolFeeStake(

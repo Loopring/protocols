@@ -274,4 +274,26 @@ library ExchangeAdmins
         uint amount = S.loopring.getExchangeStake(S.id);
         return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
     }
+
+    function withdrawTokenNotOwnedByUsers(
+        ExchangeData.State storage S,
+        address token,
+        address payable recipient
+        )
+        public
+        returns (uint amount)
+    {
+        require(token != address(0), "ZERO_ADDRESS");
+        require(recipient != address(0), "ZERO_VALUE");
+
+        uint totalBalance = ERC20(token).balanceOf(address(this));
+        uint userBalance = S.tokenBalances[token];
+
+        assert(totalBalance >= userBalance);
+        amount = totalBalance - userBalance;
+
+        if (amount > 0) {
+            require(token.safeTransfer(recipient, amount), "TRANSFER_FAILED");
+        }
+    }
 }
