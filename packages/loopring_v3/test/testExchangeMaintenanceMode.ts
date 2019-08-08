@@ -31,7 +31,7 @@ contract("Exchange", (accounts: string[]) => {
     const numMinutesLeft = (await exchange.getRemainingDowntime()).toNumber();
     const numMinutesToBuy =
       duration >= numMinutesLeft ? duration - numMinutesLeft : 0;
-    const cost = await exchange.getDowntimeCostLRC(numMinutesToBuy);
+    const cost = await getDowntimeCost(numMinutesToBuy);
 
     const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(
       user,
@@ -170,9 +170,7 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // Make sure the exchange owner has enough LRC
-        const maintenanceCost = await exchange.getDowntimeCostLRC(
-          durationMinutes
-        );
+        const maintenanceCost = await getDowntimeCost(durationMinutes);
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
@@ -315,9 +313,7 @@ contract("Exchange", (accounts: string[]) => {
         );
 
         // Make sure the exchange owner has enough LRC
-        const maintenanceCost = await exchange.getDowntimeCostLRC(
-          durationMinutes
-        );
+        const maintenanceCost = await getDowntimeCost(durationMinutes);
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
@@ -407,7 +403,7 @@ contract("Exchange", (accounts: string[]) => {
       const duration = 1000;
 
       // Make sure the exchange owner has enough LRC
-      const maintenanceCost = await exchange.getDowntimeCostLRC(duration);
+      const maintenanceCost = await getDowntimeCost(duration);
       await exchangeTestUtil.setBalanceAndApprove(
         exchangeTestUtil.exchangeOwner,
         "LRC",
@@ -446,12 +442,12 @@ contract("Exchange", (accounts: string[]) => {
 
       let duration = 123;
       let expectedCost = await getDowntimeCost(duration);
-      let cost = await exchange.getDowntimeCostLRC(duration);
+      let cost = await getDowntimeCost(duration);
       assert(cost.eq(expectedCost), "Downtime cost not as expected");
 
       duration = 456;
       expectedCost = await getDowntimeCost(duration);
-      cost = await exchange.getDowntimeCostLRC(duration);
+      cost = await getDowntimeCost(duration);
       assert(cost.eq(expectedCost), "Downtime cost not as expected");
     });
   });
