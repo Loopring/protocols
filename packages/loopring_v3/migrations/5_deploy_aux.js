@@ -1,3 +1,7 @@
+var AddressUtil = artifacts.require("./lib/LRC.sol");
+var ERC20SafeTransfer = artifacts.require("./lib/ERC20SafeTransfer.sol");
+var MathUint = artifacts.require("./lib/MathUint.sol");
+
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
@@ -14,6 +18,13 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer
       .then(() => {
+        return Promise.all([
+          AddressUtil.deployed(),
+          ERC20SafeTransfer.deployed(),
+          MathUint.deployed()
+        ]);
+      })
+      .then(() => {
         return Promise.all([LRCToken.deployed()]);
       })
       .then(() => {
@@ -21,6 +32,13 @@ module.exports = function(deployer, network, accounts) {
           deployer.deploy(BlockVerifier),
           deployer.deploy(DowntimeCostCalculator),
           deployer.deploy(UserStakingPool, LRCToken.address)
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
+          deployer.link(AddressUtil, LoopriProtocolFeeVaultngV3),
+          deployer.link(ERC20SafeTransfer, ProtocolFeeVault),
+          deployer.link(MathUint, ProtocolFeeVault)
         ]);
       })
       .then(() => {

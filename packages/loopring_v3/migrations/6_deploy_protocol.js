@@ -1,3 +1,7 @@
+var AddressUtil = artifacts.require("./lib/LRC.sol");
+var ERC20SafeTransfer = artifacts.require("./lib/ERC20SafeTransfer.sol");
+var MathUint = artifacts.require("./lib/MathUint.sol");
+
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
@@ -16,6 +20,13 @@ module.exports = function(deployer, network, accounts) {
     deployer
       .then(() => {
         return Promise.all([
+          AddressUtil.deployed(),
+          ERC20SafeTransfer.deployed(),
+          MathUint.deployed()
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
           LRCToken.deployed(),
           WETHToken.deployed(),
           ProtocolFeeVault.deployed(),
@@ -25,7 +36,12 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        return Promise.all([deployer.link(ExchangeV3Deployer, LoopringV3)]);
+        return Promise.all([
+          deployer.link(AddressUtil, LoopringV3),
+          deployer.link(ERC20SafeTransfer, LoopringV3),
+          deployer.link(MathUint, LoopringV3),
+          deployer.link(ExchangeV3Deployer, LoopringV3)
+        ]);
       })
       .then(() => {
         return Promise.all([
