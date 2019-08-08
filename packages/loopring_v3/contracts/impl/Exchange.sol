@@ -35,6 +35,8 @@ import "./libexchange/ExchangeWithdrawals.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
+///
+/// TODO(daniel): rename this to ExchangeV3 to match LoopringV3.
 contract Exchange is IExchange
 {
     using ExchangeAdmins        for ExchangeData.State;

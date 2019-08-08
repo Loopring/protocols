@@ -4,7 +4,6 @@
 
 pragma solidity 0.5.10;
 
-// import "./Pairing.sol";
 
 library BatchVerifier {
     function GroupOrder ()
