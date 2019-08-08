@@ -115,9 +115,9 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange(true);
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
-      Do a deposit
+      // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
-      We shouldn't be in withdrawal mode yet
+      // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Commit the deposits
       await exchangeTestUtil.commitDeposits(exchangeID);
