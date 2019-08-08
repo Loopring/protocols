@@ -114,8 +114,10 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
+        return Promise.all([deployer.deploy(ExchangeV3Deployer)]);
+      })
+      .then(() => {
         return Promise.all([
-          deployer.deploy(ExchangeV3Deployer),
           deployer.deploy(BlockVerifier),
           deployer.deploy(DowntimeCostCalculator),
           deployer.deploy(ProtocolRegistry),
