@@ -27,7 +27,7 @@ contract ILoopring
         external
         returns (address exchangeAddress);
 
-    /// @dev Initialize and register an exchange with msg.sender as the owner and operator.
+    /// @dev Initialize and register an exchange.
     ///      Note that this function can only be called one per deployed exchange instance.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
     /// @param  exchangeId The unique exchange id.
