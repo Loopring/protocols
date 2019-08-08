@@ -22,6 +22,8 @@ import "../../lib/MathUint.sol";
 
 import "../../iface/IDowntimeCostCalculator.sol";
 
+import "../../iface/IDowntimeCostCalculator.sol";
+
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
@@ -202,7 +204,6 @@ library ExchangeAdmins
         uint durationMinutes
         )
         public
-        view
         returns (uint)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");

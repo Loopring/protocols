@@ -106,9 +106,9 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
-        address payable _protocolFeeVault,
-        address _blockVerifierAddress,   // address(0) not allowed
-        address _downtimeCostCalculator, // address(0) allowed
+        address payable _protocolFeeVault,   // address(0) not allowed
+        address _blockVerifierAddress,       // address(0) not allowed
+        address _downtimeCostCalculator,     // address(0) allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,

@@ -821,8 +821,8 @@ contract Exchange is IExchange
         uint durationMinutes
         )
         external
-        view
-        returns (uint)
+        nonReentrant
+        returns (uint costLRC)
     {
         return state.getDowntimeCostLRC(durationMinutes);
     }

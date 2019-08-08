@@ -988,7 +988,7 @@ contract IExchange is Claimable, ReentrancyGuard
         uint durationMinutes
         )
         external
-        view
+        // view - may modify internal state.
         returns (uint costLRC);
 
     /// @dev Gets the total amount of time in seconds the exchange has ever been in maintenance.

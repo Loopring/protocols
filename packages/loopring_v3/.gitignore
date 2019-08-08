@@ -1,6 +1,7 @@
 node_modules/
 build/
 transpiled/
+ABI/
 ethsnarks/
 ABI/
 keys/
