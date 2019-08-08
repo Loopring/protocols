@@ -37,7 +37,7 @@ library ExchangeGenesis
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
-        address payable _loopringAddress,
+        address _loopringAddress,
         address payable _operator,
         bool    _onchainDataAvailability
         )
@@ -46,6 +46,8 @@ library ExchangeGenesis
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
+
+        require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
@@ -56,6 +58,7 @@ library ExchangeGenesis
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
+
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
             ExchangeData.GENESIS_MERKLE_ROOT(),

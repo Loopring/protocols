@@ -16,11 +16,9 @@
 */
 pragma solidity 0.5.10;
 
-
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/NoDefaultFunc.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";

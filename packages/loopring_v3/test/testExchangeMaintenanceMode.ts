@@ -12,10 +12,10 @@ contract("Exchange", (accounts: string[]) => {
 
   const getDowntimeCost = async (duration: number) => {
     const cost = await downtimeCostCalculator.getDowntimeCostLRC(
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
       new BN(duration)
     );
     return cost;
@@ -25,6 +25,8 @@ contract("Exchange", (accounts: string[]) => {
     duration: number,
     user: string
   ) => {
+    const price = await downtimeCostCalculator.PRICE_PER_MINUTE();
+
     const LRC = await exchangeTestUtil.getTokenContract("LRC");
 
     // Total amount LRC needed for the requested duration

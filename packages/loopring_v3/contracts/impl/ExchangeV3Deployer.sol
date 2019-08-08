@@ -16,29 +16,22 @@
 */
 pragma solidity 0.5.10;
 
-import "../lib/MathUint.sol";
-
-import "../iface/IDowntimeCostCalculator.sol";
+import "./Exchange.sol";
 
 
-/// @title A fixed price IDowntimeCostCalculator implememntation.
+/// @title ExchangeV3Deployer
+/// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract FixedPriceDowntimeCostCalculator is IDowntimeCostCalculator
+/// @dev We created this library to work around the gas limit -- inlining all the
+///      enclosed function directly into LoopringV3 will make LoopringV3 too large
+///      to deploy.
+library ExchangeV3Deployer
 {
-    using MathUint for uint;
-
-    uint public constant PRICE_PER_MINUTE = 1000 ether;
-
-    function getDowntimeCostLRC(
-        uint  /* totalTimeInMaintenanceSeconds */,
-        uint  /* totalDEXLifeTimeSeconds */,
-        uint  /* numDowntimeMinutes */,
-        uint  /* exchangeStakedLRC */,
-        uint  durationToPurchaseMinutes
-        )
+    function deploy()
         external
-        returns (uint)
+        returns (address)
     {
-        return durationToPurchaseMinutes.mul(PRICE_PER_MINUTE);
+        Exchange exchange = new Exchange();
+        return address(exchange);
     }
 }

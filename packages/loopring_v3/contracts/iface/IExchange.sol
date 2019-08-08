@@ -16,11 +16,23 @@
 */
 pragma solidity 0.5.10;
 
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
+
 
 /// @title An Implementation of IExchange.
+/// @dev Note that Claimable and RentrancyGuard are inherited here to
+///      ensure all data members are declared on IExchange to make it
+///      easy to support upgradability through proxies.
+///
+///      Subclasses of this contract must NOT define constructor to
+///      initialize data.
+///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchange
+///
+/// TODO(daniel): rename this to IExchangeV3 to match LoopringV3.
+contract IExchange is Claimable, ReentrancyGuard
 {
     // -- Events --
     // We need to make sure all events defined in exchange/*.sol
@@ -127,25 +139,30 @@ contract IExchange
         uint8 previousMakerFeeBips
     );
 
-    // -- Settings --
-    function getGlobalSettings()
+    // -- Initialization --
+    /// Initialize this exchange. This method can only be called once.
+    /// @param  owner The owner of this exchange.
+    /// @param  exchangeId The id of this exchange.
+    /// @param  operator The operator address of the exchange who will be responsible for
+    ///         submitting blocks and proofs.
+    /// @param  loopringAddress The corresponding ILoopring contract address.
+    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
+    ///         exchange. Note that this value can not be changed once the exchange is initialized.
+    function initialize(
+        address loopringAddress,
+        address owner,
+        uint    exchangeId,
+        address payable operator,
+        bool    onchainDataAvailability
+        )
+        external;
+
+    function getConstants()
         public
         pure
         returns (
-            uint32 MAX_PROOF_GENERATION_TIME_IN_SECONDS,
-            uint16 MAX_OPEN_DEPOSIT_REQUESTS,
-            uint16 MAX_OPEN_WITHDRAWAL_REQUESTS,
-            uint32 MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_AGE_REQUEST_UNTIL_FORCED,
-            uint32 MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE,
-            uint32 MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS,
-            uint32 MAX_TIME_IN_SHUTDOWN_BASE,
-            uint32 MAX_TIME_IN_SHUTDOWN_DELTA,
-            uint32 TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS,
-            uint32 FEE_BLOCK_FINE_START_TIME,
-            uint32 FEE_BLOCK_FINE_MAX_DURATION,
-            uint   MAX_NUM_TOKENS,
-            uint   MAX_NUM_ACCOUNTS
+            bytes32 merkleRoot,
+            uint[19] memory constants
         );
 
     // -- Mode --

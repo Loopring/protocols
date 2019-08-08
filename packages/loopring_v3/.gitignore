@@ -3,6 +3,7 @@ build/
 transpiled/
 ABI/
 ethsnarks/
+ABI/
 keys/
 blocks/
 .DS_Store

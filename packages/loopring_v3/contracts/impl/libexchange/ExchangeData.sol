@@ -169,6 +169,7 @@ library ExchangeData
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
+
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
     function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
     function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
@@ -187,6 +188,38 @@ library ExchangeData
     function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
+
+    function getConstants()
+        public
+        pure
+        returns(
+            bytes32 merkleRoot,
+            uint[19] memory constants
+        )
+    {
+        merkleRoot = GENESIS_MERKLE_ROOT();
+        constants = [
+            uint(SNARK_SCALAR_FIELD()),
+            uint(MAX_PROOF_GENERATION_TIME_IN_SECONDS()),
+            uint(MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS()),
+            uint(MAX_OPEN_DEPOSIT_REQUESTS()),
+            uint(MAX_OPEN_WITHDRAWAL_REQUESTS()),
+            uint(MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE()),
+            uint(MAX_AGE_REQUEST_UNTIL_FORCED()),
+            uint(MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE()),
+            uint(MAX_TIME_IN_SHUTDOWN_BASE()),
+            uint(MAX_TIME_IN_SHUTDOWN_DELTA()),
+            uint(TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS()),
+            uint(MAX_NUM_TOKENS()),
+            uint(MAX_NUM_ACCOUNTS()),
+            uint(MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(FEE_BLOCK_FINE_START_TIME()),
+            uint(FEE_BLOCK_FINE_MAX_DURATION()),
+            uint(MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
+            uint(GAS_LIMIT_SEND_TOKENS())
+        ];
+    }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State

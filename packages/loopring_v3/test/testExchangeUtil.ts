@@ -83,7 +83,6 @@ export class ExchangeTestUtil {
   public downtimeCostCalculator: any;
   public lzDecompressor: any;
 
-  public protocolFeeVaultAddress: string;
   public lrcAddress: string;
   public wethAddress: string;
 
@@ -95,32 +94,35 @@ export class ExchangeTestUtil {
   public operator: any;
   public activeOperator: number;
 
-  public userstakingpool: any;
-  public protocolfeevault: any;
+  public userStakingPool: any;
+  public protocolFeeVault: any;
+  public protocolFeeVaultContract: any;
+  public protocolRegistry: any;
 
   public accounts: Account[][] = [];
 
   public operators: number[] = [];
 
-  public GENESIS_MERKLE_ROOT: BN = new BN(
-    "2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01",
-    16
-  );
-
+  public GENESIS_MERKLE_ROOT: BN;
+  public SNARK_SCALAR_FIELD: BN;
   public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
-  public MAX_AGE_REQUEST_UNTIL_FORCED: number;
-  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
-  public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
-  public MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW: number;
-  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
-  public MAX_TIME_IN_SHUTDOWN_BASE: number;
-  public MAX_TIME_IN_SHUTDOWN_DELTA: number;
-  public FEE_BLOCK_FINE_START_TIME: number;
-  public FEE_BLOCK_FINE_MAX_DURATION: number;
-  public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
-  public MAX_NUM_TOKENS: number;
+  public MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS: number;
   public MAX_OPEN_DEPOSIT_REQUESTS: number;
   public MAX_OPEN_WITHDRAWAL_REQUESTS: number;
+  public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
+  public MAX_AGE_REQUEST_UNTIL_FORCED: number;
+  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
+  public MAX_TIME_IN_SHUTDOWN_BASE: number;
+  public MAX_TIME_IN_SHUTDOWN_DELTA: number;
+  public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
+  public MAX_NUM_TOKENS: number;
+  public MAX_NUM_ACCOUNTS: number;
+  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public FEE_BLOCK_FINE_START_TIME: number;
+  public FEE_BLOCK_FINE_MAX_DURATION: number;
+  public MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED: number;
+  public GAS_LIMIT_SEND_TOKENS: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
@@ -156,8 +158,11 @@ export class ExchangeTestUtil {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
 
-    // Initialize Loopring
+    // Initialize LoopringV3
+    this.protocolFeeVault = this.testContext.deployer;
+
     await this.loopringV3.updateSettings(
+      this.protocolFeeVault,
       this.blockVerifier.address,
       this.downtimeCostCalculator.address,
       new BN(web3.utils.toWei("0.02", "ether")),
@@ -171,6 +176,16 @@ export class ExchangeTestUtil {
       { from: this.testContext.deployer }
     );
 
+    // Register LoopringV3 to ProtocolRegistry
+    await this.protocolRegistry.registerProtocol(
+      this.loopringV3.address,
+      "3.0",
+      { from: this.testContext.deployer }
+    );
+    await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address, {
+      from: this.testContext.deployer
+    });
+
     await this.loopringV3.updateProtocolFeeSettings(
       25,
       50,
@@ -180,9 +195,6 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("10000000", "ether")),
       { from: this.testContext.deployer }
     );
-
-    this.protocolFeeVaultAddress = this.testContext.deployer;
-    await this.loopringV3.setProtocolFeeVault(this.protocolFeeVaultAddress);
 
     for (let i = 0; i < this.MAX_NUM_EXCHANGES; i++) {
       const rings: RingInfo[] = [];
@@ -220,25 +232,32 @@ export class ExchangeTestUtil {
       this.testContext.deployer,
       true,
       this.onchainDataAvailability,
+      true,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
-    const settings = await this.exchange.getGlobalSettings();
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = settings.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_FORCED = settings.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
-    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = settings.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE.toNumber();
-    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = settings.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_BASE = settings.MAX_TIME_IN_SHUTDOWN_BASE.toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_DELTA = settings.MAX_TIME_IN_SHUTDOWN_DELTA.toNumber();
-    this.FEE_BLOCK_FINE_START_TIME = settings.FEE_BLOCK_FINE_START_TIME.toNumber();
-    this.FEE_BLOCK_FINE_MAX_DURATION = settings.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
-    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = settings.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
-    this.MAX_NUM_TOKENS = settings.MAX_NUM_TOKENS.toNumber();
-    this.MIN_TIME_UNTIL_OPERATOR_CAN_WITHDRAW = 0;
-    this.MAX_OPEN_DEPOSIT_REQUESTS = settings.MAX_OPEN_DEPOSIT_REQUESTS.toNumber();
-    this.MAX_OPEN_WITHDRAWAL_REQUESTS = settings.MAX_OPEN_WITHDRAWAL_REQUESTS.toNumber();
+    const result = await this.exchange.getConstants();
+    this.GENESIS_MERKLE_ROOT = new BN(result.merkleRoot);
+    this.SNARK_SCALAR_FIELD = new BN(result.constants[0]);
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = result.constants[1].toNumber();
+    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = result.constants[2].toNumber();
+    this.MAX_OPEN_DEPOSIT_REQUESTS = result.constants[3].toNumber();
+    this.MAX_OPEN_WITHDRAWAL_REQUESTS = result.constants[4].toNumber();
+    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = result.constants[5].toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_FORCED = result.constants[6].toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = result.constants[7].toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_BASE = result.constants[8].toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_DELTA = result.constants[9].toNumber();
+    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = result.constants[10].toNumber();
+    this.MAX_NUM_TOKENS = result.constants[11].toNumber();
+    this.MAX_NUM_ACCOUNTS = result.constants[12].toNumber();
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = result.constants[13].toNumber();
+    this.FEE_BLOCK_FINE_START_TIME = result.constants[14].toNumber();
+    this.FEE_BLOCK_FINE_MAX_DURATION = result.constants[15].toNumber();
+    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = result.constants[16].toNumber();
+    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = result.constants[17].toNumber();
+    this.GAS_LIMIT_SEND_TOKENS = result.constants[18].toNumber();
   }
 
   public async setupTestState(exchangeID: number) {
@@ -2488,43 +2507,53 @@ export class ExchangeTestUtil {
     owner: string,
     bSetupTestState: boolean = true,
     onchainDataAvailability: boolean = true,
+    supportUpgradability: boolean = true,
     accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     withdrawalFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether"))
   ) {
     const operator = this.testContext.operators[0];
-
     const exchangeCreationCostLRC = await this.loopringV3.exchangeCreationCostLRC();
 
     // Send enough tokens to the owner so the Exchange can be created
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
     await LRC.addBalance(owner, exchangeCreationCostLRC);
-    await LRC.approve(this.loopringV3.address, exchangeCreationCostLRC, {
+    await LRC.approve(this.protocolRegistry.address, exchangeCreationCostLRC, {
       from: owner
     });
 
     // Create the new exchange
-    const tx = await this.loopringV3.createExchange(
-      operator,
+    const tx = await this.protocolRegistry.forgeExchange(
+      this.loopringV3.address,
+      supportUpgradability,
       onchainDataAvailability,
       { from: owner }
     );
-    // logInfo("\x1b[46m%s\x1b[0m", "[CreateExchange] Gas used: " + tx.receipt.gasUsed);
+
+    // logInfo(
+    //   "\x1b[46m%s\x1b[0m",
+    //   "[CreateExchange] Gas used: " + tx.receipt.gasUsed
+    // );
 
     const eventArr: any = await this.getEventsFromContract(
-      this.loopringV3,
-      "ExchangeCreated",
+      this.protocolRegistry,
+      "ExchangeForged",
       web3.eth.blockNumber
     );
+
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
     });
+
     const exchangeAddress = items[0][0];
     const exchangeID = items[0][1].toNumber();
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+
+    await this.exchange.setOperator(operator, { from: owner });
+
     this.exchangeOwner = owner;
     this.exchangeOperator = operator;
     this.exchangeId = exchangeID;
@@ -3637,6 +3666,7 @@ export class ExchangeTestUtil {
   // private functions:
   private async createContractContext() {
     const [
+      protocolRegistry,
       loopringV3,
       exchangeDeployer,
       blockVerifier,
@@ -3644,24 +3674,26 @@ export class ExchangeTestUtil {
       lrcToken,
       wethToken
     ] = await Promise.all([
+      this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeDeployer.deployed(),
+      this.contracts.ExchangeV3Deployer.deployed(),
       this.contracts.BlockVerifier.deployed(),
-      this.contracts.DowntimeCostCalculator.deployed(),
+      this.contracts.FixPriceDowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
     ]);
 
-    const [userstakingpool, protocolfeevault] = await Promise.all([
+    const [userStakingPool, protocolFeeVaultContract] = await Promise.all([
       this.contracts.UserStakingPool.deployed(),
       this.contracts.ProtocolFeeVault.deployed()
     ]);
 
-    this.userstakingpool = userstakingpool;
-    this.protocolfeevault = protocolfeevault;
+    this.userStakingPool = userStakingPool;
+    this.protocolFeeVaultContract = protocolFeeVaultContract;
 
     this.lzDecompressor = await this.contracts.LzDecompressor.new();
 
+    this.protocolRegistry = protocolRegistry;
     this.loopringV3 = loopringV3;
     this.exchangeDeployer = exchangeDeployer;
     this.blockVerifier = blockVerifier;

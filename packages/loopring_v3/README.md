@@ -10,21 +10,21 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 
 ### Performance
 
-|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
-| :----- |:-------------: |:---------------:| :-------------:|
-| Trades per Ethereum Block | 26      | 5350 |      92000|
-| Trades per Second | ~2      | 350        |           6150 |
-| Cost per Trade | ~300,000 gas | 1500 gas | 87 gas|
+|                           | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
+| :------------------------ | :----------: | :--------------------------------------: | :---------------------------------------: |
+| Trades per Ethereum Block |      26      |                   5350                   |                   92000                   |
+| Trades per Second         |      ~2      |                   350                    |                   6150                    |
+| Cost per Trade            | ~300,000 gas |                 1500 gas                 |                  87 gas                   |
 
 After Istanbul:
 
-|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
-| :----- |:-------------: |:---------------:| :-------------:|
-| Trades per Ethereum Block | 26      | 20800 |      140000|
-| Trades per Second | ~2      | 1400        |           9350 |
-| Cost per Trade | ~300,000 gas | 385 gas | 57 gas|
+|                           | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
+| :------------------------ | :----------: | :--------------------------------------: | :---------------------------------------: |
+| Trades per Ethereum Block |      26      |                  20800                   |                  140000                   |
+| Trades per Second         |      ~2      |                   1400                   |                   9350                    |
+| Cost per Trade            | ~300,000 gas |                 385 gas                  |                  57 gas                   |
 
-* *Cost in USD per Trade* in the table does not cover off-chain proof generation.
+- _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 
 ## Top Features
 
@@ -45,6 +45,7 @@ After Istanbul:
 - and more...
 
 ## Challenges
+
 - SNARKs require trusted setups
 
 ## Build
@@ -60,6 +61,7 @@ make
 ```
 
 ## Run Unit Tests
+
 - please clone the circuits repository `https://github.com/Loopring/protocol3-circuits.git` to the same directory as this project.
 - please make sure you run `npm run build` for the first time.
 - run `npm run ganache` from project's root directory in terminal.
