@@ -799,7 +799,7 @@ contract Exchange is IExchange, Claimable, NoDefaultFunc, ReentrancyGuard
         uint durationMinutes
         )
         external
-        view
+        nonReentrant
         returns (uint costLRC)
     {
         costLRC = state.getDowntimeCostLRC(durationMinutes);

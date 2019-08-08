@@ -3,7 +3,7 @@ var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeDeployer = artifacts.require("./impl/ExchangeDeployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var DowntimeCostCalculator = artifacts.require(
-  "./test/DowntimeCostCalculator.sol"
+  "./test/FixedPriceDowntimeCostCalculator.sol"
 );
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
