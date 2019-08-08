@@ -23,6 +23,7 @@ export class Artifacts {
   public PoseidonContract: any;
   public UserStakingPool: any;
   public ProtocolFeeVault: any;
+
   constructor(artifacts: any) {
     this.ExchangeData = artifacts.require("impl/lib/ExchangeData");
     this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
