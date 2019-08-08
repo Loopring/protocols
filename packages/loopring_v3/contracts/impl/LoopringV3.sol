@@ -200,7 +200,7 @@ contract LoopringV3 is ILoopringV3
         uint exchangeId,
         uint amount
         )
-        public
+        external
         nonReentrant
         returns (uint burnedLRC)
     {
@@ -256,7 +256,7 @@ contract LoopringV3 is ILoopringV3
         address recipient,
         uint    requestedAmount
         )
-        public
+        external
         nonReentrant
         returns (uint amountLRC)
     {

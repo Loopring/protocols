@@ -167,8 +167,8 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         uint    amount
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
         require(token != lrcAddress, "INVALD_TOKEN");
@@ -224,8 +224,8 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         uint    T
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (
             address payable auctionAddr
         )

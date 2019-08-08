@@ -50,8 +50,8 @@ contract BlockVerifier is Claimable, ReentrancyGuard, IBlockVerifier
         uint[18] calldata vk
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
         require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
@@ -79,8 +79,8 @@ contract BlockVerifier is Claimable, ReentrancyGuard, IBlockVerifier
         uint8  blockVersion
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");

@@ -144,7 +144,6 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function claim()
         public
-        nonReentrant
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");

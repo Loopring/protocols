@@ -83,8 +83,8 @@ contract Exchange is IExchange
         bool    _onchainDataAvailability
         )
         external
-        onlyWhenUninitialized
         nonReentrant
+        onlyWhenUninitialized
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
 
@@ -272,8 +272,8 @@ contract Exchange is IExchange
         address tokenAddress
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -303,8 +303,8 @@ contract Exchange is IExchange
         address tokenAddress
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -313,8 +313,8 @@ contract Exchange is IExchange
         address tokenAddress
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -332,8 +332,8 @@ contract Exchange is IExchange
         address recipient
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (uint stake)
     {
         stake = state.withdrawExchangeStake(recipient);
@@ -344,8 +344,8 @@ contract Exchange is IExchange
         uint amount
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
@@ -420,8 +420,8 @@ contract Exchange is IExchange
         bytes  calldata offchainData
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
     {
         // Decompress the data here so we can extract the data directly from calldata
         bytes4 selector = IDecompressor(0x0).decompress.selector;
@@ -479,8 +479,8 @@ contract Exchange is IExchange
         uint[] calldata proofs
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
     {
         state.verifyBlocks(blockIndices, proofs);
     }
@@ -489,8 +489,8 @@ contract Exchange is IExchange
         uint blockIdx
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
     {
         state.revertBlock(blockIdx);
     }
@@ -713,8 +713,8 @@ contract Exchange is IExchange
         address payable feeRecipient
         )
         external
-        onlyOperator
         nonReentrant
+        onlyOperator
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx, feeRecipient);
@@ -735,8 +735,8 @@ contract Exchange is IExchange
         address payable _operator
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (address payable oldOperator)
     {
         // oldOperator = state.setOperator(_operator);
@@ -746,8 +746,8 @@ contract Exchange is IExchange
         address _addressWhitelist
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (address oldAddressWhitelist)
     {
         oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
@@ -760,8 +760,8 @@ contract Exchange is IExchange
         uint _withdrawalFeeETH
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.setFees(
             _accountCreationFeeETH,
@@ -791,16 +791,16 @@ contract Exchange is IExchange
         uint durationMinutes
         )
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.startOrContinueMaintenanceMode(durationMinutes);
     }
 
     function stopMaintenanceMode()
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
     {
         state.stopMaintenanceMode();
     }
@@ -841,8 +841,8 @@ contract Exchange is IExchange
 
     function shutdown()
         external
-        onlyOwner
         nonReentrant
+        onlyOwner
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
