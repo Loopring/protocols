@@ -183,8 +183,12 @@ contract("Loopring", (accounts: string[]) => {
 
   describe("Owner", () => {
     it("should be able to update settings", async () => {
+      const protocolFeeVaultBefore = await loopring.protocolFeeVault();
+      const newProtocolFeeVault = exchangeTestUtil.testContext.orderOwners[2];
+      assert(newProtocolFeeVault !== protocolFeeVaultBefore);
+
       await loopring.updateSettings(
-        exchangeTestUtil.testContext.orderOwners[1],
+        newProtocolFeeVault,
         exchangeTestUtil.testContext.orderOwners[2],
         exchangeTestUtil.testContext.orderOwners[3],
         new BN(web3.utils.toWei("0.01", "ether")),
@@ -200,8 +204,7 @@ contract("Loopring", (accounts: string[]) => {
 
       const protocolFeeVaultAfter = await loopring.protocolFeeVault();
       assert(
-        (await loopring.protocolFeeVault()) ===
-          exchangeTestUtil.testContext.orderOwners[3],
+        newProtocolFeeVault == protocolFeeVaultAfter,
         "new protocolFeeVault should be set"
       );
     });
@@ -236,7 +239,6 @@ contract("Loopring", (accounts: string[]) => {
           exchangeTestUtil.testContext.orderOwners[1], // fee vault
           exchangeTestUtil.testContext.orderOwners[2], // block verifier
           exchangeTestUtil.testContext.orderOwners[3], // downtime cost calculator
-          new BN(web3.utils.toWei("1000", "ether")),
           new BN(web3.utils.toWei("0.02", "ether")),
           new BN(web3.utils.toWei("10000", "ether")),
           new BN(web3.utils.toWei("2000", "ether")),
