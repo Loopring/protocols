@@ -93,7 +93,7 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
       );
       // Do a deposit
       await exchangeTestUtil.doRandomDeposit();
@@ -101,7 +101,7 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -124,7 +124,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -132,7 +132,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.doRandomOnchainWithdrawal(deposit);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE - 10
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -150,7 +150,8 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2
+        exchangeTestUtil.ExchangeData
+          .MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -162,7 +163,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE - 10
+        exchangeTestUtil.ExchangeData
+          .MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE - 10
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -182,7 +184,8 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2
+        exchangeTestUtil.ExchangeData
+          .MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -193,8 +196,8 @@ contract("Exchange", (accounts: string[]) => {
       // Calculate the time the exchange can stay in shutdown
       const numAccounts = (await exchange.getNumAccounts()).toNumber();
       const timeUntilWithdrawalMode =
-        exchangeTestUtil.MAX_TIME_IN_SHUTDOWN_BASE +
-        exchangeTestUtil.MAX_TIME_IN_SHUTDOWN_DELTA * numAccounts;
+        exchangeTestUtil.ExchangeDagta.MAX_TIME_IN_SHUTDOWN_BASE +
+        exchangeTestUtil.ExchangeDagta.MAX_TIME_IN_SHUTDOWN_DELTA * numAccounts;
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
         timeUntilWithdrawalMode - 10
@@ -245,7 +248,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // Try to withdraw with an incorrect proof
@@ -301,7 +304,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
@@ -363,7 +366,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
@@ -450,7 +453,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // Cannot withdraw from deposit blocks that are included in a block
@@ -518,7 +521,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.ExchangeDagta.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // Try to shutdown the exchange

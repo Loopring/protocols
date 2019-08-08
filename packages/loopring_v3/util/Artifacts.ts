@@ -1,4 +1,5 @@
 export class Artifacts {
+  public ExchangeData: any;
   public ProtocolRegistry: any;
   public LoopringV3: any;
   public Exchange: any;
@@ -23,6 +24,7 @@ export class Artifacts {
   public UserStakingPool: any;
   public ProtocolFeeVault: any;
   constructor(artifacts: any) {
+    this.ExchangeData = artifacts.require("impl/lib/ExchangeData");
     this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.Exchange = artifacts.require("impl/Exchange");

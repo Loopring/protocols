@@ -180,13 +180,13 @@ contract IExchange is Claimable, ReentrancyGuard
     ///        MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS,
     ///        MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED,
     ///        GAS_LIMIT_SEND_TOKENS())
-    function getConstants()
-        public
-        pure
-        returns (
-            bytes32  genesisMerkleRoot,
-            uint[19] memory constants
-        );
+    // function getConstants()
+    //     public
+    //     pure
+    //     returns (
+    //         bytes32  genesisMerkleRoot,
+    //         uint[19] memory constants
+    //     );
 
     // -- Mode --
     /// @dev Whether the exchange is in withdrawal mode.

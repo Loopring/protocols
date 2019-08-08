@@ -201,7 +201,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wait a bit until MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS seconds have passed
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        exchangeTestUtil.ExchangeDagta.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
       );
 
       // Withdraw the exchange stake

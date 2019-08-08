@@ -17,7 +17,7 @@ module.exports = function(deployer, network, accounts) {
       .then(() => {
         return Promise.all([
           LRCToken.deployed(),
-          WETHToken.deploy(),
+          WETHToken.deployed(),
           ProtocolFeeVault.deployed(),
           BlockVerifier.deployed(),
           DowntimeCostCalculator.deployed(),
