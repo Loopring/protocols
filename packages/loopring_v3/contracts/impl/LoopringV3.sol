@@ -342,7 +342,7 @@ contract LoopringV3 is ILoopringV3, Claimable
         require(msg.sender == exchangeAddress, "UNAUTHORIZED");
 
         uint stakedLRC = getProtocolFeeStake(exchangeId);
-        require(amount >= stakedLRC, "INSUFFICIENT_STAKE");
+        require(amount <= stakedLRC, "INSUFFICIENT_STAKE");
         if (amount > 0) {
             require(
                 lrcAddress.safeTransfer(
