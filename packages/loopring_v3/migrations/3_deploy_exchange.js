@@ -98,22 +98,33 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
+          deployer.link(ExchangeData, ExchangeV3Deployer),
+          deployer.link(ExchangeBalances, ExchangeV3Deployer),
+          deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeAccounts, ExchangeV3Deployer),
           deployer.link(ExchangeAdmins, ExchangeV3Deployer),
-          deployer.link(ExchangeBalances, ExchangeV3Deployer),
           deployer.link(ExchangeBlocks, ExchangeV3Deployer),
-          deployer.link(ExchangeData, ExchangeV3Deployer),
-          deployer.link(ExchangeDeposits, ExchangeV3Deployer),
-          deployer.link(ExchangeGenesis, ExchangeV3Deployer),
-          deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeTokens, ExchangeV3Deployer),
+          deployer.link(ExchangeGenesis, ExchangeV3Deployer),
+          deployer.link(ExchangeDeposits, ExchangeV3Deployer),
           deployer.link(ExchangeWithdrawals, ExchangeV3Deployer)
         ]);
       })
       .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeV3Deployer, { gas: 9000000 })
-        ]);
+        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log("ExchangeData: ", ExchangeData.address);
+        console.log("ExchangeBalances: ", ExchangeBalances.address);
+        console.log("ExchangeMode: ", ExchangeMode.address);
+        console.log("ExchangeAccounts: ", ExchangeAccounts.address);
+        console.log("ExchangeAdmins: ", ExchangeAdmins.address);
+        console.log("ExchangeBlocks: ", ExchangeBlocks.address);
+        console.log("ExchangeTokens: ", ExchangeTokens.address);
+        console.log("ExchangeGenesis: ", ExchangeGenesis.address);
+        console.log("ExchangeDeposits: ", ExchangeDeposits.address);
+        console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
+      })
+      .then(() => {
+        return Promise.all([deployer.deploy(ExchangeV3Deployer)]);
       })
       .then(() => {
         console.log(">>>>>>>> Deployed contracts addresses:");
