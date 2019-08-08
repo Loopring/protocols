@@ -244,7 +244,7 @@ export class ExchangeTestUtil {
     const result = await this.exchange.getConstants();
     // this.GENESIS_MERKLE_ROOT = new BN(result.merkleRoot);
 
-    // this.SNARK_SCALAR_FIELD = result.constants[0].toNumber();
+    // this.SNARK_SCALAR_FIELD = new BN(result.constants[0]);
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = result.constants[1].toNumber();
     this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = result.constants[2].toNumber();
     this.MAX_OPEN_DEPOSIT_REQUESTS = result.constants[3].toNumber();
