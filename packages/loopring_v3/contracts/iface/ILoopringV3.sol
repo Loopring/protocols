@@ -29,7 +29,7 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
 {
     // == Events ==
 
-    event ExchangeDeployed(
+    event ExchangeCreated(
         address indexed exchangeAddress
     );
 

@@ -90,7 +90,7 @@ contract LoopringV3 is ILoopringV3
 
         IExchange exchange = IExchange(exchangeAddress);
 
-        // If the exchange has already been initlaized, the following function will fail.
+        // If the exchange has already been initlaized, the following function will throw.
         exchange.initialize(
             address(this),
             owner,
