@@ -98,6 +98,7 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
+          deployer.link(ExchangeData, ExchangeV3Deployer),
           deployer.link(ExchangeBalances, ExchangeV3Deployer),
           deployer.link(ExchangeMode, ExchangeV3Deployer),
           deployer.link(ExchangeAccounts, ExchangeV3Deployer),
