@@ -58,6 +58,7 @@ module.exports = function(deployer, network, accounts) {
       .then(() => {
         console.log(">>>>>>>> Deployed contracts addresses (deploy_protocol):");
         console.log("LoopringV3:", LoopringV3.address);
+        console.log("");
       });
   }
 };

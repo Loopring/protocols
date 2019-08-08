@@ -12,6 +12,7 @@ module.exports = function(deployer, network, accounts) {
       .then(() => {
         console.log(">>>>>>>> Deployed contracts addresses (deploy_registry):");
         console.log("ProtocolRegistry:", ProtocolRegistry.address);
+        console.log("");
       });
   }
 };

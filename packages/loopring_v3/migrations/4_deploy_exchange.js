@@ -131,6 +131,7 @@ module.exports = function(deployer, network, accounts) {
         console.log("WETHToken:", WETHToken.address);
         console.log("LRCToken:", LRCToken.address);
         console.log("ExchangeV3Deployer:", ExchangeV3Deployer.address);
+        console.log("");
       });
   }
 };

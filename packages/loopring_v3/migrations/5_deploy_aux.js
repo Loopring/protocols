@@ -56,6 +56,7 @@ module.exports = function(deployer, network, accounts) {
         console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
         console.log("UserStakingPool:", UserStakingPool.address);
         console.log("ProtocolFeeVault:", ProtocolFeeVault.address);
+        console.log("");
       });
   }
 };
