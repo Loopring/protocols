@@ -33,13 +33,12 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.link(ExchangeData, [
             ExchangeAccounts,
-            ExchangeMode,
-            ExchangeAccounts,
             ExchangeAdmins,
             ExchangeBlocks,
-            ExchangeTokens,
-            ExchangeGenesis,
             ExchangeDeposits,
+            ExchangeGenesis,
+            ExchangeMode,
+            ExchangeTokens,
             ExchangeWithdrawals
           ])
         ]);
@@ -63,11 +62,15 @@ module.exports = function(deployer, network, accounts) {
           deployer.link(ExchangeMode, [
             ExchangeAdmins,
             ExchangeBlocks,
-            ExchangeTokens,
             ExchangeDeposits,
+            ExchangeTokens,
             ExchangeWithdrawals
           ]),
-          deployer.link(ExchangeAccounts, ExchangeGenesis)
+          deployer.link(ExchangeAccounts, [
+            ExchangeDeposits,
+            ExchangeGenesis,
+            ExchangeWithdrawals
+          ])
         ]);
       })
       .then(() => {
@@ -79,9 +82,11 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.link(ExchangeTokens, ExchangeGenesis),
-          deployer.link(ExchangeTokens, ExchangeDeposits),
-          deployer.link(ExchangeTokens, ExchangeWithdrawals)
+          deployer.link(ExchangeTokens, [
+            ExchangeDeposits,
+            ExchangeGenesis,
+            ExchangeWithdrawals
+          ])
         ]);
       })
       .then(() => {
@@ -107,7 +112,7 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.deploy(ExchangeV3Deployer, { gas: 7800000 })
+          deployer.deploy(ExchangeV3Deployer, { gas: 9000000 })
         ]);
       })
       .then(() => {

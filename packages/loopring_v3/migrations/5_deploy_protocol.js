@@ -36,7 +36,7 @@ module.exports = function(deployer, network, accounts) {
             ProtocolFeeVault.address,
             BlockVerifier.address,
             DowntimeCostCalculator.address,
-            { gas: 7800000 }
+            { gas: 11100000 }
           )
         ]);
       })
