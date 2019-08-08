@@ -109,7 +109,6 @@ export class ExchangeTestUtil {
     "2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01",
     16
   );
-  s;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;

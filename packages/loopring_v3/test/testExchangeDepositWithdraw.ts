@@ -400,7 +400,7 @@ contract("Exchange", (accounts: string[]) => {
     // Balances contract
     const balancesContractBefore: BN[] = [];
     const balancesContractExpected: BN[] = [];
-    for (let i = 0; i < exchangeTestUtil.MAX_NUM_TOKENS; i++) {
+    for (let i = 0; i < exchangeTestUtil.ExchangeData.MAX_NUM_TOKENS; i++) {
       balancesContractBefore.push(new BN(0));
       balancesContractExpected.push(new BN(0));
       const token = exchangeTestUtil.getTokenAddressFromID(i);
@@ -462,7 +462,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     }
     // Check balances contract
-    for (let i = 0; i < exchangeTestUtil.MAX_NUM_TOKENS; i++) {
+    for (let i = 0; i < exchangeTestUtil.ExchangeData.MAX_NUM_TOKENS; i++) {
       const token = exchangeTestUtil.getTokenAddressFromID(i);
       if (token) {
         const balance = await exchangeTestUtil.getOnchainBalance(
