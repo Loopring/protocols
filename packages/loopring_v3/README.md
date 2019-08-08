@@ -60,7 +60,9 @@ make
 ```
 
 ## Run Unit Tests
-
+- please clone the circuits repository `https://github.com/Loopring/protocol3-circuits.git` to the same directory as this project.
+- please make sure you run `npm run build` for the first time.
+- please also delete the `keys` dir.
 - run `npm run ganache` from project's root directory in terminal.
 - run `npm run test` from project's root directory in another terminal window.
 - run single test: `npm run test -- transpiled/test/xxx.js`
