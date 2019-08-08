@@ -228,6 +228,15 @@ contract IExchange is Claimable, ReentrancyGuard
             uint   pubKeyY
         );
 
+    /// @dev Submit an onchain request to create a new account for msg.sender or
+    ///      update its existing account by replacing its trading public key.
+    ///      The total fee in ETH that the user needs to pay is:
+    ///          depositFee +
+    ///          (isAccountNew ? accountCreationFee : 0) +
+    ///          (isAccountUpdated ? accountUpdateFee : 0)
+    ///      If the user sends too much ETH the surplus is sent back immediately.
+    ///
+    ///      Note that after such an operation, it will take the operator some
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create or update the offchain account.
     ///
