@@ -38,7 +38,7 @@ contract ProtocolRegistry is IProtocolRegistry
     mapping (address => address) public exchangeToProtocolMap;
     address[] public exchanges;
 
-    function constructor(
+    constructor(
         address _lrcAddress
         )
         Claimable()
