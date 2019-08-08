@@ -453,7 +453,9 @@ contract Exchange is IExchange
           }
           case 1 {
               // External contract
-              let contractAddress := and(calldataload(add(dataOffset, 21)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+              let contractAddress := and(
+                calldataload(add(dataOffset, 21)),
+                0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
               let length := sub(calldataload(dataOffset), 21)
 
               let data := mload(0x40)
