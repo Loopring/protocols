@@ -204,7 +204,7 @@ contract("Loopring", (accounts: string[]) => {
 
       const protocolFeeVaultAfter = await loopring.protocolFeeVault();
       assert(
-        newProtocolFeeVault == protocolFeeVaultAfter,
+        newProtocolFeeVault === protocolFeeVaultAfter,
         "new protocolFeeVault should be set"
       );
     });
