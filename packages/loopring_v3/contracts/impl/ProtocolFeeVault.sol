@@ -139,7 +139,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     function setOedax(address _oedaxAddress)
         external
         onlyOwner
-        nonReentrant
     {
         require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
         oedaxAddress = _oedaxAddress;
@@ -148,7 +147,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     function setDAO(address _daoAddress)
         external
         onlyOwner
-        nonReentrant
     {
         require(_daoAddress != daoAddress, "SAME_ADDRESS");
         daoAddress = _daoAddress;
@@ -157,7 +155,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     function disableOwnerWithdrawal()
         external
         onlyOwner
-        nonReentrant
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
         require(oedaxAddress != address(0x0), "OEDAX_ADDRESS_ZERO");

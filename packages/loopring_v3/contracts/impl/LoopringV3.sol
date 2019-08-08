@@ -407,17 +407,6 @@ contract LoopringV3 is ILoopringV3
         emit SettingsUpdated(now);
     }
 
-    function getExchangeAddress(
-        uint exchangeId
-        )
-        internal
-        view
-        returns (address exchangeAddress)
-    {
-        exchangeAddress = exchanges[exchangeId].exchangeAddress;
-        require(exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
-    }
-
     function calculateProtocolFee(
         uint minFee,
         uint maxFee,

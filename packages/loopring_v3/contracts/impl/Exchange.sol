@@ -736,7 +736,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        nonReentrant // this op has an reentry!!!
+        nonReentrant
         returns (address payable oldOperator)
     {
         // oldOperator = state.setOperator(_operator);
@@ -747,7 +747,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        nonReentrant // this op has an reentry!!!
+        nonReentrant
         returns (address oldAddressWhitelist)
     {
         oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
@@ -761,7 +761,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        nonReentrant // this op has an reentry!!!
+        nonReentrant
     {
         state.setFees(
             _accountCreationFeeETH,
