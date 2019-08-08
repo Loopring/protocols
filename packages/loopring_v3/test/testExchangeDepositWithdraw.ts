@@ -400,7 +400,7 @@ contract("Exchange", (accounts: string[]) => {
     // Balances contract
     const balancesContractBefore: BN[] = [];
     const balancesContractExpected: BN[] = [];
-    for (let i = 0; i < exchangeTestUtil.MAX_NUM_TOKENS; i++) {
+    for (let i = 0; i < exchangeTestUtil.ExchangeData.MAX_NUM_TOKENS; i++) {
       balancesContractBefore.push(new BN(0));
       balancesContractExpected.push(new BN(0));
       const token = exchangeTestUtil.getTokenAddressFromID(i);
@@ -462,7 +462,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     }
     // Check balances contract
-    for (let i = 0; i < exchangeTestUtil.MAX_NUM_TOKENS; i++) {
+    for (let i = 0; i < exchangeTestUtil.ExchangeData.MAX_NUM_TOKENS; i++) {
       const token = exchangeTestUtil.getTokenAddressFromID(i);
       if (token) {
         const balance = await exchangeTestUtil.getOnchainBalance(
@@ -794,7 +794,8 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.autoCommit = false;
 
       // Do all deposits allowed
-      const maxDeposists = exchangeTestUtil.MAX_OPEN_DEPOSIT_REQUESTS;
+      const maxDeposists =
+        exchangeTestUtil.ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS;
       for (let i = 0; i < maxDeposists; i++) {
         await exchangeTestUtil.doRandomDeposit(undefined, false);
       }
@@ -906,7 +907,8 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.autoCommit = false;
 
       // Do all withdrawals allowed
-      const maxWithdrawals = exchangeTestUtil.MAX_OPEN_WITHDRAWAL_REQUESTS;
+      const maxWithdrawals =
+        exchangeTestUtil.ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS;
       for (let i = 0; i < maxWithdrawals; i++) {
         await exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false);
       }
@@ -1535,7 +1537,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wait the max time only the operator can do it
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        exchangeTestUtil.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
       );
 
       // Distribute the withdrawals
@@ -1632,7 +1634,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Wait the max time only the operator can do it
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        exchangeTestUtil.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
       );
 
       // Continue distributing the withdrawals in multiple parts

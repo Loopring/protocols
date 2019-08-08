@@ -10,8 +10,9 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([deployer.deploy(ProtocolRegistry)]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log(">>>>>>>> Deployed contracts addresses (deploy_registry):");
         console.log("ProtocolRegistry:", ProtocolRegistry.address);
+        console.log("");
       });
   }
 };

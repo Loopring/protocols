@@ -12,10 +12,10 @@ contract("Exchange", (accounts: string[]) => {
 
   const getDowntimeCost = async (duration: number) => {
     const cost = await downtimeCostCalculator.getDowntimeCostLRC(
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
+      new BN(0), // this input is ignored by test/FixPriceDowntimeCostCalculator.sol
       new BN(duration)
     );
     return cost;

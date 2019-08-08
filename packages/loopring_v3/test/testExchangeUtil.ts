@@ -77,6 +77,8 @@ export class ExchangeTestUtil {
   public offchainWithdrawalBlockSizes = [4, 8];
   public orderCancellationBlockSizes = [4, 8];
 
+  public ExchangeData: any;
+
   public protocolRegistry: any;
   public loopringV3: any;
   public exchangeDeployer: any;
@@ -107,26 +109,6 @@ export class ExchangeTestUtil {
     "2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01",
     16
   );
-
-  public SNARK_SCALAR_FIELD: number;
-  public MAX_NUM_TOKENS: number;
-  public MAX_NUM_ACCOUNTS: number;
-  public MAX_OPEN_DEPOSIT_REQUESTS: number;
-  public MAX_OPEN_WITHDRAWAL_REQUESTS: number;
-  public MAX_PROOF_GENERATION_TIME_IN_SECONDS: number;
-  public MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS: number;
-  public MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE: number;
-  public MAX_AGE_REQUEST_UNTIL_FORCED: number;
-  public MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE: number;
-  public MAX_TIME_IN_SHUTDOWN_BASE: number;
-  public MAX_TIME_IN_SHUTDOWN_DELTA: number;
-  public TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS: number;
-  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
-  public FEE_BLOCK_FINE_START_TIME: number;
-  public FEE_BLOCK_FINE_MAX_DURATION: number;
-  public MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS: number;
-  public MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED: number;
-  public GAS_LIMIT_SEND_TOKENS: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
@@ -161,6 +143,8 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
+
+    this.ExchangeData = this.contracts.ExchangeData;
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.deployer;
@@ -240,30 +224,6 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
-
-    const result = await this.exchange.getConstants();
-
-    this.SNARK_SCALAR_FIELD = result.constants[0].toNumber;
-    this.MAX_NUM_TOKENS = result.constants[1].toNumber;
-    this.MAX_NUM_ACCOUNTS = result.constants[2].toNumber;
-    this.MAX_OPEN_DEPOSIT_REQUESTS = result.constants[3].toNumber;
-    this.MAX_OPEN_WITHDRAWAL_REQUESTS = result.constants[4].toNumber;
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = result.constants[5].toNumber;
-    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS =
-      result.constants[6].toNumber;
-    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE =
-      result.constants[7].toNumber;
-    this.MAX_AGE_REQUEST_UNTIL_FORCED = result.constants[8].toNumber;
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = result.constants[9].toNumber;
-    this.MAX_TIME_IN_SHUTDOWN_BASE = result.constants[10].toNumber;
-    this.MAX_TIME_IN_SHUTDOWN_DELTA = result.constants[11].toNumber;
-    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = result.constants[12].toNumber;
-    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = result.constants[13].toNumber;
-    this.FEE_BLOCK_FINE_START_TIME = result.constants[14].toNumber;
-    this.FEE_BLOCK_FINE_MAX_DURATION = result.constants[15].toNumber;
-    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = result.constants[16].toNumber;
-    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = result.constants[17].toNumber;
-    this.GAS_LIMIT_SEND_TOKENS = result.constants[18].toNumber;
   }
 
   public async setupTestState(exchangeID: number) {
@@ -1703,7 +1663,7 @@ export class ExchangeTestUtil {
 
     // Make sure all tokens exist
     for (const account of accounts) {
-      for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
+      for (let i = 0; i < this.ExchangeData.MAX_NUM_TOKENS; i++) {
         if (!account.balances[i]) {
           account.balances[i] = {
             balance: new BN(0),
@@ -3135,7 +3095,7 @@ export class ExchangeTestUtil {
       let bNewAccount = false;
       if (accountBefore === undefined) {
         const balances: { [key: number]: Balance } = {};
-        for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
+        for (let i = 0; i < this.ExchangeData.MAX_NUM_TOKENS; i++) {
           balances[i] = {
             balance: new BN(0),
             tradeHistory: {}
@@ -3173,7 +3133,7 @@ export class ExchangeTestUtil {
       if (accountBefore.nonce !== accountAfter.nonce) {
         logInfo("nonce: " + accountBefore.nonce + " -> " + accountAfter.nonce);
       }
-      for (let i = 0; i < this.MAX_NUM_TOKENS; i++) {
+      for (let i = 0; i < this.ExchangeData.MAX_NUM_TOKENS; i++) {
         if (
           !accountBefore.balances[i].balance.eq(
             accountAfter.balances[i].balance
@@ -3683,7 +3643,7 @@ export class ExchangeTestUtil {
       this.contracts.LoopringV3.deployed(),
       this.contracts.ExchangeV3Deployer.deployed(),
       this.contracts.BlockVerifier.deployed(),
-      this.contracts.DowntimeCostCalculator.deployed(),
+      this.contracts.FixPriceDowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
     ]);

@@ -110,7 +110,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses:");
+        console.log(">>>>>>>> Deployed contracts addresses (deploy_exchange):");
         console.log("ExchangeData: ", ExchangeData.address);
         console.log("ExchangeBalances: ", ExchangeBalances.address);
         console.log("ExchangeMode: ", ExchangeMode.address);
@@ -128,10 +128,10 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses:");
         console.log("WETHToken:", WETHToken.address);
         console.log("LRCToken:", LRCToken.address);
         console.log("ExchangeV3Deployer:", ExchangeV3Deployer.address);
+        console.log("");
       });
   }
 };

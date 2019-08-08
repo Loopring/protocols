@@ -76,7 +76,9 @@ contract("Exchange", (accounts: string[]) => {
     exchangeTestUtil.cancelOrderID(
       exchangeId,
       depositInfo.accountID,
-      exchangeTestUtil.getRandomInt(exchangeTestUtil.MAX_NUM_TOKENS),
+      exchangeTestUtil.getRandomInt(
+        exchangeTestUtil.ExchangeData.MAX_NUM_TOKENS
+      ),
       exchangeTestUtil.getRandomInt(2 ** constants.TREE_DEPTH_TRADING_HISTORY),
       1,
       new BN(0),

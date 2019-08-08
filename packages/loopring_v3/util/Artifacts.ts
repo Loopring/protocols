@@ -1,11 +1,12 @@
 export class Artifacts {
+  public ExchangeData: any;
   public ProtocolRegistry: any;
   public LoopringV3: any;
   public Exchange: any;
   public ExchangeV3Deployer: any;
   public ExchangeProxy: any;
   public BlockVerifier: any;
-  public DowntimeCostCalculator: any;
+  public FixPriceDowntimeCostCalculator: any;
   public DummyToken: any;
   public LRCToken: any;
   public GTOToken: any;
@@ -22,15 +23,17 @@ export class Artifacts {
   public PoseidonContract: any;
   public UserStakingPool: any;
   public ProtocolFeeVault: any;
+
   constructor(artifacts: any) {
+    this.ExchangeData = artifacts.require("impl/lib/ExchangeData");
     this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.Exchange = artifacts.require("impl/Exchange");
     this.ExchangeV3Deployer = artifacts.require("impl/ExchangeV3Deployer");
     this.ExchangeProxy = artifacts.require("impl/ExchangeProxy");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
-    this.DowntimeCostCalculator = artifacts.require(
-      "test/FixedPriceDowntimeCostCalculator"
+    this.FixPriceDowntimeCostCalculator = artifacts.require(
+      "test/FixPriceDowntimeCostCalculator"
     );
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
