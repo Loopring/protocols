@@ -3,7 +3,7 @@ var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeDeployer = artifacts.require("./impl/ExchangeDeployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var DowntimeCostCalculator = artifacts.require(
-  "./test/DowntimeCostCalculator.sol"
+  "./test/FixedPriceDowntimeCostCalculator.sol"
 );
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
@@ -89,7 +89,7 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.deploy(ExchangeDeployer),
           deployer.deploy(BlockVerifier),
-          deployer.deploy(DowntimeCostCalculator, 60000, 2, 1000, 120000, 500)
+          deployer.deploy(DowntimeCostCalculator)
         ]);
       })
       .then(() => {
