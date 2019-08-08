@@ -26,7 +26,7 @@ export class Artifacts {
     this.ExchangeDeployer = artifacts.require("impl/ExchangeDeployer");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.DowntimeCostCalculator = artifacts.require(
-      "test/DowntimeCostCalculator"
+      "test/FixedPriceDowntimeCostCalculator"
     );
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");
