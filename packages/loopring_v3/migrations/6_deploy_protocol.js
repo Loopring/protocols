@@ -7,7 +7,7 @@ var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var FixPriceDowntimeCostCalculator = artifacts.require(
-  "./test/DowntimeCostCalculator.sol"
+  "./test/FixPriceDowntimeCostCalculator.sol"
 );
 var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
