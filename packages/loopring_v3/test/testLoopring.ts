@@ -71,199 +71,199 @@ contract("Loopring", (accounts: string[]) => {
     describe("Exchange owner", () => {
       it("should be able to withdraw the protocol fee stake", async () => {
         // Deposit some LRC to stake for the exchange
-        // const depositer = exchangeTestUtil.testContext.operators[2];
-        // const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
-        // await exchangeTestUtil.setBalanceAndApprove(
-        //   depositer,
-        //   "LRC",
-        //   stakeAmount,
-        //   loopring.address
-        // );
-        // // Stake it
-        // await exchangeTestUtil.depositProtocolFeeStakeChecked(
-        //   stakeAmount,
-        //   depositer
-        // );
-        // // Try to withdraw it from an unauthorized address on the exchange contract
-        // await expectThrow(
-        //   exchangeTestUtil.exchange.withdrawProtocolFeeStake(
-        //     exchangeTestUtil.exchangeOwner,
-        //     stakeAmount,
-        //     { from: exchangeTestUtil.exchangeOperator }
-        //   ),
-        //   "UNAUTHORIZED"
-        // );
-        // // Try to withdraw it from an unauthorized address on the loopring contract
-        // await expectThrow(
-        //   loopring.withdrawProtocolFeeStake(
-        //     exchangeTestUtil.exchangeId,
-        //     exchangeTestUtil.exchangeOwner,
-        //     stakeAmount,
-        //     { from: exchangeTestUtil.exchangeOwner }
-        //   ),
-        //   "UNAUTHORIZED"
-        // );
-        // // Withdraw the exchange stake
-        // await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
-        //   exchangeTestUtil.exchangeOwner,
-        //   stakeAmount
-        // );
+        const depositer = exchangeTestUtil.testContext.operators[2];
+        const stakeAmount = new BN(web3.utils.toWei("1234567", "ether"));
+        await exchangeTestUtil.setBalanceAndApprove(
+          depositer,
+          "LRC",
+          stakeAmount,
+          loopring.address
+        );
+        // Stake it
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(
+          stakeAmount,
+          depositer
+        );
+        // Try to withdraw it from an unauthorized address on the exchange contract
+        await expectThrow(
+          exchangeTestUtil.exchange.withdrawProtocolFeeStake(
+            exchangeTestUtil.exchangeOwner,
+            stakeAmount,
+            { from: exchangeTestUtil.exchangeOperator }
+          ),
+          "UNAUTHORIZED"
+        );
+        // Try to withdraw it from an unauthorized address on the loopring contract
+        await expectThrow(
+          loopring.withdrawProtocolFeeStake(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.exchangeOwner,
+            stakeAmount,
+            { from: exchangeTestUtil.exchangeOwner }
+          ),
+          "UNAUTHORIZED"
+        );
+        // Withdraw the exchange stake
+        await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
+          exchangeTestUtil.exchangeOwner,
+          stakeAmount
+        );
       });
 
-      // it("should be able to lower the protocol fees", async () => {
-      //   const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
-      //   const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
-      //   const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();
-      //   const maxProtocolMakerFeeBips = await loopring.maxProtocolMakerFeeBips();
-      //   const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
-      //   const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
+      it("should be able to lower the protocol fees", async () => {
+        const minProtocolTakerFeeBips = await loopring.minProtocolTakerFeeBips();
+        const maxProtocolTakerFeeBips = await loopring.maxProtocolTakerFeeBips();
+        const minProtocolMakerFeeBips = await loopring.minProtocolMakerFeeBips();
+        const maxProtocolMakerFeeBips = await loopring.maxProtocolMakerFeeBips();
+        const targetProtocolTakerFeeStake = await loopring.targetProtocolTakerFeeStake();
+        const targetProtocolMakerFeeStake = await loopring.targetProtocolMakerFeeStake();
 
-      //   // Deposit some LRC to stake for the exchange
-      //   const depositer = exchangeTestUtil.testContext.operators[2];
-      //   const totalLRC = targetProtocolTakerFeeStake.mul(new BN(4));
-      //   await exchangeTestUtil.setBalanceAndApprove(
-      //     depositer,
-      //     "LRC",
-      //     totalLRC,
-      //     loopring.address
-      //   );
+        // Deposit some LRC to stake for the exchange
+        const depositer = exchangeTestUtil.testContext.operators[2];
+        const totalLRC = targetProtocolTakerFeeStake.mul(new BN(4));
+        await exchangeTestUtil.setBalanceAndApprove(
+          depositer,
+          "LRC",
+          totalLRC,
+          loopring.address
+        );
 
-      //   {
-      //     const protocolFees = await loopring.getProtocolFeeValues(
-      //       exchangeTestUtil.exchangeId,
-      //       exchangeTestUtil.onchainDataAvailability
-      //     );
-      //     assert(
-      //       protocolFees.takerFeeBips.eq(maxProtocolTakerFeeBips),
-      //       "Wrong protocol taker fees"
-      //     );
-      //     assert(
-      //       protocolFees.makerFeeBips.eq(maxProtocolMakerFeeBips),
-      //       "Wrong protocol maker fees"
-      //     );
-      //   }
+        {
+          const protocolFees = await loopring.getProtocolFeeValues(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.onchainDataAvailability
+          );
+          assert(
+            protocolFees.takerFeeBips.eq(maxProtocolTakerFeeBips),
+            "Wrong protocol taker fees"
+          );
+          assert(
+            protocolFees.makerFeeBips.eq(maxProtocolMakerFeeBips),
+            "Wrong protocol maker fees"
+          );
+        }
 
-      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
-      //     targetProtocolMakerFeeStake,
-      //     depositer
-      //   );
-      //   await checkProtocolFees();
-      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
-      //     targetProtocolMakerFeeStake,
-      //     depositer
-      //   );
-      //   await checkProtocolFees();
-      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
-      //     targetProtocolTakerFeeStake,
-      //     depositer
-      //   );
-      //   await checkProtocolFees();
-      //   await exchangeTestUtil.depositProtocolFeeStakeChecked(
-      //     targetProtocolTakerFeeStake,
-      //     depositer
-      //   );
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(
+          targetProtocolMakerFeeStake,
+          depositer
+        );
+        await checkProtocolFees();
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(
+          targetProtocolMakerFeeStake,
+          depositer
+        );
+        await checkProtocolFees();
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(
+          targetProtocolTakerFeeStake,
+          depositer
+        );
+        await checkProtocolFees();
+        await exchangeTestUtil.depositProtocolFeeStakeChecked(
+          targetProtocolTakerFeeStake,
+          depositer
+        );
 
-      //   {
-      //     const protocolFees = await loopring.getProtocolFeeValues(
-      //       exchangeTestUtil.exchangeId,
-      //       exchangeTestUtil.onchainDataAvailability
-      //     );
-      //     assert(
-      //       protocolFees.takerFeeBips.eq(minProtocolTakerFeeBips),
-      //       "Wrong protocol taker fees"
-      //     );
-      //     assert(
-      //       protocolFees.makerFeeBips.eq(minProtocolMakerFeeBips),
-      //       "Wrong protocol maker fees"
-      //     );
-      //   }
-      // });
+        {
+          const protocolFees = await loopring.getProtocolFeeValues(
+            exchangeTestUtil.exchangeId,
+            exchangeTestUtil.onchainDataAvailability
+          );
+          assert(
+            protocolFees.takerFeeBips.eq(minProtocolTakerFeeBips),
+            "Wrong protocol taker fees"
+          );
+          assert(
+            protocolFees.makerFeeBips.eq(minProtocolMakerFeeBips),
+            "Wrong protocol maker fees"
+          );
+        }
+      });
     });
   });
 
-  // describe("Owner", () => {
-  //   it("should be able to update settings", async () => {
-  //     await loopring.updateSettings(
-  //       exchangeTestUtil.testContext.orderOwners[1],
-  //       exchangeTestUtil.testContext.orderOwners[2],
-  //       exchangeTestUtil.testContext.orderOwners[3],
-  //       new BN(web3.utils.toWei("0.01", "ether")),
-  //       new BN(web3.utils.toWei("9000", "ether")),
-  //       new BN(web3.utils.toWei("1000", "ether")),
-  //       new BN(web3.utils.toWei("2", "ether")),
-  //       new BN(web3.utils.toWei("125000", "ether")),
-  //       new BN(web3.utils.toWei("500000", "ether")),
-  //       new BN(web3.utils.toWei("100000", "ether")),
-  //       new BN(web3.utils.toWei("20", "ether")),
-  //       { from: exchangeTestUtil.testContext.deployer }
-  //     );
+  describe("Owner", () => {
+    it("should be able to update settings", async () => {
+      await loopring.updateSettings(
+        exchangeTestUtil.testContext.orderOwners[1],
+        exchangeTestUtil.testContext.orderOwners[2],
+        exchangeTestUtil.testContext.orderOwners[3],
+        new BN(web3.utils.toWei("0.01", "ether")),
+        new BN(web3.utils.toWei("9000", "ether")),
+        new BN(web3.utils.toWei("1000", "ether")),
+        new BN(web3.utils.toWei("2", "ether")),
+        new BN(web3.utils.toWei("125000", "ether")),
+        new BN(web3.utils.toWei("500000", "ether")),
+        new BN(web3.utils.toWei("100000", "ether")),
+        new BN(web3.utils.toWei("20", "ether")),
+        { from: exchangeTestUtil.testContext.deployer }
+      );
 
-  //     const protocolFeeVaultAfter = await loopring.protocolFeeVault();
-  //     assert(
-  //       (await loopring.protocolFeeVault()) ===
-  //         exchangeTestUtil.testContext.orderOwners[3],
-  //       "new protocolFeeVault should be set"
-  //     );
-  //   });
-  // });
+      const protocolFeeVaultAfter = await loopring.protocolFeeVault();
+      assert(
+        (await loopring.protocolFeeVault()) ===
+          exchangeTestUtil.testContext.orderOwners[3],
+        "new protocolFeeVault should be set"
+      );
+    });
+  });
 
-  // describe("anyone", () => {
-  //   it("should not be able to burn the stake", async () => {
-  //     await expectThrow(
-  //       loopring.burnExchangeStake(exchangeTestUtil.exchangeId, new BN(0), {
-  //         from: exchangeTestUtil.testContext.deployer
-  //       }),
-  //       "UNAUTHORIZED"
-  //     );
-  //   });
+  describe("anyone", () => {
+    it("should not be able to burn the stake", async () => {
+      await expectThrow(
+        loopring.burnExchangeStake(exchangeTestUtil.exchangeId, new BN(0), {
+          from: exchangeTestUtil.testContext.deployer
+        }),
+        "UNAUTHORIZED"
+      );
+    });
 
-  //   it("should not be able to withdraw the stake", async () => {
-  //     const recipient = exchangeTestUtil.testContext.orderOwners[1];
-  //     await expectThrow(
-  //       loopring.withdrawExchangeStake(
-  //         exchangeTestUtil.exchangeId,
-  //         recipient,
-  //         new BN(0),
-  //         { from: exchangeTestUtil.testContext.deployer }
-  //       ),
-  //       "UNAUTHORIZED"
-  //     );
-  //   });
+    it("should not be able to withdraw the stake", async () => {
+      const recipient = exchangeTestUtil.testContext.orderOwners[1];
+      await expectThrow(
+        loopring.withdrawExchangeStake(
+          exchangeTestUtil.exchangeId,
+          recipient,
+          new BN(0),
+          { from: exchangeTestUtil.testContext.deployer }
+        ),
+        "UNAUTHORIZED"
+      );
+    });
 
-  //   it("should not be able to set the update the settings", async () => {
-  //     await expectThrow(
-  //       loopring.updateSettings(
-  //         exchangeTestUtil.testContext.orderOwners[1], // fee vault
-  //         exchangeTestUtil.testContext.orderOwners[2], // block verifier
-  //         exchangeTestUtil.testContext.orderOwners[3], // downtime cost calculator
-  //         new BN(web3.utils.toWei("1000", "ether")),
-  //         new BN(web3.utils.toWei("0.02", "ether")),
-  //         new BN(web3.utils.toWei("10000", "ether")),
-  //         new BN(web3.utils.toWei("2000", "ether")),
-  //         new BN(web3.utils.toWei("1", "ether")),
-  //         new BN(web3.utils.toWei("250000", "ether")),
-  //         new BN(web3.utils.toWei("1000000", "ether")),
-  //         new BN(web3.utils.toWei("50000", "ether")),
-  //         new BN(web3.utils.toWei("10", "ether")),
-  //         { from: exchangeTestUtil.testContext.orderOwners[0] }
-  //       ),
-  //       "UNAUTHORIZED"
-  //     );
-  //   });
+    it("should not be able to set the update the settings", async () => {
+      await expectThrow(
+        loopring.updateSettings(
+          exchangeTestUtil.testContext.orderOwners[1], // fee vault
+          exchangeTestUtil.testContext.orderOwners[2], // block verifier
+          exchangeTestUtil.testContext.orderOwners[3], // downtime cost calculator
+          new BN(web3.utils.toWei("1000", "ether")),
+          new BN(web3.utils.toWei("0.02", "ether")),
+          new BN(web3.utils.toWei("10000", "ether")),
+          new BN(web3.utils.toWei("2000", "ether")),
+          new BN(web3.utils.toWei("1", "ether")),
+          new BN(web3.utils.toWei("250000", "ether")),
+          new BN(web3.utils.toWei("1000000", "ether")),
+          new BN(web3.utils.toWei("50000", "ether")),
+          new BN(web3.utils.toWei("10", "ether")),
+          { from: exchangeTestUtil.testContext.orderOwners[0] }
+        ),
+        "UNAUTHORIZED"
+      );
+    });
 
-  //   it("should not be able to set the update the protocol fee settings", async () => {
-  //     await expectThrow(
-  //       loopring.updateProtocolFeeSettings(
-  //         25,
-  //         50,
-  //         10,
-  //         25,
-  //         new BN(web3.utils.toWei("25000000", "ether")),
-  //         new BN(web3.utils.toWei("10000000", "ether")),
-  //         { from: exchangeTestUtil.testContext.orderOwners[0] }
-  //       ),
-  //       "UNAUTHORIZED"
-  //     );
-  //   });
-  // });
+    it("should not be able to set the update the protocol fee settings", async () => {
+      await expectThrow(
+        loopring.updateProtocolFeeSettings(
+          25,
+          50,
+          10,
+          25,
+          new BN(web3.utils.toWei("25000000", "ether")),
+          new BN(web3.utils.toWei("10000000", "ether")),
+          { from: exchangeTestUtil.testContext.orderOwners[0] }
+        ),
+        "UNAUTHORIZED"
+      );
+    });
+  });
 });

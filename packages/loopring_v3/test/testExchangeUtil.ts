@@ -355,9 +355,9 @@ export class ExchangeTestUtil {
       web3.eth.blockNumber
     );
 
-    // events.forEach((e: any) => {
-    //   logInfo("event:", util.inspect(e.args, false, null));
-    // });
+    events.forEach((e: any) => {
+      logInfo("event:", util.inspect(e.args, false, null));
+    });
   }
 
   public async setupRing(
@@ -2594,7 +2594,7 @@ export class ExchangeTestUtil {
       from: depositer
     });
 
-    return 0; //exchangeID;
+    return exchangeID;
   }
 
   public getTokenAddress(token: string) {
