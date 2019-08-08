@@ -2,6 +2,7 @@ node_modules/
 build/
 transpiled/
 ethsnarks/
+ABI/
 keys/
 blocks/
 .DS_Store

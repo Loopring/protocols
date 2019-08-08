@@ -26,11 +26,11 @@
   },
   "scripts": {
     "watch": "npm-watch compile",
-    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc",
+    "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc && ./genAbi.sh",
     "test": "npm run transpile && truffle test",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
-    "compile": "truffle compile",
+    "compile": "truffle compile && ./genAbi.sh",
     "build": "./install && yarn run compile",
     "genabi": "./genAbi.sh",
     "migrate": "npm run transpile && truffle migrate",

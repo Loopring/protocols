@@ -10,12 +10,11 @@ node_modules/solc/solcjs \
     -o ABI/version30/ --overwrite \
     --abi contracts/lib/*.sol \
     --allow-paths contracts/thirdparty/*.sol
-s
+
 node_modules/solc/solcjs \
     -o ABI/version30/ --overwrite \
     --abi contracts/iface/*.sol \
     --allow-paths contracts/thirdparty/*.sol contracts/lib/*.sol
-
 
 mv ABI/version30/contracts_iface_IAddressWhitelist_sol_IAddressWhitelist.abi ABI/version30/IAddressWhitelist.abi
 mv ABI/version30/contracts_iface_IBlockVerifier_sol_IBlockVerifier.abi ABI/version30/IBlockVerifier.abi
