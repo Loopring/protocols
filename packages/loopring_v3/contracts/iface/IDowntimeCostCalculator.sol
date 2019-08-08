@@ -36,6 +36,6 @@ contract IDowntimeCostCalculator
         uint  durationToPurchaseMinutes
         )
         external
-        view
+        // view - This function may choose to change internal state.
         returns (uint cost);
 }

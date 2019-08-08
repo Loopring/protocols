@@ -37,7 +37,6 @@ contract DowntimeCostCalculator is IDowntimeCostCalculator
         uint  durationToPurchaseMinutes
         )
         external
-        view
         returns (uint)
     {
         return durationToPurchaseMinutes.mul(PRICE_PER_MINUTE);

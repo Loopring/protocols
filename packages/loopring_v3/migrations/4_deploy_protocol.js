@@ -89,7 +89,7 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.deploy(ExchangeDeployer),
           deployer.deploy(BlockVerifier),
-          deployer.deploy(DowntimeCostCalculator)
+          deployer.deploy(DowntimeCostCalculator, 60000, 2, 1000, 120000, 500)
         ]);
       })
       .then(() => {
