@@ -3708,8 +3708,6 @@ export class ExchangeTestUtil {
     this.lrcAddress = lrcToken.address;
     this.wethAddress = wethToken.address;
 
-    await protocolRegistry.setLRCAddress(lrcToken.address);
-
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber))
       .timestamp;
