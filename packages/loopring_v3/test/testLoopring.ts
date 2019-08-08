@@ -228,7 +228,7 @@ contract("Loopring", (accounts: string[]) => {
       await expectThrow(
         loopring.updateSettings(
           loopring.address,
-          new BN(web3.utils.toWei("1000", "ether")),
+          accounts[2],
           new BN(web3.utils.toWei("0.02", "ether")),
           new BN(web3.utils.toWei("10000", "ether")),
           new BN(web3.utils.toWei("2000", "ether")),
