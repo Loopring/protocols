@@ -128,7 +128,7 @@ contract("Operator", (accounts: string[]) => {
         await exchangeTestUtil.verifyPendingBlocks(exchangeId);
         // Distribute the withdrawals too late
         await exchangeTestUtil.advanceBlockTimestamp(
-          exchangeTestUtil.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+          exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
         );
         // This call can also happen directly on the Exchange contract
         await operator.distributeWithdrawals(
@@ -160,7 +160,7 @@ contract("Operator", (accounts: string[]) => {
     //   const blockA = await commitDepositBlock();
     //   // Wait until we can't submit the proof anymore
     //   await exchangeTestUtil.advanceBlockTimestamp(
-    //     exchangeTestUtil.ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1
+    //     exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1
     //   );
     //   // Revert the block
     //   await exchangeTestUtil.revertBlock(blockA.block.blockIdx);

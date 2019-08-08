@@ -708,21 +708,21 @@ export class ExchangeTestUtil {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
 
-    let numAvailableSlots = (await this.ExchangeData.getNumAvailableDepositSlots()).toNumber();
+    let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
     if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitDeposits(exchangeID);
-      numAvailableSlots = (await this.ExchangeData.getNumAvailableDepositSlots()).toNumber();
+      numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
     // Calculate how much fee needs to be paid
-    const fees = await this.ExchangeData.getFees();
+    const fees = await this.exchange.getFees();
     let feeETH = fees._depositFeeETH;
     const currentAccountID = await this.getAccountID(owner);
     if (currentAccountID === undefined) {
       feeETH = feeETH.add(fees._accountUpdateFeeETH);
     } else {
-      const accountData = await this.ExchangeData.getAccount(owner);
+      const accountData = await this.exchange.getAccount(owner);
       if (
         accountData.pubKeyX.toString(10) !== publicKeyX ||
         accountData.pubKeyY.toString(10) !== publicKeyY
@@ -884,13 +884,13 @@ export class ExchangeTestUtil {
     }
     const tokenID = this.tokenAddressToIDMap.get(token);
 
-    let numAvailableSlots = (await this.ExchangeData.getNumAvailableWithdrawalSlots()).toNumber();
+    let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
     if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitOnchainWithdrawalRequests(exchangeID);
-      numAvailableSlots = (await this.ExchangeData.getNumAvailableWithdrawalSlots()).toNumber();
+      numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
-    const withdrawalFee = (await this.ExchangeData.getFees())._withdrawalFeeETH;
+    const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
 
     const feeSurplus = new BN(456);
     const ethToSend = withdrawalFee.add(feeSurplus);
@@ -905,7 +905,7 @@ export class ExchangeTestUtil {
     // Submit the withdraw request
     let tx;
     if (accountID === 0) {
-      tx = await this.ExchangeData.withdrawProtocolFees(token, {
+      tx = await this.exchange.withdrawProtocolFees(token, {
         from: caller,
         value: ethToSend,
         gasPrice: 0
@@ -913,7 +913,7 @@ export class ExchangeTestUtil {
       amount = new BN(2);
       amount = amount.pow(new BN(96)).sub(new BN(1));
     } else {
-      tx = await this.ExchangeData.withdraw(token, web3.utils.toBN(amount), {
+      tx = await this.exchange.withdraw(token, web3.utils.toBN(amount), {
         from: caller,
         value: ethToSend,
         gasPrice: 0
@@ -1095,8 +1095,7 @@ export class ExchangeTestUtil {
     data: string,
     validate: boolean = true
   ) {
-    const nextBlockIdx =
-      (await this.ExchangeData.getBlockHeight()).toNumber() + 1;
+    const nextBlockIdx = (await this.exchange.getBlockHeight()).toNumber() + 1;
     const inputFilename =
       "./blocks/block_" + exchangeID + "_" + nextBlockIdx + "_info.json";
     const outputFilename =
@@ -1173,7 +1172,7 @@ export class ExchangeTestUtil {
     // Make sure the keys are generated
     await this.generateKeys(filename);
 
-    const blockHeightBefore = await this.ExchangeData.getBlockHeight();
+    const blockHeightBefore = await this.exchange.getBlockHeight();
 
     const blockVersion = 0;
     const operatorContract = this.operator ? this.operator : this.exchange;
@@ -1190,7 +1189,7 @@ export class ExchangeTestUtil {
       "[commitBlock] Gas used: " + tx.receipt.gasUsed
     );
 
-    const blockHeightAfter = await this.ExchangeData.getBlockHeight();
+    const blockHeightAfter = await this.exchange.getBlockHeight();
     assert(
       blockHeightAfter.eq(blockHeightBefore.add(new BN(1))),
       "block height should be incremented by 1"
@@ -1219,10 +1218,10 @@ export class ExchangeTestUtil {
       "public data hash needs to match"
     );
 
-    const blockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+    const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
 
     // Check the block data
-    const blockData = await this.ExchangeData.getBlock(blockIdx);
+    const blockData = await this.exchange.getBlock(blockIdx);
     assert(
       blockData.blockState.toNumber() === BlockState.COMMITTED,
       "block state needs to be COMMITTED"
@@ -1324,11 +1323,11 @@ export class ExchangeTestUtil {
       proofs.push(...block.proof);
     }
 
-    const numBlocksFinalizedBefore = await this.ExchangeData.getNumBlocksFinalized();
+    const numBlocksFinalizedBefore = await this.exchange.getNumBlocksFinalized();
 
     const blockDataBefore: any[] = [];
     for (const block of blocks) {
-      blockDataBefore.push(await this.ExchangeData.getBlock(block.blockIdx));
+      blockDataBefore.push(await this.exchange.getBlock(block.blockIdx));
     }
 
     if (this.commitWrongProofOnce) {
@@ -1382,7 +1381,7 @@ export class ExchangeTestUtil {
 
     // Check the block data
     for (const block of blocks) {
-      const blockDataAfter = await this.ExchangeData.getBlock(block.blockIdx);
+      const blockDataAfter = await this.exchange.getBlock(block.blockIdx);
       assert(
         blockDataAfter.blockState.toNumber() === BlockState.VERIFIED,
         "block state after needs to be VERIFIED"
@@ -1390,13 +1389,13 @@ export class ExchangeTestUtil {
     }
 
     // Check numBlocksFinalized
-    const numBlocksFinalizedAfter = await this.ExchangeData.getNumBlocksFinalized();
-    const numBlocks = (await this.ExchangeData.getBlockHeight()).toNumber() + 1;
+    const numBlocksFinalizedAfter = await this.exchange.getNumBlocksFinalized();
+    const numBlocks = (await this.exchange.getBlockHeight()).toNumber() + 1;
     let numBlockFinalizedExpected = 0;
     let idx = numBlocksFinalizedBefore.toNumber() + 1;
     while (
       idx < numBlocks &&
-      (await this.ExchangeData.getBlock(idx)).blockState.toNumber() ===
+      (await this.exchange.getBlock(idx)).blockState.toNumber() ===
         BlockState.VERIFIED
     ) {
       numBlockFinalizedExpected++;
@@ -1530,10 +1529,10 @@ export class ExchangeTestUtil {
       assert(deposits.length === blockSize);
       numDepositsDone += blockSize;
 
-      const startIndex = (await this.ExchangeData.getNumDepositRequestsProcessed()).toNumber();
+      const startIndex = (await this.exchange.getNumDepositRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
-      const firstRequestData = await this.ExchangeData.getDepositRequest(
+      const firstRequestData = await this.exchange.getDepositRequest(
         startIndex - 1
       );
       const startingHash = firstRequestData.accumulatedHash;
@@ -1566,7 +1565,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -1597,8 +1596,8 @@ export class ExchangeTestUtil {
       bs.addNumber(startIndex, 4);
       bs.addNumber(numRequestsInBlock, 4);
 
-      const numAvailableSlotsBefore = await this.ExchangeData.getNumAvailableDepositSlots();
-      const numDepositRequestsProcessedBefore = await this.ExchangeData.getNumDepositRequestsProcessed();
+      const numAvailableSlotsBefore = await this.exchange.getNumAvailableDepositSlots();
+      const numDepositRequestsProcessedBefore = await this.exchange.getNumDepositRequestsProcessed();
 
       // Commit the block
       const operator = await this.getActiveOperator(exchangeID);
@@ -1610,8 +1609,8 @@ export class ExchangeTestUtil {
         blockFilename
       );
 
-      const numAvailableSlotsAfter = await this.ExchangeData.getNumAvailableDepositSlots();
-      const numDepositRequestsProcessedAfter = await this.ExchangeData.getNumDepositRequestsProcessed();
+      const numAvailableSlotsAfter = await this.exchange.getNumAvailableDepositSlots();
+      const numDepositRequestsProcessedAfter = await this.exchange.getNumDepositRequestsProcessed();
       assert(
         numAvailableSlotsAfter.eq(
           numAvailableSlotsBefore.add(new BN(numRequestsInBlock))
@@ -1636,7 +1635,7 @@ export class ExchangeTestUtil {
   public async loadExchangeState(exchangeID: number, blockIdx?: number) {
     // Read in the state
     if (blockIdx === undefined) {
-      blockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+      blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     }
     const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
@@ -1728,7 +1727,7 @@ export class ExchangeTestUtil {
   }
 
   public async setOperatorContract(operator: any) {
-    await this.ExchangeData.setOperator(operator.address, {
+    await this.exchange.setOperator(operator.address, {
       from: this.exchangeOwner
     });
     this.operator = operator;
@@ -1807,10 +1806,10 @@ export class ExchangeTestUtil {
         }
       }
 
-      const startIndex = (await this.ExchangeData.getNumWithdrawalRequestsProcessed()).toNumber();
+      const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
-      const firstRequestData = await this.ExchangeData.getWithdrawRequest(
+      const firstRequestData = await this.exchange.getWithdrawRequest(
         startIndex - 1
       );
       const startingHash = firstRequestData.accumulatedHash;
@@ -1846,7 +1845,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -1913,8 +1912,8 @@ export class ExchangeTestUtil {
         );
       }
 
-      const numAvailableSlotsBefore = await this.ExchangeData.getNumAvailableWithdrawalSlots();
-      const numWithdrawalRequestsProcessedBefore = await this.ExchangeData.getNumWithdrawalRequestsProcessed();
+      const numAvailableSlotsBefore = await this.exchange.getNumAvailableWithdrawalSlots();
+      const numWithdrawalRequestsProcessedBefore = await this.exchange.getNumWithdrawalRequestsProcessed();
 
       // Commit the block
       await this.commitBlock(
@@ -1925,8 +1924,8 @@ export class ExchangeTestUtil {
         blockFilename
       );
 
-      const numAvailableSlotsAfter = await this.ExchangeData.getNumAvailableWithdrawalSlots();
-      const numWithdrawalRequestsProcessedAfter = await this.ExchangeData.getNumWithdrawalRequestsProcessed();
+      const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
+      const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
       if (onchain) {
         const numRequestsProcessed = shutdown
           ? new BN(0)
@@ -1992,7 +1991,7 @@ export class ExchangeTestUtil {
     [id: string]: string;
   }) {
     for (const withdrawal of this.pendingWithdrawals) {
-      const txw = await this.ExchangeData.withdraw(
+      const txw = await this.exchange.withdraw(
         web3.utils.toBN(withdrawal.exchangeID),
         web3.utils.toBN(withdrawal.blockIdx),
         web3.utils.toBN(withdrawal.withdrawalIdx)
@@ -2124,9 +2123,9 @@ export class ExchangeTestUtil {
       }
       const labelHash = this.hashLabels(labels);
 
-      const currentBlockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
 
-      const protocolFees = await this.ExchangeData.getProtocolFeeValues();
+      const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
       const protocolMakerFeeBips = protocolFees.makerFeeBips.toNumber();
 
@@ -2403,7 +2402,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -2469,14 +2468,14 @@ export class ExchangeTestUtil {
 
       if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
         // Make sure the exchange owner can pay the registration fee
-        const registrationCost = await this.ExchangeData.getLRCFeeForRegisteringOneMoreToken();
+        const registrationCost = await this.exchange.getLRCFeeForRegisteringOneMoreToken();
         await this.setBalanceAndApprove(
           this.exchangeOwner,
           "LRC",
           registrationCost
         );
         // Register the token
-        const tx = await this.ExchangeData.registerToken(tokenAddress, {
+        const tx = await this.exchange.registerToken(tokenAddress, {
           from: this.exchangeOwner
         });
         // logInfo("\x1b[46m%s\x1b[0m", "[TokenRegistration] Gas used: " + tx.receipt.gasUsed);
@@ -2490,7 +2489,7 @@ export class ExchangeTestUtil {
   }
 
   public async getTokenID(tokenAddress: string) {
-    const tokenID = await this.ExchangeData.getTokenID(tokenAddress);
+    const tokenID = await this.exchange.getTokenID(tokenAddress);
     return tokenID.toNumber();
   }
 
@@ -2500,7 +2499,7 @@ export class ExchangeTestUtil {
 
   public async getAccountID(owner: string) {
     try {
-      const result = await this.ExchangeData.getAccount(owner);
+      const result = await this.exchange.getAccount(owner);
       return result.accountID.toNumber();
     } catch {
       return undefined;
@@ -2559,14 +2558,14 @@ export class ExchangeTestUtil {
 
     this.exchange = await this.contracts.Exchange.at(exchangeAddress);
 
-    await this.ExchangeData.setOperator(operator, { from: owner });
+    await this.exchange.setOperator(operator, { from: owner });
 
     this.exchangeOwner = owner;
     this.exchangeOperator = operator;
     this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    await this.ExchangeData.setFees(
+    await this.exchange.setFees(
       accountCreationFeeInETH,
       accountUpdateFeeInETH,
       depositFeeInETH,
@@ -2619,8 +2618,8 @@ export class ExchangeTestUtil {
 
     const revertFineLRC = await this.loopringV3.revertFineLRC();
 
-    const numBlocksBefore = (await this.ExchangeData.getBlockHeight()).toNumber();
-    const numBlocksFinalizedBefore = (await this.ExchangeData.getNumBlocksFinalized()).toNumber();
+    const numBlocksBefore = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksFinalizedBefore = (await this.exchange.getNumBlocksFinalized()).toNumber();
     const lrcBalanceBefore = await this.getOnchainBalance(
       this.loopringV3.address,
       "LRC"
@@ -2632,8 +2631,8 @@ export class ExchangeTestUtil {
       from: this.exchangeOperator
     });
 
-    const numBlocksAfter = (await this.ExchangeData.getBlockHeight()).toNumber();
-    const numBlocksFinalizedAfter = (await this.ExchangeData.getNumBlocksFinalized()).toNumber();
+    const numBlocksAfter = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksFinalizedAfter = (await this.exchange.getNumBlocksFinalized()).toNumber();
     const lrcBalanceAfter = await this.getOnchainBalance(
       this.loopringV3.address,
       "LRC"
@@ -2684,7 +2683,7 @@ export class ExchangeTestUtil {
       token
     );
 
-    await this.ExchangeData.withdrawBlockFee(blockIdx, operator, {
+    await this.exchange.withdrawBlockFee(blockIdx, operator, {
       from: operator,
       gasPrice: 0
     });
@@ -2751,7 +2750,7 @@ export class ExchangeTestUtil {
 
     const exchangeID = this.exchangeId;
 
-    const blockIdx = (await this.ExchangeData.getBlockHeight()).toNumber();
+    const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
     const filename = "withdraw_proof.json";
     const result = childProcess.spawnSync(
       "python3",
@@ -2780,7 +2779,7 @@ export class ExchangeTestUtil {
   ) {
     const accountID = await this.getAccountID(owner);
     const account = this.accounts[this.exchangeId][accountID];
-    const tx = await this.ExchangeData.withdrawFromMerkleTreeFor(
+    const tx = await this.exchange.withdrawFromMerkleTreeFor(
       owner,
       token,
       account.publicKeyX,
@@ -2803,9 +2802,7 @@ export class ExchangeTestUtil {
   }
 
   public async withdrawFromDepositRequest(requestIdx: number) {
-    await this.ExchangeData.withdrawFromDepositRequest(
-      web3.utils.toBN(requestIdx)
-    );
+    await this.exchange.withdrawFromDepositRequest(web3.utils.toBN(requestIdx));
   }
 
   public async setBalanceAndApprove(
@@ -2926,8 +2923,8 @@ export class ExchangeTestUtil {
     changeFees: boolean = true
   ) {
     // Change the deposit fee
-    const fees = await this.ExchangeData.getFees();
-    await this.ExchangeData.setFees(
+    const fees = await this.exchange.getFees();
+    await this.exchange.setFees(
       fees._accountCreationFeeETH,
       fees._accountUpdateFeeETH,
       fees._depositFeeETH.mul(new BN(changeFees ? 4 : 1)),
@@ -2960,8 +2957,8 @@ export class ExchangeTestUtil {
     changeFees: boolean = true
   ) {
     // Change the withdrawal fee
-    const fees = await this.ExchangeData.getFees();
-    await this.ExchangeData.setFees(
+    const fees = await this.exchange.getFees();
+    await this.exchange.setFees(
       fees._accountCreationFeeETH,
       fees._accountUpdateFeeETH,
       fees._depositFeeETH,
@@ -3421,7 +3418,7 @@ export class ExchangeTestUtil {
       this.loopringV3.address,
       token
     );
-    const stakeBefore = await this.ExchangeData.getExchangeStake();
+    const stakeBefore = await this.exchange.getExchangeStake();
     const totalStakeBefore = await this.loopringV3.totalStake();
 
     await this.loopringV3.depositExchangeStake(this.exchangeId, amount, {
@@ -3433,7 +3430,7 @@ export class ExchangeTestUtil {
       this.loopringV3.address,
       token
     );
-    const stakeAfter = await this.ExchangeData.getExchangeStake();
+    const stakeAfter = await this.exchange.getExchangeStake();
     const totalStakeAfter = await this.loopringV3.totalStake();
 
     assert(
@@ -3482,10 +3479,10 @@ export class ExchangeTestUtil {
       this.loopringV3.address,
       token
     );
-    const stakeBefore = await this.ExchangeData.getExchangeStake();
+    const stakeBefore = await this.exchange.getExchangeStake();
     const totalStakeBefore = await this.loopringV3.totalStake();
 
-    await this.ExchangeData.withdrawExchangeStake(recipient, {
+    await this.exchange.withdrawExchangeStake(recipient, {
       from: this.exchangeOwner
     });
 
@@ -3494,7 +3491,7 @@ export class ExchangeTestUtil {
       this.loopringV3.address,
       token
     );
-    const stakeAfter = await this.ExchangeData.getExchangeStake();
+    const stakeAfter = await this.exchange.getExchangeStake();
     const totalStakeAfter = await this.loopringV3.totalStake();
 
     assert(
@@ -3613,7 +3610,7 @@ export class ExchangeTestUtil {
     );
     const totalStakeBefore = await this.loopringV3.totalStake();
 
-    await this.ExchangeData.withdrawProtocolFeeStake(recipient, amount, {
+    await this.exchange.withdrawProtocolFeeStake(recipient, amount, {
       from: this.exchangeOwner
     });
 
