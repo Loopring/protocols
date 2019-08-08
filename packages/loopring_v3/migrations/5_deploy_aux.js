@@ -6,7 +6,7 @@ var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var DowntimeCostCalculator = artifacts.require(
-  "./test/DowntimeCostCalculator.sol"
+  "./test/FixedPriceDowntimeCostCalculator.sol"
 );
 var UserStakingPool = artifacts.require("./impl/UserStakingPool");
 var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
