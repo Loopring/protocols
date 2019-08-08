@@ -163,8 +163,7 @@ contract("Exchange", (accounts: string[]) => {
               await web3.eth.getBlockNumber()
             )).timestamp;
             timestamp -=
-              exchangeTestUtil.ExchangeData
-                .TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
+              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
             bs.addNumber(0, 1);
             bs.addNumber(exchangeId, 4);
@@ -189,8 +188,7 @@ contract("Exchange", (accounts: string[]) => {
               await web3.eth.getBlockNumber()
             )).timestamp;
             timestamp +=
-              exchangeTestUtil.ExchangeData
-                .TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
+              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
             bs.addNumber(0, 1);
             bs.addNumber(exchangeId, 4);
