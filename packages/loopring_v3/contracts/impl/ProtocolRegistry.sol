@@ -25,9 +25,6 @@ import "./ExchangeProxy.sol";
 
 
 /// @title An Implementation of IProtocolRegistry.
-/// @dev After the deployment of this contract, an OwnedUpgradabilityProxy
-///      can be placed in front of it to ensure upgradeability of
-//       this registry.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry
 {
@@ -41,16 +38,13 @@ contract ProtocolRegistry is IProtocolRegistry
     mapping (address => address) public exchangeToProtocolMap;
     address[] public exchanges;
 
-    /// @dev The constructor must do NOTHING to support proxy.
-    constructor() public {}
-
-    function setLRCAddress(
+    function constructor(
         address _lrcAddress
         )
-        external
+        Claimable()
+        public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
-        require(lrcAddress == address(0), "INITIALIZED_ALREADY");
         lrcAddress = _lrcAddress;
     }
 

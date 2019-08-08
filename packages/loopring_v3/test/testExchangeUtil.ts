@@ -77,9 +77,6 @@ export class ExchangeTestUtil {
   public offchainWithdrawalBlockSizes = [4, 8];
   public orderCancellationBlockSizes = [4, 8];
 
-  public ExchangeData: any;
-
-  public protocolRegistry: any;
   public loopringV3: any;
   public exchangeDeployer: any;
   public blockVerifier: any;
@@ -100,6 +97,8 @@ export class ExchangeTestUtil {
   public userStakingPool: any;
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
+  public protocolRegistry: any;
+  public ExchangeData: any;
 
   public accounts: Account[][] = [];
 
@@ -2553,6 +2552,7 @@ export class ExchangeTestUtil {
     const items = eventArr.map((eventObj: any) => {
       return [eventObj.args.exchangeAddress, eventObj.args.exchangeId];
     });
+
     const exchangeAddress = items[0][0];
     const exchangeID = items[0][1].toNumber();
 

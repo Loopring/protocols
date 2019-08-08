@@ -21,13 +21,6 @@ import "../lib/ReentrancyGuard.sol";
 
 
 /// @title IProtocalRegistry
-/// @dev Note that Claimable and RentrancyGuard are inherited here to
-///      ensure all data members are declared on IExchange to make it
-///      easy to support upgradability through proxies.
-///
-///      Subclasses of this contract must NOT define constructor to
-///      initialize data.
-///
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
