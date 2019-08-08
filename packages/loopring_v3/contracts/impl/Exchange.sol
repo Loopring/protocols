@@ -35,6 +35,8 @@ import "./libexchange/ExchangeWithdrawals.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
+///
+/// TODO(daniel): rename this to ExchangeV3 to match LoopringV3.
 contract Exchange is IExchange
 {
     using ExchangeAdmins        for ExchangeData.State;
@@ -82,7 +84,7 @@ contract Exchange is IExchange
         )
         external
         onlyWhenUninitialized
-        // nonReentrant
+        nonReentrant
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
 
@@ -210,7 +212,7 @@ contract Exchange is IExchange
         )
         external
         payable
-        // nonReentrant
+        nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -271,7 +273,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
         returns (uint16 tokenID)
     {
         tokenID = state.registerToken(tokenAddress);
@@ -302,7 +304,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -312,7 +314,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -331,7 +333,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
         returns (uint stake)
     {
         stake = state.withdrawExchangeStake(recipient);
@@ -343,14 +345,14 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
     {
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
 
     function burnExchangeStake()
         external
-        // nonReentrant
+        nonReentrant
     {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
         if(state.isInWithdrawalMode()) {
@@ -419,7 +421,7 @@ contract Exchange is IExchange
         )
         external
         onlyOperator
-        // nonReentrant
+        nonReentrant
     {
         // Decompress the data here so we can extract the data directly from calldata
         bytes4 selector = IDecompressor(0x0).decompress.selector;
@@ -478,7 +480,7 @@ contract Exchange is IExchange
         )
         external
         onlyOperator
-        // nonReentrant
+        nonReentrant
     {
         state.verifyBlocks(blockIndices, proofs);
     }
@@ -488,7 +490,7 @@ contract Exchange is IExchange
         )
         external
         onlyOperator
-        // nonReentrant
+        nonReentrant
     {
         state.revertBlock(blockIdx);
     }
@@ -533,7 +535,7 @@ contract Exchange is IExchange
         )
         external
         payable
-        // nonReentrant
+        nonReentrant
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -555,7 +557,7 @@ contract Exchange is IExchange
         )
         external
         payable
-        // nonReentrant
+        nonReentrant
     {
         state.depositTo(msg.sender, token, amount, 0);
     }
@@ -567,7 +569,7 @@ contract Exchange is IExchange
         )
         external
         payable
-        // nonReentrant
+        nonReentrant
     {
         state.depositTo(recipient, tokenAddress, amount, 0);
     }
@@ -609,7 +611,7 @@ contract Exchange is IExchange
         )
         external
         payable
-        // nonReentrant
+        nonReentrant
     {
         uint24 accountID = state.getAccountID(msg.sender);
         state.withdraw(accountID, token, amount);
@@ -620,7 +622,7 @@ contract Exchange is IExchange
         )
         external
         payable
-        // nonReentrant
+        nonReentrant
     {
         // Always request the maximum amount so the complete balance is withdrawn
         state.withdraw(0, token, ~uint96(0));
@@ -637,7 +639,7 @@ contract Exchange is IExchange
         uint[12] calldata balancePath
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             msg.sender,
@@ -665,7 +667,7 @@ contract Exchange is IExchange
         uint[12] calldata balancePath
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         state.withdrawFromMerkleTreeFor(
             owner,
@@ -684,7 +686,7 @@ contract Exchange is IExchange
         uint depositIdx
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         state.withdrawFromDepositRequest(depositIdx);
     }
@@ -694,7 +696,7 @@ contract Exchange is IExchange
         uint slotIdx
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         require(blockIdx < state.blocks.length, "INVALID_BLOCK_IDX");
         ExchangeData.Block storage withdrawBlock = state.blocks[blockIdx];
@@ -712,7 +714,7 @@ contract Exchange is IExchange
         )
         external
         onlyOperator
-        // nonReentrant
+        nonReentrant
         returns (uint feeAmount)
     {
         feeAmount = state.withdrawBlockFee(blockIdx, feeRecipient);
@@ -723,7 +725,7 @@ contract Exchange is IExchange
         uint maxNumWithdrawals
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         state.distributeWithdrawals(blockIdx, maxNumWithdrawals);
     }
@@ -745,7 +747,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant // this op has an reentry!!!
+        nonReentrant // this op has an reentry!!!
         returns (address oldAddressWhitelist)
     {
         oldAddressWhitelist = state.setAddressWhitelist(_addressWhitelist);
@@ -759,7 +761,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant // this op has an reentry!!!
+        nonReentrant // this op has an reentry!!!
     {
         state.setFees(
             _accountCreationFeeETH,
@@ -790,7 +792,7 @@ contract Exchange is IExchange
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
     {
         state.startOrContinueMaintenanceMode(durationMinutes);
     }
@@ -798,7 +800,7 @@ contract Exchange is IExchange
     function stopMaintenanceMode()
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
     {
         state.stopMaintenanceMode();
     }
@@ -840,7 +842,7 @@ contract Exchange is IExchange
     function shutdown()
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");

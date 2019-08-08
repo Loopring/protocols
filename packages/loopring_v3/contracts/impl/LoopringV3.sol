@@ -63,7 +63,7 @@ contract LoopringV3 is ILoopringV3
     // === ILoopring methods ===
     function deployExchange()
         external
-        // nonReentrant
+        nonReentrant
         returns (address)
     {
         return ExchangeV3Deployer.deploy();
@@ -77,7 +77,7 @@ contract LoopringV3 is ILoopringV3
         bool    onchainDataAvailability
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
         require(exchangeId != 0, "INVALID_EXCHANGE_ID");
@@ -201,7 +201,7 @@ contract LoopringV3 is ILoopringV3
         uint amount
         )
         public
-        // nonReentrant
+        nonReentrant
         returns (uint burnedLRC)
     {
         Exchange storage exchange = exchanges[exchangeId];
@@ -232,7 +232,7 @@ contract LoopringV3 is ILoopringV3
         uint amountLRC
         )
         external
-        // nonReentrant
+        nonReentrant
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
@@ -257,7 +257,7 @@ contract LoopringV3 is ILoopringV3
         uint    requestedAmount
         )
         public
-        // nonReentrant
+        nonReentrant
         returns (uint amountLRC)
     {
         Exchange storage exchange = exchanges[exchangeId];
@@ -284,7 +284,7 @@ contract LoopringV3 is ILoopringV3
         uint amountLRC
         )
         external
-        // nonReentrant
+        nonReentrant
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
@@ -309,7 +309,7 @@ contract LoopringV3 is ILoopringV3
         uint    amountLRC
         )
         external
-        // nonReentrant
+        nonReentrant
     {
         Exchange storage exchange = exchanges[exchangeId];
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");

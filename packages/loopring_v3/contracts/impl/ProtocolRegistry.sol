@@ -54,7 +54,7 @@ contract ProtocolRegistry is IProtocolRegistry
         string  memory version
         )
         public
-        // nonReentrant
+        nonReentrant
     {
         require(protocol != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
@@ -109,7 +109,7 @@ contract ProtocolRegistry is IProtocolRegistry
         )
         external
         onlyOwner
-        // nonReentrant
+        nonReentrant
     {
         (address instance, ) = getProtocol(protocol);
         require(instance != address(0), "INVALID_PROTOCOL");
@@ -136,7 +136,7 @@ contract ProtocolRegistry is IProtocolRegistry
         bool    onchainDataAvailability
         )
         public
-        // nonReentrant
+        nonReentrant
         returns (
             address exchangeAddress,
             uint    exchangeId
