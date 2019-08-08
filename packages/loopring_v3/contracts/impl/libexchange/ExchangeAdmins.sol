@@ -22,8 +22,6 @@ import "../../lib/MathUint.sol";
 
 import "../../iface/IDowntimeCostCalculator.sol";
 
-import "../../iface/IDowntimeCostCalculator.sol";
-
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
