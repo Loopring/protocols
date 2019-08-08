@@ -61,7 +61,7 @@ contract ProtocolRegistry is IProtocolRegistry
         ILoopring loopring = ILoopring(protocol);
 
         // Leave this instance uninitialized.
-        address instance = loopring.deployExchange();
+        address instance = loopring.createExchange();
 
         protocols[protocol] = Protocol(instance, version);
     }
@@ -197,7 +197,7 @@ contract ProtocolRegistry is IProtocolRegistry
             exchangeToProtocolMap[exchangeAddress] = protocol;
         } else {
             // Deploy a native exchange
-            exchangeAddress = loopring.deployExchange();
+            exchangeAddress = loopring.createExchange();
         }
 
         loopring.initializeExchange(

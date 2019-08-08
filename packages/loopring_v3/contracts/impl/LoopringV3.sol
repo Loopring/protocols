@@ -63,13 +63,13 @@ contract LoopringV3 is ILoopringV3
     }
 
     // === ILoopring methods ===
-    function deployExchange()
+    function createExchange()
         external
         nonReentrant
         returns (address exchange)
     {
         exchange = ExchangeV3Deployer.deploy();
-        emit ExchangeDeployed(exchange);
+        emit ExchangeCreated(exchange);
     }
 
     function initializeExchange(

@@ -25,7 +25,7 @@ contract ILoopring
 
     /// @dev Deploy an new exchange instance without initialization.
     /// @return exchangeAddress The address of the new exchange.
-    function deployExchange()
+    function createExchange()
         external
         returns (address exchangeAddress);
 
