@@ -42,7 +42,8 @@ module.exports = {
         // my address: 0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa
         return provider;
       },
-      gasPrice: 21000000000
+      gasPrice: 21000000000,
+      gas: 4700000
     },
     rinkeby: {
       network_id: 4,
@@ -68,7 +69,7 @@ module.exports = {
       port: 8545,
       network_id: "*", // Match any network id
       gasPrice: 21000000000,
-      gas: 6700000
+      gas: 7800000
     },
     coverage: {
       host: "localhost",

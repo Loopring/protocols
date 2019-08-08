@@ -35,7 +35,8 @@ module.exports = function(deployer, network, accounts) {
             WETHToken.address,
             ProtocolFeeVault.address,
             BlockVerifier.address,
-            DowntimeCostCalculator.address
+            DowntimeCostCalculator.address,
+            { gas: 7800000 }
           )
         ]);
       })
