@@ -164,6 +164,26 @@ export class ExchangeTestUtil {
     this.testContext = await this.createExchangeTestContext(accounts);
 
     this.ExchangeData = this.contracts.ExchangeData;
+    // this.GENESIS_MERKLE_ROOT = new BN(await this.ExchangeData.GENESIS_MERKLE_ROOT());
+    this.SNARK_SCALAR_FIELD = await this.ExchangeData.SNARK_SCALAR_FIELD().toNumber();
+    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = await this.ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS().toNumber();
+    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = await this.ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS().toNumber();
+    this.MAX_OPEN_DEPOSIT_REQUESTS = await this.ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS().toNumber();
+    this.MAX_OPEN_WITHDRAWAL_REQUESTS = await this.ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS().toNumber();
+    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = await this.ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE().toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_FORCED = await this.ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED().toNumber();
+    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = await this.ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE().toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_BASE = await this.ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE().toNumber();
+    this.MAX_TIME_IN_SHUTDOWN_DELTA = await this.ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA().toNumber();
+    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = await this.ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS().toNumber();
+    this.MAX_NUM_TOKENS = await this.ExchangeData.MAX_NUM_TOKENS().toNumber();
+    this.MAX_NUM_ACCOUNTS = await this.ExchangeData.MAX_NUM_ACCOUNTS().toNumber();
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = await this.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS().toNumber();
+    this.FEE_BLOCK_FINE_START_TIME = await this.ExchangeData.FEE_BLOCK_FINE_START_TIME().toNumber();
+    this.FEE_BLOCK_FINE_MAX_DURATION = await this.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION().toNumber();
+    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = await this.ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS().toNumber();
+    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = await this.ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED().toNumber();
+    this.GAS_LIMIT_SEND_TOKENS = await this.ExchangeData.GAS_LIMIT_SEND_TOKENS().toNumber();
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.deployer;
@@ -243,27 +263,6 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
-
-    // this.GENESIS_MERKLE_ROOT = new BN(await this.ExchangeData.GENESIS_MERKLE_ROOT );
-    this.SNARK_SCALAR_FIELD = await this.ExchangeData.SNARK_SCALAR_FIELD.toNumber();
-    this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = await this.ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS.toNumber();
-    this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = await this.ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS.toNumber();
-    this.MAX_OPEN_DEPOSIT_REQUESTS = await this.ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS.toNumber();
-    this.MAX_OPEN_WITHDRAWAL_REQUESTS = await this.ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS.toNumber();
-    this.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE = await this.ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE.toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_FORCED = await this.ExchangeData.MAX_AGE_REQUEST_UNTIL_FORCED.toNumber();
-    this.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = await this.ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE.toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_BASE = await this.ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE.toNumber();
-    this.MAX_TIME_IN_SHUTDOWN_DELTA = await this.ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA.toNumber();
-    this.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = await this.ExchangeData.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS.toNumber();
-    this.MAX_NUM_TOKENS = await this.ExchangeData.MAX_NUM_TOKENS.toNumber();
-    this.MAX_NUM_ACCOUNTS = await this.ExchangeData.MAX_NUM_ACCOUNTS.toNumber();
-    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = await this.ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
-    this.FEE_BLOCK_FINE_START_TIME = await this.ExchangeData.FEE_BLOCK_FINE_START_TIME.toNumber();
-    this.FEE_BLOCK_FINE_MAX_DURATION = await this.ExchangeData.FEE_BLOCK_FINE_MAX_DURATION.toNumber();
-    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = await this.ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS.toNumber();
-    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = await this.ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED.toNumber();
-    this.GAS_LIMIT_SEND_TOKENS = await this.ExchangeData.GAS_LIMIT_SEND_TOKENS.toNumber();
   }
 
   public async setupTestState(exchangeID: number) {

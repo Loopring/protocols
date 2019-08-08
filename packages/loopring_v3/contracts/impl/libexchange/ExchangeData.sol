@@ -161,33 +161,33 @@ library ExchangeData
         uint96 amount;
     }
 
-    function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
+    function GENESIS_MERKLE_ROOT() public pure returns (bytes32) {
         return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
     }
 
-    function SNARK_SCALAR_FIELD() internal pure returns (uint) {
+    function SNARK_SCALAR_FIELD() public pure returns (uint) {
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
 
-    function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
-    function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() internal pure returns (uint32) { return 2500; }
-    function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
-    function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
-    function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
-    function MAX_AGE_REQUEST_UNTIL_FORCED() internal pure returns (uint32) { return 15 minutes; }
-    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() internal pure returns (uint32) { return 1 days; }
-    function MAX_TIME_IN_SHUTDOWN_BASE() internal pure returns (uint32) { return 1 days; }
-    function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 15 seconds; }
-    function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 10 minutes; }
-    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
-    function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
-    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 2 hours; }
-    function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 5 minutes; }
-    function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 30 minutes; }
-    function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
-    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
-    function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
+    function MAX_PROOF_GENERATION_TIME_IN_SECONDS() public pure returns (uint32) { return 1 hours; }
+    function MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS() public pure returns (uint32) { return 2500; }
+    function MAX_OPEN_DEPOSIT_REQUESTS() public pure returns (uint16) { return 1024; }
+    function MAX_OPEN_WITHDRAWAL_REQUESTS() public pure returns (uint16) { return 1024; }
+    function MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE() public pure returns (uint32) { return 1 days; }
+    function MAX_AGE_REQUEST_UNTIL_FORCED() public pure returns (uint32) { return 15 minutes; }
+    function MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() public pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_BASE() public pure returns (uint32) { return 1 days; }
+    function MAX_TIME_IN_SHUTDOWN_DELTA() public pure returns (uint32) { return 15 seconds; }
+    function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() public pure returns (uint32) { return 10 minutes; }
+    function MAX_NUM_TOKENS() public pure returns (uint) { return 2 ** 8; }
+    function MAX_NUM_ACCOUNTS() public pure returns (uint) { return 2 ** 20 - 1; }
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() public pure returns (uint32) { return 2 hours; }
+    function FEE_BLOCK_FINE_START_TIME() public pure returns (uint32) { return 5 minutes; }
+    function FEE_BLOCK_FINE_MAX_DURATION() public pure returns (uint32) { return 30 minutes; }
+    function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() public pure returns (uint32) { return 60000; }
+    function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() public pure returns (uint32) { return 1 days; }
+    function GAS_LIMIT_SEND_TOKENS() public pure returns (uint32) { return 30000; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State

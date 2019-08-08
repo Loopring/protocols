@@ -8,8 +8,8 @@ contract("Loopring", (accounts: string[]) => {
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
-    // await exchangeTestUtil.initialize(accounts);
-    // loopring = exchangeTestUtil.loopringV3;
+    await exchangeTestUtil.initialize(accounts);
+    loopring = exchangeTestUtil.loopringV3;
   });
 
   const calculateProtocolFee = (
