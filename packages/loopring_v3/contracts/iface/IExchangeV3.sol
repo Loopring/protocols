@@ -20,7 +20,7 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title An Implementation of IExchange.
+/// @title IExchangeV3.
 /// @dev Note that Claimable and RentrancyGuard are inherited here to
 ///      ensure all data members are declared on IExchange to make it
 ///      easy to support upgradability through proxies.
@@ -31,8 +31,7 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 ///
-/// TODO(daniel): rename this to IExchangeV3 to match LoopringV3.
-contract IExchange is Claimable, ReentrancyGuard
+contract IExchangeV3 is Claimable, ReentrancyGuard
 {
     // -- Events --
     // We need to make sure all events defined in exchange/*.sol

@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IExchange.sol";
+import "../iface/IExchangeV3.sol";
 
 import "../lib/MathUint.sol";
 

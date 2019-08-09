@@ -17,7 +17,6 @@ var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
     // ignore.
-    // TODO(kongliang): we should deploy on mainnet using scripts written here.
   } else {
     deployer
       .then(() => {

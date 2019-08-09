@@ -2,7 +2,7 @@ export class Artifacts {
   public ExchangeData: any;
   public ProtocolRegistry: any;
   public LoopringV3: any;
-  public Exchange: any;
+  public ExchangeV3: any;
   public ExchangeV3Deployer: any;
   public ExchangeProxy: any;
   public BlockVerifier: any;
@@ -28,7 +28,7 @@ export class Artifacts {
     this.ExchangeData = artifacts.require("impl/lib/ExchangeData");
     this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
-    this.Exchange = artifacts.require("impl/Exchange");
+    this.ExchangeV3 = artifacts.require("impl/ExchangeV3");
     this.ExchangeV3Deployer = artifacts.require("impl/ExchangeV3Deployer");
     this.ExchangeProxy = artifacts.require("impl/ExchangeProxy");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
