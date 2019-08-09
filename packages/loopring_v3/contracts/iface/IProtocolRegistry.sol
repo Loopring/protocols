@@ -36,6 +36,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     );
 
     /// @dev Returns information regarding the default protocol.
+    ///      This function throws if no default protocol is set.
     /// @return loopring The default protocol address.
     /// @return instance The protocol's default instance.
     /// @return version The protocol's version number.
@@ -48,6 +49,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory version
         );
 
+    /// @dev Sets the default protocol.
+    /// @param protocol The address of the default protocol version.
     function setDefaultProtocol(
         address protocol
         )
