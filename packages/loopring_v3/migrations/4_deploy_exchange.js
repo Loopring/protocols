@@ -1,3 +1,7 @@
+// Deploy the ExchangeV3Deployer library which is very large in terms of
+// gas usage. We need to deploy most libraries linked from it as stand-alone
+// libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
+
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
