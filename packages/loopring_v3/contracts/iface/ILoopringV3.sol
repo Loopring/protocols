@@ -16,16 +16,13 @@
 */
 pragma solidity 0.5.10;
 
-import "../lib/Claimable.sol";
-import "../lib/ReentrancyGuard.sol";
-
 import "./ILoopring.sol";
 
 
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
+contract ILoopringV3 is ILoopring
 {
     // == Events ==
 

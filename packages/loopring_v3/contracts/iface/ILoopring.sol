@@ -16,23 +16,28 @@
 */
 pragma solidity 0.5.10;
 
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
+
 
 /// @title ILoopring
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopring
+contract ILoopring is Claimable, ReentrancyGuard
 {
     address public protocolRegistry;
     address public lrcAddress;
     uint    public exchangeCreationCostLRC;
 
     /// @dev Deploy an new exchange instance without initialization.
+    ///      This function should only be callabled by the protocolRegistry contract.
     /// @return exchangeAddress The address of the new exchange.
     function createExchange()
         external
         returns (address exchangeAddress);
 
     /// @dev Initialize and register an exchange.
-    ///      Note that this function can only be called one per deployed exchange instance.
+    ///      This function should only be callabled by the protocolRegistry contract.
+    ///      Also note that this function can only be called once per exchange instance.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
     /// @param  exchangeId The unique exchange id.
     /// @param  owner The owner of the exchange.

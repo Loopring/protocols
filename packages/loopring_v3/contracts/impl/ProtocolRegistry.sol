@@ -59,6 +59,7 @@ contract ProtocolRegistry is IProtocolRegistry
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
 
         ILoopring loopring = ILoopring(protocol);
+        require(loopring.owner() == owner, "INCONSISTENT_OWNER");
         require(loopring.protocolRegistry() == address(this), "INCONSISTENT_REGISTRY");
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
