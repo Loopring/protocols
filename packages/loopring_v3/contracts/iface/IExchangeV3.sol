@@ -177,7 +177,6 @@ contract IExchangeV3 is Claimable, ReentrancyGuard
     ///         MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS
     ///         MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
     ///         GAS_LIMIT_SEND_TOKENS
-
     function getConstants()
         external
         pure
