@@ -42,6 +42,15 @@ contract("Exchange", (accounts: string[]) => {
     // console.log(externalFunctions);
 
     for (const externalFunction of externalFunctions) {
+      // Do not test the following methods inherited from Clailable.
+      if (
+        externalFunction.name == "transferOwnership" ||
+        externalFunction.name == "renounceOwnership" ||
+        externalFunction.name == "claimOwnership"
+      ) {
+        continue;
+      }
+
       it(externalFunction.name, async () => {
         await createExchange();
 
