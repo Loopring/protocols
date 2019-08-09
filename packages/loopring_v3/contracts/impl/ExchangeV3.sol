@@ -16,8 +16,6 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IExchangeV3.sol";
-
 import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
 import "./libexchange/ExchangeBalances.sol";
@@ -28,6 +26,8 @@ import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
+
+import "../iface/IExchangeV3.sol";
 
 
 /// @title An Implementation of IExchangeV3.
@@ -63,7 +63,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor() public {}
+    constructor() public IExchangeV3() {}
 
     // -- Initialization --
     function initialize(

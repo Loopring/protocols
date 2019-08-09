@@ -16,15 +16,15 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IProtocolFeeVault.sol";
-
 import "../lib/AddressUtil.sol";
-import "../lib/Claimable.sol";
 import "../lib/BurnableERC20.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
+
+import "../iface/IProtocolFeeVault.sol";
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so

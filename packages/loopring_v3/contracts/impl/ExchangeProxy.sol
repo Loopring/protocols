@@ -16,9 +16,9 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IProtocolRegistry.sol";
-
 import "../thirdparty/Proxy.sol";
+
+import "../iface/IProtocolRegistry.sol";
 
 
 /// @title ExchangeProxy
