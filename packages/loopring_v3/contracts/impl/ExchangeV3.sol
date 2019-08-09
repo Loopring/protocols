@@ -16,8 +16,6 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IExchange.sol";
-
 import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
 import "./libexchange/ExchangeBalances.sol";
@@ -29,15 +27,15 @@ import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
 
+import "../iface/IExchangeV3.sol";
 
-/// @title An Implementation of IExchange.
+
+/// @title An Implementation of IExchangeV3.
 /// @dev This contract supports upgradability proxy, therefore its constructor
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-///
-/// TODO(daniel): rename this to ExchangeV3 to match LoopringV3.
-contract Exchange is IExchange
+contract ExchangeV3 is IExchangeV3
 {
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;

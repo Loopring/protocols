@@ -28,7 +28,7 @@ contract("Exchange", (accounts: string[]) => {
     // Load IExchange ABI
     const ABIPath = "ABI/version30/";
     const exchangeABI = JSON.parse(
-      fs.readFileSync(ABIPath + "IExchange.abi", "ascii")
+      fs.readFileSync(ABIPath + "IExchangeV3.abi", "ascii")
     );
     // console.log(exchangeABI);
 

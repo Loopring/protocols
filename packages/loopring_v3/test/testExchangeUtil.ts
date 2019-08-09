@@ -2550,7 +2550,7 @@ export class ExchangeTestUtil {
     const exchangeAddress = items[0][0];
     const exchangeID = items[0][1].toNumber();
 
-    this.exchange = await this.contracts.Exchange.at(exchangeAddress);
+    this.exchange = await this.contracts.ExchangeV3.at(exchangeAddress);
 
     await this.exchange.setOperator(operator, { from: owner });
 

@@ -16,15 +16,15 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IBlockVerifier.sol";
+import "../thirdparty/Verifier.sol";
+import "../thirdparty/BatchVerifier.sol";
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
-import "../impl/libexchange/ExchangeData.sol";
+import "../iface/IBlockVerifier.sol";
 
-import "../thirdparty/Verifier.sol";
-import "../thirdparty/BatchVerifier.sol";
+import "../impl/libexchange/ExchangeData.sol";
 
 
 /// @title An Implementation of IBlockVerifier.

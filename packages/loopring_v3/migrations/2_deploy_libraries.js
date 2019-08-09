@@ -9,7 +9,6 @@ var MathUint = artifacts.require("./lib/MathUint.sol");
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
     // ignore.
-    // TODO(kongliang): we should deploy on mainnet using scripts written here.
   } else {
     deployer
       .then(() => {
