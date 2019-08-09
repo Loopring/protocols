@@ -1,7 +1,7 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or ProtocolRegistry.
 
-var AddressUtil = artifacts.require("./lib/LRC.sol");
+var AddressUtil = artifacts.require("./lib/AddressUtil.sol");
 var ERC20SafeTransfer = artifacts.require("./lib/ERC20SafeTransfer.sol");
 var MathUint = artifacts.require("./lib/MathUint.sol");
 
