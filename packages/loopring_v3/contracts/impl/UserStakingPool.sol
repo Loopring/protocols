@@ -116,7 +116,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         // automatical claim when possible
         if (protocolFeeVaultAddress != address(0) &&
             getUserClaimWaitTime(msg.sender) == 0) {
-            claim();
+            claimReward();
         }
 
         Staking storage user = stakings[msg.sender];
@@ -143,7 +143,17 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     }
 
     function claim()
-        public
+        external
+        nonReentrant
+        returns (uint claimedAmount)
+    {
+        return claimReward();
+    }
+
+    // -- Private Function --
+
+    function claimReward()
+        private
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
@@ -170,8 +180,6 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
         emit LRCRewarded(msg.sender, claimedAmount);
     }
-
-    // -- Private Function --
 
     function updateStaking(
         Staking storage staking,
