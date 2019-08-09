@@ -193,12 +193,11 @@ library ExchangeData
         public
         pure
         returns(
-            bytes32 merkleRoot,
-            uint[19] memory constants
+            uint[20] memory
         )
     {
-        merkleRoot = GENESIS_MERKLE_ROOT();
-        constants = [
+        return [
+            uint(GENESIS_MERKLE_ROOT()),
             uint(SNARK_SCALAR_FIELD()),
             uint(MAX_PROOF_GENERATION_TIME_IN_SECONDS()),
             uint(MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS()),

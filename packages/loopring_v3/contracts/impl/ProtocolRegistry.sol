@@ -54,6 +54,7 @@ contract ProtocolRegistry is IProtocolRegistry
         )
         external
         nonReentrant
+        onlyOwner
     {
         require(protocol != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION_LABEL");

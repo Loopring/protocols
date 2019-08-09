@@ -69,7 +69,7 @@ contract IAuction
 }
 
 
-/// @title An Implementation of IUserStakingPool.
+/// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 {

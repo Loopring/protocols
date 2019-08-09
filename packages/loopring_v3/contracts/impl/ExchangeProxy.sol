@@ -27,7 +27,6 @@ import "../iface/IProtocolRegistry.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeProxy is Proxy
 {
-    bytes32 private constant registryPosition = keccak256("org.loopring.protocol.exchange.proxy.registry");
     bytes32 private constant loopringPosition = keccak256("org.loopring.protocol.exchange.proxy.loopring");
 
     constructor(address _registry)

@@ -91,8 +91,7 @@ contract ExchangeV3 is IExchangeV3
         external
         pure
         returns (
-            bytes32 merkleRoot,
-            uint[19] memory constants
+            uint[20] memory
         )
     {
         return ExchangeData.getConstants();

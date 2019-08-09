@@ -244,7 +244,7 @@ contract ILoopringV3 is ILoopring
     function getProtocolFeeStake(
         uint exchangeId
         )
-        public
+        external
         view
         returns (uint protocolFeeStake);
 }
