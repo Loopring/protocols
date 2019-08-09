@@ -81,8 +81,6 @@ contract ILoopringV3 is Claimable, ReentrancyGuard, ILoopring
 
     uint    public totalStake;
 
-    address public protocolRegistry;
-    address public lrcAddress;
     address public wethAddress;
     address public exchangeDeployerAddress;
     address public blockVerifierAddress;
