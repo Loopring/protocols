@@ -30,7 +30,6 @@ import "../lib/ReentrancyGuard.sol";
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-///
 contract IExchangeV3 is Claimable, ReentrancyGuard
 {
     // -- Events --

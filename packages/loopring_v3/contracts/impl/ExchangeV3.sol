@@ -35,7 +35,6 @@ import "../iface/IExchangeV3.sol";
 ///      must do NOTHING.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-///
 contract ExchangeV3 is IExchangeV3
 {
     using ExchangeAdmins        for ExchangeData.State;
