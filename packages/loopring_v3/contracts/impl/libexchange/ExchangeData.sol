@@ -192,9 +192,7 @@ library ExchangeData
     function getConstants()
         public
         pure
-        returns(
-            uint[20] memory
-        )
+        returns(uint[20] memory)
     {
         return [
             uint(GENESIS_MERKLE_ROOT()),
