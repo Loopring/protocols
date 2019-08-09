@@ -24,14 +24,14 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           AddressUtil.deployed(),
           ERC20SafeTransfer.deployed(),
-          MathUint.deployed(),
-          ProtocolRegistry.deployed()
+          MathUint.deployed()
         ]);
       })
       .then(() => {
         return Promise.all([
           LRCToken.deployed(),
           WETHToken.deployed(),
+          ProtocolRegistry.deployed(),
           ProtocolFeeVault.deployed(),
           BlockVerifier.deployed(),
           FixPriceDowntimeCostCalculator.deployed(),
