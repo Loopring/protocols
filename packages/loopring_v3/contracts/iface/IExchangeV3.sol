@@ -20,9 +20,9 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title IExchangeV3.
+/// @title IExchangeV3
 /// @dev Note that Claimable and RentrancyGuard are inherited here to
-///      ensure all data members are declared on IExchange to make it
+///      ensure all data members are declared on IExchangeV3 to make it
 ///      easy to support upgradability through proxies.
 ///
 ///      Subclasses of this contract must NOT define constructor to

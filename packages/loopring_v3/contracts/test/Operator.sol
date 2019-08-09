@@ -21,14 +21,14 @@ import "../iface/IExchangeV3.sol";
 
 contract Operator {
 
-    IExchange exchange;
+    IExchangeV3 exchange;
 
     constructor(
         address _exchangeAddress
         )
         public
     {
-        exchange = IExchange(_exchangeAddress);
+        exchange = IExchangeV3(_exchangeAddress);
     }
 
     function commitBlock(

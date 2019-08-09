@@ -89,7 +89,7 @@ contract LoopringV3 is ILoopringV3
         require(operator != address(0), "ZERO_ADDRESS");
         require(exchanges[exchangeId].exchangeAddress == address(0), "ID_USED_ALREADY");
 
-        IExchange exchange = IExchange(exchangeAddress);
+        IExchangeV3 exchange = IExchangeV3(exchangeAddress);
 
         // If the exchange has already been initlaized, the following function will throw.
         exchange.initialize(
