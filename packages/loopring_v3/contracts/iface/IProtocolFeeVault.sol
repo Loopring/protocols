@@ -19,13 +19,13 @@ pragma solidity 0.5.10;
 
 /// @title IProtocolFeeVault
 /// @dev This smart contract manages the distribution of protocol fees.
-/// Tokens other than LRC will be auctioned off for LRC using Oedax. The owner
-/// of this smart contract will also have the option to withdraw non-LRC tokens
-/// and Ether to sell them for LRC by other means such as using a centralized
-/// exchange. This option will be disabled once Oedax is production ready.
-/// For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
-/// to reward LRC stakers; 20% of them can be withdrawn to the Loopring DAO,
-/// and the remaining 10% can be burned to reduce LRC's total supply.
+///     Tokens other than LRC will be auctioned off for LRC using Oedax. The owner
+///     of this smart contract will also have the option to withdraw non-LRC tokens
+///     and Ether to sell them for LRC by other means such as using a centralized
+///     exchange. This option will be disabled once Oedax is production ready.
+///     For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
+///     to reward LRC stakers; 20% of them can be withdrawn to the Loopring DAO,
+///     and the remaining 10% can be burned to reduce LRC's total supply.
 contract IProtocolFeeVault
 {
     uint public constant REWARD_PERCENTAGE      = 70;
