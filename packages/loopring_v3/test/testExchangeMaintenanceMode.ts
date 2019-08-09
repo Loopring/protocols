@@ -20,7 +20,6 @@ contract("Exchange", (accounts: string[]) => {
     );
     return cost;
   };
-
   const startOrContinueMaintenanceModeChecked = async (
     duration: number,
     user: string
