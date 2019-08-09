@@ -29,7 +29,6 @@ import "./ExchangeV3Deployer.sol";
 
 /// @title LoopringV3
 /// @dev This contract does NOT support proxy.
-//       This contract allows exchangeId to be 0, ProrotocolRegister may have stricter rules.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract LoopringV3 is ILoopringV3
@@ -96,6 +95,7 @@ contract LoopringV3 is ILoopringV3
         nonReentrant
         onlyProtocolRegistry
     {
+        require(exchangeId != 0, "ZERO_ID");
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
         require(owner != address(0), "ZERO_ADDRESS");
         require(operator != address(0), "ZERO_ADDRESS");
