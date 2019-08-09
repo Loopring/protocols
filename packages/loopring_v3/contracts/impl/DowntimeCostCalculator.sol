@@ -18,14 +18,13 @@ pragma solidity 0.5.10;
 
 import "../lib/Claimable.sol";
 import "../lib/MathUint.sol";
-import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IDowntimeCostCalculator.sol";
 
 
 /// @title The default IDowntimeCostCalculator implementation.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract DowntimeCostCalculator is Claimable, ReentrancyGuard, IDowntimeCostCalculator
+contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
 {
     using MathUint for uint;
 
@@ -70,7 +69,7 @@ contract DowntimeCostCalculator is Claimable, ReentrancyGuard, IDowntimeCostCalc
         uint  durationToPurchaseMinutes
         )
         external
-        nonReentrant
+        view
         returns (uint)
     {
         uint newCost = getTotalCost(

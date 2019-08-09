@@ -202,10 +202,12 @@ library ExchangeAdmins
         uint durationMinutes
         )
         public
+        view
         returns (uint)
     {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(durationMinutes > 0, "ZERO_VALUE");
+        if(durationMinutes == 0) {
+            return 0;
+        }
 
         address costCalculatorAddr = S.loopring.downtimeCostCalculator();
         if (costCalculatorAddr == address(0)) {

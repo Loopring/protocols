@@ -771,7 +771,7 @@ contract ExchangeV3 is IExchangeV3
         uint durationMinutes
         )
         external
-        nonReentrant
+        view
         returns (uint costLRC)
     {
         return state.getDowntimeCostLRC(durationMinutes);
