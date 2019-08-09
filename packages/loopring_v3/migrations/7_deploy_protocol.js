@@ -12,6 +12,7 @@ var FixPriceDowntimeCostCalculator = artifacts.require(
   "./test/FixPriceDowntimeCostCalculator.sol"
 );
 var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
+var ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
 var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 
 module.exports = function(deployer, network, accounts) {
@@ -30,6 +31,7 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           LRCToken.deployed(),
           WETHToken.deployed(),
+          ProtocolRegistry.deployed(),
           ProtocolFeeVault.deployed(),
           BlockVerifier.deployed(),
           FixPriceDowntimeCostCalculator.deployed(),
@@ -48,6 +50,7 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.deploy(
             LoopringV3,
+            ProtocolRegistry.address,
             LRCToken.address,
             WETHToken.address,
             ProtocolFeeVault.address,
