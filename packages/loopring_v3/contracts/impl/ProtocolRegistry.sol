@@ -179,8 +179,8 @@ contract ProtocolRegistry is IProtocolRegistry
     {
         getProtocol(protocol); // verifies protocol is valid
 
-        exchangeId = exchanges.length + 1;
         exchanges.push(exchangeAddress);
+        exchangeId = exchanges.length;
 
         ILoopring loopring = ILoopring(protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
