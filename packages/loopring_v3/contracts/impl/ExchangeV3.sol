@@ -63,7 +63,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     /// @dev The constructor must do NOTHING to support proxy.
-    constructor() public IExchangeV3() {}
+    constructor() public {}
 
     // -- Initialization --
     function initialize(
