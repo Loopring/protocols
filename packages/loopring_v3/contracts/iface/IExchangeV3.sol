@@ -156,7 +156,7 @@ contract IExchangeV3 is Claimable, ReentrancyGuard
         external;
 
     function getConstants()
-        public
+        external
         pure
         returns (
             bytes32 merkleRoot,

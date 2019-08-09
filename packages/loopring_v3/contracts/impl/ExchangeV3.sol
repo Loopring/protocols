@@ -88,7 +88,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function getConstants()
-        public
+        external
         pure
         returns (
             bytes32 merkleRoot,

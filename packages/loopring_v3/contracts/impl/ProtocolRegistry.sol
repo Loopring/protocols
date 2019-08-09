@@ -143,7 +143,6 @@ contract ProtocolRegistry is IProtocolRegistry
         );
     }
 
-
     function forgeExchange(
         address protocol,
         bool    supportUpgradability,
