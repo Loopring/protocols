@@ -46,7 +46,7 @@ contract("Exchange", (accounts: string[]) => {
       if (
         externalFunction.name == "transferOwnership" ||
         externalFunction.name == "renounceOwnership" ||
-        externalFunction.name == "claimOwnersnip"
+        externalFunction.name == "claimOwnership"
       ) {
         continue;
       }
