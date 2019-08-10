@@ -68,7 +68,7 @@ library ExchangeTokens
         address tokenAddress,
         uint    amountToBurn
         )
-        internal
+        public
         returns (uint16 tokenID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
