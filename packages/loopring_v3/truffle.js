@@ -1,9 +1,14 @@
 var fs = require("fs");
+
 var HDWalletProvider = require("truffle-hdwallet-provider");
-var mnemonic = "your mnemonic phases here.";
-// or you may read your mnemonic phases from a file:
-// var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
-// console.log("mnemonic", mnemonic);
+var mnemonicFile = process.env.HOME + "/.protocolv3_migration_mnemonic";
+console.log("reading mnemonic from: " + mnemonicFile);
+var mnemonic = fs.readFileSync(mnemonicFile, "utf8");
+
+var PrivateKeyProvider = require("truffle-privatekey-provider");
+var privkeyFile = process.env.HOME + "/.protocolv3_migration_privkey";
+console.log("reading private key from: " + privkeyFile);
+var privateKey = fs.readFileSync(privkeyFile, "utf8");
 
 module.exports = {
   compilers: {
@@ -17,6 +22,7 @@ module.exports = {
       version: "0.5.10"
     }
   },
+  plugins: ["truffle-plugin-verify"],
   networks: {
     live: {
       host: "localhost",
@@ -33,17 +39,15 @@ module.exports = {
     ropsten: {
       network_id: 3,
       provider: function() {
-        var provider = new HDWalletProvider(
-          mnemonic,
-          "https://ropsten.infura.io/hM4sFGiBdqbnGTxk5YT2",
-          1
+        var provider = new PrivateKeyProvider(
+          privateKey,
+          "https://ropsten.infura.io/v3/f6a06b14054b4f4880e002a191492c49"
         );
-        // console.log("addresses:", provider.getAddresses());
-        // my address: 0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa
+        // console.log("deployer address:", provider.getAddress());
         return provider;
       },
-      gasPrice: 21000000000,
-      gas: 4700000
+      gasPrice: 1000000000,
+      gas: 6700000
     },
     rinkeby: {
       network_id: 4,
