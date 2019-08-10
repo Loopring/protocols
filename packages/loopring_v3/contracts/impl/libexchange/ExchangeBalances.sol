@@ -97,7 +97,7 @@ library ExchangeBalances
         uint     tradeHistoryRoot,
         uint[12] memory balanceMerkleProof
         )
-        internal
+        private
         pure
         returns (uint)
     {
@@ -146,7 +146,7 @@ library ExchangeBalances
         uint     balancesRoot,
         uint[30] memory accountMerkleProof
         )
-        internal
+        private
         pure
         returns (uint)
     {
@@ -193,7 +193,7 @@ library ExchangeBalances
         uint t2,
         uint t3
         )
-        internal
+        private
         pure
         returns (uint)
     {

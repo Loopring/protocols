@@ -114,7 +114,7 @@ library ExchangeWithdrawals
         address token,
         uint96  amount
         )
-        internal
+        public
     {
         require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -450,7 +450,7 @@ library ExchangeWithdrawals
     }
 
 
-    // == Internal Functions ==
+    // == Internal and Private Functions ==
 
     // If allowFailure is true the transfer can fail because of a transfer error or
     // because the transfer uses more than GAS_LIMIT_SEND_TOKENS gas. The function
@@ -464,7 +464,7 @@ library ExchangeWithdrawals
         uint    amount,
         bool    allowFailure
         )
-        internal
+        private
         returns (bool success)
     {
         // If we're withdrawing from the protocol fee account send the tokens
