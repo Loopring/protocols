@@ -114,7 +114,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        console.log(">>>>>>>> Deployed contracts addresses (deploy_exchange):");
+        console.log(">>>>>>>> contracts deployed by deploy_exchange:");
         console.log("ExchangeData: ", ExchangeData.address);
         console.log("ExchangeBalances: ", ExchangeBalances.address);
         console.log("ExchangeMode: ", ExchangeMode.address);
