@@ -8,7 +8,7 @@ import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
 import { DexAccount, OrderInfo, Signature } from "../model/types";
-import { Order, TokenAmounts } from "../proto_gen/data_order_pb";
+import { Order, TokenAmounts } from "../grpc/proto_gen/data_order_pb";
 import {
   AccountID,
   Amount,
@@ -18,12 +18,12 @@ import {
   EdDSASignature,
   OrderID,
   TokenID
-} from "../proto_gen/data_types_pb";
+} from "../grpc/proto_gen/data_types_pb";
 import {
   Account,
   DexConfigurations,
   SimpleOrderCancellationReq
-} from "../proto_gen/service_dex_pb";
+} from "../grpc/proto_gen/service_dex_pb";
 
 export class Exchange {
   private readonly exchangeID: number;
@@ -44,6 +44,7 @@ export class Exchange {
 
   private async initExchange() {
     config.initTokenConfig();
+    // TODO: replace with REST API
     this.dexConfigurations = await grpcClientService.getDexConfigurations();
   }
 

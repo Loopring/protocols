@@ -11,8 +11,8 @@
     }
   },
   "scripts": {
-    "build:proto": "rimraf src/proto_gen && mkdir src/grpc/proto_gen && node src/grpc/proto",
-    "build": "npm run build:proto1 && rimraf dist && tsc",
+    "build:proto": "rimraf src/grpc/proto_gen && mkdir src/grpc/proto_gen && node src/grpc/proto",
+    "build": "npm run build:proto && rimraf dist && tsc",
     "lint": "prettier --write \"src/**/*.ts\" --ignore-path \"src/grpc/proto_gen/**\"",
     "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
   },
