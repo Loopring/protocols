@@ -18,6 +18,7 @@ pragma solidity 0.5.10;
 
 import "../lib/BurnableERC20.sol";
 
+import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
@@ -31,18 +32,24 @@ contract ProtocolRegistry is IProtocolRegistry
     struct Protocol
     {
        address implementation;
-       string  version;
        bool    enabled;
     }
 
-    mapping (address => Protocol) private protocols;
-    mapping (address => address) public exchangeToProtocol;
+    struct Version
+    {
+        address protocol;
+        address implementation;
+    }
+
+    mapping (address => Protocol)   private protocols;
+    mapping (string => Version)     private versions;
+    mapping (address => address)    public  exchangeToProtocol;
 
     address[] public exchanges;
 
-    modifier nonZeroImplementation(address impl)
+    modifier checkAddress(address addr)
     {
-        require(impl != address(0), "ZERO_ADDRESS");
+        require(addr != address(0), "ZERO_ADDRESS");
         _;
     }
 
@@ -81,27 +88,28 @@ contract ProtocolRegistry is IProtocolRegistry
 
     function registerProtocol(
         address protocol,
-        string  calldata version
+        address initialImplementation
         )
         external
         nonReentrant
         onlyOwner
-        nonZeroImplementation(protocol)
+        checkAddress(protocol)
+        checkAddress(initialImplementation)
         protocolNotRegistered(protocol)
-        returns (address implementation)
     {
-        require(bytes(version).length > 0, "INVALID_VERSION");
-
         ILoopring loopring = ILoopring(protocol);
         require(loopring.owner() == owner, "INCONSISTENT_OWNER");
         require(loopring.protocolRegistry() == address(this), "INCONSISTENT_REGISTRY");
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
-        // Leave this implementation uninitialized.
-        implementation = loopring.createExchange();
-        protocols[protocol] = Protocol(implementation, version, true);
+        IExchange exchange = IExchange(initialImplementation);
+        string memory version = exchange.version();
+        require(versions[version].protocol == address(0), "VERSION_USED");
+        checkAndRegisterVersion(protocol, initialImplementation, version);
 
-        emit ProtocolRegistered(protocol, implementation, version);
+        // Leave this implementation uninitialized.
+        protocols[protocol] = Protocol(initialImplementation, true);
+        emit ProtocolRegistered(protocol, initialImplementation);
     }
 
     function upgradeProtocol(
@@ -111,12 +119,15 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
-        nonZeroImplementation(newImplementation)
+        checkAddress(newImplementation)
         protocolRegistered(protocol)
         returns (address oldImplementation)
     {
         oldImplementation = protocols[protocol].implementation;
         require(newImplementation != oldImplementation, "SAME_IMPLEMENTATION");
+
+        IExchange exchange = IExchange(newImplementation);
+        checkAndRegisterVersion(protocol, newImplementation, exchange.version());
 
         protocols[protocol].implementation = newImplementation;
         emit ProtocolUpgraded(protocol, newImplementation, oldImplementation);
@@ -169,8 +180,7 @@ contract ProtocolRegistry is IProtocolRegistry
         view
         returns (
             address protocol,
-            address implementation,
-            string  memory version
+            address implementation
         )
     {
         require(defaultProtocol != address(0), "NO_DEFAULT_PROTOCOL");
@@ -178,7 +188,6 @@ contract ProtocolRegistry is IProtocolRegistry
         protocol = defaultProtocol;
         Protocol storage p = protocols[protocol];
         implementation = p.implementation;
-        version = p.version;
     }
 
     function getProtocol(
@@ -188,13 +197,12 @@ contract ProtocolRegistry is IProtocolRegistry
         view
         returns (
             address implementation,
-            string  memory version,
             bool    enabled
         )
     {
         Protocol storage p = protocols[protocol];
         require(p.implementation != address(0), "PROTOCOL_NOT_REGISTERED");
-        return (p.implementation, p.version, p.enabled);
+        return (p.implementation, p.enabled);
     }
 
     function getExchangeProtocol(
@@ -205,14 +213,13 @@ contract ProtocolRegistry is IProtocolRegistry
         returns (
             address protocol,
             address implementation,
-            string  memory version,
             bool    enabled
         )
     {
         protocol = exchangeToProtocol[exchangeAddress];
         Protocol storage p = protocols[protocol];
         require(p.implementation != address(0), "PROTOCOL_NOT_REGISTERED");
-        return (protocol, p.implementation, p.version, p.enabled);
+        return (protocol, p.implementation, p.enabled);
     }
 
     function forgeExchange(
@@ -252,7 +259,7 @@ contract ProtocolRegistry is IProtocolRegistry
         );
     }
 
-    // --- Internal Functions ---
+    // --- Private Functions ---
 
     function forgeExchangeInternal(
         address protocol,
@@ -270,7 +277,12 @@ contract ProtocolRegistry is IProtocolRegistry
         exchanges.push(exchangeAddress);
         exchangeId = exchanges.length;
 
+        Protocol storage p = protocols[protocol];
+        require(p.enabled, "PROTOCOL_DISABLED");
+
         ILoopring loopring = ILoopring(protocol);
+        IExchange implementation = IExchange(p.implementation);
+
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
         if (exchangeCreationCostLRC > 0) {
@@ -281,12 +293,11 @@ contract ProtocolRegistry is IProtocolRegistry
         }
 
         if (supportUpgradability) {
-            // Deploy an exchange proxy
+            // Deploy an exchange proxy and points to the implementation
             exchangeAddress = address(new ExchangeProxy(address(this)));
-
         } else {
-            // Deploy a native exchange
-            exchangeAddress = loopring.createExchange();
+            // Clone a native exchange from the implementation.
+            exchangeAddress = implementation.clone();
         }
 
         assert(exchangeToProtocol[exchangeAddress] == address(0));
@@ -304,8 +315,31 @@ contract ProtocolRegistry is IProtocolRegistry
             protocol,
             exchangeAddress,
             msg.sender,
+            supportUpgradability,
+            onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC
         );
+    }
+
+    function checkAndRegisterVersion(
+        address protocol,
+        address implementation,
+        string  memory version
+        )
+        private
+    {
+        require(bytes(version).length > 0, "INVALID_VERSION");
+        Version storage ver = versions[version];
+
+        if (ver.protocol == address(0)) {
+            ver.protocol = protocol;
+            ver.implementation = implementation;
+        } else {
+            require(
+                ver.protocol == protocol && ver.implementation == implementation,
+                "VERSION_USED"
+            );
+        }
     }
 }

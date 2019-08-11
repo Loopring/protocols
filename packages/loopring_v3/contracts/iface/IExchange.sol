@@ -16,21 +16,28 @@
 */
 pragma solidity 0.5.10;
 
-import "./ExchangeV3.sol";
+import "../thirdparty/Clonable.sol";
+
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
-/// @title ExchangeV3Deployer
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title IExchange
 /// @author Daniel Wang  - <daniel@loopring.org>
-/// @dev We created this library to work around the gas limit -- inlining all the
-///      enclosed function directly into LoopringV3 will make LoopringV3 too large
-///      to deploy.
-library ExchangeV3Deployer
+contract IExchange is Claimable, ReentrancyGuard, Clonable
 {
-    function deploy()
+    string constant public version = "";
+
+    /// @dev Clone an exchange without any initialization
+    /// @return  cloneAddress The address of the new exchange.
+    function clone()
         external
-        returns (address)
+        returns (address cloneAddress)
     {
-        return address(new ExchangeV3());
+        address origin = address(this);
+        cloneAddress = clone(origin);
+
+        assert(cloneAddress != origin);
+        assert(cloneAddress != address(0));
     }
 }

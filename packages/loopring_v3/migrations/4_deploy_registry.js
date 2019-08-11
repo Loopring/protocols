@@ -18,6 +18,7 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         console.log(">>>>>>>> contracts deployed by deploy_registry:");
+        console.log("LRCToken:", LRCToken.address);
         console.log("ProtocolRegistry:", ProtocolRegistry.address);
         console.log("");
       });

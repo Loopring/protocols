@@ -31,14 +31,15 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address indexed loopring,
         address indexed exchangeAddress,
         address         owner,
+        bool            supportUpgradability,
+        bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
     );
 
     event ProtocolRegistered (
         address indexed protocol,
-        address indexed implementation,
-        string  indexed version
+        address indexed implementation
     );
 
     event ProtocolUpgraded (
@@ -62,14 +63,13 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Registers a new protocol
     /// @param protocol The protocol address.
-    /// @param version The protocol's version number.
+    /// @param initialImplementation The protocol's implementaion address.
     /// @return implementation The Protocol's implementation.
     function registerProtocol(
         address protocol,
-        string  calldata version
+        address initialImplementation
         )
-        external
-        returns (address implementation);
+        external;
 
     /// @dev Updates a protocol with a new implementation
     /// @param protocol The protocol address.
@@ -107,20 +107,17 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     ///      This function throws if no default protocol is set.
     /// @return loopring The default protocol address.
     /// @return implementation The protocol's implementation.
-    /// @return version The protocol's version number.
     function getDefaultProtocol()
         external
         view
         returns (
             address protocol,
-            address implementation,
-            string  memory version
+            address implementation
         );
 
     /// @dev Returns information regarding a protocol.
     /// @return protocol The protocol address.
     /// @return implementation The protocol's implementation.
-    /// @return version The protocol's version number.
     function getProtocol(
         address protocol
         )
@@ -128,7 +125,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         view
         returns (
             address implementation,
-            string  memory version,
             bool    enabled
         );
 
@@ -136,7 +132,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @param exchangeAddress The address of the exchange.
     /// @return protocol The protocol address.
     /// @return implementation The protocol's implementation.
-    /// @return version The protocol's version number.
     function getExchangeProtocol(
         address exchangeAddress
         )
@@ -145,7 +140,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         returns (
             address protocol,
             address implementation,
-            string  memory version,
             bool    enabled
         );
 

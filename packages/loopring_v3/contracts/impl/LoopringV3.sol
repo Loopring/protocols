@@ -24,8 +24,6 @@ import "../lib/MathUint.sol";
 import "../iface/IExchangeV3.sol";
 import "../iface/ILoopringV3.sol";
 
-import "./ExchangeV3Deployer.sol";
-
 
 /// @title LoopringV3
 /// @dev This contract does NOT support proxy.
@@ -73,17 +71,6 @@ contract LoopringV3 is ILoopringV3
         _;
     }
 
-    function createExchange()
-        external
-        nonReentrant
-        onlyProtocolRegistry
-        returns (address exchange)
-    {
-        exchange = ExchangeV3Deployer.deploy();
-        emit ExchangeCreated(exchange);
-    }
-
-
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
@@ -118,7 +105,8 @@ contract LoopringV3 is ILoopringV3
             exchangeId,
             exchangeAddress,
             owner,
-            operator
+            operator,
+            onchainDataAvailability
         );
     }
 

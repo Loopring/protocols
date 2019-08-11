@@ -28,23 +28,13 @@ contract ILoopring is Claimable, ReentrancyGuard
     address public lrcAddress;
     uint    public exchangeCreationCostLRC;
 
-    event ExchangeCreated(
-        address indexed exchangeAddress
-    );
-
     event ExchangeInitialized(
         uint    indexed exchangeId,
         address indexed exchangeAddress,
         address indexed owner,
-        address         operator
+        address         operator,
+        bool            onchainDataAvailability
     );
-
-    /// @dev Deploy an new exchange instance without initialization.
-    ///      This function should only be callabled by the protocolRegistry contract.
-    /// @return exchangeAddress The address of the new exchange.
-    function createExchange()
-        external
-        returns (address exchangeAddress);
 
     /// @dev Initialize and register an exchange.
     ///      This function should only be callabled by the protocolRegistry contract.

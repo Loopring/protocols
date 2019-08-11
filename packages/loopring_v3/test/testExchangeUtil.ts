@@ -78,7 +78,6 @@ export class ExchangeTestUtil {
   public orderCancellationBlockSizes = [4, 8];
 
   public loopringV3: any;
-  public exchangeDeployer: any;
   public blockVerifier: any;
   public downtimeCostCalculator: any;
   public lzDecompressor: any;
@@ -179,6 +178,7 @@ export class ExchangeTestUtil {
     // Register LoopringV3 to ProtocolRegistry
     await this.protocolRegistry.registerProtocol(
       this.loopringV3.address,
+      this.exchange.address,
       "3.0",
       { from: this.testContext.deployer }
     );
@@ -232,7 +232,6 @@ export class ExchangeTestUtil {
       this.testContext.deployer,
       true,
       this.onchainDataAvailability,
-      true,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
@@ -2507,7 +2506,6 @@ export class ExchangeTestUtil {
     owner: string,
     bSetupTestState: boolean = true,
     onchainDataAvailability: boolean = true,
-    supportUpgradability: boolean = true,
     accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
@@ -2524,6 +2522,8 @@ export class ExchangeTestUtil {
       from: owner
     });
 
+    // randomely support upgradability
+    const supportUpgradability = new Date().getMilliseconds() % 2 == 0;
     // Create the new exchange
     const tx = await this.protocolRegistry.forgeExchange(
       this.loopringV3.address,
@@ -3668,7 +3668,7 @@ export class ExchangeTestUtil {
     const [
       protocolRegistry,
       loopringV3,
-      exchangeDeployer,
+      exchange,
       blockVerifier,
       downtimeCostCalculator,
       lrcToken,
@@ -3676,7 +3676,7 @@ export class ExchangeTestUtil {
     ] = await Promise.all([
       this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeV3Deployer.deployed(),
+      this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.FixPriceDowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
@@ -3695,7 +3695,7 @@ export class ExchangeTestUtil {
 
     this.protocolRegistry = protocolRegistry;
     this.loopringV3 = loopringV3;
-    this.exchangeDeployer = exchangeDeployer;
+    this.exchange = exchange;
     this.blockVerifier = blockVerifier;
     this.downtimeCostCalculator = downtimeCostCalculator;
 
