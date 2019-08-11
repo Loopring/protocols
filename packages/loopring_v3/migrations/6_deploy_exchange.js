@@ -1,4 +1,4 @@
-// Deploy the ExchangeV3Deployer library which is very large in terms of
+// Deploy the ExchangeV3 library which is very large in terms of
 // gas usage. We need to deploy most libraries linked from it as stand-alone
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
@@ -16,7 +16,7 @@ var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
 var ExchangeWithdrawals = artifacts.require(
   "./impl/libexchange/ExchangeWithdrawals"
 );
-var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
+var ExchangeV3 = artifacts.require("./impl/ExchangeV3");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
@@ -101,16 +101,16 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         return Promise.all([
-          deployer.link(ExchangeData, ExchangeV3Deployer),
-          deployer.link(ExchangeBalances, ExchangeV3Deployer),
-          deployer.link(ExchangeMode, ExchangeV3Deployer),
-          deployer.link(ExchangeAccounts, ExchangeV3Deployer),
-          deployer.link(ExchangeAdmins, ExchangeV3Deployer),
-          deployer.link(ExchangeBlocks, ExchangeV3Deployer),
-          deployer.link(ExchangeTokens, ExchangeV3Deployer),
-          deployer.link(ExchangeGenesis, ExchangeV3Deployer),
-          deployer.link(ExchangeDeposits, ExchangeV3Deployer),
-          deployer.link(ExchangeWithdrawals, ExchangeV3Deployer)
+          deployer.link(ExchangeData, ExchangeV3),
+          deployer.link(ExchangeBalances, ExchangeV3),
+          deployer.link(ExchangeMode, ExchangeV3),
+          deployer.link(ExchangeAccounts, ExchangeV3),
+          deployer.link(ExchangeAdmins, ExchangeV3),
+          deployer.link(ExchangeBlocks, ExchangeV3),
+          deployer.link(ExchangeTokens, ExchangeV3),
+          deployer.link(ExchangeGenesis, ExchangeV3),
+          deployer.link(ExchangeDeposits, ExchangeV3),
+          deployer.link(ExchangeWithdrawals, ExchangeV3)
         ]);
       })
       .then(() => {
@@ -127,14 +127,12 @@ module.exports = function(deployer, network, accounts) {
         console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
       })
       .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeV3Deployer, { gas: 6700000 })
-        ]);
+        return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
       })
       .then(() => {
         console.log("WETHToken:", WETHToken.address);
         console.log("LRCToken:", LRCToken.address);
-        console.log("ExchangeV3Deployer:", ExchangeV3Deployer.address);
+        console.log("ExchangeV3:", ExchangeV3.address);
         console.log("");
       });
   }

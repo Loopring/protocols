@@ -62,14 +62,15 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Registers a new protocol
     /// @param protocol The protocol address.
+    /// @param initialImplementation The protocol's implementaion address.
     /// @param version The protocol's version number.
     /// @return implementation The Protocol's implementation.
     function registerProtocol(
         address protocol,
+        address initialImplementation,
         string  calldata version
         )
-        external
-        returns (address implementation);
+        external;
 
     /// @dev Updates a protocol with a new implementation
     /// @param protocol The protocol address.

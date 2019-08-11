@@ -18,6 +18,7 @@ pragma solidity 0.5.10;
 
 import "../lib/BurnableERC20.sol";
 
+import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
@@ -40,9 +41,9 @@ contract ProtocolRegistry is IProtocolRegistry
 
     address[] public exchanges;
 
-    modifier nonZeroImplementation(address impl)
+    modifier checkAddress(address addr)
     {
-        require(impl != address(0), "ZERO_ADDRESS");
+        require(addr != address(0), "ZERO_ADDRESS");
         _;
     }
 
@@ -81,14 +82,15 @@ contract ProtocolRegistry is IProtocolRegistry
 
     function registerProtocol(
         address protocol,
+        address initialImplementation,
         string  calldata version
         )
         external
         nonReentrant
         onlyOwner
-        nonZeroImplementation(protocol)
+        checkAddress(protocol)
+        checkAddress(initialImplementation)
         protocolNotRegistered(protocol)
-        returns (address implementation)
     {
         require(bytes(version).length > 0, "INVALID_VERSION");
 
@@ -98,10 +100,9 @@ contract ProtocolRegistry is IProtocolRegistry
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
         // Leave this implementation uninitialized.
-        implementation = loopring.createExchange();
-        protocols[protocol] = Protocol(implementation, version, true);
+        protocols[protocol] = Protocol(initialImplementation, version, true);
 
-        emit ProtocolRegistered(protocol, implementation, version);
+        emit ProtocolRegistered(protocol, initialImplementation, version);
     }
 
     function upgradeProtocol(
@@ -111,7 +112,7 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
-        nonZeroImplementation(newImplementation)
+        checkAddress(newImplementation)
         protocolRegistered(protocol)
         returns (address oldImplementation)
     {
@@ -270,7 +271,10 @@ contract ProtocolRegistry is IProtocolRegistry
         exchanges.push(exchangeAddress);
         exchangeId = exchanges.length;
 
+        Protocol storage p = protocols[protocol];
+
         ILoopring loopring = ILoopring(protocol);
+        IExchange impl = IExchange(p.implementation);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
         if (exchangeCreationCostLRC > 0) {
@@ -286,7 +290,7 @@ contract ProtocolRegistry is IProtocolRegistry
 
         } else {
             // Deploy a native exchange
-            exchangeAddress = loopring.createExchange();
+            exchangeAddress = impl.clone();//loopring.createExchange();
         }
 
         assert(exchangeToProtocol[exchangeAddress] == address(0));
