@@ -1,14 +1,30 @@
+// var dotenv  = require('dotenv').config();
 var fs = require("fs");
-
 var HDWalletProvider = require("truffle-hdwallet-provider");
-var mnemonicFile = process.env.HOME + "/.protocolv3_migration_mnemonic";
-console.log("reading mnemonic from: " + mnemonicFile);
-var mnemonic = fs.readFileSync(mnemonicFile, "utf8");
-
 var PrivateKeyProvider = require("truffle-privatekey-provider");
-var privkeyFile = process.env.HOME + "/.protocolv3_migration_privkey";
-console.log("reading private key from: " + privkeyFile);
-var privateKey = fs.readFileSync(privkeyFile, "utf8");
+
+const etherscanAPIKeyPath =
+  process.env.HOME + "/.protocolv3_migration_etherscan_key";
+const walletFile = process.env.HOME + "/.protocolv3_migration_wallet";
+const infuraProjectId = "f6a06b14054b4f4880e002a191492c49";
+const usePrivateKey = true;
+
+const getWalletProvider = function(network) {
+  var content = fs.readFileSync(walletFile, "utf8");
+
+  var infuraAPI = "https://" + network + ".infura.io/v3/" + infuraProjectId; // f6a06b14054b4f4880e002a191492c49
+  var provider;
+  if (usePrivateKey == true) {
+    provider = new PrivateKeyProvider(content, infuraAPI);
+  } else {
+    provider = new HDWalletProvider(content, infuraAPI);
+  }
+  return provider;
+};
+
+const getEtherScanAPIKey = function() {
+  return fs.readFileSync(etherscanAPIKeyPath, "utf8");
+};
 
 module.exports = {
   compilers: {
@@ -23,6 +39,9 @@ module.exports = {
     }
   },
   plugins: ["truffle-plugin-verify"],
+  api_keys: {
+    etherscan: getEtherScanAPIKey()
+  },
   networks: {
     live: {
       host: "localhost",
@@ -39,12 +58,7 @@ module.exports = {
     ropsten: {
       network_id: 3,
       provider: function() {
-        var provider = new PrivateKeyProvider(
-          privateKey,
-          "https://ropsten.infura.io/v3/f6a06b14054b4f4880e002a191492c49"
-        );
-        // console.log("deployer address:", provider.getAddress());
-        return provider;
+        return getWalletProvider("ropsten");
       },
       gasPrice: 1000000000,
       gas: 6700000
@@ -52,11 +66,7 @@ module.exports = {
     rinkeby: {
       network_id: 4,
       provider: function() {
-        return new HDWalletProvider(
-          mnemonic,
-          "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2",
-          1
-        );
+        return getWalletProvider("rinkeby");
       },
       gasPrice: 1000000000,
       gas: 6700000
