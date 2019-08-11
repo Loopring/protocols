@@ -24,8 +24,9 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
-    address public lrcAddress;
-    address public defaultProtocol;
+    address     public lrcAddress;
+    address     public defaultProtocol;
+    address[]   public exchanges;
 
     event ExchangeForged (
         address indexed loopring,
@@ -63,11 +64,11 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Registers a new protocol
     /// @param protocol The protocol address.
-    /// @param initialImplementation The protocol's implementaion address.
+    /// @param implementation The protocol's implementaion address.
     /// @return implementation The Protocol's implementation.
     function registerProtocol(
         address protocol,
-        address initialImplementation
+        address implementation
         )
         external;
 
@@ -107,17 +108,20 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     ///      This function throws if no default protocol is set.
     /// @return loopring The default protocol address.
     /// @return implementation The protocol's implementation.
+    /// @return enabled Whether the protocol is enabled.
     function getDefaultProtocol()
         external
         view
         returns (
             address protocol,
-            address implementation
+            address implementation,
+            bool    enabled
         );
 
     /// @dev Returns information regarding a protocol.
     /// @return protocol The protocol address.
     /// @return implementation The protocol's implementation.
+    /// @return enabled Whether the protocol is enabled.
     function getProtocol(
         address protocol
         )
@@ -132,6 +136,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @param exchangeAddress The address of the exchange.
     /// @return protocol The protocol address.
     /// @return implementation The protocol's implementation.
+    /// @return enabled Whether the protocol is enabled.
     function getExchangeProtocol(
         address exchangeAddress
         )
