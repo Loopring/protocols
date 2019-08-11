@@ -353,6 +353,8 @@ export class Simulator {
     const newExchangeState = this.copyExchangeState(exchangeState);
 
     const account = newExchangeState.accounts[accountID];
+    const tradeHistorySlot =
+      orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
 
     // Update balance
     account.balances[feeTokenID].balance = account.balances[
@@ -361,14 +363,20 @@ export class Simulator {
     account.nonce++;
 
     // Update trade history
-    if (!account.balances[orderTokenID].tradeHistory[orderID]) {
-      account.balances[orderTokenID].tradeHistory[orderID] = {
+    if (!account.balances[orderTokenID].tradeHistory[tradeHistorySlot]) {
+      account.balances[orderTokenID].tradeHistory[tradeHistorySlot] = {
         filled: new BN(0),
         cancelled: false,
         orderID: 0
       };
     }
-    account.balances[orderTokenID].tradeHistory[orderID].cancelled = true;
+    const tradeHistory =
+      account.balances[orderTokenID].tradeHistory[tradeHistorySlot];
+    if (tradeHistory.orderID < orderID) {
+      tradeHistory.filled = new BN(0);
+    }
+    tradeHistory.cancelled = true;
+    tradeHistory.orderID = orderID;
 
     // Update operator
     const operator = newExchangeState.accounts[operatorAccountID];
@@ -1001,7 +1009,8 @@ export class Simulator {
     if (!tradeHistory) {
       tradeHistory = {
         filled: new BN(0),
-        cancelled: false
+        cancelled: false,
+        orderID: 0
       };
     }
     // Trade history trimming
@@ -1083,11 +1092,16 @@ export class Simulator {
     return [fee, protocolFee, rebate];
   }
 
-  private hasRoundingError(value: BN, numerator: BN, denominator: BN) {
-    const multiplied = value.mul(numerator);
-    const remainder = multiplied.mod(denominator);
-    // Return true if the rounding error is larger than 1%
-    return multiplied.lt(remainder.mul(new BN(100)));
+  private checkFillRate(
+    amountS: BN,
+    amountB: BN,
+    fillAmountS: BN,
+    fillAmountB: BN
+  ) {
+    return fillAmountS
+      .mul(amountB)
+      .mul(new BN(100))
+      .lt(fillAmountB.mul(amountS).mul(new BN(101)));
   }
 
   private checkValid(
@@ -1118,8 +1132,13 @@ export class Simulator {
     valid =
       valid &&
       this.ensure(
-        !this.hasRoundingError(fillAmountS, order.amountB, order.amountS),
-        "rounding error"
+        this.checkFillRate(
+          order.amountS,
+          order.amountB,
+          fillAmountS,
+          fillAmountB
+        ),
+        "invalid fill rate"
       );
     valid = valid && this.ensure(!fillAmountS.eq(0), "no tokens sold");
     valid = valid && this.ensure(!fillAmountB.eq(0), "no tokens bought");
