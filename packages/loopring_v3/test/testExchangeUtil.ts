@@ -179,7 +179,6 @@ export class ExchangeTestUtil {
     await this.protocolRegistry.registerProtocol(
       this.loopringV3.address,
       this.exchange.address,
-      "3.0",
       { from: this.testContext.deployer }
     );
     await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address, {

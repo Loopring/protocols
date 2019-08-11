@@ -231,13 +231,14 @@ contract LoopringV3 is ILoopringV3
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
+
+        Exchange storage exchange = exchanges[exchangeId];
+        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+
         require(
             lrcAddress.safeTransferFrom(msg.sender, address(this), amountLRC),
             "TRANSFER_FAILURE"
         );
-
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         stakedLRC = exchange.exchangeStake.add(amountLRC);
         exchange.exchangeStake = stakedLRC;
@@ -283,13 +284,14 @@ contract LoopringV3 is ILoopringV3
         returns (uint stakedLRC)
     {
         require(amountLRC > 0, "ZERO_VALUE");
+
+        Exchange storage exchange = exchanges[exchangeId];
+        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
+
         require(
             lrcAddress.safeTransferFrom(msg.sender, address(this), amountLRC),
             "TRANSFER_FAILURE"
         );
-
-        Exchange storage exchange = exchanges[exchangeId];
-        require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
         stakedLRC = exchange.protocolFeeStake.add(amountLRC);
         exchange.protocolFeeStake = stakedLRC;
