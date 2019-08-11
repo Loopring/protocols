@@ -26,17 +26,6 @@ contract ILoopringV3 is ILoopring
 {
     // == Events ==
 
-    event ExchangeCreated(
-        address indexed exchangeAddress
-    );
-
-    event ExchangeInitialized(
-        uint    indexed exchangeId,
-        address indexed exchangeAddress,
-        address indexed owner,
-        address         operator
-    );
-
     event ExchangeStakeDeposited(
         uint    indexed exchangeId,
         uint            amount

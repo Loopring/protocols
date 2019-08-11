@@ -28,12 +28,36 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     address public defaultProtocol;
 
     event ExchangeForged (
-        address loopring,
-        address exchangeAddress,
-        address owner,
-        uint    exchangeId,
-        uint    amountLRCBurned
+        address indexed loopring,
+        address indexed exchangeAddress,
+        address         owner,
+        uint            exchangeId,
+        uint            amountLRCBurned
     );
+
+    event ProtocolRegistered (
+        address indexed protocol,
+        address indexed implementation,
+        string  indexed version
+    );
+
+    event ProtocolUpgraded (
+        address indexed protocol,
+        address indexed newImplementation,
+        address         oldImplementation
+    );
+
+    event DefaultProtocolChanged(
+        address indexed newDefault,
+        address         oldDefault
+    );
+
+    /// @dev Sets the default protocol.
+    /// @param protocol The address of the default protocol version.
+    function setDefaultProtocol(
+        address protocol
+        )
+        external;
 
     /// @dev Returns information regarding the default protocol.
     ///      This function throws if no default protocol is set.
@@ -49,13 +73,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory version
         );
 
-    /// @dev Sets the default protocol.
-    /// @param protocol The address of the default protocol version.
-    function setDefaultProtocol(
-        address protocol
-        )
-        external;
-
     /// @dev Returns information regarding a protocol.
     /// @return protocol The protocol address.
     /// @return instance The protocol's default instance.
@@ -63,18 +80,21 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     function getProtocol(
         address protocol
         )
-        public
+        external
         view
         returns (
             address instance,
             string memory version
         );
 
-    /// @dev Returns the protocol assgined to msg.sender.
+    /// @dev Returns the protocol associated with an exchange.
+    /// @param exchangeAddress The address of the exchange.
     /// @return protocol The protocol address.
     /// @return instance The protocol's default instance.
     /// @return version The protocol's version number.
-    function getProtocol()
+    function getExchangeProtocol(
+        address exchangeAddress
+        )
         external
         view
         returns (
@@ -83,14 +103,27 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory version
         );
 
-    /// @dev Register a new protocol
+    /// @dev Registers a new protocol
     /// @param protocol The protocol address.
     /// @param version The protocol's version number.
+    /// @return implementation The Protocol's default implementation.
     function registerProtocol(
         address protocol,
         string  calldata version
         )
-        external;
+        external
+        returns (address implementation);
+
+    /// @dev Updates a protocol with a new implementation
+    /// @param protocol The protocol address.
+    /// @param newImplementation The protocol's new implementation.
+    /// @return oldImplementation The Protocol's previous implementation.
+    function upgradeProtocol(
+        address protocol,
+        address newImplementation
+        )
+        external
+        returns (address oldImplementation);
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.

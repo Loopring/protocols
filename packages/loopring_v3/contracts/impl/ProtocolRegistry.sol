@@ -30,12 +30,13 @@ contract ProtocolRegistry is IProtocolRegistry
 {
     struct Protocol
     {
-       address instance;
+       address implementation;
        string  version;
     }
 
     mapping (address => Protocol) private protocols;
-    mapping (address => address) public exchangeToProtocolMap;
+    mapping (address => address) public exchangeToProtocol;
+
     address[] public exchanges;
 
     constructor(
@@ -55,50 +56,43 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
+        returns (address implementation)
     {
         require(protocol != address(0), "ZERO_ADDRESS");
-        require(bytes(version).length > 0, "INVALID_VERSION_LABEL");
+        require(bytes(version).length > 0, "INVALID_VERSION");
+        require(protocols[protocol].implementation == address(0), "PROTOCOL_REGISTERED_ALREADY");
 
         ILoopring loopring = ILoopring(protocol);
         require(loopring.owner() == owner, "INCONSISTENT_OWNER");
         require(loopring.protocolRegistry() == address(this), "INCONSISTENT_REGISTRY");
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
-        // Leave this instance uninitialized.
-        protocols[protocol] = Protocol(loopring.createExchange(), version);
+        // Leave this implementation uninitialized.
+        implementation = loopring.createExchange();
+        protocols[protocol] = Protocol(implementation, version);
+
+        emit ProtocolRegistered(protocol, implementation, version);
     }
 
-    function getProtocol(
-        address protocol
+    function upgradeProtocol(
+        address protocol,
+        address newImplementation
         )
-        public
-        view
-        returns (
-            address instance,
-            string  memory version
-        )
-    {
-        require(protocol != address(0), "INVALID_PROTOCOL");
-        Protocol storage p = protocols[protocol];
-        instance = p.instance;
-        version = p.version;
-        require(instance != address(0), "INVALID_INSTANCE");
-    }
-
-    function getProtocol()
         external
-        view
-        returns (
-            address protocol,
-            address instance,
-            string  memory version
-        )
+        nonReentrant
+        onlyOwner
+        returns (address oldImplementation)
     {
-        protocol = exchangeToProtocolMap[msg.sender];
-        Protocol storage p = protocols[protocol];
-        instance = p.instance;
-        version = p.version;
-        require(instance != address(0), "INVALID_INSTANCE");
+        require(protocol != address(0), "ZERO_ADDRESS");
+        require(newImplementation != address(0), "ZERO_ADDRESS");
+
+        oldImplementation = protocols[protocol].implementation;
+
+        require(oldImplementation != address(0), "PROTOCOL_NOT_REGISTERED");
+        require(newImplementation != oldImplementation, "SAME_IMPLEMENTATION");
+
+        protocols[protocol].implementation = newImplementation;
+        emit ProtocolUpgraded(protocol, newImplementation, oldImplementation);
     }
 
     function setDefaultProtocol(
@@ -108,9 +102,13 @@ contract ProtocolRegistry is IProtocolRegistry
         nonReentrant
         onlyOwner
     {
-        (address instance, ) = getProtocol(protocol);
-        require(instance != address(0), "INVALID_PROTOCOL");
+        require(protocol != address(0), "ZERO_ADDRESS");
+        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
+
+        address oldDefaultProtocol = defaultProtocol;
         defaultProtocol = protocol;
+
+        emit DefaultProtocolChanged(protocol, oldDefaultProtocol);
     }
 
     function getDefaultProtocol()
@@ -118,13 +116,52 @@ contract ProtocolRegistry is IProtocolRegistry
         view
         returns (
             address protocol,
-            address instance,
+            address implementation,
             string  memory version
         )
     {
-        require(defaultProtocol != address(0), "NO_DEFAULT");
-        protocol = defaultProtocol;
-        (instance, version) = getProtocol(protocol);
+        if (defaultProtocol != address(0)) {
+            protocol = defaultProtocol;
+            Protocol storage p = protocols[protocol];
+            implementation = p.implementation;
+            version = p.version;
+        }
+    }
+
+    function getProtocol(
+        address protocol
+        )
+        external
+        view
+        returns (
+            address implementation,
+            string  memory version
+        )
+    {
+        require(protocol != address(0), "ZERO_ADDRESS");
+        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
+        Protocol storage p = protocols[protocol];
+        implementation = p.implementation;
+        version = p.version;
+    }
+
+    function getExchangeProtocol(
+        address exchangeAddress
+        )
+        external
+        view
+        returns (
+            address protocol,
+            address implementation,
+            string  memory version
+        )
+    {
+        protocol = exchangeToProtocol[exchangeAddress];
+        require(protocol != address(0), "EXCHANGE_NOT_REGISTERED");
+
+        Protocol storage p = protocols[protocol];
+        implementation = p.implementation;
+        version = p.version;
     }
 
     function forgeExchange(
@@ -177,7 +214,7 @@ contract ProtocolRegistry is IProtocolRegistry
             uint    exchangeId
         )
     {
-        getProtocol(protocol); // verifies protocol is valid
+        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
 
         exchanges.push(exchangeAddress);
         exchangeId = exchanges.length;
@@ -201,8 +238,8 @@ contract ProtocolRegistry is IProtocolRegistry
             exchangeAddress = loopring.createExchange();
         }
 
-        assert(exchangeToProtocolMap[exchangeAddress] == address(0));
-        exchangeToProtocolMap[exchangeAddress] = protocol;
+        assert(exchangeToProtocol[exchangeAddress] == address(0));
+        exchangeToProtocol[exchangeAddress] = protocol;
 
         loopring.initializeExchange(
             exchangeAddress,
