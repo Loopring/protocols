@@ -52,6 +52,50 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address         oldDefault
     );
 
+    event ProtocolDisabled(
+        address indexed protocol
+    );
+
+    event ProtocolEnabled(
+        address indexed protocol
+    );
+
+    /// @dev Registers a new protocol
+    /// @param protocol The protocol address.
+    /// @param version The protocol's version number.
+    /// @return implementation The Protocol's default implementation.
+    function registerProtocol(
+        address protocol,
+        string  calldata version
+        )
+        external
+        returns (address implementation);
+
+    /// @dev Updates a protocol with a new implementation
+    /// @param protocol The protocol address.
+    /// @param newImplementation The protocol's new implementation.
+    /// @return oldImplementation The Protocol's previous implementation.
+    function upgradeProtocol(
+        address protocol,
+        address newImplementation
+        )
+        external
+        returns (address oldImplementation);
+
+    /// @dev Disables a protocol.
+    /// @param protocol The protocol to disable.
+    function disableProtocol(
+        address protocol
+        )
+        external;
+
+    /// @dev Enables a protocol.
+    /// @param protocol The protocol to re-enable.
+    function enableProtocol(
+        address protocol
+        )
+        external;
+
     /// @dev Sets the default protocol.
     /// @param protocol The address of the default protocol version.
     function setDefaultProtocol(
@@ -84,7 +128,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         view
         returns (
             address instance,
-            string memory version
+            string  memory version,
+            bool    enabled
         );
 
     /// @dev Returns the protocol associated with an exchange.
@@ -100,30 +145,9 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         returns (
             address protocol,
             address instance,
-            string  memory version
+            string  memory version,
+            bool    enabled
         );
-
-    /// @dev Registers a new protocol
-    /// @param protocol The protocol address.
-    /// @param version The protocol's version number.
-    /// @return implementation The Protocol's default implementation.
-    function registerProtocol(
-        address protocol,
-        string  calldata version
-        )
-        external
-        returns (address implementation);
-
-    /// @dev Updates a protocol with a new implementation
-    /// @param protocol The protocol address.
-    /// @param newImplementation The protocol's new implementation.
-    /// @return oldImplementation The Protocol's previous implementation.
-    function upgradeProtocol(
-        address protocol,
-        address newImplementation
-        )
-        external
-        returns (address oldImplementation);
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.

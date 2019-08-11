@@ -54,27 +54,22 @@ contract ExchangeProxy is Proxy
     function protocol()
         public
         view
-        returns (address _addr)
+        returns (
+            address _protocol,
+            address _implementation,
+            string  memory _version,
+            bool    _enabled
+        )
     {
-        (_addr, ,) = IProtocolRegistry(registry())
-            .getExchangeProtocol(address(this));
+        IProtocolRegistry r = IProtocolRegistry(registry());
+        return r.getExchangeProtocol(address(this));
     }
 
     function implementation()
         public
         view
-        returns (address _addr)
+        returns (address impl)
     {
-        (, _addr,) = IProtocolRegistry(registry())
-            .getExchangeProtocol(address(this));
-    }
-
-    function version()
-        public
-        view
-        returns (string memory _ver)
-    {
-        (, , _ver) = IProtocolRegistry(registry())
-            .getExchangeProtocol(address(this));
+        (, impl, ,) = protocol();
     }
 }
