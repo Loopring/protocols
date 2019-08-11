@@ -54,9 +54,9 @@ module.exports = {
   },
   networks: {
     live: {
-      provider: function() {
-        return getWalletProvider("mainnet");
-      },
+      // provider: function() {
+      //   return getWalletProvider("mainnet");
+      // },
       network_id: "1", // main-net
       gasPrice: 5000000000
     },
