@@ -31,7 +31,7 @@
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",
-    "build": "./install && yarn run compile",
+    "build": "./install && make && yarn run compile",
     "genabi": "./genAbi.sh",
     "migrate": "npm run transpile && truffle migrate",
     "deploy": "npm run migrate --network kovan",
