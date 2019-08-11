@@ -32,7 +32,7 @@ contract IExchange is Claimable, ReentrancyGuard, Clonable
         external
         returns (address cloneAddress)
     {
-        address origin =address(this);
+        address origin = address(this);
         cloneAddress = clone(origin);
 
         assert(cloneAddress != origin);
