@@ -85,7 +85,7 @@ module.exports = {
     development: {
       host: "localhost",
       port: 8545,
-      network_id: "*", // Match any network id
+      network_id: "*",
       gasPrice: 21000000000,
       gas: 6700000
     },
@@ -99,7 +99,7 @@ module.exports = {
     docker: {
       host: "ganache",
       port: 8545,
-      network_id: "*", // Match any network id
+      network_id: "*",
       gasPrice: 21000000000,
       gas: 6700000
     }
