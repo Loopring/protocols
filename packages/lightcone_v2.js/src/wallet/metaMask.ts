@@ -15,12 +15,12 @@ export class MetaMask {
   public constructor() {
     this.web3 = new Web3(
       "http://a9649c5e4b66b11e985860aa2b459f18-1745823248.us-west-2.elb.amazonaws.com:8545"
-    ); // TODO: config replace for ruby
+    );
     this.account = fromMetaMask(this.web3);
     this.address = this.account.getAddress();
     this.ethNode = new Eth(
       "http://a9649c5e4b66b11e985860aa2b459f18-1745823248.us-west-2.elb.amazonaws.com:8545"
-    ); // TODO: config
+    );
   }
 
   public async createOrUpdateAccount(

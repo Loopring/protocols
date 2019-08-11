@@ -34,8 +34,8 @@ import {
   OrderBook,
   SimpleOrderCancellationReq,
   SubmitOrderRes
-} from "../proto_gen/service_dex_pb";
-import { DexServiceClient } from "../proto_gen/Service_dexServiceClientPb";
+} from "./proto_gen/service_dex_pb";
+import { DexServiceClient } from "./proto_gen/Service_dexServiceClientPb";
 
 /**
  * gRPC GrpcClientService Service
