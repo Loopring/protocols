@@ -2,12 +2,16 @@ require("dotenv").config();
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 
-// Please config the following env variables in `.env`` or in command line like this:
-// `DOTENV_CONFIG_ETHERSCAN_API_KEY=value npm run mycommand`
-//   ETHERSCAN_API_KEY=
-//   INFURA_PROJECT_ID=
-//   WALLET_PRIVATE_KEY=
-//   WALLET_MNEMONIC=
+// Please config the following env variables in `.env`` as follows:
+//```
+//ETHERSCAN_API_KEY=<YOUR_KEY>
+//INFURA_PROJECT_ID=<YOUR_PROJECT_ID>
+//WALLET_PRIVATE_KEY=<YOUR_PRIVATE_KEY>
+//WALLET_MNEMONIC=<YOUR_MNEMONIC>
+//```
+//
+// OR in command line add something like this:
+//     `DOTENV_CONFIG_ETHERSCAN_API_KEY=value npm run mycommand`
 
 const getWalletProvider = function(network) {
   if (process.env.INFURA_PROJECT_ID == "") {
