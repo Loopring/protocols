@@ -272,9 +272,11 @@ contract ProtocolRegistry is IProtocolRegistry
         exchangeId = exchanges.length;
 
         Protocol storage p = protocols[protocol];
+        require(p.enabled, "PROTOCOL_DISABLED");
 
         ILoopring loopring = ILoopring(protocol);
-        IExchange impl = IExchange(p.implementation);
+        IExchange implementation = IExchange(p.implementation);
+
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
         if (exchangeCreationCostLRC > 0) {
@@ -285,12 +287,11 @@ contract ProtocolRegistry is IProtocolRegistry
         }
 
         if (supportUpgradability) {
-            // Deploy an exchange proxy
+            // Deploy an exchange proxy and points to the implementation
             exchangeAddress = address(new ExchangeProxy(address(this)));
-
         } else {
-            // Deploy a native exchange
-            exchangeAddress = impl.clone();//loopring.createExchange();
+            // Clone a native exchange from the implementation.
+            exchangeAddress = implementation.clone();
         }
 
         assert(exchangeToProtocol[exchangeAddress] == address(0));

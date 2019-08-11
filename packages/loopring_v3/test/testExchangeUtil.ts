@@ -232,7 +232,6 @@ export class ExchangeTestUtil {
       this.testContext.deployer,
       true,
       this.onchainDataAvailability,
-      true,
       new BN(web3.utils.toWei("0.001", "ether")),
       new BN(web3.utils.toWei("0.001", "ether"))
     );
@@ -2507,7 +2506,6 @@ export class ExchangeTestUtil {
     owner: string,
     bSetupTestState: boolean = true,
     onchainDataAvailability: boolean = true,
-    supportUpgradability: boolean = true,
     accountCreationFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     accountUpdateFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
     depositFeeInETH: BN = new BN(web3.utils.toWei("0.00001", "ether")),
@@ -2524,6 +2522,8 @@ export class ExchangeTestUtil {
       from: owner
     });
 
+    // randomely support upgradability
+    const supportUpgradability = Math.random() % 2 == 0;
     // Create the new exchange
     const tx = await this.protocolRegistry.forgeExchange(
       this.loopringV3.address,
