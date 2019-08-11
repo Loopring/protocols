@@ -329,7 +329,7 @@ contract ProtocolRegistry is IProtocolRegistry
         )
         private
     {
-        require(bytes(version).length > 0, "INVALID_VERSION");
+        require(bytes(version).length >= 3, "INVALID_VERSION");
         Version storage ver = versions[version];
 
         if (ver.protocol == address(0)) {
