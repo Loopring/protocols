@@ -4,7 +4,7 @@
 pragma solidity 0.5.10;
 
 
-contract Clonable {
+contract Cloneable {
     function clone(address a)
         internal
         returns (address)
