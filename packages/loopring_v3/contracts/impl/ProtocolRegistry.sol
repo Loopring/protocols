@@ -40,21 +40,21 @@ contract ProtocolRegistry is IProtocolRegistry
 
     address[] public exchanges;
 
+    modifier nonZeroImplementation(address impl)
+    {
+        require(impl != address(0), "ZERO_ADDRESS");
+        _;
+    }
+
     modifier protocolRegistered(address protocol)
     {
-        require(
-            protocols[protocol].implementation != address(0),
-            "PROTOCOL_NOT_REGISTERED"
-        );
+        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
         _;
     }
 
     modifier protocolNotRegistered(address protocol)
     {
-        require(
-            protocols[protocol].implementation == address(0),
-            "PROTOCOL_REGISTERED_ALREADY"
-        );
+        require(protocols[protocol].implementation == address(0), "PROTOCOL_REGISTERED_ALREADY");
         _;
     }
 
@@ -86,10 +86,10 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
+        nonZeroImplementation(protocol)
         protocolNotRegistered(protocol)
         returns (address implementation)
     {
-        require(protocol != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION");
 
         ILoopring loopring = ILoopring(protocol);
@@ -111,12 +111,10 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
+        nonZeroImplementation(newImplementation)
         protocolRegistered(protocol)
-        protocolEnabled(protocol)
         returns (address oldImplementation)
     {
-        require(newImplementation != address(0), "ZERO_ADDRESS");
-
         oldImplementation = protocols[protocol].implementation;
         require(newImplementation != oldImplementation, "SAME_IMPLEMENTATION");
 
@@ -149,7 +147,6 @@ contract ProtocolRegistry is IProtocolRegistry
         protocolDisabled(protocol)
     {
         protocols[protocol].enabled = true;
-
         emit ProtocolEnabled(protocol);
     }
 
@@ -160,6 +157,7 @@ contract ProtocolRegistry is IProtocolRegistry
         nonReentrant
         onlyOwner
         protocolRegistered(protocol)
+        protocolEnabled(protocol)
     {
         address oldDefaultProtocol = defaultProtocol;
         defaultProtocol = protocol;
@@ -175,12 +173,12 @@ contract ProtocolRegistry is IProtocolRegistry
             string  memory version
         )
     {
-        if (defaultProtocol != address(0)) {
-            protocol = defaultProtocol;
-            Protocol storage p = protocols[protocol];
-            implementation = p.implementation;
-            version = p.version;
-        }
+        require(defaultProtocol != address(0), "NO_DEFAULT_PROTOCOL");
+
+        protocol = defaultProtocol;
+        Protocol storage p = protocols[protocol];
+        implementation = p.implementation;
+        version = p.version;
     }
 
     function getProtocol(
