@@ -32,12 +32,13 @@ contract ProtocolRegistry is IProtocolRegistry
     struct Protocol
     {
        address implementation;
-       string  version;
        bool    enabled;
     }
 
     mapping (address => Protocol) private protocols;
     mapping (address => address) public exchangeToProtocol;
+    // protocol => version => implementation
+    mapping (address => mapping(string => address)) public versions;
 
     address[] public exchanges;
 
@@ -82,8 +83,7 @@ contract ProtocolRegistry is IProtocolRegistry
 
     function registerProtocol(
         address protocol,
-        address initialImplementation,
-        string  calldata version
+        address initialImplementation
         )
         external
         nonReentrant
@@ -92,17 +92,21 @@ contract ProtocolRegistry is IProtocolRegistry
         checkAddress(initialImplementation)
         protocolNotRegistered(protocol)
     {
-        require(bytes(version).length > 0, "INVALID_VERSION");
-
         ILoopring loopring = ILoopring(protocol);
         require(loopring.owner() == owner, "INCONSISTENT_OWNER");
         require(loopring.protocolRegistry() == address(this), "INCONSISTENT_REGISTRY");
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
-        // Leave this implementation uninitialized.
-        protocols[protocol] = Protocol(initialImplementation, version, true);
+        IExchange exchange = IExchange(initialImplementation);
+        string memory ver = exchange.version();
+        require(bytes(ver).length > 0, "INVALID_VERSION_STRING");
 
-        emit ProtocolRegistered(protocol, initialImplementation, version);
+        require(versions[protocol][ver] == address(0), "VERSION_EXISTS");
+        versions[protocol][ver] = initialImplementation;
+
+        // Leave this implementation uninitialized.
+        protocols[protocol] = Protocol(initialImplementation, true);
+        emit ProtocolRegistered(protocol, initialImplementation);
     }
 
     function upgradeProtocol(
@@ -118,6 +122,14 @@ contract ProtocolRegistry is IProtocolRegistry
     {
         oldImplementation = protocols[protocol].implementation;
         require(newImplementation != oldImplementation, "SAME_IMPLEMENTATION");
+
+        IExchange exchange = IExchange(newImplementation);
+        string memory ver = exchange.version();
+        require(bytes(ver).length > 0, "INVALID_VERSION_STRING");
+
+        if (versions[protocol][ver] == address(0)) {
+            versions[protocol][ver] = newImplementation;
+        }
 
         protocols[protocol].implementation = newImplementation;
         emit ProtocolUpgraded(protocol, newImplementation, oldImplementation);
@@ -170,8 +182,7 @@ contract ProtocolRegistry is IProtocolRegistry
         view
         returns (
             address protocol,
-            address implementation,
-            string  memory version
+            address implementation
         )
     {
         require(defaultProtocol != address(0), "NO_DEFAULT_PROTOCOL");
@@ -179,7 +190,6 @@ contract ProtocolRegistry is IProtocolRegistry
         protocol = defaultProtocol;
         Protocol storage p = protocols[protocol];
         implementation = p.implementation;
-        version = p.version;
     }
 
     function getProtocol(
@@ -189,13 +199,12 @@ contract ProtocolRegistry is IProtocolRegistry
         view
         returns (
             address implementation,
-            string  memory version,
             bool    enabled
         )
     {
         Protocol storage p = protocols[protocol];
         require(p.implementation != address(0), "PROTOCOL_NOT_REGISTERED");
-        return (p.implementation, p.version, p.enabled);
+        return (p.implementation, p.enabled);
     }
 
     function getExchangeProtocol(
@@ -206,14 +215,13 @@ contract ProtocolRegistry is IProtocolRegistry
         returns (
             address protocol,
             address implementation,
-            string  memory version,
             bool    enabled
         )
     {
         protocol = exchangeToProtocol[exchangeAddress];
         Protocol storage p = protocols[protocol];
         require(p.implementation != address(0), "PROTOCOL_NOT_REGISTERED");
-        return (protocol, p.implementation, p.version, p.enabled);
+        return (protocol, p.implementation, p.enabled);
     }
 
     function forgeExchange(

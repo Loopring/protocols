@@ -18,6 +18,7 @@ pragma solidity 0.5.10;
 
 import "../thirdparty/Proxy.sol";
 
+import "../iface/IExchange.sol";
 import "../iface/IProtocolRegistry.sol";
 
 
@@ -54,15 +55,10 @@ contract ExchangeProxy is Proxy
     function protocol()
         public
         view
-        returns (
-            address _protocol,
-            address _implementation,
-            string  memory _version,
-            bool    _enabled
-        )
+        returns (address _protocol)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-        return r.getExchangeProtocol(address(this));
+        (_protocol, , ) = r.getExchangeProtocol(address(this));
     }
 
     function implementation()
@@ -70,6 +66,7 @@ contract ExchangeProxy is Proxy
         view
         returns (address impl)
     {
-        (, impl, ,) = protocol();
+        IProtocolRegistry r = IProtocolRegistry(registry());
+        (, impl, ) = r.getExchangeProtocol(address(this));
     }
 }
