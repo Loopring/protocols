@@ -309,6 +309,8 @@ contract ProtocolRegistry is IProtocolRegistry
             protocol,
             exchangeAddress,
             msg.sender,
+            supportUpgradability,
+            onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC
         );

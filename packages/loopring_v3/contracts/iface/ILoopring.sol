@@ -32,7 +32,8 @@ contract ILoopring is Claimable, ReentrancyGuard
         uint    indexed exchangeId,
         address indexed exchangeAddress,
         address indexed owner,
-        address         operator
+        address         operator,
+        bool            onchainDataAvailability
     );
 
     /// @dev Initialize and register an exchange.

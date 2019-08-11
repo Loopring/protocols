@@ -105,7 +105,8 @@ contract LoopringV3 is ILoopringV3
             exchangeId,
             exchangeAddress,
             owner,
-            operator
+            operator,
+            onchainDataAvailability
         );
     }
 

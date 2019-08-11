@@ -31,6 +31,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address indexed loopring,
         address indexed exchangeAddress,
         address         owner,
+        bool            supportUpgradability,
+        bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
     );
