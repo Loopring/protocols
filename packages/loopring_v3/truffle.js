@@ -67,6 +67,8 @@ module.exports = {
       gasPrice: 21000000000
     },
     ropsten: {
+      // This will actually deploy to Infura's ropsten-fork chain, so
+      // txs won't be available on https://ropsten.etherscan.io
       network_id: 3,
       provider: function() {
         return getWalletProvider("ropsten");
