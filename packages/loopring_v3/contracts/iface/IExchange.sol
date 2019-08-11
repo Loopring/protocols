@@ -31,7 +31,7 @@ contract IExchange is Claimable, ReentrancyGuard, Clonable
     /// @dev Clone an exchange without any initialization
     /// @return  cloneAddress The address of the new exchange.
     function clone()
-        public
+        external
         returns (address cloneAddress)
     {
         cloneAddress = clone(address(this));

@@ -292,7 +292,7 @@ contract ProtocolRegistry is IProtocolRegistry
         } else {
             // Clone a native exchange from the implementation.
             exchangeAddress = implementation.clone();
-            assert(exchangeAddress != implementation);
+            assert(exchangeAddress != p.implementation);
             assert(exchangeAddress != address(0));
         }
 
