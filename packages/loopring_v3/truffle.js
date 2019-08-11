@@ -15,9 +15,9 @@ const getWalletProvider = function(network) {
     console.error(">>>> ERROR: INFURA_PROJECT_ID is missing !!!");
     return;
   }
-
   var infuraAPI =
     "https://" + network + ".infura.io/v3/" + process.env.INFURA_PROJECT_ID;
+
   var provider;
   if (process.env.WALLET_PRIVATE_KEY != "") {
     provider = new PrivateKeyProvider(
