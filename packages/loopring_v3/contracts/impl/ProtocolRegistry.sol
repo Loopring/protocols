@@ -32,12 +32,42 @@ contract ProtocolRegistry is IProtocolRegistry
     {
        address implementation;
        string  version;
+       bool    enabled;
     }
 
     mapping (address => Protocol) private protocols;
     mapping (address => address) public exchangeToProtocol;
 
     address[] public exchanges;
+
+    modifier protocolRegistered(address protocol)
+    {
+        require(
+            protocols[protocol].implementation != address(0),
+            "PROTOCOL_NOT_REGISTERED"
+        );
+        _;
+    }
+
+    modifier protocolNotRegistered(address protocol)
+    {
+        require(
+            protocols[protocol].implementation == address(0),
+            "PROTOCOL_REGISTERED_ALREADY"
+        );
+        _;
+    }
+
+    modifier protocolEnabled(address protocol)
+    {
+        require(protocols[protocol].enabled , "PROTOCOL_DISABLED");
+        _;
+    }
+    modifier protocolDisabled(address protocol)
+    {
+        require(!protocols[protocol].enabled, "PROTOCOL_ENABLED");
+        _;
+    }
 
     constructor(
         address _lrcAddress
@@ -56,11 +86,11 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
+        protocolNotRegistered(protocol)
         returns (address implementation)
     {
         require(protocol != address(0), "ZERO_ADDRESS");
         require(bytes(version).length > 0, "INVALID_VERSION");
-        require(protocols[protocol].implementation == address(0), "PROTOCOL_REGISTERED_ALREADY");
 
         ILoopring loopring = ILoopring(protocol);
         require(loopring.owner() == owner, "INCONSISTENT_OWNER");
@@ -69,7 +99,7 @@ contract ProtocolRegistry is IProtocolRegistry
 
         // Leave this implementation uninitialized.
         implementation = loopring.createExchange();
-        protocols[protocol] = Protocol(implementation, version);
+        protocols[protocol] = Protocol(implementation, version, true);
 
         emit ProtocolRegistered(protocol, implementation, version);
     }
@@ -81,18 +111,46 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
+        protocolRegistered(protocol)
+        protocolEnabled(protocol)
         returns (address oldImplementation)
     {
-        require(protocol != address(0), "ZERO_ADDRESS");
         require(newImplementation != address(0), "ZERO_ADDRESS");
 
         oldImplementation = protocols[protocol].implementation;
-
-        require(oldImplementation != address(0), "PROTOCOL_NOT_REGISTERED");
         require(newImplementation != oldImplementation, "SAME_IMPLEMENTATION");
 
         protocols[protocol].implementation = newImplementation;
         emit ProtocolUpgraded(protocol, newImplementation, oldImplementation);
+    }
+
+    function disableProtocol(
+        address protocol
+        )
+        external
+        nonReentrant
+        onlyOwner
+        protocolRegistered(protocol)
+        protocolEnabled(protocol)
+    {
+        require(protocol != defaultProtocol, "FORBIDDEN");
+        protocols[protocol].enabled = false;
+
+        emit ProtocolDisabled(protocol);
+    }
+
+    function enableProtocol(
+        address protocol
+        )
+        external
+        nonReentrant
+        onlyOwner
+        protocolRegistered(protocol)
+        protocolDisabled(protocol)
+    {
+        protocols[protocol].enabled = true;
+
+        emit ProtocolEnabled(protocol);
     }
 
     function setDefaultProtocol(
@@ -101,13 +159,10 @@ contract ProtocolRegistry is IProtocolRegistry
         external
         nonReentrant
         onlyOwner
+        protocolRegistered(protocol)
     {
-        require(protocol != address(0), "ZERO_ADDRESS");
-        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
-
         address oldDefaultProtocol = defaultProtocol;
         defaultProtocol = protocol;
-
         emit DefaultProtocolChanged(protocol, oldDefaultProtocol);
     }
 
@@ -135,14 +190,13 @@ contract ProtocolRegistry is IProtocolRegistry
         view
         returns (
             address implementation,
-            string  memory version
+            string  memory version,
+            bool    enabled
         )
     {
-        require(protocol != address(0), "ZERO_ADDRESS");
-        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
         Protocol storage p = protocols[protocol];
-        implementation = p.implementation;
-        version = p.version;
+        require(p.implementation != address(0), "PROTOCOL_NOT_REGISTERED");
+        return (p.implementation, p.version, p.enabled);
     }
 
     function getExchangeProtocol(
@@ -153,15 +207,14 @@ contract ProtocolRegistry is IProtocolRegistry
         returns (
             address protocol,
             address implementation,
-            string  memory version
+            string  memory version,
+            bool    enabled
         )
     {
         protocol = exchangeToProtocol[exchangeAddress];
-        require(protocol != address(0), "EXCHANGE_NOT_REGISTERED");
-
         Protocol storage p = protocols[protocol];
-        implementation = p.implementation;
-        version = p.version;
+        require(p.implementation != address(0), "PROTOCOL_NOT_REGISTERED");
+        return (protocol, p.implementation, p.version, p.enabled);
     }
 
     function forgeExchange(
@@ -209,13 +262,13 @@ contract ProtocolRegistry is IProtocolRegistry
         bool    onchainDataAvailability
         )
         private
+        protocolRegistered(protocol)
+        protocolEnabled(protocol)
         returns (
             address exchangeAddress,
             uint    exchangeId
         )
     {
-        require(protocols[protocol].implementation != address(0), "PROTOCOL_NOT_REGISTERED");
-
         exchanges.push(exchangeAddress);
         exchangeId = exchanges.length;
 

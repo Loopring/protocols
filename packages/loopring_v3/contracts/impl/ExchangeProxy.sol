@@ -56,7 +56,7 @@ contract ExchangeProxy is Proxy
         view
         returns (address _addr)
     {
-        (_addr, ,) = IProtocolRegistry(registry())
+        (_addr, , ,) = IProtocolRegistry(registry())
             .getExchangeProtocol(address(this));
     }
 
@@ -65,7 +65,7 @@ contract ExchangeProxy is Proxy
         view
         returns (address _addr)
     {
-        (, _addr,) = IProtocolRegistry(registry())
+        (, _addr, ,) = IProtocolRegistry(registry())
             .getExchangeProtocol(address(this));
     }
 
@@ -74,7 +74,7 @@ contract ExchangeProxy is Proxy
         view
         returns (string memory _ver)
     {
-        (, , _ver) = IProtocolRegistry(registry())
+        (, , _ver, ) = IProtocolRegistry(registry())
             .getExchangeProtocol(address(this));
     }
 }
