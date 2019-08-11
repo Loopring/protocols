@@ -35,10 +35,15 @@ contract ProtocolRegistry is IProtocolRegistry
        bool    enabled;
     }
 
-    mapping (address => Protocol) private protocols;
-    mapping (address => address) public exchangeToProtocol;
-    // protocol => version => implementation
-    mapping (address => mapping(string => address)) public versions;
+    struct Version
+    {
+        address protocol;
+        address implementation;
+    }
+
+    mapping (address => Protocol)   private protocols;
+    mapping (string => Version)     private versions;
+    mapping (address => address)    public  exchangeToProtocol;
 
     address[] public exchanges;
 
@@ -98,11 +103,9 @@ contract ProtocolRegistry is IProtocolRegistry
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
         IExchange exchange = IExchange(initialImplementation);
-        string memory ver = exchange.version();
-        require(bytes(ver).length > 0, "INVALID_VERSION_STRING");
-
-        require(versions[protocol][ver] == address(0), "VERSION_EXISTS");
-        versions[protocol][ver] = initialImplementation;
+        string memory version = exchange.version();
+        require(versions[version].protocol == address(0), "VERSION_USED")
+        checkAndRegisterVersion(protocol, initialImplementation, version);
 
         // Leave this implementation uninitialized.
         protocols[protocol] = Protocol(initialImplementation, true);
@@ -124,12 +127,7 @@ contract ProtocolRegistry is IProtocolRegistry
         require(newImplementation != oldImplementation, "SAME_IMPLEMENTATION");
 
         IExchange exchange = IExchange(newImplementation);
-        string memory ver = exchange.version();
-        require(bytes(ver).length > 0, "INVALID_VERSION_STRING");
-
-        if (versions[protocol][ver] == address(0)) {
-            versions[protocol][ver] = newImplementation;
-        }
+        checkAndRegisterVersion(protocol, newImplementation, exchange.version());
 
         protocols[protocol].implementation = newImplementation;
         emit ProtocolUpgraded(protocol, newImplementation, oldImplementation);
@@ -322,5 +320,26 @@ contract ProtocolRegistry is IProtocolRegistry
             exchangeId,
             exchangeCreationCostLRC
         );
+    }
+
+    function checkAndRegisterVersion(
+        address protocol,
+        address implementation,
+        string  memory version
+        )
+        private
+    {
+        require(bytes(version).length > 0, "INVALID_VERSION");
+        Version storage ver = versions[version];
+
+        if (ver.protocol == address(0)) {
+            ver.protoocl = protocol;
+            ver.implementation = implementation;
+        } else {
+            require(
+                ver.protocol == protocol && ver.implementation == implementation,
+                "VERSION_USED"
+            );
+        }
     }
 }
