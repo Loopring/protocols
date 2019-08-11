@@ -3,16 +3,17 @@ var fs = require("fs");
 var HDWalletProvider = require("truffle-hdwallet-provider");
 var PrivateKeyProvider = require("truffle-privatekey-provider");
 
+// config the following
 const etherscanAPIKeyPath =
   process.env.HOME + "/.protocolv3_migration_etherscan_key";
 const walletFile = process.env.HOME + "/.protocolv3_migration_wallet";
 const infuraProjectId = "f6a06b14054b4f4880e002a191492c49";
-const usePrivateKey = true;
+const usePrivateKey = true; // false for using mnemonic.
 
 const getWalletProvider = function(network) {
   var content = fs.readFileSync(walletFile, "utf8");
 
-  var infuraAPI = "https://" + network + ".infura.io/v3/" + infuraProjectId; // f6a06b14054b4f4880e002a191492c49
+  var infuraAPI = "https://" + network + ".infura.io/v3/" + infuraProjectId;
   var provider;
   if (usePrivateKey == true) {
     provider = new PrivateKeyProvider(content, infuraAPI);
@@ -44,8 +45,9 @@ module.exports = {
   },
   networks: {
     live: {
-      host: "localhost",
-      port: 8546,
+      provider: function() {
+        return getWalletProvider("mainnet");
+      },
       network_id: "1", // main-net
       gasPrice: 5000000000
     },
