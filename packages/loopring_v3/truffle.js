@@ -1,30 +1,43 @@
-// var dotenv  = require('dotenv').config();
-var fs = require("fs");
-var HDWalletProvider = require("truffle-hdwallet-provider");
-var PrivateKeyProvider = require("truffle-privatekey-provider");
+require("dotenv").config();
+const HDWalletProvider = require("truffle-hdwallet-provider");
+const PrivateKeyProvider = require("truffle-privatekey-provider");
 
-// config the following
-const etherscanAPIKeyPath =
-  process.env.HOME + "/.protocolv3_migration_etherscan_key";
-const walletFile = process.env.HOME + "/.protocolv3_migration_wallet";
-const infuraProjectId = "f6a06b14054b4f4880e002a191492c49";
-const usePrivateKey = true; // false for using mnemonic.
+// Please config the following env variables in `.env`` or in command line like this:
+// `DOTENV_CONFIG_ETHERSCAN_API_KEY=value npm run mycommand`
+//   ETHERSCAN_API_KEY=
+//   INFURA_PROJECT_ID=
+//   WALLET_PRIVATE_KEY=
+//   WALLET_MNEMONIC=
 
+if (
+  process.env.ETHERSCAN_API_KEY == "" ||
+  process.env.INFURA_PROJECT_ID == ""
+) {
+  console.log(process.env);
+  console.error(
+    ">>>> ERROR: ETHERSCAN_API_KEY or INFURA_PROJECT_ID is missing !!!"
+  );
+  return;
+}
 const getWalletProvider = function(network) {
-  var content = fs.readFileSync(walletFile, "utf8");
-
-  var infuraAPI = "https://" + network + ".infura.io/v3/" + infuraProjectId;
+  var infuraAPI =
+    "https://" + network + ".infura.io/v3/" + process.env.INFURA_PROJECT_ID;
   var provider;
-  if (usePrivateKey == true) {
-    provider = new PrivateKeyProvider(content, infuraAPI);
+  if (process.env.WALLET_PRIVATE_KEY != "") {
+    provider = new PrivateKeyProvider(
+      process.env.WALLET_PRIVATE_KEY,
+      infuraAPI
+    );
+  } else if (process.env.WALLET_MNEMONIC != "") {
+    provider = new HDWalletProvider(process.env.WALLET_MNEMONIC, infuraAPI);
   } else {
-    provider = new HDWalletProvider(content, infuraAPI);
+    console.log(process.env);
+    console.error(
+      ">>>> ERROR: WALLET_PRIVATE_KEY or WALLET_MNEMONIC has to be set !!!"
+    );
+    return;
   }
   return provider;
-};
-
-const getEtherScanAPIKey = function() {
-  return fs.readFileSync(etherscanAPIKeyPath, "utf8");
 };
 
 module.exports = {
@@ -41,7 +54,7 @@ module.exports = {
   },
   plugins: ["truffle-plugin-verify"],
   api_keys: {
-    etherscan: getEtherScanAPIKey()
+    etherscan: `process.env.ETHERSCAN_API_KEY`
   },
   networks: {
     live: {
@@ -72,13 +85,6 @@ module.exports = {
       },
       gasPrice: 1000000000,
       gas: 6700000
-    },
-    priv: {
-      host: "localhost",
-      port: 8545,
-      network_id: "50", // main-net
-      gasPrice: 5000000000,
-      gas: 4500000
     },
     development: {
       host: "localhost",
