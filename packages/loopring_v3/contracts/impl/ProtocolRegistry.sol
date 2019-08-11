@@ -259,7 +259,7 @@ contract ProtocolRegistry is IProtocolRegistry
         );
     }
 
-    // --- Internal Functions ---
+    // --- Private Functions ---
 
     function forgeExchangeInternal(
         address protocol,
