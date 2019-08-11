@@ -16,7 +16,7 @@
 */
 pragma solidity 0.5.10;
 
-import "../thirdparty/Clonable.sol";
+import "../thirdparty/Cloneable.sol";
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -24,7 +24,7 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title IExchange
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchange is Claimable, ReentrancyGuard, Clonable
+contract IExchange is Claimable, ReentrancyGuard, Cloneable
 {
     string constant public version = "";
 
