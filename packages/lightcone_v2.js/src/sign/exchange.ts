@@ -4,6 +4,7 @@ import { generateKeyPair, sign } from "../lib/sign/eddsa";
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
+import { updateHost } from "../lib/wallet/ethereum/utils";
 import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
@@ -25,27 +26,52 @@ import {
   SimpleOrderCancellationReq
 } from "../grpc/proto_gen/service_dex_pb";
 
+// TODO: Rename Exchange
 export class Exchange {
-  private readonly exchangeID: number;
-  private readonly exchangeAddr: string;
-  private readonly walletAddressID: number;
   private currentDexAccount: DexAccount;
   private currentWalletAccount: WalletAccount;
   private dexConfigurations: DexConfigurations;
-  private readonly accounts: Map<WalletAccount, DexAccount>;
+
+  // Init when web app launches
+  private hasInitialized: boolean;
+
+  private exchangeID: number;
+  private exchangeAddr: string;
+  private walletAddressID: number;
+
+  public contractURL: string;
+
+  private accounts: Map<WalletAccount, DexAccount>;
 
   public constructor() {
+    this.hasInitialized = false;
+  }
+
+  public async init(contractURL: string) {
+    console.log("init exchange");
+    console.log(updateHost);
+    config.initTokenConfig();
+
+    this.contractURL = contractURL;
+    // host = contractURL
+    updateHost(contractURL);
+
     this.exchangeID = 2; // TODO: config
     this.exchangeAddr = "0x3d88d9C4adC342cEff41855CF540844268390BE6"; // TODO: config
     this.walletAddressID = 0; // TODO: config
     this.accounts = new Map<WalletAccount, DexAccount>();
-    this.initExchange();
+
+    this.hasInitialized = true;
+
+    // TODO: replace with REST API
+    // this.dexConfigurations = await grpcClientService.getDexConfigurations();
   }
 
-  private async initExchange() {
-    config.initTokenConfig();
-    // TODO: replace with REST API
-    this.dexConfigurations = await grpcClientService.getDexConfigurations();
+  private checkIfInitialized() {
+    if (this.hasInitialized === false) {
+      console.warn("lightcone_v2.js is not initialized yet");
+      throw "lightcone_v2.js is not initialized yet";
+    }
   }
 
   public static toBitsBN(value: BN, length: number) {
@@ -112,6 +138,8 @@ export class Exchange {
   // https://medium.com/@giovannipinto/async-error-handling-forced-to-do-it-right-2817cf9e8b43
   public async updateAccount(wallet: WalletAccount, gasPrice: number) {
     try {
+      this.checkIfInitialized();
+
       // TODO: need to check if gasPrice is a reasonable value
       if (this.accounts.get(wallet) == null) {
         const keyPair = generateKeyPair();
@@ -125,29 +153,22 @@ export class Exchange {
 
         // TODO: Let's avoid using Promises. Change this part to await.
         // At least, avoid using a Promise in another Promise.
-        wallet
-          .sendTransaction(
-            new Eth(
-              "http://a9649c5e4b66b11e985860aa2b459f18-1745823248.us-west-2.elb.amazonaws.com:8545"
-            ),
-            signedTx
-          )
-          .then(() => {
-            // TODO: config
-            grpcClientService
-              .getAccount(wallet.getAddress())
-              .then((account: Account) => {
-                const dexAccount = new DexAccount();
-                dexAccount.nonce = 0;
-                dexAccount.owner = wallet.getAddress();
-                dexAccount.accountID = account.getAccountId().getValue();
-                dexAccount.publicKeyX = keyPair.publicKeyX;
-                dexAccount.publicKeyY = keyPair.publicKeyY;
-                dexAccount.secretKey = keyPair.secretKey;
-                this.accounts.set(wallet, dexAccount);
-                this.currentDexAccount = dexAccount;
-              });
-          });
+        wallet.sendTransaction(new Eth(this.contractURL), signedTx).then(() => {
+          // TODO: config
+          grpcClientService
+            .getAccount(wallet.getAddress())
+            .then((account: Account) => {
+              const dexAccount = new DexAccount();
+              dexAccount.nonce = 0;
+              dexAccount.owner = wallet.getAddress();
+              dexAccount.accountID = account.getAccountId().getValue();
+              dexAccount.publicKeyX = keyPair.publicKeyX;
+              dexAccount.publicKeyY = keyPair.publicKeyY;
+              dexAccount.secretKey = keyPair.secretKey;
+              this.accounts.set(wallet, dexAccount);
+              this.currentDexAccount = dexAccount;
+            });
+        });
       }
     } catch (err) {
       console.error("Failed to create.", err);
@@ -161,6 +182,8 @@ export class Exchange {
     gasPrice: number
   ) {
     try {
+      this.checkIfInitialized();
+
       const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
         "createOrUpdateAccount",
         {
@@ -192,6 +215,8 @@ export class Exchange {
   ) {
     let to, value, data: string;
     try {
+      this.checkIfInitialized();
+
       const token = config.getTokenBySymbol(symbol);
       value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
       if (wallet.getAddress()) {
@@ -226,6 +251,8 @@ export class Exchange {
   ) {
     let to, value, data: string;
     try {
+      this.checkIfInitialized();
+
       const token = config.getTokenBySymbol(symbol);
       value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
       if (wallet.getAddress()) {
