@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { grpcClientService } from "..";
+import { grpcClientService, RestApiServer } from "..";
 import { generateKeyPair, sign } from "../lib/sign/eddsa";
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
@@ -22,7 +22,6 @@ import {
 } from "../grpc/proto_gen/data_types_pb";
 import {
   Account,
-  DexConfigurations,
   SimpleOrderCancellationReq
 } from "../grpc/proto_gen/service_dex_pb";
 
@@ -30,7 +29,7 @@ import {
 export class Exchange {
   private currentDexAccount: DexAccount;
   private currentWalletAccount: WalletAccount;
-  private dexConfigurations: DexConfigurations;
+  private dexConfigurations;
 
   // Init when web app launches
   private hasInitialized: boolean;
@@ -49,7 +48,6 @@ export class Exchange {
 
   public async init(contractURL: string) {
     console.log("init exchange");
-    console.log(updateHost);
     config.initTokenConfig();
 
     this.contractURL = contractURL;
@@ -63,8 +61,7 @@ export class Exchange {
 
     this.hasInitialized = true;
 
-    // TODO: replace with REST API
-    // this.dexConfigurations = await grpcClientService.getDexConfigurations();
+    this.dexConfigurations = await RestApiServer.getDexConfigurations();
   }
 
   private checkIfInitialized() {

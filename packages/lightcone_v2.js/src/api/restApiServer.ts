@@ -1,4 +1,5 @@
 import axios from "axios";
+import { DexConfiguration } from "./ApiModel";
 
 // It's a mock API server hosted on SwaggerHub
 // Link: https://app.swaggerhub.com/apis/relay7/service-dex_proto/2
@@ -39,7 +40,14 @@ export class RestApiServer {
       const response = await axios.post(
         `${MOCK_API_BASE_URL}/v1/getDexConfigurations`
       );
-      return response;
+      const dexConfiguration = <DexConfiguration>response.data;
+
+      // Mock data
+      dexConfiguration.account_update_fee_eth = "0x10000";
+      dexConfiguration.deposit_fee_eth = "0x10000";
+      dexConfiguration.onchain_withdrawal_fee_eth = "0x10000";
+
+      return dexConfiguration;
     } catch (error) {
       throw error;
     }
