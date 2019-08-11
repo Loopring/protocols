@@ -9,17 +9,13 @@ const PrivateKeyProvider = require("truffle-privatekey-provider");
 //   WALLET_PRIVATE_KEY=
 //   WALLET_MNEMONIC=
 
-if (
-  process.env.ETHERSCAN_API_KEY == "" ||
-  process.env.INFURA_PROJECT_ID == ""
-) {
-  console.log(process.env);
-  console.error(
-    ">>>> ERROR: ETHERSCAN_API_KEY or INFURA_PROJECT_ID is missing !!!"
-  );
-  return;
-}
 const getWalletProvider = function(network) {
+  if (process.env.INFURA_PROJECT_ID == "") {
+    console.log(process.env);
+    console.error(">>>> ERROR: INFURA_PROJECT_ID is missing !!!");
+    return;
+  }
+
   var infuraAPI =
     "https://" + network + ".infura.io/v3/" + process.env.INFURA_PROJECT_ID;
   var provider;
