@@ -104,7 +104,7 @@ contract ProtocolRegistry is IProtocolRegistry
 
         IExchange exchange = IExchange(initialImplementation);
         string memory version = exchange.version();
-        require(versions[version].protocol == address(0), "VERSION_USED")
+        require(versions[version].protocol == address(0), "VERSION_USED");
         checkAndRegisterVersion(protocol, initialImplementation, version);
 
         // Leave this implementation uninitialized.
@@ -333,7 +333,7 @@ contract ProtocolRegistry is IProtocolRegistry
         Version storage ver = versions[version];
 
         if (ver.protocol == address(0)) {
-            ver.protoocl = protocol;
+            ver.protocol = protocol;
             ver.implementation = implementation;
         } else {
             require(
