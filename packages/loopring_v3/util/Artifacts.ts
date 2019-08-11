@@ -3,7 +3,6 @@ export class Artifacts {
   public ProtocolRegistry: any;
   public LoopringV3: any;
   public ExchangeV3: any;
-  public ExchangeV3Deployer: any;
   public ExchangeProxy: any;
   public BlockVerifier: any;
   public FixPriceDowntimeCostCalculator: any;
@@ -29,7 +28,6 @@ export class Artifacts {
     this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.ExchangeV3 = artifacts.require("impl/ExchangeV3");
-    this.ExchangeV3Deployer = artifacts.require("impl/ExchangeV3Deployer");
     this.ExchangeProxy = artifacts.require("impl/ExchangeProxy");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.FixPriceDowntimeCostCalculator = artifacts.require(

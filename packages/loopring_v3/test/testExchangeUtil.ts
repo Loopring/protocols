@@ -78,7 +78,6 @@ export class ExchangeTestUtil {
   public orderCancellationBlockSizes = [4, 8];
 
   public loopringV3: any;
-  public exchangeDeployer: any;
   public blockVerifier: any;
   public downtimeCostCalculator: any;
   public lzDecompressor: any;
@@ -179,6 +178,7 @@ export class ExchangeTestUtil {
     // Register LoopringV3 to ProtocolRegistry
     await this.protocolRegistry.registerProtocol(
       this.loopringV3.address,
+      this.exchange.address,
       "3.0",
       { from: this.testContext.deployer }
     );
@@ -3668,7 +3668,7 @@ export class ExchangeTestUtil {
     const [
       protocolRegistry,
       loopringV3,
-      exchangeDeployer,
+      exchange,
       blockVerifier,
       downtimeCostCalculator,
       lrcToken,
@@ -3676,7 +3676,7 @@ export class ExchangeTestUtil {
     ] = await Promise.all([
       this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeV3Deployer.deployed(),
+      this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.FixPriceDowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
@@ -3695,7 +3695,7 @@ export class ExchangeTestUtil {
 
     this.protocolRegistry = protocolRegistry;
     this.loopringV3 = loopringV3;
-    this.exchangeDeployer = exchangeDeployer;
+    this.exchange = exchange;
     this.blockVerifier = blockVerifier;
     this.downtimeCostCalculator = downtimeCostCalculator;
 

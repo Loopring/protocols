@@ -2,7 +2,6 @@
 // or ProtocolRegistry.
 
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var ExchangeV3Deployer = artifacts.require("./impl/ExchangeV3Deployer");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var FixPriceDowntimeCostCalculator = artifacts.require(
   "./test/FixPriceDowntimeCostCalculator.sol"
