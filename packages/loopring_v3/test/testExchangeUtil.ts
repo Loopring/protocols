@@ -85,6 +85,7 @@ export class ExchangeTestUtil {
   public lrcAddress: string;
   public wethAddress: string;
 
+  public exchangeData: any;
   public exchange: any;
   public exchangeOwner: string;
   public exchangeOperator: string;
@@ -235,7 +236,7 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
-    const constants = await this.exchange.getConstants();
+    const constants = await this.exchangeData.getConstants();
     this.GENESIS_MERKLE_ROOT = new BN(constants[0]);
     this.SNARK_SCALAR_FIELD = new BN(constants[1]);
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = constants[2].toNumber();
@@ -3667,6 +3668,7 @@ export class ExchangeTestUtil {
     const [
       protocolRegistry,
       loopringV3,
+      exchangeData,
       exchange,
       blockVerifier,
       downtimeCostCalculator,
@@ -3675,6 +3677,7 @@ export class ExchangeTestUtil {
     ] = await Promise.all([
       this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
+      this.contracts.ExchangeData.deployed(),
       this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.FixPriceDowntimeCostCalculator.deployed(),
@@ -3694,6 +3697,7 @@ export class ExchangeTestUtil {
 
     this.protocolRegistry = protocolRegistry;
     this.loopringV3 = loopringV3;
+    this.exchangeData = exchangeData;
     this.exchange = exchange;
     this.blockVerifier = blockVerifier;
     this.downtimeCostCalculator = downtimeCostCalculator;

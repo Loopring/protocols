@@ -89,14 +89,6 @@ contract ExchangeV3 is IExchangeV3
         );
     }
 
-    function getConstants()
-        external
-        pure
-        returns (uint[20] memory)
-    {
-        return ExchangeData.getConstants();
-    }
-
     // -- Mode --
     function isInWithdrawalMode()
         external

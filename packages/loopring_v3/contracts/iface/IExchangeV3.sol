@@ -154,33 +154,6 @@ contract IExchangeV3 is IExchange
         )
         external;
 
-    /// @dev Returns a list of constants used by this exchange.
-    /// @return constants The list of constants in the following order:
-    ///         GENESIS_MERKLE_ROOT
-    ///         SNARK_SCALAR_FIELD
-    ///         MAX_PROOF_GENERATION_TIME_IN_SECONDS
-    ///         MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
-    ///         MAX_OPEN_DEPOSIT_REQUESTS
-    ///         MAX_OPEN_WITHDRAWAL_REQUESTS
-    ///         MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE
-    ///         MAX_AGE_REQUEST_UNTIL_FORCED
-    ///         MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE
-    ///         MAX_TIME_IN_SHUTDOWN_BASE
-    ///         MAX_TIME_IN_SHUTDOWN_DELTA
-    ///         TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS
-    ///         MAX_NUM_TOKENS
-    ///         MAX_NUM_ACCOUNTS
-    ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS
-    ///         FEE_BLOCK_FINE_START_TIME
-    ///         FEE_BLOCK_FINE_MAX_DURATION
-    ///         MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS
-    ///         MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
-    ///         GAS_LIMIT_SEND_TOKENS
-    function getConstants()
-        external
-        pure
-        returns (uint[20] memory constants);
-
     // -- Mode --
     /// @dev Whether the exchange is in withdrawal mode.
     /// @return Returns true if the exchange is in withdrawal mode, else false

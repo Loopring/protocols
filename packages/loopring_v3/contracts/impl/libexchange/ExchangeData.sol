@@ -190,7 +190,7 @@ library ExchangeData
     function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
 
     function getConstants()
-        public
+        external
         pure
         returns(uint[20] memory)
     {
