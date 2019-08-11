@@ -26,15 +26,16 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange is Claimable, ReentrancyGuard, Clonable
 {
-    event ExchangeSpawned(address indexed newExchange);
-
     /// @dev Clone an exchange without any initialization
     /// @return  cloneAddress The address of the new exchange.
     function clone()
         external
         returns (address cloneAddress)
     {
-        cloneAddress = clone(address(this));
-        emit ExchangeSpawned(cloneAddress);
+        address origin =address(this);
+        cloneAddress = clone(origin);
+
+        assert(cloneAddress != origin);
+        assert(cloneAddress != address(0));
     }
 }
