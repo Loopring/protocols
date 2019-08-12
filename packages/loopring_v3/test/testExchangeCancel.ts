@@ -203,6 +203,77 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
+    it("Cancel an order with orderID > tradeHistory.orderID", async () => {
+      const orderID = 1987;
+      const ringA: RingInfo = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 4
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          orderID
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ringA);
+
+      const ringB: RingInfo = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 5
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("400", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY,
+          accountID: ringA.orderB.accountID,
+          owner: ringA.orderB.owner
+        },
+        expected: {
+          orderA: {
+            filledFraction: 0.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 0.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ringB);
+
+      await exchangeTestUtil.commitDeposits(exchangeId);
+      await exchangeTestUtil.sendRing(exchangeId, ringA);
+      await exchangeTestUtil.commitRings(exchangeId);
+
+      await exchangeTestUtil.cancelOrder(
+        ringB.orderB,
+        "WETH",
+        new BN(web3.utils.toWei("0", "ether"))
+      );
+      await exchangeTestUtil.commitCancels(exchangeId);
+
+      await exchangeTestUtil.sendRing(exchangeId, ringB);
+      await exchangeTestUtil.commitRings(exchangeId);
+
+      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+    });
+
     it("Cancel all orders from an account by changing the account's public key", async () => {
       const ring: RingInfo = {
         orderA: {

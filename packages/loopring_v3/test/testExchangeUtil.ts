@@ -2978,7 +2978,7 @@ export class ExchangeTestUtil {
           const tradeHistoryValueA =
             balanceValueA.tradeHistory[Number(orderID)];
           const tradeHistoryValueB =
-            balanceValueA.tradeHistory[Number(orderID)];
+            balanceValueB.tradeHistory[Number(orderID)];
 
           assert(
             tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled),
@@ -3287,8 +3287,46 @@ export class ExchangeTestUtil {
         );
       }
 
-      // const accountBefore = latestState.accounts[cancel.accountID];
-      // const accountAfter = simulatorReport.exchangeStateAfter.accounts[cancel.accountID];
+      const accountBefore = latestState.accounts[cancel.accountID];
+      const accountAfter =
+        simulatorReport.exchangeStateAfter.accounts[cancel.accountID];
+
+      const tradeHistorySlot =
+        cancel.orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      let tradeHistoryBefore =
+        accountBefore.balances[cancel.orderTokenID].tradeHistory[
+          tradeHistorySlot
+        ];
+      if (!tradeHistoryBefore) {
+        tradeHistoryBefore = {
+          filled: new BN(0),
+          cancelled: false,
+          orderID: 0
+        };
+      }
+      const tradeHistoryAfter =
+        accountAfter.balances[cancel.orderTokenID].tradeHistory[
+          tradeHistorySlot
+        ];
+      logInfo("Slot " + tradeHistorySlot + " (" + cancel.orderID + "):");
+      logInfo(
+        "- cancelled: " +
+          tradeHistoryBefore.cancelled +
+          " -> " +
+          tradeHistoryAfter.cancelled
+      );
+      logInfo(
+        "- filled: " +
+          tradeHistoryBefore.filled.toString(10) +
+          " -> " +
+          tradeHistoryAfter.filled.toString(10)
+      );
+      logInfo(
+        "- orderID: " +
+          tradeHistoryBefore.orderID +
+          " -> " +
+          tradeHistoryAfter.orderID
+      );
 
       latestState = simulatorReport.exchangeStateAfter;
     }
@@ -3862,7 +3900,9 @@ export class ExchangeTestUtil {
         "% -> " +
         filledAfterPercentage.toString(10) +
         "%)" +
-        " (" +
+        " (slot " +
+        tradeHistorySlot +
+        ": " +
         this.getPrettyCancelled(before.cancelled) +
         " -> " +
         this.getPrettyCancelled(after.cancelled) +

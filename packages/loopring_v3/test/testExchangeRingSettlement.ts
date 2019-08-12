@@ -841,6 +841,68 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
+    it("Insufficient funds available (buy order)", async () => {
+      const ring: RingInfo = {
+        orderA: {
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("10", "ether")),
+          balanceS: new BN(web3.utils.toWei("40", "ether")),
+          buy: true
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("20", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 0.4, spread: new BN(0) },
+          orderB: { filledFraction: 0.2 }
+        }
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
+    it("Insufficient funds available (sell order)", async () => {
+      const ring: RingInfo = {
+        orderA: {
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("10", "ether")),
+          balanceS: new BN(web3.utils.toWei("40", "ether")),
+          buy: false
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("20", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether"))
+        },
+        expected: {
+          orderA: { filledFraction: 0.4, spread: new BN(0) },
+          orderB: { filledFraction: 0.2 }
+        }
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeID, ring);
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.commitRings(exchangeID);
+
+      await verify();
+    });
+
     it("allOrNone (Buy, successful)", async () => {
       const ring: RingInfo = {
         orderA: {

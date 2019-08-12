@@ -40,7 +40,8 @@
     "truffle": "truffle",
     "clean": "rm -rf build/contracts",
     "v": "node -v",
-    "preinstall": "rm -rf node_modules/websocket/.git"
+    "preinstall": "rm -rf node_modules/websocket/.git",
+    "test-circuits": "./build/circuit/dex_circuit_tests"
   },
   "license": "ISC",
   "devDependencies": {

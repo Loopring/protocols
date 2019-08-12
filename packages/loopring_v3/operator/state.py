@@ -231,7 +231,10 @@ class Account(object):
         rootBefore = self._balancesTree._root
 
         # Update cancelled state
-        filled = int(self._balancesLeafs[str(tokenID)].getTradeHistory(orderID).filled)
+        tradeHistory = self._balancesLeafs[str(tokenID)].getTradeHistory(orderID)
+        filled = int(tradeHistory.filled)
+        if int(tradeHistory.orderID) < orderID:
+            filled = 0
         tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled, 1, orderID)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
@@ -344,7 +347,8 @@ class Order(object):
         valid = valid and (self.validSince <= context.timestamp)
         valid = valid and (context.timestamp <= self.validUntil)
 
-        valid = valid and not self.hasRoundingError(fillAmountS, int(order.amountB), int(order.amountS))
+        valid = valid and self.checkFillRate(int(order.amountS), int(order.amountB), fillAmountS, fillAmountB)
+
         valid = valid and not (not self.buy and self.allOrNone and fillAmountS < int(order.amountS))
         valid = valid and not (self.buy and self.allOrNone and fillAmountB < int(order.amountB))
         valid = valid and fillAmountS != 0
@@ -352,12 +356,10 @@ class Order(object):
 
         self.valid = valid
 
-    def hasRoundingError(self, value, numerator, denominator):
-        multiplied = value * numerator
-        remainder = multiplied % denominator
-        # Return true if the rounding error is larger than 1%
-        return multiplied < remainder * 100
-
+    def checkFillRate(self, amountS, amountB, fillAmountS, fillAmountB):
+        # Return true if the fill rate < 1% worse than the target rate
+        # (fillAmountS/fillAmountB) * 100 <= (amountS/amountB) * 101
+        return (fillAmountS * amountB * 100) < (fillAmountB * amountS * 101)
 
 class Ring(object):
     def __init__(self, orderA, orderB):
