@@ -14,7 +14,7 @@ else
 		export LD_LIBRARY_PATH := /usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib:"$(LD_LIBRARY_PATH)"
 		export CPATH := /usr/local/opt/openssl/include:/usr/local/opt/gmp/include:/usr/local/opt/boost/include:"$(CPATH)"
 		export PKG_CONFIG_PATH := /usr/local/opt/openssl/lib/pkgconfig:"$(PKG_CONFIG_PATH)"
-		CMAKE_TYPE := cmake-debug
+		CMAKE_TYPE := cmake-release
 	else
 		DLL_EXT := .so
 	endif

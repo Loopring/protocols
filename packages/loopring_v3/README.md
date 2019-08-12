@@ -62,8 +62,6 @@ make
 
 The circuit tests can be run with `npm run test-circuits`. A single test can be run with `npm run test-circuits <test_name>`.
 
-Remember the circuit tests only pass in release, therefore, you'll need to change the Makefile accordingly.
-
 ## Run Unit Tests
 
 - please clone the circuits repository `https://github.com/Loopring/protocol3-circuits.git` to the same directory as this project.
