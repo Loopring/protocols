@@ -30,7 +30,7 @@
     "test": "npm run transpile && node --max-old-space-size=4096 `which truffle` test --network development",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
-    "compile": "truffle compile",
+    "compile": "truffle compile && npm run genabi",
     "build": "cd ../../../protocol3-circuits/ && git pull && cd - && ./install && make",
     "genabi": "./genAbi.sh",
     "migrate": "npm run transpile && truffle migrate",
