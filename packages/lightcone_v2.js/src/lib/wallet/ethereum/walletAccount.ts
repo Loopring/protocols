@@ -140,8 +140,8 @@ export function fromKeystore(keystore, password) {
   return fromPrivateKey(privateKey);
 }
 
-export function fromMetaMask(web3) {
-  return new MetaMaskAccount(web3);
+export function fromMetaMask(web3, account, address) {
+  return new MetaMaskAccount(web3, account, address);
 }
 
 /**
@@ -267,22 +267,17 @@ export class PrivateKeyAccount extends WalletAccount {
 export class MetaMaskAccount extends WalletAccount {
   web3: any;
   account: any;
+  address: string;
 
-  constructor(web3) {
+  constructor(web3, account, address) {
     super();
-    if (web3 && web3.eth.accounts[0]) {
-      this.web3 = web3;
-      this.account = this.web3.eth.accounts[0];
-    }
+    this.web3 = web3;
+    this.account = account;
+    this.address = address;
   }
 
   getAddress() {
-    if (this.web3 && this.web3.eth.accounts[0]) {
-      return this.web3.eth.accounts[0];
-    } else {
-      // SDK shouldn't throw any error
-      console.warn("Not found MetaMask");
-    }
+    return this.address;
   }
 
   async sign(hash) {
