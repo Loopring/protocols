@@ -16,20 +16,15 @@
 */
 pragma solidity 0.5.10;
 
+import "./ILoopring.sol";
+
 
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopringV3
+contract ILoopringV3 is ILoopring
 {
     // == Events ==
-    event ExchangeCreated(
-        uint    indexed exchangeId,
-        address indexed exchangeAddress,
-        address indexed owner,
-        address         operator,
-        uint            burnedLRC
-    );
 
     event ExchangeStakeDeposited(
         uint    indexed exchangeId,
@@ -60,10 +55,6 @@ contract ILoopringV3
         uint            time
     );
 
-    event ProtocolFeeVaultUpdated(
-        address payable protocolFeeVault
-    );
-
     // == Public Variables ==
     struct Exchange
     {
@@ -71,16 +62,15 @@ contract ILoopringV3
         uint    exchangeStake;
         uint    protocolFeeStake;
     }
-    Exchange[] public exchanges;
+
+    mapping (uint => Exchange) internal exchanges;
 
     uint    public totalStake;
 
-    address public lrcAddress;
     address public wethAddress;
     address public exchangeDeployerAddress;
     address public blockVerifierAddress;
     address public downtimeCostCalculator;
-    uint    public exchangeCreationCostLRC;
     uint    public maxWithdrawalFee;
     uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;
@@ -104,8 +94,9 @@ contract ILoopringV3
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
-        address _blockVerifierAddress,   // address(0) not allowed
-        address _downtimeCostCalculator, // address(0) allowed
+        address payable _protocolFeeVault,   // address(0) not allowed
+        address _blockVerifierAddress,       // address(0) not allowed
+        address _downtimeCostCalculator,     // address(0) allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
@@ -123,41 +114,14 @@ contract ILoopringV3
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateProtocolFeeSettings(
-        uint8   _minProtocolTakerFeeBips,
-        uint8   _maxProtocolTakerFeeBips,
-        uint8   _minProtocolMakerFeeBips,
-        uint8   _maxProtocolMakerFeeBips,
-        uint    _targetProtocolTakerFeeStake,
-        uint    _targetProtocolMakerFeeStake
+        uint8 _minProtocolTakerFeeBips,
+        uint8 _maxProtocolTakerFeeBips,
+        uint8 _minProtocolMakerFeeBips,
+        uint8 _maxProtocolMakerFeeBips,
+        uint  _targetProtocolTakerFeeStake,
+        uint  _targetProtocolMakerFeeStake
         )
         external;
-
-    /// @dev Update the protocol fee manager.
-    ///      This function can only be called by the owner of this contract.
-    ///
-    ///      Warning: this new address will be used by existing and
-    ///      new Loopring exchanges.
-    function setProtocolFeeVault(
-        address payable _protocolFeeVault
-        )
-        external;
-
-    /// @dev Create a new exchange. msg.sender will become the owner of the new exchange.
-    /// @param  operator The operator address of the exchange who will be responsible for
-    ///         submitting blocks and proofs.
-    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
-    ///         exchange. Note that this value can not be changed once the exchange is created.
-    /// @return exchangeId The id of the exchange.
-    /// @return exchangeAddress The address of the newly deployed exchange contract.
-    function createExchange(
-        address payable operator,
-        bool onchainDataAvailability
-        )
-        external
-        returns (
-            uint exchangeId,
-            address exchangeAddress
-        );
 
     /// @dev Returns whether the Exchange has staked enough to commit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
@@ -195,7 +159,7 @@ contract ILoopringV3
         uint exchangeId,
         uint amount
         )
-        public
+        external
         returns (uint burnedLRC);
 
     /// @dev Stake more LRC for an exchange.
@@ -220,7 +184,7 @@ contract ILoopringV3
         address recipient,
         uint    requestedAmount
         )
-        public
+        external
         returns (uint amount);
 
     /// @dev Stake more LRC for an exchange.
@@ -263,8 +227,13 @@ contract ILoopringV3
             uint8 makerFeeBips
         );
 
-    /// @dev Allow ETH to be sent directly to this contract (to collect the protocol fees)
-    function()
+    /// @dev Returns the exchange's protocol fee stake.
+    /// @param  exchangeId The exchange's id.
+    /// @return protocolFeeStake The exchange's protocol fee stake.
+    function getProtocolFeeStake(
+        uint exchangeId
+        )
         external
-        payable;
+        view
+        returns (uint protocolFeeStake);
 }

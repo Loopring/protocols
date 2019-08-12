@@ -3,6 +3,7 @@ build/
 transpiled/
 ABI/
 ethsnarks/
+ABI/
 keys/
 blocks/
 .DS_Store
@@ -10,6 +11,7 @@ blocks/
 *.log
 state_*.json
 withdraw_proof.json
+.env
 ganache_account_keys.txt
 __pycache__
 *.pyc

@@ -23,7 +23,7 @@ import "../iface/IDowntimeCostCalculator.sol";
 
 /// @title A fixed price IDowntimeCostCalculator implememntation.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract FixedPriceDowntimeCostCalculator is IDowntimeCostCalculator
+contract FixPriceDowntimeCostCalculator is IDowntimeCostCalculator
 {
     using MathUint for uint;
 
@@ -37,6 +37,7 @@ contract FixedPriceDowntimeCostCalculator is IDowntimeCostCalculator
         uint  durationToPurchaseMinutes
         )
         external
+        view
         returns (uint)
     {
         return durationToPurchaseMinutes.mul(PRICE_PER_MINUTE);

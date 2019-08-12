@@ -24,17 +24,17 @@ contract IBlockVerifier
     // -- Events --
 
     event CircuitRegistered(
-        uint8  blockType,
-        bool   onchainDataAvailability,
-        uint16 blockSize,
-        uint8  blockVersion
+        uint8  indexed blockType,
+        bool           onchainDataAvailability,
+        uint16         blockSize,
+        uint8          blockVersion
     );
 
     event CircuitDisabled(
-        uint8  blockType,
-        bool   onchainDataAvailability,
-        uint16 blockSize,
-        uint8  blockVersion
+        uint8  indexed blockType,
+        bool           onchainDataAvailability,
+        uint16         blockSize,
+        uint8          blockVersion
     );
 
     // -- Public functions --

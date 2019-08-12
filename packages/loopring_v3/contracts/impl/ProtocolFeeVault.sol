@@ -16,19 +16,20 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IProtocolFeeVault.sol";
-
 import "../lib/AddressUtil.sol";
-import "../lib/Claimable.sol";
 import "../lib/BurnableERC20.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
+
+import "../iface/IProtocolFeeVault.sol";
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
-contract IOedax {
-
+contract IOedax
+{
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token.
     /// @param minAskAmount The minimum ask amount.
@@ -61,15 +62,16 @@ contract IOedax {
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
-contract IAuction {
+contract IAuction
+{
     function settle() public;
     function ask(uint amount) external returns (uint accepted);
 }
 
 
-/// @title An Implementation of IUserStakingPool.
+/// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ProtocolFeeVault is IProtocolFeeVault, Claimable
+contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 {
     uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using AddressUtil       for address;
@@ -88,15 +90,15 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         require(_userStakingPoolAddress != address(0), "ZERO_ADDRESS");
 
         allowOwnerWithdrawal = true;
-
         lrcAddress = _lrcAddress;
         userStakingPoolAddress = _userStakingPoolAddress;
     }
 
     function claimStakingReward(
-        uint    amount
+        uint amount
         )
         external
+        nonReentrant
     {
         require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
 
@@ -165,6 +167,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         uint    amount
         )
         external
+        nonReentrant
         onlyOwner
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
@@ -181,6 +184,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
 
     function withdrawLRCToDAO()
         external
+        nonReentrant
     {
         require(daoAddress != address(0), "ZERO_DAO_ADDRESS");
         uint amountDAO;
@@ -202,6 +206,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
 
     function settleAuction(address auction)
         external
+        nonReentrant
     {
         require(auction != address(0), "ZERO_ADDRESS");
         IAuction(auction).settle();
@@ -219,6 +224,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         uint    T
         )
         external
+        nonReentrant
         onlyOwner
         returns (
             address payable auctionAddr

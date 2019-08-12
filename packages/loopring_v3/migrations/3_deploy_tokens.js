@@ -1,3 +1,5 @@
+// Deploy tokens for testing purposes
+
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var GTOToken = artifacts.require("./test/tokens/GTO.sol");
 var RDNToken = artifacts.require("./test/tokens/RDN.sol");

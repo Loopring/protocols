@@ -16,18 +16,19 @@
 */
 pragma solidity 0.5.10;
 
-import "../iface/IUserStakingPool.sol";
-import "../iface/IProtocolFeeVault.sol";
-
-import "..//lib/Claimable.sol";
-import "../lib/ERC20SafeTransfer.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
+
+import "../iface/IProtocolFeeVault.sol";
+import "../iface/IUserStakingPool.sol";
 
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract UserStakingPool is IUserStakingPool, Claimable
+contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
@@ -42,9 +43,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
     Staking private total;
     mapping (address => Staking) private stakings;
 
-    constructor(
-        address _lrcAddress
-        )
+    constructor(address _lrcAddress)
         Claimable()
         public
     {
@@ -86,6 +85,7 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function stake(uint amount)
         external
+        nonReentrant
     {
         require(amount > 0, "ZERO_VALUE");
 
@@ -109,13 +109,14 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function withdraw(uint amount)
         external
+        nonReentrant
     {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         // automatical claim when possible
         if (protocolFeeVaultAddress != address(0) &&
             getUserClaimWaitTime(msg.sender) == 0) {
-            claim();
+            claimReward();
         }
 
         Staking storage user = stakings[msg.sender];
@@ -142,7 +143,17 @@ contract UserStakingPool is IUserStakingPool, Claimable
     }
 
     function claim()
-        public
+        external
+        nonReentrant
+        returns (uint claimedAmount)
+    {
+        return claimReward();
+    }
+
+    // -- Private Function --
+
+    function claimReward()
+        private
         returns (uint claimedAmount)
     {
         require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
@@ -169,8 +180,6 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
         emit LRCRewarded(msg.sender, claimedAmount);
     }
-
-    // -- Private Function --
 
     function updateStaking(
         Staking storage staking,

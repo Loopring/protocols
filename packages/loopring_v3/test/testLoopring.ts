@@ -79,13 +79,11 @@ contract("Loopring", (accounts: string[]) => {
           stakeAmount,
           loopring.address
         );
-
         // Stake it
         await exchangeTestUtil.depositProtocolFeeStakeChecked(
           stakeAmount,
           depositer
         );
-
         // Try to withdraw it from an unauthorized address on the exchange contract
         await expectThrow(
           exchangeTestUtil.exchange.withdrawProtocolFeeStake(
@@ -95,7 +93,6 @@ contract("Loopring", (accounts: string[]) => {
           ),
           "UNAUTHORIZED"
         );
-
         // Try to withdraw it from an unauthorized address on the loopring contract
         await expectThrow(
           loopring.withdrawProtocolFeeStake(
@@ -106,7 +103,6 @@ contract("Loopring", (accounts: string[]) => {
           ),
           "UNAUTHORIZED"
         );
-
         // Withdraw the exchange stake
         await exchangeTestUtil.withdrawProtocolFeeStakeChecked(
           exchangeTestUtil.exchangeOwner,
@@ -186,12 +182,25 @@ contract("Loopring", (accounts: string[]) => {
   });
 
   describe("Owner", () => {
-    it("should be able to set the protocol fee manager", async () => {
+    it("should be able to update settings", async () => {
       const protocolFeeVaultBefore = await loopring.protocolFeeVault();
       const newProtocolFeeVault = exchangeTestUtil.testContext.orderOwners[2];
       assert(newProtocolFeeVault !== protocolFeeVaultBefore);
 
-      await loopring.setProtocolFeeVault(newProtocolFeeVault);
+      await loopring.updateSettings(
+        newProtocolFeeVault,
+        exchangeTestUtil.testContext.orderOwners[2],
+        exchangeTestUtil.testContext.orderOwners[3],
+        new BN(web3.utils.toWei("0.01", "ether")),
+        new BN(web3.utils.toWei("9000", "ether")),
+        new BN(web3.utils.toWei("1000", "ether")),
+        new BN(web3.utils.toWei("2", "ether")),
+        new BN(web3.utils.toWei("125000", "ether")),
+        new BN(web3.utils.toWei("500000", "ether")),
+        new BN(web3.utils.toWei("100000", "ether")),
+        new BN(web3.utils.toWei("20", "ether")),
+        { from: exchangeTestUtil.testContext.deployer }
+      );
 
       const protocolFeeVaultAfter = await loopring.protocolFeeVault();
       assert(
@@ -227,8 +236,9 @@ contract("Loopring", (accounts: string[]) => {
     it("should not be able to set the update the settings", async () => {
       await expectThrow(
         loopring.updateSettings(
-          loopring.address,
-          accounts[2],
+          exchangeTestUtil.testContext.orderOwners[1], // fee vault
+          exchangeTestUtil.testContext.orderOwners[2], // block verifier
+          exchangeTestUtil.testContext.orderOwners[3], // downtime cost calculator
           new BN(web3.utils.toWei("0.02", "ether")),
           new BN(web3.utils.toWei("10000", "ether")),
           new BN(web3.utils.toWei("2000", "ether")),
@@ -254,16 +264,6 @@ contract("Loopring", (accounts: string[]) => {
           new BN(web3.utils.toWei("10000000", "ether")),
           { from: exchangeTestUtil.testContext.orderOwners[0] }
         ),
-        "UNAUTHORIZED"
-      );
-    });
-
-    it("should not be able to set the protocol fee manager", async () => {
-      const newProtocolFeeVault = exchangeTestUtil.testContext.orderOwners[3];
-      await expectThrow(
-        loopring.setProtocolFeeVault(newProtocolFeeVault, {
-          from: exchangeTestUtil.exchangeOperator
-        }),
         "UNAUTHORIZED"
       );
     });

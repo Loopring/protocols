@@ -28,7 +28,7 @@ contract("Exchange", (accounts: string[]) => {
     // Load IExchange ABI
     const ABIPath = "ABI/version30/";
     const exchangeABI = JSON.parse(
-      fs.readFileSync(ABIPath + "IExchange.abi", "ascii")
+      fs.readFileSync(ABIPath + "IExchangeV3.abi", "ascii")
     );
     // console.log(exchangeABI);
 
@@ -42,6 +42,15 @@ contract("Exchange", (accounts: string[]) => {
     // console.log(externalFunctions);
 
     for (const externalFunction of externalFunctions) {
+      // Do not test the following methods inherited from Clailable.
+      if (
+        externalFunction.name == "transferOwnership" ||
+        externalFunction.name == "renounceOwnership" ||
+        externalFunction.name == "claimOwnership"
+      ) {
+        continue;
+      }
+
       it(externalFunction.name, async () => {
         await createExchange();
 

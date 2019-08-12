@@ -67,7 +67,7 @@ library ExchangeBlocks
         bytes  memory data,
         bytes  memory /*offchainData*/
         )
-        internal  // inline call
+        internal
     {
         commitBlockInternal(
             S,

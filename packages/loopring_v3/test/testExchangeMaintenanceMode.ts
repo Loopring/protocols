@@ -7,18 +7,10 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let loopring: any;
-  let downtimeCostCalculator: any;
   let exchangeID = 0;
 
   const getDowntimeCost = async (duration: number) => {
-    const cost = await downtimeCostCalculator.getDowntimeCostLRC(
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(0), // this input is ignored by test/DowntimeCostCalculator.sol
-      new BN(duration)
-    );
-    return cost;
+    return new BN(await exchange.getDowntimeCostLRC(duration));
   };
 
   const startOrContinueMaintenanceModeChecked = async (
@@ -124,7 +116,6 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
     loopring = exchangeTestUtil.loopringV3;
-    downtimeCostCalculator = exchangeTestUtil.downtimeCostCalculator;
     exchangeID = 1;
   });
 
@@ -435,20 +426,6 @@ contract("Exchange", (accounts: string[]) => {
           "UNAUTHORIZED"
         );
       });
-    });
-
-    it("Downtime cost should be as expected", async () => {
-      await createExchange(false);
-
-      let duration = 123;
-      let expectedCost = await getDowntimeCost(duration);
-      let cost = await getDowntimeCost(duration);
-      assert(cost.eq(expectedCost), "Downtime cost not as expected");
-
-      duration = 456;
-      expectedCost = await getDowntimeCost(duration);
-      cost = await getDowntimeCost(duration);
-      assert(cost.eq(expectedCost), "Downtime cost not as expected");
     });
   });
 });
