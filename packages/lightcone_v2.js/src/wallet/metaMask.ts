@@ -12,27 +12,19 @@ export class MetaMask {
   public ethNode: Eth;
   public account: MetaMaskAccount;
 
-  public constructor() {
-    this.web3 = new Web3("http://localhost:8545");
-    this.account = fromMetaMask(this.web3);
-    this.address = this.account.getAddress();
-    this.ethNode = new Eth("http://localhost:8545");
+  public constructor(web3, account) {
+    this.web3 = web3;
+    this.account = account;
+    this.address = account;
+    this.ethNode = new Eth("http://localhost:8545"); // TODO: config
   }
 
-  public async createOrUpdateAccount(
-    publicX: string,
-    publicY: string,
-    gasPrice: number
-  ) {
-    exchange
-      .createOrUpdateAccount(publicX, publicY, gasPrice)
-      .then((rawTx: Transaction) => {
-        this.account.signEthereumTx(rawTx).then(signedTx => {
-          return this.account.sendTransaction(this.ethNode, signedTx);
-        });
-      });
-  }
-
+  /**
+   * Deposit to Dex
+   * @param symbol string symbol of token to deposit
+   * @param amount number amount to deposit, e.g. 1.5
+   * @param gasPrice in gwei
+   */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
     exchange
       .deposit(this.account, symbol, amount, gasPrice)
@@ -43,6 +35,12 @@ export class MetaMask {
       });
   }
 
+  /**
+   * Withdraw from Dex
+   * @param symbol string symbol of token to withdraw
+   * @param amount number amount to withdraw, e.g. 1.5
+   * @param gasPrice in gwei
+   */
   public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
     exchange
       .withdraw(this.account, symbol, amount, gasPrice)

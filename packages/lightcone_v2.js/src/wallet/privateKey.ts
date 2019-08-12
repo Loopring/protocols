@@ -6,11 +6,11 @@ import * as datas from "../lib/wallet/config/data";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
-import { KeyAccount } from "../lib/wallet/ethereum/walletAccount";
+import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
 import { exchange } from "../sign/exchange";
 
 export class PrivateKey {
-  public account: KeyAccount;
+  public account: PrivateKeyAccount;
   public address: string;
   public ethNode: Eth;
 

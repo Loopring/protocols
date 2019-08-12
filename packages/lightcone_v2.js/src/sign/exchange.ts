@@ -173,7 +173,7 @@ export class Exchange {
     }
   }
 
-  public async createOrUpdateAccount(
+  private async createOrUpdateAccount(
     publicX: string,
     publicY: string,
     gasPrice: number
@@ -190,14 +190,14 @@ export class Exchange {
       );
       return new Transaction({
         to: this.exchangeAddr,
-        // value: this.dexConfigurations.getAccountUpdateFeeEth(),
-        value: "0x10000",
+        value: this.dexConfigurations.account_update_fee_eth,
         data: data,
         chainId: config.getChainId(),
         nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
         gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
         gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
       });
+      console.log("CreateOrUpdateAccount");
     } catch (err) {
       console.error("Failed to create.", err);
       throw err;
@@ -225,8 +225,7 @@ export class Exchange {
         });
         return new Transaction({
           to: to,
-          // value: this.dexConfigurations.getDepositFeeEth(),
-          value: "0x10000",
+          value: this.dexConfigurations.deposit_fee_eth,
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
@@ -265,8 +264,7 @@ export class Exchange {
 
         return new Transaction({
           to: to,
-          // value: this.dexConfigurations.getOnchainWithdrawalFeeEth(),
-          value: "0x10000",
+          value: this.dexConfigurations.onchain_withdrawal_fee_eth,
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
