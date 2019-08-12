@@ -96,8 +96,6 @@ export class PrivateKey {
    */
   public async deposit(amount: number, gasPrice: number) {
     const weth = config.getTokenBySymbol("WETH");
-    console.log(weth);
-    console.log("deposit...");
     const value = fm.toHex(fm.toBig(amount).times(1e18));
     const rawTx = new Transaction({
       to: weth.address,
