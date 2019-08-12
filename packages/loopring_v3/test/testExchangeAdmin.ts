@@ -42,11 +42,6 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  before(async () => {
-    exchangeTestUtil = new ExchangeTestUtil();
-    await exchangeTestUtil.initialize(accounts);
-  });
-
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
