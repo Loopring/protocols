@@ -150,11 +150,20 @@ export class Exchange {
 
         // TODO: Let's avoid using Promises. Change this part to await.
         // At least, avoid using a Promise in another Promise.
-        wallet.sendTransaction(new Eth(this.contractURL), signedTx).then(() => {
+        const sendTransactionResponse = await wallet.sendTransaction(
+          new Eth(this.contractURL),
+          signedTx
+        );
+        console.log("sendTransactionResponse: ", sendTransactionResponse);
+
+        // TODO: Notify Relay
+        /*
+        .then(() => {
           // TODO: config
           grpcClientService
             .getAccount(wallet.getAddress())
             .then((account: Account) => {
+              console.log(account)
               const dexAccount = new DexAccount();
               dexAccount.nonce = 0;
               dexAccount.owner = wallet.getAddress();
@@ -166,6 +175,7 @@ export class Exchange {
               this.currentDexAccount = dexAccount;
             });
         });
+        */
       }
     } catch (err) {
       console.error("Failed to create.", err);
@@ -197,7 +207,6 @@ export class Exchange {
         gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
         gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
       });
-      console.log("CreateOrUpdateAccount");
     } catch (err) {
       console.error("Failed to create.", err);
       throw err;
@@ -223,15 +232,19 @@ export class Exchange {
           tokenAddress: to,
           amount: value
         });
-        return new Transaction({
+
+        const nonce = await ethereum.wallet.getNonce(this.getAddress());
+
+        const transaction = new Transaction({
           to: to,
           value: this.dexConfigurations.deposit_fee_eth,
           data: data,
           chainId: config.getChainId(),
-          nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+          nonce: fm.toHex(nonce),
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
           gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
         });
+        return transaction;
       }
     } catch (err) {
       console.error("Failed to create.", err);
@@ -262,15 +275,18 @@ export class Exchange {
           }
         );
 
-        return new Transaction({
+        const nonce = await ethereum.wallet.getNonce(this.getAddress());
+
+        const transaction = new Transaction({
           to: to,
           value: this.dexConfigurations.onchain_withdrawal_fee_eth,
           data: data,
           chainId: config.getChainId(),
-          nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+          nonce: fm.toHex(nonce),
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
           gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
         });
+        return transaction;
       }
     } catch (err) {
       console.error("Failed to create.", err);

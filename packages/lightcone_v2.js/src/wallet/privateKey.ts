@@ -15,7 +15,7 @@ export class PrivateKey {
   public ethNode: Eth;
 
   public constructor() {
-    this.ethNode = new Eth(""); // TODO: config
+    this.ethNode = new Eth("http://localhost:8545"); // TODO: config
     // this.account = walletUtil.fromPrivateKey('');
   }
 
@@ -96,6 +96,8 @@ export class PrivateKey {
    */
   public async deposit(amount: number, gasPrice: number) {
     const weth = config.getTokenBySymbol("WETH");
+    console.log(weth);
+    console.log("deposit...");
     const value = fm.toHex(fm.toBig(amount).times(1e18));
     const rawTx = new Transaction({
       to: weth.address,
@@ -142,12 +144,26 @@ export class PrivateKey {
    * @param gasPrice in gwei
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
-    exchange
-      .deposit(this.account, symbol, amount, gasPrice)
-      .then((rawTx: Transaction) => {
-        const signedTx = this.account.signEthereumTx(rawTx.raw);
-        return this.account.sendTransaction(this.ethNode, signedTx);
-      });
+    try {
+      const rawTx = await exchange.deposit(
+        this.account,
+        symbol,
+        amount,
+        gasPrice
+      );
+      const signedTx = this.account.signEthereumTx(rawTx.raw);
+      const sendTransactionResponse = await this.account.sendTransaction(
+        this.ethNode,
+        signedTx
+      );
+      console.log(
+        "depositTo sendTransactionResponse:",
+        sendTransactionResponse
+      );
+      return sendTransactionResponse;
+    } catch (e) {
+      throw e;
+    }
   }
 
   /**
@@ -157,12 +173,26 @@ export class PrivateKey {
    * @param gasPrice in gwei
    */
   public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
-    exchange
-      .withdraw(this.account, symbol, amount, gasPrice)
-      .then((rawTx: Transaction) => {
-        const signedTx = this.account.signEthereumTx(rawTx.raw);
-        return this.account.sendTransaction(this.ethNode, signedTx);
-      });
+    try {
+      const rawTx = await exchange.withdraw(
+        this.account,
+        symbol,
+        amount,
+        gasPrice
+      );
+      const signedTx = this.account.signEthereumTx(rawTx.raw);
+      const sendTransactionResponse = await this.account.sendTransaction(
+        this.ethNode,
+        signedTx
+      );
+      console.log(
+        "withdrawFrom sendTransactionResponse:",
+        sendTransactionResponse
+      );
+      return sendTransactionResponse;
+    } catch (e) {
+      throw e;
+    }
   }
 }
 
