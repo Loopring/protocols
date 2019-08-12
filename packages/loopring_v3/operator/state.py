@@ -460,6 +460,36 @@ class Cancellation(object):
 
         self.balanceUpdateF_O = balanceUpdateF_O
 
+class InternalTransfer(object):
+    def __init__(self,
+                 exchangeID,
+                 accountFromID, accountToID,
+                 transTokenID, amount,
+                 feeTokenID, fee, label,
+                 nonceFrom, nonceTo,
+                 balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
+                 balanceUpdateT_To, accountUpdate_To,
+                 balanceUpdateF_O):
+        self.exchangeID = exchangeID
+
+        self.accountFromID = accountFromID
+        self.accountToID = accountToID
+        self.transTokenID = transTokenID
+        self.amount = str(amount)
+        self.feeTokenID = feeTokenID
+        self.fee = str(fee)
+        self.label = int(label)
+        self.nonceFrom = nonceFrom
+        self.nonceTo = nonceTo
+
+        self.balanceUpdateF_From = balanceUpdateF_From
+        self.balanceUpdateT_From = balanceUpdateT_From
+        self.accountUpdate_From = accountUpdate_From
+
+        self.balanceUpdateT_To = balanceUpdateT_To
+        self.accountUpdate_To = accountUpdate_To
+
+        self.balanceUpdateF_O = balanceUpdateF_O
 
 class State(object):
     def __init__(self, exchangeID):
@@ -843,6 +873,58 @@ class State(object):
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     None)
         return cancellation
+
+    def internalTransfer(self,
+                    exchangeID, operatorAccountID, accountFromID, accountToID,
+                    transTokenID, amountRequested, feeTokenID, fee, label):
+
+        feeValue = roundToFloatValue(fee, Float16Encoding)
+
+        # Update account From
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(accountFromID))
+        nonce = accountBefore.nonce
+        proof = self._accountsTree.createProof(accountFromID)
+
+        balanceUpdateF_From = self.getAccount(accountFromID).updateBalance(feeTokenID, -feeValue)
+        balanceT = int(self.getAccount(accountFromID).getBalance(transTokenID))
+        uAmountTrans = int(amountRequested) if (int(amountRequested) < balanceT) else balanceT
+
+        fAmountTrans = toFloat(uAmountTrans, Float28Encoding)
+        amountTrans = fromFloat(fAmountTrans, Float28Encoding)
+        balanceUpdateT_From = self.getAccount(accountFromID).updateBalance(transTokenID, -amountTrans)
+
+        self.getAccount(accountFromID).nonce += 1
+
+        self.updateAccountTree(accountFromID)
+        accountAfter = copyAccountInfo(self.getAccount(accountFromID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_From = AccountUpdateData(accountFromID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        
+        # Update accout To
+        rootToBefore = self._accountsTree._root
+        accountToBefore = copyAccountInfo(self.getAccount(accountToID))
+        nonceTo = accountBefore.nonce
+        proofTo = self._accountsTree.createProof(accountFromID)
+
+        accountTo = self.getAccount(accountToID)
+        balanceUpdateT_To = accountTo.updateBalance(transTokenID, amountTrans)
+
+        self.updateAccountTree(accountToID)
+        accountToAfter = copyAccountInfo(self.getAccount(accountToID))
+        rootToAfter = self._accountsTree._root
+        accountUpdate_To = AccountUpdateData(accountToID, proofTo, rootToBefore, rootToAfter, accountToBefore, accountToAfter)
+        # Operator payment
+        # This is done after all cancellations are processed
+        internalTrans = InternalTransfer(exchangeID,
+                                    accountFromID, accountToID,
+                                    transTokenID, amountTrans,
+                                    feeTokenID, fee, label,
+                                    nonce, nonceTo,
+                                    balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
+                                    balanceUpdateT_To, accountUpdate_To,
+                                    None)
+        return internalTrans
 
     def createWithdrawProof(self, exchangeID, accountID, tokenID):
         account = copyAccountInfo(self.getAccount(accountID))

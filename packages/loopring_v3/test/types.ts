@@ -11,7 +11,8 @@ export enum BlockType {
   DEPOSIT,
   ONCHAIN_WITHDRAWAL,
   OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION
+  ORDER_CANCELLATION,
+  INTERNAL_TRANSFER
 }
 
 export interface KeyPair {
@@ -110,6 +111,29 @@ export interface DepositBlock {
   startHash: BN;
   startIndex: number;
   count: number;
+}
+
+export interface InternalTransferRequest {
+  accountFromID: number;
+  accountToID: number;
+
+  transTokenID: number;
+  amount: BN;
+
+  feeTokenID: number;
+  fee: BN;
+
+  label: number;
+
+  signature?: Signature;
+}
+
+export interface InternalTransferBlock {
+  transferres: InternalTransferRequest[];
+
+  onchainDataAvailability?: boolean;
+
+  operatorAccountID?: number;
 }
 
 export interface WithdrawalRequest {

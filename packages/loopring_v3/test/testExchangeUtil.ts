@@ -34,6 +34,8 @@ import {
   DepositInfo,
   DetailedTokenTransfer,
   ExchangeState,
+  InternalTransferRequest,
+  InternalTransferBlock,
   KeyPair,
   OrderInfo,
   RingBlock,
@@ -76,6 +78,7 @@ export class ExchangeTestUtil {
   public depositBlockSizes = [4, 8];
   public onchainWithdrawalBlockSizes = [4, 8];
   public offchainWithdrawalBlockSizes = [4, 8];
+  public interfalTransferBlockSizes = [4, 8];
   public orderCancellationBlockSizes = [4, 8];
 
   public loopringV3: any;
@@ -145,6 +148,7 @@ export class ExchangeTestUtil {
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
+  private pendingInternalTransferRequests: InternalTransferRequest[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingCancels: Cancel[][] = [];
@@ -206,6 +210,9 @@ export class ExchangeTestUtil {
 
       const onchainWithdrawalRequests: WithdrawalRequest[] = [];
       this.pendingOnchainWithdrawalRequests.push(onchainWithdrawalRequests);
+
+      const internalTransferres: InternalTransferRequest[] = [];
+      this.pendingInternalTransferRequests.push(internalTransferres);
 
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
@@ -572,6 +579,39 @@ export class ExchangeTestUtil {
     assert(success, "Failed to verify signature");
   }
 
+  public signInternalTransfer(trans: InternalTransferRequest) {
+    if (trans.signature !== undefined) {
+      return;
+    }
+
+    const hasher = poseidon.createHash(11, 6, 53);
+    const account = this.accounts[this.exchangeId][trans.accountFromID];
+
+    // Calculate hash
+    const inputs = [
+      this.exchangeId,
+      trans.accountFromID,
+      trans.accountToID,
+      trans.transTokenID,
+      trans.amount,
+      trans.feeTokenID,
+      trans.fee,
+      trans.label,
+      account.nonce++
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    trans.signature = eddsa.sign(account.secretKey, hash);
+
+    // Verify signature
+    const success = eddsa.verify(hash, trans.signature, [
+      account.publicKeyX,
+      account.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+  }
+
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
     let publicKeyX = keyPair.publicKeyX;
@@ -833,6 +873,37 @@ export class ExchangeTestUtil {
       token,
       amount
     );
+  }
+
+  public async requestInternalTransfer(
+    exchangeID: number,
+    accountFromID: number,
+    accountToID: number,
+    token: string,
+    amount: BN,
+    feeToken: string,
+    fee: BN,
+    label: number
+  ) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    const transTokenID = this.tokenAddressToIDMap.get(token);
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    this.pendingInternalTransferRequests[exchangeID].push({
+      accountFromID,
+      accountToID,
+      transTokenID,
+      amount,
+      feeTokenID,
+      fee,
+      label
+    });
+
+    return this.pendingInternalTransferRequests[exchangeID][
+      this.pendingInternalTransferRequests[exchangeID].length - 1
+    ];
   }
 
   public async requestWithdrawalOffchain(
@@ -1978,6 +2049,163 @@ export class ExchangeTestUtil {
     } else {
       this.pendingOffchainWithdrawalRequests[exchangeID] = [];
     }
+  }
+
+  public async commitInternalTransferRequests(
+    exchangeID: number,
+    shutdown: boolean = false
+  ) {
+    let pendingTransferres = this.pendingInternalTransferRequests[exchangeID];
+
+    if (pendingTransferres.length === 0) {
+      return;
+    }
+
+    const blockType = BlockType.INTERNAL_TRANSFER;
+
+    let numWithdrawalsDone = 0;
+    while (numWithdrawalsDone < pendingTransferres.length) {
+      const transferres: InternalTransferRequest[] = [];
+      let numRequestsInBlock = 0;
+      // Get all withdrawals for the block
+      const blockSizes = this.interfalTransferBlockSizes;
+      const blockSize = this.getBestBlockSize(
+        pendingTransferres.length - numWithdrawalsDone,
+        blockSizes
+      );
+      for (
+        let b = numWithdrawalsDone;
+        b < numWithdrawalsDone + blockSize;
+        b++
+      ) {
+        if (b < pendingTransferres.length) {
+          // pendingTransferres[b].slotIdx = withdrawals.length;
+          transferres.push(pendingTransferres[b]);
+          numRequestsInBlock++;
+        } else {
+          const dummyInternalTransferresRequest: InternalTransferRequest = {
+            accountFromID: this.dummyAccountId,
+            accountToID: this.dummyAccountId,
+            transTokenID: 0,
+            amount: new BN(0),
+            feeTokenID: 1,
+            fee: new BN(0),
+            label: 0
+          };
+          transferres.push(dummyInternalTransferresRequest);
+        }
+      }
+      assert(transferres.length === blockSize);
+      numWithdrawalsDone += blockSize;
+
+      // Hash the labels
+      const labels: number[] = [];
+      for (const trans of transferres) {
+        labels.push(trans.label);
+      }
+      const labelHash = this.hashLabels(labels);
+
+      // Sign the offchain withdrawals
+      for (const trans of transferres) {
+        this.signInternalTransfer(trans);
+      }
+
+      // Block info
+      const operator = await this.getActiveOperator(exchangeID);
+      const internalTransferBlock: InternalTransferBlock = {
+        transferres,
+        onchainDataAvailability: this.onchainDataAvailability,
+        operatorAccountID: operator
+      };
+
+      // Store state before
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const stateBefore = await this.loadExchangeState(
+        exchangeID,
+        currentBlockIdx
+      );
+
+      const jWithdrawalsInfo = JSON.stringify(
+        internalTransferBlock,
+        replacer,
+        4
+      );
+      const [blockIdx, blockFilename] = await this.createBlock(
+        exchangeID,
+        blockType,
+        jWithdrawalsInfo
+      );
+
+      // Store state after
+      const stateAfter = await this.loadExchangeState(
+        exchangeID,
+        currentBlockIdx + 1
+      );
+
+      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+      const bs = new Bitstream();
+      bs.addNumber(block.exchangeID, 4);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
+      for (const trans of block.transferres) {
+        bs.addNumber(trans.tokenID, 1);
+        bs.addNumber(trans.accountID * 2 ** 28 + trans.amount, 6);
+      }
+
+      bs.addBN(new BN(labelHash, 10), 32);
+      if (block.onchainDataAvailability) {
+        bs.addNumber(block.operatorAccountID, 3);
+        for (const trans of block.internalTransferres) {
+          bs.addNumber(trans.accountFromID);
+          bs.addNumber(trans.accountToID);
+          bs.addNumber(trans.transTokenID, 1);
+          bs.addNumber(
+            toFloat(new BN(trans.amount), constants.Float28Encoding),
+            2
+          );
+          bs.addNumber(trans.feeTokenID, 1);
+          bs.addNumber(
+            toFloat(new BN(trans.fee), constants.Float16Encoding),
+            2
+          );
+        }
+      }
+
+      /*TODO: commit to contract.
+
+        // Validate state change
+        this.validateInternalTranferres(
+            withdrawalBlock,
+            bs,
+            stateBefore,
+            stateAfter
+        );
+
+        // Commit the block
+        await this.commitBlock(
+            operator,
+            blockType,
+            blockSize,
+            bs.getData(),
+            blockFilename
+        );
+
+        // Add as a pending withdrawal
+        let withdrawalIdx = 0;
+        for (const withdrawalRequest of block.withdrawals) {
+            const withdrawal: Withdrawal = {
+                exchangeID,
+                blockIdx,
+                withdrawalIdx
+                };
+                this.pendingWithdrawals.push(withdrawal);
+                withdrawalIdx++;
+            }
+        }
+        */
+    }
+
+    this.pendingInternalTransferRequests[exchangeID] = [];
   }
 
   public async commitOffchainWithdrawalRequests(exchangeID: number) {
