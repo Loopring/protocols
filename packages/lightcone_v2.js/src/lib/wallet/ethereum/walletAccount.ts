@@ -126,7 +126,7 @@ export function fromMnemonic(mnemonic, dpath, password) {
  * @returns {WalletAccount}
  */
 export function fromPrivateKey(privateKey) {
-  return new KeyAccount(privateKey);
+  return new PrivateKeyAccount(privateKey);
 }
 
 /**
@@ -198,8 +198,7 @@ export class WalletAccount {
   }
 }
 
-// Hack: We don't need this one?
-export class KeyAccount extends WalletAccount {
+export class PrivateKeyAccount extends WalletAccount {
   privateKey: any;
 
   /**
