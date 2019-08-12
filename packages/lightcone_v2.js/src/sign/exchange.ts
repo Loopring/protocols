@@ -25,6 +25,8 @@ import {
   SimpleOrderCancellationReq
 } from "../grpc/proto_gen/service_dex_pb";
 
+const MOCK_EXCHANGE_GAS_LIMIT = "0xf0f09f0";
+
 // TODO: Rename Exchange
 export class Exchange {
   private currentDexAccount: DexAccount;
@@ -195,7 +197,7 @@ export class Exchange {
         chainId: config.getChainId(),
         nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
         gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-        gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
+        gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
       });
       console.log("CreateOrUpdateAccount");
     } catch (err) {
@@ -230,7 +232,7 @@ export class Exchange {
           chainId: config.getChainId(),
           nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-          gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
+          gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
         });
       }
     } catch (err) {
@@ -269,7 +271,7 @@ export class Exchange {
           chainId: config.getChainId(),
           nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-          gasLimit: fm.toHex(config.getGasLimitByType("eth_transfer").gasLimit) // TODO: new gas limit
+          gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
         });
       }
     } catch (err) {
