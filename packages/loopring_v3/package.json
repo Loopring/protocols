@@ -41,7 +41,8 @@
     "clean": "rm -rf build blocks keys",
     "v": "node -v",
     "preinstall": "rm -rf node_modules/websocket/.git",
-    "test-circuits": "./build/circuit/dex_circuit_tests"
+    "test-circuits": "./build/circuit/dex_circuit_tests",
+    "testc": "npm run test-circuits"
   },
   "license": "ISC",
   "devDependencies": {
