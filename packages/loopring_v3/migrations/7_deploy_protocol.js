@@ -16,9 +16,7 @@ var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 
 module.exports = function(deployer, network, accounts) {
-  if (network === "live") {
-    // ignore.
-  } else {
+  if (network !== "live") {
     DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );

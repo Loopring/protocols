@@ -25,9 +25,7 @@ var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
-  if (network === "live") {
-    // ignore.
-  } else {
+  if (network !== "live") {
     deployer_ = deployer_.then(() => {
       return Promise.all([
         LRCToken.deployed().then(addr => {

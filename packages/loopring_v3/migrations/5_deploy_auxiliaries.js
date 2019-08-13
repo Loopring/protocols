@@ -17,8 +17,7 @@ var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
-  if (network === "live") {
-  } else {
+  if (network !== "live") {
     DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
