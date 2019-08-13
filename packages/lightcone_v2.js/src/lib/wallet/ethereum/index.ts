@@ -1,6 +1,5 @@
 import abi from "./contracts";
 import * as account from "./walletAccount";
-import * as keystore from "./keystore";
 import * as metamask from "./metaMask";
 import * as mnemonic from "./mnemonic";
 import validator from "./validator";
@@ -10,7 +9,6 @@ import wallet from "./wallet";
 export default {
   abi,
   account,
-  keystore,
   mnemonic,
   metamask,
   eth,

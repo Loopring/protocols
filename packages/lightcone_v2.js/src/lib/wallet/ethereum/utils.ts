@@ -1,7 +1,7 @@
 import validator from "../common/validator";
 import request from "../common/request";
 
-import { sha3 } from "ethereumjs-util";
+import { keccak } from "ethereumjs-util";
 
 var host = "http://localhost:8545";
 
@@ -236,5 +236,5 @@ export function isValidEthAddress(address) {
 }
 
 export function getHash(message) {
-  return sha3(message);
+  return keccak(message);
 }

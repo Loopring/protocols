@@ -7,7 +7,7 @@ describe("generate key_pair test", function() {
 
   it("send tx using metamask", async () => {
     let privateKeyAccount = new PrivateKeyAccount(
-      "ffd9b73fa766fe3a69d139c2cc39dfbb171d680222f07196a2c7b088e4139d75"
+      "4c5496d2745fe9cc2e0aa3e1aad2b66cc792a716decf707ddb3f92bd2d93ad24"
     );
     exchange.updateAccount(privateKeyAccount, 100000).then(() => {
       console.log();

@@ -2,8 +2,9 @@ import validator from "./validator";
 import Response from "../common/response";
 import code from "../common/code";
 import { addHexPrefix, toHex, toNumber } from "../common/formatter";
-import { hashPersonalMessage, sha3 } from "ethereumjs-util";
-import EthTransaction from "ethereumjs-tx";
+import { hashPersonalMessage, keccak } from "ethereumjs-util";
+
+const EthereumTx = require("ethereumjs-tx").Transaction;
 
 /**
  * @description sign hash
@@ -44,7 +45,7 @@ export async function sign(web3, account, hash) {
  * @returns {Promise}
  */
 export function signMessage(web3, account, message) {
-  const hash = toHex(hashPersonalMessage(sha3(message)));
+  const hash = toHex(hashPersonalMessage(keccak(message)));
   return sign(web3, account, hash);
 }
 
@@ -64,7 +65,7 @@ export async function signEthereumTx(web3, account, rawTx) {
     );
   }
   try {
-    const ethTx = new EthTransaction(rawTx);
+    const ethTx = new EthereumTx(rawTx);
     const hash = toHex(ethTx.hash(false));
     const response = await sign(web3, account, hash);
     if (!response["error"]) {

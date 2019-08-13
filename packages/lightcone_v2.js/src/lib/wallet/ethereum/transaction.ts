@@ -1,9 +1,10 @@
-import EthTransaction from "ethereumjs-tx";
 import validator from "./validator";
 import { addHexPrefix, toBuffer, toHex } from "../common/formatter";
 import { getGasPrice, getTransactionCount } from "./utils";
 import request from "../common/request";
 import { configs } from "../config/data";
+
+const EthereumTx = require("ethereumjs-tx").Transaction;
 
 // HACK: What is the host in wallet/ethereum?
 const host = "host";
@@ -38,7 +39,7 @@ export default class Transaction {
 
   hash() {
     validator.validate({ value: this.raw, type: "TX" });
-    return new EthTransaction(this.raw).hash();
+    return new EthereumTx(this.raw).hash();
   }
 
   async sign({ privateKey, walletType, path }) {
@@ -47,7 +48,7 @@ export default class Transaction {
     } catch (e) {
       await this.complete();
     }
-    const ethTx = new EthTransaction(this.raw);
+    const ethTx = new EthereumTx(this.raw);
 
     let signed;
     if (privateKey) {

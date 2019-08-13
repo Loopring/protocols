@@ -37,7 +37,7 @@
     "bn.js": "5.0.0",
     "ethereumjs-abi": "0.6.7",
     "ethereumjs-tx": "2.1.0",
-    "ethereumjs-util": "git://github.com/ethereumjs/ethereumjs-util.git#3b10850",
+    "ethereumjs-util": "6.1.0",
     "google-protobuf": "^3.9.0-rc.1",
     "grpc": "^1.21.1",
     "grpc-loader": "^2.0.1",

@@ -1,5 +1,3 @@
-// @ts-ignore
-/* ts-disable */
 import validator from "./validator";
 import {
   addHexPrefix,
@@ -9,20 +7,18 @@ import {
   toHex,
   toNumber
 } from "../common/formatter";
-import { decryptKeystoreToPkey, pkeyToKeystore } from "./keystore";
 import {
   ecsign,
   hashPersonalMessage,
   privateToAddress,
   privateToPublic,
   publicToAddress,
-  sha3
+  keccak
 } from "ethereumjs-util";
 import { mnemonictoPrivatekey } from "./mnemonic";
 import { generateMnemonic } from "bip39";
 import { trimAll } from "../common/utils";
 import HDKey from "hdkey";
-import EthTransaction from "ethereumjs-tx";
 import * as MetaMask from "./metaMask";
 
 import wallets from "../config/wallets.json";
@@ -30,6 +26,8 @@ const LoopringWallet = wallets.find(
   wallet => trimAll(wallet.name).toLowerCase() === "loopringwallet"
 );
 export const path = LoopringWallet.dpath;
+
+const EthereumTx = require("ethereumjs-tx").Transaction;
 
 /**
  * @description Returns the ethereum address  of a given private key
@@ -124,17 +122,6 @@ export function fromPrivateKey(privateKey) {
   return new PrivateKeyAccount(privateKey);
 }
 
-/**
- * @description Returns WalletAccount of the given keystore
- * @param keystore string
- * @param password string
- * @returns {WalletAccount}
- */
-export function fromKeystore(keystore, password) {
-  const privateKey = decryptKeystoreToPkey(keystore, password);
-  return fromPrivateKey(privateKey);
-}
-
 export function fromMetaMask(web3, account, address) {
   return new MetaMaskAccount(web3, account, address);
 }
@@ -216,15 +203,6 @@ export class PrivateKeyAccount extends WalletAccount {
   }
 
   /**
-   * @description Returns V3 type keystore of this account
-   * @param password
-   * @returns {{version, id, address, crypto}}
-   */
-  toV3Keystore(password) {
-    return pkeyToKeystore(this.privateKey, password);
-  }
-
-  /**
    * Returns ethereum public key of this account
    * @returns {string}
    */
@@ -246,14 +224,14 @@ export class PrivateKeyAccount extends WalletAccount {
   }
 
   signMessage(message) {
-    const hash = sha3(message);
+    const hash = keccak(message);
     const finalHash = hashPersonalMessage(hash);
     return this.sign(finalHash);
   }
 
   signEthereumTx(rawTx) {
     validator.validate({ type: "TX", value: rawTx });
-    const ethTx = new EthTransaction(rawTx);
+    const ethTx = new EthereumTx(rawTx);
     ethTx.sign(this.privateKey);
     return toHex(ethTx.serialize());
   }
