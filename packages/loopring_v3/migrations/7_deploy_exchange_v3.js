@@ -63,7 +63,7 @@ module.exports = function(deployer, network, accounts) {
 
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_exchange_v3:");
-      console.log("ExchangeV3:", ExchangeV3.address, " version=", version);
+      console.log("ExchangeV3:", ExchangeV3.address, ", version=", version);
       console.log("");
     });
 };
