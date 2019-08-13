@@ -13,66 +13,66 @@ module.exports = function(deployer, network, accounts) {
   console.log("   > deploying to network: " + network);
   var deployer_ = deployer;
 
-  // if (network != "live" && network != "ropsten-fork") {
-  //   DowntimeCostCalculator = artifacts.require(
-  //     "./test/FixPriceDowntimeCostCalculator.sol"
-  //   );
+  if (network != "live" && network != "ropsten-fork") {
+    DowntimeCostCalculator = artifacts.require(
+      "./test/FixPriceDowntimeCostCalculator.sol"
+    );
 
-  //   const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-  //   const WETHToken = artifacts.require("./test/tokens/WETH.sol");
-  //   const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
-  //   deployer_ = deployer_.then(() => {
-  //     return Promise.all([
-  //       LRCToken.deployed().then(c => {
-  //         lrcAddress = c.address;
-  //       }),
-  //       WETHToken.deployed().then(c => {
-  //         wethAddress = c.address;
-  //       }),
-  //       ProtocolFeeVault.deployed().then(c => {
-  //         protocolFeeValutAddress = c.address;
-  //       })
-  //     ]);
-  //   });
-  // }
+    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
+    const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
+    deployer_ = deployer_.then(() => {
+      return Promise.all([
+        LRCToken.deployed().then(c => {
+          lrcAddress = c.address;
+        }),
+        WETHToken.deployed().then(c => {
+          wethAddress = c.address;
+        }),
+        ProtocolFeeVault.deployed().then(c => {
+          protocolFeeValutAddress = c.address;
+        })
+      ]);
+    });
+  }
 
-  // // common deployment
+  // common deployment
 
-  // const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
-  // const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-  // const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
+  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+  const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 
-  // deployer_
-  //   .then(() => {
-  //     return Promise.all([
-  //       ProtocolRegistry.deployed(),
-  //       BlockVerifier.deployed(),
-  //       DowntimeCostCalculator.deployed()
-  //     ]);
-  //   })
-  //   .then(() => {
-  //     return Promise.all([
-  //       deployer.deploy(
-  //         LoopringV3,
-  //         ProtocolRegistry.address,
-  //         lrcAddress,
-  //         wethAddress,
-  //         protocolFeeValutAddress,
-  //         BlockVerifier.address,
-  //         DowntimeCostCalculator.address
-  //       )
-  //     ]);
-  //   })
-  //   .then(() => {
-  //     console.log(">>>>>>>> contracts deployed by deploy_protocol:");
-  //     console.log("lrcAddress:", lrcAddress);
-  //     console.log("wethAddress:", wethAddress);
-  //     console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
-  //     console.log("userStakingPoolAddress:", userStakingPoolAddress);
-  //     console.log("ProtocolRegistry:", ProtocolRegistry.address);
-  //     console.log("BlockVerifier:", BlockVerifier.address);
-  //     console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
-  //     console.log("LoopringV3:", LoopringV3.address);
-  //     console.log("");
-  //   });
+  deployer_
+    .then(() => {
+      return Promise.all([
+        ProtocolRegistry.deployed(),
+        BlockVerifier.deployed(),
+        DowntimeCostCalculator.deployed()
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(
+          LoopringV3,
+          ProtocolRegistry.address,
+          lrcAddress,
+          wethAddress,
+          protocolFeeValutAddress,
+          BlockVerifier.address,
+          DowntimeCostCalculator.address
+        )
+      ]);
+    })
+    .then(() => {
+      console.log(">>>>>>>> contracts deployed by deploy_protocol:");
+      console.log("lrcAddress:", lrcAddress);
+      console.log("wethAddress:", wethAddress);
+      console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
+      console.log("userStakingPoolAddress:", userStakingPoolAddress);
+      console.log("ProtocolRegistry:", ProtocolRegistry.address);
+      console.log("BlockVerifier:", BlockVerifier.address);
+      console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
+      console.log("LoopringV3:", LoopringV3.address);
+      console.log("");
+    });
 };
