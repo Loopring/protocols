@@ -31,6 +31,9 @@ module.exports = function(deployer, network, accounts) {
           }),
           WETHToken.deployed().then(addr => {
             wethAddress = addr;
+          }),
+          ProtocolFeeVault.deployed().then(addr => {
+            protocolFeeValutAddress = addr;
           })
         ]);
       })
@@ -39,7 +42,6 @@ module.exports = function(deployer, network, accounts) {
           LRCToken.deployed(),
           WETHToken.deployed(),
           ProtocolRegistry.deployed(),
-          ProtocolFeeVault.deployed(),
           BlockVerifier.deployed(),
           DowntimeCostCalculator.deployed()
         ]);
@@ -51,7 +53,7 @@ module.exports = function(deployer, network, accounts) {
             ProtocolRegistry.address,
             lrcAddress,
             wethAddress,
-            ProtocolFeeVault.address,
+            protocolFeeValutAddress,
             BlockVerifier.address,
             DowntimeCostCalculator.address
           )
