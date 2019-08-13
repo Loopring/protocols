@@ -1,7 +1,6 @@
 // Deploy protocol: LoopringV3
 
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var FixPriceDowntimeCostCalculator = artifacts.require(
   "./test/FixPriceDowntimeCostCalculator.sol"
@@ -18,7 +17,6 @@ module.exports = function(deployer, network, accounts) {
       .then(() => {
         return Promise.all([
           LRCToken.deployed(),
-          WETHToken.deployed(),
           ProtocolRegistry.deployed(),
           ProtocolFeeVault.deployed(),
           BlockVerifier.deployed(),
@@ -31,7 +29,6 @@ module.exports = function(deployer, network, accounts) {
             LoopringV3,
             ProtocolRegistry.address,
             LRCToken.address,
-            WETHToken.address,
             ProtocolFeeVault.address,
             BlockVerifier.address,
             FixPriceDowntimeCostCalculator.address

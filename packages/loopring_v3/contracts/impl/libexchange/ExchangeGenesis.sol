@@ -105,7 +105,6 @@ library ExchangeGenesis
 
         // Call these after the main state has been set up
         S.registerToken(address(0), 0);
-        S.registerToken(loopring.wethAddress(), 0);
         S.registerToken(S.lrcAddress, 0);
     }
 }

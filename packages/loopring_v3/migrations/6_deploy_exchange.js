@@ -3,7 +3,6 @@
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var WETHToken = artifacts.require("./test/tokens/WETH.sol");
 var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
 var ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
 var ExchangeBalances = artifacts.require("./impl/libexchange/ExchangeBalances");
@@ -24,7 +23,7 @@ module.exports = function(deployer, network, accounts) {
   } else {
     deployer
       .then(() => {
-        return Promise.all([LRCToken.deployed(), WETHToken.deployed()]);
+        return Promise.all([LRCToken.deployed()]);
       })
       .then(() => {
         return Promise.all([
@@ -130,7 +129,6 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
       })
       .then(() => {
-        console.log("WETHToken:", WETHToken.address);
         console.log("LRCToken:", LRCToken.address);
         console.log("ExchangeV3:", ExchangeV3.address);
         console.log("");

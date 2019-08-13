@@ -27,7 +27,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Cancel (orderToken != feeToken)", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -35,7 +35,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           orderID: 2
@@ -73,7 +73,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Cancel (orderToken == feeToken)", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -81,7 +81,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           orderID: 2
@@ -102,7 +102,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.cancelOrder(
         ring.orderA,
-        "WETH",
+        "DAI",
         new BN(web3.utils.toWei("1", "ether"))
       );
       await exchangeTestUtil.commitCancels(exchangeId);
@@ -115,7 +115,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Cancel (owner == operator)", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -123,7 +123,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           orderID: 2
@@ -146,7 +146,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.cancelOrder(
         ring.orderA,
-        "WETH",
+        "DAI",
         new BN(web3.utils.toWei("1", "ether"))
       );
       await exchangeTestUtil.commitCancels(exchangeId);
@@ -160,7 +160,7 @@ contract("Exchange", (accounts: string[]) => {
       const orderID = 123;
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -168,7 +168,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           orderID
@@ -188,7 +188,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.cancelOrder(
         ring.orderA,
-        "WETH",
+        "DAI",
         new BN(web3.utils.toWei("0", "ether"))
       );
       await exchangeTestUtil.commitCancels(exchangeId);
@@ -207,7 +207,7 @@ contract("Exchange", (accounts: string[]) => {
       const orderID = 1987;
       const ringA: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -215,7 +215,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           orderID
@@ -232,7 +232,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const ringB: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -240,7 +240,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("400", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY,
@@ -263,7 +263,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.cancelOrder(
         ringB.orderB,
-        "WETH",
+        "DAI",
         new BN(web3.utils.toWei("0", "ether"))
       );
       await exchangeTestUtil.commitCancels(exchangeId);
@@ -277,14 +277,14 @@ contract("Exchange", (accounts: string[]) => {
     it("Cancel all orders from an account by changing the account's public key", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether"))
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },

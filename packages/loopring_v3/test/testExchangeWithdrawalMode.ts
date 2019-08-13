@@ -316,14 +316,14 @@ contract("Exchange", (accounts: string[]) => {
       // Ring with ETH and ERC20
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether"))
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         }
@@ -391,7 +391,7 @@ contract("Exchange", (accounts: string[]) => {
       const balanceB = new BN(web3.utils.toWei("2.8", "ether"));
       const tokenC = "ETH";
       const balanceC = new BN(web3.utils.toWei("1.7", "ether"));
-      const tokenD = "WETH";
+      const tokenD = "DAI";
       const balanceD = new BN(web3.utils.toWei("23.7", "ether"));
 
       const depositInfoA = await exchangeTestUtil.deposit(

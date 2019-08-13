@@ -39,7 +39,6 @@ contract LoopringV3 is ILoopringV3
     constructor(
         address _protocolRegistry,
         address _lrcAddress,
-        address _wethAddress,
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
         address _downtimeCostCalculator
@@ -49,11 +48,9 @@ contract LoopringV3 is ILoopringV3
     {
         require(address(0) != _protocolRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
-        require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
         protocolRegistry = _protocolRegistry;
         lrcAddress = _lrcAddress;
-        wethAddress = _wethAddress;
 
         updateSettingsInternal(
             _protocolFeeVault,

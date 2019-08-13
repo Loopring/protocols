@@ -37,14 +37,14 @@ contract("Exchange", (accounts: string[]) => {
     it("Perfect match", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether"))
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
@@ -66,14 +66,14 @@ contract("Exchange", (accounts: string[]) => {
     it("Matchable (orderA < orderB)", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether"))
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("5", "ether")),
           amountB: new BN(web3.utils.toWei("45", "ether"))
         },
@@ -129,7 +129,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market buy (single ring)", async () => {
       const order: OrderInfo = {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("101", "ether")),
         amountB: new BN(web3.utils.toWei("100", "ether")),
@@ -145,7 +145,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
@@ -199,7 +199,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market buy (multiple rings)", async () => {
       const order: OrderInfo = {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("110", "ether")),
         amountB: new BN(web3.utils.toWei("100", "ether")),
@@ -215,7 +215,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("50", "ether")),
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
@@ -232,7 +232,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("220", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
@@ -296,7 +296,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market sell (single ring)", async () => {
       const order: OrderInfo = {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("1000", "ether")),
         amountB: new BN(web3.utils.toWei("99", "ether")),
@@ -312,7 +312,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("2000", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
@@ -366,7 +366,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Market sell (multiple rings)", async () => {
       const order: OrderInfo = {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("100", "ether")),
         amountB: new BN(web3.utils.toWei("900", "ether")),
@@ -382,7 +382,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("500", "ether")),
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
@@ -399,7 +399,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("900", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
@@ -463,7 +463,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Buy order used as taker and maker", async () => {
       const order: OrderInfo = {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("110", "ether")),
         amountB: new BN(web3.utils.toWei("100", "ether")),
@@ -479,7 +479,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("50", "ether")),
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
@@ -495,7 +495,7 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("220", "ether")),
           amountB: new BN(web3.utils.toWei("220", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
@@ -559,7 +559,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Sell order used as taker and maker", async () => {
       const order: OrderInfo = {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: new BN(web3.utils.toWei("100", "ether")),
         amountB: new BN(web3.utils.toWei("90", "ether")),
@@ -575,7 +575,7 @@ contract("Exchange", (accounts: string[]) => {
         orderA: order,
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("50", "ether")),
           amountB: new BN(web3.utils.toWei("50", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1],
@@ -591,7 +591,7 @@ contract("Exchange", (accounts: string[]) => {
       const ringB: RingInfo = {
         orderA: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("190", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[2],
@@ -781,7 +781,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Unmatchable", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("90", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
@@ -789,7 +789,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
@@ -973,7 +973,7 @@ contract("Exchange", (accounts: string[]) => {
     it("allOrNone (Buy, unsuccessful)", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether")),
@@ -981,7 +981,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("20", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           balanceS: new BN(web3.utils.toWei("5", "ether"))
@@ -1039,7 +1039,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Self-trading", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("105", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether")),
@@ -1048,7 +1048,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("10", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
@@ -1079,12 +1079,12 @@ contract("Exchange", (accounts: string[]) => {
       const ring: RingInfo = {
         orderA: {
           tokenS: "INDA",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(60),
           amountB: new BN(web3.utils.toWei("5", "ether"))
         },
         orderB: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "INDA",
           amountS: new BN(web3.utils.toWei("2.5", "ether")),
           amountB: new BN(25)
@@ -1169,14 +1169,14 @@ contract("Exchange", (accounts: string[]) => {
     it("operator == order owner", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "LRC",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
         orderB: {
           tokenS: "LRC",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         }
@@ -1196,7 +1196,7 @@ contract("Exchange", (accounts: string[]) => {
     it("orderA.owner == orderB.owner == operator", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("105", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether")),
@@ -1205,11 +1205,11 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("10", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
-        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("WETH"),
+        tokenID: await exchangeTestUtil.getTokenIdFromNameOrAddress("DAI"),
         expected: {
           orderA: {
             filledFraction: 1.0,
@@ -1268,14 +1268,14 @@ contract("Exchange", (accounts: string[]) => {
     it("tokenS == tokenB", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
-          tokenB: "WETH",
+          tokenS: "DAI",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
         orderB: {
-          tokenS: "WETH",
-          tokenB: "WETH",
+          tokenS: "DAI",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         }
@@ -1298,7 +1298,7 @@ contract("Exchange", (accounts: string[]) => {
     it("Wrong order signature", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "LRC",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
@@ -1306,7 +1306,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "LRC",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         }
@@ -1371,7 +1371,7 @@ contract("Exchange", (accounts: string[]) => {
     it("validUntil < now", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1379,7 +1379,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
@@ -1401,7 +1401,7 @@ contract("Exchange", (accounts: string[]) => {
     it("validSince > now", async () => {
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1409,7 +1409,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },
@@ -1454,7 +1454,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       const ringB: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1462,7 +1462,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[3]
@@ -1547,7 +1547,7 @@ contract("Exchange", (accounts: string[]) => {
       const orderID = 79;
       const ringA: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("1000", "ether")),
           amountB: new BN(web3.utils.toWei("2000", "ether")),
@@ -1556,7 +1556,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("2000", "ether")),
           amountB: new BN(web3.utils.toWei("1000", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1]
@@ -1568,7 +1568,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       const ringB: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1577,7 +1577,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[3]
@@ -1603,7 +1603,7 @@ contract("Exchange", (accounts: string[]) => {
       const orderID = 8;
       const ringA: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1612,7 +1612,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1]
@@ -1624,7 +1624,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       const ringB: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1633,7 +1633,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[3]
@@ -1659,7 +1659,7 @@ contract("Exchange", (accounts: string[]) => {
       const orderID = 8;
       const ringA: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1668,7 +1668,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[1]
@@ -1680,7 +1680,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       const ringB: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
@@ -1689,7 +1689,7 @@ contract("Exchange", (accounts: string[]) => {
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[3]

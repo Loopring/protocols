@@ -717,7 +717,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Do deposit to the same account with another token
-      token = exchangeTestUtil.getTokenAddress("WETH");
+      token = exchangeTestUtil.getTokenAddress("DAI");
       amount = new BN(web3.utils.toWei("4.5", "ether"));
 
       // New balance/approval for another deposit
@@ -1743,7 +1743,7 @@ contract("Exchange", (accounts: string[]) => {
         });
       });
 
-      it("should not be able to disable deposits for LRC/ETH/WETH", async () => {
+      it("should not be able to disable deposits for LRC/ETH", async () => {
         await createExchange();
 
         const owner = exchangeTestUtil.exchangeOwner;
@@ -1754,14 +1754,6 @@ contract("Exchange", (accounts: string[]) => {
             { from: owner }
           ),
           "ETHER_CANNOT_BE_DISABLED"
-        );
-        // Try to disable WETH
-        await expectThrow(
-          exchange.disableTokenDeposit(
-            exchangeTestUtil.getTokenAddress("WETH"),
-            { from: owner }
-          ),
-          "WETH_CANNOT_BE_DISABLED"
         );
         // Try to disable LRC
         await expectThrow(

@@ -131,7 +131,7 @@ contract("Exchange", (accounts: string[]) => {
         const keyPair = exchangeTestUtil.getKeyPairEDDSA();
         const owner = exchangeTestUtil.testContext.orderOwners[5];
         const amount = new BN(web3.utils.toWei("4567", "ether"));
-        const token = exchangeTestUtil.getTokenAddress("WETH");
+        const token = exchangeTestUtil.getTokenAddress("DAI");
 
         await exchangeTestUtil.deposit(
           exchangeID,
@@ -274,7 +274,7 @@ contract("Exchange", (accounts: string[]) => {
         const keyPair = exchangeTestUtil.getKeyPairEDDSA();
         const owner = exchangeTestUtil.testContext.orderOwners[5];
         const amount = new BN(web3.utils.toWei("4567", "ether"));
-        const token = exchangeTestUtil.getTokenAddress("WETH");
+        const token = exchangeTestUtil.getTokenAddress("DAI");
 
         await exchangeTestUtil.deposit(
           exchangeID,
@@ -369,14 +369,14 @@ contract("Exchange", (accounts: string[]) => {
       // Setup a ring
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("10", "ether"))
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("5", "ether")),
           amountB: new BN(web3.utils.toWei("45", "ether"))
         },

@@ -185,7 +185,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it("LRC, ETH and WETH should be preregistered", async () => {
+    it("LRC and ETH should be preregistered", async () => {
       await createExchange(false);
 
       // Make sure the exchange owner has enough LRC
@@ -195,7 +195,6 @@ contract("Exchange", (accounts: string[]) => {
         "LRC",
         registrationCost
       );
-
       // Try to register LRC
       await expectThrow(
         exchange.registerToken(exchangeTestUtil.getTokenAddress("LRC"), {
@@ -206,13 +205,6 @@ contract("Exchange", (accounts: string[]) => {
       // Try to register ETH
       await expectThrow(
         exchange.registerToken(exchangeTestUtil.getTokenAddress("ETH"), {
-          from: exchangeTestUtil.exchangeOwner
-        }),
-        "TOKEN_ALREADY_EXIST"
-      );
-      // Try to register WETH
-      await expectThrow(
-        exchange.registerToken(exchangeTestUtil.getTokenAddress("WETH"), {
           from: exchangeTestUtil.exchangeOwner
         }),
         "TOKEN_ALREADY_EXIST"

@@ -51,14 +51,14 @@ contract("Exchange", (accounts: string[]) => {
       // Do a trade so the trading history/nonce for some accounts don't have default values
       const ring: RingInfo = {
         orderA: {
-          tokenS: "WETH",
+          tokenS: "DAI",
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether"))
         },
         orderB: {
           tokenS: "GTO",
-          tokenB: "WETH",
+          tokenB: "DAI",
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether"))
         },

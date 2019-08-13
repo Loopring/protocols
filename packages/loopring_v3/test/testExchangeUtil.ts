@@ -83,7 +83,6 @@ export class ExchangeTestUtil {
   public lzDecompressor: any;
 
   public lrcAddress: string;
-  public wethAddress: string;
 
   public exchangeData: any;
   public exchange: any;
@@ -2458,7 +2457,7 @@ export class ExchangeTestUtil {
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
-      if (symbol !== "ETH" && symbol !== "WETH" && symbol !== "LRC") {
+      if (symbol !== "ETH" && symbol !== "LRC") {
         // Make sure the exchange owner can pay the registration fee
         const registrationCost = await this.exchange.getLRCFeeForRegisteringOneMoreToken();
         await this.setBalanceAndApprove(
@@ -3710,8 +3709,7 @@ export class ExchangeTestUtil {
       exchange,
       blockVerifier,
       downtimeCostCalculator,
-      lrcToken,
-      wethToken
+      lrcToken
     ] = await Promise.all([
       this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
@@ -3719,8 +3717,7 @@ export class ExchangeTestUtil {
       this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.FixPriceDowntimeCostCalculator.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.WETHToken.deployed()
+      this.contracts.LRCToken.deployed()
     ]);
 
     const [userStakingPool, protocolFeeVaultContract] = await Promise.all([
@@ -3741,7 +3738,6 @@ export class ExchangeTestUtil {
     this.downtimeCostCalculator = downtimeCostCalculator;
 
     this.lrcAddress = lrcToken.address;
-    this.wethAddress = wethToken.address;
 
     const currBlockNumber = await web3.eth.getBlockNumber();
     const currBlockTimestamp = (await web3.eth.getBlock(currBlockNumber))
@@ -3755,24 +3751,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
-      [
-        null,
-        this.contracts.WETHToken.deployed(),
-        this.contracts.LRCToken.deployed(),
-        this.contracts.GTOToken.deployed(),
-        this.contracts.RDNToken.deployed(),
-        this.contracts.REPToken.deployed(),
-        this.contracts.INDAToken.deployed(),
-        this.contracts.INDBToken.deployed(),
-        this.contracts.TESTToken.deployed()
-      ]
-    );
+    const [eth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all([
+      null,
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.INDAToken.deployed(),
+      this.contracts.INDBToken.deployed(),
+      this.contracts.TESTToken.deployed()
+    ]);
 
-    const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
+    const allTokens = [eth, lrc, gto, rdn, rep, inda, indb, test];
 
-    tokenSymbolAddrMap.set("ETH", constants.zeroAddress);
-    tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
     tokenSymbolAddrMap.set("RDN", this.contracts.RDNToken.address);
@@ -3790,7 +3781,6 @@ export class ExchangeTestUtil {
     }
 
     tokenAddrSymbolMap.set(constants.zeroAddress, "ETH");
-    tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
     tokenAddrSymbolMap.set(this.contracts.RDNToken.address, "RDN");
@@ -3800,7 +3790,6 @@ export class ExchangeTestUtil {
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
     tokenAddrInstanceMap.set(constants.zeroAddress, null);
-    tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
     tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
     tokenAddrInstanceMap.set(this.contracts.RDNToken.address, rdn);

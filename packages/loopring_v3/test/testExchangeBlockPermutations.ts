@@ -10,7 +10,7 @@ contract("Exchange", (accounts: string[]) => {
   const createRandomRing = () => {
     const ring: RingInfo = {
       orderA: {
-        tokenS: "WETH",
+        tokenS: "DAI",
         tokenB: "GTO",
         amountS: exchangeTestUtil.getRandomAmount(),
         amountB: exchangeTestUtil.getRandomAmount(),
@@ -18,7 +18,7 @@ contract("Exchange", (accounts: string[]) => {
       },
       orderB: {
         tokenS: "GTO",
-        tokenB: "WETH",
+        tokenB: "DAI",
         amountS: exchangeTestUtil.getRandomAmount(),
         amountB: exchangeTestUtil.getRandomAmount(),
         buy: exchangeTestUtil.getRandomInt(2) > 0
