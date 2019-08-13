@@ -28,107 +28,103 @@ module.exports = function(deployer, network, accounts) {
   if (network === "live") {
     // ignore.
   } else {
-    deployer_ = deployer_
-      .then(() => {
-        return Promise.all([
-          LRCToken.deployed().then(addr => {
-            lrcAddress = addr;
-          }),
-          WETHToken.deployed().then(addr => {
-            wethAddress = addr;
-          })
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeData),
-          deployer.deploy(ExchangeBalances)
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.link(ExchangeData, [
-            ExchangeAccounts,
-            ExchangeAdmins,
-            ExchangeBlocks,
-            ExchangeDeposits,
-            ExchangeGenesis,
-            ExchangeMode,
-            ExchangeTokens,
-            ExchangeWithdrawals
-          ])
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.link(ExchangeBalances, [
-            ExchangeAccounts,
-            ExchangeWithdrawals
-          ])
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeMode),
-          deployer.deploy(ExchangeAccounts)
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.link(ExchangeMode, [
-            ExchangeAdmins,
-            ExchangeBlocks,
-            ExchangeDeposits,
-            ExchangeTokens,
-            ExchangeWithdrawals
-          ]),
-          deployer.link(ExchangeAccounts, [
-            ExchangeDeposits,
-            ExchangeGenesis,
-            ExchangeWithdrawals
-          ])
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeAdmins),
-          deployer.deploy(ExchangeBlocks),
-          deployer.deploy(ExchangeTokens)
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.link(ExchangeTokens, [
-            ExchangeDeposits,
-            ExchangeGenesis,
-            ExchangeWithdrawals
-          ])
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeGenesis),
-          deployer.deploy(ExchangeDeposits),
-          deployer.deploy(ExchangeWithdrawals)
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.link(ExchangeData, ExchangeV3),
-          deployer.link(ExchangeBalances, ExchangeV3),
-          deployer.link(ExchangeMode, ExchangeV3),
-          deployer.link(ExchangeAccounts, ExchangeV3),
-          deployer.link(ExchangeAdmins, ExchangeV3),
-          deployer.link(ExchangeBlocks, ExchangeV3),
-          deployer.link(ExchangeTokens, ExchangeV3),
-          deployer.link(ExchangeGenesis, ExchangeV3),
-          deployer.link(ExchangeDeposits, ExchangeV3),
-          deployer.link(ExchangeWithdrawals, ExchangeV3)
-        ]);
-      });
+    deployer_ = deployer_.then(() => {
+      return Promise.all([
+        LRCToken.deployed().then(addr => {
+          lrcAddress = addr;
+        }),
+        WETHToken.deployed().then(addr => {
+          wethAddress = addr;
+        })
+      ]);
+    });
   }
 
   deployer_
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(ExchangeData),
+        deployer.deploy(ExchangeBalances)
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.link(ExchangeData, [
+          ExchangeAccounts,
+          ExchangeAdmins,
+          ExchangeBlocks,
+          ExchangeDeposits,
+          ExchangeGenesis,
+          ExchangeMode,
+          ExchangeTokens,
+          ExchangeWithdrawals
+        ])
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.link(ExchangeBalances, [ExchangeAccounts, ExchangeWithdrawals])
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(ExchangeMode),
+        deployer.deploy(ExchangeAccounts)
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.link(ExchangeMode, [
+          ExchangeAdmins,
+          ExchangeBlocks,
+          ExchangeDeposits,
+          ExchangeTokens,
+          ExchangeWithdrawals
+        ]),
+        deployer.link(ExchangeAccounts, [
+          ExchangeDeposits,
+          ExchangeGenesis,
+          ExchangeWithdrawals
+        ])
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(ExchangeAdmins),
+        deployer.deploy(ExchangeBlocks),
+        deployer.deploy(ExchangeTokens)
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.link(ExchangeTokens, [
+          ExchangeDeposits,
+          ExchangeGenesis,
+          ExchangeWithdrawals
+        ])
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(ExchangeGenesis),
+        deployer.deploy(ExchangeDeposits),
+        deployer.deploy(ExchangeWithdrawals)
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.link(ExchangeData, ExchangeV3),
+        deployer.link(ExchangeBalances, ExchangeV3),
+        deployer.link(ExchangeMode, ExchangeV3),
+        deployer.link(ExchangeAccounts, ExchangeV3),
+        deployer.link(ExchangeAdmins, ExchangeV3),
+        deployer.link(ExchangeBlocks, ExchangeV3),
+        deployer.link(ExchangeTokens, ExchangeV3),
+        deployer.link(ExchangeGenesis, ExchangeV3),
+        deployer.link(ExchangeDeposits, ExchangeV3),
+        deployer.link(ExchangeWithdrawals, ExchangeV3)
+      ]);
+    })
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_exchange:");
       console.log("ExchangeData: ", ExchangeData.address);
