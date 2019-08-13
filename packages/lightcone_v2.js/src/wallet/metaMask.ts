@@ -26,13 +26,26 @@ export class MetaMask {
    * @param gasPrice in gwei
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
-    exchange
-      .deposit(this.account, symbol, amount, gasPrice)
-      .then((rawTx: Transaction) => {
-        this.account.signEthereumTx(rawTx).then(signedTx => {
-          return this.account.sendTransaction(this.ethNode, signedTx);
-        });
-      });
+    try {
+      const rawTx = await exchange.deposit(
+        this.account,
+        symbol,
+        amount,
+        gasPrice
+      );
+      const signedTx = this.account.signEthereumTx(rawTx.raw);
+      const sendTransactionResponse = await this.account.sendTransaction(
+        this.ethNode,
+        signedTx
+      );
+      console.log(
+        "depositTo sendTransactionResponse:",
+        sendTransactionResponse
+      );
+      return sendTransactionResponse;
+    } catch (e) {
+      throw e;
+    }
   }
 
   /**
@@ -42,12 +55,25 @@ export class MetaMask {
    * @param gasPrice in gwei
    */
   public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
-    exchange
-      .withdraw(this.account, symbol, amount, gasPrice)
-      .then((rawTx: Transaction) => {
-        this.account.signEthereumTx(rawTx).then(signedTx => {
-          return this.account.sendTransaction(this.ethNode, signedTx);
-        });
-      });
+    try {
+      const rawTx = await exchange.withdraw(
+        this.account,
+        symbol,
+        amount,
+        gasPrice
+      );
+      const signedTx = this.account.signEthereumTx(rawTx.raw);
+      const sendTransactionResponse = await this.account.sendTransaction(
+        this.ethNode,
+        signedTx
+      );
+      console.log(
+        "withdrawFrom sendTransactionResponse:",
+        sendTransactionResponse
+      );
+      return sendTransactionResponse;
+    } catch (e) {
+      throw e;
+    }
   }
 }
