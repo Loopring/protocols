@@ -68,8 +68,6 @@ library ExchangeBlocks
         bytes  memory /*offchainData*/
         )
         internal
-        // TODO(daniel/brecht): chaning this to internal will end up not being
-        // able to deploy the contract using `truffle migrate`.
     {
         commitBlockInternal(
             S,
