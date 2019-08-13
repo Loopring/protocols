@@ -26,6 +26,9 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         LRCToken.deployed().then(addr => {
           lrcAddress = addr;
+        }),
+        WETHToken.deployed().then(addr => {
+          wethAddress = addr;
         })
       ]);
     });

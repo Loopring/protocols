@@ -18,13 +18,26 @@ var ExchangeWithdrawals = artifacts.require(
 );
 var ExchangeV3 = artifacts.require("./impl/ExchangeV3");
 
+var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
+var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
+
 module.exports = function(deployer, network, accounts) {
+  var deployer_ = deployer;
+
   if (network === "live") {
     // ignore.
   } else {
-    deployer
+    deployer_ = deployer_
       .then(() => {
-        return Promise.all([LRCToken.deployed(), WETHToken.deployed()]);
+        return Promise.all([
+          LRCToken.deployed().then(addr => {
+            lrcAddress = addr;
+          }),
+          WETHToken.deployed().then(addr => {
+            wethAddress = addr;
+          })
+        ]);
       })
       .then(() => {
         return Promise.all([
@@ -112,28 +125,30 @@ module.exports = function(deployer, network, accounts) {
           deployer.link(ExchangeDeposits, ExchangeV3),
           deployer.link(ExchangeWithdrawals, ExchangeV3)
         ]);
-      })
-      .then(() => {
-        console.log(">>>>>>>> contracts deployed by deploy_exchange:");
-        console.log("ExchangeData: ", ExchangeData.address);
-        console.log("ExchangeBalances: ", ExchangeBalances.address);
-        console.log("ExchangeMode: ", ExchangeMode.address);
-        console.log("ExchangeAccounts: ", ExchangeAccounts.address);
-        console.log("ExchangeAdmins: ", ExchangeAdmins.address);
-        console.log("ExchangeBlocks: ", ExchangeBlocks.address);
-        console.log("ExchangeTokens: ", ExchangeTokens.address);
-        console.log("ExchangeGenesis: ", ExchangeGenesis.address);
-        console.log("ExchangeDeposits: ", ExchangeDeposits.address);
-        console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
-      })
-      .then(() => {
-        return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
-      })
-      .then(() => {
-        console.log("WETHToken:", WETHToken.address);
-        console.log("LRCToken:", LRCToken.address);
-        console.log("ExchangeV3:", ExchangeV3.address);
-        console.log("");
       });
   }
+
+  deployer_
+    .then(() => {
+      console.log(">>>>>>>> contracts deployed by deploy_exchange:");
+      console.log("ExchangeData: ", ExchangeData.address);
+      console.log("ExchangeBalances: ", ExchangeBalances.address);
+      console.log("ExchangeMode: ", ExchangeMode.address);
+      console.log("ExchangeAccounts: ", ExchangeAccounts.address);
+      console.log("ExchangeAdmins: ", ExchangeAdmins.address);
+      console.log("ExchangeBlocks: ", ExchangeBlocks.address);
+      console.log("ExchangeTokens: ", ExchangeTokens.address);
+      console.log("ExchangeGenesis: ", ExchangeGenesis.address);
+      console.log("ExchangeDeposits: ", ExchangeDeposits.address);
+      console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
+    })
+    .then(() => {
+      return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
+    })
+    .then(() => {
+      console.log("WETHToken:", wethAddress);
+      console.log("LRCToken:", lrcAddress);
+      console.log("ExchangeV3:", ExchangeV3.address);
+      console.log("");
+    });
 };
