@@ -47,33 +47,11 @@ library ExchangeDeposits
         uint            pubKeyY
     );
 
-    function getNumDepositRequestsProcessed(
-        ExchangeData.State storage S
-      )
-        public
-        view
-        returns (uint)
-    {
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-        return currentBlock.numDepositRequestsCommitted;
-    }
-
-    function getNumAvailableDepositSlots(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
-    }
-
     function getDepositRequest(
         ExchangeData.State storage S,
         uint index
         )
-        public
+        external
         view
         returns (
           bytes32 accumulatedHash,
@@ -164,6 +142,28 @@ library ExchangeDeposits
             account.pubKeyX,
             account.pubKeyY
         );
+    }
+
+    function getNumDepositRequestsProcessed(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
+        return currentBlock.numDepositRequestsCommitted;
+    }
+
+    function getNumAvailableDepositSlots(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
+        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
     }
 
     function transferDeposit(

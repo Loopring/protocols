@@ -180,7 +180,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint blockIdx
         )
-        public
+        external
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");

@@ -51,7 +51,7 @@ library ExchangeAccounts
         ExchangeData.State storage S,
         address owner
         )
-        public
+        external
         view
         returns (
             uint24 accountID,
@@ -69,9 +69,9 @@ library ExchangeAccounts
         ExchangeData.State storage S,
         uint  pubKeyX,
         uint  pubKeyY,
-        bytes memory permission
+        bytes calldata permission
         )
-        public
+        external
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -80,7 +80,6 @@ library ExchangeAccounts
     {
         // We allow pubKeyX and/or pubKeyY to be 0 for normal accounts to
         // disable offchain request signing.
-
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
             if (S.addressWhitelist != address(0)) {
@@ -94,6 +93,48 @@ library ExchangeAccounts
         } else {
             (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
         }
+    }
+
+    function isAccountBalanceCorrect(
+        ExchangeData.Account storage account,
+        bytes32  merkleRoot,
+        uint24   accountID,
+        uint16   tokenID,
+        uint32   nonce,
+        uint96   balance,
+        uint     tradeHistoryRoot,
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
+        )
+        external
+        view
+    {
+        ExchangeBalances.isAccountBalanceCorrect(
+            uint(merkleRoot),
+            accountID,
+            tokenID,
+            account.pubKeyX,
+            account.pubKeyY,
+            nonce,
+            balance,
+            tradeHistoryRoot,
+            accountMerkleProof,
+            balanceMerkleProof
+        );
+    }
+
+    function getAccountID(
+        ExchangeData.State storage S,
+        address owner
+        )
+        public
+        view
+        returns (uint24 accountID)
+    {
+        accountID = S.ownerToAccountId[owner];
+        require(accountID != 0, "ADDRESS_HAS_NO_ACCOUNT");
+
+        accountID = accountID - 1;
     }
 
     function createAccount(
@@ -153,48 +194,5 @@ library ExchangeAccounts
                 pubKeyY
             );
         }
-    }
-
-    // == Internal Functions ==
-    function getAccountID(
-        ExchangeData.State storage S,
-        address owner
-        )
-        public
-        view
-        returns (uint24 accountID)
-    {
-        accountID = S.ownerToAccountId[owner];
-        require(accountID != 0, "ADDRESS_HAS_NO_ACCOUNT");
-
-        accountID = accountID - 1;
-    }
-
-    function isAccountBalanceCorrect(
-        ExchangeData.Account storage account,
-        bytes32  merkleRoot,
-        uint24   accountID,
-        uint16   tokenID,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[30] calldata accountMerkleProof,
-        uint[12] calldata balanceMerkleProof
-        )
-        external
-        view
-    {
-        ExchangeBalances.isAccountBalanceCorrect(
-            uint(merkleRoot),
-            accountID,
-            tokenID,
-            account.pubKeyX,
-            account.pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountMerkleProof,
-            balanceMerkleProof
-        );
     }
 }

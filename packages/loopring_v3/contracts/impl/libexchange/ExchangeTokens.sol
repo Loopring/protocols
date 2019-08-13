@@ -37,6 +37,32 @@ library ExchangeTokens
         uint16  indexed tokenId
     );
 
+    function registerToken(
+        ExchangeData.State storage S,
+        address tokenAddress
+        )
+        external
+        returns (uint16 tokenID)
+    {
+        tokenID = registerToken(
+            S,
+            tokenAddress,
+            getLRCFeeForRegisteringOneMoreToken(S)
+        );
+    }
+
+    function getTokenAddress(
+        ExchangeData.State storage S,
+        uint16 tokenID
+        )
+        external
+        view
+        returns (address)
+    {
+        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
+        return S.tokens[tokenID].token;
+    }
+
     function getLRCFeeForRegisteringOneMoreToken(
         ExchangeData.State storage S
         )
@@ -46,20 +72,6 @@ library ExchangeTokens
     {
         return S.loopring.tokenRegistrationFeeLRCBase().add(
             S.loopring.tokenRegistrationFeeLRCDelta().mul(S.tokens.length)
-        );
-    }
-
-    function registerToken(
-        ExchangeData.State storage S,
-        address tokenAddress
-        )
-        public
-        returns (uint16 tokenID)
-    {
-        tokenID = registerToken(
-            S,
-            tokenAddress,
-            getLRCFeeForRegisteringOneMoreToken(S)
         );
     }
 
@@ -98,18 +110,6 @@ library ExchangeTokens
         tokenID = S.tokenToTokenId[tokenAddress];
         require(tokenID != 0, "TOKEN_NOT_FOUND");
         tokenID = tokenID - 1;
-    }
-
-    function getTokenAddress(
-        ExchangeData.State storage S,
-        uint16 tokenID
-        )
-        public
-        view
-        returns (address)
-    {
-        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
-        return S.tokens[tokenID].token;
     }
 
     function disableTokenDeposit(
