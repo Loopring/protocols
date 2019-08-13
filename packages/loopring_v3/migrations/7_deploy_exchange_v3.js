@@ -21,6 +21,8 @@ const ExchangeWithdrawals = artifacts.require(
 const Cloneable = artifacts.require("./thirdparty/Cloneable.sol");
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
+var exchangeVersion = "[version]";
+
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
   deployer
@@ -52,16 +54,16 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-
-        deployer.deploy(ExchangeV3, { gas: 6700000 }).then((c)=>{
-          console.log("ExchangeV3 version:", c.version());
+        deployer.deploy(ExchangeV3, { gas: 6700000 }).then((c) => {
+          c.version().then((v) => { exchangeVersion = v; })
         })
-        ]);
+      ]);
 
     })
+
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_exchange_v3:");
-      console.log("ExchangeV3:", ExchangeV3.address);
+      console.log("ExchangeV3:", ExchangeV3.address, " version=", version);
       console.log("");
     });
 };

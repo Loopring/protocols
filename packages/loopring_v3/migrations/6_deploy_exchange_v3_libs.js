@@ -25,18 +25,12 @@ const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
-  var deployer_ = deployer;
-
-  if (network != "live") {
-    deployer_ = deployer_
+  deployer
       .then(() => {
         return Promise.all([
           deployer.deploy(ExchangeConstants) // only for testing purpose
         ]);
       })
-  }
-
-  deployer_
     .then(() => {
       return Promise.all([
         deployer.deploy(ExchangeBalances)
