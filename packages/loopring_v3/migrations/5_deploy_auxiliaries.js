@@ -19,38 +19,37 @@ module.exports = function(deployer, network, accounts) {
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
   } else {
-    d = d
-      .then(() => {
-        return Promise.all([
-          LRCToken.deployed().then(addr => {
-            lrcAddress = addr;
-          })
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(BlockVerifier),
-          deployer.deploy(DowntimeCostCalculator),
-          deployer.deploy(UserStakingPool, LRCToken.address)
-        ]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(
-            ProtocolFeeVault,
-            LRCToken.address,
-            UserStakingPool.address
-          )
-        ]);
-      });
+    d = d.then(() => {
+      return Promise.all([
+        LRCToken.deployed().then(addr => {
+          lrcAddress = addr;
+        })
+      ]);
+    });
   }
 
   d.then(() => {
-    console.log(">>>>>>>> contracts deployed by deploy_aux:");
-    console.log("BlockVerifier:", BlockVerifier.address);
-    console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
-    console.log("UserStakingPool:", UserStakingPool.address);
-    console.log("ProtocolFeeVault:", ProtocolFeeVault.address);
-    console.log("");
-  });
+    return Promise.all([
+      deployer.deploy(BlockVerifier),
+      deployer.deploy(DowntimeCostCalculator),
+      deployer.deploy(UserStakingPool, LRCToken.address)
+    ]);
+  })
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(
+          ProtocolFeeVault,
+          LRCToken.address,
+          UserStakingPool.address
+        )
+      ]);
+    })
+    .then(() => {
+      console.log(">>>>>>>> contracts deployed by deploy_aux:");
+      console.log("BlockVerifier:", BlockVerifier.address);
+      console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
+      console.log("UserStakingPool:", UserStakingPool.address);
+      console.log("ProtocolFeeVault:", ProtocolFeeVault.address);
+      console.log("");
+    });
 };
