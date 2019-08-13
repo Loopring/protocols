@@ -160,7 +160,7 @@ library ExchangeAccounts
         ExchangeData.State storage S,
         address owner
         )
-        internal
+        public
         view
         returns (uint24 accountID)
     {
