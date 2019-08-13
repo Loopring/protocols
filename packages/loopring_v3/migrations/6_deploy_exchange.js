@@ -2,31 +2,27 @@
 // gas usage. We need to deploy most libraries linked from it as stand-alone
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
-var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
+const ExchangeAccounts = artifacts.require(
+  "./impl/libexchange/ExchangeAccounts"
+);
+const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
+const ExchangeBalances = artifacts.require(
+  "./impl/libexchange/ExchangeBalances"
+);
+const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
+const ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
+const ExchangeDeposits = artifacts.require(
+  "./impl/libexchange/ExchangeDeposits"
+);
+const ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis");
+const ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
+const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
+const ExchangeWithdrawals = artifacts.require(
+  "./impl/libexchange/ExchangeWithdrawals"
+);
+const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
 
 module.exports = function(deployer, network, accounts) {
-  const ExchangeAccounts = artifacts.require(
-    "./impl/libexchange/ExchangeAccounts"
-  );
-  const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
-  const ExchangeBalances = artifacts.require(
-    "./impl/libexchange/ExchangeBalances"
-  );
-  const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
-  const ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
-  const ExchangeDeposits = artifacts.require(
-    "./impl/libexchange/ExchangeDeposits"
-  );
-  const ExchangeGenesis = artifacts.require(
-    "./impl/libexchange/ExchangeGenesis"
-  );
-  const ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
-  const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
-  const ExchangeWithdrawals = artifacts.require(
-    "./impl/libexchange/ExchangeWithdrawals"
-  );
-  const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
-
   deployer
     .then(() => {
       return Promise.all([
