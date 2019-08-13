@@ -64,6 +64,18 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
+      const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
+      return Promise.all([ExchangeV3.deployed()]);
+    })
+    .then(() => {
+      const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
+      return Promise.all([
+        ProtocolRegistry.deployed().then(c => {
+          c.registryProtocol(LoopringV3.address, ExchangeV3.address);
+        })
+      ]);
+    })
+    .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_protocol:");
       console.log("lrcAddress:", lrcAddress);
       console.log("wethAddress:", wethAddress);

@@ -79,8 +79,7 @@ Verifier/Prover keys are cached in the `keys` folder. When updating the circuits
 ## Contract Deployment
 
 ```bash
-npm run transpile
-truffle migrate --network <network>
+npm run transpile && truffle migrate --network <network>
 
 ```
 
