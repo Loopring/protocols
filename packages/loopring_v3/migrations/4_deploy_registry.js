@@ -6,8 +6,7 @@ var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "undeployed";
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deployging on network: " + network);
-  console.log("> block number:        " + network);
+  console.log("   > deploying to network: " + network);
   var deployer_ = deployer;
 
   if (network != "live" && network != "ropsten-fork") {

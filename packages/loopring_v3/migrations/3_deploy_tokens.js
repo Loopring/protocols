@@ -1,7 +1,7 @@
 // Deploy tokens for testing purposes
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deployging on network: " + network);
+  console.log("   > deploying to network: " + network);
 
   if (network != "live" && network != "ropsten-fork") {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");

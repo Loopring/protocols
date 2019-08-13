@@ -23,7 +23,7 @@ const ExchangeWithdrawals = artifacts.require(
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deployging on network: " + network);
+  console.log("   > deploying to network: " + network);
   // deployer
   //   .then(() => {
   //     return Promise.all([

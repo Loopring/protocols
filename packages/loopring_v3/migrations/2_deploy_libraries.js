@@ -8,7 +8,7 @@
 // var MathUint = artifacts.require("./lib/MathUint.sol");
 
 module.exports = function(deployer, network, accounts) {
-  console.log("deployging on network: " + network);
+  console.log("   > deploying to network: " + network);
   if (network !== "live") {
     // deployer
     //   .then(() => {
