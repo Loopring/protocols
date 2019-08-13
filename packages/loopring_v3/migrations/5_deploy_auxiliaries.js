@@ -6,8 +6,8 @@ var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var FixPriceDowntimeCostCalculator = artifacts.require(
   "./test/FixPriceDowntimeCostCalculator.sol"
 );
-var UserStakingPool = artifacts.require("./impl/UserStakingPool");
-var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
+var UserStakingPool = artifacts.require("./impl/UserStakingPool.sol");
+var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {

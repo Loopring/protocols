@@ -4,19 +4,19 @@
 
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var WETHToken = artifacts.require("./test/tokens/WETH.sol");
-var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
-var ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
-var ExchangeBalances = artifacts.require("./impl/libexchange/ExchangeBalances");
-var ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
-var ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
-var ExchangeDeposits = artifacts.require("./impl/libexchange/ExchangeDeposits");
-var ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis");
-var ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
-var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
+var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts.sol");
+var ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins.sol");
+var ExchangeBalances = artifacts.require("./impl/libexchange/ExchangeBalances.sol");
+var ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks.sol");
+var ExchangeData = artifacts.require("./impl/libexchange/ExchangeData.sol");
+var ExchangeDeposits = artifacts.require("./impl/libexchange/ExchangeDeposits.sol");
+var ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis.sol");
+var ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode.sol");
+var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens.sol");
 var ExchangeWithdrawals = artifacts.require(
-  "./impl/libexchange/ExchangeWithdrawals"
+  "./impl/libexchange/ExchangeWithdrawals.sol"
 );
-var ExchangeV3 = artifacts.require("./impl/ExchangeV3");
+var ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {

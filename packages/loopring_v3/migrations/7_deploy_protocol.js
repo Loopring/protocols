@@ -6,9 +6,9 @@ var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var FixPriceDowntimeCostCalculator = artifacts.require(
   "./test/FixPriceDowntimeCostCalculator.sol"
 );
-var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
-var ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
-var LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
+var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
+var ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry.sol");
+var LoopringV3 = artifacts.require("./impl/LoopringV3.sol.sol");
 
 module.exports = function(deployer, network, accounts) {
   if (network === "live") {
