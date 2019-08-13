@@ -20,16 +20,20 @@ module.exports = function(deployer, network, accounts) {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
-    deployer_ = deployer_.then(() => {
-      return Promise.all([
-        LRCToken.deployed().then(addr => {
-          lrcAddress = addr;
-        }),
-        WETHToken.deployed().then(addr => {
-          wethAddress = addr;
-        })
-      ]);
-    });
+    deployer_ = deployer_
+      .then(() => {
+        return Promise.all([
+          LRCToken.deployed().then(addr => {
+            lrcAddress = addr;
+          }),
+          WETHToken.deployed().then(addr => {
+            wethAddress = addr;
+          })
+        ]);
+      })
+      .then(() => {
+        return Promise.all([deployer.deploy(UserStakingPool, lrcAddress)]);
+      });
   }
 
   // common deployment
@@ -42,8 +46,7 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       return Promise.all([
         deployer.deploy(BlockVerifier),
-        deployer.deploy(DowntimeCostCalculator),
-        deployer.deploy(UserStakingPool, lrcAddress)
+        deployer.deploy(DowntimeCostCalculator)
       ]);
     })
     .then(() => {
