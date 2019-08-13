@@ -1,8 +1,9 @@
-require("dotenv").config();
+require('dotenv').config({ path: require('find-config')('.env') })
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 
-// Please config the following env variables in `.env`` as follows:
+// Please config the following env variables in `.env` in any parent directory
+// as follows:
 //```
 //ETHERSCAN_API_KEY=<YOUR_KEY>
 //INFURA_PROJECT_ID=<YOUR_PROJECT_ID>
@@ -49,7 +50,7 @@ module.exports = {
           runs: 100
         }
       },
-      version: "0.5.10"
+      version: "0.5.11"
     }
   },
   plugins: ["truffle-plugin-verify"],
@@ -74,9 +75,7 @@ module.exports = {
       gasPrice: 21000000000
     },
     ropsten: {
-      // This will actually deploy to Infura's ropsten-fork chain, so
-      // txs won't be available on https://ropsten.etherscan.io
-      network_id: 3,
+      network_id: "3",
       provider: function() {
         return getWalletProvider("ropsten");
       },
@@ -84,7 +83,7 @@ module.exports = {
       gas: 6700000
     },
     rinkeby: {
-      network_id: 4,
+      network_id: "4",
       provider: function() {
         return getWalletProvider("rinkeby");
       },
