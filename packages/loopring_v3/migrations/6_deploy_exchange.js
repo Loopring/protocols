@@ -2,43 +2,32 @@
 // gas usage. We need to deploy most libraries linked from it as stand-alone
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
-var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var WETHToken = artifacts.require("./test/tokens/WETH.sol");
-var ExchangeAccounts = artifacts.require("./impl/libexchange/ExchangeAccounts");
-var ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
-var ExchangeBalances = artifacts.require("./impl/libexchange/ExchangeBalances");
-var ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
-var ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
-var ExchangeDeposits = artifacts.require("./impl/libexchange/ExchangeDeposits");
-var ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis");
-var ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
-var ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
-var ExchangeWithdrawals = artifacts.require(
-  "./impl/libexchange/ExchangeWithdrawals"
-);
-var ExchangeV3 = artifacts.require("./impl/ExchangeV3");
-
-var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
-var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 
 module.exports = function(deployer, network, accounts) {
-  var deployer_ = deployer;
+  const ExchangeAccounts = artifacts.require(
+    "./impl/libexchange/ExchangeAccounts"
+  );
+  const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
+  const ExchangeBalances = artifacts.require(
+    "./impl/libexchange/ExchangeBalances"
+  );
+  const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
+  const ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
+  const ExchangeDeposits = artifacts.require(
+    "./impl/libexchange/ExchangeDeposits"
+  );
+  const ExchangeGenesis = artifacts.require(
+    "./impl/libexchange/ExchangeGenesis"
+  );
+  const ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
+  const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
+  const ExchangeWithdrawals = artifacts.require(
+    "./impl/libexchange/ExchangeWithdrawals"
+  );
+  const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
 
-  if (network !== "live") {
-    deployer_ = deployer_.then(() => {
-      return Promise.all([
-        LRCToken.deployed().then(addr => {
-          lrcAddress = addr;
-        }),
-        WETHToken.deployed().then(addr => {
-          wethAddress = addr;
-        })
-      ]);
-    });
-  }
-
-  deployer_
+  deployer
     .then(() => {
       return Promise.all([
         deployer.deploy(ExchangeData),
@@ -140,8 +129,6 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
     })
     .then(() => {
-      console.log("WETHToken:", wethAddress);
-      console.log("LRCToken:", lrcAddress);
       console.log("ExchangeV3:", ExchangeV3.address);
       console.log("");
     });
