@@ -67,7 +67,7 @@ library ExchangeBlocks
         bytes  memory data,
         bytes  memory /*offchainData*/
         )
-        public
+        internal
         // TODO(daniel/brecht): chaning this to internal will end up not being
         // able to deploy the contract using `truffle migrate`.
     {
