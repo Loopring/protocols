@@ -9,15 +9,19 @@ var DowntimeCostCalculator = artifacts.require(
 var UserStakingPool = artifacts.require("./impl/UserStakingPool");
 var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 
+var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
+
 module.exports = function(deployer, network, accounts) {
-  const lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
   var d = deployer;
 
   if (network === "live") {
+    DowntimeCostCalculator = artifacts.require(
+      "./test/FixPriceDowntimeCostCalculator.sol"
+    );
   } else {
     d = d
       .then(() => {
-        return Promise.all([LRCToken.deployed()]);
+        return Promise.all([(lrcAddress = LRCToken.deployed())]);
       })
       .then(() => {
         return Promise.all([
