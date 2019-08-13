@@ -25,7 +25,7 @@ import {
   SimpleOrderCancellationReq
 } from "../grpc/proto_gen/service_dex_pb";
 
-const MOCK_EXCHANGE_GAS_LIMIT = "0xf0f09f0";
+const MOCK_EXCHANGE_GAS_LIMIT = "0x30DD54";
 
 // TODO: Rename Exchange
 export class Exchange {
@@ -150,8 +150,6 @@ export class Exchange {
         );
         const signedTx = wallet.signEthereumTx(rawTx.raw);
 
-        // TODO: Let's avoid using Promises. Change this part to await.
-        // At least, avoid using a Promise in another Promise.
         const sendTransactionResponse = await wallet.sendTransaction(
           new Eth(this.contractURL),
           signedTx
