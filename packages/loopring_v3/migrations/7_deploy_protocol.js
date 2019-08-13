@@ -1,12 +1,5 @@
 // Deploy protocol: LoopringV3
 
-const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-const WETHToken = artifacts.require("./test/tokens/WETH.sol");
-const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
-const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
-const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
-
 var DowntimeCostCalculator = artifacts.require(
   "./impl/DowntimeCostCalculator.sol"
 );
@@ -24,6 +17,9 @@ module.exports = function(deployer, network, accounts) {
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
 
+    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
+    const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
     deployer_ = deployer_.then(() => {
       return Promise.all([
         LRCToken.deployed().then(addr => {
@@ -40,6 +36,11 @@ module.exports = function(deployer, network, accounts) {
   }
 
   // common deployment
+
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
+  const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
+
   deployer_
     .then(() => {
       return Promise.all([
