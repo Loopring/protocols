@@ -10,8 +10,8 @@ module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
   if (network != "live") {
-    const LRCToken = artifacts.require("./test/tokens/LRC");
-    const WETHToken = artifacts.require("./test/tokens/WETH");
+    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
     deployer_.then(() => {
       return Promise.all([
@@ -27,7 +27,7 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
+  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry.sol");
 
   deployer_
     .then(() => {

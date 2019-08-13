@@ -4,14 +4,14 @@ module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
 
   if (network != "live") {
-    const LRCToken = artifacts.require("./test/tokens/LRC");
-    const GTOToken = artifacts.require("./test/tokens/GTO");
-    const RDNToken = artifacts.require("./test/tokens/RDN");
-    const REPToken = artifacts.require("./test/tokens/REP");
-    const WETHToken = artifacts.require("./test/tokens/WETH");
-    const TESTToken = artifacts.require("./test/tokens/TEST");
-    const INDAToken = artifacts.require("./test/tokens/INDA");
-    const INDBToken = artifacts.require("./test/tokens/INDB");
+    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+    const GTOToken = artifacts.require("./test/tokens/GTO.sol");
+    const RDNToken = artifacts.require("./test/tokens/RDN.sol");
+    const REPToken = artifacts.require("./test/tokens/REP.sol");
+    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
+    const TESTToken = artifacts.require("./test/tokens/TEST.sol");
+    const INDAToken = artifacts.require("./test/tokens/INDA.sol");
+    const INDBToken = artifacts.require("./test/tokens/INDB.sol");
 
     deployer.deploy(LRCToken);
     deployer.deploy(GTOToken);

@@ -1,4 +1,4 @@
-var Migrations = artifacts.require("./Migrations");
+var Migrations = artifacts.require("./Migrations.sol");
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);

@@ -1,7 +1,7 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or ProtocolRegistry.
 
-var DowntimeCostCalculator = artifacts.require("./impl/DowntimeCostCalculator");
+var DowntimeCostCalculator = artifacts.require("./impl/DowntimeCostCalculator.sol");
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -17,8 +17,8 @@ module.exports = function(deployer, network, accounts) {
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
 
-    const LRCToken = artifacts.require("./test/tokens/LRC");
-    const WETHToken = artifacts.require("./test/tokens/WETH");
+    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
     deployer_ = deployer_
       .then(() => {
@@ -32,7 +32,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        const UserStakingPool = artifacts.require("./impl/UserStakingPool");
+        const UserStakingPool = artifacts.require("./impl/UserStakingPool.sol");
         return Promise.all([
           deployer.deploy(UserStakingPool, lrcAddress).then(c => {
             userStakingPoolAddress = c.address;
@@ -40,7 +40,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
-        const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
+        const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
         return Promise.all([
           deployer
             .deploy(ProtocolFeeVault, lrcAddress, userStakingPoolAddress)
@@ -53,7 +53,7 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const BlockVerifier = artifacts.require("./impl/BlockVerifier");
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 
   deployer_
     .then(() => {

@@ -3,24 +3,24 @@
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
 const ExchangeAccounts = artifacts.require(
-  "./impl/libexchange/ExchangeAccounts"
+  "./impl/libexchange/ExchangeAccounts.sol"
 );
-const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins");
+const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins.sol");
 const ExchangeBalances = artifacts.require(
-  "./impl/libexchange/ExchangeBalances"
+  "./impl/libexchange/ExchangeBalances.sol"
 );
-const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks");
-const ExchangeData = artifacts.require("./impl/libexchange/ExchangeData");
+const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks.sol");
+const ExchangeData = artifacts.require("./impl/libexchange/ExchangeData.sol");
 const ExchangeDeposits = artifacts.require(
-  "./impl/libexchange/ExchangeDeposits"
+  "./impl/libexchange/ExchangeDeposits.sol"
 );
-const ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis");
-const ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode");
-const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens");
+const ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis.sol");
+const ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode.sol");
+const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens.sol");
 const ExchangeWithdrawals = artifacts.require(
-  "./impl/libexchange/ExchangeWithdrawals"
+  "./impl/libexchange/ExchangeWithdrawals.sol"
 );
-const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
+const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
