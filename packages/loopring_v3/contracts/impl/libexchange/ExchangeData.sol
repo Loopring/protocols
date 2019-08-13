@@ -161,10 +161,6 @@ library ExchangeData
         uint96 amount;
     }
 
-    // function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
-    //     return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
-    // }
-
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
