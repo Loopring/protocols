@@ -10,8 +10,8 @@ module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
   if (network != "live") {
-    const LRCToken = artifacts.require("./test/tokens/LRC.");
-    const WETHToken = artifacts.require("./test/tokens/WETH.");
+    const LRCToken = artifacts.require("./test/tokens/LRC");
+    const WETHToken = artifacts.require("./test/tokens/WETH");
 
     deployer_.then(() => {
       return Promise.all([
