@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('find-config')('.env') })
+require("dotenv").config({ path: require("find-config")(".env") });
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 
@@ -47,7 +47,7 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100
+          runs: 200
         }
       },
       version: "0.5.11"
