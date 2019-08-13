@@ -54,15 +54,18 @@ module.exports = {
   },
   plugins: ["truffle-plugin-verify"],
   api_keys: {
-    etherscan: `process.env.ETHERSCAN_API_KEY`
+    etherscan: process.env.ETHERSCAN_API_KEY
+  },
+  verify: {
+    preamble: "Author: Loopring Foundation (Loopring Project Ltd)"
   },
   networks: {
     live: {
-      // provider: function() {
-      //   return getWalletProvider("mainnet");
-      // },
+      provider: function() {
+        return getWalletProvider("mainnet");
+      },
       network_id: "1", // main-net
-      gasPrice: 5000000000
+      gasPrice: 1000000000
     },
     testnet: {
       host: "localhost",

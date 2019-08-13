@@ -177,11 +177,11 @@ export class ExchangeTestUtil {
     );
 
     // Register LoopringV3 to ProtocolRegistry
-    await this.protocolRegistry.registerProtocol(
-      this.loopringV3.address,
-      this.exchange.address,
-      { from: this.testContext.deployer }
-    );
+    // await this.protocolRegistry.registerProtocol(
+    //   this.loopringV3.address,
+    //   this.exchange.address,
+    //   { from: this.testContext.deployer }
+    // );
     await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address, {
       from: this.testContext.deployer
     });
