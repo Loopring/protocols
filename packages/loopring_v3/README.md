@@ -60,7 +60,7 @@ The code of our circuits is currently not open source. If you have access to the
 make
 ```
 
-The circuit tests can be run with `npm run test-circuits`. A single test can be run with `npm run test-circuits <test_name>`.
+The circuit tests can be run with `npm run build && npm run testc`. A single test can be run with `npm run test-circuits <test_name>`.
 
 ## Run Unit Tests
 
