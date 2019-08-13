@@ -18,7 +18,7 @@ library Cloneable {
      DUP1           # [ 0, 0 ]
      PUSH20
      <address>      # [0,0, address]
-     DUP1       # [0,0, address ,address]
+     DUP1           # [0,0, address ,address]
      EXTCODESIZE    # [0,0, address, size ]
      DUP1           # [0,0, address, size, size]
      SWAP4          # [ size, 0, address, size, 0]
@@ -36,9 +36,9 @@ library Cloneable {
      DUP1           # [ 0, 0 ]
      PUSH20
      <address>      # [0,0, address]
-     DUP1       # [0,0, address ,address]
+     DUP1           # [0,0, address ,address]
      EXTCODESIZE    # [0,0, address, size ]
-     DUP1           # [0,0,e address, size, size]
+     DUP1           # [0,0, address, size, size]
      SWAP4          # [ size, 0, address, size, 0]
      DUP1           # [ size, 0, address ,size, 0,0]
      SWAP2          # [ size, 0, address, 0, 0, size]
