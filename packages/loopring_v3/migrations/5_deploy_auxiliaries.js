@@ -1,15 +1,17 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or ProtocolRegistry.
 
-var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+const UserStakingPool = artifacts.require("./impl/UserStakingPool");
+const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
+
 var DowntimeCostCalculator = artifacts.require(
   "./impl/DowntimeCostCalculator.sol"
 );
-var UserStakingPool = artifacts.require("./impl/UserStakingPool");
-var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
+var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 
 module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
