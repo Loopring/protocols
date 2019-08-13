@@ -67,33 +67,11 @@ library ExchangeWithdrawals
         uint96          amount
     );
 
-    function getNumWithdrawalRequestsProcessed(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-        return currentBlock.numWithdrawalRequestsCommitted;
-    }
-
-    function getNumAvailableWithdrawalSlots(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numOpenRequests = S.withdrawalChain.length - getNumWithdrawalRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS() - numOpenRequests;
-    }
-
     function getWithdrawRequest(
         ExchangeData.State storage S,
         uint index
         )
-        public
+        external
         view
         returns (
             bytes32 accumulatedHash,
@@ -114,7 +92,7 @@ library ExchangeWithdrawals
         address token,
         uint96  amount
         )
-        public
+        external
     {
         require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -161,10 +139,10 @@ library ExchangeWithdrawals
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] memory accountMerkleProof,
-        uint[12] memory balanceMerkleProof
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
         )
-        public
+        external
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
@@ -198,6 +176,28 @@ library ExchangeWithdrawals
             balance,
             false
         );
+    }
+
+    function getNumWithdrawalRequestsProcessed(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
+        return currentBlock.numWithdrawalRequestsCommitted;
+    }
+
+    function getNumAvailableWithdrawalSlots(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        uint numOpenRequests = S.withdrawalChain.length - getNumWithdrawalRequestsProcessed(S);
+        return ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS() - numOpenRequests;
     }
 
     function withdrawFromDepositRequest(

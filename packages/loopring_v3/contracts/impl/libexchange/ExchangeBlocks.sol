@@ -64,10 +64,10 @@ library ExchangeBlocks
         uint8  blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes  memory data,
-        bytes  memory /*offchainData*/
+        bytes  calldata data,
+        bytes  calldata /*offchainData*/
         )
-        internal
+        external
     {
         commitBlockInternal(
             S,
@@ -80,10 +80,10 @@ library ExchangeBlocks
 
     function verifyBlocks(
         ExchangeData.State storage S,
-        uint[] memory blockIndices,
-        uint[] memory proofs
+        uint[] calldata blockIndices,
+        uint[] calldata proofs
         )
-        public
+        external
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -180,7 +180,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         uint blockIdx
         )
-        public
+        external
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");

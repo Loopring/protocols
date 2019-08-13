@@ -1177,6 +1177,7 @@ export class ExchangeTestUtil {
       web3.utils.hexToBytes("0x"),
       { from: this.exchangeOperator }
     );
+
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[commitBlock] Gas used: " + tx.receipt.gasUsed

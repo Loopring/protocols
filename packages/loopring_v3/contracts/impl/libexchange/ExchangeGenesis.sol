@@ -42,7 +42,7 @@ library ExchangeGenesis
         bool    _onchainDataAvailability,
         bytes32 _genesisBlockHash
         )
-        public
+        external
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
