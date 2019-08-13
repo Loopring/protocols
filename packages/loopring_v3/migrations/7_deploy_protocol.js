@@ -68,10 +68,9 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([ExchangeV3.deployed()]);
     })
     .then(() => {
-      const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
       return Promise.all([
         ProtocolRegistry.deployed().then(c => {
-          c.registryProtocol(LoopringV3.address, ExchangeV3.address);
+          c.registerProtocol(LoopringV3.address, ExchangeV3.address);
         })
       ]);
     })
