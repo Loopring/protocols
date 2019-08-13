@@ -21,7 +21,11 @@ module.exports = function(deployer, network, accounts) {
   } else {
     d = d
       .then(() => {
-        return Promise.all([(lrcAddress = LRCToken.deployed())]);
+        return Promise.all([
+          LRCToken.deployed().then(addr => {
+            lrcAddress = addr;
+          })
+        ]);
       })
       .then(() => {
         return Promise.all([
