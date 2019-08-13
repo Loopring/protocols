@@ -1,8 +1,6 @@
 // Deploy protocol: LoopringV3
 
-var DowntimeCostCalculator = artifacts.require(
-  "./impl/DowntimeCostCalculator.sol"
-);
+var DowntimeCostCalculator = artifacts.require("./impl/DowntimeCostCalculator");
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -15,11 +13,11 @@ module.exports = function(deployer, network, accounts) {
 
   if (network != "live") {
     DowntimeCostCalculator = artifacts.require(
-      "./test/FixPriceDowntimeCostCalculator.sol"
+      "./test/FixPriceDowntimeCostCalculator"
     );
 
-    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
+    const LRCToken = artifacts.require("./test/tokens/LRC");
+    const WETHToken = artifacts.require("./test/tokens/WETH");
     const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
     deployer_ = deployer_.then(() => {
       return Promise.all([
@@ -39,8 +37,9 @@ module.exports = function(deployer, network, accounts) {
   // common deployment
 
   const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
-  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-  const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier");
+  const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
+  const LoopringV3 = artifacts.require("./impl/LoopringV3");
 
   deployer_
     .then(() => {
@@ -64,7 +63,6 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      const ExchangeV3 = artifacts.require("./impl/ExchangeV3");
       return Promise.all([ExchangeV3.deployed()]);
     })
     .then(() => {

@@ -1,9 +1,7 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or ProtocolRegistry.
 
-var DowntimeCostCalculator = artifacts.require(
-  "./impl/DowntimeCostCalculator.sol"
-);
+var DowntimeCostCalculator = artifacts.require("./impl/DowntimeCostCalculator");
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -19,8 +17,8 @@ module.exports = function(deployer, network, accounts) {
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
 
-    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
+    const LRCToken = artifacts.require("./test/tokens/LRC");
+    const WETHToken = artifacts.require("./test/tokens/WETH");
 
     deployer_ = deployer_
       .then(() => {
@@ -55,7 +53,7 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier");
 
   deployer_
     .then(() => {
