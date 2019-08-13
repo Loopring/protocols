@@ -36,10 +36,10 @@ library ExchangeBalances
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] memory accountMerkleProof,
-        uint[12] memory balanceMerkleProof
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
         )
-        public
+        external
         pure
     {
         bool isCorrect = isAccountBalanceCorrect(
