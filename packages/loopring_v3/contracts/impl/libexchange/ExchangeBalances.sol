@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.10;
+pragma solidity 0.5.11;
 
 import "../../lib/MathUint.sol";
 import "../../lib/Poseidon.sol";
