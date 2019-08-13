@@ -9,7 +9,7 @@ module.exports = function(deployer, network, accounts) {
   console.log("   > deploying to network: " + network);
   var deployer_ = deployer;
 
-  if (network != "live" && network != "ropsten-fork") {
+  if (network != "live") {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 

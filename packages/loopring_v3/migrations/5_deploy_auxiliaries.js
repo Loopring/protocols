@@ -14,7 +14,7 @@ module.exports = function(deployer, network, accounts) {
   console.log("   > deploying to network: " + network);
   var deployer_ = deployer;
 
-  if (network != "live" && network != "ropsten-fork") {
+  if (network != "live") {
     DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );

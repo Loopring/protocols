@@ -33,8 +33,6 @@
     "compile": "truffle compile",
     "build": "cd ../../../protocol3-circuits/ && git pull && cd - && ./install && make && npm run compile",
     "genabi": "./genAbi.sh",
-    "migrate-kovan": "npm run clean && npm run transpile && truffle migrate --network=kovan",
-    "migrate-ropsten": "npm run clean && npm run transpile && truffle migrate --network=ropsten",
     "ganache": "./ganache.sh",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle",
