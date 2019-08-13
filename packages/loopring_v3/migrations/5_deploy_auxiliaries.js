@@ -12,7 +12,7 @@ module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
   var deployer_ = deployer;
 
-  if (network != "live") {
+  if (network != "live" && network != "live-fork") {
     DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
@@ -43,19 +43,31 @@ module.exports = function(deployer, network, accounts) {
         const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
         return Promise.all([
           deployer
-            .deploy(ProtocolFeeVault, lrcAddress, userStakingPoolAddress)
-            .then(c => {
-              protocolFeeValutAddress = c.address;
-            })
+          .deploy(ProtocolFeeVault, lrcAddress, userStakingPoolAddress)
+          .then(c => {
+            protocolFeeValutAddress = c.address;
+          })
         ]);
       });
   }
 
   // common deployment
+  // common deployment
 
+  const BatchVerifier = artifacts.require("./thirdparty/BatchVerifier.sol");
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 
   deployer_
+    .then(() => {
+      return Promise.all([
+        BatchVerifier.deployed()
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.link(BatchVerifier, BlockVerifier)
+      ]);
+    })
     .then(() => {
       return Promise.all([
         deployer.deploy(BlockVerifier),

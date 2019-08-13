@@ -4,9 +4,9 @@
 pragma solidity 0.5.11;
 
 
-contract Cloneable {
+library Cloneable {
     function clone(address a)
-        internal
+        public
         returns (address)
     {
 
@@ -18,7 +18,7 @@ contract Cloneable {
      DUP1           # [ 0, 0 ]
      PUSH20
      <address>      # [0,0, address]
-     DUP1       # [0,0, address ,address]
+     DUP1           # [0,0, address ,address]
      EXTCODESIZE    # [0,0, address, size ]
      DUP1           # [0,0, address, size, size]
      SWAP4          # [ size, 0, address, size, 0]
@@ -36,7 +36,7 @@ contract Cloneable {
      DUP1           # [ 0, 0 ]
      PUSH20
      <address>      # [0,0, address]
-     DUP1       # [0,0, address ,address]
+     DUP1           # [0,0, address ,address]
      EXTCODESIZE    # [0,0, address, size ]
      DUP1           # [0,0, address, size, size]
      SWAP4          # [ size, 0, address, size, 0]

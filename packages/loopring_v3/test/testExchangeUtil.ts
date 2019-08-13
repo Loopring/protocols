@@ -85,7 +85,7 @@ export class ExchangeTestUtil {
   public lrcAddress: string;
   public wethAddress: string;
 
-  public exchangeData: any;
+  public exchangeConstants: any;
   public exchange: any;
   public exchangeOwner: string;
   public exchangeOperator: string;
@@ -238,7 +238,7 @@ export class ExchangeTestUtil {
 
     this.GENESIS_MERKLE_ROOT = new BN(await this.exchange.genesisBlockHash());
 
-    const constants = await this.exchangeData.getConstants();
+    const constants = await this.exchangeConstants.getConstants();
     this.SNARK_SCALAR_FIELD = new BN(constants[0]);
     this.MAX_PROOF_GENERATION_TIME_IN_SECONDS = constants[1].toNumber();
     this.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS = constants[2].toNumber();
@@ -3707,7 +3707,7 @@ export class ExchangeTestUtil {
     const [
       protocolRegistry,
       loopringV3,
-      exchangeData,
+      exchangeConstants,
       exchange,
       blockVerifier,
       downtimeCostCalculator,
@@ -3716,7 +3716,7 @@ export class ExchangeTestUtil {
     ] = await Promise.all([
       this.contracts.ProtocolRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
-      this.contracts.ExchangeData.deployed(),
+      this.contracts.ExchangeConstants.deployed(),
       this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
       this.contracts.FixPriceDowntimeCostCalculator.deployed(),
@@ -3736,7 +3736,7 @@ export class ExchangeTestUtil {
 
     this.protocolRegistry = protocolRegistry;
     this.loopringV3 = loopringV3;
-    this.exchangeData = exchangeData;
+    this.exchangeConstants = exchangeConstants;
     this.exchange = exchange;
     this.blockVerifier = blockVerifier;
     this.downtimeCostCalculator = downtimeCostCalculator;

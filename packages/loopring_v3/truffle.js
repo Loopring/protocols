@@ -1,4 +1,4 @@
-require('dotenv').config({ path: require('find-config')('.env') })
+require("dotenv").config({ path: require("find-config")(".env") });
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 
@@ -47,7 +47,7 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100
+          runs: 200
         }
       },
       version: "0.5.11"
@@ -66,7 +66,7 @@ module.exports = {
         return getWalletProvider("mainnet");
       },
       network_id: "1", // main-net
-      gasPrice: 1000000000
+      gasPrice: 3000000000
     },
     testnet: {
       host: "localhost",

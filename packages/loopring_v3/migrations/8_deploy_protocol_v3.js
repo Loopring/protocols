@@ -11,7 +11,7 @@ module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
   var deployer_ = deployer;
 
-  if (network != "live") {
+  if (network != "live" && network != "live-fork") {
     DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
@@ -78,7 +78,7 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      console.log(">>>>>>>> contracts deployed by deploy_protocol:");
+      console.log(">>>>>>>> contracts deployed by deploy_protocol_v3:");
       console.log("lrcAddress:", lrcAddress);
       console.log("wethAddress:", wethAddress);
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
