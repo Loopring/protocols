@@ -1,7 +1,7 @@
 var Migrations = artifacts.require("./Migrations");
 
 module.exports = function(deployer, network, accounts) {
-  console.log("   > deploying to network: " + network);
+  console.log("deploying to network: " + network);
   deployer
     .then(() => {
       return Promise.all([deployer.deploy(Migrations)]);

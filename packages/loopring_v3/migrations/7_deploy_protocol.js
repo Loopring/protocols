@@ -8,7 +8,7 @@ var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "[undeployed]";
 
 module.exports = function(deployer, network, accounts) {
-  console.log("   > deploying to network: " + network);
+  console.log("deploying to network: " + network);
   var deployer_ = deployer;
 
   if (network != "live") {
@@ -68,6 +68,11 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       return Promise.all([
         ProtocolRegistry.deployed().then(c => {
+          console.log(
+            "registering protocol:",
+            LoopringV3.address,
+            ExchangeV3.address
+          );
           c.registerProtocol(LoopringV3.address, ExchangeV3.address);
         })
       ]);

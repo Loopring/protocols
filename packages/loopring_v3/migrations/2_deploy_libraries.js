@@ -8,5 +8,5 @@
 // var MathUint = artifacts.require("./lib/MathUint.");
 
 module.exports = function(deployer, network, accounts) {
-  // console.log("   > deploying to network: " + network);
+  // console.log("deploying to network: " + network);
 };
