@@ -39,14 +39,15 @@ library ExchangeGenesis
         uint    _id,
         address _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability
+        bool    _onchainDataAvailability,
+        bytes32 _genesisBlockHash
         )
         public
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
-
+        require(_genesisBlockHash != 0, "ZERO_GENESIS_BLOCK_HASH");
         require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
@@ -59,9 +60,8 @@ library ExchangeGenesis
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
 
-
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
-            ExchangeData.GENESIS_MERKLE_ROOT(),
+            _genesisBlockHash,
             0x0,
             ExchangeData.BlockState.VERIFIED,
             ExchangeData.BlockType(0),
