@@ -32,6 +32,8 @@ module.exports = function(deployer, network, accounts) {
     });
   }
 
+  // common deployment
+
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const UserStakingPool = artifacts.require("./impl/UserStakingPool");
   const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");

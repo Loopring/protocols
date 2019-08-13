@@ -19,6 +19,8 @@ module.exports = function(deployer, network, accounts) {
     });
   }
 
+  // common deployment
+
   const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
 
   deployer_
