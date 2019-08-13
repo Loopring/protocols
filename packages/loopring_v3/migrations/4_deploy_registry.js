@@ -1,26 +1,45 @@
 // Deploy ProtocolRegistry
 
-var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
+var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
+var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
+var userStakingPoolAddress = "[undeployed]";
 
 module.exports = function(deployer, network, accounts) {
-  if (network === "live") {
-    // ignore.
-  } else {
-    deployer
-      .then(() => {
-        return Promise.all([LRCToken.deployed()]);
-      })
-      .then(() => {
-        return Promise.all([
-          deployer.deploy(ProtocolRegistry, LRCToken.address)
-        ]);
-      })
-      .then(() => {
-        console.log(">>>>>>>> contracts deployed by deploy_registry:");
-        console.log("LRCToken:", LRCToken.address);
-        console.log("ProtocolRegistry:", ProtocolRegistry.address);
-        console.log("");
-      });
+  console.log("deploying to network: " + network);
+  var deployer_ = deployer;
+
+  if (network != "live") {
+    const LRCToken = artifacts.require("./test/tokens/LRC");
+    const WETHToken = artifacts.require("./test/tokens/WETH");
+
+    deployer_.then(() => {
+      return Promise.all([
+        LRCToken.deployed().then(c => {
+          lrcAddress = c.address;
+        }),
+        WETHToken.deployed().then(c => {
+          wethAddress = c.address;
+        })
+      ]);
+    });
   }
+
+  // common deployment
+
+  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
+
+  deployer_
+    .then(() => {
+      return Promise.all([deployer.deploy(ProtocolRegistry, lrcAddress)]);
+    })
+    .then(() => {
+      console.log(">>>>>>>> contracts deployed by deploy_registry:");
+      console.log("lrcAddress:", lrcAddress);
+      console.log("wethAddress:", wethAddress);
+      console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
+      console.log("userStakingPoolAddress:", userStakingPoolAddress);
+      console.log("ProtocolRegistry:", ProtocolRegistry.address);
+      console.log("");
+    });
 };

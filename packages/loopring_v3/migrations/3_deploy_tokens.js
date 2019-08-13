@@ -1,18 +1,18 @@
 // Deploy tokens for testing purposes
 
-var LRCToken = artifacts.require("./test/tokens/LRC.sol");
-var GTOToken = artifacts.require("./test/tokens/GTO.sol");
-var RDNToken = artifacts.require("./test/tokens/RDN.sol");
-var REPToken = artifacts.require("./test/tokens/REP.sol");
-var WETHToken = artifacts.require("./test/tokens/WETH.sol");
-var TESTToken = artifacts.require("./test/tokens/TEST.sol");
-var INDAToken = artifacts.require("./test/tokens/INDA.sol");
-var INDBToken = artifacts.require("./test/tokens/INDB.sol");
-
 module.exports = function(deployer, network, accounts) {
-  if (network === "live") {
-    // ignore
-  } else {
+  console.log("deploying to network: " + network);
+
+  if (network != "live") {
+    const LRCToken = artifacts.require("./test/tokens/LRC");
+    const GTOToken = artifacts.require("./test/tokens/GTO");
+    const RDNToken = artifacts.require("./test/tokens/RDN");
+    const REPToken = artifacts.require("./test/tokens/REP");
+    const WETHToken = artifacts.require("./test/tokens/WETH");
+    const TESTToken = artifacts.require("./test/tokens/TEST");
+    const INDAToken = artifacts.require("./test/tokens/INDA");
+    const INDBToken = artifacts.require("./test/tokens/INDB");
+
     deployer.deploy(LRCToken);
     deployer.deploy(GTOToken);
     deployer.deploy(RDNToken);

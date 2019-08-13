@@ -78,4 +78,9 @@ Verifier/Prover keys are cached in the `keys` folder. When updating the circuits
 
 ## Contract Deployment
 
-It's recommended to deploy the protocol with **UpgradeabilityProxy**. For more information, please see https://blog.openzeppelin.com/upgradeability-using-unstructured-storage and https://github.com/OpenZeppelin/openzeppelin-labs/tree/master/upgradeability_using_unstructured_storage.
+```bash
+npm run transpile && truffle migrate --network <network>
+
+```
+
+Replace network with `development`, `live`, `ropsten`, `koven`, etc.
