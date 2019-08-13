@@ -37,8 +37,8 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry");
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
 
   deployer_
