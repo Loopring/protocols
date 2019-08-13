@@ -4,7 +4,7 @@
 var LRCToken = artifacts.require("./test/tokens/LRC.sol");
 var BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
 var DowntimeCostCalculator = artifacts.require(
-  "./test/FixPriceDowntimeCostCalculator.sol"
+  "./impl/DowntimeCostCalculator.sol"
 );
 var UserStakingPool = artifacts.require("./impl/UserStakingPool");
 var ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
@@ -15,10 +15,11 @@ module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
   if (network === "live") {
-    DowntimeCostCalculator = artifacts.require(
+  } else {
+    var DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
-  } else {
+
     deployer_ = deployer_.then(() => {
       return Promise.all([
         LRCToken.deployed().then(addr => {
@@ -33,16 +34,12 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         deployer.deploy(BlockVerifier),
         deployer.deploy(DowntimeCostCalculator),
-        deployer.deploy(UserStakingPool, LRCToken.address)
+        deployer.deploy(UserStakingPool, lrcAddress)
       ]);
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(
-          ProtocolFeeVault,
-          LRCToken.address,
-          UserStakingPool.address
-        )
+        deployer.deploy(ProtocolFeeVault, lrcAddress, UserStakingPool.address)
       ]);
     })
     .then(() => {
