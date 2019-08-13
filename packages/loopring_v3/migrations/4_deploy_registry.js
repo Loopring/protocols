@@ -8,7 +8,7 @@ var userStakingPoolAddress = "undeployed";
 module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
-  if (network !== "live") {
+  if (network != "live" && network != "ropsten") {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 

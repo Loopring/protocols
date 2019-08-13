@@ -8,9 +8,7 @@
 // var MathUint = artifacts.require("./lib/MathUint.sol");
 
 module.exports = function(deployer, network, accounts) {
-  if (network === "live") {
-    // ignore.
-  } else {
+  if (network !== "live") {
     // deployer
     //   .then(() => {
     //     return Promise.all([

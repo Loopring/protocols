@@ -1,7 +1,7 @@
 // Deploy tokens for testing purposes
 
 module.exports = function(deployer, network, accounts) {
-  if (network !== "live") {
+  if (network != "live" && network != "ropsten") {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const GTOToken = artifacts.require("./test/tokens/GTO.sol");
     const RDNToken = artifacts.require("./test/tokens/RDN.sol");

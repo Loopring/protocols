@@ -24,6 +24,7 @@ const getWalletProvider = function(network) {
 
   var provider;
   if (process.env.WALLET_PRIVATE_KEY != "") {
+    console.log("=====>>>>> : " + process.env.WALLET_PRIVATE_KEY);
     provider = new PrivateKeyProvider(
       process.env.WALLET_PRIVATE_KEY,
       infuraAPI
@@ -52,15 +53,15 @@ module.exports = {
       version: "0.5.10"
     }
   },
-  plugins: ["truffle-plugin-verify"],
-  api_keys: {
-    etherscan: `process.env.ETHERSCAN_API_KEY`
-  },
+  // plugins: ["truffle-plugin-verify"],
+  // api_keys: {
+  //   etherscan: `process.env.ETHERSCAN_API_KEY`
+  // },
   networks: {
     live: {
-      // provider: function() {
-      //   return getWalletProvider("mainnet");
-      // },
+      provider: function() {
+        return getWalletProvider("mainnet");
+      },
       network_id: "1", // main-net
       gasPrice: 5000000000
     },
