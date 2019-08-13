@@ -96,20 +96,6 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeData, ExchangeV3),
-        deployer.link(ExchangeBalances, ExchangeV3),
-        deployer.link(ExchangeMode, ExchangeV3),
-        deployer.link(ExchangeAccounts, ExchangeV3),
-        deployer.link(ExchangeAdmins, ExchangeV3),
-        deployer.link(ExchangeBlocks, ExchangeV3),
-        deployer.link(ExchangeTokens, ExchangeV3),
-        deployer.link(ExchangeGenesis, ExchangeV3),
-        deployer.link(ExchangeDeposits, ExchangeV3),
-        deployer.link(ExchangeWithdrawals, ExchangeV3)
-      ]);
-    })
-    .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_exchange:");
       console.log("ExchangeData: ", ExchangeData.address);
       console.log("ExchangeBalances: ", ExchangeBalances.address);
@@ -121,12 +107,5 @@ module.exports = function(deployer, network, accounts) {
       console.log("ExchangeGenesis: ", ExchangeGenesis.address);
       console.log("ExchangeDeposits: ", ExchangeDeposits.address);
       console.log("ExchangeWithdrawals: ", ExchangeWithdrawals.address);
-    })
-    .then(() => {
-      return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
-    })
-    .then(() => {
-      console.log("ExchangeV3:", ExchangeV3.address);
-      console.log("");
     });
 };
