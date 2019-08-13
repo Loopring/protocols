@@ -33,6 +33,7 @@ module.exports = function(deployer, network, accounts) {
         ]);
       })
       .then(() => {
+        const UserStakingPool = artifacts.require("./impl/UserStakingPool");
         return Promise.all([
           deployer.deploy(UserStakingPool, lrcAddress).then(addr => {
             userStakingPoolAddress = addr;
@@ -44,7 +45,6 @@ module.exports = function(deployer, network, accounts) {
   // common deployment
 
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-  const UserStakingPool = artifacts.require("./impl/UserStakingPool");
   const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 
   deployer_
@@ -56,7 +56,7 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(ProtocolFeeVault, lrcAddress, UserStakingPool.address)
+        deployer.deploy(ProtocolFeeVault, lrcAddress, userStakingPoolAddress)
       ]);
     })
     .then(() => {
