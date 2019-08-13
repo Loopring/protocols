@@ -161,10 +161,10 @@ library ExchangeWithdrawals
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] memory accountMerkleProof,
-        uint[12] memory balanceMerkleProof
+        uint[30] calldata accountMerkleProof,
+        uint[12] calldata balanceMerkleProof
         )
-        public
+        external
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
