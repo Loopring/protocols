@@ -19,7 +19,7 @@ module.exports = function(deployer, network, accounts) {
 
   if (network === "live") {
   } else {
-    var DowntimeCostCalculator = artifacts.require(
+    DowntimeCostCalculator = artifacts.require(
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
 
