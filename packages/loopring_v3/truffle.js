@@ -1,4 +1,4 @@
-require("dotenv").config();
+require('dotenv').config({ path: require('find-config')('.env') })
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 
