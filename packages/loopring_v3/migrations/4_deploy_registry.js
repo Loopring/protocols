@@ -6,19 +6,21 @@ var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "undeployed";
 
 module.exports = function(deployer, network, accounts) {
+  console.log("deployging on network: " + network);
+  console.log("> block number:        " + network);
   var deployer_ = deployer;
 
-  if (network != "live" && network != "ropsten") {
+  if (network != "live" && network != "ropsten-fork") {
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
     deployer_.then(() => {
       return Promise.all([
-        LRCToken.deployed().then(addr => {
-          lrcAddress = addr;
+        LRCToken.deployed().then(c => {
+          lrcAddress = c.address;
         }),
-        WETHToken.deployed().then(addr => {
-          wethAddress = addr;
+        WETHToken.deployed().then(c => {
+          wethAddress = c.address;
         })
       ]);
     });

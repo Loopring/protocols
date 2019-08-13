@@ -24,7 +24,6 @@ const getWalletProvider = function(network) {
 
   var provider;
   if (process.env.WALLET_PRIVATE_KEY != "") {
-    console.log("=====>>>>> : " + process.env.WALLET_PRIVATE_KEY);
     provider = new PrivateKeyProvider(
       process.env.WALLET_PRIVATE_KEY,
       infuraAPI
