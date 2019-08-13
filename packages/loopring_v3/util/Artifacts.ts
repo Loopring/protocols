@@ -1,5 +1,5 @@
 export class Artifacts {
-  public ExchangeData: any;
+  public ExchangeConstants: any;
   public ProtocolRegistry: any;
   public LoopringV3: any;
   public ExchangeV3: any;
@@ -24,7 +24,7 @@ export class Artifacts {
   public ProtocolFeeVault: any;
 
   constructor(artifacts: any) {
-    this.ExchangeData = artifacts.require("impl/lib/ExchangeData");
+    this.ExchangeConstants = artifacts.require("impl/lib/ExchangeConstants");
     this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.ExchangeV3 = artifacts.require("impl/ExchangeV3");

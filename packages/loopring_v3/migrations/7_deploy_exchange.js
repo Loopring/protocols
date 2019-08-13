@@ -57,6 +57,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([deployer.deploy(ExchangeV3, { gas: 6700000 })]);
     })
     .then(() => {
+      console.log(">>>>>>>> contracts deployed by deploy_exchange:");
       console.log("ExchangeV3:", ExchangeV3.address);
       console.log("");
     });

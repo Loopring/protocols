@@ -3,6 +3,9 @@
 // libraries, otherwise we'll run into the 'exceeded block gas limit' issue.
 
 const ExchangeAccounts = artifacts.require(
+  "./impl/libexchange/ExchangeConstants.sol"
+);
+const ExchangeAccounts = artifacts.require(
   "./impl/libexchange/ExchangeAccounts.sol"
 );
 const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins.sol");
@@ -10,12 +13,10 @@ const ExchangeBalances = artifacts.require(
   "./impl/libexchange/ExchangeBalances.sol"
 );
 const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks.sol");
-const ExchangeData = artifacts.require("./impl/libexchange/ExchangeData.sol");
 const ExchangeDeposits = artifacts.require(
   "./impl/libexchange/ExchangeDeposits.sol"
 );
 const ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis.sol");
-const ExchangeMode = artifacts.require("./impl/libexchange/ExchangeMode.sol");
 const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens.sol");
 const ExchangeWithdrawals = artifacts.require(
   "./impl/libexchange/ExchangeWithdrawals.sol"
@@ -24,25 +25,21 @@ const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
-  deployer
+  var deployer_ = deployer;
+
+  if (network != "live") {
+    deployer_ = deployer_
+      .then(() => {
+        return Promise.all([
+          deployer.deploy(ExchangeConstants) // only for testing purpose
+        ]);
+      })
+  }
+
+  deployer_
     .then(() => {
       return Promise.all([
-        deployer.deploy(ExchangeData),
         deployer.deploy(ExchangeBalances)
-      ]);
-    })
-    .then(() => {
-      return Promise.all([
-        deployer.link(ExchangeData, [
-          ExchangeAccounts,
-          ExchangeAdmins,
-          ExchangeBlocks,
-          ExchangeDeposits,
-          ExchangeGenesis,
-          ExchangeMode,
-          ExchangeTokens,
-          ExchangeWithdrawals
-        ])
       ]);
     })
     .then(() => {
@@ -52,19 +49,11 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(ExchangeMode),
         deployer.deploy(ExchangeAccounts)
       ]);
     })
     .then(() => {
       return Promise.all([
-        deployer.link(ExchangeMode, [
-          ExchangeAdmins,
-          ExchangeBlocks,
-          ExchangeDeposits,
-          ExchangeTokens,
-          ExchangeWithdrawals
-        ]),
         deployer.link(ExchangeAccounts, [
           ExchangeDeposits,
           ExchangeGenesis,
@@ -96,10 +85,8 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      console.log(">>>>>>>> contracts deployed by deploy_exchange:");
-      console.log("ExchangeData: ", ExchangeData.address);
+      console.log(">>>>>>>> contracts deployed by deploy_exchange_libs:");
       console.log("ExchangeBalances: ", ExchangeBalances.address);
-      console.log("ExchangeMode: ", ExchangeMode.address);
       console.log("ExchangeAccounts: ", ExchangeAccounts.address);
       console.log("ExchangeAdmins: ", ExchangeAdmins.address);
       console.log("ExchangeBlocks: ", ExchangeBlocks.address);

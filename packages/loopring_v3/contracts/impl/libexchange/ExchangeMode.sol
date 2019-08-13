@@ -22,6 +22,8 @@ import "./ExchangeData.sol";
 
 
 /// @title ExchangeMode.
+/// @dev All methods in this lib are internal, therefore, there is no need
+///      to deploy this library independently.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeMode
