@@ -1,11 +1,6 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or ProtocolRegistry.
 
-const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
-const UserStakingPool = artifacts.require("./impl/UserStakingPool");
-const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
-
 var DowntimeCostCalculator = artifacts.require(
   "./impl/DowntimeCostCalculator.sol"
 );
@@ -22,6 +17,9 @@ module.exports = function(deployer, network, accounts) {
       "./test/FixPriceDowntimeCostCalculator.sol"
     );
 
+    const LRCToken = artifacts.require("./test/tokens/LRC.sol");
+    const WETHToken = artifacts.require("./test/tokens/WETH.sol");
+
     deployer_ = deployer_.then(() => {
       return Promise.all([
         LRCToken.deployed().then(addr => {
@@ -33,6 +31,10 @@ module.exports = function(deployer, network, accounts) {
       ]);
     });
   }
+
+  const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
+  const UserStakingPool = artifacts.require("./impl/UserStakingPool");
+  const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault");
 
   deployer_
     .then(() => {

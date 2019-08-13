@@ -10,6 +10,7 @@ module.exports = function(deployer, network, accounts) {
     const TESTToken = artifacts.require("./test/tokens/TEST.sol");
     const INDAToken = artifacts.require("./test/tokens/INDA.sol");
     const INDBToken = artifacts.require("./test/tokens/INDB.sol");
+
     deployer.deploy(LRCToken);
     deployer.deploy(GTOToken);
     deployer.deploy(RDNToken);
