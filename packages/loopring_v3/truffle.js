@@ -2,7 +2,8 @@ require('dotenv').config({ path: require('find-config')('.env') })
 const HDWalletProvider = require("truffle-hdwallet-provider");
 const PrivateKeyProvider = require("truffle-privatekey-provider");
 
-// Please config the following env variables in `.env`` as follows:
+// Please config the following env variables in `.env` in any parent directory
+// as follows:
 //```
 //ETHERSCAN_API_KEY=<YOUR_KEY>
 //INFURA_PROJECT_ID=<YOUR_PROJECT_ID>
