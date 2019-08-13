@@ -85,7 +85,7 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      console.log(">>>>>>>> contracts deployed by deploy_exchange_libs:");
+      console.log(">>>>>>>> contracts deployed by deploy_exchange_v3_libs:");
       console.log("ExchangeConstants: ", ExchangeConstants.address);
       console.log("ExchangeBalances: ", ExchangeBalances.address);
       console.log("ExchangeAccounts: ", ExchangeAccounts.address);
