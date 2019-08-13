@@ -56,6 +56,9 @@ module.exports = {
   api_keys: {
     etherscan: process.env.ETHERSCAN_API_KEY
   },
+  verify: {
+    preamble: "Author: Loopring Foundation (Loopring Project Ltd)"
+  },
   networks: {
     live: {
       provider: function() {
