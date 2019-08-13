@@ -915,7 +915,7 @@ class State(object):
         rootToAfter = self._accountsTree._root
         accountUpdate_To = AccountUpdateData(accountToID, proofTo, rootToBefore, rootToAfter, accountToBefore, accountToAfter)
         # Operator payment
-        # This is done after all cancellations are processed
+        # This is done after all internal transfer are processed
         internalTrans = InternalTransfer(exchangeID,
                                     accountFromID, accountToID,
                                     transTokenID, amountTrans,

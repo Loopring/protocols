@@ -78,7 +78,7 @@ export class ExchangeTestUtil {
   public depositBlockSizes = [4, 8];
   public onchainWithdrawalBlockSizes = [4, 8];
   public offchainWithdrawalBlockSizes = [4, 8];
-  public interfalTransferBlockSizes = [4, 8];
+  public interfalTransferBlockSizes = [2, 4];
   public orderCancellationBlockSizes = [4, 8];
 
   public loopringV3: any;
@@ -1237,6 +1237,22 @@ export class ExchangeTestUtil {
     // Make sure the keys are generated
     await this.generateKeys(filename);
 
+    if (blockType == BlockType.INTERNAL_TRANSFER) {
+      // TODO: interact with contract when ready
+      const fakeBlock: Block = {
+        blockIdx: 0,
+        filename: "",
+        blockType: 5,
+        blockSize: 0,
+        blockVersion: 0,
+        operatorId: 0,
+        compressedData: "",
+        publicDataHash: "",
+        publicInput: ""
+      };
+      return fakeBlock;
+    }
+
     const blockHeightBefore = await this.exchange.getBlockHeight();
 
     const blockVersion = 0;
@@ -1329,6 +1345,8 @@ export class ExchangeTestUtil {
       verificationKeyFilename += "withdraw_offchain";
     } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
       verificationKeyFilename += "cancel";
+    } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
+      verificationKeyFilename += "internal_transfer";
     }
     verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
     verificationKeyFilename += block.blockSize + "_vk.json";
@@ -2063,21 +2081,17 @@ export class ExchangeTestUtil {
 
     const blockType = BlockType.INTERNAL_TRANSFER;
 
-    let numWithdrawalsDone = 0;
-    while (numWithdrawalsDone < pendingTransferres.length) {
+    let numTransferDone = 0;
+    while (numTransferDone < pendingTransferres.length) {
       const transferres: InternalTransferRequest[] = [];
       let numRequestsInBlock = 0;
       // Get all withdrawals for the block
       const blockSizes = this.interfalTransferBlockSizes;
       const blockSize = this.getBestBlockSize(
-        pendingTransferres.length - numWithdrawalsDone,
+        pendingTransferres.length - numTransferDone,
         blockSizes
       );
-      for (
-        let b = numWithdrawalsDone;
-        b < numWithdrawalsDone + blockSize;
-        b++
-      ) {
+      for (let b = numTransferDone; b < numTransferDone + blockSize; b++) {
         if (b < pendingTransferres.length) {
           // pendingTransferres[b].slotIdx = withdrawals.length;
           transferres.push(pendingTransferres[b]);
@@ -2096,7 +2110,7 @@ export class ExchangeTestUtil {
         }
       }
       assert(transferres.length === blockSize);
-      numWithdrawalsDone += blockSize;
+      numTransferDone += blockSize;
 
       // Hash the labels
       const labels: number[] = [];
@@ -2171,38 +2185,38 @@ export class ExchangeTestUtil {
         }
       }
 
-      /*TODO: commit to contract.
+      //*TODO: commit to contract.
 
-        // Validate state change
-        this.validateInternalTranferres(
-            withdrawalBlock,
-            bs,
-            stateBefore,
-            stateAfter
-        );
+      // Validate state change
+      // this.validateInternalTranferres(
+      //     withdrawalBlock,
+      //     bs,
+      //     stateBefore,
+      //     stateAfter
+      // );
 
-        // Commit the block
-        await this.commitBlock(
-            operator,
-            blockType,
-            blockSize,
-            bs.getData(),
-            blockFilename
-        );
+      // Commit the block
+      await this.commitBlock(
+        operator,
+        blockType,
+        blockSize,
+        bs.getData(),
+        blockFilename
+      );
 
-        // Add as a pending withdrawal
-        let withdrawalIdx = 0;
-        for (const withdrawalRequest of block.withdrawals) {
-            const withdrawal: Withdrawal = {
-                exchangeID,
-                blockIdx,
-                withdrawalIdx
-                };
-                this.pendingWithdrawals.push(withdrawal);
-                withdrawalIdx++;
-            }
-        }
-        */
+      // Add as a pending withdrawal
+      // let withdrawalIdx = 0;
+      // for (const withdrawalRequest of block.withdrawals) {
+      //     const withdrawal: Withdrawal = {
+      //         exchangeID,
+      //         blockIdx,
+      //         withdrawalIdx
+      //         };
+      //         this.pendingWithdrawals.push(withdrawal);
+      //         withdrawalIdx++;
+      //     }
+      // }
+      //*/
     }
 
     this.pendingInternalTransferRequests[exchangeID] = [];
