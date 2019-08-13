@@ -67,7 +67,9 @@ library ExchangeBlocks
         bytes  memory data,
         bytes  memory /*offchainData*/
         )
-        internal
+        public
+        // TODO(daniel/brecht): chaning this to internal will end up not being
+        // able to deploy the contract using `truffle migrate`.
     {
         commitBlockInternal(
             S,
@@ -215,7 +217,7 @@ library ExchangeBlocks
         ExchangeData.BlockType blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes  memory data   // This field already has all the dummy (0-valued) requests padded,
+        bytes  memory data  // This field already has all the dummy (0-valued) requests padded,
                             // therefore the size of this field totally depends on
                             // `blockSize` instead of the actual user requests processed
                             // in this block. This is fine because 0-bytes consume fewer gas.
