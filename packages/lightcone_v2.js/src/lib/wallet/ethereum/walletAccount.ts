@@ -193,8 +193,10 @@ export class WalletAccount {
   //     throw Error('unimplemented');
   // }
 
-  sendTransaction(ethNode, signedTx) {
-    return ethNode.sendRawTransaction(signedTx);
+  async sendTransaction(ethNode, signedTx) {
+    const response = await ethNode.sendRawTransaction(signedTx);
+    console.log("WalletAccount sendTransaction: ", response);
+    return response;
   }
 }
 
