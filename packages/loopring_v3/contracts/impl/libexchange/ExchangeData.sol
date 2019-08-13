@@ -161,6 +161,10 @@ library ExchangeData
         uint96 amount;
     }
 
+    function GENESIS_MERKLE_ROOT() internal pure returns (bytes32) {
+        return 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
+    }
+
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
@@ -187,6 +191,7 @@ library ExchangeData
 
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants in the following order:
+    ///         GENESIS_MERKLE_ROOT
     ///         SNARK_SCALAR_FIELD
     ///         MAX_PROOF_GENERATION_TIME_IN_SECONDS
     ///         MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
@@ -209,9 +214,10 @@ library ExchangeData
     function getConstants()
         external
         pure
-        returns(uint[19] memory)
+        returns(uint[20] memory)
     {
         return [
+            uint(GENESIS_MERKLE_ROOT()),
             uint(SNARK_SCALAR_FIELD()),
             uint(MAX_PROOF_GENERATION_TIME_IN_SECONDS()),
             uint(MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS()),

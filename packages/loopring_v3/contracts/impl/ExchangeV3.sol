@@ -37,9 +37,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    string  constant public version = "3.0-beta3";
-    bytes32 constant public genesisBlockHash =
-        0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
+    string constant public version = "3.0-beta3";
 
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
@@ -87,8 +85,7 @@ contract ExchangeV3 is IExchangeV3
             _id,
             _loopringAddress,
             _operator,
-            _onchainDataAvailability,
-            genesisBlockHash
+            _onchainDataAvailability
         );
     }
 
