@@ -42,24 +42,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         uint oldMaxAwailableDowntimeMinutes
     );
 
-    constructor(
-        uint _basePricePerMinute,
-        uint _maxPenalty,
-        uint _gracePeriodsMinutes,
-        uint _gracePeriodPricePerMinute,
-        uint _maxAwailableDowntimeMinutes
-        )
-        Claimable()
-        public
-    {
-        updateSettings(
-            _basePricePerMinute,
-            _maxPenalty,
-            _gracePeriodsMinutes,
-            _gracePeriodPricePerMinute,
-            _maxAwailableDowntimeMinutes
-        );
-    }
+    constructor() Claimable() public {}
 
     function getDowntimeCostLRC(
         uint  totalTimeInMaintenanceSeconds,
