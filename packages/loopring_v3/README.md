@@ -78,9 +78,12 @@ Verifier/Prover keys are cached in the `keys` folder. When updating the circuits
 
 ## Contract Deployment
 
-```bash
-npm run transpile && truffle migrate --skipDryRun --network <network>
+- development network: `npm run migrate-dev`
+- ropsten network: `npm run migrate-ropsten`
+- main network: `npm run migrate`
 
-```
+If you have installed truffle globally, you can run:
+
+`npm run transpile && truffle migrate --network <network> --reset --dry-run`
 
 Replace network with `development`, `live`, `ropsten`, `koven`, etc.
