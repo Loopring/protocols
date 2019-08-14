@@ -73,7 +73,7 @@ library ExchangeDeposits
         uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
-        public
+        external
     {
         require(recipient != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
@@ -96,6 +96,8 @@ library ExchangeDeposits
             feeETH
         );
 
+        // We allow invalid public keys to be set for accounts to
+        // disable offchain request signing.
         // Make sure we can detect accounts that were not yet created in the circuits
         // by forcing the pubKeyX to be non-zero.
         require(account.pubKeyX > 0, "INVALID_PUBKEY");

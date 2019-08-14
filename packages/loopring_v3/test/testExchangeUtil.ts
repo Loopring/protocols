@@ -54,7 +54,8 @@ function replacer(name: any, val: any) {
     name === "amountB" ||
     name === "amount" ||
     name === "fee" ||
-    name === "startHash"
+    name === "startHash" ||
+    name === "label"
   ) {
     return new BN(val, 16).toString(10);
   } else {
@@ -71,7 +72,7 @@ export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
 
-  public ringSettlementBlockSizes = [1, 2];
+  public ringSettlementBlockSizes = [1, 2, 4];
   public depositBlockSizes = [4, 8];
   public onchainWithdrawalBlockSizes = [4, 8];
   public offchainWithdrawalBlockSizes = [4, 8];
@@ -236,7 +237,10 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
-    this.GENESIS_MERKLE_ROOT = new BN(await this.exchange.genesisBlockHash());
+    this.GENESIS_MERKLE_ROOT = new BN(
+      (await this.exchange.genesisBlockHash()).slice(2),
+      16
+    );
 
     const constants = await this.exchangeConstants.getConstants();
     this.SNARK_SCALAR_FIELD = new BN(constants[0]);
@@ -1475,6 +1479,16 @@ export class ExchangeTestUtil {
       pendingDeposits.push(pendingDeposit);
     }
     return pendingDeposits;
+  }
+
+  public getPendingOnchainWithdrawals(exchangeID: number) {
+    const pendingWithdrawals: WithdrawalRequest[] = [];
+    for (const pendingWithdrawal of this.pendingOnchainWithdrawalRequests[
+      exchangeID
+    ]) {
+      pendingWithdrawals.push(pendingWithdrawal);
+    }
+    return pendingWithdrawals;
   }
 
   public async commitDeposits(

@@ -534,6 +534,7 @@ export class Simulator {
     this.validateOrder(
       exchangeState,
       ring.orderA,
+      ring.orderB,
       false,
       fillA.S,
       fillA.B,
@@ -541,6 +542,7 @@ export class Simulator {
     );
     this.validateOrder(
       exchangeState,
+      ring.orderB,
       ring.orderB,
       true,
       fillB.S,
@@ -909,7 +911,8 @@ export class Simulator {
   private validateOrder(
     exchangeState: ExchangeState,
     order: OrderInfo,
-    makerOrder: boolean,
+    makerOrder: OrderInfo,
+    isMakerOrder: boolean,
     fillS: BN,
     fillB: BN,
     valid: boolean
@@ -933,25 +936,33 @@ export class Simulator {
         );
       } else {
         if (!fillS.isZero() || !fillB.isZero()) {
-          const targetRate = order.amountS
-            .mul(new BN(10000))
-            .div(order.amountB);
-          const rate = fillS.mul(new BN(10000)).div(fillB);
-          if (makerOrder) {
-            assert(
-              targetRate
-                .mul(new BN(10000))
-                .sub(rate.mul(new BN(10000)))
-                .abs()
-                .lt(rate),
-              "maker rate needs to match order rate"
-            );
+          const multiplier = new BN(web3.utils.toWei("1000", "ether"));
+          const orderRate = order.amountS.mul(multiplier).div(order.amountB);
+          const rate = fillS.mul(multiplier).div(fillB);
+          let targetRate: BN;
+          if (isMakerOrder) {
+            targetRate = makerOrder.amountS
+              .mul(multiplier)
+              .div(makerOrder.amountB);
           } else {
-            assert(
-              rate.lte(targetRate.add(new BN(1))),
-              "taker rate needs to be equal or better than order rate"
-            );
+            targetRate = makerOrder.amountB
+              .mul(multiplier)
+              .div(makerOrder.amountS);
           }
+          assert(
+            targetRate
+              .mul(new BN(100))
+              .sub(rate.mul(new BN(100)))
+              .abs()
+              .lte(targetRate),
+            "fill rate needs to match maker order rate"
+          );
+          assert(
+            rate
+              .mul(multiplier)
+              .lte(orderRate.mul(multiplier.add(multiplier.div(new BN(100))))),
+            "fill rate needs to match or be better than the order rate"
+          );
         }
         if (order.buy) {
           assert(

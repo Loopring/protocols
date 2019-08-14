@@ -77,7 +77,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         uint _gracePeriodPricePerMinute,
         uint _maxAwailableDowntimeMinutes
         )
-        public
+        external
         onlyOwner
     {
         require(
