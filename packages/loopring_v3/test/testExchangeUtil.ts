@@ -2161,21 +2161,31 @@ export class ExchangeTestUtil {
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
-      for (const trans of block.transferres) {
-        bs.addNumber(trans.tokenID, 1);
-        bs.addNumber(trans.accountID * 2 ** 28 + trans.amount, 6);
+      for (const trans of block.internalTransferres) {
+        bs.addNumber(trans.transTokenID, 1);
+        bs.addNumber(trans.feeTokenID, 1);
+        bs.addNumber(
+          trans.accountFromID * 2 ** 28 +
+            toFloat(new BN(trans.amount), constants.Float28Encoding),
+          6
+        );
+        bs.addNumber(
+          trans.accountToID * 2 ** 28 +
+            toFloat(new BN(trans.fee), constants.Float16Encoding),
+          6
+        );
       }
 
       bs.addBN(new BN(labelHash, 10), 32);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const trans of block.internalTransferres) {
-          bs.addNumber(trans.accountFromID);
-          bs.addNumber(trans.accountToID);
+          bs.addNumber(trans.accountFromID, 3);
+          bs.addNumber(trans.accountToID, 3);
           bs.addNumber(trans.transTokenID, 1);
           bs.addNumber(
             toFloat(new BN(trans.amount), constants.Float28Encoding),
-            2
+            4
           );
           bs.addNumber(trans.feeTokenID, 1);
           bs.addNumber(
@@ -2185,7 +2195,7 @@ export class ExchangeTestUtil {
         }
       }
 
-      //*TODO: commit to contract.
+      /*TODO: commit to contract.
 
       // Validate state change
       // this.validateInternalTranferres(
@@ -2196,13 +2206,13 @@ export class ExchangeTestUtil {
       // );
 
       // Commit the block
-      await this.commitBlock(
-        operator,
-        blockType,
-        blockSize,
-        bs.getData(),
-        blockFilename
-      );
+        // await this.commitBlock(
+        // operator,
+        // blockType,
+        // blockSize,
+        // bs.getData(),
+        // blockFilename
+        // );
 
       // Add as a pending withdrawal
       // let withdrawalIdx = 0;

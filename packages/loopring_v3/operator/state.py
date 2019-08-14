@@ -904,8 +904,8 @@ class State(object):
         # Update accout To
         rootToBefore = self._accountsTree._root
         accountToBefore = copyAccountInfo(self.getAccount(accountToID))
-        nonceTo = accountBefore.nonce
-        proofTo = self._accountsTree.createProof(accountFromID)
+        nonceTo = accountToBefore.nonce
+        proofTo = self._accountsTree.createProof(accountToID)
 
         accountTo = self.getAccount(accountToID)
         balanceUpdateT_To = accountTo.updateBalance(transTokenID, amountTrans)

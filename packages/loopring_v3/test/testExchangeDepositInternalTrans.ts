@@ -29,19 +29,14 @@ contract("Exchange", (accounts: string[]) => {
     it("Internal transfer (normal account)", async () => {
       await createExchange();
 
-      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
-      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
-      const ownerD = exchangeTestUtil.testContext.orderOwners[3];
-
       const initBalance = new BN(web3.utils.toWei("7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
       const transAmount = new BN(web3.utils.toWei("2", "ether"));
       const feeToken = exchangeTestUtil.getTokenAddress("ETH");
-      //   const feeToO = new BN(web3.utils.toWei("1", "ether"));
       const feeToO = new BN(0);
 
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
       const depositInfoA = await exchangeTestUtil.deposit(
         exchangeID,
         ownerA,
@@ -51,7 +46,9 @@ contract("Exchange", (accounts: string[]) => {
         token,
         initBalance
       );
+
       // init B by 0
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
       const keyPairB = exchangeTestUtil.getKeyPairEDDSA();
       const depositInfoB = await exchangeTestUtil.deposit(
         exchangeID,
@@ -64,6 +61,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // init C by 0
+      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
       const keyPairC = exchangeTestUtil.getKeyPairEDDSA();
       const depositInfoC = await exchangeTestUtil.deposit(
         exchangeID,
@@ -76,6 +74,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // init D by 0
+      const ownerD = exchangeTestUtil.testContext.orderOwners[3];
       const keyPairD = exchangeTestUtil.getKeyPairEDDSA();
       const depositInfoD = await exchangeTestUtil.deposit(
         exchangeID,
