@@ -3,7 +3,10 @@ import { toNumber } from "../common/formatter";
 import validator from "./validator";
 
 const setWallet = wallet => {
-  const wallets = localStorage.wallet ? JSON.parse(localStorage.wallet) : [];
+  const wallets =
+    typeof localStorage !== "undefined" && localStorage.wallet
+      ? JSON.parse(localStorage.wallet)
+      : [];
   const otherWallets = wallets.filter(
     w => w.address.toLowerCase() !== wallet.address.toLowerCase()
   );
@@ -11,11 +14,17 @@ const setWallet = wallet => {
     address: wallet.address,
     nonce: toNumber(wallet.nonce) + 1
   });
-  localStorage.wallet = JSON.stringify(otherWallets);
+  if (typeof localStorage !== "undefined") {
+    localStorage.wallet = JSON.stringify(otherWallets);
+  }
 };
 
 const getWallet = address => {
-  const wallets = localStorage.wallet ? JSON.parse(localStorage.wallet) : [];
+  const wallets =
+    typeof localStorage !== "undefined" && localStorage.wallet
+      ? JSON.parse(localStorage.wallet)
+      : [];
+  console.log("get wallets");
   return wallets.find(
     wallet => wallet.address.toLowerCase() === address.toLowerCase()
   );
