@@ -25,7 +25,7 @@ import {
   SimpleOrderCancellationReq
 } from "../grpc/proto_gen/service_dex_pb";
 
-const MOCK_EXCHANGE_GAS_LIMIT = "0x30DD54";
+const MOCK_EXCHANGE_GAS_LIMIT = "0x5446a0";
 
 // TODO: Rename Exchange
 export class Exchange {
@@ -50,10 +50,11 @@ export class Exchange {
 
   public async init(contractURL: string) {
     console.log("init exchange");
-    config.initTokenConfig();
+
+    // TODO: add config back when we can remove localStorage dependency in config
+    // config.initTokenConfig();
 
     this.contractURL = contractURL;
-    // host = contractURL
     updateHost(contractURL);
 
     this.exchangeID = 2; // TODO: config
@@ -154,7 +155,10 @@ export class Exchange {
           new Eth(this.contractURL),
           signedTx
         );
-        console.log("sendTransactionResponse: ", sendTransactionResponse);
+        console.log(
+          "updateAccount method: sendTransactionResponse: ",
+          sendTransactionResponse
+        );
 
         // TODO: Notify Relay
         /*
@@ -178,7 +182,7 @@ export class Exchange {
         */
       }
     } catch (err) {
-      console.error("Failed to create.", err);
+      console.error("Failed in method updateAccount. Error: ", err);
       throw err;
     }
   }
@@ -208,7 +212,7 @@ export class Exchange {
         gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
       });
     } catch (err) {
-      console.error("Failed to create.", err);
+      console.error("Failed in method createOrUpdateAccount. Error: ", err);
       throw err;
     }
   }
@@ -247,7 +251,7 @@ export class Exchange {
         return transaction;
       }
     } catch (err) {
-      console.error("Failed to create.", err);
+      console.error("Failed in method deposit. Error: ", err);
       throw err;
     }
   }
@@ -289,7 +293,7 @@ export class Exchange {
         return transaction;
       }
     } catch (err) {
-      console.error("Failed to create.", err);
+      console.error("Failed in method withdraw. Error: ", err);
       throw err;
     }
   }
