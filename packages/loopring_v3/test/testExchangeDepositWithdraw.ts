@@ -814,12 +814,39 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.autoCommit = true;
     });
 
+    it("Wrong deposit ending hash", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("7", "ether"));
+      const token = exchangeTestUtil.getTokenAddress("LRC");
+
+      await exchangeTestUtil.deposit(
+        exchangeID,
+        ownerA,
+        keyPair.secretKey,
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        token,
+        balance
+      );
+
+      // Change the deposit info so double the amount is used to update the Merkle tree
+      const pendingDeposits = exchangeTestUtil.getPendingDeposits(exchangeID);
+      pendingDeposits[0].amount = pendingDeposits[0].amount.mul(new BN(2));
+
+      await expectThrow(
+        exchangeTestUtil.commitDeposits(exchangeID),
+        "INVALID_ENDING_HASH"
+      );
+    });
+
     it("Onchain withdrawal request", async () => {
       await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
       const balance = new BN(web3.utils.toWei("7", "ether"));
       const toWithdraw = new BN(web3.utils.toWei("4", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
@@ -888,6 +915,51 @@ contract("Exchange", (accounts: string[]) => {
         token,
         ownerA,
         toWithdraw
+      );
+    });
+
+    it("Wrong onchain withdrawal ending hash", async () => {
+      await createExchange();
+
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const balance = new BN(web3.utils.toWei("7", "ether"));
+      const toWithdraw = new BN(web3.utils.toWei("4", "ether"));
+      const token = exchangeTestUtil.getTokenAddress("LRC");
+
+      const depositInfo = await exchangeTestUtil.deposit(
+        exchangeID,
+        ownerA,
+        keyPair.secretKey,
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        token,
+        balance
+      );
+      const accountID = depositInfo.accountID;
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Do the request
+      const witdrawalRequest = await exchangeTestUtil.requestWithdrawalOnchain(
+        exchangeID,
+        accountID,
+        token,
+        toWithdraw,
+        ownerA
+      );
+
+      // Change the withdrawal info so half the amount is used to update the Merkle tree
+      const pendingWithdrawals = exchangeTestUtil.getPendingOnchainWithdrawals(
+        exchangeID
+      );
+      pendingWithdrawals[0].amount = pendingWithdrawals[0].amount.div(
+        new BN(2)
+      );
+
+      // Commit the withdrawal
+      await expectThrow(
+        exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID),
+        "INVALID_ENDING_HASH"
       );
     });
 

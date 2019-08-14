@@ -336,7 +336,7 @@ class Order(object):
         self.validUntil = validUntil
         self.buy = bool(buy)
         self.maxFeeBips = maxFeeBips
-        self.label = int(label)
+        self.label = str(label)
 
         self.feeBips = feeBips
         self.rebateBips = rebateBips
@@ -425,7 +425,7 @@ class OffchainWithdrawal(object):
 
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
-        self.label = int(label)
+        self.label = str(label)
 
         self.balanceUpdateF_A = balanceUpdateF_A
         self.balanceUpdateW_A = balanceUpdateW_A
@@ -450,7 +450,7 @@ class Cancellation(object):
         self.orderID = orderID
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
-        self.label = int(label)
+        self.label = str(label)
         self.nonce = nonce
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A

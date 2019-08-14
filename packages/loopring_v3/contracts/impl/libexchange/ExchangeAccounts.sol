@@ -78,8 +78,6 @@ library ExchangeAccounts
             bool   isAccountUpdated
         )
     {
-        // We allow pubKeyX and/or pubKeyY to be 0 for normal accounts to
-        // disable offchain request signing.
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
             if (S.addressWhitelist != address(0)) {
@@ -93,34 +91,6 @@ library ExchangeAccounts
         } else {
             (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
         }
-    }
-
-    function isAccountBalanceCorrect(
-        ExchangeData.Account storage account,
-        bytes32  merkleRoot,
-        uint24   accountID,
-        uint16   tokenID,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[30] calldata accountMerkleProof,
-        uint[12] calldata balanceMerkleProof
-        )
-        external
-        view
-    {
-        ExchangeBalances.isAccountBalanceCorrect(
-            uint(merkleRoot),
-            accountID,
-            tokenID,
-            account.pubKeyX,
-            account.pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountMerkleProof,
-            balanceMerkleProof
-        );
     }
 
     function getAccountID(

@@ -404,7 +404,7 @@ library ExchangeWithdrawals
         // Check if the withdrawals were already completely distributed
         require(withdrawBlock.numWithdrawalsDistributed < withdrawBlock.blockSize, "WITHDRAWALS_ALREADY_DISTRIBUTED");
 
-        // Only allow the operator to distibute withdrawals at first, if he doesn't do it in time
+        // Only allow the operator to distribute withdrawals at first, if he doesn't do it in time
         // anyone can do it and get paid a part of the exchange stake
         bool bOnlyOperator = now < withdrawBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS();
         if (bOnlyOperator) {
