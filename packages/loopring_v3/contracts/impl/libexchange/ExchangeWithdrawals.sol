@@ -204,7 +204,7 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         uint depositIdx
         )
-        public
+        external
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
@@ -320,7 +320,7 @@ library ExchangeWithdrawals
         uint blockIdx,
         address payable feeRecipient
         )
-        public
+        external
         returns (uint feeAmountToOperator)
     {
         require(blockIdx > 0 && blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
@@ -386,7 +386,7 @@ library ExchangeWithdrawals
         uint blockIdx,
         uint maxNumWithdrawals
         )
-        public
+        external
     {
         require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
         require(maxNumWithdrawals > 0, "INVALID_MAX_NUM_WITHDRAWALS");

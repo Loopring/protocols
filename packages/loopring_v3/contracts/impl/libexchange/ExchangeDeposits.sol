@@ -73,7 +73,7 @@ library ExchangeDeposits
         uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
-        public
+        external
     {
         require(recipient != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");

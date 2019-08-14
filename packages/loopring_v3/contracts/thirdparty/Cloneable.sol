@@ -6,7 +6,7 @@ pragma solidity ^0.5.11;
 
 library Cloneable {
     function clone(address a)
-        public
+        external
         returns (address)
     {
 

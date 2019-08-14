@@ -116,7 +116,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        public
+        external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
@@ -134,7 +134,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        public
+        external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         uint16 tokenID = getTokenID(S, tokenAddress);
