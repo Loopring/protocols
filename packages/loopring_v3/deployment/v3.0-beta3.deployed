@@ -1,0 +1,475 @@
+
+> loopring_v3@3.0.0 migrate /Users/d/Projects/protocols/packages/loopring_v3
+> npm run transpile && truffle migrate --network live --skipDryRun
+
+
+> loopring_v3@3.0.0 transpile /Users/d/Projects/protocols/packages/loopring_v3
+> rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc && npm run genabi
+
+
+> loopring_v3@3.0.0 genabi /Users/d/Projects/protocols/packages/loopring_v3
+> ./genAbi.sh
+
+> Warning: possible unsupported (undocumented in help) command line option: --skipDryRun
+
+Compiling your contracts...
+===========================
+> Everything is up to date, there is nothing to compile.
+
+
+Starting migrations...
+======================
+> Network name:    'live'
+> Network id:      1
+> Block gas limit: 0x7a1200
+
+
+1_initial_migration.js
+======================
+deploying to network: live
+
+   Deploying 'Migrations'
+   ----------------------
+   > transaction hash:    0xdf05c7193bb138b1fdb571bb3798acdd8f197c8fc2240dcb4b0474682dceb114
+   > Blocks: 3            Seconds: 24
+   > contract address:    0x984f360C4A66b3094036779b71173cB0fD2892CA
+   > block number:        8345901
+   > block timestamp:     1565749746
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.156838214
+   > gas used:            190982
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.000572946 ETH
+
+>>>>>>>> contracts deployed by initial_migration:
+Migrations: 0x984f360C4A66b3094036779b71173cB0fD2892CA
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.000572946 ETH
+
+
+2_deploy_thirdparty.js
+======================
+deploying to network: live
+
+   Deploying 'Cloneable'
+   ---------------------
+
+   Deploying 'BatchVerifier'
+   -------------------------
+   > transaction hash:    0xa9fca7d060e8bfc21330a780bb6bc720bb1c719f3411019f2cba74d9588d5534
+   > transaction hash:    0x87e0b99222f566c4fab31e9ed10fc0e32013cee368773c6f4c2df982cb089fa4
+   > Blocks: 6            Seconds: 72
+   > contract address:    0xC741EcBfd990aD926E4FCe4F282b30f3B0EdeEa4
+   > block number:        8345910
+   > block timestamp:     1565749838
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.156067613
+   > gas used:            98996
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.000296988 ETH
+
+   > Blocks: 6            Seconds: 72
+   > contract address:    0x83E80092a90D3c8e9B80E42bD03b765A2886A33D
+   > block number:        8345910
+   > block timestamp:     1565749838
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.156067613
+   > gas used:            115932
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.000347796 ETH
+
+>>>>>>>> contracts deployed by deploy_thirdparty:
+Cloneable: 0x83E80092a90D3c8e9B80E42bD03b765A2886A33D
+BatchVerifier: 0xC741EcBfd990aD926E4FCe4F282b30f3B0EdeEa4
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.000644784 ETH
+
+
+3_deploy_tokens.js
+==================
+deploying to network: live
+
+   > Saving migration to chain.
+   -------------------------------------
+   > Total cost:                   0 ETH
+
+
+4_deploy_registry.js
+====================
+deploying to network: live
+
+   Deploying 'ProtocolRegistry'
+   ----------------------------
+   > transaction hash:    0x6e4f9d6671525f28aab69dec83d8f7de152e66de3fc2fa3ea8b93f5770152ddf
+   > Blocks: 1            Seconds: 8
+   > contract address:    0x2Eb11F52239FECEd6ED5D74a7F70D6F7269CE605
+   > block number:        8345921
+   > block timestamp:     1565749888
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.147812441
+   > gas used:            2697846
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.008093538 ETH
+
+>>>>>>>> contracts deployed by deploy_registry:
+lrcAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD
+wethAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+protocolFeeValutAddress: 0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4
+userStakingPoolAddress: [undeployed]
+ProtocolRegistry: 0x2Eb11F52239FECEd6ED5D74a7F70D6F7269CE605
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.008093538 ETH
+
+
+5_deploy_auxiliaries.js
+=======================
+deploying to network: live
+
+   Deploying 'DowntimeCostCalculator'
+   ----------------------------------
+
+   Deploying 'BlockVerifier'
+   -------------------------
+   > transaction hash:    0x89bc12e9f46d5215e491f779289af3707f541ddf97aaf5df251671a17f61d60c
+   > transaction hash:    0x1f5e6fd978728c325750ea6fc7192491c4999b77ade8ad66452f29ed51695ea2
+   > Blocks: 33           Seconds: 352
+   > contract address:    0xf5F51dD56e0eBF8e7f3ac76D58AE12996dF66108
+   > block number:        8345970
+   > block timestamp:     1565750480
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.140706368
+   > gas used:            2341752
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.007025256 ETH
+
+   > Blocks: 36           Seconds: 372
+   > contract address:    0xC01F51171BDE2802f7efdEd0f6541e8097a3df1a
+   > block number:        8345973
+   > block timestamp:     1565750516
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.138858854
+   > gas used:            615838
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.001847514 ETH
+
+>>>>>>>> contracts deployed by deploy_aux:
+lrcAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD
+wethAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+protocolFeeValutAddress: 0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4
+userStakingPoolAddress: [undeployed]
+BlockVerifier: 0xf5F51dD56e0eBF8e7f3ac76D58AE12996dF66108
+DowntimeCostCalculator: 0xC01F51171BDE2802f7efdEd0f6541e8097a3df1a
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:          0.00887277 ETH
+
+
+6_deploy_exchange_v3_libs.js
+============================
+deploying to network: live
+
+   Deploying 'ExchangeConstants'
+   -----------------------------
+   > transaction hash:    0x8896c6c578ceb8424d152fdc77d2d546940944b71fff267a2565b0676d7f4874
+   > Blocks: 3            Seconds: 52
+   > contract address:    0x8F4d0012c5f47dA47605FA0Ebb58F4FA37Db13Aa
+   > block number:        8345983
+   > block timestamp:     1565750597
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.138065921
+   > gas used:            237372
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.000712116 ETH
+
+
+   Deploying 'ExchangeBalances'
+   ----------------------------
+   > transaction hash:    0x26dd113bacbc61278184beb37c1093ac9e83d06f8e06f80ffd4c17dc8fc9f661
+   > Blocks: 11           Seconds: 132
+   > contract address:    0x1c0e522B7f6ab97be28883F72fAa7092Fd377821
+   > block number:        8345995
+   > block timestamp:     1565750729
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.131048498
+   > gas used:            2339141
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.007017423 ETH
+
+
+   Linking
+   -------
+   * Contract: ExchangeAccounts <--> Library: ExchangeBalances (at address: 0x1c0e522B7f6ab97be28883F72fAa7092Fd377821)
+
+   Linking
+   -------
+   * Contract: ExchangeWithdrawals <--> Library: ExchangeBalances (at address: 0x1c0e522B7f6ab97be28883F72fAa7092Fd377821)
+
+   Deploying 'ExchangeAccounts'
+   ----------------------------
+   > transaction hash:    0x9ac6229b11769feae589541511539b0e7c262afc40e7e9ba6902d1f06250dcc3
+   > Blocks: 7            Seconds: 64
+   > contract address:    0x774f9f4b70e95Fa355972FfdA16A09C751220cc4
+   > block number:        8346002
+   > block timestamp:     1565750797
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.129158651
+   > gas used:            629949
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.001889847 ETH
+
+
+   Linking
+   -------
+   * Contract: ExchangeDeposits <--> Library: ExchangeAccounts (at address: 0x774f9f4b70e95Fa355972FfdA16A09C751220cc4)
+
+   Linking
+   -------
+   * Contract: ExchangeWithdrawals <--> Library: ExchangeAccounts (at address: 0x774f9f4b70e95Fa355972FfdA16A09C751220cc4)
+
+   Deploying 'ExchangeTokens'
+   --------------------------
+
+   Deploying 'ExchangeAdmins'
+   --------------------------
+
+   Deploying 'ExchangeBlocks'
+   --------------------------
+   > transaction hash:    0x87e35c05d4a51b2eb1ecc763c35ff587701d10190fb4e39ba18afe864601ab30
+   > transaction hash:    0x17b31adf8f4277e7814bf2ec3a1454e1b0d5bd02c7b2cf672955104b6252dd00
+   > transaction hash:    0x18bac822ce90e9f40abe778df73796f9105844522d8927429a0457e6f7d01436
+   > Blocks: 7            Seconds: 80
+   > contract address:    0xd0eAC7584ec5fB3772Bd448eEe846fbf45f88378
+   > block number:        8346008
+   > block timestamp:     1565750884
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.124430987
+   > gas used:            1575888
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.004727664 ETH
+
+   > Blocks: 8            Seconds: 104
+   > contract address:    0x511dae72c490Dac58D93604E45E4fEefEfdE138d
+   > block number:        8346010
+   > block timestamp:     1565750908
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.121193381
+   > gas used:            1079202
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003237606 ETH
+
+   > Blocks: 28           Seconds: 416
+   > contract address:    0x73c85b58Ec83A800e3BDbf679D71905833C3C104
+   > block number:        8346031
+   > block timestamp:     1565751227
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.11290337
+   > gas used:            2763337
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.008290011 ETH
+
+
+   Linking
+   -------
+   * Contract: ExchangeDeposits <--> Library: ExchangeTokens (at address: 0x511dae72c490Dac58D93604E45E4fEefEfdE138d)
+
+   Linking
+   -------
+   * Contract: ExchangeGenesis <--> Library: ExchangeTokens (at address: 0x511dae72c490Dac58D93604E45E4fEefEfdE138d)
+
+   Linking
+   -------
+   * Contract: ExchangeWithdrawals <--> Library: ExchangeTokens (at address: 0x511dae72c490Dac58D93604E45E4fEefEfdE138d)
+
+   Deploying 'ExchangeWithdrawals'
+   -------------------------------
+
+   Deploying 'ExchangeGenesis'
+   ---------------------------
+
+   Deploying 'ExchangeDeposits'
+   ----------------------------
+   > transaction hash:    0xc2f4d03f10c965f66e0e799800060bdddd20fef924191057f19b81b6545d3f48
+   > transaction hash:    0x77431d5598739b732eb179f2304b788c14b49154a04afd348fd551b1db7f8071
+   > transaction hash:    0x88a150569f24ad8c4158fbd86a06e707f28c56123fa83b6ea79cc9d81de0bdde
+   > Blocks: 13           Seconds: 244
+   > contract address:    0xCaa285F21b4aC278Fd11Bf3289790210bD7e74dD
+   > block number:        8346045
+   > block timestamp:     1565751467
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.104960753
+   > gas used:            2647539
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.007942617 ETH
+
+   > Blocks: 19           Seconds: 320
+   > contract address:    0x494e121916a57ff30AEb8aecD4b2Cf2C96e4477e
+   > block number:        8346051
+   > block timestamp:     1565751541
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.102212612
+   > gas used:            916047
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.002748141 ETH
+
+   > Blocks: 21           Seconds: 340
+   > contract address:    0x92341C5ca7198A89360BF3aC291d980A49c26Fd2
+   > block number:        8346053
+   > block timestamp:     1565751553
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.098360783
+   > gas used:            1283943
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.003851829 ETH
+
+>>>>>>>> contracts deployed by deploy_exchange_v3_libs:
+ExchangeConstants:  0x8F4d0012c5f47dA47605FA0Ebb58F4FA37Db13Aa
+ExchangeBalances:  0x1c0e522B7f6ab97be28883F72fAa7092Fd377821
+ExchangeAccounts:  0x774f9f4b70e95Fa355972FfdA16A09C751220cc4
+ExchangeAdmins:  0xd0eAC7584ec5fB3772Bd448eEe846fbf45f88378
+ExchangeBlocks:  0x73c85b58Ec83A800e3BDbf679D71905833C3C104
+ExchangeTokens:  0x511dae72c490Dac58D93604E45E4fEefEfdE138d
+ExchangeGenesis:  0x494e121916a57ff30AEb8aecD4b2Cf2C96e4477e
+ExchangeDeposits:  0x92341C5ca7198A89360BF3aC291d980A49c26Fd2
+ExchangeWithdrawals:  0xCaa285F21b4aC278Fd11Bf3289790210bD7e74dD
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.040417254 ETH
+
+
+7_deploy_exchange_v3.js
+=======================
+deploying to network: live
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeBalances (at address: 0x1c0e522B7f6ab97be28883F72fAa7092Fd377821)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeAccounts (at address: 0x774f9f4b70e95Fa355972FfdA16A09C751220cc4)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeAdmins (at address: 0xd0eAC7584ec5fB3772Bd448eEe846fbf45f88378)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeBlocks (at address: 0x73c85b58Ec83A800e3BDbf679D71905833C3C104)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeTokens (at address: 0x511dae72c490Dac58D93604E45E4fEefEfdE138d)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeGenesis (at address: 0x494e121916a57ff30AEb8aecD4b2Cf2C96e4477e)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeDeposits (at address: 0x92341C5ca7198A89360BF3aC291d980A49c26Fd2)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: ExchangeWithdrawals (at address: 0xCaa285F21b4aC278Fd11Bf3289790210bD7e74dD)
+
+   Linking
+   -------
+   * Contract: ExchangeV3 <--> Library: Cloneable (at address: 0x83E80092a90D3c8e9B80E42bD03b765A2886A33D)
+
+   Deploying 'ExchangeV3'
+   ----------------------
+   > transaction hash:    0xb4cabdca8e07c94fc62843cca213cb55fedaa750f977f2eb9507f9abbd1a5677
+   > Blocks: 1            Seconds: 20
+   > contract address:    0x9dF500D0C1eA2Cc3eBcf39Cf3dea521856597028
+   > block number:        8346068
+   > block timestamp:     1565751806
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.083618945
+   > gas used:            4887007
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.014661021 ETH
+
+>>>>>>>> contracts deployed by deploy_exchange_v3:
+ExchangeV3: 0x9dF500D0C1eA2Cc3eBcf39Cf3dea521856597028
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.014661021 ETH
+
+
+8_deploy_protocol_v3.js
+=======================
+deploying to network: live
+
+   Deploying 'LoopringV3'
+   ----------------------
+   > transaction hash:    0xb1065c9e371f8a4f10d74059a32c2070b70d6cdb573b74f43fcc2e08270a4d7a
+   > Blocks: 18           Seconds: 344
+   > contract address:    0xeD395035e43534f86d933604C240b9e095231aBf
+   > block number:        8346108
+   > block timestamp:     1565752424
+   > account:             0xa3ae668B6239fA3eb1dc26DaAbb03f244d0259f0
+   > balance:             0.076280822
+   > gas used:            2419102
+   > gas price:           3 gwei
+   > value sent:          0 ETH
+   > total cost:          0.007257306 ETH
+
+registering protocol: 0xeD395035e43534f86d933604C240b9e095231aBf 0x9dF500D0C1eA2Cc3eBcf39Cf3dea521856597028
+>>>>>>>> contracts deployed by deploy_protocol_v3:
+lrcAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD
+wethAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
+protocolFeeValutAddress: 0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4
+userStakingPoolAddress: [undeployed]
+ProtocolRegistry: 0x2Eb11F52239FECEd6ED5D74a7F70D6F7269CE605
+BlockVerifier: 0xf5F51dD56e0eBF8e7f3ac76D58AE12996dF66108
+DowntimeCostCalculator: 0xC01F51171BDE2802f7efdEd0f6541e8097a3df1a
+LoopringV3: 0xeD395035e43534f86d933604C240b9e095231aBf
+
+
+   > Saving migration to chain.
+   > Saving artifacts
+   -------------------------------------
+   > Total cost:         0.007257306 ETH
+
+
+Summary
+=======
+> Total deployments:   17
+> Final cost:          0.080519619 ETH
+
