@@ -237,7 +237,10 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("0.001", "ether"))
     );
 
-    this.GENESIS_MERKLE_ROOT = new BN(await this.exchange.genesisBlockHash());
+    this.GENESIS_MERKLE_ROOT = new BN(
+      (await this.exchange.genesisBlockHash()).slice(2),
+      16
+    );
 
     const constants = await this.exchangeConstants.getConstants();
     this.SNARK_SCALAR_FIELD = new BN(constants[0]);
