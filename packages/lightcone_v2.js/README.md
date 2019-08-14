@@ -7,6 +7,22 @@
 - `npm run build` to build the project
 - `npm run test` to run tests
 
+# Steps to run unit tests
+
+- Launch a local Eth node
+
+```
+docker run -p 8545:8545 kongliangzhong/contracts-beta2:0.2
+```
+
+- Run tests
+
+```
+npm install
+npm run build
+npm run test
+```
+
 # Entrypoint of library
 
 `src/index.ts`
