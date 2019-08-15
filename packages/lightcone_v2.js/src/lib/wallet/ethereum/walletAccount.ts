@@ -259,7 +259,7 @@ export class PrivateKeyAccount extends WalletAccount {
   }
 
   signEthereumTx(rawTx) {
-    validator.validate({ type: "TX", value: rawTx });
+    // validator.validate({ type: "TX", value: rawTx });
     const ethTx = new EthTransaction(rawTx);
     ethTx.sign(this.privateKey);
     return toHex(ethTx.serialize());

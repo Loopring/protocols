@@ -29,9 +29,9 @@ describe("sign transaction using private key", function() {
     const fees = await exchangeInstance.methods.getFees().call();
     console.log("fees:", fees);
 
-    // const updateAccountResponse = await exchange.updateAccount(
-    //   privateKeyAccount,
-    //   100
-    // );
+    const updateAccountResponse = await exchange.updateAccount(
+      privateKeyAccount,
+      1
+    );
   });
 });

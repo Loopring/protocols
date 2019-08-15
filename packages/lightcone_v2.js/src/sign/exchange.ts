@@ -25,7 +25,7 @@ import {
   SimpleOrderCancellationReq
 } from "../grpc/proto_gen/service_dex_pb";
 
-const MOCK_EXCHANGE_GAS_LIMIT = "0x5446a0";
+const MOCK_EXCHANGE_GAS_LIMIT = "0x186a0";
 
 // TODO: Rename Exchange
 export class Exchange {
@@ -202,14 +202,21 @@ export class Exchange {
           pubKeyY: fm.toBN(publicY)
         }
       );
+
+      const gasPriceValue = fm.toHex(fm.toBig(1).times(1e9));
+      console.log("gasPrice: ", gasPriceValue);
+
+      const gasLimitValue = fm.toHex("0x30D40");
+      console.log("gasLimit: ", gasLimitValue);
+
       return new Transaction({
         to: this.exchangeAddr,
-        value: this.dexConfigurations.account_update_fee_eth,
+        value: "1000000000000000000",
         data: data,
         chainId: config.getChainId(),
-        nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-        gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-        gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
+        nonce: await ethereum.wallet.getNonce(this.getAddress()),
+        gasPrice: gasPriceValue,
+        gasLimit: gasLimitValue
       });
     } catch (err) {
       console.error("Failed in method createOrUpdateAccount. Error: ", err);
