@@ -87,3 +87,7 @@ If you have installed truffle globally, you can run:
 `npm run transpile && truffle migrate --network <network> --reset --dry-run`
 
 Replace network with `development`, `live`, `ropsten`, `koven`, etc.
+
+## Verify Contract Source Code
+
+You can run `truffle-flattener <solidity-files>` to flatten a file.
