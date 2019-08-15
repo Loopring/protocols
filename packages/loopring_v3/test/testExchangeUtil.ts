@@ -584,7 +584,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(11, 6, 53);
+    const hasher = poseidon.createHash(10, 6, 53);
     const account = this.accounts[this.exchangeId][trans.accountFromID];
 
     // Calculate hash
@@ -2102,7 +2102,7 @@ export class ExchangeTestUtil {
             accountToID: this.dummyAccountId,
             transTokenID: 0,
             amount: new BN(0),
-            feeTokenID: 1,
+            feeTokenID: 0,
             fee: new BN(0),
             label: 0
           };

@@ -31,9 +31,10 @@ contract("Exchange", (accounts: string[]) => {
 
       const initBalance = new BN(web3.utils.toWei("7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
-      const transAmount = new BN(web3.utils.toWei("2", "ether"));
+      const transAmount1 = new BN(web3.utils.toWei("2", "ether"));
+      const transAmount2 = new BN(web3.utils.toWei("1.5", "ether"));
       const feeToken = exchangeTestUtil.getTokenAddress("ETH");
-      const feeToO = new BN(0);
+      const feeToO = new BN(web3.utils.toWei("0.1", "ether"));
 
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
@@ -94,7 +95,7 @@ contract("Exchange", (accounts: string[]) => {
         depositInfoA.accountID,
         depositInfoC.accountID,
         token,
-        transAmount,
+        transAmount1,
         feeToken,
         feeToO,
         0
@@ -105,7 +106,7 @@ contract("Exchange", (accounts: string[]) => {
         depositInfoB.accountID,
         depositInfoD.accountID,
         token,
-        transAmount,
+        transAmount2,
         feeToken,
         feeToO,
         0
@@ -117,5 +118,60 @@ contract("Exchange", (accounts: string[]) => {
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
     });
-  });
-});
+
+    it("Internal transfer partial block with dummy trans", async () => {
+      await createExchange();
+
+      const initBalance = new BN(web3.utils.toWei("7", "ether"));
+      const token = exchangeTestUtil.getTokenAddress("ETH");
+      const transAmount1 = new BN(web3.utils.toWei("1", "ether"));
+      const feeToken = exchangeTestUtil.getTokenAddress("ETH");
+      const feeToO = new BN(web3.utils.toWei("0.1", "ether"));
+
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
+      const depositInfoA = await exchangeTestUtil.deposit(
+        exchangeID,
+        ownerA,
+        keyPairA.secretKey,
+        keyPairA.publicKeyX,
+        keyPairA.publicKeyY,
+        token,
+        initBalance
+      );
+
+      // init C by 0
+      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
+      const keyPairC = exchangeTestUtil.getKeyPairEDDSA();
+      const depositInfoC = await exchangeTestUtil.deposit(
+        exchangeID,
+        ownerC,
+        keyPairC.secretKey,
+        keyPairC.publicKeyX,
+        keyPairC.publicKeyY,
+        token,
+        new BN(0)
+      );
+
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Do the request
+      await exchangeTestUtil.requestInternalTransfer(
+        exchangeID,
+        depositInfoA.accountID,
+        depositInfoC.accountID,
+        token,
+        transAmount1,
+        feeToken,
+        new BN(0),
+        0
+      );
+
+      // Commit the deposit
+      await exchangeTestUtil.commitInternalTransferRequests(exchangeID);
+
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+    });
+  }); // end of describe()
+}); // end of contract()
