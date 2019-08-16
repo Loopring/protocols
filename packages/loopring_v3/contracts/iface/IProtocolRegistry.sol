@@ -150,9 +150,10 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.
-    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
-    ///        in front of the native exchange contract to support upgradability;
-    ///        False to indicate a simple Proxy should be deployed instead.
+    /// @param supportUpgradability True to indicate an ExchangeUpgradabilityProxy
+    ///        shall be deploy in front of the native exchange contract to support
+    ///        upgradability; false to indicate a ExchangeSimpleProxy should be
+    ///        deployed instead.
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
@@ -169,9 +170,10 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param protocol The protocol address.
-    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
-    ///        in front of the native exchange contract to support upgradability;
-    ///        False to indicate a simple Proxy should be deployed instead.
+    /// @param supportUpgradability True to indicate an ExchangeUpgradabilityProxy
+    ///        shall be deploy in front of the native exchange contract to support
+    ///        upgradability; false to indicate a ExchangeSimpleProxy should be
+    ///        deployed instead.
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @return exchangeAddress The new exchange's address.
     /// @return exchangeId The new exchange's ID.
