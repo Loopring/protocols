@@ -24,7 +24,7 @@ describe("sign transaction using private key", function() {
       "0x3d88d9C4adC342cEff41855CF540844268390BE6"
     );
 
-    console.log("exchangeInstance：", exchangeInstance);
+    // console.log("exchangeInstance：", exchangeInstance);
 
     const fees = await exchangeInstance.methods.getFees().call();
     console.log("fees:", fees);
@@ -33,5 +33,27 @@ describe("sign transaction using private key", function() {
       privateKeyAccount,
       1
     );
+
+    // const updateAccountResponse = await exchange.updateAccount(
+    //   privateKeyAccount,
+    //   100
+    // );
+
+    const sender = "0x201bba420af6cebdaa29b7aff1244447bab35074"; // account 49
+
+    const publicKeyX = "12";
+    const publicKeyY = "34";
+    const tx = await exchangeInstance.methods
+      .createOrUpdateAccount(publicKeyX, publicKeyY)
+      .send({
+        from: sender,
+        gas: 1000000,
+        gasPrice: 1000000000,
+        value: "1000000000000000000"
+      });
+
+    const events = await exchangeInstance.getPastEvents("AccountCreated");
+    console.log("events:", events);
+
   });
 });
