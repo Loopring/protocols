@@ -111,6 +111,7 @@ contract ProtocolRegistry is IProtocolRegistry
         address addr
         )
         external
+        view
         returns (bool)
     {
         return exchangeToProtocol[addr] != address(0);

@@ -67,6 +67,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address addr
         )
         external
+        view
         returns (bool);
 
     /// @dev Registers a new protocol
