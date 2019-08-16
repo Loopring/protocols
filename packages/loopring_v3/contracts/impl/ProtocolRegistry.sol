@@ -22,8 +22,8 @@ import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
-import "./ExchangeSimpleProxy.sol";
-import "./ExchangeUpgradabilityProxy.sol";
+import "./ExchangeAutoUpgradabilityProxy.sol";
+import "./ExchangeManualUpgradabilityProxy.sol";
 
 
 /// @title An Implementation of IProtocolRegistry.
@@ -274,7 +274,7 @@ contract ProtocolRegistry is IProtocolRegistry
     }
 
     function forgeExchange(
-        bool    supportUpgradability,
+        uint8   upgradabilityMode,
         bool    onchainDataAvailability
         )
         external
@@ -286,14 +286,14 @@ contract ProtocolRegistry is IProtocolRegistry
     {
         return forgeExchangeInternal(
             defaultProtocol,
-            supportUpgradability,
+            upgradabilityMode,
             onchainDataAvailability
         );
     }
 
     function forgeExchange(
         address protocol,
-        bool    supportUpgradability,
+        uint8   upgradabilityMode,
         bool    onchainDataAvailability
         )
         external
@@ -305,7 +305,7 @@ contract ProtocolRegistry is IProtocolRegistry
     {
         return forgeExchangeInternal(
             protocol,
-            supportUpgradability,
+            upgradabilityMode,
             onchainDataAvailability
         );
     }
@@ -314,7 +314,7 @@ contract ProtocolRegistry is IProtocolRegistry
 
     function forgeExchangeInternal(
         address protocol,
-        bool    supportUpgradability,
+        uint8   upgradabilityMode,
         bool    onchainDataAvailability
         )
         private
@@ -335,12 +335,19 @@ contract ProtocolRegistry is IProtocolRegistry
             );
         }
 
-        if (supportUpgradability) {
+        if (upgradabilityMode == 0) {
+            // 0: automatic upgradability
             // Deploy an exchange proxy and points to the implementation
-            exchangeAddress = address(new ExchangeUpgradabilityProxy(address(this)));
-        } else {
+            exchangeAddress = address(new ExchangeAutoUpgradabilityProxy(address(this)));
+        } else if (upgradabilityMode == 1) {
+            // 1: manual upgradability
+            exchangeAddress = address(new ExchangeManualUpgradabilityProxy(msg.sender, address(this)));
+        } else if (upgradabilityMode == 2) {
+            // 2: no upgradability
             // Clone a native exchange from the implementation.
-            exchangeAddress = address(new ExchangeSimpleProxy(address(this)));
+            exchangeAddress = IExchange(protocols[protocol].implementation).clone();
+        } else {
+            revert("INVALID_UPGRADABILITY_MODE");
         }
 
         assert(exchangeToProtocol[exchangeAddress] == address(0));
@@ -361,7 +368,7 @@ contract ProtocolRegistry is IProtocolRegistry
             protocol,
             exchangeAddress,
             msg.sender,
-            supportUpgradability,
+            upgradabilityMode,
             onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC

@@ -16,6 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
+import "../thirdparty/Cloneable.sol";
+
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
@@ -26,4 +28,18 @@ contract IExchange is Claimable, ReentrancyGuard
 {
     string  constant public version          = ""; // must override this
     bytes32 constant public genesisBlockHash = 0;  // must override this
+
+    /// @dev Clone an exchange without any initialization
+    /// @return  cloneAddress The address of the new exchange.
+    function clone()
+        external
+        nonReentrant
+        returns (address cloneAddress)
+    {
+        address origin = address(this);
+        cloneAddress = Cloneable.clone(origin);
+
+        assert(cloneAddress != origin);
+        assert(cloneAddress != address(0));
+    }
 }

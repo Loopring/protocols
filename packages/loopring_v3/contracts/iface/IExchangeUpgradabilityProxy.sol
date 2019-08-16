@@ -19,9 +19,9 @@ pragma solidity ^0.5.11;
 import "../thirdparty/Proxy.sol";
 
 
-/// @title IExchangeProxy
+/// @title IExchangeUpgradabilityProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchangeProxy is Proxy
+contract IExchangeUpgradabilityProxy is Proxy
 {
     /// @dev Returns the dex's registry address.
     function registry() public view returns (address registryAddress);

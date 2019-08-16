@@ -26,6 +26,7 @@ const ExchangeTokens = artifacts.require(
 const ExchangeWithdrawals = artifacts.require(
   "./impl/libexchange/ExchangeWithdrawals.sol"
 );
+const Cloneable = artifacts.require("./thirdparty/Cloneable.sol");
 const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
 
 module.exports = function(deployer, network, accounts) {
@@ -40,7 +41,8 @@ module.exports = function(deployer, network, accounts) {
         ExchangeTokens.deployed(),
         ExchangeGenesis.deployed(),
         ExchangeDeposits.deployed(),
-        ExchangeWithdrawals.deployed()
+        ExchangeWithdrawals.deployed(),
+        Cloneable.deployed()
       ]);
     })
     .then(() => {
@@ -52,7 +54,8 @@ module.exports = function(deployer, network, accounts) {
         deployer.link(ExchangeTokens, ExchangeV3),
         deployer.link(ExchangeGenesis, ExchangeV3),
         deployer.link(ExchangeDeposits, ExchangeV3),
-        deployer.link(ExchangeWithdrawals, ExchangeV3)
+        deployer.link(ExchangeWithdrawals, ExchangeV3),
+        deployer.link(Cloneable, ExchangeV3)
       ]);
     })
     .then(() => {

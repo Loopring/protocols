@@ -32,7 +32,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address indexed loopring,
         address indexed exchangeAddress,
         address         owner,
-        bool            supportUpgradability,
+        uint8           upgradabilityMode,
         bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
@@ -158,16 +158,16 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.
-    /// @param supportUpgradability True to indicate an ExchangeUpgradabilityProxy
-    ///        shall be deploy in front of the native exchange contract to support
-    ///        upgradability; false to indicate a ExchangeSimpleProxy should be
-    ///        deployed instead.
+    /// @param upgradabilityMode Specify how the exchange shall support upgradability.
+    ///        0: automatical upgradability
+    ///        1: manual upgradability
+    ///        2: no upgradability
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        bool supportUpgradability,
-        bool onchainDataAvailability
+        uint8   upgradabilityMode,
+        bool    onchainDataAvailability
         )
         external
         returns (
@@ -178,16 +178,16 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param protocol The protocol address.
-    /// @param supportUpgradability True to indicate an ExchangeUpgradabilityProxy
-    ///        shall be deploy in front of the native exchange contract to support
-    ///        upgradability; false to indicate a ExchangeSimpleProxy should be
-    ///        deployed instead.
+    /// @param upgradabilityMode Specify how the exchange shall support upgradability.
+    ///        0: automatical upgradability
+    ///        1: manual upgradability
+    ///        2: no upgradability
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @return exchangeAddress The new exchange's address.
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         address protocol,
-        bool    supportUpgradability,
+        uint8   upgradabilityMode,
         bool    onchainDataAvailability
         )
         external

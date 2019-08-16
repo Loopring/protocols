@@ -17,45 +17,26 @@
 pragma solidity ^0.5.11;
 
 import "../iface/IExchange.sol";
-import "../iface/IExchangeProxy.sol";
+import "../iface/IExchangeUpgradabilityProxy.sol";
 import "../iface/IProtocolRegistry.sol";
 
 
-/// @title ExchangeSimpleProxy
+/// @title ExchangeAutoUpgradabilityProxy
+/// @dev This proxy is designed to support automatic Upgradability offered by a
+///      IProtocolRegistry contract.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeSimpleProxy is IExchangeProxy
+contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
 {
     bytes32 private constant registryPosition = keccak256(
         "org.loopring.protocol.v3.registry"
-    );
-    bytes32 private constant protocolPosition = keccak256(
-        "org.loopring.protocol.v3.protocol"
-    );
-    bytes32 private constant implPosition = keccak256(
-        "org.loopring.protocol.v3.implementation"
     );
 
     constructor(address _registry)
         public
     {
-        IProtocolRegistry r = IProtocolRegistry(_registry);
-        address _proto;
-        address _impl;
-        (_proto, _impl, ) = r.getExchangeProtocol(address(this));
-
         bytes32 position = registryPosition;
         assembly {
           sstore(position, _registry)
-        }
-
-        position = protocolPosition;
-        assembly {
-          sstore(position, _proto)
-        }
-
-        position = implPosition;
-        assembly {
-          sstore(position, _impl)
         }
     }
 
@@ -73,22 +54,18 @@ contract ExchangeSimpleProxy is IExchangeProxy
     function protocol()
         public
         view
-        returns (address _addr)
+        returns (address _protocol)
     {
-        bytes32 position = protocolPosition;
-        assembly {
-          _addr := sload(position)
-        }
+        IProtocolRegistry r = IProtocolRegistry(registry());
+        (_protocol, , ) = r.getExchangeProtocol(address(this));
     }
 
     function implementation()
         public
         view
-        returns (address _addr)
+        returns (address impl)
     {
-        bytes32 position = implPosition;
-        assembly {
-          _addr := sload(position)
-        }
+        IProtocolRegistry r = IProtocolRegistry(registry());
+        (, impl, ) = r.getExchangeProtocol(address(this));
     }
 }
