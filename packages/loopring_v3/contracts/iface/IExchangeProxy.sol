@@ -16,14 +16,18 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Claimable.sol";
-import "../lib/ReentrancyGuard.sol";
+import "../thirdparty/Proxy.sol";
 
 
-/// @title IExchange
+/// @title IExchangeProxy
+/// @dev This proxy is designed to support transparent upgradeability offered by a
+///      IProtocolRegistry contract.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchange is Claimable, ReentrancyGuard
+contract IExchangeProxy is Proxy
 {
-    string  constant public version          = ""; // must override this
-    bytes32 constant public genesisBlockHash = 0;  // must override this
+    /// @dev Returns the dex's registry address.
+    function registry() public view returns (address registryAddress);
+
+    /// @dev Returns the dex's protocol address.
+    function protocol() public view returns (address protocolAddress);
 }

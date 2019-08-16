@@ -16,13 +16,16 @@
 */
 pragma solidity ^0.5.11;
 
+import "../thirdparty/Proxy.sol";
+
 import "../lib/BurnableERC20.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
-import "./ExchangeProxy.sol";
+import "./ExchangeSimpleProxy.sol";
+import "./ExchangeUpgradabilityProxy.sol";
 
 
 /// @title An Implementation of IProtocolRegistry.
@@ -317,13 +320,12 @@ contract ProtocolRegistry is IProtocolRegistry
             );
         }
 
-        IExchange implementation = IExchange(protocols[protocol].implementation);
         if (supportUpgradability) {
             // Deploy an exchange proxy and points to the implementation
-            exchangeAddress = address(new ExchangeProxy(address(this)));
+            exchangeAddress = address(new ExchangeUpgradabilityProxy(address(this)));
         } else {
             // Clone a native exchange from the implementation.
-            exchangeAddress = implementation.clone();
+            exchangeAddress = address(new ExchangeSimpleProxy(address(this)));
         }
 
         assert(exchangeToProtocol[exchangeAddress] == address(0));

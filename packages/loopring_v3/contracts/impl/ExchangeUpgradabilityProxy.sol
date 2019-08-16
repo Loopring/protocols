@@ -16,17 +16,16 @@
 */
 pragma solidity ^0.5.11;
 
-import "../thirdparty/Proxy.sol";
-
 import "../iface/IExchange.sol";
+import "../iface/IExchangeProxy.sol";
 import "../iface/IProtocolRegistry.sol";
 
 
-/// @title ExchangeProxy
+/// @title ExchangeUpgradabilityProxy
 /// @dev This proxy is designed to support transparent upgradeability offered by a
 ///      IProtocolRegistry contract.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeProxy is Proxy
+contract ExchangeUpgradabilityProxy is IExchangeProxy
 {
     bytes32 private constant registryPosition = keccak256(
         "org.loopring.protocol.v3.registry"
