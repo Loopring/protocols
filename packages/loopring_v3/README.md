@@ -88,7 +88,6 @@ If you have installed truffle globally, you can run:
 
 Replace network with `development`, `live`, `ropsten`, `koven`, etc.
 
-## Verify Contract Source Code
+## Etherscan.io Code Verification
 
-You can run `truffle-flattener <solidity-files>` to flatten a file.
-For contracts with constructor arguments, use https://abi.hashex.org/ to generated the argument string.
+You can run `truffle-flattener <solidity-files>` to flatten a file. For contracts with constructor arguments, use https://abi.hashex.org/ to generated the argument string. To verify on etherscan.io, you also need to learn which libraries are linked to each contract from the migration scripts.
