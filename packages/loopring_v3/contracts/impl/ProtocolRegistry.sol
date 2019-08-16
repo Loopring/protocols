@@ -42,9 +42,16 @@ contract ProtocolRegistry is IProtocolRegistry
         string  version;  // must be unique globally
     }
 
+    // ILoopring address => Protocol structs
     mapping (address => Protocol)       private protocols;
+
+    // IExchange address => Implementation structs
     mapping (address => Implementation) private impls;
+
+    // version strings => IProtocol addresses
     mapping (string => address)         private versions;
+
+    // exchange addresses => ILoopring addresses
     mapping (address => address)        private exchangeToProtocol;
 
     modifier addressNotZero(address addr)
@@ -98,6 +105,15 @@ contract ProtocolRegistry is IProtocolRegistry
         addressNotZero(_lrcAddress)
     {
         lrcAddress = _lrcAddress;
+    }
+
+    function isRegisteredExchange(
+        address addr
+        )
+        external
+        returns (bool)
+    {
+        return exchangeToProtocol[addr] != address(0);
     }
 
     function registerProtocol(

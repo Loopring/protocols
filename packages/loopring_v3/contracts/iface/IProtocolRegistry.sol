@@ -62,6 +62,13 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address indexed protocol
     );
 
+    /// @dev Returns true if the given address is a registered Loopring DEX.
+    function isRegisteredExchange(
+        address addr
+        )
+        external
+        returns (bool);
+
     /// @dev Registers a new protocol
     /// @param protocol The protocol address.
     /// @param implementation The protocol's implementaion address.
