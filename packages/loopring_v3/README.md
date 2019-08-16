@@ -91,3 +91,4 @@ Replace network with `development`, `live`, `ropsten`, `koven`, etc.
 ## Verify Contract Source Code
 
 You can run `truffle-flattener <solidity-files>` to flatten a file.
+For contracts with constructor arguments, use https://abi.hashex.org/ to generated the argument string.
