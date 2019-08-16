@@ -92,6 +92,14 @@ contract ExchangeV3 is IExchangeV3
         );
     }
 
+    function id()
+        external
+        view
+        returns (uint)
+    {
+        return state.id;
+    }
+
     // -- Mode --
     function isInWithdrawalMode()
         external
