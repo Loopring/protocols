@@ -29,10 +29,10 @@ describe("sign transaction using private key", function() {
     const fees = await exchangeInstance.methods.getFees().call();
     console.log("fees:", fees);
 
-    const updateAccountResponse = await exchange.updateAccount(
-      privateKeyAccount,
-      1
-    );
+    // const updateAccountResponse = await exchange.updateAccount(
+    //   privateKeyAccount,
+    //   1
+    // );
 
     // const updateAccountResponse = await exchange.updateAccount(
     //   privateKeyAccount,
@@ -53,7 +53,11 @@ describe("sign transaction using private key", function() {
       });
 
     const events = await exchangeInstance.getPastEvents("AccountCreated");
-    console.log("events:", events);
+    const events2 = await exchangeInstance.getPastEvents("AccountUpdated");
+    const events3 = await exchangeInstance.getPastEvents("DepositRequested");
 
+    console.log("events:", events);
+    console.log("events2:", events2);
+    console.log("events3:", events3);
   });
 });

@@ -209,6 +209,8 @@ export class Exchange {
       const gasLimitValue = fm.toHex("0x30D40");
       console.log("gasLimit: ", gasLimitValue);
 
+      // const txCount = await web3.eth.getTransactionCount(this.getAddress());
+
       return new Transaction({
         to: this.exchangeAddr,
         value: "1000000000000000000",
