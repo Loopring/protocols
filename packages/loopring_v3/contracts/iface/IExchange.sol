@@ -26,6 +26,7 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange is Claimable, ReentrancyGuard
 {
+    string  public name = "";
     string  constant public version          = ""; // must override this
     bytes32 constant public genesisBlockHash = 0;  // must override this
 

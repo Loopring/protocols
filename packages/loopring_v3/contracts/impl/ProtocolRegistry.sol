@@ -256,6 +256,7 @@ contract ProtocolRegistry is IProtocolRegistry
     }
 
     function forgeExchange(
+        string  calldata exchangeName,
         bool    supportUpgradability,
         bool    onchainDataAvailability
         )
@@ -267,6 +268,7 @@ contract ProtocolRegistry is IProtocolRegistry
         )
     {
         return forgeExchangeInternal(
+            exchangeName,
             defaultProtocol,
             supportUpgradability,
             onchainDataAvailability
@@ -274,6 +276,7 @@ contract ProtocolRegistry is IProtocolRegistry
     }
 
     function forgeExchange(
+        string  calldata exchangeName,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
@@ -286,6 +289,7 @@ contract ProtocolRegistry is IProtocolRegistry
         )
     {
         return forgeExchangeInternal(
+            exchangeName,
             protocol,
             supportUpgradability,
             onchainDataAvailability
@@ -295,6 +299,7 @@ contract ProtocolRegistry is IProtocolRegistry
     // --- Private Functions ---
 
     function forgeExchangeInternal(
+        string  memory exchangeName,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability
@@ -307,6 +312,8 @@ contract ProtocolRegistry is IProtocolRegistry
             uint    exchangeId
         )
     {
+        require(bytes(exchangeName).length > 0, "EMPTY_NAME");
+        
         ILoopring loopring = ILoopring(protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
@@ -333,6 +340,7 @@ contract ProtocolRegistry is IProtocolRegistry
         exchangeId = exchanges.length;
 
         loopring.initializeExchange(
+            exchangeName,
             exchangeAddress,
             exchangeId,
             msg.sender,  // owner

@@ -72,6 +72,7 @@ contract LoopringV3 is ILoopringV3
     }
 
     function initializeExchange(
+        string  calldata exchangeName,
         address exchangeAddress,
         uint    exchangeId,
         address owner,
@@ -92,6 +93,7 @@ contract LoopringV3 is ILoopringV3
 
         // If the exchange has already been initialized, the following function will throw.
         exchange.initialize(
+            exchangeName,
             address(this),
             owner,
             exchangeId,

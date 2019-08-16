@@ -138,14 +138,16 @@ contract IExchangeV3 is IExchange
 
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
+    /// @param  name The name of the exchange.
+    /// @param  loopringAddress The corresponding ILoopring contract address.
     /// @param  owner The owner of this exchange.
     /// @param  exchangeId The id of this exchange.
     /// @param  operator The operator address of the exchange who will be responsible for
     ///         submitting blocks and proofs.
-    /// @param  loopringAddress The corresponding ILoopring contract address.
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     function initialize(
+        string  calldata name,
         address loopringAddress,
         address owner,
         uint    exchangeId,

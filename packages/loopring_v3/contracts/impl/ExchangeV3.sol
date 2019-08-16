@@ -70,6 +70,7 @@ contract ExchangeV3 is IExchangeV3
 
     // -- Initialization --
     function initialize(
+        string  calldata _name,
         address _loopringAddress,
         address _owner,
         uint    _id,
@@ -82,6 +83,7 @@ contract ExchangeV3 is IExchangeV3
     {
         require(address(0) != _owner, "ZERO_ADDRESS");
         owner = _owner;
+        name = _name;
 
         state.initializeGenesisBlock(
             _id,

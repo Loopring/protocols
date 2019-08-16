@@ -150,14 +150,16 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Create a new exchange using the default protocol with msg.sender
     ///      as owner and operator.
+    /// @param exchangeName The name of the exchange.
     /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
     ///        in front of the native exchange contract to support upgradability.
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        bool supportUpgradability,
-        bool onchainDataAvailability
+        string  calldata exchangeName,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
         )
         external
         returns (
@@ -167,6 +169,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
+    /// @param exchangeName The name of the exchange.
     /// @param protocol The protocol address.
     /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
     ///        in front of the native exchange contract to support upgradability.
@@ -174,6 +177,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @return exchangeAddress The new exchange's address.
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
+        string  calldata exchangeName,
         address protocol,
         bool    supportUpgradability,
         bool    onchainDataAvailability

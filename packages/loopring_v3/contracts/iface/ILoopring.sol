@@ -39,6 +39,7 @@ contract ILoopring is Claimable, ReentrancyGuard
     /// @dev Initialize and register an exchange.
     ///      This function should only be callabled by the protocolRegistry contract.
     ///      Also note that this function can only be called once per exchange instance.
+    /// @param   exchangeName The name of the exchange.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
     /// @param  exchangeId The unique exchange id.
     /// @param  owner The owner of the exchange.
@@ -47,6 +48,7 @@ contract ILoopring is Claimable, ReentrancyGuard
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
     /// @return exchangeId The id of the exchange.
     function initializeExchange(
+        string calldata exchangeName,
         address exchangeAddress,
         uint    exchangeId,
         address owner,
