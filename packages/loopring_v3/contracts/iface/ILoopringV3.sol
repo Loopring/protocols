@@ -68,7 +68,6 @@ contract ILoopringV3 is ILoopring
     uint    public totalStake;
 
     address public wethAddress;
-    address public exchangeDeployerAddress;
     address public blockVerifierAddress;
     address public downtimeCostCalculator;
     uint    public maxWithdrawalFee;
