@@ -16,8 +16,6 @@
 */
 pragma solidity ^0.5.11;
 
-import "../thirdparty/Proxy.sol";
-
 import "../lib/BurnableERC20.sol";
 
 import "../iface/IExchange.sol";
