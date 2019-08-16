@@ -918,7 +918,7 @@ class State(object):
         # This is done after all internal transfer are processed
         internalTrans = InternalTransfer(exchangeID,
                                     accountFromID, accountToID,
-                                    transTokenID, amountTrans,
+                                    transTokenID, amountRequested,
                                     feeTokenID, fee, label,
                                     nonce, nonceTo,
                                     balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
