@@ -20,6 +20,7 @@ import "../thirdparty/Proxy.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/IProtocolRegistry.sol";
+import "../iface/IImplementationManager.sol";
 
 
 /// @title ExchangeProxy
@@ -58,7 +59,7 @@ contract ExchangeProxy is Proxy
         returns (address _protocol)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-        (_protocol, , ) = r.getExchangeProtocol(address(this));
+        (_protocol, ) = r.getExchangeProtocol(address(this));
     }
 
     function implementation()
@@ -67,6 +68,7 @@ contract ExchangeProxy is Proxy
         returns (address impl)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-        (, impl, ) = r.getExchangeProtocol(address(this));
+        (, address implManager) = r.getExchangeProtocol(address(this));
+        impl = IImplementationManager(implManager).defaultImpl();
     }
 }

@@ -40,6 +40,7 @@
     "migrate-dev": "npm run transpile && truffle migrate --network development   | tee -a deployment/development.deployed",
     "coverage": "./node_modules/.bin/solidity-coverage",
     "truffle": "truffle",
+    "solium": "solium -d contracts",
     "clean": "rm -rf build blocks keys transpiled",
     "v": "node -v",
     "preinstall": "rm -rf node_modules/websocket/.git",

@@ -42,33 +42,29 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         uint8   v;
 
         if (permission.length != 73) {
-          return false;
+            return false;
         }
 
         assembly {
-          t := mload(add(permission, 8)) // first 8 bytes as time in second since epoch
-          r := mload(add(permission, 40))
-          s := mload(add(permission, 72))
-          v := and(mload(add(permission, 73)), 255)
+            t := mload(add(permission, 8)) // first 8 bytes as time in second since epoch
+            r := mload(add(permission, 40))
+            s := mload(add(permission, 72))
+            v := and(mload(add(permission, 73)), 255)
         }
 
-        if (t < now - PERMISSION_TIMEOUT){
+        if (t < now - PERMISSION_TIMEOUT) {
             return false;
         }
 
         if (v < 27) {
-          v += 27;
+            v += 27;
         }
 
         if (v != 27 && v != 28) {
-          return false;
+            return false;
         }
 
-        bytes32 hash = keccak256(abi.encode(
-            "LOOPRING_DEX_ACCOUNT_CREATION",
-            user,
-            t
-        ));
+        bytes32 hash = keccak256(abi.encode("LOOPRING_DEX_ACCOUNT_CREATION", user, t));
         return owner == ecrecover(hash, v, r, s);
     }
 }
