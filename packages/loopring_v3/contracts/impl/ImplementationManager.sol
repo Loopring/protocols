@@ -123,6 +123,7 @@ contract ImplementationManager is IImplementationManager
         external
         nonReentrant
     {
+        require(implementation != defaultImpl, "FORBIDDEN");
         require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
 
         statusMap[implementation].enabled = false;

@@ -120,7 +120,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         onlyOwner
     {
         require(protocol != defaultProtocolAddress, "SAME_PROTOCOL");
-        requier(protocolMap[protocol].enabled, "PROTOCOL_DISABLED");
+        require(protocolMap[protocol].enabled, "PROTOCOL_DISABLED");
         address oldDefault = defaultProtocolAddress;
         defaultProtocolAddress = protocol;
         emit DefaultProtocolChanged(oldDefault, defaultProtocolAddress);
