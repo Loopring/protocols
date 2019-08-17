@@ -286,7 +286,7 @@ contract LoopringRegistry is ILoopringRegistry
     }
 
     function forgeExchange(
-        uint8   upgradabilityMode,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability
         )
         external
@@ -305,7 +305,7 @@ contract LoopringRegistry is ILoopringRegistry
 
     function forgeExchange(
         address protocol,
-        uint8   upgradabilityMode,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability
         )
         external
@@ -326,7 +326,7 @@ contract LoopringRegistry is ILoopringRegistry
 
     function forgeExchangeInternal(
         address protocol,
-        uint8   upgradabilityMode,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability
         )
         private

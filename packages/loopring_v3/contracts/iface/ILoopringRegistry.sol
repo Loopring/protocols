@@ -32,7 +32,7 @@ contract ILoopringRegistry is Claimable, ReentrancyGuard
         address indexed loopring,
         address indexed exchangeAddress,
         address         owner,
-        uint8           upgradabilityMode,
+        uint            upgradabilityMode,
         bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
@@ -177,8 +177,8 @@ contract ILoopringRegistry is Claimable, ReentrancyGuard
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        uint8   upgradabilityMode,
-        bool    onchainDataAvailability
+        uint upgradabilityMode,
+        bool onchainDataAvailability
         )
         external
         returns (
@@ -198,7 +198,7 @@ contract ILoopringRegistry is Claimable, ReentrancyGuard
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         address protocol,
-        uint8   upgradabilityMode,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability
         )
         external
