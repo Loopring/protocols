@@ -24,9 +24,9 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopring is Claimable, ReentrancyGuard
 {
-    address public ProtocolRegistry;
-    address public lrcAddress;
+    string  constant public version = ""; // must override this
     uint    public exchangeCreationCostLRC;
+    address public protocolRegistry;
 
     event ExchangeInitialized(
         uint    indexed exchangeId,

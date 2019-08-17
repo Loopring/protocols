@@ -26,8 +26,9 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange is Claimable, ReentrancyGuard
 {
-    string  constant public version          = ""; // must override this
-    bytes32 constant public genesisBlockHash = 0;  // must override this
+    string constant public version = ""; // must override this
+
+    event Cloned (address indexed clone);
 
     /// @dev Clone an exchange without any initialization
     /// @return  cloneAddress The address of the new exchange.
@@ -41,5 +42,7 @@ contract IExchange is Claimable, ReentrancyGuard
 
         assert(cloneAddress != origin);
         assert(cloneAddress != address(0));
+
+        emit Cloned(cloneAddress);
     }
 }

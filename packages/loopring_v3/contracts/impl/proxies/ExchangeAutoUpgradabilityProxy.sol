@@ -37,6 +37,6 @@ contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
         returns (address impl)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-        (, impl, ) = r.getExchangeProtocol(address(this));
+        (, impl) = r.getExchangeProtocol(address(this));
     }
 }

@@ -19,6 +19,7 @@ pragma solidity ^0.5.11;
 import "../thirdparty/Proxy.sol";
 
 import "../iface/IProtocolRegistry.sol";
+import "../iface/IImplementationManager.sol";
 
 
 /// @title IExchangeUpgradabilityProxy
@@ -52,7 +53,7 @@ contract IExchangeUpgradabilityProxy is Proxy
         returns (address protocolAddress)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-        (protocolAddress, , ) = r.getExchangeProtocol(address(this));
+        (protocolAddress, ) = r.getExchangeProtocol(address(this));
     }
 
     function setRegistry(address _registry)

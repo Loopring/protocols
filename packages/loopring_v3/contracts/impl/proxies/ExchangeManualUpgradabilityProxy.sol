@@ -90,10 +90,10 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         private
         view
     {
-        IProtocolRegistry registry = IProtocolRegistry(registry());
-        require(
-            registry.isImplementationEnabled(protocol(), newImplementation),
-            "INVALID_IMPLEMENTATION"
-        );
+        // IProtocolRegistry registry = IProtocolRegistry(registry());
+        // require(
+        //     registry.isEnabled(protocol(), newImplementation),
+        //     "INVALID_IMPLEMENTATION"
+        // );
     }
 }
