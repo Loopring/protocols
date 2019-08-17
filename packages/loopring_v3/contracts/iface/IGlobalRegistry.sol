@@ -29,11 +29,7 @@ contract IGlobalRegistry is Claimable, ReentrancyGuard
 
     event ExchangeRegistered(address exchange);
 
-    event ProtocolRegistered(
-        address protocol,
-        string  version,
-        address versionManager
-    );
+    event ProtocolRegistered(address protocol, address versionManager, string  version);
 
     // --- Data ---
     address[] public exchanges;

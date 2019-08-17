@@ -16,8 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/IVersionManager.sol";
+import "../iface/ILoopring.sol";
 import "../iface/IGlobalRegistry.sol";
+
+import "./VersionManager.sol";
 
 /// @title Implementation of IGlobalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -32,20 +34,19 @@ contract GlobalRegistry is IGlobalRegistry {
     struct Protocol
     {
         address protocol;
+        address versionManager;
         string  version;
         bool    registered;
         bool    enabled;
     }
 
-    address   public defaultVersionManager;
-    address[] public managers;
+    address   private defaultProtocolAddress;
+    address[] public  protocols;
 
     // IProtocol.version => IProtocol address
     mapping   (string => address) public versionMap;
-    // IVersionManager address => Protocol
-    mapping   (address => Protocol) private managerMap;
-    // ILoopring address => IVersionManager address
-    mapping   (address => address) private protocolMap;
+    // ILoopring address => Protocol
+    mapping   (address => Protocol) private protocolMap;
 
     // --- Constructor ---
     constructor() public Ownable() {}
@@ -64,74 +65,66 @@ contract GlobalRegistry is IGlobalRegistry {
 
     // --- Public Functions for Version Manager Registry ---
 
-    function defaultProtocolVersion()
-        external
-        view
-        returns (string memory)
-    {
-        if (defaultVersionManager != address(0)) {
-            return IVersionManager(defaultVersionManager).protocolVersion();
-        }
-    }
-
     function defaultProtocol()
         external
         view
-        returns (address)
+        returns (
+            address protocol,
+            address versionmanager,
+            address defaultImplementation,
+            string  memory protocolVersion,
+            string  memory defaultImplementationVersion
+        )
     {
-        if (defaultVersionManager != address(0)) {
-            return IVersionManager(defaultVersionManager).protocol();
-        }
+        // TODO
     }
 
     function registerProtocol(
-        address versionManager
+        address protocol,
+        address implementation
         )
         external
         onlyOwner
+        returns (address versionManager)
     {
-        require(!managerMap[versionManager].registered, "MANAGER_REGISTERED");
+        require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
 
-        IVersionManager manager = IVersionManager(versionManager);
-        address _owner = manager.owner();
-        require(_owner == owner, "INVALID_OWNER");
+        IVersionManager manager = new VersionManager(owner, protocol, implementation);
+        versionManager = address(manager);
 
-        string memory version = manager.protocolVersion();
+        string memory version = ILoopring(protocol).version();
         require(versionMap[version] == address(0), "VERSION_REGISTERED");
+        require(!protocolMap[protocol].registered, "PROTOCOL_REGISTERED");
 
-        address protocol = manager.protocol();
-        require(protocolMap[protocol] == address(0), "PROTOCOL_REGISTERED");
-
-        managerMap[versionManager] = Protocol(protocol, version, true, true);
+        protocols.push(protocol);
         versionMap[version] = protocol;
-        protocolMap[protocol] = versionManager;
-        managers.push(versionManager);
+        protocolMap[protocol] = Protocol(protocol, versionManager, version, true, true);
 
-        if (defaultVersionManager == address(0)) {
-            defaultVersionManager = versionManager;
+        if (defaultProtocolAddress == address(0)) {
+            defaultProtocolAddress = protocol;
         }
 
-        emit ProtocolRegistered(protocol, version, protocol);
+        emit ProtocolRegistered(protocol, versionManager, version);
     }
 
     function isProtocolRegistered(
-        address versionManager
+        address protocol
         )
         public
         view
         returns (bool)
     {
-        return managerMap[versionManager].registered;
+        return protocolMap[protocol].registered;
     }
 
-    function isVersionManagerEnabled(
-        address versionManager
+    function isProtocolEnabled(
+        address protocol
         )
         public
         view
         returns (bool)
     {
-        return managerMap[versionManager].enabled;
+        return protocolMap[protocol].enabled;
     }
 
     // --- Private Functions ---

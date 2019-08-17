@@ -37,15 +37,19 @@ contract VersionManager is IVersionManager
     // --- Constructor ---
 
     constructor(
+        address _owner,
         address _protocol,
         address _implementation
         )
         public
-        Ownable()
     {
+        require(_owner != address(0), "ZERO_ADDRESS");
         require(_protocol != address(0), "ZERO_PROTOCOL");
+
+        owner = _owner;
         protocol = _protocol;
         defaultImplementation = _implementation;
+
         addImplementation(_implementation);
     }
 
@@ -57,6 +61,14 @@ contract VersionManager is IVersionManager
         returns (string memory)
     {
         return ILoopring(protocol).version();
+    }
+
+    function defaultImplementationVersion()
+        external
+        view
+        returns (string memory)
+    {
+        return IExchange(defaultImplementation).version();
     }
 
     function addImplementation(
