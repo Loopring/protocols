@@ -25,14 +25,14 @@ import "../iface/IVersionManager.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract VersionManager is IVersionManager
 {
-    struct MinorVersion
+    struct Version
     {
         bool registered;
         bool enabled;
     }
 
-    // implementation => MinorVersion
-    mapping (address => MinorVersion) private implementationMap;
+    // implementation => Version
+    mapping (address => Version) private versions;
 
     // --- Constructor ---
 
@@ -72,11 +72,11 @@ contract VersionManager is IVersionManager
         require(bytes(version).length > 0, "INVALID_VERISON_LABEL");
         require(versionLabelMap[version] == address(0), "VERISON_LABEL_USED");
 
-        MinorVersion storage state = implementationMap[implementation];
+        Version storage state = versions[implementation];
         require(!state.registered, "INVALID_IMPLEMENTATION");
 
         implementations.push(implementation);
-        implementationMap[implementation] = MinorVersion(true, true);
+        versions[implementation] = Version(true, true);
         versionLabelMap[version] = implementation;
 
         emit ImplementationAdded(implementation, version);
@@ -93,7 +93,7 @@ contract VersionManager is IVersionManager
         address oldDefault = defaultImplementation;
         defaultImplementation = implementation;
 
-        emit DefaultImplementationChanged(
+        emit DefaultChanged(
             oldDefault,
             implementation
         );
@@ -105,7 +105,7 @@ contract VersionManager is IVersionManager
         external
         nonReentrant
     {
-        MinorVersion storage state = implementationMap[implementation];
+        Version storage state = versions[implementation];
         require(state.registered && !state.enabled, "INVALID_IMPLEMENTATION");
 
         state.enabled = true;
@@ -120,7 +120,7 @@ contract VersionManager is IVersionManager
     {
         require(isImplementationEnabled(implementation), "INVALID_IMPLEMENTATION");
 
-        implementationMap[implementation].enabled = false;
+        versions[implementation].enabled = false;
         emit ImplementationDisabled(implementation);
     }
 
@@ -139,7 +139,7 @@ contract VersionManager is IVersionManager
         view
         returns (bool)
     {
-        return implementationMap[implementation].registered;
+        return versions[implementation].registered;
     }
 
     function isImplementationEnabled(
@@ -149,6 +149,6 @@ contract VersionManager is IVersionManager
         view
         returns (bool)
     {
-        return implementationMap[implementation].enabled;
+        return versions[implementation].enabled;
     }
 }

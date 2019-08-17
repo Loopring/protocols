@@ -22,15 +22,16 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title IVersionManager
 /// @dev This contract manages implementation versions for a perticular ILoopring
-///      version.
+///      contract. The ILoopring contract can be considered as the "major" version
+///      and each IExchange implementation can be considiered as the "minor" version.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IVersionManager is Claimable, ReentrancyGuard
 {
     // --- Events ---
 
-    event DefaultImplementationChanged(
-        address oldDefaultImplementation,
-        address newDefaultImplementation
+    event DefaultChanged(
+        address oldDefault,
+        address newDefault
     );
 
     event ImplementationAdded   (address implementation, string version);
