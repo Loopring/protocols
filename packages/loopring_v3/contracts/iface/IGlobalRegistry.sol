@@ -54,8 +54,12 @@ contract IGlobalRegistry is Claimable, ReentrancyGuard
     // --- Data ---
     address   public lrcAddress;
     address[] public exchanges;
+    address[] public protocols;
 
-    // --- Functions ---
+    // IProtocol.version => IProtocol address
+    mapping (string => address) public versionMap;
+
+    // --- Public Functions for Version Manager Registry ---
 
     function isExchangeRegistered(
         address exchange
@@ -63,4 +67,77 @@ contract IGlobalRegistry is Claimable, ReentrancyGuard
         public
         view
         returns (bool);
+
+    function defaultProtocol()
+        external
+        view
+        returns (
+            address protocol,
+            address versionmanager,
+            address defaultImplementation,
+            string  memory protocolVersion,
+            string  memory defaultImplementationVersion
+        );
+
+    function registerProtocol(
+        address protocol,
+        address implementation
+        )
+        external
+        returns (address versionManager);
+
+    function isProtocolRegistered(
+        address protocol
+        )
+        public
+        view
+        returns (bool);
+
+    function isProtocolEnabled(
+        address protocol
+        )
+        public
+        view
+        returns (bool);
+
+    function enableProtocol(
+        address protocol
+        )
+        external;
+
+    function disableProtocol(
+        address protocol
+        )
+        external;
+
+    function forgeExchange(
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        );
+
+    function forgeExchange(
+        address protocol,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        );
+
+    function getExchangeProtocol(
+        address exchangeAddress
+        )
+        external
+        view
+        returns (
+            address protocol,
+            address versionManager
+        );
 }

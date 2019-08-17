@@ -206,6 +206,23 @@ contract GlobalRegistry is IGlobalRegistry {
         );
     }
 
+    function getExchangeProtocol(
+        address exchangeAddress
+        )
+        external
+        view
+        returns (
+            address protocol,
+            address versionManager
+        )
+    {
+        require(exchangeAddress != address(0), "ZERO_ADDRESS");
+        protocol = exchangeMap[exchangeAddress];
+        require(protocol != address(0), "INVALID_EXCHANGE");
+
+        versionManager = protocolMap[protocol].versionManager;
+    }
+
     // --- Private Functions ---
 
     function forgeExchangeInternal(

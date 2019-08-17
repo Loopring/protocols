@@ -37,7 +37,7 @@ contract LoopringV3 is ILoopringV3
 
     // -- Constructor --
     constructor(
-        address _protocolRegistry,
+        address _globalRegistry,
         address _lrcAddress,
         address _wethAddress,
         address payable _protocolFeeVault,
@@ -47,11 +47,11 @@ contract LoopringV3 is ILoopringV3
         Ownable()
         public
     {
-        require(address(0) != _protocolRegistry, "ZERO_ADDRESS");
+        require(address(0) != _globalRegistry, "ZERO_ADDRESS");
         require(address(0) != _lrcAddress, "ZERO_ADDRESS");
         require(address(0) != _wethAddress, "ZERO_ADDRESS");
 
-        protocolRegistry = _protocolRegistry;
+        globalRegistry = _globalRegistry;
         lrcAddress = _lrcAddress;
         wethAddress = _wethAddress;
 
@@ -65,9 +65,9 @@ contract LoopringV3 is ILoopringV3
 
     // === ILoopring methods ===
 
-    modifier onlyProtocolRegistry()
+    modifier onlyGlobalRegistry()
     {
-        require(msg.sender == protocolRegistry, "UNAUTHORIZED");
+        require(msg.sender == globalRegistry, "UNAUTHORIZED");
         _;
     }
 
@@ -80,7 +80,7 @@ contract LoopringV3 is ILoopringV3
         )
         external
         nonReentrant
-        onlyProtocolRegistry
+        onlyGlobalRegistry
     {
         require(exchangeId != 0, "ZERO_ID");
         require(exchangeAddress != address(0), "ZERO_ADDRESS");

@@ -1,6 +1,8 @@
 // Deploy protocol: LoopringV3
 
-var DowntimeCostCalculator = artifacts.require("./impl/DowntimeCostCalculator.sol");
+var DowntimeCostCalculator = artifacts.require(
+  "./impl/DowntimeCostCalculator.sol"
+);
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -36,7 +38,7 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry.sol");
+  const GlobalRegistry = artifacts.require("./impl/GlobalRegistry.sol");
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
   const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
@@ -44,7 +46,7 @@ module.exports = function(deployer, network, accounts) {
   deployer_
     .then(() => {
       return Promise.all([
-        ProtocolRegistry.deployed(),
+        GlobalRegistry.deployed(),
         BlockVerifier.deployed(),
         DowntimeCostCalculator.deployed()
       ]);
@@ -53,7 +55,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         deployer.deploy(
           LoopringV3,
-          ProtocolRegistry.address,
+          GlobalRegistry.address,
           lrcAddress,
           wethAddress,
           protocolFeeValutAddress,
@@ -67,7 +69,7 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-        ProtocolRegistry.deployed().then(c => {
+        GlobalRegistry.deployed().then(c => {
           console.log(
             "registering protocol:",
             LoopringV3.address,
@@ -83,7 +85,7 @@ module.exports = function(deployer, network, accounts) {
       console.log("wethAddress:", wethAddress);
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
-      console.log("ProtocolRegistry:", ProtocolRegistry.address);
+      console.log("GlobalRegistry:", GlobalRegistry.address);
       console.log("BlockVerifier:", BlockVerifier.address);
       console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
       console.log("LoopringV3:", LoopringV3.address);
