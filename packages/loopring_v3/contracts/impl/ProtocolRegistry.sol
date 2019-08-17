@@ -21,15 +21,15 @@ import "../lib/SimpleProxy.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/ILoopringRegistry.sol";
+import "../iface/IProtocolRegistry.sol";
 
 import "./proxies/ExchangeAutoUpgradabilityProxy.sol";
 import "./proxies/ExchangeManualUpgradabilityProxy.sol";
 
 
-/// @title An Implementation of ILoopringRegistry.
+/// @title An Implementation of IProtocolRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract LoopringRegistry is ILoopringRegistry
+contract ProtocolRegistry is IProtocolRegistry
 {
     struct Protocol
     {
@@ -132,7 +132,7 @@ contract LoopringRegistry is ILoopringRegistry
     {
         ILoopring loopring = ILoopring(protocol);
         require(loopring.owner() == owner, "INCONSISTENT_OWNER");
-        require(loopring.LoopringRegistry() == address(this), "INCONSISTENT_REGISTRY");
+        require(loopring.ProtocolRegistry() == address(this), "INCONSISTENT_REGISTRY");
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
         string memory version = IExchange(implementation).version();

@@ -18,12 +18,12 @@ pragma solidity ^0.5.11;
 
 import "../../iface/IExchange.sol";
 import "../../iface/IExchangeUpgradabilityProxy.sol";
-import "../../iface/ILoopringRegistry.sol";
+import "../../iface/IProtocolRegistry.sol";
 
 
 /// @title ExchangeAutoUpgradabilityProxy
 /// @dev This proxy is designed to support automatic Upgradability offered by a
-///      ILoopringRegistry contract.
+///      IProtocolRegistry contract.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
 {
@@ -36,7 +36,7 @@ contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
         view
         returns (address impl)
     {
-        ILoopringRegistry r = ILoopringRegistry(registry());
+        IProtocolRegistry r = IProtocolRegistry(registry());
         (, impl, ) = r.getExchangeProtocol(address(this));
     }
 }

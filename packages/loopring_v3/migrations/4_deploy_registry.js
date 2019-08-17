@@ -1,4 +1,4 @@
-// Deploy LoopringRegistry
+// Deploy ProtocolRegistry
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
@@ -27,11 +27,11 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const LoopringRegistry = artifacts.require("./impl/LoopringRegistry.sol");
+  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry.sol");
 
   deployer_
     .then(() => {
-      return Promise.all([deployer.deploy(LoopringRegistry, lrcAddress)]);
+      return Promise.all([deployer.deploy(ProtocolRegistry, lrcAddress)]);
     })
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_registry:");
@@ -39,7 +39,7 @@ module.exports = function(deployer, network, accounts) {
       console.log("wethAddress:", wethAddress);
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
-      console.log("LoopringRegistry:", LoopringRegistry.address);
+      console.log("ProtocolRegistry:", ProtocolRegistry.address);
       console.log("");
     });
 };

@@ -18,7 +18,7 @@ pragma solidity ^0.5.11;
 
 import "../thirdparty/Proxy.sol";
 
-import "../iface/ILoopringRegistry.sol";
+import "../iface/IProtocolRegistry.sol";
 
 
 /// @title IExchangeUpgradabilityProxy
@@ -51,7 +51,7 @@ contract IExchangeUpgradabilityProxy is Proxy
         view
         returns (address protocolAddress)
     {
-        ILoopringRegistry r = ILoopringRegistry(registry());
+        IProtocolRegistry r = IProtocolRegistry(registry());
         (protocolAddress, , ) = r.getExchangeProtocol(address(this));
     }
 

@@ -1,5 +1,5 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
-// or LoopringRegistry.
+// or ProtocolRegistry.
 
 var DowntimeCostCalculator = artifacts.require(
   "./impl/DowntimeCostCalculator.sol"

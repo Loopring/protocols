@@ -22,7 +22,7 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title IProtocalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopringRegistry is Claimable, ReentrancyGuard
+contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
     address     public lrcAddress;
     address     public defaultProtocol;
