@@ -2541,6 +2541,8 @@ export class ExchangeTestUtil {
     const tx = await this.protocolRegistry.forgeExchange(
       supportUpgradability,
       onchainDataAvailability,
+      constants.zeroAddress,
+      constants.zeroAddress,
       { from: owner }
     );
 

@@ -190,20 +190,18 @@ contract ProtocolRegistry is IProtocolRegistry {
         if (_protocol == address(0)) {
             _protocol = defaultProtocolAddress;
         } else {
-            require(isProtocolEnabled(protocol), "INVALID_PROTOCOL");
+            require(isProtocolEnabled(_protocol), "INVALID_PROTOCOL");
         }
 
         address _implementation = implementation;
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
+        IImplementationManager m = IImplementationManager(protocolMap[_protocol].manager);
         if (_implementation == address(0)) {
             _implementation = m.defaultImpl();
         } else {
-            require(m.isEnabled(implementation), "INVALID_IMPLEMENTATION");
+            require(m.isEnabled(_implementation), "INVALID_IMPLEMENTATION");
         }
 
         ILoopring loopring = ILoopring(_protocol);
-        IExchange exchange = IExchange(_implementation);
-
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
         if (exchangeCreationCostLRC > 0) {
@@ -218,12 +216,12 @@ contract ProtocolRegistry is IProtocolRegistry {
             exchangeAddress = address(new ExchangeProxy(address(this)));
         } else {
             // Clone a native exchange from the implementation.
-            exchangeAddress = exchange.clone();
+            exchangeAddress = IExchange(_implementation).clone();
         }
 
         assert(exchangeMap[exchangeAddress] == address(0));
 
-        exchangeMap[exchangeAddress] = protocol;
+        exchangeMap[exchangeAddress] = _protocol;
         exchanges.push(exchangeAddress);
         exchangeId = exchanges.length;
 
