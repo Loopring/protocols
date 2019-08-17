@@ -24,8 +24,8 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopring is Claimable, ReentrancyGuard
 {
-    string  constant public version = ""; // must override this
-    uint    public exchangeCreationCostLRC;
+    string constant public version = ""; // must override this
+    uint   public exchangeCreationCostLRC;
 
     event ExchangeInitialized(
         uint    indexed exchangeId,

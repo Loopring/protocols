@@ -26,7 +26,7 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchange is Claimable, ReentrancyGuard
 {
-    string  constant public version = ""; // must override this
+    string constant public version = ""; // must override this
 
     /// @dev Clone an exchange without any initialization
     /// @return  cloneAddress The address of the new exchange.
