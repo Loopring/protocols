@@ -23,7 +23,7 @@ import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
 import "./ExchangeProxy.sol";
-import "./VersionManager.sol";
+import "./ImplementationManager.sol";
 
 /// @title Implementation of IProtocolRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -31,7 +31,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     struct Protocol
     {
         address protocol;
-        address versionManager;
+        address implManager;
         string  version;
         bool    registered;
         bool    enabled;
@@ -70,7 +70,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         view
         returns (
             address protocol,
-            address versionManager,
+            address implManager,
             address defaultImplementation,
             string  memory protocolVersion,
             string  memory defaultImplementationVersion
@@ -78,9 +78,9 @@ contract ProtocolRegistry is IProtocolRegistry {
     {
         protocol = defaultProtocolAddress;
         Protocol storage p = protocolMap[protocol];
-        versionManager = p.versionManager;
+        implManager = p.implManager;
 
-        IVersionManager manager = IVersionManager(versionManager);
+        IImplementationManager manager = IImplementationManager(implManager);
         defaultImplementation = manager.defaultImplementation();
         (protocolVersion, defaultImplementationVersion) = manager.version();
     }
@@ -91,12 +91,12 @@ contract ProtocolRegistry is IProtocolRegistry {
         )
         external
         onlyOwner
-        returns (address versionManager)
+        returns (address implManager)
     {
         require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
 
-        IVersionManager manager = new VersionManager(owner, protocol, implementation);
-        versionManager = address(manager);
+        IImplementationManager manager = new ImplementationManager(owner, protocol, implementation);
+        implManager = address(manager);
 
         string memory version = ILoopring(protocol).version();
         require(versionMap[version] == address(0), "VERSION_REGISTERED");
@@ -104,13 +104,13 @@ contract ProtocolRegistry is IProtocolRegistry {
 
         protocols.push(protocol);
         versionMap[version] = protocol;
-        protocolMap[protocol] = Protocol(protocol, versionManager, version, true, true);
+        protocolMap[protocol] = Protocol(protocol, implManager, version, true, true);
 
         if (defaultProtocolAddress == address(0)) {
             defaultProtocolAddress = protocol;
         }
 
-        emit ProtocolRegistered(protocol, versionManager, version);
+        emit ProtocolRegistered(protocol, implManager, version);
     }
 
     function isProtocolRegistered(
@@ -205,14 +205,14 @@ contract ProtocolRegistry is IProtocolRegistry {
         view
         returns (
             address protocol,
-            address versionManager
+            address implManager
         )
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
         protocol = exchangeMap[exchangeAddress];
         require(protocol != address(0), "INVALID_EXCHANGE");
 
-        versionManager = protocolMap[protocol].versionManager;
+        implManager = protocolMap[protocol].implManager;
     }
 
     /// === Internal & Private Functions ===
@@ -241,7 +241,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         }
 
         Protocol storage p = protocolMap[protocol];
-        IVersionManager manager = IVersionManager(p.versionManager);
+        IImplementationManager manager = IImplementationManager(p.implManager);
         IExchange implementation = IExchange(manager.defaultImplementation());
 
         if (supportUpgradability) {

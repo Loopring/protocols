@@ -18,12 +18,12 @@ pragma solidity ^0.5.11;
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IVersionManager.sol";
+import "../iface/IImplementationManager.sol";
 
 
-/// @title An Implementation of IVersionManager.
+/// @title An Implementation of IImplementationManager.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract VersionManager is IVersionManager
+contract ImplementationManager is IImplementationManager
 {
     struct Status
     {

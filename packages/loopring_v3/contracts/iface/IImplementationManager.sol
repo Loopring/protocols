@@ -20,7 +20,7 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title IVersionManager
+/// @title IImplementationManager
 /// @dev This contract manages implementation versions for a perticular ILoopring
 ///      contract. The ILoopring contract can be considered as the "major" version
 ///      of a Loopring protocol and each IExchange implementation can be considiered
@@ -28,7 +28,7 @@ import "../lib/ReentrancyGuard.sol";
 ///      ILoopring contracts. Sometimes minor versions are also refered as implementations.
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IVersionManager is Claimable, ReentrancyGuard
+contract IImplementationManager is Claimable, ReentrancyGuard
 {
     /// === Events ===
 

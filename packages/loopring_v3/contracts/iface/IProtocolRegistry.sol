@@ -31,7 +31,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     event ProtocolRegistered (
         address indexed protocol,
-        address indexed versionManager,
+        address indexed implManager,
         string          version
     );
 
@@ -75,7 +75,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
-    /// @return versionManager The address of the default protocol's version manager.
+    /// @return implManager The address of the default protocol's version manager.
     /// @return defaultImplementation The default protocol's default implementation address.
     /// @return defaultImplementationVersion The version of the default implementation.
     function defaultProtocol()
@@ -93,13 +93,13 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @dev Registers a new protocol.
     /// @param protocol The address of the new protocol.
     /// @param implementation The new protocol's default implementation.
-    /// @return versionManager A new version manager to manage the protocol's implementations.
+    /// @return implManager A new version manager to manage the protocol's implementations.
     function registerProtocol(
         address protocol,
         address implementation
         )
         external
-        returns (address versionManager);
+        returns (address implManager);
 
     /// @dev Checks if a protocol has been registered.
     /// @param protocol The address of the protocol.
