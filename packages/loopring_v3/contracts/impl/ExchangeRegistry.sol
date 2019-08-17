@@ -16,15 +16,11 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Claimable.sol";
-import "../lib/ReentrancyGuard.sol";
+import "../iface/IExchangeRegistry.sol";
 
 
-/// @title IGlobalRegistry
-/// @dev This contract manages the all registered ILoopring protocol versions
-///      and a list of Exchanges built on top of Loopring protocols.
+/// @title An Implementation of IExchangeRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IGlobalRegistry is Claimable, ReentrancyGuard
+contract ExchangeRegistry is IExchangeRegistry
 {
-
 }

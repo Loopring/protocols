@@ -18,21 +18,21 @@ pragma solidity ^0.5.11;
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IGlobalRegistry.sol";
-import "../iface/IVersionManager.sol";
+import "../iface/IImplementationManager.sol";
+import "../iface/IProtocolManager.sol";
 
 
-/// @title An Implementation of IGlobalRegistry.
+/// @title An Implementation of IProtocolManager.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract GlobalRegistry is IGlobalRegistry
+contract ProtocolManager is IProtocolManager
 {
-    event VersionManagerRegistered (
+    event ImplementationManagerRegistered (
         address versionManager,
         address protocol,
         string version
     );
 
-    struct ManagerState
+    struct MajorVersion
     {
         address protocol;
         string  version;
@@ -40,16 +40,16 @@ contract GlobalRegistry is IGlobalRegistry
         bool    enabled;
     }
 
-    address   public defaultVersionManager;
+    address   public defaultImplementationManager;
     address[] public versionManagers;
 
     // IProtocol.version => IProtocol address
-    mapping   (string => address) public versionMap;
+    mapping   (string => address) public versionLabelMap;
 
-    // IVersionManager address => ManagerState
-    mapping   (address => ManagerState) private managerMap;
+    // IImplementationManager address => MajorVersion
+    mapping   (address => MajorVersion) private versionMap;
 
-    // ILoopring address => IVersionManager address
+    // ILoopring address => IImplementationManager address
     mapping   (address => address) private protocolMap;
 
     constructor () public Ownable() {}
@@ -59,19 +59,19 @@ contract GlobalRegistry is IGlobalRegistry
         view
         returns (string memory)
     {
-        if (defaultVersionManager != address(0)) {
-            return IVersionManager(defaultVersionManager).protocolVersion();
+        if (defaultImplementationManager != address(0)) {
+            return IImplementationManager(defaultImplementationManager).protocolVersion();
         }
     }
 
-    function registerVersionManager(
+    function registerImplementationManager(
         address versionManager
         )
         external
         onlyOwner
     {
         require(versionManager != address(0), "ZERO_ADDRESS");
-        IVersionManager manager = IVersionManager(versionManager);
+        IImplementationManager manager = IImplementationManager(versionManager);
 
         address _owner = manager.owner();
         require(_owner == owner, "INVALID_OWNER");
@@ -79,39 +79,39 @@ contract GlobalRegistry is IGlobalRegistry
         string memory version = manager.protocolVersion();
         address protocol = manager.protocol();
 
-        require(versionMap[version] == address(0), "VERSION_REGISTERED");
-        require(!managerMap[versionManager].registered, "MANAGER_REGISTERED");
+        require(versionLabelMap[version] == address(0), "VERSION_REGISTERED");
+        require(!versionMap[versionManager].registered, "MANAGER_REGISTERED");
         require(protocolMap[protocol] == address(0), "PROTOCOL_REGISTERED");
 
-        versionMap[version] = protocol;
-        managerMap[versionManager] = ManagerState(protocol, version, true, true);
+        versionLabelMap[version] = protocol;
+        versionMap[versionManager] = MajorVersion(protocol, version, true, true);
         protocolMap[protocol] = versionManager;
         versionManagers.push(versionManager);
 
-        if (defaultVersionManager == address(0)) {
-            defaultVersionManager = versionManager;
+        if (defaultImplementationManager == address(0)) {
+            defaultImplementationManager = versionManager;
         }
 
-        emit VersionManagerRegistered(versionManager, protocol, version);
+        emit ImplementationManagerRegistered(versionManager, protocol, version);
     }
 
-    function isVersionManagerRegistered(
+    function isImplementationManagerRegistered(
         address versionManager
         )
         public
         view
         returns (bool)
     {
-        return managerMap[versionManager].registered;
+        return versionMap[versionManager].registered;
     }
 
-    function isVersionManagerEnabled(
+    function isImplementationManagerEnabled(
         address versionManager
         )
         public
         view
         returns (bool)
     {
-        return managerMap[versionManager].enabled;
+        return versionMap[versionManager].enabled;
     }
 }

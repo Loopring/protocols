@@ -18,21 +18,21 @@ pragma solidity ^0.5.11;
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IVersionManager.sol";
+import "../iface/IImplementationManager.sol";
 
 
-/// @title An Implementation of IVersionManager.
+/// @title An Implementation of IImplementationManager.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract VersionManager is IVersionManager
+contract ImplementationManager is IImplementationManager
 {
-    struct ImplState
+    struct MinorVersion
     {
         bool registered;
         bool enabled;
     }
 
-    // implementation => ImplState
-    mapping (address => ImplState) private implementationMap;
+    // implementation => MinorVersion
+    mapping (address => MinorVersion) private implementationMap;
 
     // --- Constructor ---
 
@@ -70,14 +70,14 @@ contract VersionManager is IVersionManager
         string memory version = exchange.version();
 
         require(bytes(version).length > 0, "INVALID_VERISON_LABEL");
-        require(versionMap[version] == address(0), "VERISON_LABEL_USED");
+        require(versionLabelMap[version] == address(0), "VERISON_LABEL_USED");
 
-        ImplState storage state = implementationMap[implementation];
+        MinorVersion storage state = implementationMap[implementation];
         require(!state.registered, "INVALID_IMPLEMENTATION");
 
         implementations.push(implementation);
-        implementationMap[implementation] = ImplState(true, true);
-        versionMap[version] = implementation;
+        implementationMap[implementation] = MinorVersion(true, true);
+        versionLabelMap[version] = implementation;
 
         emit ImplementationAdded(implementation, version);
     }
@@ -105,7 +105,7 @@ contract VersionManager is IVersionManager
         external
         nonReentrant
     {
-        ImplState storage state = implementationMap[implementation];
+        MinorVersion storage state = implementationMap[implementation];
         require(state.registered && !state.enabled, "INVALID_IMPLEMENTATION");
 
         state.enabled = true;
