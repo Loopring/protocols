@@ -83,7 +83,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         address _lrcAddress,
         address _userStakingPoolAddress
         )
-        Claimable()
+        Ownable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");

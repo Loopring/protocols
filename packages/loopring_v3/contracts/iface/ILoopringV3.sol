@@ -24,6 +24,7 @@ import "./ILoopring.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3 is ILoopring
 {
+    string  constant public version = "3.0";
     // == Events ==
 
     event ExchangeStakeDeposited(

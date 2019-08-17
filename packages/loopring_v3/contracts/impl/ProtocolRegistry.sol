@@ -92,7 +92,7 @@ contract ProtocolRegistry is IProtocolRegistry
     constructor(
         address _lrcAddress
         )
-        Claimable()
+        Ownable()
         public
         addressNotZero(_lrcAddress)
     {
