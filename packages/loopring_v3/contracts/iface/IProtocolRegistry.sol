@@ -207,7 +207,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     function forgeExchange(
         address protocol,
         address implementation,
-        bool    supportUpgradability,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability
         )
         external
