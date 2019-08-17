@@ -27,37 +27,10 @@ import "../iface/IProtocolRegistry.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
 {
-    bytes32 private constant registryPosition = keccak256(
-        "org.loopring.protocol.v3.registry"
-    );
-
     constructor(address _registry)
         public
     {
-        bytes32 position = registryPosition;
-        assembly {
-          sstore(position, _registry)
-        }
-    }
-
-    function registry()
-        public
-        view
-        returns (address _addr)
-    {
-        bytes32 position = registryPosition;
-        assembly {
-          _addr := sload(position)
-        }
-    }
-
-    function protocol()
-        public
-        view
-        returns (address _protocol)
-    {
-        IProtocolRegistry r = IProtocolRegistry(registry());
-        (_protocol, , ) = r.getExchangeProtocol(address(this));
+        setRegistry(_registry);
     }
 
     function implementation()

@@ -18,14 +18,44 @@ pragma solidity ^0.5.11;
 
 import "../thirdparty/Proxy.sol";
 
+import "../iface/IProtocolRegistry.sol";
+
 
 /// @title IExchangeUpgradabilityProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IExchangeUpgradabilityProxy is Proxy
 {
-    /// @dev Returns the dex's registry address.
-    function registry() public view returns (address registryAddress);
+    bytes32 private constant registryPosition = keccak256(
+        "org.loopring.protocol.v3.registry"
+    );
+
+     /// @dev Returns the dex's registry address.
+    function registry()
+        public
+        view
+        returns (address registryAddress)
+    {
+        bytes32 position = registryPosition;
+        assembly { registryAddress := sload(position) }
+    }
 
     /// @dev Returns the dex's protocol address.
-    function protocol() public view returns (address protocolAddress);
+    function protocol()
+        public
+        view
+        returns (address protocolAddress)
+    {
+        IProtocolRegistry r = IProtocolRegistry(registry());
+        (protocolAddress, , ) = r.getExchangeProtocol(address(this));
+    }
+
+
+    function setRegistry(address _registry)
+        internal
+    {
+        require(_registry != address(0), "ZERO_ADDRESS");
+        bytes32 position = registryPosition;
+        assembly { sstore(position, _registry) }
+    }
+
 }

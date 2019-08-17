@@ -32,8 +32,8 @@ contract ProtocolRegistry is IProtocolRegistry
 {
     struct Protocol
     {
-       address implementation;  // updatable
-       bool    enabled;         // updatable
+        address implementation;  // updatable
+        bool    enabled;         // updatable
     }
 
     struct Implementation
@@ -341,7 +341,10 @@ contract ProtocolRegistry is IProtocolRegistry
             exchangeAddress = address(new ExchangeAutoUpgradabilityProxy(address(this)));
         } else if (upgradabilityMode == 1) {
             // 1: manual upgradability
-            exchangeAddress = address(new ExchangeManualUpgradabilityProxy(msg.sender, address(this)));
+            exchangeAddress = address(new ExchangeManualUpgradabilityProxy(
+                address(this),
+                protocols[protocol].implementation
+                ));
         } else if (upgradabilityMode == 2) {
             // 2: no upgradability
             // Clone a native exchange from the implementation.

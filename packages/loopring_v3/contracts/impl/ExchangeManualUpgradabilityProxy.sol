@@ -16,9 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../thirdparty/OwnedUpgradabilityProxy.sol";
-
-import "../lib/Claimable.sol";
+import "../lib/Ownable.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/IExchangeUpgradabilityProxy.sol";
@@ -27,61 +25,67 @@ import "../iface/IProtocolRegistry.sol";
 
 /// @title ExchangeManualUpgradabilityProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy, Claimable, OwnedUpgradabilityProxy
+contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
 {
-    bytes32 private constant registryPosition = keccak256(
-        "org.loopring.protocol.v3.registry"
-    );
-    bytes32 private constant protocolPosition = keccak256(
-        "org.loopring.protocol.v3.protocol"
+    event Upgraded(address indexed implementation);
+
+    bytes32 private constant implementationPosition = keccak256(
+        "org.loopring.protocol.v3.implementation"
     );
 
+    modifier onlyOwner()
+    {
+        require(msg.sender == Ownable(address(this)).owner(), "UNAUTHORIZED");
+        _;
+    }
+
     constructor(
-        address _owner,
-        address _registry
+        address _registry,
+        address _implementation
         )
         public
     {
-        require(_owner != address(0), "INVALID_OWNER");
-        setUpgradabilityOwner(_owner);
-
-        IProtocolRegistry r = IProtocolRegistry(_registry);
-        address _proto;
-        address _impl;
-        (_proto, _impl, ) = r.getExchangeProtocol(address(this));
-
-        bytes32 position = registryPosition;
-        assembly {
-          sstore(position, _registry)
-        }
-
-        position = protocolPosition;
-        assembly {
-          sstore(position, _proto)
-        }
-
-        setImplementation(_impl);
+        setRegistry(_registry);
+        setImplementation(_implementation);
     }
 
-    function registry()
+    function implementation()
         public
         view
-        returns (address _addr)
+        returns (address impl)
     {
-        bytes32 position = registryPosition;
-        assembly {
-          _addr := sload(position)
-        }
+        bytes32 position = implementationPosition;
+        assembly { impl := sload(position) }
     }
 
-    function protocol()
-        public
-        view
-        returns (address _addr)
+    function upgradeTo(
+        address newImplementation
+        )
+        external
+        onlyOwner
     {
-        bytes32 position = protocolPosition;
-        assembly {
-          _addr := sload(position)
-        }
+        validateImplementation(newImplementation);
+        address currentImplementation = implementation();
+        require(currentImplementation != newImplementation);
+        setImplementation(newImplementation);
+        emit Upgraded(newImplementation);
+    }
+
+    function setImplementation(
+        address newImplementation
+        )
+        private
+    {
+        bytes32 position = implementationPosition;
+        assembly {sstore(position, newImplementation) }
+    }
+
+    function validateImplementation(
+        address newImplementation
+        )
+        private
+        view
+    {
+
     }
 }
