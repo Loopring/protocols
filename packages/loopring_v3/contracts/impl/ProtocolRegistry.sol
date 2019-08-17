@@ -128,8 +128,9 @@ contract ProtocolRegistry is IProtocolRegistry {
             return false;
         }
 
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
-        return m.isEnabled(implementation);
+        address managerAddr = protocolMap[protocol].manager;
+        IImplementationManager manager = IImplementationManager(managerAddr);
+        return manager.isEnabled(implementation);
     }
 
     function isProtocolRegistered(
@@ -191,10 +192,12 @@ contract ProtocolRegistry is IProtocolRegistry {
         )
     {
         address protocol = defaultProtocolAddress;
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
+        address managerAddr = protocolMap[protocol].manager;
+        IImplementationManager manager = IImplementationManager(managerAddr);
+
         return forgeExchangeInternal(
             protocol,
-            m.defaultImpl(),
+            manager.defaultImpl(),
             upgradabilityMode,
             onchainDataAvailability
         );
@@ -212,10 +215,12 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
+        address managerAddr = protocolMap[protocol].manager;
+        IImplementationManager manager = IImplementationManager(managerAddr);
+
         return forgeExchangeInternal(
             protocol,
-            m.defaultImpl(),
+            manager.defaultImpl(),
             upgradabilityMode,
             onchainDataAvailability
         );
