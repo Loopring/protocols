@@ -293,10 +293,9 @@ contract ProtocolRegistry is IProtocolRegistry {
             exchangeAddress = address(new AutoUpgradabilityProxy(address(this)));
         } else if (upgradabilityMode == 1) {
             // 1: manual upgradability
-            exchangeAddress = address(new ManualUpgradabilityProxy(
-                address(this),
-                implementation
-            ));
+            exchangeAddress = address(
+                new ManualUpgradabilityProxy(address(this), implementation)
+            );
         } else if (upgradabilityMode == 2) {
             // 2: no upgradability with a simple proxy
             exchangeAddress = address(new SimpleProxy(implementation));

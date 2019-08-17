@@ -66,7 +66,7 @@ contract ManualUpgradabilityProxy is IExchangeProxy
         external
         onlyUnderlyingOwner
     {
-        require(implementation() != newImplementation);
+        require(implementation() != newImplementation, "SAME_IMPLEMENTATION");
 
         IProtocolRegistry r = IProtocolRegistry(registry());
         require(

@@ -26,9 +26,7 @@ import "../../iface/IProtocolRegistry.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract AutoUpgradabilityProxy is IExchangeProxy
 {
-    constructor(address _registry)
-        public
-        IExchangeProxy(_registry) {}
+    constructor(address _registry) public IExchangeProxy(_registry) {}
 
     function implementation()
         public
