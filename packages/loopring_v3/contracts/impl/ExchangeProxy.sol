@@ -71,6 +71,6 @@ contract ExchangeProxy is Proxy
 
         (, address implManager) = r.getExchangeProtocol(address(this));
 
-        impl = IImplementationManager(implManager).defaultImplementation();
+        impl = IImplementationManager(implManager).defaultImpl();
     }
 }

@@ -53,7 +53,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     /// === Data ===
 
     address   public protocol;
-    address   public defaultImplementation;
+    address   public defaultImpl;
     address[] public implementations;
 
     // version strings => IExchange addresses
@@ -63,46 +63,46 @@ contract IImplementationManager is Claimable, ReentrancyGuard
 
     /// @dev Returns version information.
     /// @return protocolVersion The protocol's version.
-    /// @return defaultImplementationVersion The default implementation's version.
+    /// @return defaultImplVersion The default implementation's version.
     function version()
         external
         view
         returns (
             string  memory protocolVersion,
-            string  memory defaultImplementationVersion
+            string  memory defaultImplVersion
         );
 
     /// @dev Sets the default implemenation.
     /// @param implementation The new default implementation.
-    function setDeaultImplementation(
+    function setDefault(
         address implementation
         )
         external;
 
     /// @dev Enables an implemenation.
     /// @param implementation The implementation to be enabled.
-    function enableImplementation(
+    function enable(
         address implementation
         )
         external;
 
     /// @dev Disables an implemenation.
     /// @param implementation The implementation to be disabled.
-    function disableImplementation(
+    function disable(
         address implementation
         )
         external;
 
     /// @dev Returns the latest implemenation added.
     /// @param implementation The latest implemenation added.
-    function latestImplementation()
+    function latest()
         public
         view
         returns (address implementation);
 
     /// @dev Register a new implementation.
     /// @param implementation The implemenation to add.
-    function registerImplementation(
+    function register(
         address implementation
         )
         public;

@@ -71,9 +71,9 @@ contract ProtocolRegistry is IProtocolRegistry {
         returns (
             address protocol,
             address implManager,
-            address defaultImplementation,
+            address defaultImpl,
             string  memory protocolVersion,
-            string  memory defaultImplementationVersion
+            string  memory defaultImplVersion
         )
     {
         protocol = defaultProtocolAddress;
@@ -81,8 +81,8 @@ contract ProtocolRegistry is IProtocolRegistry {
         implManager = p.implManager;
 
         IImplementationManager manager = IImplementationManager(implManager);
-        defaultImplementation = manager.defaultImplementation();
-        (protocolVersion, defaultImplementationVersion) = manager.version();
+        defaultImpl = manager.defaultImpl();
+        (protocolVersion, defaultImplVersion) = manager.version();
     }
 
     function registerProtocol(
@@ -242,7 +242,7 @@ contract ProtocolRegistry is IProtocolRegistry {
 
         Protocol storage p = protocolMap[protocol];
         IImplementationManager manager = IImplementationManager(p.implManager);
-        IExchange implementation = IExchange(manager.defaultImplementation());
+        IExchange implementation = IExchange(manager.defaultImpl());
 
         if (supportUpgradability) {
             // Deploy an exchange proxy and points to the implementation

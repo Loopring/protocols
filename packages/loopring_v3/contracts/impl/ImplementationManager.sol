@@ -48,9 +48,9 @@ contract ImplementationManager is IImplementationManager
 
         owner = _owner;
         protocol = _protocol;
-        defaultImplementation = _implementation;
+        defaultImpl = _implementation;
 
-        registerImplementation(_implementation);
+        register(_implementation);
     }
 
     /// === Functions ===
@@ -60,14 +60,14 @@ contract ImplementationManager is IImplementationManager
         view
         returns (
             string  memory protocolVersion,
-            string  memory defaultImplementationVersion
+            string  memory defaultImplVersion
         )
     {
         protocolVersion = ILoopring(protocol).version();
-        defaultImplementationVersion = IExchange(defaultImplementation).version();
+        defaultImplVersion = IExchange(defaultImpl).version();
     }
 
-    function registerImplementation(
+    function register(
         address implementation
         )
         public
@@ -86,17 +86,17 @@ contract ImplementationManager is IImplementationManager
         emit Registered(implementation, _version);
     }
 
-    function setDeaultImplementation(
+    function setDefault(
         address implementation
         )
         external
         nonReentrant
     {
         require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
-        require(implementation != defaultImplementation, "SAME_IMPLEMENTATION");
+        require(implementation != defaultImpl, "SAME_IMPLEMENTATION");
 
-        address oldDefault = defaultImplementation;
-        defaultImplementation = implementation;
+        address oldDefault = defaultImpl;
+        defaultImpl = implementation;
 
         emit DefaultChanged(
             oldDefault,
@@ -104,7 +104,7 @@ contract ImplementationManager is IImplementationManager
         );
     }
 
-    function enableImplementation(
+    function enable(
         address implementation
         )
         external
@@ -117,7 +117,7 @@ contract ImplementationManager is IImplementationManager
         emit Enabled(implementation);
     }
 
-    function disableImplementation(
+    function disable(
         address implementation
         )
         external
@@ -129,7 +129,7 @@ contract ImplementationManager is IImplementationManager
         emit Disabled(implementation);
     }
 
-    function latestImplementation()
+    function latest()
         public
         view
         returns (address)

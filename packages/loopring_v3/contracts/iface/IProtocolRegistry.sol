@@ -76,17 +76,17 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
     /// @return implManager The address of the default protocol's version manager.
-    /// @return defaultImplementation The default protocol's default implementation address.
-    /// @return defaultImplementationVersion The version of the default implementation.
+    /// @return defaultImpl The default protocol's default implementation address.
+    /// @return defaultImplVersion The version of the default implementation.
     function defaultProtocol()
         external
         view
         returns (
             address protocol,
             address versionmanager,
-            address defaultImplementation,
+            address defaultImpl,
             string  memory protocolVersion,
-            string  memory defaultImplementationVersion
+            string  memory defaultImplVersion
         );
 
 
