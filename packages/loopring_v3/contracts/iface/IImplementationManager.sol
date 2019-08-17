@@ -24,8 +24,8 @@ import "../lib/ReentrancyGuard.sol";
 /// @dev This contract manages implementation versions for a perticular ILoopring
 ///      contract. The ILoopring contract can be considered as the "major" version
 ///      of a Loopring protocol and each IExchange implementation can be considiered
-///      as a "minor" version. Multiple IExchange contracts can share the same
-///      ILoopring contracts. Sometimes minor versions are also refered as implementations.
+///      as a "minor" version. Multiple IExchange contracts can use the same
+///      ILoopring contracts.
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IImplementationManager is Claimable, ReentrancyGuard
