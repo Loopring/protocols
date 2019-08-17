@@ -33,7 +33,7 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         "org.loopring.protocol.v3.implementation"
     );
 
-    modifier onlyOwner()
+    modifier onlyUnderlyingOwner()
     {
         require(msg.sender == Ownable(address(this)).owner(), "UNAUTHORIZED");
         _;
@@ -44,8 +44,8 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         address _implementation
         )
         public
+        IExchangeUpgradabilityProxy(_registry)
     {
-        setRegistry(_registry);
         setImplementation(_implementation);
     }
 
@@ -62,7 +62,7 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         address newImplementation
         )
         external
-        onlyOwner
+        onlyUnderlyingOwner
     {
         validateImplementation(newImplementation);
         address currentImplementation = implementation();

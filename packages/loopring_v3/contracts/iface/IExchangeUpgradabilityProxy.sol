@@ -29,6 +29,12 @@ contract IExchangeUpgradabilityProxy is Proxy
         "org.loopring.protocol.v3.registry"
     );
 
+    constructor(address _registry)
+        public
+    {
+        setRegistry(_registry);
+    }
+
      /// @dev Returns the dex's registry address.
     function registry()
         public
@@ -51,7 +57,7 @@ contract IExchangeUpgradabilityProxy is Proxy
 
 
     function setRegistry(address _registry)
-        internal
+        private
     {
         require(_registry != address(0), "ZERO_ADDRESS");
         bytes32 position = registryPosition;

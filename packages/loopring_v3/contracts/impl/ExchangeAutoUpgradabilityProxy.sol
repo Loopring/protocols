@@ -29,9 +29,7 @@ contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
 {
     constructor(address _registry)
         public
-    {
-        setRegistry(_registry);
-    }
+        IExchangeUpgradabilityProxy(_registry) {}
 
     function implementation()
         public
