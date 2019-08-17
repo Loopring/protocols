@@ -27,7 +27,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
 
-    constructor() Claimable() public {}
+    constructor() Ownable() public {}
 
     function isWhitelisted(
         address user,
