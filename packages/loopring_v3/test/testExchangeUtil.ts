@@ -177,7 +177,7 @@ export class ExchangeTestUtil {
       { from: this.testContext.deployer }
     );
 
-    // Register LoopringV3 to protocolRegistry
+    // Register LoopringV3 to ProtocolRegistry
     // await this.protocolRegistry.registerProtocol(
     //   this.loopringV3.address,
     //   this.exchange.address,
