@@ -22,8 +22,7 @@ import "../../iface/IProtocolRegistry.sol";
 
 
 /// @title ExchangeAutoUpgradabilityProxy
-/// @dev This proxy is designed to support automatic Upgradability offered by a
-///      IProtocolRegistry contract.
+/// @dev This proxy is designed to support automatic upgradability.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
 {
