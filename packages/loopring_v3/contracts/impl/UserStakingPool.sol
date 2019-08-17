@@ -44,7 +44,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     mapping (address => Staking) private stakings;
 
     constructor(address _lrcAddress)
-        Ownable()
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
