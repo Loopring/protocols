@@ -22,9 +22,9 @@ import "../iface/IProtocolRegistry.sol";
 import "../iface/IImplementationManager.sol";
 
 
-/// @title IExchangeUpgradabilityProxy
+/// @title IExchangeProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchangeUpgradabilityProxy is Proxy
+contract IExchangeProxy is Proxy
 {
     bytes32 private constant registryPosition = keccak256(
         "org.loopring.protocol.v3.registry"

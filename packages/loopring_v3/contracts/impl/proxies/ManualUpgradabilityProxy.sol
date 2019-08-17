@@ -18,14 +18,14 @@ pragma solidity ^0.5.11;
 
 import "../../lib/Ownable.sol";
 
-import "../../iface/IExchangeUpgradabilityProxy.sol";
+import "../../iface/IExchangeProxy.sol";
 import "../../iface/IProtocolRegistry.sol";
 
 
-/// @title ExchangeManualUpgradabilityProxy
+/// @title ManualUpgradabilityProxy
 /// @dev This proxy is designed to support manual upgradability.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
+contract ManualUpgradabilityProxy is IExchangeProxy
 {
     event Upgraded(address indexed implementation);
 
@@ -46,7 +46,7 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         address _implementation
         )
         public
-        IExchangeUpgradabilityProxy(_registry)
+        IExchangeProxy(_registry)
     {
         setImplementation(_implementation);
     }

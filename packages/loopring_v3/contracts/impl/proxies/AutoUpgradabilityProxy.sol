@@ -17,18 +17,18 @@
 pragma solidity ^0.5.11;
 
 import "../../iface/IExchange.sol";
-import "../../iface/IExchangeUpgradabilityProxy.sol";
+import "../../iface/IExchangeProxy.sol";
 import "../../iface/IProtocolRegistry.sol";
 
 
-/// @title ExchangeAutoUpgradabilityProxy
+/// @title AutoUpgradabilityProxy
 /// @dev This proxy is designed to support automatic upgradability.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
+contract AutoUpgradabilityProxy is IExchangeProxy
 {
     constructor(address _registry)
         public
-        IExchangeUpgradabilityProxy(_registry) {}
+        IExchangeProxy(_registry) {}
 
     function implementation()
         public

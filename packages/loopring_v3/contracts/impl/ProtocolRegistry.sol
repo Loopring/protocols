@@ -23,8 +23,8 @@ import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
-import "./proxies/ExchangeAutoUpgradabilityProxy.sol";
-import "./proxies/ExchangeManualUpgradabilityProxy.sol";
+import "./proxies/AutoUpgradabilityProxy.sol";
+import "./proxies/ManualUpgradabilityProxy.sol";
 
 import "./ImplementationManager.sol";
 
@@ -275,10 +275,10 @@ contract ProtocolRegistry is IProtocolRegistry {
         if (upgradabilityMode == 0) {
             // 0: automatic upgradability
             // Deploy an exchange proxy and points to the implementation
-            exchangeAddress = address(new ExchangeAutoUpgradabilityProxy(address(this)));
+            exchangeAddress = address(new AutoUpgradabilityProxy(address(this)));
         } else if (upgradabilityMode == 1) {
             // 1: manual upgradability
-            exchangeAddress = address(new ExchangeManualUpgradabilityProxy(
+            exchangeAddress = address(new ManualUpgradabilityProxy(
                 address(this),
                 implementation
             ));
