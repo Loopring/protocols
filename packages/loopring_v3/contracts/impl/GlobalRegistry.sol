@@ -127,6 +127,31 @@ contract GlobalRegistry is IGlobalRegistry {
         return protocolMap[protocol].enabled;
     }
 
+    function enableProtocol(
+        address protocol
+        )
+        external
+        nonReentrant
+        onlyOwner
+    {
+        require(protocolMap[protocol].registered, "NOT_REREGISTERED");
+        require(!protocolMap[protocol].enabled, "ALREADY_ENABLED");
+        protocolMap[protocol].enabled = true;
+        emit ProtocolEnabled(protocol);
+    }
+
+    function disableProtocol(
+        address protocol
+        )
+        external
+        nonReentrant
+        onlyOwner
+    {
+        require(protocolMap[protocol].enabled, "ALREADY_DISABLED");
+        protocolMap[protocol].enabled = false;
+        emit ProtocolDisabled(protocol);
+    }
+
     // --- Private Functions ---
 
     function registerExchange(
