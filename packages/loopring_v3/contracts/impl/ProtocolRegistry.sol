@@ -123,7 +123,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         requier(protocolMap[protocol].enabled, "PROTOCOL_DISABLED");
         address oldDefault = defaultProtocolAddress;
         defaultProtocolAddress = protocol;
-        emit DefaultProtocolChanged(oldDefault, defaultProtocolAddress)
+        emit DefaultProtocolChanged(oldDefault, defaultProtocolAddress);
     }
 
     function isProtocolRegistered(
