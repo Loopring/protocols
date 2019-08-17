@@ -68,9 +68,7 @@ contract ExchangeProxy is Proxy
         returns (address impl)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-
         (, address implManager) = r.getExchangeProtocol(address(this));
-
         impl = IImplementationManager(implManager).defaultImpl();
     }
 }
