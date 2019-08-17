@@ -66,14 +66,17 @@ contract ManualUpgradabilityProxy is IExchangeProxy
         external
         onlyUnderlyingOwner
     {
-        validateImplementation(newImplementation);
         require(implementation() != newImplementation);
+
+        IProtocolRegistry r = IProtocolRegistry(registry());
+        require(
+            r.isProtocolAndImplementationEnabled(protocol(), newImplementation),
+            "INVALID_PROTOCOL_OR_IMPLEMENTATION"
+        );
 
         setImplementation(newImplementation);
         emit Upgraded(newImplementation);
     }
-
-    // --- Private methods ---
 
     function setImplementation(
         address newImplementation
@@ -82,18 +85,5 @@ contract ManualUpgradabilityProxy is IExchangeProxy
     {
         bytes32 position = implementationPosition;
         assembly {sstore(position, newImplementation) }
-    }
-
-    function validateImplementation(
-        address newImplementation
-        )
-        private
-        view
-    {
-        // IProtocolRegistry registry = IProtocolRegistry(registry());
-        // require(
-        //     registry.isEnabled(protocol(), newImplementation),
-        //     "INVALID_IMPLEMENTATION"
-        // );
     }
 }

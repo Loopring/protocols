@@ -116,6 +116,22 @@ contract ProtocolRegistry is IProtocolRegistry {
         emit ProtocolRegistered(protocol, manager, version);
     }
 
+    function isProtocolAndImplementationEnabled(
+        address protocol,
+        address implementation
+        )
+        public
+        view
+        returns (bool enabled)
+    {
+        if (!isProtocolEnabled(protocol)) {
+            return false;
+        }
+
+        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
+        return m.isEnabled(implementation);
+    }
+
     function isProtocolRegistered(
         address protocol
         )
@@ -256,15 +272,14 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
-        require(isProtocolEnabled(protocol), "INVALID_PROTOCOL");
-
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
-        require(m.isEnabled(implementation), "INVALID_IMPLEMENTATION");
+        require(
+            isProtocolAndImplementationEnabled(protocol, implementation),
+            "INVALID_PROTOCOL_OR_IMPLEMENTATION"
+        );
 
         ILoopring loopring = ILoopring(protocol);
 
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
-
         if (exchangeCreationCostLRC > 0) {
             require(
                 BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),

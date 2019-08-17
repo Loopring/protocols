@@ -89,7 +89,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory defaultImplVersion
         );
 
-
     /// @dev Registers a new protocol.
     /// @param protocol The address of the new protocol.
     /// @param implementation The new protocol's default implementation.
@@ -100,6 +99,18 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         )
         external
         returns (address implManager);
+
+    /// @dev Checks if the given protocol and mplementation are both registered and enabled.
+    /// @param protocol The address of the protocol.
+    /// @param implementation The address of the implementation.
+    /// @return enabled True if both the protocol and the implementation are registered and enabled.
+    function isProtocolAndImplementationEnabled(
+        address protocol,
+        address implementation
+        )
+        public
+        view
+        returns (bool enabled);
 
     /// @dev Checks if a protocol has been registered.
     /// @param protocol The address of the protocol.
