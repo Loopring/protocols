@@ -154,6 +154,12 @@ contract IExchangeV3 is IExchange
         )
         external;
 
+    /// @dev Returns this Exchange's id.
+    function id()
+        external
+        view
+        returns (uint);
+
     // -- Mode --
     /// @dev Whether the exchange is in withdrawal mode.
     /// @return Returns true if the exchange is in withdrawal mode, else false

@@ -10,9 +10,9 @@ module.exports = function(deployer, network, accounts) {
   deployer_
     .then(() => {
       return Promise.all([
-          deployer.deploy(Cloneable),
-          deployer.deploy(BatchVerifier)
-          ]);
+        deployer.deploy(Cloneable),
+        deployer.deploy(BatchVerifier)
+      ]);
     })
     .then(() => {
       console.log(">>>>>>>> contracts deployed by deploy_thirdparty:");

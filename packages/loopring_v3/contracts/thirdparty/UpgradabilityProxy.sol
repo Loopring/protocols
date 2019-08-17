@@ -7,10 +7,10 @@ import './Proxy.sol';
 
 
 /**
- * @title UpgradeabilityProxy
+ * @title UpgradabilityProxy
  * @dev This contract represents a proxy where the implementation address to which it will delegate can be upgraded
  */
-contract UpgradeabilityProxy is Proxy {
+contract UpgradabilityProxy is Proxy {
   /**
    * @dev This event will be emitted every time the implementation gets upgraded
    * @param implementation representing the address of the upgraded implementation

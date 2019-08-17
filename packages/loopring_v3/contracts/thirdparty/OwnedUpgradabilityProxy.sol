@@ -3,14 +3,14 @@
 
 pragma solidity ^0.5.11;
 
-import './UpgradeabilityProxy.sol';
+import './UpgradabilityProxy.sol';
 
 
 /**
  * @title OwnedUpgradabilityProxy
- * @dev This contract combines an upgradeability proxy with basic authorization control functionalities
+ * @dev This contract combines an Upgradability proxy with basic authorization control functionalities
  */
-contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
+contract OwnedUpgradabilityProxy is UpgradabilityProxy {
   /**
   * @dev Event to show ownership has been transferred
   * @param previousOwner representing the address of the previous owner
@@ -25,7 +25,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   * @dev the constructor sets the original owner of the contract to the sender account.
   */
   constructor() public {
-    setUpgradeabilityOwner(msg.sender);
+    setUpgradabilityOwner(msg.sender);
   }
 
   /**
@@ -50,7 +50,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   /**
    * @dev Sets the address of the owner
    */
-  function setUpgradeabilityOwner(address newProxyOwner) internal {
+  function setUpgradabilityOwner(address newProxyOwner) internal {
     bytes32 position = proxyOwnerPosition;
     assembly {
       sstore(position, newProxyOwner)
@@ -64,7 +64,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
   function transferProxyOwnership(address newOwner) public onlyProxyOwner {
     require(newOwner != address(0));
     emit ProxyOwnershipTransferred(proxyOwner(), newOwner);
-    setUpgradeabilityOwner(newOwner);
+    setUpgradabilityOwner(newOwner);
   }
 
   /**

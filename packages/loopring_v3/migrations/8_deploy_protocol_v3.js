@@ -1,6 +1,8 @@
 // Deploy protocol: LoopringV3
 
-var DowntimeCostCalculator = artifacts.require("./impl/DowntimeCostCalculator.sol");
+var DowntimeCostCalculator = artifacts.require(
+  "./impl/DowntimeCostCalculator.sol"
+);
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
