@@ -27,15 +27,32 @@ contract IGlobalRegistry is Claimable, ReentrancyGuard
 {
     // --- Events ---
 
-    event ExchangeRegistered(address exchange);
+    event ProtocolRegistered (
+        address indexed protocol,
+        address indexed versionManager,
+        string          version
+    );
 
-    event ProtocolRegistered(address protocol, address versionManager, string  version);
+    event ProtocolEnabled (
+        address indexed protocol
+    );
 
-    event ProtocolEnabled(address protocol);
+    event ProtocolDisabled (
+        address indexed protocol
+    );
 
-    event ProtocolDisabled(address protocol);
+    event ExchangeForged (
+        address indexed loopring,
+        address indexed exchangeAddress,
+        address         owner,
+        bool            supportUpgradability,
+        bool            onchainDataAvailability,
+        uint            exchangeId,
+        uint            amountLRCBurned
+    );
 
     // --- Data ---
+    address   public lrcAddress;
     address[] public exchanges;
 
     // --- Functions ---

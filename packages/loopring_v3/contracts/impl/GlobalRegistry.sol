@@ -16,9 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
+import "../lib/BurnableERC20.sol";
+
+import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IGlobalRegistry.sol";
 
+import "./ExchangeProxy.sol";
 import "./VersionManager.sol";
 
 /// @title Implementation of IGlobalRegistry
@@ -27,7 +31,8 @@ contract GlobalRegistry is IGlobalRegistry {
 
     // --- Data for managing exchanges ---
 
-    mapping (address => bool) private exchangeMap;
+    // IExchange addresses => IProtocol addresses
+    mapping (address => address) private exchangeMap;
 
     // -- Data for managing protocols ---
 
@@ -48,8 +53,17 @@ contract GlobalRegistry is IGlobalRegistry {
     // ILoopring address => Protocol
     mapping   (address => Protocol) private protocolMap;
 
-    // --- Constructor ---
-    constructor() public Ownable() {}
+
+    /// === Public Functions ==
+    constructor(
+        address _lrcAddress
+        )
+        Ownable()
+        public
+    {
+        require(_lrcAddress != address(0), "ZERO_ADDRESS");
+        lrcAddress = _lrcAddress;
+    }
 
     // --- Public Functions for Exchange Registry ---
 
@@ -60,7 +74,7 @@ contract GlobalRegistry is IGlobalRegistry {
         view
         returns (bool)
     {
-        return exchangeMap[exchange];
+        return exchangeMap[exchange] != address(0);
     }
 
     // --- Public Functions for Version Manager Registry ---
@@ -136,6 +150,7 @@ contract GlobalRegistry is IGlobalRegistry {
     {
         require(protocolMap[protocol].registered, "NOT_REREGISTERED");
         require(!protocolMap[protocol].enabled, "ALREADY_ENABLED");
+
         protocolMap[protocol].enabled = true;
         emit ProtocolEnabled(protocol);
     }
@@ -148,24 +163,109 @@ contract GlobalRegistry is IGlobalRegistry {
         onlyOwner
     {
         require(protocolMap[protocol].enabled, "ALREADY_DISABLED");
+
         protocolMap[protocol].enabled = false;
         emit ProtocolDisabled(protocol);
     }
 
+
+    function forgeExchange(
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        nonReentrant
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        )
+    {
+        return forgeExchangeInternal(
+            defaultProtocolAddress,
+            supportUpgradability,
+            onchainDataAvailability
+        );
+    }
+
+    function forgeExchange(
+        address protocol,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        nonReentrant
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        )
+    {
+        return forgeExchangeInternal(
+            protocol,
+            supportUpgradability,
+            onchainDataAvailability
+        );
+    }
+
     // --- Private Functions ---
 
-    function registerExchange(
-        address exchange
+    function forgeExchangeInternal(
+        address protocol,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
         )
         private
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        )
     {
-        require(exchange != address(0), "ZERO_ADDRESS");
-        require(!exchangeMap[exchange], "EXCHANGE_REGISTERED");
+        require(protocolMap[protocol].enabled, "INVALID_PROTOCOL");
 
-        exchanges.push(exchange);
-        exchangeMap[exchange] = true;
+        ILoopring loopring = ILoopring(protocol);
+        uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
-        emit ExchangeRegistered(exchange);
+        if (exchangeCreationCostLRC > 0) {
+            require(
+                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
+                "BURN_FAILURE"
+            );
+        }
+
+        Protocol storage p = protocolMap[protocol];
+        IVersionManager manager = IVersionManager(p.versionManager);
+        IExchange implementation = IExchange(manager.defaultImplementation());
+
+        if (supportUpgradability) {
+            // Deploy an exchange proxy and points to the implementation
+            exchangeAddress = address(new ExchangeProxy(address(this)));
+        } else {
+            // Clone a native exchange from the implementation.
+            exchangeAddress = implementation.clone();
+        }
+
+        assert(exchangeMap[exchangeAddress] == address(0));
+
+        exchangeMap[exchangeAddress] = protocol;
+        exchanges.push(exchangeAddress);
+        exchangeId = exchanges.length;
+
+        loopring.initializeExchange(
+            exchangeAddress,
+            exchangeId,
+            msg.sender,  // owner
+            msg.sender,  // operator
+            onchainDataAvailability
+        );
+
+        emit ExchangeForged(
+            protocol,
+            exchangeAddress,
+            msg.sender,
+            supportUpgradability,
+            onchainDataAvailability,
+            exchangeId,
+            exchangeCreationCostLRC
+        );
     }
 }
 

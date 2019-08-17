@@ -29,14 +29,23 @@ contract IVersionManager is Claimable, ReentrancyGuard
 {
     // --- Events ---
 
-    event DefaultChanged(
-        address oldDefault,
-        address newDefault
+    event DefaultChanged (
+        address indexed oldDefault,
+        address indexed newDefault
     );
 
-    event ImplementationAdded   (address implementation, string version);
-    event ImplementationEnabled (address implementation);
-    event ImplementationDisabled(address implementation);
+    event ImplementationAdded (
+        address indexed implementation,
+        string          version
+    );
+
+    event ImplementationEnabled (
+        address indexed implementation
+    );
+
+    event ImplementationDisabled (
+        address indexed implementation
+    );
 
     // --- Public Data ---
 
