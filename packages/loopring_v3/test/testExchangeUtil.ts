@@ -2539,10 +2539,10 @@ export class ExchangeTestUtil {
     });
 
     // randomely support upgradability
-    const upgradabilityMode = new Date().getMilliseconds() % 3;
+    const upgradabilityMode = new Date().getMilliseconds() % 4;
     // Create the new exchange
     const tx = await this.protocolRegistry.forgeExchange(
-      this.loopringV3.address,
+      // this.loopringV3.address,
       upgradabilityMode,
       onchainDataAvailability,
       { from: owner }

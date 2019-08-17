@@ -17,18 +17,19 @@
 pragma solidity ^0.5.11;
 
 import "../lib/BurnableERC20.sol";
+import "../lib/SimpleProxy.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IProtocolRegistry.sol";
+import "../iface/ILoopringRegistry.sol";
 
-import "./ExchangeAutoUpgradabilityProxy.sol";
-import "./ExchangeManualUpgradabilityProxy.sol";
+import "./proxies/ExchangeAutoUpgradabilityProxy.sol";
+import "./proxies/ExchangeManualUpgradabilityProxy.sol";
 
 
-/// @title An Implementation of IProtocolRegistry.
+/// @title An Implementation of ILoopringRegistry.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry
+contract LoopringRegistry is ILoopringRegistry
 {
     struct Protocol
     {
@@ -131,7 +132,7 @@ contract ProtocolRegistry is IProtocolRegistry
     {
         ILoopring loopring = ILoopring(protocol);
         require(loopring.owner() == owner, "INCONSISTENT_OWNER");
-        require(loopring.protocolRegistry() == address(this), "INCONSISTENT_REGISTRY");
+        require(loopring.LoopringRegistry() == address(this), "INCONSISTENT_REGISTRY");
         require(loopring.lrcAddress() == lrcAddress, "INCONSISTENT_LRC_ADDRESS");
 
         string memory version = IExchange(implementation).version();
@@ -355,9 +356,14 @@ contract ProtocolRegistry is IProtocolRegistry
             exchangeAddress = address(new ExchangeManualUpgradabilityProxy(
                 address(this),
                 protocols[protocol].implementation
-                ));
+            ));
         } else if (upgradabilityMode == 2) {
-            // 2: no upgradability
+            // 2: no upgradability with a simple proxy
+            exchangeAddress = address(new SimpleProxy(
+                protocols[protocol].implementation
+            ));
+        } else if (upgradabilityMode == 3) {
+            // 3: no upgradability with a native DEX
             // Clone a native exchange from the implementation.
             exchangeAddress = IExchange(protocols[protocol].implementation).clone();
         } else {

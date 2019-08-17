@@ -16,11 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Ownable.sol";
+import "../../lib/Ownable.sol";
 
-import "../iface/IExchange.sol";
-import "../iface/IExchangeUpgradabilityProxy.sol";
-import "../iface/IProtocolRegistry.sol";
+import "../../iface/IExchangeUpgradabilityProxy.sol";
+import "../../iface/ILoopringRegistry.sol";
 
 
 /// @title ExchangeManualUpgradabilityProxy
@@ -91,7 +90,7 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         private
         view
     {
-        IProtocolRegistry registry = IProtocolRegistry(registry());
+        ILoopringRegistry registry = ILoopringRegistry(registry());
         require(
             registry.isImplementationEnabled(protocol(), newImplementation),
             "INVALID_IMPLEMENTATION"

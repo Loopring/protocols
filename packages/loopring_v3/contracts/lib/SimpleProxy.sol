@@ -16,27 +16,30 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/IExchange.sol";
-import "../iface/IExchangeUpgradabilityProxy.sol";
-import "../iface/IProtocolRegistry.sol";
+import "../thirdparty/Proxy.sol";
 
 
-/// @title ExchangeAutoUpgradabilityProxy
-/// @dev This proxy is designed to support automatic Upgradability offered by a
-///      IProtocolRegistry contract.
+/// @title SimpleProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeAutoUpgradabilityProxy is IExchangeUpgradabilityProxy
+contract SimpleProxy is Proxy
 {
-    constructor(address _registry)
+    bytes32 private constant implementationPosition = keccak256(
+        "org.loopring.protocol.simple.proxy"
+    );
+
+    constructor(address _implementation)
         public
-        IExchangeUpgradabilityProxy(_registry) {}
+    {
+        bytes32 position = implementationPosition;
+        assembly {sstore(position, _implementation) }
+    }
 
     function implementation()
         public
         view
         returns (address impl)
     {
-        IProtocolRegistry r = IProtocolRegistry(registry());
-        (, impl, ) = r.getExchangeProtocol(address(this));
+        bytes32 position = implementationPosition;
+        assembly { impl := sload(position) }
     }
 }

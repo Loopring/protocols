@@ -22,7 +22,7 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title IProtocalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IProtocolRegistry is Claimable, ReentrancyGuard
+contract ILoopringRegistry is Claimable, ReentrancyGuard
 {
     address     public lrcAddress;
     address     public defaultProtocol;
@@ -171,7 +171,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @param upgradabilityMode Specify how the exchange shall support upgradability.
     ///        0: automatical upgradability
     ///        1: manual upgradability
-    ///        2: no upgradability
+    ///        2: no upgradability with a SimpleProxy
+    ///        3: no upgradability with a native DEX contract
     /// @param onchainDataAvailability If the on-chain DA is on
     /// @return exchangeAddress The new exchange's  address.
     /// @return exchangeId The new exchange's ID.
