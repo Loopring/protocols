@@ -16,17 +16,56 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/IExchange.sol";
-import "../iface/ILoopring.sol";
-import "../iface/IImplementationManager.sol";
-import "../iface/IProtocolManager.sol";
+import "../iface/IVersionManager.sol";
+import "../iface/IGlobalRegistry.sol";
 
-
-/// @title An Implementation of IProtocolManager.
+/// @title Implementation of IGlobalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolManager is IProtocolManager
-{
-    event ImplementationManagerRegistered (
+contract GlobalRegistry is IGlobalRegistry {
+    mapping (address => bool) private exchangeRegistrationMap;
+
+
+    address   public defaultVersionManager;
+    address[] public versionManagers;
+
+    // IProtocol.version => IProtocol address
+    mapping   (string => address) public versionLabelMap;
+
+    // IVersionManager address => MajorVersion
+    mapping   (address => MajorVersion) private versionMap;
+
+    // ILoopring address => IVersionManager address
+    mapping   (address => address) private protocolMap;
+
+
+    constructor() public Ownable() {}
+
+    function registerExchange(
+        address exchange
+        )
+        public
+    {
+        require(exchange != address(0), "ZERO_ADDRESS");
+        require(!exchangeRegistrationMap[exchange], "ALREADY_REGISTERED");
+
+        exchanges.push(exchange);
+        exchangeRegistrationMap[exchange] = true;
+
+        emit ExchangeRegistered(exchange);
+    }
+
+    function isExchangeRegistered(
+        address exchange
+        )
+        public
+        view
+        returns (bool)
+    {
+        return exchangeRegistrationMap[exchange];
+    }
+
+
+     event VersionManagerRegistered (
         address versionManager,
         address protocol,
         string version
@@ -40,38 +79,26 @@ contract ProtocolManager is IProtocolManager
         bool    enabled;
     }
 
-    address   public defaultImplementationManager;
-    address[] public versionManagers;
 
-    // IProtocol.version => IProtocol address
-    mapping   (string => address) public versionLabelMap;
-
-    // IImplementationManager address => MajorVersion
-    mapping   (address => MajorVersion) private versionMap;
-
-    // ILoopring address => IImplementationManager address
-    mapping   (address => address) private protocolMap;
-
-    constructor () public Ownable() {}
 
     function defaultProtocolVersion()
         external
         view
         returns (string memory)
     {
-        if (defaultImplementationManager != address(0)) {
-            return IImplementationManager(defaultImplementationManager).protocolVersion();
+        if (defaultVersionManager != address(0)) {
+            return IVersionManager(defaultVersionManager).protocolVersion();
         }
     }
 
-    function registerImplementationManager(
+    function registerVersionManager(
         address versionManager
         )
         external
         onlyOwner
     {
         require(versionManager != address(0), "ZERO_ADDRESS");
-        IImplementationManager manager = IImplementationManager(versionManager);
+        IVersionManager manager = IVersionManager(versionManager);
 
         address _owner = manager.owner();
         require(_owner == owner, "INVALID_OWNER");
@@ -88,14 +115,14 @@ contract ProtocolManager is IProtocolManager
         protocolMap[protocol] = versionManager;
         versionManagers.push(versionManager);
 
-        if (defaultImplementationManager == address(0)) {
-            defaultImplementationManager = versionManager;
+        if (defaultVersionManager == address(0)) {
+            defaultVersionManager = versionManager;
         }
 
-        emit ImplementationManagerRegistered(versionManager, protocol, version);
+        emit VersionManagerRegistered(versionManager, protocol, version);
     }
 
-    function isImplementationManagerRegistered(
+    function isVersionManagerRegistered(
         address versionManager
         )
         public
@@ -105,7 +132,7 @@ contract ProtocolManager is IProtocolManager
         return versionMap[versionManager].registered;
     }
 
-    function isImplementationManagerEnabled(
+    function isVersionManagerEnabled(
         address versionManager
         )
         public
@@ -115,3 +142,4 @@ contract ProtocolManager is IProtocolManager
         return versionMap[versionManager].enabled;
     }
 }
+

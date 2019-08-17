@@ -20,11 +20,11 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title IImplementationManager
+/// @title IVersionManager
 /// @dev This contract manages implementation versions for a perticular ILoopring
 ///      version.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IImplementationManager is Claimable, ReentrancyGuard
+contract IVersionManager is Claimable, ReentrancyGuard
 {
     // --- Events ---
 
