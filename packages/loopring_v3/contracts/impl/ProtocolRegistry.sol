@@ -25,6 +25,7 @@ import "../iface/IProtocolRegistry.sol";
 
 import "./proxies/ExchangeAutoUpgradabilityProxy.sol";
 import "./proxies/ExchangeManualUpgradabilityProxy.sol";
+
 import "./ImplementationManager.sol";
 
 /// @title An Implementation of IProtocolRegistry
