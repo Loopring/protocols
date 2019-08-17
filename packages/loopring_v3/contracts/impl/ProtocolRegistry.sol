@@ -20,22 +20,14 @@ import "../lib/BurnableERC20.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IGlobalRegistry.sol";
+import "../iface/IProtocolRegistry.sol";
 
 import "./ExchangeProxy.sol";
 import "./VersionManager.sol";
 
-/// @title Implementation of IGlobalRegistry
+/// @title Implementation of IProtocolRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract GlobalRegistry is IGlobalRegistry {
-
-    // --- Data for managing exchanges ---
-
-    // IExchange addresses => IProtocol addresses
-    mapping (address => address) private exchangeMap;
-
-    // -- Data for managing protocols ---
-
+contract ProtocolRegistry is IProtocolRegistry {
     struct Protocol
     {
         address protocol;
@@ -45,14 +37,12 @@ contract GlobalRegistry is IGlobalRegistry {
         bool    enabled;
     }
 
-    address   private defaultProtocolAddress;
-    address[] public  protocols;
+    // IExchange addresses => IProtocol addresses
+    mapping (address => address) private exchangeMap;
+     // ILoopring address => Protocol
+    mapping (address => Protocol) private protocolMap;
 
-    // IProtocol.version => IProtocol address
-    mapping   (string => address) public versionMap;
-    // ILoopring address => Protocol
-    mapping   (address => Protocol) private protocolMap;
-
+    address private defaultProtocolAddress;
 
     /// === Public Functions ==
     constructor(

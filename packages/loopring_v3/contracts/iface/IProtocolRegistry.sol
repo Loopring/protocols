@@ -20,10 +20,10 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title IGlobalRegistry
+/// @title IProtocolRegistry
 /// @dev This contract manages the all registered ILoopring protocol versions.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IGlobalRegistry is Claimable, ReentrancyGuard
+contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
     // --- Events ---
 

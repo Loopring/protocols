@@ -19,13 +19,13 @@ pragma solidity ^0.5.11;
 import "../thirdparty/Proxy.sol";
 
 import "../iface/IExchange.sol";
-import "../iface/IGlobalRegistry.sol";
+import "../iface/IProtocolRegistry.sol";
 import "../iface/IVersionManager.sol";
 
 
 /// @title ExchangeProxy
 /// @dev This proxy is designed to support transparent upgradeability offered by a
-///      IGlobalRegistry contract.
+///      IProtocolRegistry contract.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeProxy is Proxy
 {
@@ -58,7 +58,7 @@ contract ExchangeProxy is Proxy
         view
         returns (address _protocol)
     {
-        IGlobalRegistry r = IGlobalRegistry(registry());
+        IProtocolRegistry r = IProtocolRegistry(registry());
         (_protocol, ) = r.getExchangeProtocol(address(this));
     }
 
@@ -67,7 +67,7 @@ contract ExchangeProxy is Proxy
         view
         returns (address impl)
     {
-        IGlobalRegistry r = IGlobalRegistry(registry());
+        IProtocolRegistry r = IProtocolRegistry(registry());
 
         (, address versionManager) = r.getExchangeProtocol(address(this));
 

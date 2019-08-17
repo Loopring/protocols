@@ -38,7 +38,7 @@ module.exports = function(deployer, network, accounts) {
 
   // common deployment
 
-  const GlobalRegistry = artifacts.require("./impl/GlobalRegistry.sol");
+  const ProtocolRegistry = artifacts.require("./impl/ProtocolRegistry.sol");
   const BlockVerifier = artifacts.require("./impl/BlockVerifier.sol");
   const ExchangeV3 = artifacts.require("./impl/ExchangeV3.sol");
   const LoopringV3 = artifacts.require("./impl/LoopringV3.sol");
@@ -46,7 +46,7 @@ module.exports = function(deployer, network, accounts) {
   deployer_
     .then(() => {
       return Promise.all([
-        GlobalRegistry.deployed(),
+        ProtocolRegistry.deployed(),
         BlockVerifier.deployed(),
         DowntimeCostCalculator.deployed()
       ]);
@@ -55,7 +55,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         deployer.deploy(
           LoopringV3,
-          GlobalRegistry.address,
+          ProtocolRegistry.address,
           lrcAddress,
           wethAddress,
           protocolFeeValutAddress,
@@ -69,7 +69,7 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-        GlobalRegistry.deployed().then(c => {
+        ProtocolRegistry.deployed().then(c => {
           console.log(
             "registering protocol:",
             LoopringV3.address,
@@ -85,7 +85,7 @@ module.exports = function(deployer, network, accounts) {
       console.log("wethAddress:", wethAddress);
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
-      console.log("GlobalRegistry:", GlobalRegistry.address);
+      console.log("ProtocolRegistry:", ProtocolRegistry.address);
       console.log("BlockVerifier:", BlockVerifier.address);
       console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
       console.log("LoopringV3:", LoopringV3.address);
