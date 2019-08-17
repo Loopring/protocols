@@ -35,7 +35,9 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
 
     modifier onlyUnderlyingOwner()
     {
-        require(msg.sender == Ownable(address(this)).owner(), "UNAUTHORIZED");
+        address underlyingOwner = Ownable(address(this)).owner();
+        require(underlyingOwner != address(0), "NO_OWNER");
+        require(underlyingOwner == msg.sender, "UNAUTHORIZED");
         _;
     }
 
@@ -65,11 +67,14 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         onlyUnderlyingOwner
     {
         validateImplementation(newImplementation);
+
         address currentImplementation = implementation();
         require(currentImplementation != newImplementation);
         setImplementation(newImplementation);
         emit Upgraded(newImplementation);
     }
+
+    // --- Private methods ---
 
     function setImplementation(
         address newImplementation
@@ -86,6 +91,10 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         private
         view
     {
-
+        IProtocolRegistry registry = IProtocolRegistry(registry());
+        require(
+            registry.isImplementationEnabled(protocol(), newImplementation),
+            "INVALID_IMPLEMENTATION"
+        );
     }
 }

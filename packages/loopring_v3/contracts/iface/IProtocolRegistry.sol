@@ -91,6 +91,16 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         external
         returns (address oldImplementation);
 
+    /// @dev Check if a protocol/implementaiton combinitation is valid and the
+    ///      implemenetation is still enabled.
+    function isImplementationEnabled(
+        address protocol,
+        address implementation
+        )
+        external
+        view
+        returns (bool validAndEnabled);
+
     /// @dev Disables a protocol.
     /// @param protocol The protocol to disable.
     function disableProtocol(

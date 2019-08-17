@@ -176,6 +176,17 @@ contract ProtocolRegistry is IProtocolRegistry
         emit ProtocolUpgraded(protocol, newImplementation, oldImplementation);
     }
 
+    function isImplementationEnabled(
+        address _protocol,
+        address _implementation
+        )
+        external
+        view
+        returns (bool validAndEnabled)
+    {
+        return true; // TODO
+    }
+
     function disableProtocol(
         address protocol
         )
