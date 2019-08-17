@@ -28,6 +28,8 @@ contract IExchange is Claimable, ReentrancyGuard
 {
     string constant public version = ""; // must override this
 
+    event Cloned (address indexed clone);
+
     /// @dev Clone an exchange without any initialization
     /// @return  cloneAddress The address of the new exchange.
     function clone()
@@ -40,5 +42,7 @@ contract IExchange is Claimable, ReentrancyGuard
 
         assert(cloneAddress != origin);
         assert(cloneAddress != address(0));
+
+        emit Cloned(cloneAddress);
     }
 }
