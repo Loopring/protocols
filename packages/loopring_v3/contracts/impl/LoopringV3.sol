@@ -44,7 +44,7 @@ contract LoopringV3 is ILoopringV3
         address _blockVerifierAddress,
         address _downtimeCostCalculator
         )
-        Ownable()
+        Claimable()
         public
     {
         require(address(0) != _protocolRegistry, "ZERO_ADDRESS");

@@ -40,7 +40,7 @@ contract BlockVerifier is Claimable, ReentrancyGuard, IBlockVerifier
 
     mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
 
-    constructor() Ownable() public {}
+    constructor() Claimable() public {}
 
     function registerCircuit(
         uint8    blockType,

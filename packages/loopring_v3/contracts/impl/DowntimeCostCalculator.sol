@@ -42,7 +42,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         uint oldMaxAwailableDowntimeMinutes
     );
 
-    constructor() Ownable() public {}
+    constructor() Claimable() public {}
 
     function getDowntimeCostLRC(
         uint  totalTimeInMaintenanceSeconds,

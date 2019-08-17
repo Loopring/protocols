@@ -48,7 +48,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     constructor(
         address _lrcAddress
         )
-        Ownable()
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
