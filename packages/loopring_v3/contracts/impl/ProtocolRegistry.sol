@@ -173,13 +173,14 @@ contract ProtocolRegistry is IProtocolRegistry {
         emit ProtocolDisabled(protocol);
     }
 
-    function forgeExchangeInternal(
+    function forgeExchange(
         bool    supportUpgradability,
         bool    onchainDataAvailability,
         address protocol,
         address implementation
         )
-        private
+        external
+        nonReentrant
         returns (
             address exchangeAddress,
             uint    exchangeId
