@@ -111,8 +111,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         external;
 
     function forgeExchange(
-        bool    supportUpgradability,
-        bool    onchainDataAvailability
+        bool supportUpgradability,
+        bool onchainDataAvailability
         )
         external
         returns (
