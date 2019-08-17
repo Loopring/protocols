@@ -25,7 +25,7 @@ import "../iface/IProtocolRegistry.sol";
 import "./ExchangeProxy.sol";
 import "./ImplementationManager.sol";
 
-/// @title Implementation of IProtocolRegistry
+/// @title An Implementation of IProtocolRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ProtocolRegistry is IProtocolRegistry {
     struct Protocol
