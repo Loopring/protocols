@@ -185,4 +185,25 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             address exchangeAddress,
             uint    exchangeId
         );
+
+    /// @dev Create a new exchange using a specific protocol with msg.sender
+    ///      as owner and operator.
+    /// @param protocol The protocol address.
+    /// @param implementation The implementation to use.
+    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    ///        in front of the native exchange contract to support upgradability.
+    /// @param onchainDataAvailability IF the on-chain DA is on
+    /// @return exchangeAddress The new exchange's address.
+    /// @return exchangeId The new exchange's ID.
+    function forgeExchange(
+        address protocol,
+        address implementation,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        );
 }

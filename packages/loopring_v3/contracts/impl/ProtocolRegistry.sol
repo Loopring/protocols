@@ -31,7 +31,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     struct Protocol
     {
         address protocol;
-        address implManager;
+        address manager;
         string  version;
         bool    registered;
         bool    enabled;
@@ -70,7 +70,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         view
         returns (
             address protocol,
-            address implManager,
+            address manager,
             address defaultImpl,
             string  memory protocolVersion,
             string  memory defaultImplVersion
@@ -78,11 +78,11 @@ contract ProtocolRegistry is IProtocolRegistry {
     {
         protocol = defaultProtocolAddress;
         Protocol storage p = protocolMap[protocol];
-        implManager = p.implManager;
+        manager = p.manager;
 
-        IImplementationManager manager = IImplementationManager(implManager);
-        defaultImpl = manager.defaultImpl();
-        (protocolVersion, defaultImplVersion) = manager.version();
+        IImplementationManager m = IImplementationManager(manager);
+        defaultImpl = m.defaultImpl();
+        (protocolVersion, defaultImplVersion) = m.version();
     }
 
     function registerProtocol(
@@ -91,12 +91,12 @@ contract ProtocolRegistry is IProtocolRegistry {
         )
         external
         onlyOwner
-        returns (address implManager)
+        returns (address manager)
     {
         require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
 
-        IImplementationManager manager = new ImplementationManager(owner, protocol, implementation);
-        implManager = address(manager);
+        IImplementationManager m = new ImplementationManager(owner, protocol, implementation);
+        manager = address(m);
 
         string memory version = ILoopring(protocol).version();
         require(versionMap[version] == address(0), "VERSION_REGISTERED");
@@ -104,13 +104,13 @@ contract ProtocolRegistry is IProtocolRegistry {
 
         protocols.push(protocol);
         versionMap[version] = protocol;
-        protocolMap[protocol] = Protocol(protocol, implManager, version, true, true);
+        protocolMap[protocol] = Protocol(protocol, manager, version, true, true);
 
         if (defaultProtocolAddress == address(0)) {
             defaultProtocolAddress = protocol;
         }
 
-        emit ProtocolRegistered(protocol, implManager, version);
+        emit ProtocolRegistered(protocol, manager, version);
     }
 
     function isProtocolRegistered(
@@ -160,7 +160,6 @@ contract ProtocolRegistry is IProtocolRegistry {
         emit ProtocolDisabled(protocol);
     }
 
-
     function forgeExchange(
         bool supportUpgradability,
         bool onchainDataAvailability
@@ -172,8 +171,11 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
+        address protocol = defaultProtocolAddress;
+        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
         return forgeExchangeInternal(
-            defaultProtocolAddress,
+            protocol,
+            m.defaultImpl(),
             supportUpgradability,
             onchainDataAvailability
         );
@@ -181,6 +183,28 @@ contract ProtocolRegistry is IProtocolRegistry {
 
     function forgeExchange(
         address protocol,
+        bool    supportUpgradability,
+        bool    onchainDataAvailability
+        )
+        external
+        nonReentrant
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        )
+    {
+        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
+        return forgeExchangeInternal(
+            protocol,
+            m.defaultImpl(),
+            supportUpgradability,
+            onchainDataAvailability
+        );
+    }
+
+    function forgeExchange(
+        address protocol,
+        address implementation,
         bool    supportUpgradability,
         bool    onchainDataAvailability
         )
@@ -193,6 +217,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     {
         return forgeExchangeInternal(
             protocol,
+            implementation,
             supportUpgradability,
             onchainDataAvailability
         );
@@ -205,20 +230,20 @@ contract ProtocolRegistry is IProtocolRegistry {
         view
         returns (
             address protocol,
-            address implManager
+            address manager
         )
     {
         require(exchangeAddress != address(0), "ZERO_ADDRESS");
         protocol = exchangeMap[exchangeAddress];
         require(protocol != address(0), "INVALID_EXCHANGE");
-
-        implManager = protocolMap[protocol].implManager;
+        manager = protocolMap[protocol].manager;
     }
 
     /// === Internal & Private Functions ===
 
     function forgeExchangeInternal(
         address protocol,
+        address implementation,
         bool    supportUpgradability,
         bool    onchainDataAvailability
         )
@@ -228,9 +253,14 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
-        require(protocolMap[protocol].enabled, "INVALID_PROTOCOL");
+        require(isProtocolEnabled(protocol), "INVALID_PROTOCOL");
+
+        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
+        require(m.isEnabled(implementation), "INVALID_IMPLEMENTATION");
 
         ILoopring loopring = ILoopring(protocol);
+        IExchange exchange = IExchange(implementation);
+
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
         if (exchangeCreationCostLRC > 0) {
@@ -240,16 +270,12 @@ contract ProtocolRegistry is IProtocolRegistry {
             );
         }
 
-        Protocol storage p = protocolMap[protocol];
-        IImplementationManager manager = IImplementationManager(p.implManager);
-        IExchange implementation = IExchange(manager.defaultImpl());
-
         if (supportUpgradability) {
             // Deploy an exchange proxy and points to the implementation
             exchangeAddress = address(new ExchangeProxy(address(this)));
         } else {
             // Clone a native exchange from the implementation.
-            exchangeAddress = implementation.clone();
+            exchangeAddress = exchange.clone();
         }
 
         assert(exchangeMap[exchangeAddress] == address(0));
@@ -277,4 +303,3 @@ contract ProtocolRegistry is IProtocolRegistry {
         );
     }
 }
-
