@@ -94,7 +94,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory defaultImplVersion
         );
 
-
     /// @dev Registers a new protocol.
     /// @param protocol The address of the new protocol.
     /// @param implementation The new protocol's default implementation.
@@ -154,7 +153,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             address protocol,
             address implementation
         );
-
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
