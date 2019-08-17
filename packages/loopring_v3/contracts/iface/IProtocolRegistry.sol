@@ -75,7 +75,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
-    /// @return implManager The address of the default protocol's version manager.
+    /// @return implManager The address of the default protocol's implementation manager.
     /// @return defaultImpl The default protocol's default implementation address.
     /// @return defaultImplVersion The version of the default implementation.
     function defaultProtocol()
@@ -93,7 +93,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @dev Registers a new protocol.
     /// @param protocol The address of the new protocol.
     /// @param implementation The new protocol's default implementation.
-    /// @return implManager A new version manager to manage the protocol's implementations.
+    /// @return implManager A new implementation manager to manage the protocol's implementations.
     function registerProtocol(
         address protocol,
         address implementation
