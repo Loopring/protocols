@@ -23,18 +23,21 @@ import "../lib/ReentrancyGuard.sol";
 /// @title IVersionManager
 /// @dev This contract manages implementation versions for a perticular ILoopring
 ///      contract. The ILoopring contract can be considered as the "major" version
-///      and each IExchange implementation can be considiered as the "minor" version.
+///      of a Loopring protocol and each IExchange implementation can be considiered
+///      as a "minor" version. Multiple IExchange contracts can share the same
+///      ILoopring contracts. Sometimes minor versions are also refered as implementations.
+///
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IVersionManager is Claimable, ReentrancyGuard
 {
-    // --- Events ---
+    /// === Events ===
 
     event DefaultChanged (
         address indexed oldDefault,
         address indexed newDefault
     );
 
-    event ImplementationAdded (
+    event ImplementationRegistered (
         address indexed implementation,
         string          version
     );
@@ -47,57 +50,78 @@ contract IVersionManager is Claimable, ReentrancyGuard
         address indexed implementation
     );
 
-    // --- Public Data ---
+    /// === Data ===
 
-    address   public protocol;
+    address   public protocolAddress;
     address   public defaultImplementation;
     address[] public implementations;
-    mapping   (string => address) public versionLabelMap;
 
+    // version strings => IExchange addresses
+    mapping   (string => address) public versionMap;
 
-    // --- Functions ---
+    /// === Functions ===
 
-    function protocolVersion()
+    /// @dev Returns version information.
+    /// @return protocolVersion The protocol's version.
+    /// @return defaultImplementationVersion The default implementation's version.
+    function version()
         external
         view
-        returns (string memory version);
+        returns (
+            string  memory protocolVersion,
+            string  memory defaultImplementationVersion
+        );
 
+    /// @dev Sets the default implemenation.
+    /// @param implementation The new default implementation.
     function setDeaultImplementation(
         address implementation
         )
         external;
 
+    /// @dev Enables an implemenation.
+    /// @param implementation The implementation to be enabled.
     function enableImplementation(
         address implementation
         )
         external;
 
+    /// @dev Disables an implemenation.
+    /// @param implementation The implementation to be disabled.
     function disableImplementation(
         address implementation
         )
         external;
 
+    /// @dev Returns the latest implemenation added.
+    /// @param implementation The latest implemenation added.
     function latestImplementation()
         public
         view
-        returns (address);
+        returns (address implementation);
 
-    function addImplementation(
+    /// @dev Register a new implementation.
+    /// @param implementation The implemenation to add.
+    function registerImplementation(
         address implementation
         )
         public;
 
+    /// @dev Returns if an implementation has been registered.
+    /// @param registered True if the implementation is registered.
     function isImplementationRegistered(
         address implementation
         )
         public
         view
-        returns (bool);
+        returns (bool registered);
 
+    /// @dev Returns if an implementation has been registered and enabled.
+    /// @param enabled True if the implementation is registered and enabled.
     function isImplementationEnabled(
         address implementation
         )
         public
         view
-        returns (bool);
+        returns (bool enabled);
 }

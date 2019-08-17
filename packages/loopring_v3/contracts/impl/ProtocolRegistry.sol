@@ -44,7 +44,7 @@ contract ProtocolRegistry is IProtocolRegistry {
 
     address private defaultProtocolAddress;
 
-    /// === Public Functions ==
+    /// === Functions ==
     constructor(
         address _lrcAddress
         )
@@ -54,8 +54,6 @@ contract ProtocolRegistry is IProtocolRegistry {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         lrcAddress = _lrcAddress;
     }
-
-    // --- Public Functions for Exchange Registry ---
 
     function isExchangeRegistered(
         address exchange
@@ -67,20 +65,24 @@ contract ProtocolRegistry is IProtocolRegistry {
         return exchangeMap[exchange] != address(0);
     }
 
-    // --- Public Functions for Version Manager Registry ---
-
     function defaultProtocol()
         external
         view
         returns (
             address protocol,
-            address versionmanager,
+            address versionManager,
             address defaultImplementation,
             string  memory protocolVersion,
             string  memory defaultImplementationVersion
         )
     {
-        // TODO
+        protocol = defaultProtocolAddress;
+        Protocol storage p = protocolMap[protocol];
+        versionManager = p.versionManager;
+
+        IVersionManager manager = IVersionManager(versionManager);
+        defaultImplementation = manager.defaultImplementation();
+        (protocolVersion, defaultImplementationVersion) = manager.version();
     }
 
     function registerProtocol(
@@ -213,7 +215,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         versionManager = protocolMap[protocol].versionManager;
     }
 
-    // --- Private Functions ---
+    /// === Internal & Private Functions ===
 
     function forgeExchangeInternal(
         address protocol,

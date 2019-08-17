@@ -25,16 +25,16 @@ import "../iface/IVersionManager.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract VersionManager is IVersionManager
 {
-    struct Version
+    struct Status
     {
         bool registered;
         bool enabled;
     }
 
-    // implementation => Version
-    mapping (address => Version) private versions;
+    // IExchange addresses => Status
+    mapping (address => Status) private statusMap;
 
-    // --- Constructor ---
+    /// === Constructor ===
 
     constructor(
         address _owner,
@@ -47,51 +47,43 @@ contract VersionManager is IVersionManager
         require(_protocol != address(0), "ZERO_PROTOCOL");
 
         owner = _owner;
-        protocol = _protocol;
+        protocolAddress = _protocol;
         defaultImplementation = _implementation;
 
-        addImplementation(_implementation);
+        registerImplementation(_implementation);
     }
 
-    // --- Public and External Functions ---
+    /// === Functions ===
 
-    function protocolVersion()
+    function version()
         external
         view
-        returns (string memory)
+        returns (
+            string  memory protocolVersion,
+            string  memory defaultImplementationVersion
+        )
     {
-        return ILoopring(protocol).version();
+        protocolVersion = ILoopring(protocolAddress).version();
+        defaultImplementationVersion = IExchange(defaultImplementation).version();
     }
 
-    function defaultImplementationVersion()
-        external
-        view
-        returns (string memory)
-    {
-        return IExchange(defaultImplementation).version();
-    }
-
-    function addImplementation(
+    function registerImplementation(
         address implementation
         )
         public
     {
         require(implementation != address(0), "INVALID_IMPLEMENTATION");
 
-        IExchange exchange = IExchange(implementation);
-        string memory version = exchange.version();
-
-        require(bytes(version).length > 0, "INVALID_VERISON_LABEL");
-        require(versionLabelMap[version] == address(0), "VERISON_LABEL_USED");
-
-        Version storage state = versions[implementation];
-        require(!state.registered, "INVALID_IMPLEMENTATION");
+        string memory _version = IExchange(implementation).version();
+        require(bytes(_version).length >= 3, "INVALID_VESION");
+        require(versionMap[_version] == address(0), "VERSION_USED");
+        require(!statusMap[implementation].registered, "ALREADY_REGISTERED");
 
         implementations.push(implementation);
-        versions[implementation] = Version(true, true);
-        versionLabelMap[version] = implementation;
+        statusMap[implementation] = Status(true, true);
+        versionMap[_version] = implementation;
 
-        emit ImplementationAdded(implementation, version);
+        emit ImplementationRegistered(implementation, _version);
     }
 
     function setDeaultImplementation(
@@ -101,6 +93,7 @@ contract VersionManager is IVersionManager
         nonReentrant
     {
         require(isImplementationEnabled(implementation), "INVALID_IMPLEMENTATION");
+        require(implementation != defaultImplementation, "SAME_IMPLEMENTATION");
 
         address oldDefault = defaultImplementation;
         defaultImplementation = implementation;
@@ -117,10 +110,10 @@ contract VersionManager is IVersionManager
         external
         nonReentrant
     {
-        Version storage state = versions[implementation];
-        require(state.registered && !state.enabled, "INVALID_IMPLEMENTATION");
+        Status storage status = statusMap[implementation];
+        require(status.registered && !status.enabled, "INVALID_IMPLEMENTATION");
 
-        state.enabled = true;
+        status.enabled = true;
         emit ImplementationEnabled(implementation);
     }
 
@@ -132,7 +125,7 @@ contract VersionManager is IVersionManager
     {
         require(isImplementationEnabled(implementation), "INVALID_IMPLEMENTATION");
 
-        versions[implementation].enabled = false;
+        statusMap[implementation].enabled = false;
         emit ImplementationDisabled(implementation);
     }
 
@@ -151,7 +144,7 @@ contract VersionManager is IVersionManager
         view
         returns (bool)
     {
-        return versions[implementation].registered;
+        return statusMap[implementation].registered;
     }
 
     function isImplementationEnabled(
@@ -161,6 +154,6 @@ contract VersionManager is IVersionManager
         view
         returns (bool)
     {
-        return versions[implementation].enabled;
+        return statusMap[implementation].enabled;
     }
 }

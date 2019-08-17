@@ -21,11 +21,13 @@ import "../lib/ReentrancyGuard.sol";
 
 
 /// @title IProtocolRegistry
-/// @dev This contract manages the all registered ILoopring protocol versions.
+/// @dev This contract manages all registered ILoopring versions and all Loopring
+///      based exchanges.
+///
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
-    // --- Events ---
+    /// === Events ===
 
     event ProtocolRegistered (
         address indexed protocol,
@@ -51,7 +53,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         uint            amountLRCBurned
     );
 
-    // --- Data ---
+    /// === Data ===
+
     address   public lrcAddress;
     address[] public exchanges;
     address[] public protocols;
@@ -59,15 +62,22 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     // IProtocol.version => IProtocol address
     mapping (string => address) public versionMap;
 
-    // --- Public Functions for Version Manager Registry ---
+    /// === Functions ===
 
+    /// @dev Checks if the addres is a registered Loopring exchange.
+    /// @return registered True if the address is a registered exchange.
     function isExchangeRegistered(
         address exchange
         )
         public
         view
-        returns (bool);
+        returns (bool registered);
 
+    /// @dev Returns information regarding the default protocol.
+    /// @return protocol The address of the default protocol.
+    /// @return versionManager The address of the default protocol's version manager.
+    /// @return defaultImplementation The default protocol's default implementation address.
+    /// @return defaultImplementationVersion The version of the default implementation.
     function defaultProtocol()
         external
         view
@@ -79,6 +89,11 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory defaultImplementationVersion
         );
 
+
+    /// @dev Registers a new protocol.
+    /// @param protocol The address of the new protocol.
+    /// @param implementation The new protocol's default implementation.
+    /// @return versionManager A new version manager to manage the protocol's implementations.
     function registerProtocol(
         address protocol,
         address implementation
@@ -86,30 +101,62 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         external
         returns (address versionManager);
 
+    /// @dev Checks if a protocol has been registered.
+    /// @param protocol The address of the protocol.
+    /// @return registered True if the prococol is registered.
     function isProtocolRegistered(
         address protocol
         )
         public
         view
-        returns (bool);
+        returns (bool registered);
 
+    /// @dev Checks if a protocol has been eanbled.
+    /// @param protocol The address of the protocol.
+    /// @return enabled True if the prococol is registered and enabled.
     function isProtocolEnabled(
         address protocol
         )
         public
         view
-        returns (bool);
+        returns (bool enabled);
 
+    /// @dev Enables a protocol.
+    /// @param protocol The address of the protocol.
     function enableProtocol(
         address protocol
         )
         external;
 
+    /// @dev Disables a protocol.
+    /// @param protocol The address of the protocol.
     function disableProtocol(
         address protocol
         )
         external;
 
+    /// @dev Returns the protocol associated with an exchange.
+    /// @param exchangeAddress The address of the exchange.
+    /// @return protocol The protocol address.
+    /// @return implementation The protocol's implementation.
+    /// @return enabled Whether the protocol is enabled.
+    function getExchangeProtocol(
+        address exchangeAddress
+        )
+        external
+        view
+        returns (
+            address protocol,
+            address implementation
+        );
+
+    /// @dev Create a new exchange using the default protocol with msg.sender
+    ///      as owner and operator.
+    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    ///        in front of the native exchange contract to support upgradability.
+    /// @param onchainDataAvailability If the on-chain DA is on
+    /// @return exchangeAddress The new exchange's  address.
+    /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         bool supportUpgradability,
         bool onchainDataAvailability
@@ -120,6 +167,14 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             uint    exchangeId
         );
 
+    /// @dev Create a new exchange using a specific protocol with msg.sender
+    ///      as owner and operator.
+    /// @param protocol The protocol address.
+    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    ///        in front of the native exchange contract to support upgradability.
+    /// @param onchainDataAvailability IF the on-chain DA is on
+    /// @return exchangeAddress The new exchange's address.
+    /// @return exchangeId The new exchange's ID.
     function forgeExchange(
         address protocol,
         bool    supportUpgradability,
@@ -129,15 +184,5 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         returns (
             address exchangeAddress,
             uint    exchangeId
-        );
-
-    function getExchangeProtocol(
-        address exchangeAddress
-        )
-        external
-        view
-        returns (
-            address protocol,
-            address versionManager
         );
 }
