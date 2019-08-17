@@ -48,7 +48,8 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     );
 
     event ExchangeForged (
-        address indexed loopring,
+        address indexed protocol,
+        address indexed implementation,
         address indexed exchangeAddress,
         address         owner,
         bool            supportUpgradability,
@@ -154,56 +155,21 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             address implementation
         );
 
-    /// @dev Create a new exchange using the default protocol with msg.sender
-    ///      as owner and operator.
-    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
-    ///        in front of the native exchange contract to support upgradability.
-    /// @param onchainDataAvailability If the on-chain DA is on
-    /// @return exchangeAddress The new exchange's  address.
-    /// @return exchangeId The new exchange's ID.
-    function forgeExchange(
-        bool supportUpgradability,
-        bool onchainDataAvailability
-        )
-        external
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        );
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
-    /// @param protocol The protocol address.
     /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
     ///        in front of the native exchange contract to support upgradability.
     /// @param onchainDataAvailability IF the on-chain DA is on
-    /// @return exchangeAddress The new exchange's address.
+    /// @param protocol The protocol address, use 0x0 for default.
+    /// @param implementation The implementation to use, use 0x0 for default.
+    /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        address protocol,
         bool    supportUpgradability,
-        bool    onchainDataAvailability
-        )
-        external
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        );
-
-    /// @dev Create a new exchange using a specific protocol with msg.sender
-    ///      as owner and operator.
-    /// @param protocol The protocol address.
-    /// @param implementation The implementation to use.
-    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
-    ///        in front of the native exchange contract to support upgradability.
-    /// @param onchainDataAvailability IF the on-chain DA is on
-    /// @return exchangeAddress The new exchange's address.
-    /// @return exchangeId The new exchange's ID.
-    function forgeExchange(
+        bool    onchainDataAvailability,
         address protocol,
-        address implementation,
-        bool    supportUpgradability,
-        bool    onchainDataAvailability
+        address implementation
         )
         external
         returns (

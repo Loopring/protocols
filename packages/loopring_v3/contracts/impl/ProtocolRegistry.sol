@@ -173,92 +173,11 @@ contract ProtocolRegistry is IProtocolRegistry {
         emit ProtocolDisabled(protocol);
     }
 
-    function forgeExchange(
-        bool supportUpgradability,
-        bool onchainDataAvailability
-        )
-        external
-        nonReentrant
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        )
-    {
-        address protocol = defaultProtocolAddress;
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
-        return forgeExchangeInternal(
-            protocol,
-            m.defaultImpl(),
-            supportUpgradability,
-            onchainDataAvailability
-        );
-    }
-
-    function forgeExchange(
-        address protocol,
-        bool    supportUpgradability,
-        bool    onchainDataAvailability
-        )
-        external
-        nonReentrant
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        )
-    {
-        IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
-        return forgeExchangeInternal(
-            protocol,
-            m.defaultImpl(),
-            supportUpgradability,
-            onchainDataAvailability
-        );
-    }
-
-    function forgeExchange(
-        address protocol,
-        address implementation,
-        bool    supportUpgradability,
-        bool    onchainDataAvailability
-        )
-        external
-        nonReentrant
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
-        )
-    {
-        return forgeExchangeInternal(
-            protocol,
-            implementation,
-            supportUpgradability,
-            onchainDataAvailability
-        );
-    }
-
-    function getExchangeProtocol(
-        address exchangeAddress
-        )
-        external
-        view
-        returns (
-            address protocol,
-            address manager
-        )
-    {
-        require(exchangeAddress != address(0), "ZERO_ADDRESS");
-        protocol = exchangeMap[exchangeAddress];
-        require(protocol != address(0), "INVALID_EXCHANGE");
-        manager = protocolMap[protocol].manager;
-    }
-
-    /// === Internal & Private Functions ===
-
     function forgeExchangeInternal(
-        address protocol,
-        address implementation,
         bool    supportUpgradability,
-        bool    onchainDataAvailability
+        bool    onchainDataAvailability,
+        address protocol,
+        address implementation
         )
         private
         returns (
@@ -266,13 +185,23 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
-        require(isProtocolEnabled(protocol), "INVALID_PROTOCOL");
+        address _protocol = protocol;
+        if (_protocol == address(0)) {
+            _protocol = defaultProtocolAddress;
+        } else {
+            require(isProtocolEnabled(protocol), "INVALID_PROTOCOL");
+        }
 
+        address _implementation = implementation;
         IImplementationManager m = IImplementationManager(protocolMap[protocol].manager);
-        require(m.isEnabled(implementation), "INVALID_IMPLEMENTATION");
+        if (_implementation == address(0)) {
+            _implementation = m.defaultImpl();
+        } else {
+            require(m.isEnabled(implementation), "INVALID_IMPLEMENTATION");
+        }
 
-        ILoopring loopring = ILoopring(protocol);
-        IExchange exchange = IExchange(implementation);
+        ILoopring loopring = ILoopring(_protocol);
+        IExchange exchange = IExchange(_implementation);
 
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
 
@@ -306,7 +235,8 @@ contract ProtocolRegistry is IProtocolRegistry {
         );
 
         emit ExchangeForged(
-            protocol,
+            _protocol,
+            _implementation,
             exchangeAddress,
             msg.sender,
             supportUpgradability,
@@ -314,5 +244,21 @@ contract ProtocolRegistry is IProtocolRegistry {
             exchangeId,
             exchangeCreationCostLRC
         );
+    }
+
+    function getExchangeProtocol(
+        address exchangeAddress
+        )
+        external
+        view
+        returns (
+            address protocol,
+            address manager
+        )
+    {
+        require(exchangeAddress != address(0), "ZERO_ADDRESS");
+        protocol = exchangeMap[exchangeAddress];
+        require(protocol != address(0), "INVALID_EXCHANGE");
+        manager = protocolMap[protocol].manager;
     }
 }
