@@ -37,22 +37,22 @@ contract IImplementationManager is Claimable, ReentrancyGuard
         address indexed newDefault
     );
 
-    event ImplementationRegistered (
+    event Registered (
         address indexed implementation,
         string          version
     );
 
-    event ImplementationEnabled (
+    event Enabled (
         address indexed implementation
     );
 
-    event ImplementationDisabled (
+    event Disabled (
         address indexed implementation
     );
 
     /// === Data ===
 
-    address   public protocolAddress;
+    address   public protocol;
     address   public defaultImplementation;
     address[] public implementations;
 
@@ -109,7 +109,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
 
     /// @dev Returns if an implementation has been registered.
     /// @param registered True if the implementation is registered.
-    function isImplementationRegistered(
+    function isRegistered(
         address implementation
         )
         public
@@ -118,7 +118,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
 
     /// @dev Returns if an implementation has been registered and enabled.
     /// @param enabled True if the implementation is registered and enabled.
-    function isImplementationEnabled(
+    function isEnabled(
         address implementation
         )
         public

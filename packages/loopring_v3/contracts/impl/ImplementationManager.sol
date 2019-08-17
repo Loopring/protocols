@@ -47,7 +47,7 @@ contract ImplementationManager is IImplementationManager
         require(_protocol != address(0), "ZERO_PROTOCOL");
 
         owner = _owner;
-        protocolAddress = _protocol;
+        protocol = _protocol;
         defaultImplementation = _implementation;
 
         registerImplementation(_implementation);
@@ -63,7 +63,7 @@ contract ImplementationManager is IImplementationManager
             string  memory defaultImplementationVersion
         )
     {
-        protocolVersion = ILoopring(protocolAddress).version();
+        protocolVersion = ILoopring(protocol).version();
         defaultImplementationVersion = IExchange(defaultImplementation).version();
     }
 
@@ -83,7 +83,7 @@ contract ImplementationManager is IImplementationManager
         statusMap[implementation] = Status(true, true);
         versionMap[_version] = implementation;
 
-        emit ImplementationRegistered(implementation, _version);
+        emit Registered(implementation, _version);
     }
 
     function setDeaultImplementation(
@@ -92,7 +92,7 @@ contract ImplementationManager is IImplementationManager
         external
         nonReentrant
     {
-        require(isImplementationEnabled(implementation), "INVALID_IMPLEMENTATION");
+        require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
         require(implementation != defaultImplementation, "SAME_IMPLEMENTATION");
 
         address oldDefault = defaultImplementation;
@@ -114,7 +114,7 @@ contract ImplementationManager is IImplementationManager
         require(status.registered && !status.enabled, "INVALID_IMPLEMENTATION");
 
         status.enabled = true;
-        emit ImplementationEnabled(implementation);
+        emit Enabled(implementation);
     }
 
     function disableImplementation(
@@ -123,10 +123,10 @@ contract ImplementationManager is IImplementationManager
         external
         nonReentrant
     {
-        require(isImplementationEnabled(implementation), "INVALID_IMPLEMENTATION");
+        require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
 
         statusMap[implementation].enabled = false;
-        emit ImplementationDisabled(implementation);
+        emit Disabled(implementation);
     }
 
     function latestImplementation()
@@ -137,7 +137,7 @@ contract ImplementationManager is IImplementationManager
         return implementations[implementations.length - 1];
     }
 
-    function isImplementationRegistered(
+    function isRegistered(
         address implementation
         )
         public
@@ -147,7 +147,7 @@ contract ImplementationManager is IImplementationManager
         return statusMap[implementation].registered;
     }
 
-    function isImplementationEnabled(
+    function isEnabled(
         address implementation
         )
         public
