@@ -25,8 +25,6 @@ import "../lib/ReentrancyGuard.sol";
 contract ILoopring is Claimable, ReentrancyGuard
 {
     string  constant public version = ""; // must override this
-    address public protocolRegistry;
-    address public lrcAddress;
     uint    public exchangeCreationCostLRC;
 
     event ExchangeInitialized(

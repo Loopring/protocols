@@ -24,7 +24,6 @@ import "./ILoopring.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ILoopringV3 is ILoopring
 {
-    string  constant public version = "3.0";
     // == Events ==
 
     event ExchangeStakeDeposited(
@@ -66,9 +65,12 @@ contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    uint    public totalStake;
+    string  constant public version = "3.0";
 
+    address public protocolRegistry;
+    address public lrcAddress;
     address public wethAddress;
+    uint    public totalStake;
     address public blockVerifierAddress;
     address public downtimeCostCalculator;
     uint    public maxWithdrawalFee;
