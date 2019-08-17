@@ -183,9 +183,6 @@ export class ExchangeTestUtil {
     //   this.exchange.address,
     //   { from: this.testContext.deployer }
     // );
-    await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address, {
-      from: this.testContext.deployer
-    });
 
     await this.loopringV3.updateProtocolFeeSettings(
       25,

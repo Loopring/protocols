@@ -28,7 +28,6 @@ import "../lib/ReentrancyGuard.sol";
 contract IProtocolRegistry is Claimable, ReentrancyGuard
 {
     /// === Events ===
-
     event ProtocolRegistered (
         address indexed protocol,
         address indexed implManager,
@@ -41,6 +40,11 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     event ProtocolDisabled (
         address indexed protocol
+    );
+
+    event DefaultProtocolChanged (
+        address indexed oldDefault,
+        address indexed newDefault
     );
 
     event ExchangeForged (

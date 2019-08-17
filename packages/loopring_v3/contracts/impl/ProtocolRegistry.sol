@@ -113,6 +113,19 @@ contract ProtocolRegistry is IProtocolRegistry {
         emit ProtocolRegistered(protocol, manager, version);
     }
 
+    function setDefaultProtocol(
+        address protocol
+        )
+        external
+        onlyOwner
+    {
+        require(protocol != defaultProtocolAddress, "SAME_PROTOCOL");
+        requier(protocolMap[protocol].enabled, "PROTOCOL_DISABLED");
+        address oldDefault = defaultProtocolAddress;
+        defaultProtocolAddress = protocol;
+        emit DefaultProtocolChanged(oldDefault, defaultProtocolAddress)
+    }
+
     function isProtocolRegistered(
         address protocol
         )
