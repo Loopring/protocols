@@ -36,7 +36,7 @@ contract IExchangeUpgradabilityProxy is Proxy
         setRegistry(_registry);
     }
 
-    /// @dev Returns the dex's registry address.
+    /// @dev Returns the exchange's registry address.
     function registry()
         public
         view
@@ -46,7 +46,7 @@ contract IExchangeUpgradabilityProxy is Proxy
         assembly { registryAddress := sload(position) }
     }
 
-    /// @dev Returns the dex's protocol address.
+    /// @dev Returns the exchange's protocol address.
     function protocol()
         public
         view
