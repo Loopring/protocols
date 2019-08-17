@@ -25,14 +25,20 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IGlobalRegistry is Claimable, ReentrancyGuard
 {
+    // --- Events ---
+
     event ExchangeRegistered(address exchange);
 
+    event ProtocolRegistered(
+        address protocol,
+        string  version,
+        address versionManager
+    );
+
+    // --- Data ---
     address[] public exchanges;
 
-    function registerExchange(
-        address exchange
-        )
-        public;
+    // --- Functions ---
 
     function isExchangeRegistered(
         address exchange

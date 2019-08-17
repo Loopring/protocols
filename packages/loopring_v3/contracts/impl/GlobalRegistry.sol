@@ -22,37 +22,35 @@ import "../iface/IGlobalRegistry.sol";
 /// @title Implementation of IGlobalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract GlobalRegistry is IGlobalRegistry {
-    mapping (address => bool) private exchangeRegistrationMap;
 
+    // --- Data for managing exchanges ---
+
+    mapping (address => bool) private exchangeMap;
+
+    // -- Data for managing protocols ---
+
+    struct Protocol
+    {
+        address protocol;
+        string  version;
+        bool    registered;
+        bool    enabled;
+    }
 
     address   public defaultVersionManager;
-    address[] public versionManagers;
+    address[] public managers;
 
     // IProtocol.version => IProtocol address
-    mapping   (string => address) public versionLabelMap;
-
-    // IVersionManager address => MajorVersion
-    mapping   (address => MajorVersion) private versionMap;
-
+    mapping   (string => address) public versionMap;
+    // IVersionManager address => Protocol
+    mapping   (address => Protocol) private managerMap;
     // ILoopring address => IVersionManager address
     mapping   (address => address) private protocolMap;
 
-
+    // --- Constructor ---
     constructor() public Ownable() {}
 
-    function registerExchange(
-        address exchange
-        )
-        public
-    {
-        require(exchange != address(0), "ZERO_ADDRESS");
-        require(!exchangeRegistrationMap[exchange], "ALREADY_REGISTERED");
-
-        exchanges.push(exchange);
-        exchangeRegistrationMap[exchange] = true;
-
-        emit ExchangeRegistered(exchange);
-    }
+    // --- Public Functions for Exchange Registry ---
 
     function isExchangeRegistered(
         address exchange
@@ -61,25 +59,10 @@ contract GlobalRegistry is IGlobalRegistry {
         view
         returns (bool)
     {
-        return exchangeRegistrationMap[exchange];
+        return exchangeMap[exchange];
     }
 
-
-     event VersionManagerRegistered (
-        address versionManager,
-        address protocol,
-        string version
-    );
-
-    struct MajorVersion
-    {
-        address protocol;
-        string  version;
-        bool    registered;
-        bool    enabled;
-    }
-
-
+    // --- Public Functions for Version Manager Registry ---
 
     function defaultProtocolVersion()
         external
@@ -91,45 +74,54 @@ contract GlobalRegistry is IGlobalRegistry {
         }
     }
 
-    function registerVersionManager(
+    function defaultProtocol()
+        external
+        view
+        returns (address)
+    {
+        if (defaultVersionManager != address(0)) {
+            return IVersionManager(defaultVersionManager).protocol();
+        }
+    }
+
+    function registerProtocol(
         address versionManager
         )
         external
         onlyOwner
     {
-        require(versionManager != address(0), "ZERO_ADDRESS");
-        IVersionManager manager = IVersionManager(versionManager);
+        require(!managerMap[versionManager].registered, "MANAGER_REGISTERED");
 
+        IVersionManager manager = IVersionManager(versionManager);
         address _owner = manager.owner();
         require(_owner == owner, "INVALID_OWNER");
 
         string memory version = manager.protocolVersion();
-        address protocol = manager.protocol();
+        require(versionMap[version] == address(0), "VERSION_REGISTERED");
 
-        require(versionLabelMap[version] == address(0), "VERSION_REGISTERED");
-        require(!versionMap[versionManager].registered, "MANAGER_REGISTERED");
+        address protocol = manager.protocol();
         require(protocolMap[protocol] == address(0), "PROTOCOL_REGISTERED");
 
-        versionLabelMap[version] = protocol;
-        versionMap[versionManager] = MajorVersion(protocol, version, true, true);
+        managerMap[versionManager] = Protocol(protocol, version, true, true);
+        versionMap[version] = protocol;
         protocolMap[protocol] = versionManager;
-        versionManagers.push(versionManager);
+        managers.push(versionManager);
 
         if (defaultVersionManager == address(0)) {
             defaultVersionManager = versionManager;
         }
 
-        emit VersionManagerRegistered(versionManager, protocol, version);
+        emit ProtocolRegistered(protocol, version, protocol);
     }
 
-    function isVersionManagerRegistered(
+    function isProtocolRegistered(
         address versionManager
         )
         public
         view
         returns (bool)
     {
-        return versionMap[versionManager].registered;
+        return managerMap[versionManager].registered;
     }
 
     function isVersionManagerEnabled(
@@ -139,7 +131,23 @@ contract GlobalRegistry is IGlobalRegistry {
         view
         returns (bool)
     {
-        return versionMap[versionManager].enabled;
+        return managerMap[versionManager].enabled;
+    }
+
+    // --- Private Functions ---
+
+    function registerExchange(
+        address exchange
+        )
+        private
+    {
+        require(exchange != address(0), "ZERO_ADDRESS");
+        require(!exchangeMap[exchange], "EXCHANGE_REGISTERED");
+
+        exchanges.push(exchange);
+        exchangeMap[exchange] = true;
+
+        emit ExchangeRegistered(exchange);
     }
 }
 
