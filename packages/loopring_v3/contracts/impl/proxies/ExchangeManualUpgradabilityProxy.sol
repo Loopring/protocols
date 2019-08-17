@@ -66,9 +66,8 @@ contract ExchangeManualUpgradabilityProxy is IExchangeUpgradabilityProxy
         onlyUnderlyingOwner
     {
         validateImplementation(newImplementation);
+        require(implementation() != newImplementation);
 
-        address currentImplementation = implementation();
-        require(currentImplementation != newImplementation);
         setImplementation(newImplementation);
         emit Upgraded(newImplementation);
     }
