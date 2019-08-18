@@ -132,10 +132,10 @@ contract UniversalRegistry is IUniversalRegistry {
     }
 
     function forgeExchange(
-        uint    upgradabilityMode,
-        bool    onchainDataAvailability,
-        address protocol,
-        address implementation
+        DeploymentMode deploymentMode,
+        bool           onchainDataAvailability,
+        address        protocol,
+        address        implementation
         )
         external
         nonReentrant
@@ -157,7 +157,7 @@ contract UniversalRegistry is IUniversalRegistry {
             );
         }
 
-        exchangeAddress = createExchangeInstance(upgradabilityMode, _implementation);
+        exchangeAddress = deployExchangeInstance(deploymentMode, _implementation);
         assert(exchangeMap[exchangeAddress] == address(0));
 
         exchangeMap[exchangeAddress] = _protocol;
@@ -177,7 +177,7 @@ contract UniversalRegistry is IUniversalRegistry {
             _implementation,
             exchangeAddress,
             msg.sender,
-            upgradabilityMode,
+            deploymentMode,
             onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC
@@ -296,29 +296,29 @@ contract UniversalRegistry is IUniversalRegistry {
         }
     }
 
-    function createExchangeInstance(
-        uint    upgradabilityMode,
-        address implementation
+    function deployExchangeInstance(
+        DeploymentMode deploymentMode,
+        address        implementation
         )
         private
         returns (address)
     {
-        if (upgradabilityMode == 0) {
+        if (deploymentMode == DeploymentMode.AUTO_UPGRADABILITY) {
             // 0: automatic upgradability
             // Deploy an exchange proxy and points to the implementation
             return address(new AutoUpgradabilityProxy(address(this)));
-        } else if (upgradabilityMode == 1) {
+        } else if (deploymentMode == DeploymentMode.MANUAL_UPGRADABILITY) {
             // 1: manual upgradability
             return address(new ManualUpgradabilityProxy(address(this), implementation));
-        } else if (upgradabilityMode == 2) {
+        } else if (deploymentMode == DeploymentMode.PROXIED) {
             // 2: no upgradability with a simple proxy
             return address(new SimpleProxy(implementation));
-        } else if (upgradabilityMode == 3) {
+        } else if (deploymentMode == DeploymentMode.NATIVE) {
             // 3: no upgradability with a native DEX
             // Clone a native exchange from the implementation.
             return IExchange(implementation).clone();
         } else {
-            revert("INVALID_UPGRADABILITY_MODE");
+            revert("INVALID_DEPLOYMENT_MODE");
         }
     }
 }

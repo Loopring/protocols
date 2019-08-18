@@ -2536,10 +2536,10 @@ export class ExchangeTestUtil {
     });
 
     // randomely support upgradability
-    const upgradabilityMode = new Date().getMilliseconds() % 4;
+    const deploymentMode = new Date().getMilliseconds() % 4;
     // Create the new exchange
     const tx = await this.universalRegistry.forgeExchange(
-      upgradabilityMode,
+      deploymentMode,
       onchainDataAvailability,
       constants.zeroAddress,
       constants.zeroAddress,
