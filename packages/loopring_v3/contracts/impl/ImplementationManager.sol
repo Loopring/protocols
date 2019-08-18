@@ -62,7 +62,11 @@ contract ImplementationManager is IImplementationManager
     {
         require(implementation != address(0), "INVALID_IMPLEMENTATION");
 
-        string memory _version = IExchange(implementation).version();
+        IExchange exchange = IExchange(implementation);
+
+        require(exchange.protocol() == protocol, "PROTOCOL_MISMATCH");
+
+        string memory _version = exchange.version();
         require(bytes(_version).length >= 3, "INVALID_VERSION");
         require(versionMap[_version] == address(0), "VERSION_USED");
         require(!statusMap[implementation].registered, "ALREADY_REGISTERED");

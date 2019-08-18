@@ -68,10 +68,10 @@ contract ProtocolRegistry is IProtocolRegistry {
     {
         require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
 
-        // ILoopring loopring = ILoopring(protocol);
-        // require(loopring.protocolRegistry() == address(this), "REGISTRY_MISMATCH");
-        // require(loopring.owner() == owner, "OWNER_MISMATCH");
-        // require(loopring.lrcAddress() == lrcAddress, "LRC_ADDRESS_MISMATCH");
+        ILoopring loopring = ILoopring(protocol);
+        require(loopring.protocolRegistry() == address(this), "REGISTRY_MISMATCH");
+        require(loopring.owner() == owner, "OWNER_MISMATCH");
+        require(loopring.lrcAddress() == lrcAddress, "LRC_ADDRESS_MISMATCH");
 
         IImplementationManager m = new ImplementationManager(owner, protocol, implementation);
         manager = address(m);
