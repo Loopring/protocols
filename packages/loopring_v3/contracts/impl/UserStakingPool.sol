@@ -198,7 +198,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             staking.balance
                 .mul(staking.claimedAt)
                 .add(additionalBalance.mul(now)) / balance;
-    
+
         staking.balance = balance;
     }
 
