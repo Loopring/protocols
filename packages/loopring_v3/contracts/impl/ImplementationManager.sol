@@ -58,8 +58,7 @@ contract ImplementationManager is IImplementationManager
     function register(
         address implementation
         )
-        external
-        nonReentrant
+        public
     {
         require(implementation != address(0), "INVALID_IMPLEMENTATION");
 

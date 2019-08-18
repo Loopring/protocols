@@ -66,7 +66,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     function register(
         address implementation
         )
-        external;
+        public;
 
     /// @dev Sets the default implemenation.
     /// @param implementation The new default implementation.
