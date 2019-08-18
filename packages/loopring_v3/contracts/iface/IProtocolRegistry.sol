@@ -30,7 +30,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// === Events ===
     event ProtocolRegistered (
         address indexed protocol,
-        address indexed implManager,
+        address indexed implementationManager,
         string          version
     );
 
