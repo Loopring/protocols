@@ -22,10 +22,10 @@ import "../../iface/IExchangeProxy.sol";
 import "../../iface/IProtocolRegistry.sol";
 
 
-/// @title ManualUpgradeabilityProxy
+/// @title ManualUpgradabilityProxy
 /// @dev This proxy is designed to support manual upgradability.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ManualUpgradeabilityProxy is IExchangeProxy
+contract ManualUpgradabilityProxy is IExchangeProxy
 {
     event Upgraded(address indexed implementation);
 

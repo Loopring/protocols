@@ -17,12 +17,15 @@
 pragma solidity ^0.5.11;
 
 import "../lib/BurnableERC20.sol";
+import "../lib/SimpleProxy.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
 import "../iface/IProtocolRegistry.sol";
 
-import "./ExchangeProxy.sol";
+import "./proxies/AutoUpgradabilityProxy.sol";
+import "./proxies/ManualUpgradabilityProxy.sol";
+
 import "./ImplementationManager.sol";
 
 /// @title An Implementation of IProtocolRegistry
@@ -124,7 +127,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     }
 
     function forgeExchange(
-        bool    supportUpgradeability,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability,
         address protocol,
         address implementation
@@ -161,12 +164,24 @@ contract ProtocolRegistry is IProtocolRegistry {
             );
         }
 
-        if (supportUpgradeability) {
+        if (upgradabilityMode == 0) {
+            // 0: automatic upgradability
             // Deploy an exchange proxy and points to the implementation
-            exchangeAddress = address(new ExchangeProxy(address(this)));
-        } else {
+            exchangeAddress = address(new AutoUpgradabilityProxy(address(this)));
+        } else if (upgradabilityMode == 1) {
+            // 1: manual upgradability
+            exchangeAddress = address(
+                new ManualUpgradabilityProxy(address(this), implementation)
+            );
+        } else if (upgradabilityMode == 2) {
+            // 2: no upgradability with a simple proxy
+            exchangeAddress = address(new SimpleProxy(implementation));
+        } else if (upgradabilityMode == 3) {
+            // 3: no upgradability with a native DEX
             // Clone a native exchange from the implementation.
-            exchangeAddress = IExchange(_implementation).clone();
+            exchangeAddress = IExchange(implementation).clone();
+        } else {
+            revert("INVALID_UPGRADABILITY_MODE");
         }
 
         assert(exchangeMap[exchangeAddress] == address(0));
@@ -188,7 +203,7 @@ contract ProtocolRegistry is IProtocolRegistry {
             _implementation,
             exchangeAddress,
             msg.sender,
-            supportUpgradeability,
+            upgradabilityMode,
             onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC

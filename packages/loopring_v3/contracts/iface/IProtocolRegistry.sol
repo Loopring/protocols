@@ -52,7 +52,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address indexed implementation,
         address indexed exchangeAddress,
         address         owner,
-        bool            supportUpgradeability,
+        uint            upgradabilityMode,
         bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
@@ -103,15 +103,18 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
-    /// @param supportUpgradeability True to indicate an ExchangeProxy shall be deploy
-    ///        in front of the native exchange contract to support upgradability.
+    /// @param upgradabilityMode Specify how the exchange shall support upgradability.
+    ///        0: automatical upgradability
+    ///        1: manual upgradability
+    ///        2: no upgradability with a SimpleProxy
+    ///        3: no upgradability with a native DEX contract
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @param protocol The protocol address, use 0x0 for default.
     /// @param implementation The implementation to use, use 0x0 for default.
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        bool    supportUpgradeability,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability,
         address protocol,
         address implementation
