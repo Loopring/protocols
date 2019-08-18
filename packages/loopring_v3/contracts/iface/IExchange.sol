@@ -30,8 +30,8 @@ contract IExchange is Claimable, ReentrancyGuard
 
     event Cloned (address indexed clone);
 
-    /// @dev Clone an exchange without any initialization
-    /// @return  cloneAddress The address of the new exchange.
+    /// @dev Clones an exchange without any initialization
+    /// @return cloneAddress The address of the new exchange.
     function clone()
         external
         nonReentrant
