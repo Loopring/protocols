@@ -27,7 +27,7 @@ contract ILoopring is Claimable, ReentrancyGuard
     string  constant public version = ""; // must override this
 
     uint    public exchangeCreationCostLRC;
-    address public protocolRegistry;
+    address public universalRegistry;
     address public lrcAddress;
 
     event ExchangeInitialized(
@@ -39,7 +39,7 @@ contract ILoopring is Claimable, ReentrancyGuard
     );
 
     /// @dev Initialize and register an exchange.
-    ///      This function should only be callabled by the protocolRegistry contract.
+    ///      This function should only be callabled by the universalRegistry contract.
     ///      Also note that this function can only be called once per exchange instance.
     /// @param  exchangeAddress The address of the exchange to initialize and register.
     /// @param  exchangeId The unique exchange id.
