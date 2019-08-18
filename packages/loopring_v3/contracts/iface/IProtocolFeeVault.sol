@@ -22,7 +22,7 @@ pragma solidity ^0.5.11;
 ///     Tokens other than LRC will be auctioned off for LRC using Oedax. The owner
 ///     of this smart contract will also have the option to withdraw non-LRC tokens
 ///     and Ether to sell them for LRC by other means such as using a centralized
-///     exchange. This option will be disabled once Oedax is production ready.
+///     exchange. This option will be disabled once Oedax is production-ready.
 ///     For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
 ///     to reward LRC stakers; 20% of them can be withdrawn to the Loopring DAO,
 ///     and the remaining 10% can be burned to reduce LRC's total supply.
@@ -57,7 +57,7 @@ contract IProtocolFeeVault
         address payable auctionAddr
     );
 
-    /// @dev Claim LRC as staking reward to the IUserStakingPool contract.
+    /// @dev Claims LRC as staking reward to the IUserStakingPool contract.
     ///
     ///      Note that this function can only be called by
     ///      the IUserStakingPool contract.
@@ -88,18 +88,18 @@ contract IProtocolFeeVault
             uint remainingReward
         );
 
-    /// @dev Set Oedax address, only callable by the owner.
+    /// @dev Sets Oedax address, only callable by the owner.
     /// @param _oedaxAddress The address of Oedax contract.
     function setOedax(address _oedaxAddress) external;
 
-    /// @dev Set the Loopring DAO address, only callable by the owner.
+    /// @dev Sets the Loopring DAO address, only callable by the owner.
     /// @param _daoAddress The address of the DAO contract.
     function setDAO(address _daoAddress) external;
 
-    /// @dev Permanently disallow owner to withdraw non-LRC protocol fees, only callable by the owner.
+    /// @dev Permanently disallows owner to withdraw non-LRC protocol fees, only callable by the owner.
     function disableOwnerWithdrawal() external;
 
-    /// @dev Withdraw non-LRC protocol fees to owner's address, only callable by the owner.
+    /// @dev Withdraws non-LRC protocol fees to owner's address, only callable by the owner.
     /// @param token The token to be withdrawn
     /// @param amount The amount of token to withdraw.
     function withdraw(
@@ -108,7 +108,7 @@ contract IProtocolFeeVault
         )
         external;
 
-    /// @dev Sell a non-LRC token or Ether to LRC, only callable by the owner.
+    /// @dev Sells a non-LRC token or Ether to LRC, only callable by the owner.
     /// @param token The token or ether (0x0) to sell.
     /// @param amount THe amout of token/ether to sell.
     /// @param sellForEther True if tokenB should be Ether,false if tokenB is LRC.
@@ -135,11 +135,11 @@ contract IProtocolFeeVault
             address payable auctionAddr
         );
 
-    /// @dev withdraw LRC to DAO and in the meanwhile burn some LRC according to
+    /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
     ///      the predefined percentages.
     function withdrawLRCToDAO() external;
 
-    /// @dev Settle a closed Oedax auction,
+    /// @dev Settles a closed Oedax auction,
     function settleAuction(address auction) external;
 
 }

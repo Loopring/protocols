@@ -74,7 +74,7 @@ contract IBlockVerifier
         )
         external;
 
-    /// @dev Verify blocks with the given public data and proofs.
+    /// @dev Verifies blocks with the given public data and proofs.
     ///      Verifying a block makes sure all requests handled in the block
     ///      are correctly handled by the operator.
     /// @param blockType The type of block See @BlockType

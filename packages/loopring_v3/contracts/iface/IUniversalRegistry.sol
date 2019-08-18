@@ -101,7 +101,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         )
         external;
 
-    /// @dev Create a new exchange using a specific protocol with msg.sender
+    /// @dev Creates a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param upgradabilityMode Specify how the exchange shall support upgradability.
     ///        0: automatical upgradability
