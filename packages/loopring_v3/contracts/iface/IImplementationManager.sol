@@ -61,16 +61,12 @@ contract IImplementationManager is Claimable, ReentrancyGuard
 
     /// === Functions ===
 
-    /// @dev Returns version information.
-    /// @return protocolVersion The protocol's version.
-    /// @return defaultImplVersion The default implementation's version.
-    function version()
-        external
-        view
-        returns (
-            string  memory protocolVersion,
-            string  memory defaultImplVersion
-        );
+    /// @dev Register a new implementation.
+    /// @param implementation The implemenation to add.
+    function register(
+        address implementation
+        )
+        external;
 
     /// @dev Sets the default implemenation.
     /// @param implementation The new default implementation.
@@ -93,19 +89,23 @@ contract IImplementationManager is Claimable, ReentrancyGuard
         )
         external;
 
+    /// @dev Returns version information.
+    /// @return protocolVersion The protocol's version.
+    /// @return defaultImplVersion The default implementation's version.
+    function version()
+        external
+        view
+        returns (
+            string  memory protocolVersion,
+            string  memory defaultImplVersion
+        );
+
     /// @dev Returns the latest implemenation added.
     /// @param implementation The latest implemenation added.
     function latest()
         public
         view
         returns (address implementation);
-
-    /// @dev Register a new implementation.
-    /// @param implementation The implemenation to add.
-    function register(
-        address implementation
-        )
-        public;
 
     /// @dev Returns if an implementation has been registered.
     /// @param registered True if the implementation is registered.

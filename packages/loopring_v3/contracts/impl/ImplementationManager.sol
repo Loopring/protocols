@@ -55,22 +55,10 @@ contract ImplementationManager is IImplementationManager
 
     /// === Functions ===
 
-    function version()
-        external
-        view
-        returns (
-            string  memory protocolVersion,
-            string  memory defaultImplVersion
-        )
-    {
-        protocolVersion = ILoopring(protocol).version();
-        defaultImplVersion = IExchange(defaultImpl).version();
-    }
-
     function register(
         address implementation
         )
-        public
+        external
     {
         require(implementation != address(0), "INVALID_IMPLEMENTATION");
 
@@ -128,6 +116,18 @@ contract ImplementationManager is IImplementationManager
 
         statusMap[implementation].enabled = false;
         emit Disabled(implementation);
+    }
+
+    function version()
+        external
+        view
+        returns (
+            string  memory protocolVersion,
+            string  memory defaultImplVersion
+        )
+    {
+        protocolVersion = ILoopring(protocol).version();
+        defaultImplVersion = IExchange(defaultImpl).version();
     }
 
     function latest()
