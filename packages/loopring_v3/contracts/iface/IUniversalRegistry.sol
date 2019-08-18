@@ -27,9 +27,9 @@ import "../lib/ReentrancyGuard.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract IUniversalRegistry is Claimable, ReentrancyGuard
 {
-    enum DeploymentMode {
-        AUTO_UPGRADABILITY,
-        MANUAL_UPGRADABILITY,
+    enum ForgeMode {
+        AUTO_UPGRADABLE,
+        MANUAL_UPGRADABLE,
         PROXIED,
         NATIVE
     }
@@ -60,7 +60,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address indexed implementation,
         address indexed exchangeAddress,
         address         owner,
-        DeploymentMode  deploymentMode,
+        ForgeMode       forgeMode,
         bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
@@ -111,17 +111,17 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
 
     /// @dev Creates a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
-    /// @param deploymentMode The deployment mode.
+    /// @param forgeMode The forge mode.
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @param protocol The protocol address, use 0x0 for default.
     /// @param implementation The implementation to use, use 0x0 for default.
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        DeploymentMode  deploymentMode,
-        bool            onchainDataAvailability,
-        address         protocol,
-        address         implementation
+        ForgeMode   forgeMode,
+        bool        onchainDataAvailability,
+        address     protocol,
+        address     implementation
         )
         external
         returns (
