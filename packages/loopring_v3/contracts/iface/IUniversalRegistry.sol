@@ -33,7 +33,9 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         PROXIED,
         NATIVE
     }
+
     /// === Events ===
+
     event ProtocolRegistered (
         address indexed protocol,
         address indexed implementationManager,
