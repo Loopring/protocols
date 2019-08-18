@@ -59,6 +59,7 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         external
+        nonReentrant
     {
         require(implementation != address(0), "INVALID_IMPLEMENTATION");
 

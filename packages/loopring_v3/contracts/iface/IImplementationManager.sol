@@ -57,7 +57,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     address[] public implementations;
 
     // version strings => IExchange addresses
-    mapping   (string => address) public versionMap;
+    mapping (string => address) public versionMap;
 
     /// === Functions ===
 
