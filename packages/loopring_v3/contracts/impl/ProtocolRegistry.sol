@@ -124,7 +124,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     }
 
     function forgeExchange(
-        bool    supportUpgradability,
+        bool    supportUpgradeability,
         bool    onchainDataAvailability,
         address protocol,
         address implementation
@@ -161,7 +161,7 @@ contract ProtocolRegistry is IProtocolRegistry {
             );
         }
 
-        if (supportUpgradability) {
+        if (supportUpgradeability) {
             // Deploy an exchange proxy and points to the implementation
             exchangeAddress = address(new ExchangeProxy(address(this)));
         } else {
@@ -188,7 +188,7 @@ contract ProtocolRegistry is IProtocolRegistry {
             _implementation,
             exchangeAddress,
             msg.sender,
-            supportUpgradability,
+            supportUpgradeability,
             onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC
@@ -243,6 +243,23 @@ contract ProtocolRegistry is IProtocolRegistry {
         returns (bool)
     {
         return exchangeMap[exchange] != address(0);
+    }
+
+    function isProtocolAndImplementationEnabled(
+        address protocol,
+        address implementation
+        )
+        public
+        view
+        returns (bool enabled)
+    {
+        if (!isProtocolEnabled(protocol)) {
+            return false;
+        }
+
+        address managerAddr = protocolMap[protocol].manager;
+        IImplementationManager m = IImplementationManager(managerAddr);
+        return m.isEnabled(implementation);
     }
 
     function getExchangeProtocol(

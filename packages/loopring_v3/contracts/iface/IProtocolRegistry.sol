@@ -52,7 +52,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         address indexed implementation,
         address indexed exchangeAddress,
         address         owner,
-        bool            supportUpgradability,
+        bool            supportUpgradeability,
         bool            onchainDataAvailability,
         uint            exchangeId,
         uint            amountLRCBurned
@@ -103,7 +103,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// @dev Create a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
-    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    /// @param supportUpgradeability True to indicate an ExchangeProxy shall be deploy
     ///        in front of the native exchange contract to support upgradability.
     /// @param onchainDataAvailability IF the on-chain DA is on
     /// @param protocol The protocol address, use 0x0 for default.
@@ -111,7 +111,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        bool    supportUpgradability,
+        bool    supportUpgradeability,
         bool    onchainDataAvailability,
         address protocol,
         address implementation
@@ -166,6 +166,18 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         public
         view
         returns (bool registered);
+
+    /// @dev Checks if the given protocol and mplementation are both registered and enabled.
+    /// @param protocol The address of the protocol.
+    /// @param implementation The address of the implementation.
+    /// @return enabled True if both the protocol and the implementation are registered and enabled.
+    function isProtocolAndImplementationEnabled(
+        address protocol,
+        address implementation
+        )
+        public
+        view
+        returns (bool enabled);
 
     /// @dev Returns the protocol associated with an exchange.
     /// @param exchangeAddress The address of the exchange.
