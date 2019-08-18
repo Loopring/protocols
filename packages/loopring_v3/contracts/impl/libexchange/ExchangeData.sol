@@ -88,7 +88,7 @@ library ExchangeData
     // per-exchange (virtual) blockchain.
     struct Block
     {
-        // The merkle root of the offchain data stored in a merkle tree. The merkle tree
+        // The merkle root of the offchain data stored in a Merkle tree. The Merkle tree
         // stores balances for users using an account model.
         bytes32 merkleRoot;
 

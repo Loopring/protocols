@@ -98,7 +98,7 @@ export class ExchangeTestUtil {
   public userStakingPool: any;
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
-  public protocolRegistry: any;
+  public universalRegistry: any;
 
   public accounts: Account[][] = [];
 
@@ -177,15 +177,12 @@ export class ExchangeTestUtil {
       { from: this.testContext.deployer }
     );
 
-    // Register LoopringV3 to ProtocolRegistry
-    // await this.protocolRegistry.registerProtocol(
+    // Register LoopringV3 to UniversalRegistry
+    // await this.universalRegistry.registerProtocol(
     //   this.loopringV3.address,
     //   this.exchange.address,
     //   { from: this.testContext.deployer }
     // );
-    await this.protocolRegistry.setDefaultProtocol(this.loopringV3.address, {
-      from: this.testContext.deployer
-    });
 
     await this.loopringV3.updateProtocolFeeSettings(
       25,
@@ -2534,17 +2531,18 @@ export class ExchangeTestUtil {
     const lrcAddress = this.testContext.tokenSymbolAddrMap.get("LRC");
     const LRC = this.testContext.tokenAddrInstanceMap.get(lrcAddress);
     await LRC.addBalance(owner, exchangeCreationCostLRC);
-    await LRC.approve(this.protocolRegistry.address, exchangeCreationCostLRC, {
+    await LRC.approve(this.universalRegistry.address, exchangeCreationCostLRC, {
       from: owner
     });
 
     // randomely support upgradability
-    const supportUpgradability = new Date().getMilliseconds() % 2 == 0;
+    const upgradabilityMode = new Date().getMilliseconds() % 4;
     // Create the new exchange
-    const tx = await this.protocolRegistry.forgeExchange(
-      this.loopringV3.address,
-      supportUpgradability,
+    const tx = await this.universalRegistry.forgeExchange(
+      upgradabilityMode,
       onchainDataAvailability,
+      constants.zeroAddress,
+      constants.zeroAddress,
       { from: owner }
     );
 
@@ -2554,7 +2552,7 @@ export class ExchangeTestUtil {
     // );
 
     const eventArr: any = await this.getEventsFromContract(
-      this.protocolRegistry,
+      this.universalRegistry,
       "ExchangeForged",
       web3.eth.blockNumber
     );
@@ -3720,7 +3718,7 @@ export class ExchangeTestUtil {
   // private functions:
   private async createContractContext() {
     const [
-      protocolRegistry,
+      universalRegistry,
       loopringV3,
       exchangeConstants,
       exchange,
@@ -3729,7 +3727,7 @@ export class ExchangeTestUtil {
       lrcToken,
       wethToken
     ] = await Promise.all([
-      this.contracts.ProtocolRegistry.deployed(),
+      this.contracts.UniversalRegistry.deployed(),
       this.contracts.LoopringV3.deployed(),
       this.contracts.ExchangeConstants.deployed(),
       this.contracts.ExchangeV3.deployed(),
@@ -3749,7 +3747,7 @@ export class ExchangeTestUtil {
 
     this.lzDecompressor = await this.contracts.LzDecompressor.new();
 
-    this.protocolRegistry = protocolRegistry;
+    this.universalRegistry = universalRegistry;
     this.loopringV3 = loopringV3;
     this.exchangeConstants = exchangeConstants;
     this.exchange = exchange;

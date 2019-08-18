@@ -1,9 +1,8 @@
 export class Artifacts {
   public ExchangeConstants: any;
-  public ProtocolRegistry: any;
+  public UniversalRegistry: any;
   public LoopringV3: any;
   public ExchangeV3: any;
-  public ExchangeProxy: any;
   public BlockVerifier: any;
   public FixPriceDowntimeCostCalculator: any;
   public DummyToken: any;
@@ -25,10 +24,9 @@ export class Artifacts {
 
   constructor(artifacts: any) {
     this.ExchangeConstants = artifacts.require("impl/lib/ExchangeConstants");
-    this.ProtocolRegistry = artifacts.require("impl/ProtocolRegistry");
+    this.UniversalRegistry = artifacts.require("impl/UniversalRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
     this.ExchangeV3 = artifacts.require("impl/ExchangeV3");
-    this.ExchangeProxy = artifacts.require("impl/ExchangeProxy");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.FixPriceDowntimeCostCalculator = artifacts.require(
       "test/FixPriceDowntimeCostCalculator"

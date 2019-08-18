@@ -18,16 +18,13 @@ pragma solidity ^0.5.11;
 
 import "../thirdparty/Proxy.sol";
 
-import "../iface/IExchange.sol";
 import "../iface/IImplementationManager.sol";
 import "../iface/IUniversalRegistry.sol";
 
 
-/// @title ExchangeProxy
-/// @dev This proxy is designed to support transparent upgradeability offered by a
-///      IUniversalRegistry contract.
+/// @title IExchangeProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeProxy is Proxy
+contract IExchangeProxy is Proxy
 {
     bytes32 private constant registryPosition = keccak256(
         "org.loopring.protocol.v3.registry"
@@ -36,39 +33,34 @@ contract ExchangeProxy is Proxy
     constructor(address _registry)
         public
     {
-        bytes32 position = registryPosition;
-        assembly {
-          sstore(position, _registry)
-        }
+        setRegistry(_registry);
     }
 
+    /// @dev Returns the exchange's registry address.
     function registry()
         public
         view
-        returns (address _addr)
+        returns (address registryAddress)
     {
         bytes32 position = registryPosition;
-        assembly {
-          _addr := sload(position)
-        }
+        assembly { registryAddress := sload(position) }
     }
 
+    /// @dev Returns the exchange's protocol address.
     function protocol()
         public
         view
-        returns (address _protocol)
+        returns (address protocolAddress)
     {
         IUniversalRegistry r = IUniversalRegistry(registry());
-        (_protocol, ) = r.getExchangeProtocol(address(this));
+        (protocolAddress, ) = r.getExchangeProtocol(address(this));
     }
 
-    function implementation()
-        public
-        view
-        returns (address impl)
+    function setRegistry(address _registry)
+        private
     {
-        IUniversalRegistry r = IUniversalRegistry(registry());
-        (, address implManager) = r.getExchangeProtocol(address(this));
-        impl = IImplementationManager(implManager).defaultImpl();
+        require(_registry != address(0), "ZERO_ADDRESS");
+        bytes32 position = registryPosition;
+        assembly { sstore(position, _registry) }
     }
 }

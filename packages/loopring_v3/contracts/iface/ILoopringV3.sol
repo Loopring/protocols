@@ -65,9 +65,10 @@ contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    uint    public totalStake;
+    string  constant public version = "3.0";
 
     address public wethAddress;
+    uint    public totalStake;
     address public blockVerifierAddress;
     address public downtimeCostCalculator;
     uint    public maxWithdrawalFee;
@@ -87,7 +88,7 @@ contract ILoopringV3 is ILoopring
     address payable public protocolFeeVault;
 
     // == Public Functions ==
-    /// @dev Update the global exchange settings.
+    /// @dev Updates the global exchange settings.
     ///      This function can only be called by the owner of this contract.
     ///
     ///      Warning: these new values will be used by existing and
@@ -107,7 +108,7 @@ contract ILoopringV3 is ILoopring
         )
         external;
 
-    /// @dev Update the global protocol fee settings.
+    /// @dev Updates the global protocol fee settings.
     ///      This function can only be called by the owner of this contract.
     ///
     ///      Warning: these new values will be used by existing and
@@ -139,7 +140,7 @@ contract ILoopringV3 is ILoopring
         view
         returns (bool);
 
-    /// @dev Get the amount of staked LRC for an exchange.
+    /// @dev Gets the amount of staked LRC for an exchange.
     /// @param exchangeId The id of the exchange
     /// @return stakedLRC The amount of LRC
     function getExchangeStake(
@@ -149,7 +150,7 @@ contract ILoopringV3 is ILoopring
         view
         returns (uint stakedLRC);
 
-    /// @dev Burn a certain amount of staked LRC for a specific exchange.
+    /// @dev Burns a certain amount of staked LRC for a specific exchange.
     ///      This function is meant to be called only from exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @return burnedLRC The amount of LRC burned. If the amount is greater than
@@ -161,7 +162,7 @@ contract ILoopringV3 is ILoopring
         external
         returns (uint burnedLRC);
 
-    /// @dev Stake more LRC for an exchange.
+    /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
@@ -172,7 +173,7 @@ contract ILoopringV3 is ILoopring
         external
         returns (uint stakedLRC);
 
-    /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
+    /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
@@ -186,7 +187,7 @@ contract ILoopringV3 is ILoopring
         external
         returns (uint amount);
 
-    /// @dev Stake more LRC for an exchange.
+    /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
@@ -197,7 +198,7 @@ contract ILoopringV3 is ILoopring
         external
         returns (uint stakedLRC);
 
-    /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
+    /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
@@ -209,7 +210,7 @@ contract ILoopringV3 is ILoopring
         )
         external;
 
-    /// @dev Get the protocol fee values for an exchange.
+    /// @dev Gets the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
     /// @param onchainDataAvailability True if the exchange has on-chain
     ///        data-availability, else false
