@@ -16,8 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../iface/IExchange.sol";
 import "../../iface/IExchangeProxy.sol";
+import "../../iface/IImplementationManager.sol";
 import "../../iface/IProtocolRegistry.sol";
 
 
