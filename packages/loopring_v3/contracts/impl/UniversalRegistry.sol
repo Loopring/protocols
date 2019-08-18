@@ -304,18 +304,12 @@ contract UniversalRegistry is IUniversalRegistry {
         returns (address)
     {
         if (forgeMode == ForgeMode.AUTO_UPGRADABLE) {
-            // 0: automatic upgradability
-            // Deploy an exchange proxy and points to the implementation
             return address(new AutoUpgradabilityProxy(address(this)));
         } else if (forgeMode == ForgeMode.MANUAL_UPGRADABLE) {
-            // 1: manual upgradability
             return address(new ManualUpgradabilityProxy(address(this), implementation));
         } else if (forgeMode == ForgeMode.PROXIED) {
-            // 2: no upgradability with a simple proxy
             return address(new SimpleProxy(implementation));
         } else if (forgeMode == ForgeMode.NATIVE) {
-            // 3: no upgradability with a native DEX
-            // Clone a native exchange from the implementation.
             return IExchange(implementation).clone();
         } else {
             revert("INVALID_FORGE_MODE");
