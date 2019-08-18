@@ -21,16 +21,16 @@ import "../lib/SimpleProxy.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IProtocolRegistry.sol";
+import "../iface/IUniversalRegistry.sol";
 
 import "./proxies/AutoUpgradabilityProxy.sol";
 import "./proxies/ManualUpgradabilityProxy.sol";
 
 import "./ImplementationManager.sol";
 
-/// @title An Implementation of IProtocolRegistry
+/// @title An Implementation of IUniversalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry {
+contract UniversalRegistry is IUniversalRegistry {
     struct Protocol
     {
         address protocol;
@@ -69,7 +69,7 @@ contract ProtocolRegistry is IProtocolRegistry {
         require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
 
         ILoopring loopring = ILoopring(protocol);
-        require(loopring.protocolRegistry() == address(this), "REGISTRY_MISMATCH");
+        require(loopring.universalRegistry() == address(this), "REGISTRY_MISMATCH");
         require(loopring.owner() == owner, "OWNER_MISMATCH");
         require(loopring.lrcAddress() == lrcAddress, "LRC_ADDRESS_MISMATCH");
 

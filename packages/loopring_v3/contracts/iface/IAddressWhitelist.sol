@@ -21,9 +21,9 @@ pragma solidity ^0.5.11;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract IAddressWhitelist
 {
-    /// @dev Check if a address is whitelisted.
+    /// @dev Checks if an address has been whitelisted.
     /// @param user The user to check if being whitelisted.
-    /// @param permission An arbitrary data from caller to indicate permission.
+    /// @param permission An arbitrary data from the caller to indicate permission.
     /// @return true if the address is whitelisted
     function isWhitelisted(
         address user,

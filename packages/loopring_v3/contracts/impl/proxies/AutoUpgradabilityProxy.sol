@@ -18,7 +18,7 @@ pragma solidity ^0.5.11;
 
 import "../../iface/IExchangeProxy.sol";
 import "../../iface/IImplementationManager.sol";
-import "../../iface/IProtocolRegistry.sol";
+import "../../iface/IUniversalRegistry.sol";
 
 
 /// @title AutoUpgradabilityProxy
@@ -33,7 +33,7 @@ contract AutoUpgradabilityProxy is IExchangeProxy
         view
         returns (address)
     {
-        IProtocolRegistry r = IProtocolRegistry(registry());
+        IUniversalRegistry r = IUniversalRegistry(registry());
         (, address managerAddr) = r.getExchangeProtocol(address(this));
         return IImplementationManager(managerAddr).defaultImpl();
     }

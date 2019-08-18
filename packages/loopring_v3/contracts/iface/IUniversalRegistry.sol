@@ -20,12 +20,12 @@ import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
-/// @title IProtocolRegistry
+/// @title IUniversalRegistry
 /// @dev This contract manages all registered ILoopring versions and all Loopring
 ///      based exchanges.
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IProtocolRegistry is Claimable, ReentrancyGuard
+contract IUniversalRegistry is Claimable, ReentrancyGuard
 {
     /// === Events ===
     event ProtocolRegistered (
@@ -101,7 +101,7 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         )
         external;
 
-    /// @dev Create a new exchange using a specific protocol with msg.sender
+    /// @dev Creates a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
     /// @param upgradabilityMode Specify how the exchange shall support upgradability.
     ///        0: automatical upgradability

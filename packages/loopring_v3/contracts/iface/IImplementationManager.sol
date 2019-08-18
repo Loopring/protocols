@@ -21,9 +21,9 @@ import "../lib/ReentrancyGuard.sol";
 
 
 /// @title IImplementationManager
-/// @dev This contract manages implementation versions for a perticular ILoopring
+/// @dev This contract manages implementation versions for a specific ILoopring
 ///      contract. The ILoopring contract can be considered as the "major" version
-///      of a Loopring protocol and each IExchange implementation can be considiered
+///      of a Loopring protocol and each IExchange implementation can be considered
 ///      as a "minor" version. Multiple IExchange contracts can use the same
 ///      ILoopring contracts.
 ///
@@ -61,7 +61,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
 
     /// === Functions ===
 
-    /// @dev Register a new implementation.
+    /// @dev Registers a new implementation.
     /// @param implementation The implemenation to add.
     function register(
         address implementation

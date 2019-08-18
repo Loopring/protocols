@@ -19,7 +19,7 @@ pragma solidity ^0.5.11;
 import "../../lib/Ownable.sol";
 
 import "../../iface/IExchangeProxy.sol";
-import "../../iface/IProtocolRegistry.sol";
+import "../../iface/IUniversalRegistry.sol";
 
 
 /// @title ManualUpgradabilityProxy
@@ -68,7 +68,7 @@ contract ManualUpgradabilityProxy is IExchangeProxy
     {
         require(implementation() != newImplementation, "SAME_IMPLEMENTATION");
 
-        IProtocolRegistry r = IProtocolRegistry(registry());
+        IUniversalRegistry r = IUniversalRegistry(registry());
         require(
             r.isProtocolAndImplementationEnabled(protocol(), newImplementation),
             "INVALID_PROTOCOL_OR_IMPLEMENTATION"

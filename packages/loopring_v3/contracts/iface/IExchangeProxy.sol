@@ -18,8 +18,8 @@ pragma solidity ^0.5.11;
 
 import "../thirdparty/Proxy.sol";
 
-import "../iface/IProtocolRegistry.sol";
 import "../iface/IImplementationManager.sol";
+import "../iface/IUniversalRegistry.sol";
 
 
 /// @title IExchangeProxy
@@ -52,7 +52,7 @@ contract IExchangeProxy is Proxy
         view
         returns (address protocolAddress)
     {
-        IProtocolRegistry r = IProtocolRegistry(registry());
+        IUniversalRegistry r = IUniversalRegistry(registry());
         (protocolAddress, ) = r.getExchangeProtocol(address(this));
     }
 
