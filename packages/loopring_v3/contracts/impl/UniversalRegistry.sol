@@ -157,7 +157,7 @@ contract UniversalRegistry is IUniversalRegistry {
             );
         }
 
-        exchangeAddress = forge(forgeMode, _implementation);
+        exchangeAddress = forgeInternal(forgeMode, _implementation);
         assert(exchangeMap[exchangeAddress] == address(0));
 
         exchangeMap[exchangeAddress] = _protocol;
@@ -296,7 +296,7 @@ contract UniversalRegistry is IUniversalRegistry {
         }
     }
 
-    function forge(
+    function forgeInternal(
         ForgeMode forgeMode,
         address   implementation
         )
