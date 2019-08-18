@@ -155,15 +155,15 @@ contract IExchangeV3 is IExchange
         external;
 
     // -- Mode --
-    /// @dev Whether the exchange is in withdrawal mode.
-    /// @return Returns true if the exchange is in withdrawal mode, else false
+    /// @dev Returns hether the exchange is in withdrawal mode.
+    /// @return Returns true if the exchange is in withdrawal mode, else false.
     function isInWithdrawalMode()
         external
         view
         returns (bool);
 
-    /// @dev Whether the exchange is shutdown.
-    /// @return Returns true if the exchange is shutdown, else false
+    /// @dev Returns whether the exchange is shutdown.
+    /// @return Returns true if the exchange is shutdown, else false.
     function isShutdown()
         external
         view
@@ -178,7 +178,7 @@ contract IExchangeV3 is IExchange
         view
         returns (uint);
 
-    /// @dev Get the account information for a given address.
+    /// @dev Gets the account information for a given address.
     /// @param  owner The owning address of the account
     /// @return accountID The account's ID
     /// @return pubKeyX The first part of the account's trading EdDSA public key
@@ -194,7 +194,7 @@ contract IExchangeV3 is IExchange
             uint   pubKeyY
         );
 
-    /// @dev Submit an onchain request to create a new account for msg.sender or
+    /// @dev Submits an onchain request to create a new account for msg.sender or
     ///      update its existing account by replacing its trading public key.
     ///      The total fee in ETH that the user needs to pay is:
     ///          depositFee +
@@ -231,9 +231,9 @@ contract IExchangeV3 is IExchange
         );
 
     // -- Balances --
-    /// @dev Verifies that the given information is stored in the merkle tree with
+    /// @dev Verifies that the given information is stored in the Merkle tree with
     ///      the specified merkle root.
-    /// @param  merkleRoot The merkle tree root of all account data
+    /// @param  merkleRoot The Merkle tree root of all account data
     /// @param  accountID The ID of the account the balance is verified for
     /// @param  tokenID The ID of the token the balance is verified for
     /// @param  pubKeyX The first part of the public key of the account
@@ -246,7 +246,7 @@ contract IExchangeV3 is IExchange
     /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
     ///                      token for the account. The deepest hash in the tree is the
     ///                      1st element of the array.
-    /// @return True if the given information is stored in the merkle tree, false otherwise
+    /// @return True if the given information is stored in the Merkle tree, false otherwise
     function isAccountBalanceCorrect(
         uint     merkleRoot,
         uint24   accountID,
@@ -265,14 +265,14 @@ contract IExchangeV3 is IExchange
 
     // -- Tokens --
 
-    /// @dev Get the required amount of LRC to burn for registering one more token.
+    /// @dev Gets the required amount of LRC to burn for registering one more token.
     /// @return feeLRC The amount of LRC to burn.
     function getLRCFeeForRegisteringOneMoreToken()
         external
         view
         returns (uint feeLRC);
 
-    /// @dev Register an ERC20 token for a token id. Note that different exchanges may have
+    /// @dev Registers an ERC20 token for a token id. Note that different exchanges may have
     ///      different ids for the same ERC20 token.
     ///
     ///      Please note that 1 is reserved for Ether (ETH), 2 is reserved for Wrapped Ether (ETH),
@@ -282,7 +282,7 @@ contract IExchangeV3 is IExchange
     ///
     /// @param  tokenAddress The token's address
     /// @return tokenID The token's ID in this exchanges.
-    /// @return isAccountNew True if this account is newly created, false if the account existed
+    /// @return isAccountNew True if this account is newly created, false if the account existes.
     function registerToken(
         address tokenAddress
         )
@@ -309,7 +309,7 @@ contract IExchangeV3 is IExchange
         view
         returns (address tokenAddress);
 
-    /// @dev Disable users to submit onchain deposit requests for a token.
+    /// @dev Disables users to submit onchain deposit requests for a token.
     ///      This function is only callable by the exchange owner.
     /// @param  tokenAddress The token's address
     function disableTokenDeposit(
@@ -326,7 +326,7 @@ contract IExchangeV3 is IExchange
         external;
 
     // -- Stakes --
-    /// @dev Get the amount of LRC the owner has staked onchain for this exchange.
+    /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
     ///      The stake will be burned if the exchange does not fulfill its duty by
     ///      processing user requests in time. Please note that order matching may potentially
     ///      performed by another party and is not part of the exchange's duty.
@@ -385,7 +385,7 @@ contract IExchangeV3 is IExchange
         external;
 
     // -- Blocks --
-    /// @dev Get the height of this exchange's virtual blockchain. The block height for a
+    /// @dev Gets the height of this exchange's virtual blockchain. The block height for a
     ///      new exchange is 0.
     /// @return The virtual blockchain height which is the index of the last block.
     function getBlockHeight()
@@ -393,7 +393,7 @@ contract IExchangeV3 is IExchange
         view
         returns (uint);
 
-    /// @dev Get the number of finalized (i.e. irreversible) blocks.
+    /// @dev Gets the number of finalized (i.e. irreversible) blocks.
     /// @return The number of finalized blocks which is the index of the last finalized block.
     function getNumBlocksFinalized()
         external
@@ -431,7 +431,7 @@ contract IExchangeV3 is IExchange
             uint16  numWithdrawalsDistributed
         );
 
-    /// @dev Commit a new block to the virtual blockchain without the proof.
+    /// @dev Commits a new block to the virtual blockchain without the proof.
     ///      This function is only callable by the exchange operator.
     ///
     /// @param blockType The type of the new block
@@ -473,7 +473,7 @@ contract IExchangeV3 is IExchange
     ///            - Label hash: 32 bytes
     ///
     ///        The 'onchain data availability' data (if enabled) is added
-    ///        at the end. This allows anyone to recreate the merkle tree
+    ///        at the end. This allows anyone to recreate the Merkle tree
     ///        just by using data published on the Ethereum blockchain.
     ///
     ///        For RING_SETTLEMENT blocks add the following data:
@@ -551,7 +551,7 @@ contract IExchangeV3 is IExchange
         )
         external;
 
-    /// @dev Revert the exchange's virtual blockchain until a specific block index.
+    /// @dev Reverts the exchange's virtual blockchain until a specific block index.
     ///      After MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds (the timeout), if a valid
     ///      proof is still not submitted onchain, the operator can call this method to trigger
     ///      the blockchain to revert.
@@ -581,14 +581,14 @@ contract IExchangeV3 is IExchange
         view
         returns (uint);
 
-    /// @dev Get the number of available onchain deposit slots.
+    /// @dev Gets the number of available onchain deposit slots.
     /// @return The number of slots avalable for deposits.
     function getNumAvailableDepositSlots()
         external
         view
         returns (uint);
 
-    /// @dev Get an item from deposit request-chain.
+    /// @dev Gets an item from deposit request-chain.
     /// @param index The 0-based index of the request
     /// @return accumulatedHash See @Request
     /// @return accumulatedFee  See @Request
@@ -604,7 +604,7 @@ contract IExchangeV3 is IExchange
           uint32  timestamp
         );
 
-    /// @dev Deposit Ether or ERC20 tokens to the sender's account.
+    /// @dev Deposits Ether or ERC20 tokens to the sender's account.
     ///      This function will create a new account if no account exists
     ///      for msg.sender, or update the existing account with the given trading
     ///      public key when the account exists.
@@ -646,7 +646,7 @@ contract IExchangeV3 is IExchange
             bool   isAccountUpdated
         );
 
-    /// @dev Deposit Ether or ERC20 tokens to the sender's account.
+    /// @dev Deposits Ether or ERC20 tokens to the sender's account.
     ///
     ///      The total fee in ETH that the user needs to pay is 'depositFee'.
     ///      If the user sends too much ETH the surplus is sent back immediately.
@@ -668,7 +668,7 @@ contract IExchangeV3 is IExchange
         external
         payable;
 
-    /// @dev Deposit Ether or ERC20 tokens to a recipient account.
+    /// @dev Deposits Ether or ERC20 tokens to a recipient account.
     ///
     ///      The total fee in ETH that the user needs to pay is 'depositFee'.
     ///      If the user sends too much ETH the surplus is sent back immediately.
@@ -693,6 +693,7 @@ contract IExchangeV3 is IExchange
         payable;
 
     // -- Withdrawals --
+
     /// @dev Returns the index of the first withdrawal request that wasn't yet included
     ///      in a block. Can be used to check if a withdrawal with a given withdrawalIdx
     ///      (as specified in the WithdrawalRequested event) was processed by the operator.
@@ -702,7 +703,7 @@ contract IExchangeV3 is IExchange
         view
         returns (uint);
 
-    /// @dev Get the number of available onchain withdrawal slots.
+    /// @dev Gets the number of available onchain withdrawal slots.
     /// @return The number of slots available for withdrawals
     function getNumAvailableWithdrawalSlots(
         )
@@ -710,7 +711,7 @@ contract IExchangeV3 is IExchange
         view
         returns (uint);
 
-    /// @dev Get an item from withdrawal request-chain.
+    /// @dev Gets an item from withdrawal request-chain.
     /// @param index The 0-based index of the request
     /// @return accumulatedHash See @Request
     /// @return accumulatedFee  See @Request
@@ -726,7 +727,7 @@ contract IExchangeV3 is IExchange
             uint32  timestamp
         );
 
-    /// @dev Submit an onchain request to withdraw Ether or ERC20 tokens. To withdraw
+    /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens. To withdraw
     ///      all the balance, use a very large number for `amount`.
     ///
     ///      Only the owner of the account can request a withdrawal.
@@ -747,7 +748,7 @@ contract IExchangeV3 is IExchange
         external
         payable;
 
-    /// @dev Submit an onchain request to withdraw Ether or ERC20 tokens from the
+    /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens from the
     ///      protocol fees account. The complete balance is always withdrawn.
     ///
     ///      Anyone can request a withdrawal of the protocol fees.
@@ -764,7 +765,7 @@ contract IExchangeV3 is IExchange
         payable;
 
     /// @dev Allows an account owner to withdraw his funds using the balances stored
-    ///      in the merkle tree. The funds will be sent to the owner of the account.
+    ///      in the Merkle tree. The funds will be sent to the owner of the account.
     ///
     ///      Trading pubKey matching the offchain Merkle tree need to be provided.
     ///      The pubKey may already be reset to 0 when the exchange is shutdown.
@@ -803,10 +804,10 @@ contract IExchangeV3 is IExchange
         external;
 
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
-    ///      in the merkle tree. The funds will be sent to the owner of the acount.
+    ///      in the Merkle tree. The funds will be sent to the owner of the acount.
     ///
     ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
-    ///      committing blocks and is not able to commit anymore blocks).
+    ///      committing blocks and is not able to commit any more blocks).
     ///
     ///      This will NOT modify the onchain merkle root! The merkle root stored
     ///      onchain will remain the same after the withdrawal. We store if the user
@@ -838,7 +839,7 @@ contract IExchangeV3 is IExchange
         external;
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
-    ///      it was never committed in a block (so the balance in the merkle tree was
+    ///      it was never committed in a block (so the balance in the Merkle tree was
     ///      not updated).
     ///
     ///      Can be called by anyone. The deposited tokens will be sent back to
@@ -869,7 +870,7 @@ contract IExchangeV3 is IExchange
     ///      Funds can only be withdrawn from requests processed in a
     ///      finalized block (i.e. a block that can never be reverted).
     ///
-    /// @param  blockIdx The block the withdrawal requests was committed in
+    /// @param  blockIdx The block the withdrawal requests were committed in
     /// @param  slotIdx The index in the list of withdrawals that were processed
     ///                 by the operator. It is not possible for users to know
     ///                 what this index will be for their withdrawal request.
@@ -897,7 +898,7 @@ contract IExchangeV3 is IExchange
         external
         returns (uint feeAmount);
 
-    /// @dev Distributes the the funds to the account owners after their withdrawal
+    /// @dev Distributes the funds to the account owners after their withdrawal
     ///      requests were processed by the operator.
     ///
     ///      Needs to be called by the operator after submitting a block processing
@@ -938,7 +939,7 @@ contract IExchangeV3 is IExchange
 
     // -- Admins --
 
-    /// @dev Set the operator address.
+    /// @dev Sets the operator address.
     /// @param _operator The new operator's address
     /// @return oldOperator The old operator's address
     function setOperator(
@@ -947,7 +948,7 @@ contract IExchangeV3 is IExchange
         external
         returns (address payable oldOperator);
 
-    /// @dev Set the address whitelist contract address.
+    /// @dev Sets the address whitelist contract address.
     ///      Can only be called by the exchange owner.
     /// @param _addressWhitelist The new address whitelist contract address
     /// @return oldAddressWhitelist The old address whitelist contract address
@@ -957,7 +958,7 @@ contract IExchangeV3 is IExchange
         external
         returns (address oldAddressWhitelist);
 
-    /// @dev Update fee settings.
+    /// @dev Updates fee settings.
     ///      This function is only callable by the exchange owner.
     /// @param _accountCreationFeeETH The fee in ETH for account creation
     /// @param _accountUpdateFeeETH The fee in ETH for account update
@@ -971,7 +972,7 @@ contract IExchangeV3 is IExchange
         )
         external;
 
-    /// @dev Get current fee settings.
+    /// @dev Gets current fee settings.
     /// @return _accountCreationFeeETH The fee in ETH for account creation
     /// @return _accountUpdateFeeETH The fee in ETH for account update
     /// @return _depositFeeETH The fee in ETH for deposits
@@ -1021,14 +1022,14 @@ contract IExchangeV3 is IExchange
     function stopMaintenanceMode()
         external;
 
-    /// @dev Get the remaining downtime.
+    /// @dev Gets the remaining downtime.
     /// @return durationSeconds Remaining downtime in second.
     function getRemainingDowntime()
         external
         view
         returns (uint durationMinutes);
 
-    /// @dev Get the amount of LRC to burn for buying the downtime.
+    /// @dev Gets the amount of LRC to burn for buying the downtime.
     /// @return costLRC The amount of LRC to burn
     function getDowntimeCostLRC(
         uint durationMinutes
@@ -1069,7 +1070,7 @@ contract IExchangeV3 is IExchange
         external
         returns (bool success);
 
-    /// @dev Get number of available/processed deposits/withdrawals.
+    /// @dev Gets number of available/processed deposits/withdrawals.
     /// @return numDepositRequestsProcessed The num of the processed deposit requests
     /// @return numAvailableDepositSlots The number of slots available for deposits
     /// @return numWithdrawalRequestsProcessed The num of processed withdrawal requests
@@ -1084,7 +1085,7 @@ contract IExchangeV3 is IExchange
             uint numAvailableWithdrawalSlots
         );
 
-    /// @dev Get the protocol fees for this exchange.
+    /// @dev Gets the protocol fees for this exchange.
     /// @return timestamp The timestamp the protocol fees were last updated
     /// @return takerFeeBips The protocol taker fee
     /// @return makerFeeBips The protocol maker fee

@@ -16,19 +16,30 @@
 */
 pragma solidity ^0.5.11;
 
+import "../thirdparty/Proxy.sol";
 
-/// @title IAddressWhitelist
-/// @author Daniel Wang - <daniel@loopring.org>
-contract IAddressWhitelist
+
+/// @title SimpleProxy
+/// @author Daniel Wang  - <daniel@loopring.org>
+contract SimpleProxy is Proxy
 {
-    /// @dev Checks if an address has been whitelisted.
-    /// @param user The user to check if being whitelisted.
-    /// @param permission An arbitrary data from the caller to indicate permission.
-    /// @return true if the address is whitelisted
-    function isWhitelisted(
-        address user,
-        bytes   memory permission
-        )
+    bytes32 private constant implementationPosition = keccak256(
+        "org.loopring.protocol.simple.proxy"
+    );
+
+    constructor(address _implementation)
         public
-        returns (bool);
+    {
+        bytes32 position = implementationPosition;
+        assembly {sstore(position, _implementation) }
+    }
+
+    function implementation()
+        public
+        view
+        returns (address impl)
+    {
+        bytes32 position = implementationPosition;
+        assembly { impl := sload(position) }
+    }
 }

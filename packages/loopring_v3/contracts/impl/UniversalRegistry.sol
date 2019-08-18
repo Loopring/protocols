@@ -17,17 +17,20 @@
 pragma solidity ^0.5.11;
 
 import "../lib/BurnableERC20.sol";
+import "../lib/SimpleProxy.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
-import "../iface/IProtocolRegistry.sol";
+import "../iface/IUniversalRegistry.sol";
 
-import "./ExchangeProxy.sol";
+import "./proxies/AutoUpgradabilityProxy.sol";
+import "./proxies/ManualUpgradabilityProxy.sol";
+
 import "./ImplementationManager.sol";
 
-/// @title An Implementation of IProtocolRegistry
+/// @title An Implementation of IUniversalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ProtocolRegistry is IProtocolRegistry {
+contract UniversalRegistry is IUniversalRegistry {
     struct Protocol
     {
         address protocol;
@@ -64,6 +67,11 @@ contract ProtocolRegistry is IProtocolRegistry {
         returns (address manager)
     {
         require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
+
+        ILoopring loopring = ILoopring(protocol);
+        require(loopring.universalRegistry() == address(this), "REGISTRY_MISMATCH");
+        require(loopring.owner() == owner, "OWNER_MISMATCH");
+        require(loopring.lrcAddress() == lrcAddress, "LRC_ADDRESS_MISMATCH");
 
         IImplementationManager m = new ImplementationManager(owner, protocol, implementation);
         manager = address(m);
@@ -124,7 +132,7 @@ contract ProtocolRegistry is IProtocolRegistry {
     }
 
     function forgeExchange(
-        bool    supportUpgradability,
+        uint    upgradabilityMode,
         bool    onchainDataAvailability,
         address protocol,
         address implementation
@@ -136,20 +144,8 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
-        address _protocol = protocol;
-        if (_protocol == address(0)) {
-            _protocol = defaultProtocolAddress;
-        } else {
-            require(isProtocolEnabled(_protocol), "INVALID_PROTOCOL");
-        }
-
-        address _implementation = implementation;
-        IImplementationManager m = IImplementationManager(protocolMap[_protocol].manager);
-        if (_implementation == address(0)) {
-            _implementation = m.defaultImpl();
-        } else {
-            require(m.isEnabled(_implementation), "INVALID_IMPLEMENTATION");
-        }
+        (address _protocol, address _implementation) =
+            getProtocolAndImplementationToUse(protocol, implementation);
 
         ILoopring loopring = ILoopring(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
@@ -161,14 +157,7 @@ contract ProtocolRegistry is IProtocolRegistry {
             );
         }
 
-        if (supportUpgradability) {
-            // Deploy an exchange proxy and points to the implementation
-            exchangeAddress = address(new ExchangeProxy(address(this)));
-        } else {
-            // Clone a native exchange from the implementation.
-            exchangeAddress = IExchange(_implementation).clone();
-        }
-
+        exchangeAddress = createExchangeInstance(upgradabilityMode, _implementation);
         assert(exchangeMap[exchangeAddress] == address(0));
 
         exchangeMap[exchangeAddress] = _protocol;
@@ -188,7 +177,7 @@ contract ProtocolRegistry is IProtocolRegistry {
             _implementation,
             exchangeAddress,
             msg.sender,
-            supportUpgradability,
+            upgradabilityMode,
             onchainDataAvailability,
             exchangeId,
             exchangeCreationCostLRC
@@ -245,6 +234,23 @@ contract ProtocolRegistry is IProtocolRegistry {
         return exchangeMap[exchange] != address(0);
     }
 
+    function isProtocolAndImplementationEnabled(
+        address protocol,
+        address implementation
+        )
+        public
+        view
+        returns (bool enabled)
+    {
+        if (!isProtocolEnabled(protocol)) {
+            return false;
+        }
+
+        address managerAddr = protocolMap[protocol].manager;
+        IImplementationManager m = IImplementationManager(managerAddr);
+        return m.isEnabled(implementation);
+    }
+
     function getExchangeProtocol(
         address exchangeAddress
         )
@@ -259,5 +265,60 @@ contract ProtocolRegistry is IProtocolRegistry {
         protocol = exchangeMap[exchangeAddress];
         require(protocol != address(0), "INVALID_EXCHANGE");
         manager = protocolMap[protocol].manager;
+    }
+
+    /// === Private Functions ===
+
+    function getProtocolAndImplementationToUse(
+        address protocol,
+        address implementation
+        )
+        private
+        view
+        returns (
+            address protocolToUse,
+            address implementationToUse
+        )
+    {
+        protocolToUse = protocol;
+        if (protocolToUse == address(0)) {
+            protocolToUse = defaultProtocolAddress;
+        } else {
+            require(isProtocolEnabled(protocolToUse), "INVALID_PROTOCOL");
+        }
+
+        implementationToUse = implementation;
+        IImplementationManager m = IImplementationManager(protocolMap[protocolToUse].manager);
+        if (implementationToUse == address(0)) {
+            implementationToUse = m.defaultImpl();
+        } else {
+            require(m.isEnabled(implementationToUse), "INVALID_IMPLEMENTATION");
+        }
+    }
+
+    function createExchangeInstance(
+        uint    upgradabilityMode,
+        address implementation
+        )
+        private
+        returns (address)
+    {
+        if (upgradabilityMode == 0) {
+            // 0: automatic upgradability
+            // Deploy an exchange proxy and points to the implementation
+            return address(new AutoUpgradabilityProxy(address(this)));
+        } else if (upgradabilityMode == 1) {
+            // 1: manual upgradability
+            return address(new ManualUpgradabilityProxy(address(this), implementation));
+        } else if (upgradabilityMode == 2) {
+            // 2: no upgradability with a simple proxy
+            return address(new SimpleProxy(implementation));
+        } else if (upgradabilityMode == 3) {
+            // 3: no upgradability with a native DEX
+            // Clone a native exchange from the implementation.
+            return IExchange(implementation).clone();
+        } else {
+            revert("INVALID_UPGRADABILITY_MODE");
+        }
     }
 }
