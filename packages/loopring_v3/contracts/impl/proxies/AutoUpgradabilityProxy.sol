@@ -31,9 +31,10 @@ contract AutoUpgradabilityProxy is IExchangeProxy
     function implementation()
         public
         view
-        returns (address impl)
+        returns (address)
     {
         IProtocolRegistry r = IProtocolRegistry(registry());
-        (, impl) = r.getExchangeProtocol(address(this));
+        (, address managerAddr) = r.getExchangeProtocol(address(this));
+        return IImplementationManager(managerAddr).defaultImpl();
     }
 }
