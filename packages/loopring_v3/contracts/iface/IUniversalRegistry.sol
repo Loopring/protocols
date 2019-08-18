@@ -118,10 +118,10 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @return exchangeAddress The new exchange's address
     /// @return exchangeId The new exchange's ID.
     function forgeExchange(
-        ForgeMode   forgeMode,
-        bool        onchainDataAvailability,
-        address     protocol,
-        address     implementation
+        ForgeMode forgeMode,
+        bool      onchainDataAvailability,
+        address   protocol,
+        address   implementation
         )
         external
         returns (
