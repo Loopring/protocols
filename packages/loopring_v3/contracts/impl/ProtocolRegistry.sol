@@ -144,10 +144,8 @@ contract ProtocolRegistry is IProtocolRegistry {
             uint    exchangeId
         )
     {
-        (address _protocol, address _implementation) = getProtocolAndImplementationToUse(
-            protocol,
-            implementation
-        );
+        (address _protocol, address _implementation) =
+            getProtocolAndImplementationToUse(protocol, implementation);
 
         ILoopring loopring = ILoopring(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
@@ -268,7 +266,6 @@ contract ProtocolRegistry is IProtocolRegistry {
         require(protocol != address(0), "INVALID_EXCHANGE");
         manager = protocolMap[protocol].manager;
     }
-
 
     /// === Private Functions ===
 
