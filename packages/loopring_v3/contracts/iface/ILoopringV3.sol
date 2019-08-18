@@ -67,7 +67,6 @@ contract ILoopringV3 is ILoopring
 
     string  constant public version = "3.0";
 
-    address public protocolRegistry;
     address public lrcAddress;
     address public wethAddress;
     uint    public totalStake;
