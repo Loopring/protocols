@@ -63,7 +63,7 @@ contract ImplementationManager is IImplementationManager
         require(implementation != address(0), "INVALID_IMPLEMENTATION");
 
         string memory _version = IExchange(implementation).version();
-        require(bytes(_version).length >= 3, "INVALID_VESION");
+        require(bytes(_version).length >= 3, "INVALID_VERSION");
         require(versionMap[_version] == address(0), "VERSION_USED");
         require(!statusMap[implementation].registered, "ALREADY_REGISTERED");
 
@@ -80,8 +80,8 @@ contract ImplementationManager is IImplementationManager
         external
         nonReentrant
     {
-        require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
         require(implementation != defaultImpl, "SAME_IMPLEMENTATION");
+        require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
 
         address oldDefault = defaultImpl;
         defaultImpl = implementation;

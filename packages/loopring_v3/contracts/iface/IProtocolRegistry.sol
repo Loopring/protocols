@@ -69,14 +69,58 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
 
     /// === Functions ===
 
-    /// @dev Checks if the addres is a registered Loopring exchange.
-    /// @return registered True if the address is a registered exchange.
-    function isExchangeRegistered(
-        address exchange
+    /// @dev Registers a new protocol.
+    /// @param protocol The address of the new protocol.
+    /// @param implementation The new protocol's default implementation.
+    /// @return implManager A new implementation manager to manage the protocol's implementations.
+    function registerProtocol(
+        address protocol,
+        address implementation
         )
-        public
-        view
-        returns (bool registered);
+        external
+        returns (address implManager);
+
+    /// @dev Sets the default protocol.
+    /// @param protocol The new defualt protocol.
+    function setDefaultProtocol(
+        address protocol
+        )
+        external;
+
+    /// @dev Enables a protocol.
+    /// @param protocol The address of the protocol.
+    function enableProtocol(
+        address protocol
+        )
+        external;
+
+    /// @dev Disables a protocol.
+    /// @param protocol The address of the protocol.
+    function disableProtocol(
+        address protocol
+        )
+        external;
+
+    /// @dev Create a new exchange using a specific protocol with msg.sender
+    ///      as owner and operator.
+    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
+    ///        in front of the native exchange contract to support upgradability.
+    /// @param onchainDataAvailability IF the on-chain DA is on
+    /// @param protocol The protocol address, use 0x0 for default.
+    /// @param implementation The implementation to use, use 0x0 for default.
+    /// @return exchangeAddress The new exchange's address
+    /// @return exchangeId The new exchange's ID.
+    function forgeExchange(
+        bool    supportUpgradability,
+        bool    onchainDataAvailability,
+        address protocol,
+        address implementation
+        )
+        external
+        returns (
+            address exchangeAddress,
+            uint    exchangeId
+        );
 
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
@@ -93,17 +137,6 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
             string  memory protocolVersion,
             string  memory defaultImplVersion
         );
-
-    /// @dev Registers a new protocol.
-    /// @param protocol The address of the new protocol.
-    /// @param implementation The new protocol's default implementation.
-    /// @return implManager A new implementation manager to manage the protocol's implementations.
-    function registerProtocol(
-        address protocol,
-        address implementation
-        )
-        external
-        returns (address implManager);
 
     /// @dev Checks if a protocol has been registered.
     /// @param protocol The address of the protocol.
@@ -125,19 +158,14 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         view
         returns (bool enabled);
 
-    /// @dev Enables a protocol.
-    /// @param protocol The address of the protocol.
-    function enableProtocol(
-        address protocol
+    /// @dev Checks if the addres is a registered Loopring exchange.
+    /// @return registered True if the address is a registered exchange.
+    function isExchangeRegistered(
+        address exchange
         )
-        external;
-
-    /// @dev Disables a protocol.
-    /// @param protocol The address of the protocol.
-    function disableProtocol(
-        address protocol
-        )
-        external;
+        public
+        view
+        returns (bool registered);
 
     /// @dev Returns the protocol associated with an exchange.
     /// @param exchangeAddress The address of the exchange.
@@ -152,26 +180,5 @@ contract IProtocolRegistry is Claimable, ReentrancyGuard
         returns (
             address protocol,
             address implementation
-        );
-
-    /// @dev Create a new exchange using a specific protocol with msg.sender
-    ///      as owner and operator.
-    /// @param supportUpgradability True to indicate an ExchangeProxy shall be deploy
-    ///        in front of the native exchange contract to support upgradability.
-    /// @param onchainDataAvailability IF the on-chain DA is on
-    /// @param protocol The protocol address, use 0x0 for default.
-    /// @param implementation The implementation to use, use 0x0 for default.
-    /// @return exchangeAddress The new exchange's address
-    /// @return exchangeId The new exchange's ID.
-    function forgeExchange(
-        bool    supportUpgradability,
-        bool    onchainDataAvailability,
-        address protocol,
-        address implementation
-        )
-        external
-        returns (
-            address exchangeAddress,
-            uint    exchangeId
         );
 }

@@ -55,36 +55,6 @@ contract ProtocolRegistry is IProtocolRegistry {
         lrcAddress = _lrcAddress;
     }
 
-    function isExchangeRegistered(
-        address exchange
-        )
-        public
-        view
-        returns (bool)
-    {
-        return exchangeMap[exchange] != address(0);
-    }
-
-    function defaultProtocol()
-        external
-        view
-        returns (
-            address protocol,
-            address manager,
-            address defaultImpl,
-            string  memory protocolVersion,
-            string  memory defaultImplVersion
-        )
-    {
-        protocol = defaultProtocolAddress;
-        Protocol storage p = protocolMap[protocol];
-        manager = p.manager;
-
-        IImplementationManager m = IImplementationManager(manager);
-        defaultImpl = m.defaultImpl();
-        (protocolVersion, defaultImplVersion) = m.version();
-    }
-
     function registerProtocol(
         address protocol,
         address implementation
@@ -124,26 +94,6 @@ contract ProtocolRegistry is IProtocolRegistry {
         address oldDefault = defaultProtocolAddress;
         defaultProtocolAddress = protocol;
         emit DefaultProtocolChanged(oldDefault, defaultProtocolAddress);
-    }
-
-    function isProtocolRegistered(
-        address protocol
-        )
-        public
-        view
-        returns (bool)
-    {
-        return protocolMap[protocol].registered;
-    }
-
-    function isProtocolEnabled(
-        address protocol
-        )
-        public
-        view
-        returns (bool)
-    {
-        return protocolMap[protocol].enabled;
     }
 
     function enableProtocol(
@@ -243,6 +193,56 @@ contract ProtocolRegistry is IProtocolRegistry {
             exchangeId,
             exchangeCreationCostLRC
         );
+    }
+
+    function defaultProtocol()
+        external
+        view
+        returns (
+            address protocol,
+            address manager,
+            address defaultImpl,
+            string  memory protocolVersion,
+            string  memory defaultImplVersion
+        )
+    {
+        protocol = defaultProtocolAddress;
+        Protocol storage p = protocolMap[protocol];
+        manager = p.manager;
+
+        IImplementationManager m = IImplementationManager(manager);
+        defaultImpl = m.defaultImpl();
+        (protocolVersion, defaultImplVersion) = m.version();
+    }
+
+    function isProtocolRegistered(
+        address protocol
+        )
+        public
+        view
+        returns (bool)
+    {
+        return protocolMap[protocol].registered;
+    }
+
+    function isProtocolEnabled(
+        address protocol
+        )
+        public
+        view
+        returns (bool)
+    {
+        return protocolMap[protocol].enabled;
+    }
+
+    function isExchangeRegistered(
+        address exchange
+        )
+        public
+        view
+        returns (bool)
+    {
+        return exchangeMap[exchange] != address(0);
     }
 
     function getExchangeProtocol(
