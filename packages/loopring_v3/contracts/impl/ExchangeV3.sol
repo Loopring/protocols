@@ -67,14 +67,6 @@ contract ExchangeV3 is IExchangeV3
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
-    function protocol()
-        external
-        view
-        returns (address)
-    {
-        return address(state.loopring);
-    }
-
     // -- Initialization --
     function initialize(
         address _loopringAddress,

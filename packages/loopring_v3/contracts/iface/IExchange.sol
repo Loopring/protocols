@@ -30,12 +30,6 @@ contract IExchange is Claimable, ReentrancyGuard
 
     event Cloned (address indexed clone);
 
-    /// @dev Returns the corresponding ILoopring address.
-    function protocol()
-        external
-        view
-        returns (address);
-
     /// @dev Clone an exchange without any initialization
     /// @return  cloneAddress The address of the new exchange.
     function clone()
