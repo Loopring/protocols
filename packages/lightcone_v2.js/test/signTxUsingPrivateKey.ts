@@ -34,10 +34,10 @@ describe("sign transaction using private key", function() {
     //   1
     // );
 
-    // const updateAccountResponse = await exchange.updateAccount(
-    //   privateKeyAccount,
-    //   100
-    // );
+    const updateAccountResponse = await exchange.updateAccount(
+      privateKeyAccount,
+      100
+    );
 
     const sender = "0x201bba420af6cebdaa29b7aff1244447bab35074"; // account 49
 
