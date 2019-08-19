@@ -213,7 +213,7 @@ export class Exchange {
 
       return new Transaction({
         to: this.exchangeAddr,
-        value: "1000000000000000000",
+        value: this.dexConfigurations.account_update_fee_eth,
         data: data,
         chainId: config.getChainId(),
         nonce: await ethereum.wallet.getNonce(this.getAddress()),
