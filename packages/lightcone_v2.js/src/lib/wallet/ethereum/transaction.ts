@@ -13,7 +13,7 @@ export default class Transaction {
   signed: string;
 
   constructor(rawTx) {
-    // validator.validate({ value: rawTx, type: "BASIC_TX" });
+    validator.validate({ value: rawTx, type: "BASIC_TX" });
     this.raw = rawTx;
   }
 
@@ -37,13 +37,13 @@ export default class Transaction {
   }
 
   hash() {
-    // validator.validate({ value: this.raw, type: "TX" });
+    validator.validate({ value: this.raw, type: "TX" });
     return new EthTransaction(this.raw).hash();
   }
 
   async sign({ privateKey, walletType, path }) {
     try {
-      // validator.validate({ value: this.raw, type: "TX" });
+      validator.validate({ value: this.raw, type: "TX" });
     } catch (e) {
       await this.complete();
     }
