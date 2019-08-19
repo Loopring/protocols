@@ -260,7 +260,6 @@ library ExchangeBlocks
             merkleRootAfter := mload(add(data, 68))
         }
         require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
-        require(uint256(merkleRootBefore) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
         require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         uint32 numDepositRequestsCommitted = uint32(prevBlock.numDepositRequestsCommitted);
