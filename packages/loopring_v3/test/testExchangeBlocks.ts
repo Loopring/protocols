@@ -147,6 +147,42 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
+        it("should not be able to commit blocks with an invalid new Merkle root", async () => {
+          await createExchange(false);
+          const blockVersion = blockVersionGenerator++;
+          await exchangeTestUtil.blockVerifier.registerCircuit(
+            BlockType.RING_SETTLEMENT,
+            true,
+            2,
+            blockVersion,
+            new Array(18).fill(1)
+          );
+          {
+            let timestamp = (await web3.eth.getBlock(
+              await web3.eth.getBlockNumber()
+            )).timestamp;
+            timestamp -=
+              exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
+            const bs = new Bitstream();
+            bs.addNumber(0, 1);
+            bs.addNumber(exchangeId, 4);
+            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
+            bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
+            bs.addNumber(timestamp, 4);
+            await expectThrow(
+              exchange.commitBlock(
+                BlockType.RING_SETTLEMENT,
+                2,
+                blockVersion,
+                web3.utils.hexToBytes(bs.getData()),
+                constants.emptyBytes,
+                { from: exchangeTestUtil.exchangeOperator }
+              ),
+              "INVALID_MERKLE_ROOT"
+            );
+          }
+        });
+
         it("should not be able to commit settlement blocks with an invalid timestamp", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
