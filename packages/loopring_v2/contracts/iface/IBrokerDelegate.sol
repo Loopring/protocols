@@ -30,7 +30,10 @@ interface IBrokerDelegate {
    * Loopring's RingSubmitter calls this and then performs a transfer on the
    * broker's token balance. If the tokens for the given owner address are
    * held in a different contract, they must be moved into the broker's possesion
-   * in the execution of this function.
+   * in the execution of this function. A transfer will not occur if the requestedRecipient
+   * is equal to this broker address, you must handle this case internally if applicable.
+   * Furthermore, it is highly encouraged that one requires that the msg.sender is the
+   * Loopring RingSubmitter contract to ensure the security of funds held in this contract.
    *
    * owner - the owner of the order who's attributed funds are being requested
    * receivedToken - The token that was received (tokenB)

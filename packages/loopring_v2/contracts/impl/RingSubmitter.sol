@@ -561,11 +561,16 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 transfer.isFee
             );
 
-            require(transfer.token.safeTransferFrom(
-                transfer.broker, 
-                transfer.recipient, 
-                transfer.amount
-            ), TRANSFER_FAILURE);
+            // If the recipient is the broker, do not transfer the tokens
+            // The broker should check for this and internally handle it
+            // if applicable
+            if (transfer.recipient != transfer.broker) {
+                require(transfer.token.safeTransferFrom(
+                    transfer.broker, 
+                    transfer.recipient, 
+                    transfer.amount
+                ), TRANSFER_FAILURE);
+            }
         }
     }
 

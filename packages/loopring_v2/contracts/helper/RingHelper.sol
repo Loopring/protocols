@@ -454,7 +454,7 @@ library RingHelper {
         internal
         pure
     {
-        if (amount > 0 && to != broker) {
+        if (amount > 0) {
             ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(
                 orderIndex,
                 owner,
