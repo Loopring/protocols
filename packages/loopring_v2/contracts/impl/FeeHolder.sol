@@ -15,7 +15,7 @@
   limitations under the License.
 */
 
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IFeeHolder.sol";
 import "../iface/ITradeDelegate.sol";

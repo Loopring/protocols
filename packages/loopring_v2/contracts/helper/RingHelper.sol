@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IRingSubmitter.sol";
 import "../impl/Data.sol";
@@ -361,30 +361,64 @@ library RingHelper {
         }
 
         // Transfers
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.feeToken,
-            p.order.owner,
-            address(ctx.feeHolder),
-            amountFeeToFeeHolder
-        );
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            address(ctx.feeHolder),
-            amountSToFeeHolder
-        );
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            prevP.order.tokenRecipient,
-            amountSToBuyer
-        );
+        if (p.order.broker == address(0x0)) {
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.feeToken,
+                p.order.owner,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder
+            );
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                address(ctx.feeHolder),
+                amountSToFeeHolder
+            );
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                prevP.order.tokenRecipient,
+                amountSToBuyer
+            );
+        } else {
+            addBrokerTokenTransfer(
+                ctx,
+                p.order.feeToken,
+                p.order.owner,
+                p.order.broker,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder,
+                true,
+                p.orderIndex
+            );
+            addBrokerTokenTransfer(
+                ctx,
+                p.order.tokenS,
+                p.order.owner,
+                p.order.broker,
+                address(ctx.feeHolder),
+                amountSToFeeHolder,
+                true,
+                p.orderIndex
+            );
+            addBrokerTokenTransfer(
+                ctx,
+                p.order.tokenS,
+                p.order.owner,
+                p.order.broker,
+                prevP.order.tokenRecipient,
+                amountSToBuyer,
+                false,
+                p.orderIndex
+            );
+        }
+        
 
         // NOTICE: Dolomite does not take the margin ever. We still track it for the order's history.
         // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
@@ -396,6 +430,32 @@ library RingHelper {
         //     feeRecipient,
         //     p.splitS
         // );
+    }
+
+    function addBrokerTokenTransfer(
+        Data.Context memory ctx,
+        address token, 
+        address owner, 
+        address broker,
+        address to,
+        uint amount,
+        bool isForFee,
+        uint orderIndex
+        )
+        internal
+        pure
+    {
+        if (amount > 0 && to != broker) {
+            ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(
+                orderIndex,
+                owner,
+                broker,
+                isForFee,
+                token,
+                to,
+                amount);
+            ctx.numBrokerTransfers++;
+        }
     }
 
     function addTokenTransfer(

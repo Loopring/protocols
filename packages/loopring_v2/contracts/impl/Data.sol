@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBurnRateTable.sol";
@@ -36,6 +36,16 @@ library Data {
         uint numSpendables;
     }
 
+    struct BrokerTransfer {
+        uint orderIndex;
+        address owner;
+        address broker;
+        bool isFee;
+        address token;
+        address recipient;
+        uint amount;
+    }
+
     struct Context {
         address lrcTokenAddress;
         ITradeDelegate  delegate;
@@ -52,6 +62,8 @@ library Data {
         uint feePtr;
         uint transferData;
         uint transferPtr;
+        BrokerTransfer[] brokerTransfers;
+        uint numBrokerTransfers;
     }
 
     struct Mining {
@@ -124,6 +136,7 @@ library Data {
     struct Participation {
         // required fields
         Order order;
+        uint orderIndex;
 
         // computed fields
         uint splitS;
