@@ -340,20 +340,19 @@ library RingHelper {
         pure
         returns (uint)
     {
-        uint buyerFeeAmountAfterRebateB = prevP.feeAmountB.sub(prevP.rebateB);
-
         // If the buyer needs to pay fees in tokenB, the seller needs
         // to send the tokenS amount to the fee holder contract
         uint amountSToBuyer = p.fillAmountS
             .sub(p.feeAmountS)
-            .sub(buyerFeeAmountAfterRebateB);
+            .sub(prevP.feeAmountB.sub(prevP.rebateB)); // buyer fee amount after rebate
 
         uint amountSToFeeHolder = p.feeAmountS
             .sub(p.rebateS)
-            .add(buyerFeeAmountAfterRebateB);
+            .add(prevP.feeAmountB.sub(prevP.rebateB)); // buyer fee amount after rebate
 
         uint amountFeeToFeeHolder = p.feeAmount
             .sub(p.rebateFee);
+
 
         if (p.order.tokenS == p.order.feeToken) {
             amountSToFeeHolder = amountSToFeeHolder.add(amountFeeToFeeHolder);
@@ -387,6 +386,12 @@ library RingHelper {
                 amountSToBuyer
             );
         } else {
+            
+            // Calculates amount received from other participant
+            uint amountBFromSeller = prevP.fillAmountS
+                .sub(prevP.feeAmountS)
+                .sub(p.feeAmountB.sub(p.rebateB)); // seller fee amount after rebate
+
             addBrokerTokenTransfer(
                 ctx,
                 p.order.feeToken,
@@ -395,6 +400,7 @@ library RingHelper {
                 address(ctx.feeHolder),
                 amountFeeToFeeHolder,
                 true,
+                0,
                 p.orderIndex
             );
             addBrokerTokenTransfer(
@@ -405,6 +411,7 @@ library RingHelper {
                 address(ctx.feeHolder),
                 amountSToFeeHolder,
                 true,
+                0,
                 p.orderIndex
             );
             addBrokerTokenTransfer(
@@ -415,6 +422,7 @@ library RingHelper {
                 prevP.order.tokenRecipient,
                 amountSToBuyer,
                 false,
+                amountBFromSeller,
                 p.orderIndex
             );
         }
@@ -440,6 +448,7 @@ library RingHelper {
         address to,
         uint amount,
         bool isForFee,
+        uint receivedAmount,
         uint orderIndex
         )
         internal
@@ -451,6 +460,7 @@ library RingHelper {
                 owner,
                 broker,
                 isForFee,
+                receivedAmount,
                 token,
                 to,
                 amount);

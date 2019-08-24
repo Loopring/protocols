@@ -551,8 +551,12 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
           
             IBrokerDelegate(transfer.broker).brokerRequestAllowance(
                 transfer.owner,
+                order.tokenB,
+                transfer.receivedAmount,
+                order.tokenRecipient,
                 transfer.token,
                 transfer.amount,
+                transfer.recipient,
                 order.transferDataS,
                 transfer.isFee
             );

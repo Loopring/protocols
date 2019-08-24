@@ -41,6 +41,7 @@ library Data {
         address owner;
         address broker;
         bool isFee;
+        uint receivedAmount;
         address token;
         address recipient;
         uint amount;

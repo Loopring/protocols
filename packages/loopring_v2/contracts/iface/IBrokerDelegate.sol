@@ -31,11 +31,25 @@ interface IBrokerDelegate {
    * broker's token balance. If the tokens for the given owner address are
    * held in a different contract, they must be moved into the broker's possesion
    * in the execution of this function.
+   *
+   * owner - the owner of the order who's attributed funds are being requested
+   * receivedToken - The token that was received (tokenB)
+   * receivedAmount - The amount of the token that was received (amountB)
+   * orderTokenRecipient - the tokenRecipient of the order (this is who received the receivedAmount)
+   * requestedToken - The token who's approval is being requested (tokenS/feeToken)
+   * requestedAmount - The requested amount to be transferred
+   * requestedRecipient - The recipient of the requested funds
+   * extraOrderData - The transferDataS field of the order
+   * isFee - if this is for a fee. If this is true, receivedToken & receivedAmount will be 0 and 0x0
    */
   function brokerRequestAllowance(
     address owner, 
-    address token, 
-    uint amount, 
+    address receivedToken,
+    uint receivedAmount,
+    address orderTokenRecipient,
+    address requestedToken, 
+    uint requestedAmount, 
+    address requestedRecipient,
     bytes calldata extraOrderData,
     bool isFee
   ) external;

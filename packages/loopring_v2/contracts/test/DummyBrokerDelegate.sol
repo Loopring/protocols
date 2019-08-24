@@ -22,14 +22,18 @@ contract DummyBrokerDelegate is IBrokerDelegate {
 
   function brokerRequestAllowance(
     address owner, 
-    address tokenAddress, 
-    uint amount, 
+    address receivedToken,
+    uint receivedAmount,
+    address orderTokenRecipient,
+    address requestedToken, 
+    uint requestedAmount, 
+    address requestedRecipient,
     bytes memory extraOrderData,
     bool isFee
   ) public {
-    address payable payableTokenAddress = address(uint160(tokenAddress));
+    address payable payableTokenAddress = address(uint160(requestedToken));
     ERC20 token = ERC20(payableTokenAddress);
-    token.approve(msg.sender, amount);
+    token.approve(msg.sender, requestedAmount);
   }
 
   function brokerBalanceOf(address owner, address tokenAddress) public view returns (uint) {
