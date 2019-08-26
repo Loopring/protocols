@@ -226,6 +226,7 @@ export class Exchange {
     let to, value, data: string;
     try {
       this.checkIfInitialized();
+      this.dexConfigurations = await RestApiServer.getDexConfigurations();
 
       const token = config.getTokenBySymbol(symbol);
       value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
@@ -241,7 +242,7 @@ export class Exchange {
 
         const transaction = new Transaction({
           to: to,
-          value: this.dexConfigurations.deposit_fee_eth,
+          value: this.dexConfigurations["deposit_fee_eth"],
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
