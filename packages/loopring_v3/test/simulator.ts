@@ -15,7 +15,8 @@ import {
   RingSettlementSimulatorReport,
   SimulatorReport,
   TradeHistory,
-  WithdrawalRequest
+  WithdrawalRequest,
+  InternalTransferRequest
 } from "./types";
 
 interface SettlementValues {
@@ -262,6 +263,142 @@ export class Simulator {
     operator.balances[feeTokenID].balance = operator.balances[
       feeTokenID
     ].balance.add(fee);
+
+    return newExchangeState;
+  }
+
+  public internalTransfer(
+    exchangeState: ExchangeState,
+    operatorAccountID: number,
+    accountFromID: number,
+    accountToID: number,
+    tokenID: number,
+    amountWithdrawn: BN,
+    feeTokenID: number,
+    fee: BN
+  ) {
+    const newExchangeState = this.copyExchangeState(exchangeState);
+
+    const accountFrom = newExchangeState.accounts[accountFromID];
+    const accountTo = newExchangeState.accounts[accountToID];
+
+    // Update balanceF
+    accountFrom.balances[feeTokenID].balance = accountFrom.balances[
+      feeTokenID
+    ].balance.sub(fee);
+
+    // Update balance from
+    accountFrom.balances[tokenID].balance = accountFrom.balances[
+      tokenID
+    ].balance.sub(amountWithdrawn);
+    accountFrom.nonce++;
+
+    // Update balance to
+    accountTo.balances[tokenID].balance = accountTo.balances[
+      tokenID
+    ].balance.add(amountWithdrawn);
+
+    // Update operator
+    const operator = newExchangeState.accounts[operatorAccountID];
+    operator.balances[feeTokenID].balance = operator.balances[
+      feeTokenID
+    ].balance.add(fee);
+
+    return newExchangeState;
+  }
+
+  public internalTransferFromInputData(
+    transfer: InternalTransferRequest,
+    exchangeState: ExchangeState,
+    operatorAccountID: number
+  ) {
+    const fee = roundToFloatValue(transfer.fee, constants.Float16Encoding);
+
+    const account = exchangeState.accounts[transfer.accountFromID];
+    let balance = account.balances[transfer.transTokenID].balance;
+    if (transfer.transTokenID === transfer.feeTokenID) {
+      balance = balance.sub(fee);
+    }
+    const amountToTrans = balance.lt(transfer.amount)
+      ? balance
+      : transfer.amount;
+    const amountTrans = roundToFloatValue(
+      amountToTrans,
+      constants.Float28Encoding
+    );
+
+    // Update the Merkle tree with the input data
+    const newExchangeState = this.internalTransfer(
+      exchangeState,
+      operatorAccountID,
+      transfer.accountFromID,
+      transfer.accountToID,
+      transfer.transTokenID,
+      amountTrans,
+      transfer.feeTokenID,
+      fee
+    );
+
+    const simulatorReport: SimulatorReport = {
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState
+    };
+    return simulatorReport;
+  }
+
+  public internalTransferFromOnchainData(
+    bs: Bitstream,
+    blockSize: number,
+    withdrawalIndex: number,
+    exchangeState: ExchangeState
+  ) {
+    let offset = 0;
+
+    // General data
+    const exchangeID = bs.extractUint32(offset);
+    offset += 4 + 32 + 32 + 32; // skip before & after merkle, and lable.
+
+    const operatorAccountID = bs.extractUint24(offset);
+    offset += 3;
+    const onchainDataOffset = offset;
+
+    // Jump to the specified withdrawal
+    const onchainDataSize = 14;
+    offset += withdrawalIndex * onchainDataSize;
+
+    // Extract onchain data
+    const accountFromID = bs.extractUint24(offset);
+    offset += 3;
+
+    const accountToID = bs.extractUint24(offset);
+    offset += 3;
+
+    const token = bs.extractUint8(offset);
+    offset += 1;
+    const fAmountTrans = bs.extractUint32(offset);
+    offset += 4;
+
+    // Extract offchain data
+    const feeToken = bs.extractUint8(offset);
+    offset += 1;
+    const fFee = bs.extractUint16(offset);
+    offset += 2;
+
+    // Decode the float values
+    const fee = fromFloat(fFee, constants.Float16Encoding);
+    const amountTrans = fromFloat(fAmountTrans, constants.Float28Encoding);
+
+    // Update the Merkle tree with the onchain data
+    const newExchangeState = this.internalTransfer(
+      exchangeState,
+      operatorAccountID,
+      accountFromID,
+      accountToID,
+      token,
+      amountTrans,
+      feeToken,
+      fee
+    );
 
     return newExchangeState;
   }

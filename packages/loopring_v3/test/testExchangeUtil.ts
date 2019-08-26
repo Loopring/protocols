@@ -2161,21 +2161,6 @@ export class ExchangeTestUtil {
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
-      for (const trans of block.internalTransferres) {
-        bs.addNumber(trans.transTokenID, 1);
-        bs.addNumber(trans.feeTokenID, 1);
-        bs.addNumber(
-          trans.accountFromID * 2 ** 28 +
-            toFloat(new BN(trans.amount), constants.Float28Encoding),
-          6
-        );
-        bs.addNumber(
-          trans.accountToID * 2 ** 28 +
-            toFloat(new BN(trans.fee), constants.Float16Encoding),
-          6
-        );
-      }
-
       bs.addBN(new BN(labelHash, 10), 32);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
@@ -2195,16 +2180,15 @@ export class ExchangeTestUtil {
         }
       }
 
-      /*TODO: commit to contract.
-
       // Validate state change
-      // this.validateInternalTranferres(
-      //     withdrawalBlock,
-      //     bs,
-      //     stateBefore,
-      //     stateAfter
-      // );
+      this.validateInternalTranferres(
+        internalTransferBlock,
+        bs,
+        stateBefore,
+        stateAfter
+      );
 
+      /*TODO: commit to contract.
       // Commit the block
         // await this.commitBlock(
         // operator,
@@ -3541,6 +3525,61 @@ export class ExchangeTestUtil {
           withdrawal.tokenID,
           accountBefore.balances[withdrawal.tokenID].balance,
           accountAfter.balances[withdrawal.tokenID].balance
+        );
+      }
+
+      latestState = simulatorReport.exchangeStateAfter;
+    }
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
+    logInfo("----------------------------------------------------");
+  }
+
+  public validateInternalTranferres(
+    internalTransferBlock: InternalTransferBlock,
+    bs: Bitstream,
+    stateBefore: ExchangeState,
+    stateAfter: ExchangeState
+  ) {
+    logInfo("----------------------------------------------------");
+    const operatorAccountID = internalTransferBlock.operatorAccountID;
+    let latestState = stateBefore;
+    for (const [
+      transIndex,
+      transfer
+    ] of internalTransferBlock.transferres.entries()) {
+      const simulator = new Simulator();
+      const simulatorReport = simulator.internalTransferFromInputData(
+        transfer,
+        latestState,
+        operatorAccountID
+      );
+
+      if (internalTransferBlock.onchainDataAvailability) {
+        // Verify onchain data can be used to update the Merkle tree correctly
+        const reconstructedState = simulator.internalTransferFromOnchainData(
+          bs,
+          internalTransferBlock.transferres.length,
+          transIndex,
+          latestState
+        );
+        this.compareStates(
+          simulatorReport.exchangeStateAfter,
+          reconstructedState
+        );
+      }
+
+      const accountBefore = latestState.accounts[transfer.accountFromID];
+      const accountAfter =
+        simulatorReport.exchangeStateAfter.accounts[transfer.accountFromID];
+
+      if (transfer.transTokenID > 0) {
+        this.prettyPrintBalanceChange(
+          transfer.accountFromID,
+          transfer.transTokenID,
+          accountBefore.balances[transfer.transTokenID].balance,
+          accountAfter.balances[transfer.transTokenID].balance
         );
       }
 
