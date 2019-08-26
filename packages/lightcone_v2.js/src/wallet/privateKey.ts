@@ -149,16 +149,16 @@ export class PrivateKey {
         amount,
         gasPrice
       );
-      const signedTx = this.account.signEthereumTx(rawTx.raw);
-      const sendTransactionResponse = await this.account.sendTransaction(
-        this.ethNode,
-        signedTx
-      );
-      console.log(
-        "depositTo sendTransactionResponse:",
-        sendTransactionResponse
-      );
-      return sendTransactionResponse;
+      return this.account.signEthereumTx(rawTx.raw);
+      // const sendTransactionResponse = await this.account.sendTransaction(
+      //   this.ethNode,
+      //   signedTx
+      // );
+      // console.log(
+      //   "depositTo sendTransactionResponse:",
+      //   sendTransactionResponse
+      // );
+      // return sendTransactionResponse;
     } catch (e) {
       throw e;
     }
