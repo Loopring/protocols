@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IRingSubmitter.sol";
 import "../impl/Data.sol";
@@ -340,20 +340,19 @@ library RingHelper {
         pure
         returns (uint)
     {
-        uint buyerFeeAmountAfterRebateB = prevP.feeAmountB.sub(prevP.rebateB);
-
         // If the buyer needs to pay fees in tokenB, the seller needs
         // to send the tokenS amount to the fee holder contract
         uint amountSToBuyer = p.fillAmountS
             .sub(p.feeAmountS)
-            .sub(buyerFeeAmountAfterRebateB);
+            .sub(prevP.feeAmountB.sub(prevP.rebateB)); // buyer fee amount after rebate
 
         uint amountSToFeeHolder = p.feeAmountS
             .sub(p.rebateS)
-            .add(buyerFeeAmountAfterRebateB);
+            .add(prevP.feeAmountB.sub(prevP.rebateB)); // buyer fee amount after rebate
 
         uint amountFeeToFeeHolder = p.feeAmount
             .sub(p.rebateFee);
+
 
         if (p.order.tokenS == p.order.feeToken) {
             amountSToFeeHolder = amountSToFeeHolder.add(amountFeeToFeeHolder);
@@ -361,30 +360,73 @@ library RingHelper {
         }
 
         // Transfers
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.feeToken,
-            p.order.owner,
-            address(ctx.feeHolder),
-            amountFeeToFeeHolder
-        );
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            address(ctx.feeHolder),
-            amountSToFeeHolder
-        );
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            prevP.order.tokenRecipient,
-            amountSToBuyer
-        );
+        if (p.order.broker == address(0x0)) {
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.feeToken,
+                p.order.owner,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder
+            );
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                address(ctx.feeHolder),
+                amountSToFeeHolder
+            );
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                prevP.order.tokenRecipient,
+                amountSToBuyer
+            );
+        } else {
+            
+            // Calculates amount received from other participant
+            uint amountBFromSeller = prevP.fillAmountS
+                .sub(prevP.feeAmountS)
+                .sub(p.feeAmountB.sub(p.rebateB)); // seller fee amount after rebate
+
+            addBrokerTokenTransfer(
+                ctx,
+                p.order.feeToken,
+                p.order.owner,
+                p.order.broker,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder,
+                true,
+                0,
+                p.orderIndex
+            );
+            addBrokerTokenTransfer(
+                ctx,
+                p.order.tokenS,
+                p.order.owner,
+                p.order.broker,
+                address(ctx.feeHolder),
+                amountSToFeeHolder,
+                true,
+                0,
+                p.orderIndex
+            );
+            addBrokerTokenTransfer(
+                ctx,
+                p.order.tokenS,
+                p.order.owner,
+                p.order.broker,
+                prevP.order.tokenRecipient,
+                amountSToBuyer,
+                false,
+                amountBFromSeller,
+                p.orderIndex
+            );
+        }
+        
 
         // NOTICE: Dolomite does not take the margin ever. We still track it for the order's history.
         // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
@@ -396,6 +438,34 @@ library RingHelper {
         //     feeRecipient,
         //     p.splitS
         // );
+    }
+
+    function addBrokerTokenTransfer(
+        Data.Context memory ctx,
+        address token, 
+        address owner, 
+        address broker,
+        address to,
+        uint amount,
+        bool isForFee,
+        uint receivedAmount,
+        uint orderIndex
+        )
+        internal
+        pure
+    {
+        if (amount > 0) {
+            ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(
+                orderIndex,
+                owner,
+                broker,
+                isForFee,
+                receivedAmount,
+                token,
+                to,
+                amount);
+            ctx.numBrokerTransfers++;
+        }
     }
 
     function addTokenTransfer(

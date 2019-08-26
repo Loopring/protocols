@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
@@ -167,10 +167,6 @@ library ParticipationHelper {
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
-        if (p.order.brokerInterceptor != address(0x0)) {
-            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountS);
-            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountFee);
-        }
     }
 
     function revertOrderState(

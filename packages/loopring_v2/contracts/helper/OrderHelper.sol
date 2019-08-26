@@ -14,13 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../impl/Data.sol";
 import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/MultihashUtil.sol";
-
+import "../iface/IBrokerDelegate.sol";
 
 /// @title OrderHelper
 /// @author Daniel Wang - <daniel@loopring.org>.
@@ -164,25 +164,6 @@ library OrderHelper {
         order.hash = hash;
     }
 
-    function updateBrokerAndInterceptor(
-        Data.Order memory order,
-        Data.Context memory ctx
-        )
-        internal
-        view
-    {
-        if (order.broker == address(0x0)) {
-            order.broker = order.owner;
-        } else {
-            bool registered;
-            (registered, /*order.brokerInterceptor*/) = ctx.orderBrokerRegistry.getBroker(
-                order.owner,
-                order.broker
-            );
-            order.valid = order.valid && registered;
-        }
-    }
-
     function check(
         Data.Order memory order,
         Data.Context memory ctx
@@ -194,7 +175,7 @@ library OrderHelper {
         // we don't have to check all of the infos and the signature again
         if(order.filledAmountS == 0) {
             validateAllInfo(order, ctx);
-            checkBrokerSignature(order, ctx);
+            checkOwnerSignature(order, ctx);
         } else {
             validateUnstableInfo(order, ctx);
         }
@@ -275,7 +256,7 @@ library OrderHelper {
         return bytes32ToAddress(order.trancheB) == order.tokenB;
     }
 
-    function checkBrokerSignature(
+    function checkOwnerSignature(
         Data.Order memory order,
         Data.Context memory ctx
         )
@@ -284,7 +265,7 @@ library OrderHelper {
     {
         if (order.sig.length == 0) {
             bool registered = ctx.orderRegistry.isOrderHashRegistered(
-                order.broker,
+                order.owner,
                 order.hash
             );
 
@@ -293,7 +274,7 @@ library OrderHelper {
             }
         } else {
             order.valid = order.valid && MultihashUtil.verifySignature(
-                order.broker,
+                order.owner,
                 order.hash,
                 order.sig
             );
@@ -337,6 +318,7 @@ library OrderHelper {
         returns (uint)
     {
         return getSpendable(
+            order,
             ctx.delegate,
             order.tokenS,
             order.owner,
@@ -353,6 +335,7 @@ library OrderHelper {
         returns (uint)
     {
         return getSpendable(
+            order,
             ctx.delegate,
             order.feeToken,
             order.owner,
@@ -392,6 +375,7 @@ library OrderHelper {
 
     /// @return Amount of ERC20 token that can be spent by this contract.
     function getERC20Spendable(
+        Data.Order memory order,
         ITradeDelegate delegate,
         address tokenAddress,
         address owner
@@ -400,18 +384,24 @@ library OrderHelper {
         view
         returns (uint spendable)
     {
-        ERC20 token = ERC20(tokenAddress);
-        spendable = token.allowance(
-            owner,
-            address(delegate)
-        );
-        if (spendable != 0) {
-            uint balance = token.balanceOf(owner);
-            spendable = (balance < spendable) ? balance : spendable;
+        if (order.broker == address(0x0)) {
+            ERC20 token = ERC20(tokenAddress);
+            spendable = token.allowance(
+                owner,
+                address(delegate)
+            );
+            if (spendable != 0) {
+                uint balance = token.balanceOf(owner);
+                spendable = (balance < spendable) ? balance : spendable;
+            }
+        } else {
+            IBrokerDelegate broker = IBrokerDelegate(order.broker);
+            spendable = broker.brokerBalanceOf(owner, tokenAddress);
         }
     }
 
     function getSpendable(
+        Data.Order memory order,
         ITradeDelegate delegate,
         address tokenAddress,
         address owner,
@@ -423,6 +413,7 @@ library OrderHelper {
     {
         if (!tokenSpendable.initialized) {
             tokenSpendable.amount = getERC20Spendable(
+                order,
                 delegate,
                 tokenAddress,
                 owner
