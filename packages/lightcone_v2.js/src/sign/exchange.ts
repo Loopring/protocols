@@ -241,7 +241,7 @@ export class Exchange {
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
 
         const transaction = new Transaction({
-          to: to,
+          to: this.exchangeAddr,
           value: this.dexConfigurations["deposit_fee_eth"],
           data: data,
           chainId: config.getChainId(),
@@ -283,7 +283,7 @@ export class Exchange {
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
 
         const transaction = new Transaction({
-          to: to,
+          to: this.exchangeAddr,
           value: this.dexConfigurations.onchain_withdrawal_fee_eth,
           data: data,
           chainId: config.getChainId(),
