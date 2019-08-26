@@ -138,7 +138,8 @@ export class Exchange {
   // https://medium.com/@giovannipinto/async-error-handling-forced-to-do-it-right-2817cf9e8b43
   public async updateAccount(wallet: WalletAccount, gasPrice: number) {
     try {
-      this.checkIfInitialized();
+      // TODO: Refactor
+      // this.checkIfInitialized();
 
       // TODO: need to check if gasPrice is a reasonable value
       if (this.accounts.get(wallet) == null) {
@@ -193,7 +194,8 @@ export class Exchange {
     gasPrice: number
   ) {
     try {
-      this.checkIfInitialized();
+      // TODO: Refactor
+      // this.checkIfInitialized();
 
       const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
         "createOrUpdateAccount",
@@ -225,7 +227,9 @@ export class Exchange {
   ) {
     let to, value, data: string;
     try {
-      this.checkIfInitialized();
+      // TODO: Refactor
+      // this.checkIfInitialized();
+      this.dexConfigurations = await RestApiServer.getDexConfigurations();
 
       const token = config.getTokenBySymbol(symbol);
       value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
@@ -237,11 +241,13 @@ export class Exchange {
           amount: value
         });
 
-        const nonce = await ethereum.wallet.getNonce(this.getAddress());
+        // TODO: How to connect to an ETH node today?
+        // const nonce = await ethereum.wallet.getNonce(this.getAddress());
+        const nonce = "1";
 
         const transaction = new Transaction({
           to: to,
-          value: this.dexConfigurations.deposit_fee_eth,
+          value: this.dexConfigurations["deposit_fee_eth"],
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
@@ -264,7 +270,8 @@ export class Exchange {
   ) {
     let to, value, data: string;
     try {
-      this.checkIfInitialized();
+      // TODO: Refactor
+      // this.checkIfInitialized();
 
       const token = config.getTokenBySymbol(symbol);
       value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
