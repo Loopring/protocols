@@ -43,9 +43,9 @@ export class RestApiServer {
       const dexConfiguration = <DexConfiguration>response.data;
 
       // Mock data
-      dexConfiguration.account_update_fee_eth = "0x10000";
-      dexConfiguration.deposit_fee_eth = "0x10000";
-      dexConfiguration.onchain_withdrawal_fee_eth = "0x10000";
+      dexConfiguration.account_update_fee_eth = "0xDE0B6B3A7640000";
+      dexConfiguration.deposit_fee_eth = "0xDE0B6B3A7640000";
+      dexConfiguration.onchain_withdrawal_fee_eth = "0xDE0B6B3A7640000";
 
       return dexConfiguration;
     } catch (error) {
