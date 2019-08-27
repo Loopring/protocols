@@ -171,18 +171,20 @@ export class Exchange {
       const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
         "updateAccountAndDeposit",
         {
-          pubKeyX: fm.toBN(publicX),
-          pubKeyY: fm.toBN(publicY),
+          pubKeyX: fm.toHex(fm.toBN(publicX)),
+          pubKeyY: fm.toHex(fm.toBN(publicY)),
           tokenAddress: address,
           amount: value
         }
       );
+
+      const nonce = await ethereum.wallet.getNonce(this.getAddress());
       return new Transaction({
         to: this.exchangeAddr,
-        value: this.dexConfigurations.account_update_fee_eth,
+        value: this.dexConfigurations["deposit_fee_eth"],
         data: data,
         chainId: config.getChainId(),
-        nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+        nonce: fm.toHex(nonce),
         gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
         gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
       });
