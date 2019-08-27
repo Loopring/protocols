@@ -136,6 +136,22 @@ export class PrivateKey {
   }
 
   /**
+   * create Or Update Account in DEX
+   * @param gasPrice in gwei
+   */
+  public async createOrUpdateAccount(gasPrice: number) {
+    try {
+      const rawTx = await exchange.createOrUpdateAccount(
+        this.account,
+        gasPrice
+      );
+      return this.account.signEthereumTx(rawTx.raw);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /**
    * Deposit to Dex
    * @param symbol string symbol of token to deposit
    * @param amount number amount to deposit, e.g. 1.5
@@ -150,15 +166,6 @@ export class PrivateKey {
         gasPrice
       );
       return this.account.signEthereumTx(rawTx.raw);
-      // const sendTransactionResponse = await this.account.sendTransaction(
-      //   this.ethNode,
-      //   signedTx
-      // );
-      // console.log(
-      //   "depositTo sendTransactionResponse:",
-      //   sendTransactionResponse
-      // );
-      // return sendTransactionResponse;
     } catch (e) {
       throw e;
     }
