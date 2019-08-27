@@ -1,14 +1,5 @@
 import BN = require("bn.js");
 import { grpcClientService, RestApiServer } from "..";
-import { generateKeyPair, sign } from "../lib/sign/eddsa";
-import { ethereum } from "../lib/wallet";
-import * as fm from "../lib/wallet/common/formatter";
-import config from "../lib/wallet/config";
-import { updateHost } from "../lib/wallet/ethereum/utils";
-import Eth from "../lib/wallet/ethereum/eth";
-import Transaction from "../lib/wallet/ethereum/transaction";
-import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
-import { DexAccount, OrderInfo, Signature } from "../model/types";
 import { Order, TokenAmounts } from "../grpc/proto_gen/data_order_pb";
 import {
   AccountID,
@@ -20,10 +11,15 @@ import {
   OrderID,
   TokenID
 } from "../grpc/proto_gen/data_types_pb";
-import {
-  Account,
-  SimpleOrderCancellationReq
-} from "../grpc/proto_gen/service_dex_pb";
+import { SimpleOrderCancellationReq } from "../grpc/proto_gen/service_dex_pb";
+import { generateKeyPair, sign } from "../lib/sign/eddsa";
+import { ethereum } from "../lib/wallet";
+import * as fm from "../lib/wallet/common/formatter";
+import config from "../lib/wallet/config";
+import Transaction from "../lib/wallet/ethereum/transaction";
+import { updateHost } from "../lib/wallet/ethereum/utils";
+import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
+import { DexAccount, OrderInfo, Signature } from "../model/types";
 
 const MOCK_EXCHANGE_GAS_LIMIT = "0x5446a0";
 
@@ -132,74 +128,53 @@ export class Exchange {
     return [].concat.apply([], l);
   };
 
-  // JavaScript: Promises and Why Async/Await Wins the Battle
-  // https://hackernoon.com/javascript-promises-and-why-async-await-wins-the-battle-4fc9d15d509f
-  // ES7 async error handling: do it right or die
-  // https://medium.com/@giovannipinto/async-error-handling-forced-to-do-it-right-2817cf9e8b43
-  public async updateAccount(wallet: WalletAccount, gasPrice: number) {
+  public async createOrUpdateAccount(wallet: WalletAccount, gasPrice: number) {
     try {
       this.checkIfInitialized();
 
-      // TODO: need to check if gasPrice is a reasonable value
-      if (this.accounts.get(wallet) == null) {
-        const keyPair = generateKeyPair();
-        this.currentWalletAccount = wallet;
-        let rawTx: Transaction = await this.createOrUpdateAccount(
-          keyPair.publicKeyX,
-          keyPair.publicKeyY,
-          gasPrice
-        );
-        const signedTx = wallet.signEthereumTx(rawTx.raw);
-
-        const sendTransactionResponse = await wallet.sendTransaction(
-          new Eth(this.contractURL),
-          signedTx
-        );
-        console.log(
-          "updateAccount method: sendTransactionResponse: ",
-          sendTransactionResponse
-        );
-
-        // TODO: Notify Relay
-        /*
-        .then(() => {
-          // TODO: config
-          grpcClientService
-            .getAccount(wallet.getAddress())
-            .then((account: Account) => {
-              console.log(account)
-              const dexAccount = new DexAccount();
-              dexAccount.nonce = 0;
-              dexAccount.owner = wallet.getAddress();
-              dexAccount.accountID = account.getAccountId().getValue();
-              dexAccount.publicKeyX = keyPair.publicKeyX;
-              dexAccount.publicKeyY = keyPair.publicKeyY;
-              dexAccount.secretKey = keyPair.secretKey;
-              this.accounts.set(wallet, dexAccount);
-              this.currentDexAccount = dexAccount;
-            });
-        });
-        */
-      }
+      const keyPair = generateKeyPair();
+      this.currentWalletAccount = wallet;
+      return await this.createAccountAndDeposit(
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        "",
+        0,
+        gasPrice
+      );
     } catch (err) {
       console.error("Failed in method updateAccount. Error: ", err);
       throw err;
     }
   }
 
-  private async createOrUpdateAccount(
+  private async createAccountAndDeposit(
     publicX: string,
     publicY: string,
+    symbol: string,
+    amount: number,
     gasPrice: number
   ) {
     try {
       this.checkIfInitialized();
 
+      let address, value: string;
+      const token = config.getTokenBySymbol(symbol);
+
+      if (!token) {
+        address = "0x0";
+        value = "0";
+      } else {
+        address = token.address;
+        value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+      }
+
       const data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
-        "createOrUpdateAccount",
+        "updateAccountAndDeposit",
         {
           pubKeyX: fm.toBN(publicX),
-          pubKeyY: fm.toBN(publicY)
+          pubKeyY: fm.toBN(publicY),
+          tokenAddress: address,
+          amount: value
         }
       );
       return new Transaction({
