@@ -99,6 +99,7 @@
     "es6-map": "^0.1.5",
     "es6-promisify": "^5.0.0",
     "escape-string-regexp": "^1.0.5",
+    "eslint-utils": "^1.4.2",
     "estraverse": "^4.2.0",
     "esutils": "^2.0.2",
     "ethereumjs-abi": "^0.6.5",
