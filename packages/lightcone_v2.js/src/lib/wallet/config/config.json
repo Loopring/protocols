@@ -30,12 +30,7 @@
       "name": "Test"
     }
   ],
-  "supportedTokenRInMarkets": [
-    "WETH",
-    "LRC",
-    "USDT",
-    "TUSD"
-  ],
+  "supportedTokenRInMarkets": ["WETH", "LRC", "USDT", "TUSD"],
   "markets": [
     {
       "tokenx": "LRC",
@@ -850,7 +845,7 @@
       "symbol": "LRC",
       "name": "Loopring",
       "digits": 18,
-      "address": "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD",
+      "address": "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615",
       "unit": "LRC",
       "website": "https://loopring.org",
       "allowance": "1000000000000000000000",

@@ -22,14 +22,7 @@ async function isinWhiteList(address) {
 }
 
 function initTokenConfig() {
-  const tokens = [];
-  tokens.push({
-    symbol: "LRC",
-    digits: 18,
-    address: "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615",
-    precision: 6
-  });
-  settings.setTokensConfig(tokens);
+  return config.tokens;
 }
 
 function getChainId() {

@@ -48,7 +48,7 @@ export class Exchange {
     console.log("init exchange");
 
     // TODO: add config back when we can remove localStorage dependency in config
-    // config.initTokenConfig();
+    config.initTokenConfig();
 
     this.contractURL = contractURL;
     updateHost(contractURL);
@@ -160,7 +160,7 @@ export class Exchange {
       let address, value: string;
       const token = config.getTokenBySymbol(symbol);
 
-      if (!token) {
+      if (JSON.stringify(token) === "{}") {
         address = "0x0";
         value = "0";
       } else {
@@ -215,7 +215,7 @@ export class Exchange {
 
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
 
-        const transaction = new Transaction({
+        return new Transaction({
           to: this.exchangeAddr,
           value: this.dexConfigurations["deposit_fee_eth"],
           data: data,
@@ -224,7 +224,6 @@ export class Exchange {
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
           gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
         });
-        return transaction;
       }
     } catch (err) {
       console.error("Failed in method deposit. Error: ", err);
@@ -257,7 +256,7 @@ export class Exchange {
 
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
 
-        const transaction = new Transaction({
+        return new Transaction({
           to: this.exchangeAddr,
           value: this.dexConfigurations.onchain_withdrawal_fee_eth,
           data: data,
@@ -266,7 +265,6 @@ export class Exchange {
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
           gasLimit: fm.toHex(MOCK_EXCHANGE_GAS_LIMIT) // TODO: new gas limit
         });
-        return transaction;
       }
     } catch (err) {
       console.error("Failed in method withdraw. Error: ", err);
@@ -339,11 +337,6 @@ export class Exchange {
         ? order.walletAccountID
         : this.walletAddressID;
 
-    // assert(order.maxFeeBips < 64, 'maxFeeBips >= 64');
-    // assert(order.feeBips < 64, 'feeBips >= 64');
-    // assert(order.rebateBips < 64, 'rebateBips >= 64');
-
-    // Sign the order
     this.signOrder(order);
   }
 
