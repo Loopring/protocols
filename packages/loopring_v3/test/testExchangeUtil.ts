@@ -857,6 +857,7 @@ export class ExchangeTestUtil {
       accountID,
       tokenID,
       amount,
+      0,
       feeTokenID,
       fee,
       label
@@ -942,6 +943,7 @@ export class ExchangeTestUtil {
       accountID,
       tokenID,
       amount,
+      0,
       tokenID,
       new BN(0),
       0,
@@ -969,6 +971,7 @@ export class ExchangeTestUtil {
       accountID,
       tokenID,
       amount,
+      0,
       tokenID,
       new BN(0),
       0
@@ -1052,6 +1055,7 @@ export class ExchangeTestUtil {
     accountID: number,
     tokenID: number,
     amount: BN,
+    isFastWithdraw: number,
     feeTokenID: number,
     fee: BN,
     label: number,
@@ -1062,6 +1066,7 @@ export class ExchangeTestUtil {
       accountID,
       tokenID,
       amount,
+      isFastWithdraw,
       feeTokenID,
       fee,
       label,
@@ -1787,6 +1792,7 @@ export class ExchangeTestUtil {
             accountID: onchain ? 0 : this.dummyAccountId,
             tokenID: 0,
             amount: new BN(0),
+            isFastWithdraw: 0,
             feeTokenID: 1,
             fee: new BN(0),
             label: 0
@@ -1882,6 +1888,7 @@ export class ExchangeTestUtil {
       }
       for (const withdrawal of block.withdrawals) {
         bs.addNumber(withdrawal.tokenID, 1);
+        bs.addNumber(withdrawal.isFastWithdraw, 1);
         bs.addNumber(
           withdrawal.accountID * 2 ** 28 + withdrawal.fAmountWithdrawn,
           6
@@ -1893,6 +1900,7 @@ export class ExchangeTestUtil {
           bs.addNumber(block.operatorAccountID, 3);
           for (const withdrawal of block.withdrawals) {
             bs.addNumber(withdrawal.feeTokenID, 1);
+            bs.addNumber(withdrawal.isFastWithdraw, 1);
             bs.addNumber(
               toFloat(new BN(withdrawal.fee), constants.Float16Encoding),
               2

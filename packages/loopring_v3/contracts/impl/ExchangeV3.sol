@@ -565,6 +565,29 @@ contract ExchangeV3 is IExchangeV3
         state.withdraw(accountID, token, amount);
     }
 
+    function fastWithdraw(
+        address token,
+        uint96 amount
+        )
+        external
+        payable
+        nonReentrant
+    {
+        uint24 accountID = state.getAccountID(msg.sender);
+        state.withdraw(accountID, token, amount, isFastWithdraw);
+    }
+
+    function proceedFastWithdraw(
+        uint startIdx,
+        uint count
+        )
+        external
+        nonReentrant
+        onlyOperator
+    {
+        state.proceedFastWithdraw(startIdx, count);
+    }
+
     function withdrawProtocolFees(
         address token
         )
@@ -705,7 +728,8 @@ contract ExchangeV3 is IExchangeV3
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
-        uint _withdrawalFeeETH
+        uint _withdrawalFeeETH,
+        uint _fastWithdrawalFeeETH
         )
         external
         nonReentrant
@@ -715,7 +739,8 @@ contract ExchangeV3 is IExchangeV3
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
-            _withdrawalFeeETH
+            _withdrawalFeeETH,
+            _fastWithdrawalFeeETH
         );
     }
 
@@ -726,13 +751,15 @@ contract ExchangeV3 is IExchangeV3
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
             uint _depositFeeETH,
-            uint _withdrawalFeeETH
+            uint _withdrawalFeeETH,
+            uint _fastWithdrawalFeeETH
         )
     {
         _accountCreationFeeETH = state.accountCreationFeeETH;
         _accountUpdateFeeETH = state.accountUpdateFeeETH;
         _depositFeeETH = state.depositFeeETH;
         _withdrawalFeeETH = state.withdrawalFeeETH;
+        _fastWithdrawalFeeETH = state.fastWithdrawalFeeETH;
     }
 
     function startOrContinueMaintenanceMode(

@@ -52,7 +52,8 @@ library ExchangeAdmins
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
-        uint            withdrawalFeeETH
+        uint            withdrawalFeeETH,
+        uint            fastWithdrawalFeeETH
     );
 
     function setOperator(
@@ -99,7 +100,8 @@ library ExchangeAdmins
         uint _accountCreationFeeETH,
         uint _accountUpdateFeeETH,
         uint _depositFeeETH,
-        uint _withdrawalFeeETH
+        uint _withdrawalFeeETH,
+        uint _fastWithdrawalFeeETH
         )
         external
     {
@@ -113,13 +115,14 @@ library ExchangeAdmins
         S.accountUpdateFeeETH = _accountUpdateFeeETH;
         S.depositFeeETH = _depositFeeETH;
         S.withdrawalFeeETH = _withdrawalFeeETH;
-
+        S.fastWithdrawalFeeETH = _fastWithdrawalFeeETH;
         emit FeesUpdated(
             S.id,
             _accountCreationFeeETH,
             _accountUpdateFeeETH,
             _depositFeeETH,
-            _withdrawalFeeETH
+            _withdrawalFeeETH,
+            _fastWithdrawalFeeETH
         );
     }
 

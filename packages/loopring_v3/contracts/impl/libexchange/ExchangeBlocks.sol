@@ -399,7 +399,7 @@ library ExchangeBlocks
             if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
                 start += 32 + 32 + 4 + 4;
             }
-            uint length = 7 * blockSize;
+            uint length = 8 * blockSize;
             assembly {
                 withdrawals := add(data, start)
                 mstore(withdrawals, length)

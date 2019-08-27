@@ -140,8 +140,8 @@ library ExchangeData
         // For every withdrawal (there are 'blockSize' withdrawals),
         // stored sequentially after each other:
         //    - Token ID: 1 bytes
-        //    - Account ID: 2,5 bytes
-        //    - Amount: 3,5 bytes
+        //    - IsFastWithdraw: 2, 1 bytes
+        //    - Account ID + Amount: 3, 6 bytes
         bytes  withdrawals;
     }
 
@@ -209,6 +209,7 @@ library ExchangeData
         uint    accountUpdateFeeETH;
         uint    depositFeeETH;
         uint    withdrawalFeeETH;
+        uint    fastWithdrawalFeeETH;
 
         Block[]     blocks;
         Token[]     tokens;

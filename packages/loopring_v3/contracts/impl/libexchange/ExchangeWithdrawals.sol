@@ -246,8 +246,8 @@ library ExchangeWithdrawals
 
         // Get the withdrawal data from storage for the given slot
         uint[] memory slice = new uint[](2);
-        uint slot = (7 * slotIdx) / 32;
-        uint offset = (7 * (slotIdx + 1)) - (slot * 32);
+        uint slot = (8 * slotIdx) / 32;
+        uint offset = (8 * (slotIdx + 1)) - (slot * 32);
         uint sc = 0;
         uint data = 0;
         // Short byte arrays (length <= 31) are stored differently in storage
@@ -277,8 +277,12 @@ library ExchangeWithdrawals
         }
 
         // Extract the withdrawal data
-        uint16 tokenID = uint16((data >> 48) & 0xFF);
-        uint24 accountID = uint24((data >> 28) & 0xFFFFF);
+        uint16 tokenID = uint16((data >> 56) & 0xFF);
+        uint16 isFastWithdraw = uint16((data >> 48) & 0xFF);
+        uint24 accountID = 0;
+        if (isFastWithdraw == 0) { // not fastWithdraw:
+            accountID = uint24((data >> 28) & 0xFFFFF);
+        }
         uint amount = (data & 0xFFFFFFF).decodeFloat();
 
         // Transfer the tokens
@@ -292,7 +296,7 @@ library ExchangeWithdrawals
 
         if (success && amount > 0) {
             // Set everything to 0 for this withdrawal so it cannot be used anymore
-            data = data & uint(~((1 << (7 * 8)) - 1));
+            data = data & uint(~((1 << (8 * 8)) - 1));
 
             // Update the data in storage
             if (withdrawBlock.withdrawals.length >= 32) {

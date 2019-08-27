@@ -116,6 +116,7 @@ export interface WithdrawalRequest {
   accountID: number;
   tokenID: number;
   amount: BN;
+  isFastWithdraw: number;
 
   feeTokenID: number;
   fee: BN;

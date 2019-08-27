@@ -70,7 +70,8 @@ contract IExchangeV3 is IExchange
         uint            accountCreationFeeETH,
         uint            accountUpdateFeeETH,
         uint            depositFeeETH,
-        uint            withdrawalFeeETH
+        uint            withdrawalFeeETH,
+        uint            fastWithdrawalFeeETH
     );
 
     event Shutdown(
@@ -747,6 +748,33 @@ contract IExchangeV3 is IExchange
         )
         external
         payable;
+
+    /// @dev Submits an onchain request to fast withdraw Ether or ERC20 tokens. To withdraw
+    ///      all the balance, use a very large number for `amount`.
+    ///
+    ///      Only the owner of the account can request a withdrawal.
+    ///
+    ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
+    ///      If the user sends too much ETH the surplus is sent back immediately.
+    ///
+    ///      Note that after such an operation, it will take the operator some
+    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
+    ///      and create the deposit to the offchain account.
+    ///
+    /// @param tokenAddress The address of the token, use `0x0` for Ether.
+    /// @param amount The amount of tokens to deposit
+    function fastWithdraw(
+        address token,
+        uint96 amount
+        )
+        external
+        payable;
+
+    /* function ProceedFastWithdrawTransfers( */
+
+    /*     ) */
+    /*     external; */
+
 
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens from the
     ///      protocol fees account. The complete balance is always withdrawn.
