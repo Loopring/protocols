@@ -203,7 +203,7 @@ export class PrivateKey {
   }
 
   /**
-   * Get signed order, should be submitted by frontend itself
+   * Get signed order, should be submitted by frontend itself TEMPORARY
    * @param owner: Ethereum address of this order's owner
    * @param tokenS: symbol or hex address of token sell
    * @param tokenB: symbol or hex address of token buy
