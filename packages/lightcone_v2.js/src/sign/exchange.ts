@@ -1,17 +1,14 @@
 import BN = require("bn.js");
 import { grpcClientService, RestApiServer } from "..";
-import { Order, TokenAmounts } from "../grpc/proto_gen/data_order_pb";
 import {
-  AccountID,
   Amount,
   Bips,
   EdDSAPrivKey,
   EdDSAPubKey,
-  EdDSASignature,
-  OrderID,
-  TokenID
+  EdDSASignature
 } from "../grpc/proto_gen/data_types_pb";
 import { SimpleOrderCancellationReq } from "../grpc/proto_gen/service_dex_pb";
+import { BitArray } from "../lib/sign/bitarray";
 import { generateKeyPair, sign } from "../lib/sign/eddsa";
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
@@ -37,7 +34,6 @@ export class Exchange {
   private walletAddressID: number;
 
   public contractURL: string;
-
   private accounts: Map<WalletAccount, DexAccount>;
 
   public constructor() {
@@ -68,22 +64,6 @@ export class Exchange {
       console.warn("lightcone_v2.js is not initialized yet");
       throw "lightcone_v2.js is not initialized yet";
     }
-  }
-
-  public static toBitsBN(value: BN, length: number) {
-    const res = new Array(length);
-    for (let i = 0; i < length; i++) {
-      res[i] = value.testn(i) ? 1 : 0;
-    }
-    return res;
-  }
-
-  public static toBitsNumber(value: number, length: number) {
-    return Exchange.toBitsBN(new BN(value), length);
-  }
-
-  public static toBitsString(value: string, length: number) {
-    return Exchange.toBitsBN(new BN(value, 10), length);
   }
 
   private static genAmount(amount: BN): Amount {
@@ -257,7 +237,6 @@ export class Exchange {
         );
 
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
-
         return new Transaction({
           to: this.exchangeAddr,
           value: this.dexConfigurations.onchain_withdrawal_fee_eth,
@@ -275,31 +254,33 @@ export class Exchange {
   }
 
   public signOrder(order: OrderInfo) {
-    const message = this.flattenList([
-      Exchange.toBitsNumber(this.exchangeID, 32),
-      Exchange.toBitsNumber(order.orderID, 20),
-      Exchange.toBitsNumber(order.accountID, 20),
-      Exchange.toBitsString(order.dualAuthPublicKeyX, 254),
-      Exchange.toBitsString(order.dualAuthPublicKeyY, 254),
-      Exchange.toBitsNumber(order.tokenIdS, 8),
-      Exchange.toBitsNumber(order.tokenIdB, 8),
-      Exchange.toBitsBN(order.amountS, 96),
-      Exchange.toBitsBN(order.amountB, 96),
-      Exchange.toBitsNumber(order.allOrNone ? 1 : 0, 1),
-      Exchange.toBitsNumber(order.validSince, 32),
-      Exchange.toBitsNumber(order.validUntil, 32),
-      Exchange.toBitsNumber(order.maxFeeBips, 6),
-      Exchange.toBitsNumber(order.buy ? 1 : 0, 1)
-    ]);
-    // TODO: this fails
-    // Failed to submit order TypeError: Cannot read property 'secretKey' of undefined
-    const sig = sign(this.currentDexAccount.secretKey, message);
+    if (order.signature !== undefined) {
+      return;
+    }
+    const message = new BitArray();
+    message.addNumber(this.exchangeID, 32);
+    message.addNumber(order.orderID, 20);
+    message.addNumber(order.accountID, 20);
+    message.addString(order.dualAuthPublicKeyX, 254);
+    message.addString(order.dualAuthPublicKeyY, 254);
+    message.addNumber(order.tokenIdS, 8);
+    message.addNumber(order.tokenIdB, 8);
+    message.addBN(order.amountS, 96);
+    message.addBN(order.amountB, 96);
+    message.addNumber(order.allOrNone ? 1 : 0, 1);
+    message.addNumber(order.validSince, 32);
+    message.addNumber(order.validUntil, 32);
+    message.addNumber(order.maxFeeBips, 6);
+    message.addNumber(order.buy ? 1 : 0, 1);
+    // const account = this.accounts[this.exchangeID][order.accountID];
+    const sig = sign("1", message.getBits()); // TODO: signature
     order.hash = sig.hash;
     order.signature = {
       Rx: sig.R[0].toString(),
       Ry: sig.R[1].toString(),
       s: sig.S.toString()
     };
+    // console.log(order.signature);
   }
 
   public async setupOrder(order: OrderInfo) {
@@ -413,7 +394,8 @@ export class Exchange {
     const timeStamp = new Date().getTime();
     simpleOrderCancellationReq.setTimestamp(timeStamp);
 
-    const bits = Exchange.toBitsBN(fm.toBN(timeStamp), 32);
+    const message = new BitArray();
+    const bits = message.addBN(fm.toBN(timeStamp), 32);
     const sig = sign(this.currentDexAccount.secretKey, bits);
     const edDSASignature = new EdDSASignature();
     edDSASignature.setS(sig.S);
