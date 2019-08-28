@@ -7,7 +7,9 @@ import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
+import { OrderInfo } from "../model/types";
 import { exchange } from "../sign/exchange";
+import BN = require("bn.js");
 
 export class PrivateKey {
   public account: PrivateKeyAccount;
@@ -195,6 +197,43 @@ export class PrivateKey {
         sendTransactionResponse
       );
       return sendTransactionResponse;
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /**
+   * Get signed order, should be submitted by frontend itself
+   * @param owner: Ethereum address of this order's owner
+   * @param tokenS: symbol or hex address of token sell
+   * @param tokenB: symbol or hex address of token buy
+   * @param amountS: amount of token sell, in BN
+   * @param amountB: amount of token buy, in BN
+   * @param orderID: next order ID, needed by order signature
+   * @param validSince: valid beginning period of this order, SECOND in timestamp
+   * @param validUntil: valid ending period of this order, SECOND in timestamp
+   */
+  public async submitOrder(
+    owner: string,
+    tokenS: string,
+    tokenB: string,
+    amountS: BN,
+    amountB: BN,
+    orderID: number,
+    validSince: number,
+    validUntil: number
+  ) {
+    try {
+      const order = new OrderInfo();
+      order.owner = owner;
+      order.tokenS = tokenS;
+      order.tokenB = tokenB;
+      order.amountS = amountS;
+      order.amountB = amountB;
+      order.orderID = orderID;
+      order.validSince = validSince;
+      order.validUntil = validUntil;
+      return exchange.submitOrder(order);
     } catch (e) {
       throw e;
     }

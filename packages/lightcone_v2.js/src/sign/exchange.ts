@@ -318,13 +318,6 @@ export class Exchange {
     order.tokenIdS = config.getTokenBySymbol(order.tokenS).id;
     order.tokenIdB = config.getTokenBySymbol(order.tokenB).id;
 
-    const nextOrderId = await grpcClientService.getNextOrderId(
-      this.currentDexAccount.accountID,
-      order.tokenIdS
-    );
-    order.orderID =
-      order.orderID !== undefined ? order.orderID : nextOrderId.getValue();
-
     order.exchangeID =
       order.exchangeID !== undefined ? order.exchangeID : this.exchangeID;
     order.buy = order.buy !== undefined ? order.buy : true;
@@ -339,73 +332,73 @@ export class Exchange {
         ? order.walletAccountID
         : this.walletAddressID;
 
-    this.signOrder(order);
+    return this.signOrder(order);
   }
 
   public async submitOrder(orderInfo: OrderInfo) {
-    const order = new Order();
-    await this.setupOrder(orderInfo);
+    // const order = new Order();
+    return await this.setupOrder(orderInfo);
 
-    order.setExchangeId(orderInfo.exchangeID);
-
-    const orderID = new OrderID();
-    orderID.setValue(orderInfo.orderID);
-    order.setOrderId(orderID);
-
-    const accountID = new AccountID();
-    accountID.setValue(orderInfo.accountID);
-    order.setOrderId(accountID);
-
-    const walletID = new AccountID();
-    walletID.setValue(orderInfo.walletAccountID);
-    order.setOrderId(walletID);
-
-    const tokenS = new TokenID();
-    tokenS.setValue(orderInfo.tokenIdS);
-    order.setOrderId(tokenS);
-
-    const tokenB = new TokenID();
-    tokenB.setValue(orderInfo.tokenIdB);
-    order.setOrderId(tokenB);
-
-    const tokenAmounts = new TokenAmounts();
-    const amountS = Exchange.genAmount(orderInfo.amountS);
-    const amountB = Exchange.genAmount(orderInfo.amountB);
-    tokenAmounts.setAmountS(amountS);
-    tokenAmounts.setAmountB(amountB);
-    order.setAmounts(tokenAmounts);
-
-    let bips = Exchange.genBips(orderInfo.maxFeeBips);
-    order.setMaxFee(bips);
-    bips = Exchange.genBips(orderInfo.feeBips);
-    order.setFee(bips);
-    bips = Exchange.genBips(orderInfo.rebateBips);
-    order.setRebate(bips);
-
-    order.setAllOrNone(orderInfo.allOrNone);
-    order.setValidSince(orderInfo.validSince);
-    order.setValidUntil(orderInfo.validUntil);
-    order.setBuy(orderInfo.buy);
-
-    const tradingPubKey = Exchange.genPubKey(
-      this.currentDexAccount.publicKeyX,
-      this.currentDexAccount.publicKeyY
-    );
-    order.setTradingPubKey(tradingPubKey);
-
-    const dualPubKey = Exchange.genPubKey(
-      orderInfo.dualAuthPublicKeyX,
-      orderInfo.dualAuthPublicKeyY
-    );
-    order.setDualAuthPubKey(dualPubKey);
-
-    const dualPriKey = Exchange.genPriKey(orderInfo.dualAuthSecretKey);
-    order.setDualAuthPrivKey(dualPriKey);
-
-    const tradingSig = Exchange.genSignature(orderInfo.signature);
-    order.setTradingSig(tradingSig);
-
-    return grpcClientService.submitOrder(order);
+    // order.setExchangeId(orderInfo.exchangeID);
+    //
+    // const orderID = new OrderID();
+    // orderID.setValue(orderInfo.orderID);
+    // order.setOrderId(orderID);
+    //
+    // const accountID = new AccountID();
+    // accountID.setValue(orderInfo.accountID);
+    // order.setOrderId(accountID);
+    //
+    // const walletID = new AccountID();
+    // walletID.setValue(orderInfo.walletAccountID);
+    // order.setOrderId(walletID);
+    //
+    // const tokenS = new TokenID();
+    // tokenS.setValue(orderInfo.tokenIdS);
+    // order.setOrderId(tokenS);
+    //
+    // const tokenB = new TokenID();
+    // tokenB.setValue(orderInfo.tokenIdB);
+    // order.setOrderId(tokenB);
+    //
+    // const tokenAmounts = new TokenAmounts();
+    // const amountS = Exchange.genAmount(orderInfo.amountS);
+    // const amountB = Exchange.genAmount(orderInfo.amountB);
+    // tokenAmounts.setAmountS(amountS);
+    // tokenAmounts.setAmountB(amountB);
+    // order.setAmounts(tokenAmounts);
+    //
+    // let bips = Exchange.genBips(orderInfo.maxFeeBips);
+    // order.setMaxFee(bips);
+    // bips = Exchange.genBips(orderInfo.feeBips);
+    // order.setFee(bips);
+    // bips = Exchange.genBips(orderInfo.rebateBips);
+    // order.setRebate(bips);
+    //
+    // order.setAllOrNone(orderInfo.allOrNone);
+    // order.setValidSince(orderInfo.validSince);
+    // order.setValidUntil(orderInfo.validUntil);
+    // order.setBuy(orderInfo.buy);
+    //
+    // const tradingPubKey = Exchange.genPubKey(
+    //   this.currentDexAccount.publicKeyX,
+    //   this.currentDexAccount.publicKeyY
+    // );
+    // order.setTradingPubKey(tradingPubKey);
+    //
+    // const dualPubKey = Exchange.genPubKey(
+    //   orderInfo.dualAuthPublicKeyX,
+    //   orderInfo.dualAuthPublicKeyY
+    // );
+    // order.setDualAuthPubKey(dualPubKey);
+    //
+    // const dualPriKey = Exchange.genPriKey(orderInfo.dualAuthSecretKey);
+    // order.setDualAuthPrivKey(dualPriKey);
+    //
+    // const tradingSig = Exchange.genSignature(orderInfo.signature);
+    // order.setTradingSig(tradingSig);
+    //
+    // return grpcClientService.submitOrder(order);
   }
 
   public async cancelOrder(orderInfo: OrderInfo) {

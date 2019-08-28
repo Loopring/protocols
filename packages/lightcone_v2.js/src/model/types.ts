@@ -20,7 +20,7 @@ export interface Signature {
   s: string;
 }
 
-export interface OrderInfo {
+export class OrderInfo {
   owner: string;
   tokenS: string;
   tokenB: string;
@@ -29,7 +29,7 @@ export interface OrderInfo {
 
   exchangeID?: number;
   accountID?: number;
-  orderID?: number;
+  orderID: number;
 
   dualAuthPublicKeyX?: string;
   dualAuthPublicKeyY?: string;
@@ -41,14 +41,11 @@ export interface OrderInfo {
   allOrNone?: boolean;
   validSince: number;
   validUntil: number;
-  maxFeeBips: number;
-  buy: boolean;
+  maxFeeBips?: number;
+  buy?: boolean;
 
   feeBips?: number;
   rebateBips?: number;
-
-  balanceS?: BN;
-  balanceB?: BN;
 
   hash?: string;
   signature?: Signature;
