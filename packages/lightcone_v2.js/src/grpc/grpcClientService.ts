@@ -106,30 +106,6 @@ class GrpcClientService {
     );
   }
 
-  public async getNextOrderId(
-    accountId: number,
-    tokenSellId: number
-  ): Promise<UInt32Value> {
-    const req: GetNextOrderIdReq = new GetNextOrderIdReq();
-    req.setAccountId(accountId);
-    req.setTokenSellId(tokenSellId);
-
-    return new Promise<UInt32Value>(
-      (resolve: Function, reject: Function): void => {
-        this.client.getNextOrderId(
-          req,
-          null,
-          (err: grpcWeb.Error, res: UInt32Value) => {
-            if (err) {
-              return reject(err);
-            }
-            resolve(res);
-          }
-        );
-      }
-    );
-  }
-
   public async submitOrder(param: Order): Promise<SubmitOrderRes> {
     return new Promise<SubmitOrderRes>(
       (resolve: Function, reject: Function): void => {

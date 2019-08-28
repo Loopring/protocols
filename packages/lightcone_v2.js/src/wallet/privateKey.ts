@@ -207,8 +207,8 @@ export class PrivateKey {
    * @param owner: Ethereum address of this order's owner
    * @param tokenS: symbol or hex address of token sell
    * @param tokenB: symbol or hex address of token buy
-   * @param amountS: amount of token sell, in BN
-   * @param amountB: amount of token buy, in BN
+   * @param amountSInNumber: amount of token sell, in number
+   * @param amountBInNumber: amount of token buy, in number
    * @param orderID: next order ID, needed by order signature
    * @param validSince: valid beginning period of this order, SECOND in timestamp
    * @param validUntil: valid ending period of this order, SECOND in timestamp
@@ -217,8 +217,8 @@ export class PrivateKey {
     owner: string,
     tokenS: string,
     tokenB: string,
-    amountS: BN,
-    amountB: BN,
+    amountSInNumber: number,
+    amountBInNumber: number,
     orderID: number,
     validSince: number,
     validUntil: number
@@ -228,8 +228,8 @@ export class PrivateKey {
       order.owner = owner;
       order.tokenS = tokenS;
       order.tokenB = tokenB;
-      order.amountS = amountS;
-      order.amountB = amountB;
+      order.amountS = new BN(amountSInNumber);
+      order.amountB = new BN(amountBInNumber);
       order.orderID = orderID;
       order.validSince = validSince;
       order.validUntil = validUntil;

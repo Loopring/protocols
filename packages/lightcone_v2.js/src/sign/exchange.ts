@@ -291,6 +291,8 @@ export class Exchange {
       Exchange.toBitsNumber(order.maxFeeBips, 6),
       Exchange.toBitsNumber(order.buy ? 1 : 0, 1)
     ]);
+    // TODO: this fails
+    // Failed to submit order TypeError: Cannot read property 'secretKey' of undefined
     const sig = sign(this.currentDexAccount.secretKey, message);
     order.hash = sig.hash;
     order.signature = {
