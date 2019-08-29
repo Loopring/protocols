@@ -317,7 +317,7 @@ export class Exchange {
     // order.tokenBId = config.getTokenBySymbol(order.tokenB).id;
     order.tokenSId = 0;
     order.tokenBId = 2;
-
+    order.accountId = 4; // TODO
     order.exchangeId =
       order.exchangeId !== undefined ? order.exchangeId : this.exchangeID;
     order.buy = order.buy !== undefined ? order.buy : true;
