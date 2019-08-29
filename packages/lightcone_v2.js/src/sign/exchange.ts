@@ -280,16 +280,19 @@ export class Exchange {
       Ry: sig.R[1].toString(),
       s: sig.S.toString()
     };
-    // console.log(order.signature);
+    console.log(order.signature);
+    return order;
   }
 
   public async setupOrder(order: OrderInfo) {
     if (!order.tokenS.startsWith("0x")) {
-      order.tokenS = config.getTokenBySymbol(order.tokenS).address;
+      // order.tokenS = config.getTokenBySymbol(order.tokenS).address;
+      order.tokenS = "0x0"; // TODO
     }
 
     if (!order.tokenB.startsWith("0x")) {
-      order.tokenB = config.getTokenBySymbol(order.tokenB).address;
+      // order.tokenB = config.getTokenBySymbol(order.tokenB).address;
+      order.tokenB = "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615"; // TODO
     }
     if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
       const keyPair = generateKeyPair();
@@ -298,8 +301,10 @@ export class Exchange {
       order.dualAuthSecretKey = keyPair.secretKey;
     }
 
-    order.tokenIdS = config.getTokenBySymbol(order.tokenS).id;
-    order.tokenIdB = config.getTokenBySymbol(order.tokenB).id;
+    // order.tokenIdS = config.getTokenBySymbol(order.tokenS).id;
+    // order.tokenIdB = config.getTokenBySymbol(order.tokenB).id;
+    order.tokenIdS = 0;
+    order.tokenIdB = 2;
 
     order.exchangeID =
       order.exchangeID !== undefined ? order.exchangeID : this.exchangeID;

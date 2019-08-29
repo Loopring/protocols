@@ -230,7 +230,7 @@ export class PrivateKey {
       order.tokenB = tokenB;
       order.amountS = new BN(amountSInNumber);
       order.amountB = new BN(amountBInNumber);
-      order.orderID = orderID;
+      order.orderID = 0; // TODO
       order.validSince = validSince;
       order.validUntil = validUntil;
       return exchange.submitOrder(order);
