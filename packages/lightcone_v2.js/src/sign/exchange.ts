@@ -308,8 +308,10 @@ export class Exchange {
 
     if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
       const keyPair = generateKeyPair();
-      order.dualAuthPubKeyX = keyPair.publicKeyX;
-      order.dualAuthPubKeyY = keyPair.publicKeyY;
+      order.dualAuthPubKeyX =
+        "0x10090d9a281da334ef8d10f3dedbe9be73f900b7682e95162f6d48936daed705"; // TODO
+      order.dualAuthPubKeyY =
+        "0x15188e456ba328f35e5afb2f324f24da9fda4753cf03e3866b4d95857861454c"; // TODO
       order.dualAuthPrivKey = keyPair.secretKey;
     }
 
