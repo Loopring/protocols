@@ -27,16 +27,19 @@ export class OrderInfo {
   amountS: BN;
   amountB: BN;
 
-  exchangeID?: number;
-  accountID?: number;
-  orderID: number;
+  exchangeId?: number;
+  accountId?: number;
+  orderId: number;
 
-  dualAuthPublicKeyX?: string;
-  dualAuthPublicKeyY?: string;
-  dualAuthSecretKey?: string;
+  tradingPubKeyX: string;
+  tradingPubKeyY: string;
 
-  tokenIdS?: number;
-  tokenIdB?: number;
+  dualAuthPubKeyX?: string;
+  dualAuthPubKeyY?: string;
+  dualAuthPrivKey?: string;
+
+  tokenSId?: number;
+  tokenBId?: number;
 
   allOrNone?: boolean;
   validSince: number;
@@ -48,6 +51,9 @@ export class OrderInfo {
   rebateBips?: number;
 
   hash?: string;
+  tradingSigRx: string;
+  tradingSigRy: string;
+  tradingSigS: string;
   signature?: Signature;
 
   [key: string]: any;

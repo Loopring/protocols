@@ -259,12 +259,12 @@ export class Exchange {
     }
     const message = new BitArray();
     message.addNumber(this.exchangeID, 32);
-    message.addNumber(order.orderID, 20);
-    message.addNumber(order.accountID, 20);
-    message.addString(order.dualAuthPublicKeyX, 254);
-    message.addString(order.dualAuthPublicKeyY, 254);
-    message.addNumber(order.tokenIdS, 8);
-    message.addNumber(order.tokenIdB, 8);
+    message.addNumber(order.orderId, 20);
+    message.addNumber(order.accountId, 20);
+    message.addString(order.dualAuthPubKeyX, 254);
+    message.addString(order.dualAuthPubKeyY, 254);
+    message.addNumber(order.tokenSId, 8);
+    message.addNumber(order.tokenBId, 8);
     message.addBN(order.amountS, 96);
     message.addBN(order.amountB, 96);
     message.addNumber(order.allOrNone ? 1 : 0, 1);
@@ -272,13 +272,18 @@ export class Exchange {
     message.addNumber(order.validUntil, 32);
     message.addNumber(order.maxFeeBips, 6);
     message.addNumber(order.buy ? 1 : 0, 1);
-    // const account = this.accounts[this.exchangeID][order.accountID];
+    // const account = this.accounts[this.exchangeId][order.accountId];
     const sig = sign("1", message.getBits()); // TODO: signature
     order.hash = sig.hash;
+
+    order.tradingSigRx = sig.R[0].toString();
+    order.tradingSigRy = sig.R[1].toString();
+    order.tradingSigS = sig.S.toString();
+
     order.signature = {
-      Rx: sig.R[0].toString(),
-      Ry: sig.R[1].toString(),
-      s: sig.S.toString()
+      Rx: order.tradingSigRx,
+      Ry: order.tradingSigRy,
+      s: order.tradingSigS
     };
     console.log(order.signature);
     return order;
@@ -294,20 +299,27 @@ export class Exchange {
       // order.tokenB = config.getTokenBySymbol(order.tokenB).address;
       order.tokenB = "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615"; // TODO
     }
-    if (!order.dualAuthPublicKeyX || !order.dualAuthPublicKeyY) {
+
+    if (!order.tradingPubKeyX || !order.tradingPubKeyY) {
       const keyPair = generateKeyPair();
-      order.dualAuthPublicKeyX = keyPair.publicKeyX;
-      order.dualAuthPublicKeyY = keyPair.publicKeyY;
-      order.dualAuthSecretKey = keyPair.secretKey;
+      order.tradingPubKeyX = keyPair.publicKeyX;
+      order.tradingPubKeyY = keyPair.publicKeyY;
     }
 
-    // order.tokenIdS = config.getTokenBySymbol(order.tokenS).id;
-    // order.tokenIdB = config.getTokenBySymbol(order.tokenB).id;
-    order.tokenIdS = 0;
-    order.tokenIdB = 2;
+    if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
+      const keyPair = generateKeyPair();
+      order.dualAuthPubKeyX = keyPair.publicKeyX;
+      order.dualAuthPubKeyY = keyPair.publicKeyY;
+      order.dualAuthPrivKey = keyPair.secretKey;
+    }
 
-    order.exchangeID =
-      order.exchangeID !== undefined ? order.exchangeID : this.exchangeID;
+    // order.tokenSId = config.getTokenBySymbol(order.tokenS).id;
+    // order.tokenBId = config.getTokenBySymbol(order.tokenB).id;
+    order.tokenSId = 0;
+    order.tokenBId = 2;
+
+    order.exchangeId =
+      order.exchangeId !== undefined ? order.exchangeId : this.exchangeID;
     order.buy = order.buy !== undefined ? order.buy : true;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
 
@@ -327,26 +339,26 @@ export class Exchange {
     // const order = new Order();
     return await this.setupOrder(orderInfo);
 
-    // order.setExchangeId(orderInfo.exchangeID);
+    // order.setExchangeId(orderInfo.exchangeId);
     //
-    // const orderID = new OrderID();
-    // orderID.setValue(orderInfo.orderID);
-    // order.setOrderId(orderID);
+    // const orderId = new OrderID();
+    // orderId.setValue(orderInfo.orderId);
+    // order.setOrderId(orderId);
     //
-    // const accountID = new AccountID();
-    // accountID.setValue(orderInfo.accountID);
-    // order.setOrderId(accountID);
+    // const accountId = new AccountID();
+    // accountId.setValue(orderInfo.accountId);
+    // order.setOrderId(accountId);
     //
     // const walletID = new AccountID();
     // walletID.setValue(orderInfo.walletAccountID);
     // order.setOrderId(walletID);
     //
     // const tokenS = new TokenID();
-    // tokenS.setValue(orderInfo.tokenIdS);
+    // tokenS.setValue(orderInfo.tokenSId);
     // order.setOrderId(tokenS);
     //
     // const tokenB = new TokenID();
-    // tokenB.setValue(orderInfo.tokenIdB);
+    // tokenB.setValue(orderInfo.tokenBId);
     // order.setOrderId(tokenB);
     //
     // const tokenAmounts = new TokenAmounts();
@@ -375,12 +387,12 @@ export class Exchange {
     // order.setTradingPubKey(tradingPubKey);
     //
     // const dualPubKey = Exchange.genPubKey(
-    //   orderInfo.dualAuthPublicKeyX,
-    //   orderInfo.dualAuthPublicKeyY
+    //   orderInfo.dualAuthPubKeyX,
+    //   orderInfo.dualAuthPubKeyY
     // );
     // order.setDualAuthPubKey(dualPubKey);
     //
-    // const dualPriKey = Exchange.genPriKey(orderInfo.dualAuthSecretKey);
+    // const dualPriKey = Exchange.genPriKey(orderInfo.dualAuthPrivKey);
     // order.setDualAuthPrivKey(dualPriKey);
     //
     // const tradingSig = Exchange.genSignature(orderInfo.signature);
@@ -391,10 +403,10 @@ export class Exchange {
 
   public async cancelOrder(orderInfo: OrderInfo) {
     const simpleOrderCancellationReq = new SimpleOrderCancellationReq();
-    simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeID);
-    simpleOrderCancellationReq.setAccountId(orderInfo.accountID);
-    simpleOrderCancellationReq.setMarketId(orderInfo.tokenIdS);
-    simpleOrderCancellationReq.setOrderUuid(orderInfo.orderID);
+    simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeId);
+    simpleOrderCancellationReq.setAccountId(orderInfo.accountId);
+    simpleOrderCancellationReq.setMarketId(orderInfo.tokenSId);
+    simpleOrderCancellationReq.setOrderUuid(orderInfo.orderId);
 
     const timeStamp = new Date().getTime();
     simpleOrderCancellationReq.setTimestamp(timeStamp);
