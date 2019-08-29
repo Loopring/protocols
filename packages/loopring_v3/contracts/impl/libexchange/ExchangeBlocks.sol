@@ -406,6 +406,10 @@ library ExchangeBlocks
             }
         }
 
+        if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
+
+        }
+
         // Create a new block with the updated merkle roots
         ExchangeData.Block memory newBlock = ExchangeData.Block(
             merkleRootAfter,

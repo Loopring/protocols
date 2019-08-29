@@ -228,6 +228,11 @@ library ExchangeData
         // A map from token address to their accumulated balances
         mapping (address => uint) tokenBalances;
 
+        // A map to mark that some onchain withdrawal request is fast withdrawal
+        mapping (bytes32 => bool) isFastWithdrawalMap;
+        mapping (bytes32 => uint) fastWithdrawalActualAmountMap;
+
+
         // A block's state will become FINALIZED when and only when this block is VERIFIED
         // and all previous blocks in the chain have become FINALIZED.
         // The genesis block is FINALIZED by default.
@@ -238,5 +243,6 @@ library ExchangeData
 
         // Time when the exchange was shutdown
         uint shutdownStartTime;
+        uint lastFastWithdrawalProceededIdx;
     }
 }

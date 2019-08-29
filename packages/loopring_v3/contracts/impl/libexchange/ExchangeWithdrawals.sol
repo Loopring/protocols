@@ -90,7 +90,8 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         uint24  accountID,
         address token,
-        uint96  amount
+        uint96  amount,
+        bool    isFastWithdraw
         )
         external
     {
@@ -121,12 +122,24 @@ library ExchangeWithdrawals
         );
         S.withdrawalChain.push(request);
 
+        if (isFastWithdraw) {
+            S.isFastWithdrawalMap[request.accumulatedHash] = true;
+        }
+
         emit WithdrawalRequested(
             uint32(S.withdrawalChain.length - 1),
             accountID,
             tokenID,
             amount
         );
+    }
+
+    function proceedFastWithdraw(
+        ExchangeData.State storage S,
+        )
+        external
+    {
+
     }
 
     // We still alow anyone to withdraw these funds for the account owner

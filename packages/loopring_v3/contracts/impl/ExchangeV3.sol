@@ -562,7 +562,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
     {
         uint24 accountID = state.getAccountID(msg.sender);
-        state.withdraw(accountID, token, amount);
+        state.withdraw(accountID, token, amount, false);
     }
 
     function fastWithdraw(
@@ -574,12 +574,13 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
     {
         uint24 accountID = state.getAccountID(msg.sender);
-        state.withdraw(accountID, token, amount, isFastWithdraw);
+        state.withdraw(accountID, token, amount, true);
     }
 
-    function proceedFastWithdraw(
+    function batchProceedFastWithdraw(
         uint startIdx,
-        uint count
+        uint count,
+        uint[] actualAmounts
         )
         external
         nonReentrant
