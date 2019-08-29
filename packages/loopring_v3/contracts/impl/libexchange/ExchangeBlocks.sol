@@ -406,6 +406,7 @@ library ExchangeBlocks
             }
         }
 
+        // check fast withdrawls' amounts match the proceeded amounts.
         if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
 
         }

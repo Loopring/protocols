@@ -136,10 +136,37 @@ library ExchangeWithdrawals
 
     function proceedFastWithdraw(
         ExchangeData.State storage S,
+        uint startIdx,
+        uint count,
+        address[] addresses,
+        uint[] actualAmounts
         )
         external
     {
+        require(addresses.length == count, "ADDRESS_ARRAY_AND_COUNT_NOT_MATCH");
+        require(actualAmounts.length == count, "AMOUNT_ARRAY_AND_COUNT_NOT_MATCH");
+        for (uint i = 0; i < count; i++) {
+            bytes32 hash = S.withdrawalChain[startIdx + i - 1].accumulatedHash;
+            if (!S.isFastWithdrawalMap[hash]) continue;
 
+            require(S.fastWithdrawalActualAmountMap[hash] == 0, "FAST_WITHDRAWAL_ALREADY_PROCEEDED");
+            S.fastWithdrawalActualAmountMap[hash] = actualAmounts[i];
+            if (actualAmounts[i] > 0 ) {
+                if (addresses[i] == address(0)) {
+                    msg.sender.transferETH(actualAmounts[i], gasleft());
+                } else {
+                    require(
+                        addresses[i].safeTransferFrom(
+                            accountOwner,
+                            address(this),
+                            actualAmounts[i]
+                        ),
+                        "INSUFFICIENT_FUND"
+                    );
+
+                }
+            }
+        }
     }
 
     // We still alow anyone to withdraw these funds for the account owner
