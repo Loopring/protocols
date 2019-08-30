@@ -11,7 +11,7 @@
     }
   },
   "scripts": {
-    "build": "rimraf dist && tsc",
+    "dev": "rimraf dist && tsc",
     "lint": "prettier --write \"src/**/*.ts\"",
     "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
   },

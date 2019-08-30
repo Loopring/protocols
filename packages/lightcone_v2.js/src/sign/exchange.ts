@@ -64,7 +64,6 @@ export class Exchange {
   public async createOrUpdateAccount(wallet: WalletAccount, gasPrice: number) {
     try {
       this.checkIfInitialized();
-
       const keyPair = generateKeyPair(wallet.getAddress());
       this.currentWalletAccount = wallet;
       const transaction = await this.createAccountAndDeposit(
