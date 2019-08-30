@@ -15,10 +15,27 @@ export class MetaMask {
 
   public constructor(web3, account) {
     this.web3 = web3;
-    this.account = account;
+    this.account = new MetaMaskAccount(web3,account,account);
     this.address = account;
     this.ethNode = new Eth("http://localhost:8545"); // TODO: config
   }
+
+
+    /**
+     * create Or Update Account in DEX
+     * @param gasPrice in gwei
+     */
+    public async createOrUpdateAccount(gasPrice: number) {
+        try {
+            const rawTx = await exchange.createOrUpdateAccount(
+                this.account,
+                gasPrice
+            );
+            return this.account.signEthereumTx(rawTx.raw);
+        } catch (e) {
+            throw e;
+        }
+    }
 
   /**
    * Deposit to Dex
