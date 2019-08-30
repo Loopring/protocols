@@ -7,7 +7,7 @@ import config from "../lib/wallet/config";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { updateHost } from "../lib/wallet/ethereum/utils";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
-import { DexAccount, OrderInfo, Signature } from "../model/types";
+import { DexAccount, OrderInfo } from "../model/types";
 
 const MOCK_EXCHANGE_GAS_LIMIT = "0x5446a0";
 
@@ -65,7 +65,7 @@ export class Exchange {
     try {
       this.checkIfInitialized();
 
-      const keyPair = generateKeyPair();
+      const keyPair = generateKeyPair(wallet.getAddress());
       this.currentWalletAccount = wallet;
       const transaction = await this.createAccountAndDeposit(
         keyPair.publicKeyX,
@@ -196,7 +196,7 @@ export class Exchange {
       this.checkIfInitialized();
 
       const token = config.getTokenBySymbol(symbol);
-      value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+      value = fm.toBig(amount).times("1e" + 18); // TODO
       if (wallet.getAddress()) {
         this.currentWalletAccount = wallet;
         to = symbol === "ETH" ? "0x0" : token.address;
@@ -204,14 +204,14 @@ export class Exchange {
           "withdraw",
           {
             tokenAddress: to,
-            amount: value
+            amount: fm.toHex(value)
           }
         );
-
+        value = this.dexConfigurations["onchain_withdrawal_fee_eth"];
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
         return new Transaction({
           to: this.exchangeAddr,
-          value: this.dexConfigurations["onchain_withdrawal_fee_eth"],
+          value: fm.toHex(value),
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
@@ -271,7 +271,7 @@ export class Exchange {
     }
 
     if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
-      const keyPair = generateKeyPair();
+      const keyPair = generateKeyPair(this.currentWalletAccount.getAddress());
       order.dualAuthPubKeyX = keyPair.publicKeyX;
       order.dualAuthPubKeyY = keyPair.publicKeyY;
       order.dualAuthPrivKey = keyPair.secretKey;
