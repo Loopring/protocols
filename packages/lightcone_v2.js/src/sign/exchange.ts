@@ -114,13 +114,17 @@ export class Exchange {
 
       const keyPair = generateKeyPair();
       this.currentWalletAccount = wallet;
-      return await this.createAccountAndDeposit(
+      const transaction = await this.createAccountAndDeposit(
         keyPair.publicKeyX,
         keyPair.publicKeyY,
         "",
         0,
         gasPrice
       );
+      return {
+        rawTx: transaction,
+        keyPair: keyPair
+      };
     } catch (err) {
       console.error("Failed in method updateAccount. Error: ", err);
       throw err;
