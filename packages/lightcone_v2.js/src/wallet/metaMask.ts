@@ -57,12 +57,10 @@ export class MetaMask {
    */
   public async createOrUpdateAccount(gasPrice: number) {
     try {
-      const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
         this.account,
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
-      const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
       return {
         signedTx: signedEthereumTx,
         keyPair: createOrUpdateAccountResposne["keyPair"]
