@@ -20,7 +20,7 @@ export class MetaMask {
 
   public constructor(web3, account) {
     this.web3 = web3;
-    this.account = new MetaMaskAccount(web3,account,account);
+    this.account = new MetaMaskAccount(web3, account, account);
     this.address = account;
   }
 
@@ -72,28 +72,6 @@ export class MetaMask {
       throw e;
     }
   }
-
-
-    /**
-     * create Or Update Account in DEX
-     * @param gasPrice in gwei
-     */
-    public async createOrUpdateAccount(gasPrice: number) {
-        try {
-            const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
-                this.account,
-                gasPrice
-            );
-            const rawTx = createOrUpdateAccountResposne["rawTx"];
-            const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
-            return {
-                signedTx: signedEthereumTx,
-                keyPair: createOrUpdateAccountResposne["keyPair"]
-            };
-        } catch (e) {
-            throw e;
-        }
-    }
 
   /**
    * Deposit to Dex
