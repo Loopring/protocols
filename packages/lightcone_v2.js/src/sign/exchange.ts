@@ -118,7 +118,7 @@ export class Exchange {
       const nonce = await ethereum.wallet.getNonce(this.getAddress());
       return new Transaction({
         to: this.exchangeAddr,
-        value: this.dexConfigurations["deposit_fee_eth"],
+        value: fm.toHex(this.dexConfigurations["deposit_fee_eth"]),
         data: data,
         chainId: config.getChainId(),
         nonce: fm.toHex(nonce),

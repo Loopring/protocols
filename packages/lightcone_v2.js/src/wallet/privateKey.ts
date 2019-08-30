@@ -165,6 +165,9 @@ export class PrivateKey {
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
     try {
+      if (symbol !== "ETH") {
+        await this.approve(symbol, amount, gasPrice);
+      }
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
