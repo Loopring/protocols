@@ -1,4 +1,5 @@
 import { bigInt } from "snarkjs";
+import { BitArray } from "./bitarray";
 
 const createBlakeHash = require("blake-hash");
 const babyJub = require("./babyjub");
@@ -51,13 +52,8 @@ export function bitsToBigInt(bits) {
   return value;
 }
 
-export function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
-export function generateKeyPair() {
-  // TODO: secure random number generation
-  const randomNumber = getRandomInt(218882428718390);
+export function generateKeyPair(seed: string) {
+  let randomNumber = BitArray.hashCode(seed);
   let secretKey = bigInt(randomNumber.toString(10));
   secretKey = secretKey.mod(babyJub.subOrder);
   const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);

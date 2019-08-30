@@ -142,11 +142,16 @@ export class PrivateKey {
    */
   public async createOrUpdateAccount(gasPrice: number) {
     try {
-      const rawTx = await exchange.createOrUpdateAccount(
+      const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
         this.account,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      const rawTx = createOrUpdateAccountResposne["rawTx"];
+      const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
+      return {
+        signedTx: signedEthereumTx,
+        keyPair: createOrUpdateAccountResposne["keyPair"]
+      };
     } catch (e) {
       throw e;
     }
@@ -160,6 +165,9 @@ export class PrivateKey {
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
     try {
+      if (symbol !== "ETH") {
+        await this.approve(symbol, amount, gasPrice);
+      }
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
