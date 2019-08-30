@@ -9,7 +9,6 @@ import Transaction from "../lib/wallet/ethereum/transaction";
 import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
 import { exchange } from "../sign/exchange";
-import BN = require("bn.js");
 
 export class PrivateKey {
   public account: PrivateKeyAccount;
@@ -205,32 +204,50 @@ export class PrivateKey {
   /**
    * Get signed order, should be submitted by frontend itself TEMPORARY
    * @param owner: Ethereum address of this order's owner
+   * @param accountId: account ID in exchange
    * @param tokenS: symbol or hex address of token sell
    * @param tokenB: symbol or hex address of token buy
-   * @param amountSInNumber: amount of token sell, in number
-   * @param amountBInNumber: amount of token buy, in number
-   * @param orderID: next order ID, needed by order signature
+   * @param tokenSId: token sell ID in exchange
+   * @param tokenBId: token buy ID in exchange
+   * @param tradingPubKeyX: trading public key X of account, decimal string
+   * @param tradingPubKeyY: trading public key Y of account, decimal string
+   * @param tradingPrivKey: trading private key of account, decimal string
+   * @param amountS: amount of token sell, in number
+   * @param amountB: amount of token buy, in number
+   * @param orderId: next order ID, needed by order signature
    * @param validSince: valid beginning period of this order, SECOND in timestamp
    * @param validUntil: valid ending period of this order, SECOND in timestamp
    */
   public async submitOrder(
     owner: string,
+    accountId: number,
     tokenS: string,
     tokenB: string,
-    amountSInNumber: number,
-    amountBInNumber: number,
-    orderID: number,
+    tokenSId: number,
+    tokenBId: number,
+    tradingPubKeyX: string,
+    tradingPubKeyY: string,
+    tradingPrivKey: string,
+    amountS: number,
+    amountB: number,
+    orderId: number,
     validSince: number,
     validUntil: number
   ) {
     try {
       const order = new OrderInfo();
       order.owner = owner;
+      order.accountId = accountId;
       order.tokenS = tokenS;
       order.tokenB = tokenB;
-      order.amountS = new BN(amountSInNumber);
-      order.amountB = new BN(amountBInNumber);
-      order.orderId = 0; // TODO
+      order.tokenSId = tokenSId;
+      order.tokenBId = tokenBId;
+      order.tradingPubKeyX = tradingPubKeyX;
+      order.tradingPubKeyY = tradingPubKeyY;
+      order.tradingPrivKey = tradingPrivKey;
+      order.amountS = fm.toBN("1000000000000000000");
+      order.amountB = fm.toBN("100000000000000000000"); // TODO
+      order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);
       return exchange.submitOrder(order);

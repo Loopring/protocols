@@ -1,13 +1,4 @@
-import BN = require("bn.js");
-import { grpcClientService, RestApiServer } from "..";
-import {
-  Amount,
-  Bips,
-  EdDSAPrivKey,
-  EdDSAPubKey,
-  EdDSASignature
-} from "../grpc/proto_gen/data_types_pb";
-import { SimpleOrderCancellationReq } from "../grpc/proto_gen/service_dex_pb";
+import { RestApiServer } from "..";
 import { BitArray } from "../lib/sign/bitarray";
 import { generateKeyPair, sign } from "../lib/sign/eddsa";
 import { ethereum } from "../lib/wallet";
@@ -64,44 +55,6 @@ export class Exchange {
       console.warn("lightcone_v2.js is not initialized yet");
       throw "lightcone_v2.js is not initialized yet";
     }
-  }
-
-  private static genAmount(amount: BN): Amount {
-    const result = new Amount();
-    result.setValue(fm.toHex(amount));
-
-    return result;
-  }
-
-  private static genBips(amount: number): Bips {
-    const result = new Bips();
-    result.setValue(amount);
-
-    return result;
-  }
-
-  private static genPubKey(publicX: string, publicY: string): EdDSAPubKey {
-    const result = new EdDSAPubKey();
-    result.setX(publicX);
-    result.setY(publicY);
-
-    return result;
-  }
-
-  private static genPriKey(secret: string): EdDSAPrivKey {
-    const result = new EdDSAPrivKey();
-    result.setValue(secret);
-
-    return result;
-  }
-
-  private static genSignature(signature: Signature): EdDSASignature {
-    const result = new EdDSASignature();
-    result.setRx(signature.Rx);
-    result.setRy(signature.Ry);
-    result.setS(signature.s);
-
-    return result;
   }
 
   public flattenList = (l: any[]) => {
@@ -186,20 +139,35 @@ export class Exchange {
       this.dexConfigurations = await RestApiServer.getDexConfigurations();
 
       const token = config.getTokenBySymbol(symbol);
-      value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
+      value = fm.toBig(amount).times("1e" + 18); // TODO
       if (wallet.getAddress()) {
         this.currentWalletAccount = wallet;
-        to = symbol === "ETH" ? "0x0" : token.address;
-        data = ethereum.abi.Contracts.ExchangeContract.encodeInputs("deposit", {
-          tokenAddress: to,
-          amount: value
-        });
+        if (symbol === "ETH") {
+          to = "0x0";
+          data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
+            "deposit",
+            {
+              tokenAddress: to,
+              amount: fm.toHex(value)
+            }
+          );
+          value = value.plus(this.dexConfigurations["deposit_fee_eth"]);
+        } else {
+          to = token.address;
+          data = ethereum.abi.Contracts.ExchangeContract.encodeInputs(
+            "deposit",
+            {
+              tokenAddress: to,
+              amount: fm.toHex(value)
+            }
+          );
+          value = this.dexConfigurations["deposit_fee_eth"];
+        }
 
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
-
         return new Transaction({
           to: this.exchangeAddr,
-          value: this.dexConfigurations["deposit_fee_eth"],
+          value: fm.toHex(value),
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
@@ -239,7 +207,7 @@ export class Exchange {
         const nonce = await ethereum.wallet.getNonce(this.getAddress());
         return new Transaction({
           to: this.exchangeAddr,
-          value: this.dexConfigurations.onchain_withdrawal_fee_eth,
+          value: this.dexConfigurations["onchain_withdrawal_fee_eth"],
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
@@ -273,7 +241,7 @@ export class Exchange {
     message.addNumber(order.maxFeeBips, 6);
     message.addNumber(order.buy ? 1 : 0, 1);
     // const account = this.accounts[this.exchangeId][order.accountId];
-    const sig = sign("1", message.getBits()); // TODO: signature
+    const sig = sign(order.tradingPrivKey, message.getBits());
     order.hash = sig.hash;
 
     order.tradingSigRx = sig.R[0].toString();
@@ -291,35 +259,23 @@ export class Exchange {
 
   public async setupOrder(order: OrderInfo) {
     if (!order.tokenS.startsWith("0x")) {
-      // order.tokenS = config.getTokenBySymbol(order.tokenS).address;
-      order.tokenS = "0x0"; // TODO
+      order.tokenS = config.getTokenBySymbol(order.tokenS).address;
     }
 
     if (!order.tokenB.startsWith("0x")) {
-      // order.tokenB = config.getTokenBySymbol(order.tokenB).address;
-      order.tokenB = "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615"; // TODO
-    }
-
-    if (!order.tradingPubKeyX || !order.tradingPubKeyY) {
-      const keyPair = generateKeyPair();
-      order.tradingPubKeyX = keyPair.publicKeyX;
-      order.tradingPubKeyY = keyPair.publicKeyY;
+      order.tokenB = config.getTokenBySymbol(order.tokenB).address;
     }
 
     if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
       const keyPair = generateKeyPair();
-      order.dualAuthPubKeyX =
-        "0x10090d9a281da334ef8d10f3dedbe9be73f900b7682e95162f6d48936daed705"; // TODO
-      order.dualAuthPubKeyY =
-        "0x15188e456ba328f35e5afb2f324f24da9fda4753cf03e3866b4d95857861454c"; // TODO
+      order.dualAuthPubKeyX = keyPair.publicKeyX;
+      order.dualAuthPubKeyY = keyPair.publicKeyY;
       order.dualAuthPrivKey = keyPair.secretKey;
     }
 
     // order.tokenSId = config.getTokenBySymbol(order.tokenS).id;
     // order.tokenBId = config.getTokenBySymbol(order.tokenB).id;
-    order.tokenSId = 0;
-    order.tokenBId = 2;
-    order.accountId = 4; // TODO
+
     order.exchangeId =
       order.exchangeId !== undefined ? order.exchangeId : this.exchangeID;
     order.buy = order.buy !== undefined ? order.buy : true;
@@ -404,25 +360,25 @@ export class Exchange {
   }
 
   public async cancelOrder(orderInfo: OrderInfo) {
-    const simpleOrderCancellationReq = new SimpleOrderCancellationReq();
-    simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeId);
-    simpleOrderCancellationReq.setAccountId(orderInfo.accountId);
-    simpleOrderCancellationReq.setMarketId(orderInfo.tokenSId);
-    simpleOrderCancellationReq.setOrderUuid(orderInfo.orderId);
-
-    const timeStamp = new Date().getTime();
-    simpleOrderCancellationReq.setTimestamp(timeStamp);
-
-    const message = new BitArray();
-    const bits = message.addBN(fm.toBN(timeStamp), 32);
-    const sig = sign(this.currentDexAccount.secretKey, bits);
-    const edDSASignature = new EdDSASignature();
-    edDSASignature.setS(sig.S);
-    edDSASignature.setRx(sig.R[0].toString());
-    edDSASignature.setRy(sig.R[1].toString());
-    simpleOrderCancellationReq.setSig(edDSASignature);
-
-    return grpcClientService.cancelOrder(simpleOrderCancellationReq);
+    // const simpleOrderCancellationReq = new SimpleOrderCancellationReq();
+    // simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeId);
+    // simpleOrderCancellationReq.setAccountId(orderInfo.accountId);
+    // simpleOrderCancellationReq.setMarketId(orderInfo.tokenSId);
+    // simpleOrderCancellationReq.setOrderUuid(orderInfo.orderId);
+    //
+    // const timeStamp = new Date().getTime();
+    // simpleOrderCancellationReq.setTimestamp(timeStamp);
+    //
+    // const message = new BitArray();
+    // const bits = message.addBN(fm.toBN(timeStamp), 32);
+    // const sig = sign(this.currentDexAccount.secretKey, bits);
+    // const edDSASignature = new EdDSASignature();
+    // edDSASignature.setS(sig.S);
+    // edDSASignature.setRx(sig.R[0].toString());
+    // edDSASignature.setRy(sig.R[1].toString());
+    // simpleOrderCancellationReq.setSig(edDSASignature);
+    //
+    // return grpcClientService.cancelOrder(simpleOrderCancellationReq);
   }
 
   private getAccountId() {

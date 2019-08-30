@@ -1,4 +1,3 @@
-import { grpcClientService } from "./grpc/grpcClientService";
 import { RestApiServer } from "./api/restApiServer";
 
 import common from "./lib/wallet/common";
@@ -12,7 +11,6 @@ import { MetaMask } from "./wallet/metaMask";
 import { privateKey } from "./wallet/privateKey";
 
 export {
-  grpcClientService,
   RestApiServer,
   common,
   ethereum,

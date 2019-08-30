@@ -33,6 +33,7 @@ export class OrderInfo {
 
   tradingPubKeyX: string;
   tradingPubKeyY: string;
+  tradingPrivKey: string;
 
   dualAuthPubKeyX?: string;
   dualAuthPubKeyY?: string;
