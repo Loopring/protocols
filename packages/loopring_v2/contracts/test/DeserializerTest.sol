@@ -141,7 +141,6 @@ contract DeserializerTest {
             0,
             0,
             0,
-            0,
             0
         );
     }

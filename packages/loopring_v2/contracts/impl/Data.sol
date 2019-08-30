@@ -37,14 +37,12 @@ library Data {
     }
 
     struct BrokerTransfer {
-        uint orderIndex;
-        address owner;
-        address broker;
-        bool isFee;
-        uint receivedAmount;
         address token;
         address recipient;
         uint amount;
+        Order order;
+        bool isFee;
+        uint receivedAmount;
     }
 
     struct Context {
@@ -137,7 +135,6 @@ library Data {
     struct Participation {
         // required fields
         Order order;
-        uint orderIndex;
 
         // computed fields
         uint splitS;

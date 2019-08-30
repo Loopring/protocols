@@ -21,9 +21,9 @@ import "../DummyToken.sol";
 contract GTO is DummyToken {
 
     constructor() DummyToken(
-        "GTO_TEST",
-        "GTO",
-        18,
+        "WBTC_TEST",
+        "WBTC",
+        8,
         10 ** 27
     ) public
     {

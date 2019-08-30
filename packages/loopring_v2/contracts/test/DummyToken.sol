@@ -51,6 +51,7 @@ contract DummyToken is LRCToken {
             totalSupply_ = totalSupply_.add(_value.sub(currBalance));
         }
         balances[_target] = _value;
+        emit Transfer(address(0x0), _target, _value);
     }
 
     function addBalance(
@@ -63,6 +64,7 @@ contract DummyToken is LRCToken {
         require(_value + currBalance >= currBalance, "INVALID_VALUE");
         totalSupply_ = totalSupply_.add(_value);
         balances[_target] = currBalance.add(_value);
+        emit Transfer(address(0x0), _target, _value);
     }
 
 }

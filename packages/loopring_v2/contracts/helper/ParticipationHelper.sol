@@ -42,7 +42,7 @@ library ParticipationHelper {
             // No need to check the fee balance of the owner if feeToken == tokenB,
             // fillAmountB will be used to pay the fee.
             if (!(p.order.feeToken == p.order.tokenB &&
-                  p.order.owner == p.order.tokenRecipient &&
+                  // p.order.owner == p.order.tokenRecipient &&
                   p.order.feeAmount <= p.order.amountB)) {
                 // Check how much fee needs to be paid. We limit fillAmountS to how much
                 // fee the order owner can pay.
@@ -98,7 +98,7 @@ library ParticipationHelper {
             // If feeToken == tokenB AND owner == tokenRecipient, try to pay using fillAmountB
 
             if (p.order.feeToken == p.order.tokenB &&
-                p.order.owner == p.order.tokenRecipient &&
+                // p.order.owner == p.order.tokenRecipient &&
                 p.fillAmountB >= p.feeAmount) {
                 p.feeAmountB = p.feeAmount;
                 p.feeAmount = 0;

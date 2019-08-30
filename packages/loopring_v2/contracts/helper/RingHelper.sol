@@ -395,35 +395,29 @@ library RingHelper {
             addBrokerTokenTransfer(
                 ctx,
                 p.order.feeToken,
-                p.order.owner,
-                p.order.broker,
                 address(ctx.feeHolder),
                 amountFeeToFeeHolder,
+                p.order,
                 true,
-                0,
-                p.orderIndex
+                0
             );
             addBrokerTokenTransfer(
                 ctx,
                 p.order.tokenS,
-                p.order.owner,
-                p.order.broker,
                 address(ctx.feeHolder),
                 amountSToFeeHolder,
+                p.order,
                 true,
-                0,
-                p.orderIndex
+                0
             );
             addBrokerTokenTransfer(
                 ctx,
                 p.order.tokenS,
-                p.order.owner,
-                p.order.broker,
                 prevP.order.tokenRecipient,
                 amountSToBuyer,
+                p.order,
                 false,
-                amountBFromSeller,
-                p.orderIndex
+                amountBFromSeller
             );
         }
         
@@ -443,27 +437,23 @@ library RingHelper {
     function addBrokerTokenTransfer(
         Data.Context memory ctx,
         address token, 
-        address owner, 
-        address broker,
         address to,
         uint amount,
+        Data.Order memory order,
         bool isForFee,
-        uint receivedAmount,
-        uint orderIndex
+        uint receivedAmount
         )
         internal
         pure
     {
         if (amount > 0) {
             ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(
-                orderIndex,
-                owner,
-                broker,
-                isForFee,
-                receivedAmount,
                 token,
                 to,
-                amount);
+                amount,
+                order,
+                isForFee,
+                receivedAmount);
             ctx.numBrokerTransfers++;
         }
     }

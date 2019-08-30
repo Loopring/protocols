@@ -547,26 +547,25 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     function batchBrokerTransferTokens(Data.Context memory ctx, Data.Order[] memory orders) internal {
         for (uint i = 0; i < ctx.numBrokerTransfers; i++) {
             Data.BrokerTransfer memory transfer = ctx.brokerTransfers[i];
-            Data.Order memory order = orders[transfer.orderIndex];
           
-            IBrokerDelegate(transfer.broker).brokerRequestAllowance(
-                transfer.owner,
-                order.tokenB,
+            IBrokerDelegate(transfer.order.broker).brokerRequestAllowance(
+                transfer.order.owner,
+                transfer.order.tokenB,
                 transfer.receivedAmount,
-                order.tokenRecipient,
+                transfer.order.tokenRecipient,
                 transfer.token,
                 transfer.amount,
                 transfer.recipient,
-                order.transferDataS,
+                transfer.order.transferDataS,
                 transfer.isFee
             );
 
             // If the recipient is the broker, do not transfer the tokens
             // The broker should check for this and internally handle it
             // if applicable
-            if (transfer.recipient != transfer.broker) {
+            if (transfer.recipient != transfer.order.broker) {
                 require(transfer.token.safeTransferFrom(
-                    transfer.broker, 
+                    transfer.order.broker, 
                     transfer.recipient, 
                     transfer.amount
                 ), TRANSFER_FAILURE);

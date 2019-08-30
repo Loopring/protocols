@@ -411,7 +411,7 @@ library ExchangeDeserializer {
     {
         uint ringsArrayDataSize = (1 + numRings) * 32;
         uint ringStructSize = 5 * 32;
-        uint participationStructSize = 11 * 32;
+        uint participationStructSize = 10 * 32;
 
         assembly {
             // Allocate memory for all rings
@@ -470,19 +470,16 @@ library ExchangeDeserializer {
                         mload(add(orders, mul(add(orderIndex, 1), 32)))
                     )
 
-                    // participation.orderIndex
-                    mstore(add(participation,  32), orderIndex) 
-
                     // Set default values
-                    mstore(add(participation,  64), 0)          // participation.splitS
-                    mstore(add(participation,  96), 0)          // participation.feeAmount
-                    mstore(add(participation, 128), 0)          // participation.feeAmountS
-                    mstore(add(participation, 160), 0)          // participation.feeAmountB
-                    mstore(add(participation, 192), 0)          // participation.rebateFee
-                    mstore(add(participation, 224), 0)          // participation.rebateS
-                    mstore(add(participation, 256), 0)          // participation.rebateB
-                    mstore(add(participation, 288), 0)          // participation.fillAmountS
-                    mstore(add(participation, 320), 0)          // participation.fillAmountB
+                    mstore(add(participation,  32), 0)          // participation.splitS
+                    mstore(add(participation,  64), 0)          // participation.feeAmount
+                    mstore(add(participation,  96), 0)          // participation.feeAmountS
+                    mstore(add(participation, 128), 0)          // participation.feeAmountB
+                    mstore(add(participation, 160), 0)          // participation.rebateFee
+                    mstore(add(participation, 192), 0)          // participation.rebateS
+                    mstore(add(participation, 224), 0)          // participation.rebateB
+                    mstore(add(participation, 256), 0)          // participation.fillAmountS
+                    mstore(add(participation, 288), 0)          // participation.fillAmountB
                 }
 
                 // Advance to the next ring
