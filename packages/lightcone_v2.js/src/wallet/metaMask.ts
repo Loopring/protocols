@@ -1,9 +1,14 @@
 import Web3 from "web3";
 
 import { exchange } from "..";
+import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
+import config from "../lib/wallet/config";
+import * as datas from "../lib/wallet/config/data";
+import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 
 import Eth from "../lib/wallet/ethereum/eth";
+import Transaction from "../lib/wallet/ethereum/transaction";
 import { MetaMaskAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
 
@@ -17,7 +22,55 @@ export class MetaMask {
     this.web3 = web3;
     this.account = new MetaMaskAccount(web3,account,account);
     this.address = account;
-    this.ethNode = new Eth("http://localhost:8545"); // TODO: config
+  }
+
+  public getAddress() {
+    return this.account.getAddress();
+  }
+
+  /**
+   * Approve
+   * @param symbol approve token symbol
+   * @param amount number amount to approve, e.g. 1.5
+   * @param gasPrice in gwei
+   */
+  public async approve(symbol: string, amount: number, gasPrice: number) {
+    const token = config.getTokenBySymbol(symbol);
+    const rawTx = new Transaction({
+      to: token.address,
+      value: "0x0",
+      data: Contracts.ERC20Token.encodeInputs("approve", {
+        _spender: datas.configs.delegateAddress,
+        _value: amount
+      }),
+      chainId: config.getChainId(),
+      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+      gasLimit: fm.toHex(config.getGasLimitByType("approve").gasLimit)
+    });
+    const signedTx = this.account.signEthereumTx(rawTx);
+    return this.account.sendTransaction(this.ethNode, signedTx);
+  }
+
+  /**
+   * create Or Update Account in DEX
+   * @param gasPrice in gwei
+   */
+  public async createOrUpdateAccount(gasPrice: number) {
+    try {
+      const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
+        this.account,
+        gasPrice
+      );
+      const rawTx = createOrUpdateAccountResposne["rawTx"];
+      const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
+      return {
+        signedTx: signedEthereumTx,
+        keyPair: createOrUpdateAccountResposne["keyPair"]
+      };
+    } catch (e) {
+      throw e;
+    }
   }
 
 
@@ -50,22 +103,16 @@ export class MetaMask {
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
     try {
+      if (symbol !== "ETH") {
+        await this.approve(symbol, amount, gasPrice);
+      }
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
         amount,
         gasPrice
       );
-      const signedTx = this.account.signEthereumTx(rawTx.raw);
-      const sendTransactionResponse = await this.account.sendTransaction(
-        this.ethNode,
-        signedTx
-      );
-      console.log(
-        "depositTo sendTransactionResponse:",
-        sendTransactionResponse
-      );
-      return sendTransactionResponse;
+      return this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -85,16 +132,7 @@ export class MetaMask {
         amount,
         gasPrice
       );
-      const signedTx = this.account.signEthereumTx(rawTx.raw);
-      const sendTransactionResponse = await this.account.sendTransaction(
-        this.ethNode,
-        signedTx
-      );
-      console.log(
-        "withdrawFrom sendTransactionResponse:",
-        sendTransactionResponse
-      );
-      return sendTransactionResponse;
+      return this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
