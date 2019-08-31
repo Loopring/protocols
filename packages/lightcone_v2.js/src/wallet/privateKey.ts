@@ -73,6 +73,8 @@ export class PrivateKey {
    */
   public async approve(symbol: string, amount: number, gasPrice: number) {
     const token = config.getTokenBySymbol(symbol);
+    console.log("In approve(symbol: string, amount: number, gasPrice: number)");
+    console.log(token);
     const rawTx = new Transaction({
       to: token.address,
       value: "0x0",

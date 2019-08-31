@@ -15,10 +15,10 @@ const get = () => {
   } else {
     return {
       preference: {
-        language: window["USER_AGENT"].getLanguage() || "en-US",
-        currency:
-          window["USER_AGENT"].getLanguage() === "zh-CN" ? "CNY" : "USD",
-        timezone: "UTC+00:00"
+        // language: window["USER_AGENT"].getLanguage() || "en-US",
+        // currency:
+        //   window["USER_AGENT"].getLanguage() === "zh-CN" ? "CNY" : "USD",
+        // timezone: "UTC+00:00"
       },
       trading: {
         contract: {
@@ -38,6 +38,7 @@ const get = () => {
     };
   }
 };
+
 const getRelay = () => {
   const defaultHost = sortedRelays[0].value;
   if (localStorage.settings) {
@@ -58,10 +59,13 @@ const getContractVersion = () => {
 };
 
 const setTokensConfig = (tokens: any) => {
+  console.log("set tokensConfig ......");
   localStorage.tokensConfig = JSON.stringify(tokens);
 };
+setTokensConfig(configs.tokens);
 
 const getTokensConfig = () => {
+  console.log("settings.getTokensConfig ... ", localStorage.tokensConfig);
   if (localStorage.tokensConfig) {
     return JSON.parse(localStorage.tokensConfig);
   } else {
