@@ -85,9 +85,7 @@ export class PrivateKey {
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasLimit)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx.raw);
   }
 
   /**

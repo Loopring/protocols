@@ -252,7 +252,12 @@ export class Exchange {
       Ry: order.tradingSigRy,
       s: order.tradingSigS
     };
-    console.log(order.signature);
+    console.log("\n################################");
+    console.log("order.signature.Rx", order.signature.Rx);
+    console.log("order.signature.Ry", order.signature.Ry);
+    console.log("order.signature.s", order.signature.s);
+    console.log("\n################################");
+
     return order;
   }
 
@@ -264,6 +269,9 @@ export class Exchange {
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = config.getTokenBySymbol(order.tokenB).address;
     }
+
+    order.amountS = fm.toBN("100000000000000000000");
+    order.amountB = fm.toBN("100000000000000000000");
 
     if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
       const keyPair = generateKeyPair(this.currentWalletAccount.getAddress());
