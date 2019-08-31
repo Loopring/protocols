@@ -87,9 +87,7 @@ export class PrivateKey {
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasLimit)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx.raw);
   }
 
   /**
@@ -167,9 +165,6 @@ export class PrivateKey {
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
     try {
-      if (symbol !== "ETH") {
-        await this.approve(symbol, amount, gasPrice);
-      }
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
@@ -246,8 +241,8 @@ export class PrivateKey {
       order.tradingPubKeyX = tradingPubKeyX;
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
-      order.amountS = fm.toBN("1000000000000000000");
-      order.amountB = fm.toBN("100000000000000000000"); // TODO
+      order.amountS = fm.toBN(amountS).mul(fm.toBN(1000000000000000000));
+      order.amountB = fm.toBN(amountS).mul(fm.toBN(100000000000000000000)); // TODO
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);

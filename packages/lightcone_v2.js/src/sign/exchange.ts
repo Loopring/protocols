@@ -19,11 +19,9 @@ export class Exchange {
 
   // Init when web app launches
   private hasInitialized: boolean;
-
   private exchangeID: number;
   private exchangeAddr: string;
   private walletAddressID: number;
-
   public contractURL: string;
   private accounts: Map<WalletAccount, DexAccount>;
 
@@ -44,9 +42,7 @@ export class Exchange {
     this.exchangeAddr = "0x3d88d9C4adC342cEff41855CF540844268390BE6"; // TODO: config
     this.walletAddressID = 0; // TODO: config
     this.accounts = new Map<WalletAccount, DexAccount>();
-
     this.hasInitialized = true;
-
     this.dexConfigurations = await RestApiServer.getDexConfigurations();
   }
 
@@ -64,7 +60,6 @@ export class Exchange {
   public async createOrUpdateAccount(wallet: WalletAccount, gasPrice: number) {
     try {
       this.checkIfInitialized();
-
       const keyPair = generateKeyPair(wallet.getAddress());
       this.currentWalletAccount = wallet;
       const transaction = await this.createAccountAndDeposit(
@@ -246,8 +241,8 @@ export class Exchange {
     message.addNumber(order.buy ? 1 : 0, 1);
     // const account = this.accounts[this.exchangeId][order.accountId];
     const sig = sign(order.tradingPrivKey, message.getBits());
-    order.hash = sig.hash;
 
+    order.hash = sig.hash;
     order.tradingSigRx = sig.R[0].toString();
     order.tradingSigRy = sig.R[1].toString();
     order.tradingSigS = sig.S.toString();
@@ -257,7 +252,12 @@ export class Exchange {
       Ry: order.tradingSigRy,
       s: order.tradingSigS
     };
-    console.log(order.signature);
+    console.log("\n################################");
+    console.log("order.signature.Rx", order.signature.Rx);
+    console.log("order.signature.Ry", order.signature.Ry);
+    console.log("order.signature.s", order.signature.s);
+    console.log("\n################################");
+
     return order;
   }
 
@@ -269,6 +269,9 @@ export class Exchange {
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = config.getTokenBySymbol(order.tokenB).address;
     }
+
+    order.amountS = fm.toBN("100000000000000000000");
+    order.amountB = fm.toBN("100000000000000000000");
 
     if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
       const keyPair = generateKeyPair(this.currentWalletAccount.getAddress());
