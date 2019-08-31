@@ -19,11 +19,9 @@ export class Exchange {
 
   // Init when web app launches
   private hasInitialized: boolean;
-
   private exchangeID: number;
   private exchangeAddr: string;
   private walletAddressID: number;
-
   public contractURL: string;
   private accounts: Map<WalletAccount, DexAccount>;
 
@@ -44,9 +42,7 @@ export class Exchange {
     this.exchangeAddr = "0x3d88d9C4adC342cEff41855CF540844268390BE6"; // TODO: config
     this.walletAddressID = 0; // TODO: config
     this.accounts = new Map<WalletAccount, DexAccount>();
-
     this.hasInitialized = true;
-
     this.dexConfigurations = await RestApiServer.getDexConfigurations();
   }
 
@@ -245,8 +241,8 @@ export class Exchange {
     message.addNumber(order.buy ? 1 : 0, 1);
     // const account = this.accounts[this.exchangeId][order.accountId];
     const sig = sign(order.tradingPrivKey, message.getBits());
-    order.hash = sig.hash;
 
+    order.hash = sig.hash;
     order.tradingSigRx = sig.R[0].toString();
     order.tradingSigRy = sig.R[1].toString();
     order.tradingSigS = sig.S.toString();

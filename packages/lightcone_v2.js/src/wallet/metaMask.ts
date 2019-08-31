@@ -160,8 +160,8 @@ export class MetaMask {
       order.tradingPubKeyX = tradingPubKeyX;
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
-      order.amountS = fm.toBN("1000000000000000000");
-      order.amountB = fm.toBN("100000000000000000000"); // TODO
+      order.amountS = fm.toBN(amountS).mul(fm.toBN(1000000000000000000));
+      order.amountB = fm.toBN(amountS).mul(fm.toBN(100000000000000000000)); // TODO
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);
