@@ -300,8 +300,9 @@ export class Exchange {
     return this.signOrder(order);
   }
 
-  public async submitOrder(orderInfo: OrderInfo) {
-    // const order = new Order();
+  public async submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
+    this.currentWalletAccount = wallet;
+    // In setupOrder, we will use currentWalletAccount.
     return await this.setupOrder(orderInfo);
 
     // order.setExchangeId(orderInfo.exchangeId);

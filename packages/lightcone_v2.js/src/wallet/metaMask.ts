@@ -164,7 +164,7 @@ export class MetaMask {
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);
-      return exchange.submitOrder(order);
+      return exchange.submitOrder(this.account, order);
     } catch (e) {
       throw e;
     }
