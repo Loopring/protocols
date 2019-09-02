@@ -252,6 +252,7 @@ export class PrivateKey {
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);
+      order.buy = false;
       return exchange.submitOrder(this.account, order);
     } catch (e) {
       throw e;
