@@ -241,8 +241,14 @@ export class PrivateKey {
       order.tradingPubKeyX = tradingPubKeyX;
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
-      order.amountS = fm.toBN(amountS).mul(fm.toBN(1000000000000000000));
-      order.amountB = fm.toBN(amountS).mul(fm.toBN(100000000000000000000)); // TODO
+
+      let bigNumber = fm.toBig(amountS).times(fm.toBig(1000000000000000000));
+      order.amountSInBN = fm.toBN(bigNumber);
+      bigNumber = fm.toBig(amountB).times(fm.toBig(1000000000000000000));
+      order.amountBInBN = fm.toBN(bigNumber);
+      order.amountS = order.amountSInBN.toString(10);
+      order.amountB = order.amountBInBN.toString(10);
+
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);

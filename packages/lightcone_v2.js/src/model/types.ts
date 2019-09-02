@@ -24,8 +24,10 @@ export class OrderInfo {
   owner: string;
   tokenS: string;
   tokenB: string;
-  amountS: BN;
-  amountB: BN;
+  amountSInBN: BN;
+  amountBInBN: BN;
+  amountS: string;
+  amountB: string;
 
   exchangeId?: number;
   accountId?: number;

@@ -232,8 +232,8 @@ export class Exchange {
     message.addString(order.dualAuthPubKeyY, 254);
     message.addNumber(order.tokenSId, 8);
     message.addNumber(order.tokenBId, 8);
-    message.addBN(order.amountS, 96);
-    message.addBN(order.amountB, 96);
+    message.addBN(order.amountSInBN, 96);
+    message.addBN(order.amountBInBN, 96);
     message.addNumber(order.allOrNone ? 1 : 0, 1);
     message.addNumber(order.validSince, 32);
     message.addNumber(order.validUntil, 32);
@@ -252,11 +252,11 @@ export class Exchange {
       Ry: order.tradingSigRy,
       s: order.tradingSigS
     };
-    console.log("\n################################");
+    console.log("\n######################################");
     console.log("order.signature.Rx", order.signature.Rx);
     console.log("order.signature.Ry", order.signature.Ry);
     console.log("order.signature.s", order.signature.s);
-    console.log("\n################################");
+    console.log("\n######################################");
 
     return order;
   }
@@ -269,9 +269,6 @@ export class Exchange {
     if (!order.tokenB.startsWith("0x")) {
       order.tokenB = config.getTokenBySymbol(order.tokenB).address;
     }
-
-    order.amountS = fm.toBN("100000000000000000000");
-    order.amountB = fm.toBN("100000000000000000000");
 
     if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
       const keyPair = generateKeyPair(this.currentWalletAccount.getAddress());
