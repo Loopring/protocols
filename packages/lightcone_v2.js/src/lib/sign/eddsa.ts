@@ -1,4 +1,5 @@
 import { bigInt } from "snarkjs";
+import { BitArray } from "./bitarray";
 
 const createBlakeHash = require("blake-hash");
 const babyJub = require("./babyjub");
@@ -34,7 +35,7 @@ export function prv2pub(prv) {
 export function toBitsBigInt(value, length) {
   const res = new Array(length);
   for (let i = 0; i < length; i++) {
-    res[i] = value.and(new bigInt("1").shl(i)).isZero() ? 0 : 1;
+    res[i] = value.and(bigInt("1").shl(i)).isZero() ? 0 : 1;
   }
   return res;
 }
@@ -51,13 +52,8 @@ export function bitsToBigInt(bits) {
   return value;
 }
 
-export function getRandomInt(max) {
-  return Math.floor(Math.random() * max);
-}
-
-export function generateKeyPair() {
-  // TODO: secure random number generation
-  const randomNumber = getRandomInt(218882428718390);
+export function generateKeyPair(seed: string) {
+  let randomNumber = BitArray.hashCode(seed);
   let secretKey = bigInt(randomNumber.toString(10));
   secretKey = secretKey.mod(babyJub.subOrder);
   const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
@@ -77,46 +73,23 @@ export function sign(strKey, bits) {
     Math.floor(bits.length + 7) / 8
   );
 
-  console.log("msg: " + msg.toString("hex"));
-
   const h1 = createBlakeHash("blake512")
     .update(prv)
     .digest();
-  // const sBuff = pruneBuffer(h1.slice(0,32));
-  // const s = bigInt.leBuff2int(sBuff);
-  // const A = babyJub.mulPointEscalar(babyJub.Base8, s.shr(3));
-
   const rBuff = createBlakeHash("blake512")
     .update(Buffer.concat([h1.slice(32, 64), msg]))
     .digest();
   let r = bigInt.leBuff2int(rBuff);
   r = r.mod(babyJub.subOrder);
 
-  console.log("r: " + r.toString(10));
-
-  // const h1 = createBlakeHash("blake512").update(prv).digest();
-  // const sBuff = pruneBuffer(h1.slice(0,32));
-  // const s = bigInt.leBuff2int(sBuff);
-
   const A = babyJub.mulPointEscalar(babyJub.Base8, key);
-
   const R = babyJub.mulPointEscalar(babyJub.Base8, r);
-  // const R8p = babyJub.packPoint(R8);
-  // const Ap = babyJub.packPoint(A);
-
-  console.log("R[0]: " + R[0].toString(10));
-  console.log("R[1]: " + R[1].toString(10));
-  console.log("A[0]: " + A[0].toString(10));
-  console.log("A[1]: " + A[1].toString(10));
 
   const hash = pedersenHash(
     toBitsArray([toBitsBigInt(R[0], 254), toBitsBigInt(A[0], 254), bits])
   );
-  console.log("sig hash: " + hash);
-  // const hm = bigInt.leBuff2int(hmBuff);
   const hm = bigInt(hash);
   const S = r.add(hm.mul(key)).mod(babyJub.order);
-  console.log("sig S: " + S.toString());
   return {
     R: R,
     S: S,

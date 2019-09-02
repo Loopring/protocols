@@ -806,6 +806,7 @@
   ],
   "tokens": [
     {
+      "id": "0",
       "symbol": "ETH",
       "name": "Ether",
       "digits": 18,
@@ -818,18 +819,7 @@
       "minTradeValue": 0.001
     },
     {
-      "symbol": "WETH_OLD",
-      "name": "Wrapped Ether",
-      "digits": 18,
-      "address": "0x2956356cD2a2bf3202F771F50D3D14A367b48070",
-      "unit": "WETH",
-      "website": "https://weth.io",
-      "allowance": "1000000000000000000000",
-      "allowanceWarn": "100000000000000000000",
-      "precision": 6,
-      "minTradeValue": 0.001
-    },
-    {
+      "id": "1",
       "symbol": "WETH",
       "name": "Wrapped Ether",
       "digits": 18,
@@ -842,6 +832,7 @@
       "minTradeValue": 0.001
     },
     {
+      "id": 2,
       "symbol": "LRC",
       "name": "Loopring",
       "digits": 18,

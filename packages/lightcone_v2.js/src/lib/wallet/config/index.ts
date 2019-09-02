@@ -30,6 +30,7 @@ function getChainId() {
 }
 
 function getTokenBySymbol(symbol) {
+  console.log("getTokenBySymbol: ", getTokens());
   if (!symbol) {
     return {};
   }
@@ -54,6 +55,7 @@ function getCustomTokens() {
 }
 
 function getTokens() {
+  console.log("getTokens");
   return settings.getTokensConfig();
 }
 
