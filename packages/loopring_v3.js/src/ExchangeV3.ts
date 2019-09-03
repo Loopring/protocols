@@ -3,30 +3,20 @@ import fs = require("fs");
 import Web3 from "web3";
 import { Bitstream } from "./bitstream";
 import * as constants from "./constants";
-import { fromFloat } from "./float";
 import poseidon = require("./poseidon");
 import { ProtocolV3 } from "./ProtocolV3";
 import { SparseMerkleTree } from "./SparseMerkleTree";
-import {BlockType, BlockState, ForgeMode, Block, Deposit, OnchainWithdrawal, Trade, OffchainWithdrawal,
-        OrderCancellation, TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData} from "./types";
+import {BlockType, BlockState, ForgeMode, Block, Deposit, OnchainWithdrawal,
+        TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData, State} from "./types";
+import { DepositProcessor } from "./RequestProcessors/DepositProcessor";
+import { OnchainWithdrawalProcessor } from "./RequestProcessors/OnchainWithdrawalProcessor";
+import { RingSettlementProcessor } from "./RequestProcessors/RingSettlementProcessor";
+import { OffchainWithdrawalProcessor } from "./RequestProcessors/OffchainWithdrawalProcessor";
+import { OrderCancellationProcessor } from "./RequestProcessors/OrderCancellationProcessor";
 
-interface SettlementValues {
-  fillSA: BN;
-  fillBA: BN;
-  feeA: BN;
-  protocolFeeA: BN;
-  rebateA: BN;
-
-  fillSB: BN;
-  fillBB: BN;
-  feeB: BN;
-  protocolFeeB: BN;
-  rebateB: BN;
-}
-
-interface Range {
-  offset: number;
-  length: number;
+interface Revert {
+  blockIdx: number;
+  numBlocks: number;
 }
 
 export class ExchangeV3 {
@@ -38,7 +28,6 @@ export class ExchangeV3 {
   private exchangeAddress: string;
   private exchangeId: number;
   private exchange: any;
-  private onchainDataAvailability: boolean;
   private forgeMode: ForgeMode;
   private protocol: ProtocolV3;
   private implementation: string;
@@ -52,28 +41,24 @@ export class ExchangeV3 {
   private owner: string;
   private operator: string;
 
-  private shutdown: boolean;
   private inMaintenenance: boolean;
   private inWithdrawalMode: boolean;
   private totalTimeInMaintenanceSeconds: number;
 
   private tokens: Token[] = [];
 
+  private state: State;
+
   private blocks: Block[] = [];
-  private accounts: Account[] = [];
 
-  private ownerToAccountId: { [key: string]: number } = {};
-
-  private deposits: Deposit[] = [];
-  private onchainWithdrawals: OnchainWithdrawal[] = [];
-
-  private processedRequests: any[] = [];
   private numBlocksFinalized: number;
 
   private hasher: any;
   private merkleTree: SparseMerkleTree;
 
   private genesisMerkleRoot = "19576940549163814464655809526001218205804522676808413160044023933932119144961";
+
+  private reverts: Revert[] = [];
 
   public async initialize(web3: Web3, exchangeAddress: string, exchangeId: number, owner: string,
                           onchainDataAvailability: boolean, forgeMode: ForgeMode, protocol: ProtocolV3, implementation: string) {
@@ -82,7 +67,6 @@ export class ExchangeV3 {
     this.exchangeId = exchangeId;
     this.owner = owner;
     this.operator = owner;
-    this.onchainDataAvailability = onchainDataAvailability;
     this.forgeMode = forgeMode;
     this.protocol = protocol;
     this.implementation = implementation;
@@ -100,12 +84,23 @@ export class ExchangeV3 {
 
     this.exchangeCreationTimestamp = await this.exchange.methods.getExchangeCreationTimestamp().call();
 
-    this.shutdown = false;
     this.inMaintenenance = false;
     this.inWithdrawalMode = false;
     this.totalTimeInMaintenanceSeconds = 0;
 
     this.commitBlockFunctionSignature = "0x39d07df5";
+
+    // Reset state
+    this.state = {
+      accounts: [],
+      accountIdToOwner: {},
+      ownerToAccountId: {},
+      deposits: [],
+      onchainWithdrawals: [],
+      processedRequests: [],
+      shutdown: false,
+      onchainDataAvailability,
+    };
 
     const genesisBlock: Block = {
       blockIdx: 0,
@@ -149,7 +144,7 @@ export class ExchangeV3 {
 
       transactionHash: "0x",
     };
-    this.deposits.push(genesisDeposit);
+    this.state.deposits.push(genesisDeposit);
 
     const genesisWithdrawal: OnchainWithdrawal = {
       withdrawalIdx: 0,
@@ -160,18 +155,9 @@ export class ExchangeV3 {
 
       transactionHash: "0x",
     };
-    this.onchainWithdrawals.push(genesisWithdrawal);
+    this.state.onchainWithdrawals.push(genesisWithdrawal);
 
-    const protocolPoolAccount: Account = {
-      accountId: 0,
-      owner: constants.zeroAddress,
-
-      publicKeyX: "0",
-      publicKeyY: "0",
-      nonce: 0,
-      balances: {},
-    };
-    this.accounts.push(protocolPoolAccount);
+    this.setGenesisState();
   }
 
   public async sync(ethereumBlockTo: number) {
@@ -184,7 +170,9 @@ export class ExchangeV3 {
       //console.log(event.event);
       if (event.event === "BlockCommitted") {
         const block = await this.processBlockCommitted(event);
-        await this.processBlock(block);
+        this.processBlock(block, false);
+        // Debugging
+        this.buildMerkleTree();
       } else if (event.event === "AccountCreated") {
         await this.processAccountCreated(event);
       } else if (event.event === "DepositRequested") {
@@ -209,7 +197,7 @@ export class ExchangeV3 {
     }
 
     // Get some values directly from the smart contract because we cannot depend on events
-    // (we can go automatically out of maintenance mode and automitically into withdrawal mode)
+    // (we can go automatically out of maintenance mode and automatically into withdrawal mode)
     this.inMaintenenance = await this.exchange.methods.isInMaintenance().call();
     this.inWithdrawalMode = await this.exchange.methods.isInWithdrawalMode().call();
     this.totalTimeInMaintenanceSeconds = await this.exchange.methods.getTotalTimeInMaintenanceSeconds().call();
@@ -235,7 +223,7 @@ export class ExchangeV3 {
     this.merkleTree = new SparseMerkleTree(10);
     this.merkleTree.newTree(this.hasher([0, 0, 0, balancesMerkleTree.getRoot()]).toString(10));
 
-    for (const account of this.accounts) {
+    for (const account of this.state.accounts) {
       account.balancesMerkleTree = new SparseMerkleTree(4);
       account.balancesMerkleTree.newTree(this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10));
       for (const tokenID of Object.keys(account.balances)) {
@@ -251,13 +239,24 @@ export class ExchangeV3 {
       this.merkleTree.update(account.accountId, this.hasher([account.publicKeyX, account.publicKeyY, account.nonce, account.balancesMerkleTree.getRoot()]).toString(10));
     }
     // console.log("Merkle root: " + this.merkleTree.getRoot());
+    assert.equal(this.merkleTree.getRoot(), this.blocks[this.blocks.length - 1].merkleRoot, "Merkle tree root inconsistent");
+  }
+
+  public buildMerkleTreeForWithdrawalMode() {
+    this.revertToBlock(this.numBlocksFinalized - 1);
+    this.buildMerkleTree();
+  }
+
+  public revertToBlockTest(blockIdx: number) {
+    this.revertToBlock(blockIdx);
+    this.buildMerkleTree();
   }
 
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
-    assert(accountID < this.accounts.length, "invalid account ID");
+    assert(accountID < this.state.accounts.length, "invalid account ID");
     assert(tokenID < this.tokens.length, "invalid token ID");
 
-    const account = this.accounts[accountID];
+    const account = this.state.accounts[accountID];
     const accountMerkleProof = this.merkleTree.createProof(accountID);
     const balanceMerkleProof = account.balancesMerkleTree.createProof(accountID);
 
@@ -302,37 +301,37 @@ export class ExchangeV3 {
   /// Accounts
 
   public getNumAccounts() {
-    return this.accounts.length;
+    return this.state.accounts.length;
   }
 
   public getAccount(accountId: number) {
-    return this.accounts[accountId];
+    return this.state.accounts[accountId];
   }
 
   public getAccountByOwner(owner: string) {
-    return this.accounts[this.getAccountId(owner)];
+    return this.state.accounts[this.getAccountId(owner)];
   }
 
   public getAccountId(owner: string) {
-    return this.ownerToAccountId[owner];
+    return this.state.ownerToAccountId[owner];
   }
 
   /// Processed requests
 
   public getNumProcessedRequests() {
-    return this.processedRequests.length;
+    return this.state.processedRequests.length;
   }
 
   public getProcessedRequest(requestIdx: number) {
-    return this.processedRequests[requestIdx];
+    return this.state.processedRequests[requestIdx];
   }
 
   public getProcessedRequests(startIdx: number, count: number) {
     const requests: any[] = [];
-    if (startIdx >= this.processedRequests.length) {
+    if (startIdx >= this.state.processedRequests.length) {
       return [];
     }
-    const endIdx = Math.min(startIdx + count, this.processedRequests.length);
+    const endIdx = Math.min(startIdx + count, this.state.processedRequests.length);
     for (let i = startIdx; i < endIdx; i++) {
       requests.push(this.getProcessedRequest(i));
     }
@@ -350,19 +349,19 @@ export class ExchangeV3 {
   /// Deposits
 
   public getNumDeposits() {
-    return this.deposits.length;
+    return this.state.deposits.length;
   }
 
   public getDeposit(depositIdx: number) {
-    return this.deposits[depositIdx];
+    return this.state.deposits[depositIdx];
   }
 
   public getDeposits(startIdx: number, count: number) {
     const deposits: Deposit[] = [];
-    if (startIdx >= this.deposits.length) {
+    if (startIdx >= this.state.deposits.length) {
       return [];
     }
-    const endIdx = Math.min(startIdx + count, this.deposits.length);
+    const endIdx = Math.min(startIdx + count, this.state.deposits.length);
     for (let i = startIdx; i < endIdx; i++) {
       deposits.push(this.getDeposit(i));
     }
@@ -372,19 +371,19 @@ export class ExchangeV3 {
   /// On-chain withdrawals
 
   public getNumOnchainWithdrawalRequests() {
-    return this.onchainWithdrawals.length;
+    return this.state.onchainWithdrawals.length;
   }
 
   public getOnchainWithdrawalRequest(withdrawalIdx: number) {
-    return this.onchainWithdrawals[withdrawalIdx];
+    return this.state.onchainWithdrawals[withdrawalIdx];
   }
 
   public getOnchainWithdrawalRequests(startIdx: number, count: number) {
     const withdrawals: OnchainWithdrawal[] = [];
-    if (startIdx >= this.onchainWithdrawals.length) {
+    if (startIdx >= this.state.onchainWithdrawals.length) {
       return [];
     }
-    const endIdx = Math.min(startIdx + count, this.onchainWithdrawals.length);
+    const endIdx = Math.min(startIdx + count, this.state.onchainWithdrawals.length);
     for (let i = startIdx; i < endIdx; i++) {
       withdrawals.push(this.getOnchainWithdrawalRequest(i));
     }
@@ -410,7 +409,7 @@ export class ExchangeV3 {
   }
 
    public hasOnchainDataAvailability() {
-    return this.onchainDataAvailability;
+    return this.state.onchainDataAvailability;
   }
 
   public getForgeMode() {
@@ -522,25 +521,15 @@ export class ExchangeV3 {
   }
 
   private async processAccountCreated(event: any) {
-    // Make sure the accounts are in the right order
-    assert.equal(this.accounts.length, parseInt(event.returnValues.id), "Unexpected account ID");
-
-    const newAccount: Account = {
-      accountId: parseInt(event.returnValues.id),
-      owner: event.returnValues.owner,
-
-      publicKeyX: event.returnValues.pubKeyX,
-      publicKeyY: event.returnValues.pubKeyY,
-      nonce: 0,
-      balances: {},
-    };
-    this.accounts.push(newAccount);
-    this.ownerToAccountId[newAccount.owner] = newAccount.accountId;
+    const owner = event.returnValues.owner;
+    const accountID = parseInt(event.returnValues.id);
+    this.state.ownerToAccountId[owner] = accountID;
+    this.state.accountIdToOwner[accountID] = owner;
   }
 
   private async processDepositRequested(event: any) {
     // Make sure the deposits are in the right order
-    assert.equal(this.deposits.length, parseInt(event.returnValues.depositIdx), "Unexpected depositIdx");
+    assert.equal(this.state.deposits.length, parseInt(event.returnValues.depositIdx), "Unexpected depositIdx");
 
     const deposit: Deposit = {
       depositIdx: parseInt(event.returnValues.depositIdx),
@@ -553,12 +542,12 @@ export class ExchangeV3 {
 
       transactionHash: event.transactionHash,
     };
-    this.deposits.push(deposit);
+    this.state.deposits.push(deposit);
   }
 
   private async processWithdrawalRequested(event: any) {
     // Make sure the onchain withdrawals are in the right order
-    assert.equal(this.onchainWithdrawals.length, parseInt(event.returnValues.withdrawalIdx), "Unexpected withdrawalIdx");
+    assert.equal(this.state.onchainWithdrawals.length, parseInt(event.returnValues.withdrawalIdx), "Unexpected withdrawalIdx");
 
     const onchainWithdrawal: OnchainWithdrawal = {
       withdrawalIdx: parseInt(event.returnValues.withdrawalIdx),
@@ -569,7 +558,7 @@ export class ExchangeV3 {
 
       transactionHash: event.transactionHash,
     };
-    this.onchainWithdrawals.push(onchainWithdrawal);
+    this.state.onchainWithdrawals.push(onchainWithdrawal);
   }
 
   private async processTokenRegistered(event: any) {
@@ -613,7 +602,7 @@ export class ExchangeV3 {
   }
 
   private async processShutdown(event: any) {
-    this.shutdown = true;
+    this.state.shutdown = true;
   }
 
   private async processOperatorChanged(event: any) {
@@ -622,7 +611,14 @@ export class ExchangeV3 {
   }
 
   private async processRevert(event: any) {
-    // TODO
+    const blockIdx = parseInt(event.returnValues.blockIdx);
+    const revert: Revert = {
+      blockIdx,
+      numBlocks: this.blocks.length - blockIdx,
+    };
+    this.reverts.push(revert);
+
+    this.revertToBlock(blockIdx - 1);
   }
 
   private async processOwnershipTransferred(event: any) {
@@ -631,588 +627,82 @@ export class ExchangeV3 {
   }
 
   // Apply the block changes to the current state
-  private async processBlock(block: Block) {
+  private processBlock(block: Block, replay: boolean) {
+    let requests: any[] = [];
     if (block.blockType === BlockType.RING_SETTLEMENT) {
-      this.processBlockRingSettlement(block);
+      requests = RingSettlementProcessor.processBlock(this.state, block);
+      block.totalNumTradesProccesed += replay ? 0 : requests.length;
     } else if (block.blockType === BlockType.DEPOSIT) {
-      this.processBlockDeposit(block);
+      requests = DepositProcessor.processBlock(this.state, block);
+      block.totalNumDepositsProccesed += replay ? 0 : requests.length;
     } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
-      this.processBlockOnchainWithdrawal(block);
+      requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
+      block.totalNumOnchainWithdrawalsProcessed += replay ? 0 : requests.length;
     } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-      this.processBlockOffchainWithdrawal(block);
+      requests = OffchainWithdrawalProcessor.processBlock(this.state, block);
+      block.totalNumOffchainWithdrawalsProcessed += replay ? 0 : requests.length;
     } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
-      this.processBlockOrderCancellation(block);
+      requests = OrderCancellationProcessor.processBlock(this.state, block);
+      block.totalNumOrderCancellationsProcessed += replay ? 0 : requests.length;
     } else {
       assert(false, "Unknown block type");
     }
+
+    if (!replay) {
+      block.numRequestsProcessed = requests.length;
+      block.totalNumRequestsProcessed += requests.length;
+      this.state.processedRequests.push(...requests);
+    }
   }
 
-  /// Deposits
-
-  private processBlockDeposit(block: Block) {
-    const offset = 4 + 32 + 32 + 32 + 32;
-    const data = new Bitstream(block.data);
-    const startIdx = data.extractUint32(offset);
-    const length = data.extractUint32(offset + 4);
-    //console.log("startIdx: " + startIdx);
-    //console.log("length: " + length);
-    for (let i = startIdx; i < startIdx + length; i++) {
-      const deposit = this.deposits[i];
-
-      assert(deposit.accountID < this.accounts.length, "accountID invalid");
-      const account = this.accounts[deposit.accountID];
-      account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || { balance: new BN(0), tradeHistory: {} };
-
-      account.balances[deposit.tokenID].balance = account.balances[deposit.tokenID].balance.add(deposit.amount);
-      if (account.balances[deposit.tokenID].balance.gt(constants.MAX_AMOUNT)) {
-        account.balances[deposit.tokenID].balance = constants.MAX_AMOUNT;
-      }
-      account.publicKeyX = deposit.publicKeyX;
-      account.publicKeyY = deposit.publicKeyY;
-
-      deposit.blockIdx = block.blockIdx;
-      deposit.requestIdx = this.processedRequests.length;
-      this.processedRequests.push(deposit);
+  private revertToBlock(blockIdx: number) {
+    if (blockIdx === this.blocks.length - 1) {
+      // Nothing to revert
+      return;
     }
 
-    block.numRequestsProcessed = length;
-    block.totalNumRequestsProcessed += length;
-    block.totalNumDepositsProccesed += length;
-  }
+    for (let i = this.blocks.length - 1; i > blockIdx; i--) {
+      const block = this.blocks.pop();
 
-  /// Onchain withdrawals
+      if (block.blockType === BlockType.RING_SETTLEMENT) {
+        RingSettlementProcessor.revertBlock(this.state, block);
+      } else if (block.blockType === BlockType.DEPOSIT) {
+        DepositProcessor.revertBlock(this.state, block);
+      } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+        OnchainWithdrawalProcessor.revertBlock(this.state, block);
+      } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
+        OffchainWithdrawalProcessor.revertBlock(this.state, block);
+      } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
+        OrderCancellationProcessor.revertBlock(this.state, block);
+      } else {
+        assert(false, "Unknown block type");
+      }
 
-  private processBlockOnchainWithdrawal(block: Block) {
-    let offset = 4 + 32 + 32 + 32 + 32;
-    const data = new Bitstream(block.data);
-    const startIdx = data.extractUint32(offset);
-    offset += 4;
-    const length = data.extractUint32(offset);
-    offset += 4;
-    //console.log("startIdx: " + startIdx);
-    //console.log("length: " + length);
-    for (let i = 0; i < length; i++) {
-      const approvedWitdrawal = data.extractUint56(offset + i * 7);
-
-      const tokenID = Math.floor(approvedWitdrawal / 2 ** 48) & 0xFF;
-      const accountID = Math.floor(approvedWitdrawal / 2 ** 28) & 0xFFFFF;
-      const amount = fromFloat(approvedWitdrawal & 0xFFFFFFF, constants.Float28Encoding);
-
-      // When a withdrawal is done before the deposit (account creation) we shouldn't
-      // do anything. Just leave everything as it is.
-      if (accountID < this.accounts.length) {
-        const account = this.accounts[accountID];
-        account.balances[tokenID] = account.balances[tokenID] || { balance: new BN(0), tradeHistory: {} };
-
-        const balance = account.balances[tokenID].balance;
-        const amountToSubtract = this.shutdown ? balance : amount;
-
-        // Update balance
-        account.balances[tokenID].balance = account.balances[tokenID].balance.sub(amountToSubtract);
-
-        if (this.shutdown) {
-          account.publicKeyX = "0";
-          account.publicKeyY = "0";
-          account.nonce = 0;
-          account.balances[tokenID].tradeHistory = {};
-        } else {
-          const onchainWithdrawal = this.onchainWithdrawals[startIdx + i];
-          onchainWithdrawal.blockIdx = block.blockIdx;
-          onchainWithdrawal.requestIdx = this.processedRequests.length;
-          this.processedRequests.push(onchainWithdrawal);
-        }
+      const startIdx = this.state.processedRequests.length - 1;
+      const endIdx = startIdx - block.numRequestsProcessed;
+      for (let i = startIdx; i > endIdx; i--) {
+        this.state.processedRequests.pop();
       }
     }
 
-    block.numRequestsProcessed = length;
-    block.totalNumRequestsProcessed += length;
-    block.totalNumOnchainWithdrawalsProcessed += length;
+    // Rebuild the state from scratch
+    this.setGenesisState();
+    for (let i = 1; i < this.blocks.length; i++) {
+      this.processBlock(this.blocks[i], true);
+    }
   }
 
-  /// Offchain withdrawals
+  private setGenesisState() {
+    this.state.accounts = [];
+    const protocolPoolAccount: Account = {
+      accountId: 0,
+      owner: constants.zeroAddress,
 
-  private processBlockOffchainWithdrawal(block: Block) {
-    const data = new Bitstream(block.data);
-
-    const approvedWithdrawalOffset = 4 + 32 + 32;
-
-    let daOffset = approvedWithdrawalOffset + block.blockSize * 7 + 32;
-    const operatorAccountID = data.extractUint24(daOffset);
-    daOffset += 3;
-
-    for (let i = 0; i < block.blockSize; i++) {
-      const approvedWitdrawal = data.extractUint56(approvedWithdrawalOffset + i * 7);
-
-      const tokenID = Math.floor(approvedWitdrawal / 2 ** 48) & 0xFF;
-      const accountID = Math.floor(approvedWitdrawal / 2 ** 28) & 0xFFFFF;
-      const amount = fromFloat(approvedWitdrawal & 0xFFFFFFF, constants.Float28Encoding);
-
-      const feeTokenID = data.extractUint8(daOffset + i * 3);
-      const fee = fromFloat(data.extractUint16(daOffset + i * 3 + 1), constants.Float16Encoding);
-
-      const account = this.accounts[accountID];
-      account.balances[tokenID] = account.balances[tokenID] || { balance: new BN(0), tradeHistory: {} };
-      account.balances[feeTokenID] = account.balances[feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-
-      // Update balanceF
-      account.balances[feeTokenID].balance = account.balances[feeTokenID].balance.sub(fee);
-
-      // Update balance
-      account.balances[tokenID].balance = account.balances[tokenID].balance.sub(amount);
-      account.nonce++;
-
-      // Update operator
-      const operator = this.accounts[operatorAccountID];
-      operator.balances[feeTokenID] = operator.balances[feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-      operator.balances[feeTokenID].balance = operator.balances[feeTokenID].balance.add(fee);
-
-      const offchainWithdrawal: OffchainWithdrawal = {
-        requestIdx: this.processedRequests.length,
-        blockIdx: block.blockIdx,
-        accountID,
-        tokenID,
-        amount,
-        feeTokenID,
-        fee,
-      };
-      this.processedRequests.push(offchainWithdrawal);
-    }
-
-    block.numRequestsProcessed = block.blockSize;
-    block.totalNumRequestsProcessed += block.blockSize;
-    block.totalNumOffchainWithdrawalsProcessed += block.blockSize;
-  }
-
-  // Order cancellations
-
-  private processBlockOrderCancellation(block: Block) {
-    const data = new Bitstream(block.data);
-
-    let offset = 4 + 32 + 32 + 32;
-
-    // General data
-    const operatorAccountID = data.extractUint24(offset);
-    offset += 3;
-
-    // Jump to the specified withdrawal
-    const onchainDataSize = 9;
-
-    const startOffset = offset;
-    for (let i = 0; i < block.blockSize; i++) {
-      offset = startOffset + i * onchainDataSize;
-
-      // Extract onchain data
-      const accountIdAndOrderId = data.extractUint40(offset);
-      offset += 5;
-      const orderTokenID = data.extractUint8(offset);
-      offset += 1;
-      const feeTokenID = data.extractUint8(offset);
-      offset += 1;
-      const fFee = data.extractUint16(offset);
-      offset += 2;
-
-      // Further extraction of packed data
-      const accountID = Math.floor(accountIdAndOrderId / 2 ** 20);
-      const orderID = accountIdAndOrderId & 0xfffff;
-
-      // Decode the float values
-      const fee = fromFloat(fFee, constants.Float16Encoding);
-
-      // Update the Merkle tree with the onchain data
-      this.cancelOrder(
-        operatorAccountID,
-        accountID,
-        orderTokenID,
-        orderID,
-        feeTokenID,
-        fee,
-      );
-
-      const orderCancellation: OrderCancellation = {
-        requestIdx: this.processedRequests.length,
-        blockIdx: block.blockIdx,
-        accountID,
-        orderTokenID,
-        orderID,
-        feeTokenID,
-        fee,
-      };
-      this.processedRequests.push(orderCancellation);
-    }
-
-    block.numRequestsProcessed = block.blockSize;
-    block.totalNumRequestsProcessed += block.blockSize;
-    block.totalNumOrderCancellationsProcessed += block.blockSize;
-  }
-
-  private cancelOrder(
-    operatorAccountID: number,
-    accountID: number,
-    orderTokenID: number,
-    orderID: number,
-    feeTokenID: number,
-    fee: BN
-  ) {
-    const account = this.accounts[accountID];
-    account.balances[orderTokenID] = account.balances[orderTokenID] || { balance: new BN(0), tradeHistory: {} };
-    account.balances[feeTokenID] = account.balances[feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-
-    const tradeHistorySlot = orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
-
-    // Update balance
-    account.balances[feeTokenID].balance = account.balances[feeTokenID].balance.sub(fee);
-    account.nonce++;
-
-    // Update trade history
-    account.balances[orderTokenID].tradeHistory[tradeHistorySlot] = account.balances[orderTokenID].tradeHistory[tradeHistorySlot] || {filled: new BN(0), cancelled: false, orderID: 0};
-    const tradeHistory = account.balances[orderTokenID].tradeHistory[tradeHistorySlot];
-    if (tradeHistory.orderID < orderID) {
-      tradeHistory.filled = new BN(0);
-    }
-    tradeHistory.cancelled = true;
-    tradeHistory.orderID = orderID;
-
-    // Update operator
-    const operator = this.accounts[operatorAccountID];
-    operator.balances[feeTokenID] = operator.balances[feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-    operator.balances[feeTokenID].balance = operator.balances[feeTokenID].balance.add(fee);
-  }
-
-  // Rings settlements
-
-  private processBlockRingSettlement(block: Block) {
-    let data: Bitstream;
-    if (this.onchainDataAvailability) {
-      // Reverse circuit transform
-      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 32 + 3;
-      const ringData = this.inverseTransformRingSettlementsData(
-        "0x" + block.data.slice(2 + 2 * ringDataStart)
-      );
-      data = new Bitstream(
-        block.data.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2)
-      );
-    } else {
-      data = new Bitstream(block.data);
-    }
-
-    let offset = 0;
-
-    // General data
-    offset += 4 + 32 + 32 + 4;
-    const protocolFeeTakerBips = data.extractUint8(offset);
-    offset += 1;
-    const protocolFeeMakerBips = data.extractUint8(offset);
-    offset += 1;
-    // LabelHash
-    offset += 32;
-    const operatorAccountID = data.extractUint24(offset);
-    offset += 3;
-
-    for (let i = 0; i < block.blockSize; i++) {
-      // Jump to the specified ring
-      const ringSize = 20;
-      offset += i * ringSize;
-
-      // Order IDs
-      const orderIds = data.extractUint40(offset);
-      offset += 5;
-
-      // Accounts
-      const accounts = data.extractUint40(offset);
-      offset += 5;
-
-      // Order A
-      const tokenA = data.extractUint8(offset);
-      offset += 1;
-      const fFillSA = data.extractUint24(offset);
-      offset += 3;
-      const orderDataA = data.extractUint8(offset);
-      offset += 1;
-
-      // Order B
-      const tokenB = data.extractUint8(offset);
-      offset += 1;
-      const fFillSB = data.extractUint24(offset);
-      offset += 3;
-      const orderDataB = data.extractUint8(offset);
-      offset += 1;
-
-      // Further extraction of packed data
-      const orderIdA = Math.floor(orderIds / 2 ** 20);
-      const orderIdB = orderIds & 0xfffff;
-
-      const accountIdA = Math.floor(accounts / 2 ** 20);
-      const accountIdB = accounts & 0xfffff;
-
-      const buyMaskA = orderDataA & 0b10000000;
-      const rebateMaskA = orderDataA & 0b01000000;
-      const feeOrRebateA = orderDataA & 0b00111111;
-      const buyA = buyMaskA > 0;
-      const feeBipsA = rebateMaskA > 0 ? 0 : feeOrRebateA;
-      const rebateBipsA = rebateMaskA > 0 ? feeOrRebateA : 0;
-
-      const buyMaskB = orderDataB & 0b10000000;
-      const rebateMaskB = orderDataB & 0b01000000;
-      const feeOrRebateB = orderDataB & 0b00111111;
-      const buyB = buyMaskB > 0;
-      const feeBipsB = rebateMaskB > 0 ? 0 : feeOrRebateB;
-      const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
-
-      // Decode the float values
-      const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
-      const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
-
-      // Update the state with the onchain data
-      const settlementValues = this.settleRing(
-        protocolFeeTakerBips,
-        protocolFeeMakerBips,
-        operatorAccountID,
-        fillSA,
-        fillSB,
-        buyA,
-        buyB,
-        tokenA,
-        tokenB,
-        orderIdA,
-        accountIdA,
-        feeBipsA,
-        rebateBipsA,
-        orderIdB,
-        accountIdB,
-        feeBipsB,
-        rebateBipsB
-      );
-
-      const trade: Trade = {
-        requestIdx: this.processedRequests.length,
-        blockIdx: block.blockIdx,
-
-        accountIdA,
-        fillSA: settlementValues.fillSA,
-        feeA: settlementValues.feeA,
-        protocolFeeA: settlementValues.protocolFeeA,
-        rebateA: settlementValues.rebateA,
-
-        accountIdB,
-        fillSB: settlementValues.fillSB,
-        feeB: settlementValues.feeB,
-        protocolFeeB: settlementValues.protocolFeeB,
-        rebateB: settlementValues.rebateB,
-      };
-      this.processedRequests.push(trade);
-    }
-
-    // Update operator nonce
-    const operator = this.accounts[operatorAccountID];
-    operator.nonce++;
-
-    block.numRequestsProcessed = block.blockSize;
-    block.totalNumRequestsProcessed += block.blockSize;
-    block.totalNumTradesProccesed += block.blockSize;
-  }
-
-  private settleRing(
-    protocolFeeTakerBips: number,
-    protocolFeeMakerBips: number,
-    operatorId: number,
-    fillSA: BN,
-    fillSB: BN,
-    buyA: boolean,
-    buyB: boolean,
-    tokenA: number,
-    tokenB: number,
-    orderIdA: number,
-    accountIdA: number,
-    feeBipsA: number,
-    rebateBipsA: number,
-    orderIdB: number,
-    accountIdB: number,
-    feeBipsB: number,
-    rebateBipsB: number
-  ) {
-    const s = this.calculateSettlementValues(
-      protocolFeeTakerBips,
-      protocolFeeMakerBips,
-      fillSA,
-      fillSB,
-      feeBipsA,
-      feeBipsB,
-      rebateBipsA,
-      rebateBipsB
-    );
-
-    // Update accountA
-    const accountA = this.accounts[accountIdA];
-    accountA.balances[tokenA] = accountA.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
-    accountA.balances[tokenB] = accountA.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-
-    accountA.balances[tokenA].balance = accountA.balances[tokenA].balance.sub(s.fillSA);
-    accountA.balances[tokenB].balance = accountA.balances[tokenB].balance.add(s.fillBA.sub(s.feeA).add(s.rebateA));
-
-    // Update accountB
-    const accountB = this.accounts[accountIdB];
-    accountB.balances[tokenB] = accountB.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-    accountB.balances[tokenA] = accountB.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
-
-    accountB.balances[tokenB].balance = accountB.balances[tokenB].balance.sub(s.fillSB);
-    accountB.balances[tokenA].balance = accountB.balances[tokenA].balance.add(s.fillBB.sub(s.feeB).add(s.rebateB));
-
-    // Update trade history A
-    {
-    const tradeHistorySlotA =
-        orderIdA % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
-    accountA.balances[tokenA].tradeHistory[tradeHistorySlotA] = accountA.balances[tokenA].tradeHistory[tradeHistorySlotA] || {filled: new BN(0), cancelled: false, orderID: 0};
-    const tradeHistoryA =
-        accountA.balances[tokenA].tradeHistory[tradeHistorySlotA];
-    tradeHistoryA.filled =
-        orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
-    tradeHistoryA.filled = tradeHistoryA.filled.add(
-        buyA ? s.fillBA : s.fillSA
-    );
-    tradeHistoryA.cancelled =
-        orderIdA > tradeHistoryA.orderID ? false : tradeHistoryA.cancelled;
-    tradeHistoryA.orderID =
-        orderIdA > tradeHistoryA.orderID ? orderIdA : tradeHistoryA.orderID;
-    }
-    // Update trade history B
-    {
-    const tradeHistorySlotB =
-        orderIdB % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
-    accountB.balances[tokenB].tradeHistory[tradeHistorySlotB] = accountB.balances[tokenB].tradeHistory[tradeHistorySlotB] || {filled: new BN(0), cancelled: false, orderID: 0};
-    const tradeHistoryB =
-        accountB.balances[tokenB].tradeHistory[tradeHistorySlotB];
-    tradeHistoryB.filled =
-        orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
-    tradeHistoryB.filled = tradeHistoryB.filled.add(
-        buyB ? s.fillBB : s.fillSB
-    );
-    tradeHistoryB.cancelled =
-        orderIdB > tradeHistoryB.orderID ? false : tradeHistoryB.cancelled;
-    tradeHistoryB.orderID =
-        orderIdB > tradeHistoryB.orderID ? orderIdB : tradeHistoryB.orderID;
-    }
-
-    // Update protocol fee recipient
-    const protocolFeeAccount = this.accounts[0];
-    protocolFeeAccount.balances[tokenB] = protocolFeeAccount.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-    protocolFeeAccount.balances[tokenA] = protocolFeeAccount.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
-    // - Order A
-    protocolFeeAccount.balances[tokenB].balance = protocolFeeAccount.balances[tokenB].balance.add(s.protocolFeeA);
-    // - Order B
-    protocolFeeAccount.balances[tokenA].balance = protocolFeeAccount.balances[tokenA].balance.add(s.protocolFeeB);
-
-    // Update operator
-    const operator = this.accounts[operatorId];
-    operator.balances[tokenB] = operator.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-    operator.balances[tokenA] = operator.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
-    // - FeeA
-    operator.balances[tokenB].balance = operator.balances[tokenB].balance
-    .add(s.feeA)
-    .sub(s.protocolFeeA)
-    .sub(s.rebateA);
-    // - FeeB
-    operator.balances[tokenA].balance = operator.balances[tokenA].balance
-    .add(s.feeB)
-    .sub(s.protocolFeeB)
-    .sub(s.rebateB);
-
-    return s;
-  }
-
-  public calculateSettlementValues(
-    protocolFeeTakerBips: number,
-    protocolFeeMakerBips: number,
-    fillSA: BN,
-    fillSB: BN,
-    feeBipsA: number,
-    feeBipsB: number,
-    rebateBipsA: number,
-    rebateBipsB: number
-  ) {
-    const fillBA = fillSB;
-    const fillBB = fillSA;
-    const [feeA, protocolFeeA, rebateA] = this.calculateFees(
-      fillBA,
-      protocolFeeTakerBips,
-      feeBipsA,
-      rebateBipsA
-    );
-
-    const [feeB, protocolFeeB, rebateB] = this.calculateFees(
-      fillBB,
-      protocolFeeMakerBips,
-      feeBipsB,
-      rebateBipsB
-    );
-
-    const settlementValues: SettlementValues = {
-      fillSA,
-      fillBA,
-      feeA,
-      protocolFeeA,
-      rebateA,
-
-      fillSB,
-      fillBB,
-      feeB,
-      protocolFeeB,
-      rebateB
+      publicKeyX: "0",
+      publicKeyY: "0",
+      nonce: 0,
+      balances: {},
     };
-    return settlementValues;
-  }
-
-  private calculateFees(
-    fillB: BN,
-    protocolFeeBips: number,
-    feeBips: number,
-    rebateBips: number
-  ) {
-    const protocolFee = fillB.mul(new BN(protocolFeeBips)).div(new BN(100000));
-    const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
-    const rebate = fillB.mul(new BN(rebateBips)).div(new BN(10000));
-    return [fee, protocolFee, rebate];
-  }
-
-  private inverseTransformRingSettlementsData(input: string) {
-    // Inverse Transform
-    const transformed = new Bitstream(input);
-    const ringSize = 20;
-    const numRings = transformed.length() / ringSize;
-    const ranges = this.getRingTransformations();
-    const compressed = new Bitstream();
-    for (let r = 0; r < numRings; r++) {
-      let offset = 0;
-      let ringData = "00".repeat(ringSize);
-      for (const subranges of ranges) {
-        let totalRangeLength = 0;
-        for (const subrange of subranges) {
-          totalRangeLength += subrange.length;
-        }
-        let partialRangeLength = 0;
-        for (const subrange of subranges) {
-          const dataPart = transformed.extractData(offset + totalRangeLength * r + partialRangeLength, subrange.length);
-          ringData = this.replaceAt(ringData, subrange.offset * 2, dataPart);
-          partialRangeLength += subrange.length;
-        }
-        offset += totalRangeLength * numRings;
-      }
-      compressed.addHex(ringData);
-    }
-    return compressed.getData();
-  }
-
-  private getRingTransformations() {
-    const ranges: Range[][] = [];
-    ranges.push([{ offset: 0, length: 5 }]); // orderA.orderID + orderB.orderID
-    ranges.push([{ offset: 5, length: 5 }]); // orderA.accountID + orderB.accountID
-    ranges.push([{ offset: 10, length: 1 }, { offset: 15, length: 1 }]); // orderA.tokenS + orderB.tokenS
-    ranges.push([{ offset: 11, length: 3 }, { offset: 16, length: 3 }]); // orderA.fillS + orderB.fillS
-    ranges.push([{ offset: 14, length: 1 }]); // orderA.data
-    ranges.push([{ offset: 19, length: 1 }]); // orderB.data
-    return ranges;
-  }
-
-  private replaceAt(data: string, index: number, replacement: string) {
-    return (data.substr(0, index) + replacement + data.substr(index + replacement.length));
+    this.state.accounts.push(protocolPoolAccount);
   }
 }

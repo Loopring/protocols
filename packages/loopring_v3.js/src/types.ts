@@ -93,12 +93,16 @@ export enum BlockType {
     requestIdx: number;
 
     accountIdA: number;
+    orderIdA: number;
+    tokenA: number,
     fillSA: BN;
     feeA: BN;
     protocolFeeA: BN;
     rebateA: BN;
 
     accountIdB: number;
+    orderIdB: number;
+    tokenB: number,
     fillSB: BN;
     feeB: BN;
     protocolFeeB: BN;
@@ -162,4 +166,19 @@ export enum BlockType {
     tradeHistoryRoot: string;
     accountMerkleProof: string[];
     balanceMerkleProof: string[];
+  }
+
+  export interface State {
+    accounts: Account[];
+
+    accountIdToOwner: { [key: number]: string };
+    ownerToAccountId: { [key: string]: number };
+
+    deposits: Deposit[];
+    onchainWithdrawals: OnchainWithdrawal[];
+
+    processedRequests: any[];
+
+    onchainDataAvailability: boolean;
+    shutdown: boolean;
   }
