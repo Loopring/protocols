@@ -1,5 +1,6 @@
 import BN = require("bn.js");
 import { ExchangeTestUtil } from "./testExchangeUtil";
+import { expectThrow } from "./expectThrow";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -222,11 +223,14 @@ contract("Exchange", (accounts: string[]) => {
         0
       );
 
-      // Commit the deposit
-      await exchangeTestUtil.commitInternalTransferRequests(exchangeID);
+      // Commit the deposit but not validate off-line, try leaving check to contract.
+      await exchangeTestUtil.commitInternalTransferRequests(exchangeID, false);
 
       // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await expectThrow(
+        exchangeTestUtil.verifyPendingBlocks(exchangeID),
+        "INVALID_PROOF"
+      );
     });
   }); // end of describe()
 }); // end of contract()

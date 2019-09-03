@@ -2055,7 +2055,7 @@ export class ExchangeTestUtil {
 
   public async commitInternalTransferRequests(
     exchangeID: number,
-    shutdown: boolean = false
+    validateWhenCreate: boolean = true
   ) {
     let pendingTransferres = this.pendingInternalTransferRequests[exchangeID];
 
@@ -2069,7 +2069,7 @@ export class ExchangeTestUtil {
     while (numTransferDone < pendingTransferres.length) {
       const transferres: InternalTransferRequest[] = [];
       let numRequestsInBlock = 0;
-      // Get all withdrawals for the block
+      // Get all transferres for the block
       const blockSizes = this.interfalTransferBlockSizes;
       const blockSize = this.getBestBlockSize(
         pendingTransferres.length - numTransferDone,
@@ -2077,7 +2077,6 @@ export class ExchangeTestUtil {
       );
       for (let b = numTransferDone; b < numTransferDone + blockSize; b++) {
         if (b < pendingTransferres.length) {
-          // pendingTransferres[b].slotIdx = withdrawals.length;
           transferres.push(pendingTransferres[b]);
           numRequestsInBlock++;
         } else {
@@ -2131,7 +2130,8 @@ export class ExchangeTestUtil {
       const [blockIdx, blockFilename] = await this.createBlock(
         exchangeID,
         blockType,
-        jWithdrawalsInfo
+        jWithdrawalsInfo,
+        validateWhenCreate
       );
 
       // Store state after
@@ -2177,21 +2177,6 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename
       );
-
-      // /*TODO: commit to contract.
-      // Add as a pending withdrawal
-      // let withdrawalIdx = 0;
-      // for (const withdrawalRequest of block.withdrawals) {
-      //     const withdrawal: Withdrawal = {
-      //         exchangeID,
-      //         blockIdx,
-      //         withdrawalIdx
-      //         };
-      //         this.pendingWithdrawals.push(withdrawal);
-      //         withdrawalIdx++;
-      //     }
-      // }
-      //*/
     }
 
     this.pendingInternalTransferRequests[exchangeID] = [];
