@@ -314,13 +314,13 @@ export class Simulator {
   ) {
     const fee = roundToFloatValue(transfer.fee, constants.Float16Encoding);
 
-    const account = exchangeState.accounts[transfer.accountFromID];
-    let balance = account.balances[transfer.transTokenID].balance;
+    const accountFrom = exchangeState.accounts[transfer.accountFromID];
+    let balanceFrom = accountFrom.balances[transfer.transTokenID].balance;
     if (transfer.transTokenID === transfer.feeTokenID) {
-      balance = balance.sub(fee);
+      balanceFrom = balanceFrom.sub(fee);
     }
-    const amountToTrans = balance.lt(transfer.amount)
-      ? balance
+    const amountToTrans = balanceFrom.lt(transfer.amount)
+      ? balanceFrom
       : transfer.amount;
     const amountTrans = roundToFloatValue(
       amountToTrans,

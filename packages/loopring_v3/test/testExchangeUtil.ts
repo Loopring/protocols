@@ -1237,22 +1237,6 @@ export class ExchangeTestUtil {
     // Make sure the keys are generated
     await this.generateKeys(filename);
 
-    if (blockType == BlockType.INTERNAL_TRANSFER) {
-      // TODO: interact with contract when ready
-      const fakeBlock: Block = {
-        blockIdx: 0,
-        filename: "",
-        blockType: 5,
-        blockSize: 0,
-        blockVersion: 0,
-        operatorId: 0,
-        compressedData: "",
-        publicDataHash: "",
-        publicInput: ""
-      };
-      return fakeBlock;
-    }
-
     const blockHeightBefore = await this.exchange.getBlockHeight();
 
     const blockVersion = 0;
@@ -2165,18 +2149,15 @@ export class ExchangeTestUtil {
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const trans of block.internalTransferres) {
-          bs.addNumber(trans.accountFromID, 3);
-          bs.addNumber(trans.accountToID, 3);
-          bs.addNumber(trans.transTokenID, 1);
-          bs.addNumber(
-            toFloat(new BN(trans.amount), constants.Float28Encoding),
-            4
-          );
-          bs.addNumber(trans.feeTokenID, 1);
+          bs.addNumber(trans.accountFromID, 3); // 20 bit
+          bs.addNumber(trans.accountToID, 3); // 20 bit
+          bs.addNumber(trans.transTokenID, 1); // 8 bit
+          bs.addNumber(trans.fAmountTrans, 4); // 28 bit
+          bs.addNumber(trans.feeTokenID, 1); // 8 bit
           bs.addNumber(
             toFloat(new BN(trans.fee), constants.Float16Encoding),
             2
-          );
+          ); // 16 bit
         }
       }
 
@@ -2188,16 +2169,16 @@ export class ExchangeTestUtil {
         stateAfter
       );
 
-      /*TODO: commit to contract.
       // Commit the block
-        // await this.commitBlock(
-        // operator,
-        // blockType,
-        // blockSize,
-        // bs.getData(),
-        // blockFilename
-        // );
+      await this.commitBlock(
+        operator,
+        blockType,
+        blockSize,
+        bs.getData(),
+        blockFilename
+      );
 
+      // /*TODO: commit to contract.
       // Add as a pending withdrawal
       // let withdrawalIdx = 0;
       // for (const withdrawalRequest of block.withdrawals) {
@@ -3276,7 +3257,10 @@ export class ExchangeTestUtil {
         }
         assert(
           balanceValueA.balance.eq(balanceValueB.balance),
-          "balance does not match"
+          "balance does not match " +
+            balanceValueA.balance +
+            " !=" +
+            balanceValueB.balance
         );
       }
       assert.equal(

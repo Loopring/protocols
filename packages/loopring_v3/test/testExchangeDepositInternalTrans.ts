@@ -23,7 +23,7 @@ contract("Exchange", (accounts: string[]) => {
     exchangeID = 1;
   });
 
-  describe("DepositWithdraw", function() {
+  describe("DepositInternalTransfer", function() {
     this.timeout(0);
 
     it("Internal transfer (normal account)", async () => {

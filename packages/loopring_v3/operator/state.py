@@ -464,7 +464,7 @@ class InternalTransfer(object):
     def __init__(self,
                  exchangeID,
                  accountFromID, accountToID,
-                 transTokenID, amount,
+                 transTokenID, amountRequested, fAmountTrans,
                  feeTokenID, fee, label,
                  nonceFrom, nonceTo,
                  balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
@@ -475,7 +475,8 @@ class InternalTransfer(object):
         self.accountFromID = accountFromID
         self.accountToID = accountToID
         self.transTokenID = transTokenID
-        self.amount = str(amount)
+        self.amountRequested = str(amountRequested)
+        self.fAmountTrans = str(fAmountTrans)
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
         self.label = int(label)
@@ -918,7 +919,7 @@ class State(object):
         # This is done after all internal transfer are processed
         internalTrans = InternalTransfer(exchangeID,
                                     accountFromID, accountToID,
-                                    transTokenID, amountRequested,
+                                    transTokenID, amountRequested, fAmountTrans,
                                     feeTokenID, fee, label,
                                     nonce, nonceTo,
                                     balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
