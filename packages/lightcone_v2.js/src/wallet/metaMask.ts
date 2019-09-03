@@ -4,7 +4,6 @@ import { exchange } from "..";
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
-import * as datas from "../lib/wallet/config/data";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 
 import Eth from "../lib/wallet/ethereum/eth";
@@ -40,7 +39,7 @@ export class MetaMask {
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
-        _spender: datas.configs.delegateAddress,
+        _spender: "0x3d88d9C4adC342cEff41855CF540844268390BE6", // TODO
         _value: amount
       }),
       chainId: config.getChainId(),
@@ -80,9 +79,6 @@ export class MetaMask {
    */
   public async depositTo(symbol: string, amount: number, gasPrice: number) {
     try {
-      if (symbol !== "ETH") {
-        await this.approve(symbol, amount, gasPrice);
-      }
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
