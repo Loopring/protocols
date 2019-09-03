@@ -4,6 +4,7 @@ declare module 'ethereumjs-util';
 declare module 'es6-promisify';
 declare module 'sha2';
 declare module 'snarkjs';
+declare module 'loopringV3.js';
 
 // declare module 'protocol-simulator-core';
 

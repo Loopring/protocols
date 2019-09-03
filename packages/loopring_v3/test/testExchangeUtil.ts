@@ -7,8 +7,6 @@ import { SHA256 } from "sha2";
 import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
-import babyJub = require("./babyjub");
-import { BitArray } from "./bitarray";
 import { Bitstream } from "./bitstream";
 import { compress, CompressionType } from "./compression";
 import * as constants from "./constants";
@@ -18,6 +16,7 @@ import eddsa = require("./eddsa");
 import { toFloat } from "./float";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
 import poseidon = require("./poseidon");
+import Loopring = require("loopringV3.js");
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import {
@@ -34,7 +33,6 @@ import {
   DepositInfo,
   DetailedTokenTransfer,
   ExchangeState,
-  KeyPair,
   OrderInfo,
   RingBlock,
   RingInfo,
@@ -71,6 +69,8 @@ interface Range {
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
+
+  public loopringExplorer: any;
 
   public ringSettlementBlockSizes = [1, 2, 4];
   public depositBlockSizes = [4, 8];
@@ -158,6 +158,9 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
+
+    this.loopringExplorer = new Loopring.LoopringExplorer();
+    await this.loopringExplorer.initialize(web3, this.universalRegistry.address);
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.deployer;
@@ -1222,6 +1225,8 @@ export class ExchangeTestUtil {
       "block state needs to be COMMITTED"
     );
 
+    await this.syncLoopringExplorer();
+
     const block: Block = {
       blockIdx,
       filename,
@@ -2045,6 +2050,8 @@ export class ExchangeTestUtil {
     return hash;
   }
 
+
+
   public async commitRings(exchangeID: number, forcedBlockSize?: number) {
     const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
@@ -2606,6 +2613,43 @@ export class ExchangeTestUtil {
     return exchangeID;
   }
 
+  public async syncLoopringExplorer() {
+    await this.evmMine();
+    await this.loopringExplorer.sync(await web3.eth.getBlockNumber());
+
+    const loopringExchange = this.loopringExplorer.getExchangeById(this.exchangeId);
+    //console.log("stakes:");
+    //console.log(loopringExchange.getExchangeStake().toString(10));
+    //console.log(loopringExchange.getProtocolFeeStake().toString(10));
+
+    /*for (let i = 0; i < loopringExchange.getNumTokens(); i++) {
+      const token = loopringExchange.getToken(i);
+      console.log("Token: " + i);
+      console.log(token);
+    }*/
+
+    /*for (let i = 0; i < loopringExchange.getNumBlocks(); i++) {
+      const block = loopringExchange.getBlock(i);
+      console.log("Block: " + i);
+      console.log(block);
+    }
+
+    /*for (let i = 0; i < loopringExchange.getNumBlocks(); i++) {
+      const requests = loopringExchange.getRequestsInBlock(i);
+      console.log("Block requests: " + i);
+      console.log(requests);
+    }*/
+
+    /*console.log("Requests: ");
+    const requests = loopringExchange.getProcessedRequests(0, loopringExchange.getNumProcessedRequests());
+    console.log(requests);*/
+
+    /*for (let i = 0; i < loopringExchange.getNumAccounts(); i++) {
+      const account = loopringExchange.getAccount(i);
+      console.log(account);
+    }*/
+  }
+
   public getTokenAddress(token: string) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -2777,6 +2821,11 @@ export class ExchangeTestUtil {
     // Read in the Merkle proof
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
+
+    // const loopringExchange = this.loopringExplorer.getExchange(this.exchangeId);
+    // const proofJs = loopringExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
+    // console.log(proofJs);
+
     return data.proof;
   }
 

@@ -281,7 +281,7 @@ export class Simulator {
     const operatorAccountID = bs.extractUint24(offset);
     offset += 3;
 
-    // Jump to the specified withdrawal
+    // Jump to the specified order cancellation
     const onchainDataSize = 9;
     offset += cancelIndex * onchainDataSize;
 
