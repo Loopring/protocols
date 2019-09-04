@@ -56,10 +56,6 @@ export class RingSettlementProcessor {
       offset += 3;
 
       for (let i = 0; i < block.blockSize; i++) {
-        // Jump to the specified ring
-        const ringSize = 20;
-        offset += i * ringSize;
-
         // Order IDs
         const orderIds = data.extractUint40(offset);
         offset += 5;

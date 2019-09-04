@@ -16,7 +16,7 @@ export class OnchainWithdrawalProcessor {
     const shutdown = (length === 0);
 
     const withdrawals: OnchainWithdrawal[] = [];
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < (shutdown ? block.blockSize : length); i++) {
       const approvedWitdrawal = data.extractUint56(offset + i * 7);
 
       const tokenID = Math.floor(approvedWitdrawal / 2 ** 48) & 0xFF;

@@ -160,7 +160,7 @@ export class LoopringExplorer {
     await exchange.initialize(this.web3, event.returnValues.exchangeAddress, parseInt(event.returnValues.exchangeId), event.returnValues.owner,
                               JSON.parse(event.returnValues.onchainDataAvailability), parseInt(event.returnValues.forgeMode),
                               protocol, event.returnValues.implementation);
-    assert(exchange.getExchangeId() === this.exchanges.length + 1, "unexpected exchange id");
+    assert.equal(exchange.getExchangeId(), this.exchanges.length + 1, "unexpected exchange id");
     this.exchanges.push(exchange);
   }
 
