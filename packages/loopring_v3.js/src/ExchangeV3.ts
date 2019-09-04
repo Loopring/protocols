@@ -217,6 +217,10 @@ export class ExchangeV3 {
 
   // This builds the Merkle tree on the current state from scratch
   public buildMerkleTree() {
+    if (!this.state.onchainDataAvailability) {
+      // We cannot build the Merkle tree without on-chain data-availability
+      return;
+    }
     this.hasher = poseidon.createHash(5, 6, 52);
 
     const tradeHistoryMerkleTree = new SparseMerkleTree(7);
@@ -256,6 +260,7 @@ export class ExchangeV3 {
   }
 
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
+    assert(this.state.onchainDataAvailability, "cannot create the Merkle proofs for an exchange without on-chain data-availability");
     assert(accountID < this.state.accounts.length, "invalid account ID");
     assert(tokenID < this.tokens.length, "invalid token ID");
 

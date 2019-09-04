@@ -3101,6 +3101,10 @@ export class ExchangeTestUtil {
 
   public compareStateWithExplorer(state: ExchangeState) {
     const exchange = this.loopringExplorer.getExchangeById(this.exchangeId);
+    if (!exchange.hasOnchainDataAvailability()) {
+      // We can't compare the state
+      return;
+    }
 
     assert.equal(
       exchange.getNumAccounts(),
