@@ -18,9 +18,9 @@ export class OffchainWithdrawalProcessor {
       for (let i = 0; i < block.blockSize; i++) {
         const approvedWitdrawal = data.extractUint56(approvedWithdrawalOffset + i * 7);
 
-        const tokenID = Math.floor(approvedWitdrawal / 2 ** 48) & 0xFF;
-        const accountID = Math.floor(approvedWitdrawal / 2 ** 28) & 0xFFFFF;
-        const amount = fromFloat(approvedWitdrawal & 0xFFFFFFF, constants.Float28Encoding);
+        const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xFF;
+        const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xFFFFF;
+        const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("0xFFFFFFF", 16)).toNumber(), constants.Float28Encoding);
 
         const feeTokenID = data.extractUint8(daOffset + i * 3);
         const fee = fromFloat(data.extractUint16(daOffset + i * 3 + 1), constants.Float16Encoding);
@@ -30,7 +30,7 @@ export class OffchainWithdrawalProcessor {
             blockIdx: block.blockIdx,
             accountID,
             tokenID,
-            amount,
+            amountWithdrawn,
             feeTokenID,
             fee,
           };
@@ -45,7 +45,7 @@ export class OffchainWithdrawalProcessor {
           blockIdx: block.blockIdx,
           accountID: 0,
           tokenID: 0,
-          amount: new BN(0),
+          amountWithdrawn: new BN(0),
           feeTokenID: 0,
           fee: new BN(0),
         };
@@ -64,7 +64,7 @@ export class OffchainWithdrawalProcessor {
     account.balances[offchainWithdrawal.feeTokenID].balance = account.balances[offchainWithdrawal.feeTokenID].balance.sub(offchainWithdrawal.fee);
 
     // Update balance
-    account.balances[offchainWithdrawal.tokenID].balance = account.balances[offchainWithdrawal.tokenID].balance.sub(offchainWithdrawal.amount);
+    account.balances[offchainWithdrawal.tokenID].balance = account.balances[offchainWithdrawal.tokenID].balance.sub(offchainWithdrawal.amountWithdrawn);
     account.nonce++;
 
     // Update operator

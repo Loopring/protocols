@@ -23,8 +23,6 @@ export class ExchangeV3 {
   private web3: Web3;
 
   private exchangeV3Abi: string;
-  private commitBlockFunctionSignature: string;
-
   private exchangeAddress: string;
   private exchangeId: number;
   private exchange: any;
@@ -90,8 +88,6 @@ export class ExchangeV3 {
     this.inWithdrawalMode = false;
     this.totalTimeInMaintenanceSeconds = 0;
 
-    this.commitBlockFunctionSignature = "0x39d07df5";
-
     // Reset state
     this.state = {
       accounts: [],
@@ -130,6 +126,8 @@ export class ExchangeV3 {
       totalNumOrderCancellationsProcessed: 0,
 
       transactionHash: constants.zeroAddress,
+
+      valid: true,
     };
     this.blocks.push(genesisBlock);
     this.numBlocksFinalized = 1;
@@ -219,6 +217,10 @@ export class ExchangeV3 {
   public buildMerkleTree() {
     if (!this.state.onchainDataAvailability) {
       // We cannot build the Merkle tree without on-chain data-availability
+      return;
+    }
+    if (!this.blocks[this.blocks.length - 1].valid) {
+      // Don't even try to build the Merkle tree when we're in an invalid state
       return;
     }
     this.hasher = poseidon.createHash(5, 6, 52);
@@ -463,73 +465,104 @@ export class ExchangeV3 {
   /// Private
 
   private async processBlockCommitted(event: any) {
-    const transaction = await this.web3.eth.getTransaction(event.transactionHash);
-    if (transaction.input.startsWith(this.commitBlockFunctionSignature)) {
-      // Get the timestamp from the block
-      const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-      const committedTimestamp = ethereumBlock.timestamp;
+    let valid = true;
 
+    // Make sure the blocks are in the right order
+    const blockIdx =  parseInt(event.returnValues.blockIdx);
+    assert.equal(blockIdx, this.blocks.length, "Unexpected blockIdx");
+
+    // Get the timestamp from the block
+    const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
+    const committedTimestamp = ethereumBlock.timestamp;
+
+    let merkleRoot = "0";
+    let blockType = 0;
+    let blockSize = 0;
+    let blockVersion = 0;
+    let onchainData = "0x";
+    let offchainData = "0x";
+    let data = "";
+
+    const commitBlockFunctionSignature = "0x39d07df5";
+    const transaction = await this.web3.eth.getTransaction(event.transactionHash);
+    if (transaction.input.startsWith(commitBlockFunctionSignature)) {
       // Get the inputs to commitBlock
       // Note: this will not work if an operator contract is used with a different function signature
       const decodedInputs = this.web3.eth.abi.decodeParameters(["uint8", "uint16", "uint8", "bytes", "bytes"], "0x" + transaction.input.slice(2 + 4*2));
-
-      // Get the block data
-      let data: string;
-      if (decodedInputs[3].startsWith("0x00")) {
-        data = "0x" + decodedInputs[3].slice(4);
-      } else if (decodedInputs[3].startsWith("0x01")) {
-        // Decompress using the decompressor contract
-        // We assume here that the decompressor contract is static, as in it always behaves the same no matter when it is called
-        const decompressorAddress = "0x" + decodedInputs[3].slice(4, 4 + 40);
-        const compressedData = "0x" + decodedInputs[3].slice(4 + 40);
-        this.decompressor.options.address = decompressorAddress;
-        data = await this.decompressor.methods.decompress(this.web3.utils.hexToBytes(compressedData)).call();
-      } else {
-        assert(false, "unsupported data compression mode");
-      }
-
-      // Get the new Merkle root
-      const bs = new Bitstream(data);
-      const merkleRoot = bs.extractUint(4 + 32).toString(10);
-      // console.log("merkleRoot: " + merkleRoot);
-
-      // Make sure the blocks are in the right order
-      assert.equal(this.blocks.length, parseInt(event.returnValues.blockIdx), "Unexpected blockIdx");
-
-      // Create the block
-      const lastBlock = this.blocks[this.blocks.length - 1];
-      const newBlock: Block = {
-        blockIdx: this.blocks.length,
-
-        blockType: parseInt(decodedInputs[0]),
-        blockSize: parseInt(decodedInputs[1]),
-        blockVersion: parseInt(decodedInputs[2]),
-        data,
-        offchainData: decodedInputs[3],
-
-        operator: transaction.from,
-
-        blockState: BlockState.COMMITTED,
-
-        merkleRoot,
-
-        committedTimestamp,
-
-        numRequestsProcessed: 0,
-        totalNumRequestsProcessed: lastBlock.totalNumRequestsProcessed,
-
-        totalNumTradesProccesed: lastBlock.totalNumTradesProccesed,
-        totalNumDepositsProccesed: lastBlock.totalNumDepositsProccesed,
-        totalNumOnchainWithdrawalsProcessed: lastBlock.totalNumOnchainWithdrawalsProcessed,
-        totalNumOffchainWithdrawalsProcessed: lastBlock.totalNumOffchainWithdrawalsProcessed,
-        totalNumOrderCancellationsProcessed: lastBlock.totalNumOrderCancellationsProcessed,
-
-        transactionHash: event.transactionHash,
-      };
-      this.blocks.push(newBlock);
-      return newBlock;
+      blockType = parseInt(decodedInputs[0]);
+      blockSize = parseInt(decodedInputs[1]);
+      blockVersion = parseInt(decodedInputs[2]);
+      onchainData = decodedInputs[3];
+      offchainData = decodedInputs[4];
+    } else {
+      console.log("block " + blockIdx + " was committed with an unsupported function signature");
+      valid = false;
     }
-    return undefined;
+
+    // Get the block data
+    if (onchainData.startsWith("0x00")) {
+      data = "0x" + onchainData.slice(4);
+    } else if (onchainData.startsWith("0x01")) {
+      // Decompress using the decompressor contract
+      // We assume here that the decompressor contract is static, as in it always behaves the same no matter when it is called
+      const decompressorAddress = "0x" + onchainData.slice(4, 4 + 40);
+      const compressedData = "0x" + onchainData.slice(4 + 40);
+      this.decompressor.options.address = decompressorAddress;
+      data = await this.decompressor.methods.decompress(this.web3.utils.hexToBytes(compressedData)).call();
+    } else {
+      console.log("unsupported data compression mode");
+      valid = false;
+      data = onchainData;
+    }
+
+    // Get the new Merkle root
+    const bs = new Bitstream(data);
+    if (bs.length() >= 4 + 32 + 32) {
+      merkleRoot = bs.extractUint(4 + 32).toString(10);
+      // console.log("merkleRoot: " + merkleRoot);
+    } else {
+      valid = false;
+    }
+
+    // Get the previous block
+    const lastBlock = this.blocks[this.blocks.length - 1];
+
+    // A block is only valid if it builds on a valid block
+    valid = valid && lastBlock.valid;
+
+    // Create the block
+    const newBlock: Block = {
+      blockIdx,
+
+      blockType,
+      blockSize,
+      blockVersion,
+      data,
+      offchainData,
+
+      operator: transaction.from,
+
+      blockState: BlockState.COMMITTED,
+
+      merkleRoot,
+
+      committedTimestamp,
+
+      numRequestsProcessed: 0,
+      totalNumRequestsProcessed: lastBlock.totalNumRequestsProcessed,
+
+      totalNumTradesProccesed: lastBlock.totalNumTradesProccesed,
+      totalNumDepositsProccesed: lastBlock.totalNumDepositsProccesed,
+      totalNumOnchainWithdrawalsProcessed: lastBlock.totalNumOnchainWithdrawalsProcessed,
+      totalNumOffchainWithdrawalsProcessed: lastBlock.totalNumOffchainWithdrawalsProcessed,
+      totalNumOrderCancellationsProcessed: lastBlock.totalNumOrderCancellationsProcessed,
+
+      transactionHash: event.transactionHash,
+
+      valid,
+    };
+    this.blocks.push(newBlock);
+    return newBlock;
   }
 
   private async processAccountCreated(event: any) {
@@ -651,26 +684,34 @@ export class ExchangeV3 {
   // Apply the block changes to the current state
   private processBlock(block: Block, replay: boolean) {
     let requests: any[] = [];
-    if (block.blockType === BlockType.RING_SETTLEMENT) {
-      requests = RingSettlementProcessor.processBlock(this.state, block);
-      block.totalNumTradesProccesed += replay ? 0 : requests.length;
-    } else if (block.blockType === BlockType.DEPOSIT) {
-      requests = DepositProcessor.processBlock(this.state, block);
-      block.totalNumDepositsProccesed += replay ? 0 : requests.length;
-    } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
-      requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
-      block.totalNumOnchainWithdrawalsProcessed += replay ? 0 : requests.length;
-    } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-      requests = OffchainWithdrawalProcessor.processBlock(this.state, block);
-      block.totalNumOffchainWithdrawalsProcessed += replay ? 0 : requests.length;
-    } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
-      requests = OrderCancellationProcessor.processBlock(this.state, block);
-      block.totalNumOrderCancellationsProcessed += replay ? 0 : requests.length;
-    } else {
-      assert(false, "Unknown block type");
+    if (block.valid) {
+      try {
+        if (block.blockType === BlockType.RING_SETTLEMENT) {
+          requests = RingSettlementProcessor.processBlock(this.state, block);
+          block.totalNumTradesProccesed += replay ? 0 : requests.length;
+        } else if (block.blockType === BlockType.DEPOSIT) {
+          requests = DepositProcessor.processBlock(this.state, block);
+          block.totalNumDepositsProccesed += replay ? 0 : requests.length;
+        } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+          requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
+          block.totalNumOnchainWithdrawalsProcessed += replay ? 0 : requests.length;
+        } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
+          requests = OffchainWithdrawalProcessor.processBlock(this.state, block);
+          block.totalNumOffchainWithdrawalsProcessed += replay ? 0 : requests.length;
+        } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
+          requests = OrderCancellationProcessor.processBlock(this.state, block);
+          block.totalNumOrderCancellationsProcessed += replay ? 0 : requests.length;
+        } else {
+          assert(false, "Unknown block type");
+        }
+      } catch(e) {
+        // console.log("Error detected while processing block: ");
+        // console.log(e);
+        block.valid = false;
+      }
     }
 
-    if (!replay) {
+    if (block.valid && !replay) {
       block.numRequestsProcessed = requests.length;
       block.totalNumRequestsProcessed += requests.length;
       this.state.processedRequests.push(...requests);
@@ -686,24 +727,26 @@ export class ExchangeV3 {
     for (let i = this.blocks.length - 1; i > blockIdx; i--) {
       const block = this.blocks.pop();
 
-      if (block.blockType === BlockType.RING_SETTLEMENT) {
-        RingSettlementProcessor.revertBlock(this.state, block);
-      } else if (block.blockType === BlockType.DEPOSIT) {
-        DepositProcessor.revertBlock(this.state, block);
-      } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
-        OnchainWithdrawalProcessor.revertBlock(this.state, block);
-      } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-        OffchainWithdrawalProcessor.revertBlock(this.state, block);
-      } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
-        OrderCancellationProcessor.revertBlock(this.state, block);
-      } else {
-        assert(false, "Unknown block type");
-      }
+      if (block.valid) {
+        if (block.blockType === BlockType.RING_SETTLEMENT) {
+          RingSettlementProcessor.revertBlock(this.state, block);
+        } else if (block.blockType === BlockType.DEPOSIT) {
+          DepositProcessor.revertBlock(this.state, block);
+        } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+          OnchainWithdrawalProcessor.revertBlock(this.state, block);
+        } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
+          OffchainWithdrawalProcessor.revertBlock(this.state, block);
+        } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
+          OrderCancellationProcessor.revertBlock(this.state, block);
+        } else {
+          assert(false, "Unknown block type");
+        }
 
-      const startIdx = this.state.processedRequests.length - 1;
-      const endIdx = startIdx - block.numRequestsProcessed;
-      for (let i = startIdx; i > endIdx; i--) {
-        this.state.processedRequests.pop();
+        const startIdx = this.state.processedRequests.length - 1;
+        const endIdx = startIdx - block.numRequestsProcessed;
+        for (let i = startIdx; i > endIdx; i--) {
+          this.state.processedRequests.pop();
+        }
       }
     }
 

@@ -92,15 +92,15 @@ export class Bitstream {
   }
 
   public extractUint56(offset: number) {
-    return parseInt(this.extractData(offset, 7), 16);
+    return new BN(this.extractData(offset, 7), 16);
   }
 
   public extractUint64(offset: number) {
-    return parseInt(this.extractData(offset, 8), 16);
+    return new BN(this.extractData(offset, 8), 16);
   }
 
   public extractUint(offset: number) {
-    return new BigNumber(this.extractData(offset, 32), 16);
+    return new BN(this.extractData(offset, 32), 16);
   }
 
   public extractAddress(offset: number) {

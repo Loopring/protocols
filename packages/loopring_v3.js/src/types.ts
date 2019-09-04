@@ -52,6 +52,8 @@ export enum BlockType {
     totalNumOrderCancellationsProcessed: number;
 
     transactionHash: string;
+
+    valid: boolean;
   }
 
   export interface Token {
@@ -120,7 +122,7 @@ export enum BlockType {
 
     accountID: number;
     tokenID: number;
-    amount: BN;
+    amountWithdrawn: BN;
     feeTokenID: number;
     fee: BN;
   }

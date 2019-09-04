@@ -3106,6 +3106,13 @@ export class ExchangeTestUtil {
       return;
     }
 
+    const numBlocks = exchange.getNumBlocks();
+    const block = exchange.getBlock(numBlocks - 1);
+    if (!block.valid) {
+      // We can't compare the state
+      return;
+    }
+
     assert.equal(
       exchange.getNumAccounts(),
       state.accounts.length,

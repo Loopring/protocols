@@ -19,9 +19,9 @@ export class OnchainWithdrawalProcessor {
     for (let i = 0; i < (shutdown ? block.blockSize : length); i++) {
       const approvedWitdrawal = data.extractUint56(offset + i * 7);
 
-      const tokenID = Math.floor(approvedWitdrawal / 2 ** 48) & 0xFF;
-      const accountID = Math.floor(approvedWitdrawal / 2 ** 28) & 0xFFFFF;
-      const amountWithdrawn = fromFloat(approvedWitdrawal & 0xFFFFFFF, constants.Float28Encoding);
+      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xFF;
+      const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xFFFFF;
+      const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("0xFFFFFFF", 16)).toNumber(), constants.Float28Encoding);
 
       if (!shutdown) {
         const onchainWithdrawal = state.onchainWithdrawals[startIdx + i];
