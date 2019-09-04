@@ -65,6 +65,7 @@ export enum BlockType {
     requestIdx?: number;
 
     depositIdx: number;
+    timestamp: number;
 
     accountID: number;
     tokenID: number;
@@ -80,10 +81,12 @@ export enum BlockType {
     requestIdx?: number;
 
     withdrawalIdx: number;
+    timestamp: number;
 
     accountID: number;
     tokenID: number;
-    amount: BN;
+    amountRequested: BN;
+    amountWithdrawn?: BN;
 
     transactionHash: string;
   }
@@ -94,6 +97,7 @@ export enum BlockType {
 
     accountIdA: number;
     orderIdA: number;
+    buyA: boolean;
     tokenA: number,
     fillSA: BN;
     feeA: BN;
@@ -102,6 +106,7 @@ export enum BlockType {
 
     accountIdB: number;
     orderIdB: number;
+    buyB: boolean;
     tokenB: number,
     fillSB: BN;
     feeB: BN;
@@ -180,5 +185,4 @@ export enum BlockType {
     processedRequests: any[];
 
     onchainDataAvailability: boolean;
-    shutdown: boolean;
   }

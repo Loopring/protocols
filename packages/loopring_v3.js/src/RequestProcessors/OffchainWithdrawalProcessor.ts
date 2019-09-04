@@ -25,32 +25,18 @@ export class OffchainWithdrawalProcessor {
         const feeTokenID = data.extractUint8(daOffset + i * 3);
         const fee = fromFloat(data.extractUint16(daOffset + i * 3 + 1), constants.Float16Encoding);
 
-        const account = state.accounts[accountID];
-        account.balances[tokenID] = account.balances[tokenID] || { balance: new BN(0), tradeHistory: {} };
-        account.balances[feeTokenID] = account.balances[feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-
-        // Update balanceF
-        account.balances[feeTokenID].balance = account.balances[feeTokenID].balance.sub(fee);
-
-        // Update balance
-        account.balances[tokenID].balance = account.balances[tokenID].balance.sub(amount);
-        account.nonce++;
-
-        // Update operator
-        const operator = state.accounts[operatorAccountID];
-        operator.balances[feeTokenID] = operator.balances[feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-        operator.balances[feeTokenID].balance = operator.balances[feeTokenID].balance.add(fee);
-
         const offchainWithdrawal: OffchainWithdrawal = {
-          requestIdx: state.processedRequests.length + i,
-          blockIdx: block.blockIdx,
-          accountID,
-          tokenID,
-          amount,
-          feeTokenID,
-          fee,
-        };
-        withdrawals.push(offchainWithdrawal);
+            requestIdx: state.processedRequests.length + i,
+            blockIdx: block.blockIdx,
+            accountID,
+            tokenID,
+            amount,
+            feeTokenID,
+            fee,
+          };
+          withdrawals.push(offchainWithdrawal);
+
+          this.processOffchainWithdrawal(state, operatorAccountID, offchainWithdrawal);
       }
     } else {
       for (let i = 0; i < block.blockSize; i++) {
@@ -67,6 +53,24 @@ export class OffchainWithdrawalProcessor {
       }
     }
     return withdrawals;
+  }
+
+  public static processOffchainWithdrawal(state: State, operatorAccountID: number, offchainWithdrawal: OffchainWithdrawal) {
+    const account = state.accounts[offchainWithdrawal.accountID];
+    account.balances[offchainWithdrawal.tokenID] = account.balances[offchainWithdrawal.tokenID] || { balance: new BN(0), tradeHistory: {} };
+    account.balances[offchainWithdrawal.feeTokenID] = account.balances[offchainWithdrawal.feeTokenID] || { balance: new BN(0), tradeHistory: {} };
+
+    // Update balanceF
+    account.balances[offchainWithdrawal.feeTokenID].balance = account.balances[offchainWithdrawal.feeTokenID].balance.sub(offchainWithdrawal.fee);
+
+    // Update balance
+    account.balances[offchainWithdrawal.tokenID].balance = account.balances[offchainWithdrawal.tokenID].balance.sub(offchainWithdrawal.amount);
+    account.nonce++;
+
+    // Update operator
+    const operator = state.accounts[operatorAccountID];
+    operator.balances[offchainWithdrawal.feeTokenID] = operator.balances[offchainWithdrawal.feeTokenID] || { balance: new BN(0), tradeHistory: {} };
+    operator.balances[offchainWithdrawal.feeTokenID].balance = operator.balances[offchainWithdrawal.feeTokenID].balance.add(offchainWithdrawal.fee);
   }
 
   public static revertBlock(state: State, block: Block) {

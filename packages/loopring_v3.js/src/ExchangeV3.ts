@@ -41,6 +41,7 @@ export class ExchangeV3 {
   private owner: string;
   private operator: string;
 
+  private shutdown: boolean;
   private inMaintenenance: boolean;
   private inWithdrawalMode: boolean;
   private totalTimeInMaintenanceSeconds: number;
@@ -84,6 +85,7 @@ export class ExchangeV3 {
 
     this.exchangeCreationTimestamp = await this.exchange.methods.getExchangeCreationTimestamp().call();
 
+    this.shutdown = false;
     this.inMaintenenance = false;
     this.inWithdrawalMode = false;
     this.totalTimeInMaintenanceSeconds = 0;
@@ -98,7 +100,6 @@ export class ExchangeV3 {
       deposits: [],
       onchainWithdrawals: [],
       processedRequests: [],
-      shutdown: false,
       onchainDataAvailability,
     };
 
@@ -135,6 +136,7 @@ export class ExchangeV3 {
 
     const genesisDeposit: Deposit = {
       depositIdx: 0,
+      timestamp: this.exchangeCreationTimestamp,
 
       accountID: 0,
       tokenID: 0,
@@ -148,10 +150,11 @@ export class ExchangeV3 {
 
     const genesisWithdrawal: OnchainWithdrawal = {
       withdrawalIdx: 0,
+      timestamp: this.exchangeCreationTimestamp,
 
       accountID: 0,
       tokenID: 0,
-      amount: new BN(0),
+      amountRequested: new BN(0),
 
       transactionHash: "0x",
     };
@@ -436,6 +439,10 @@ export class ExchangeV3 {
     return this.protocol.getProtocolFeeStake(this.exchangeId);
   }
 
+  public isShutdown() {
+    return this.shutdown;
+  }
+
   public isInMaintenenance() {
     return this.inMaintenenance;
   }
@@ -531,8 +538,13 @@ export class ExchangeV3 {
     // Make sure the deposits are in the right order
     assert.equal(this.state.deposits.length, parseInt(event.returnValues.depositIdx), "Unexpected depositIdx");
 
+    // Get the timestamp from the block
+    const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
+    const timestamp = ethereumBlock.timestamp;
+
     const deposit: Deposit = {
       depositIdx: parseInt(event.returnValues.depositIdx),
+      timestamp,
 
       accountID: parseInt(event.returnValues.accountID),
       tokenID: parseInt(event.returnValues.tokenID),
@@ -549,12 +561,17 @@ export class ExchangeV3 {
     // Make sure the onchain withdrawals are in the right order
     assert.equal(this.state.onchainWithdrawals.length, parseInt(event.returnValues.withdrawalIdx), "Unexpected withdrawalIdx");
 
+    // Get the timestamp from the block
+    const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
+    const timestamp = ethereumBlock.timestamp;
+
     const onchainWithdrawal: OnchainWithdrawal = {
       withdrawalIdx: parseInt(event.returnValues.withdrawalIdx),
+      timestamp,
 
       accountID: parseInt(event.returnValues.accountID),
       tokenID: parseInt(event.returnValues.tokenID),
-      amount: new BN(event.returnValues.amount, 10),
+      amountRequested: new BN(event.returnValues.amount, 10),
 
       transactionHash: event.transactionHash,
     };
@@ -602,7 +619,7 @@ export class ExchangeV3 {
   }
 
   private async processShutdown(event: any) {
-    this.state.shutdown = true;
+    this.shutdown = true;
   }
 
   private async processOperatorChanged(event: any) {

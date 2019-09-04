@@ -1225,7 +1225,7 @@ export class ExchangeTestUtil {
       "block state needs to be COMMITTED"
     );
 
-    await this.syncLoopringExplorer();
+    await this.syncExplorer();
 
     const block: Block = {
       blockIdx,
@@ -1619,6 +1619,9 @@ export class ExchangeTestUtil {
         blockFilename
       );
 
+      await this.syncExplorer();
+      this.compareStateWithExplorer(stateAfter);
+
       const numAvailableSlotsAfter = await this.exchange.getNumAvailableDepositSlots();
       const numDepositRequestsProcessedAfter = await this.exchange.getNumDepositRequestsProcessed();
       assert(
@@ -1933,6 +1936,9 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename
       );
+
+      await this.syncExplorer();
+      this.compareStateWithExplorer(stateAfter);
 
       const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
       const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
@@ -2260,6 +2266,9 @@ export class ExchangeTestUtil {
         blockFilename
       );
       blocks.push(blockInfo);
+
+      await this.syncExplorer();
+      this.compareStateWithExplorer(stateAfter);
     }
 
     this.pendingRings[exchangeID] = [];
@@ -2466,6 +2475,9 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename
       );
+
+      await this.syncExplorer();
+      this.compareStateWithExplorer(stateAfter);
     }
 
     this.pendingCancels[exchangeID] = [];
@@ -2613,7 +2625,7 @@ export class ExchangeTestUtil {
     return exchangeID;
   }
 
-  public async syncLoopringExplorer() {
+  public async syncExplorer() {
     await this.evmMine();
     await this.loopringExplorer.sync(await web3.eth.getBlockNumber());
 
@@ -2647,6 +2659,28 @@ export class ExchangeTestUtil {
     /*for (let i = 0; i < loopringExchange.getNumAccounts(); i++) {
       const account = loopringExchange.getAccount(i);
       console.log(account);
+    }*/
+  }
+
+  public async revertLoopringExplorer(blockIdx: number) {
+    await this.evmMine();
+    await this.loopringExplorer.sync(await web3.eth.getBlockNumber());
+
+    /*const loopringExchange = this.loopringExplorer.getExchangeById(this.exchangeId);
+    loopringExchange.revertToBlockTest(0);
+
+    for (let i = 0; i < loopringExchange.getNumBlocks(); i++) {
+      const block = loopringExchange.getBlock(i);
+      console.log(block);
+    }
+
+    console.log("Requests: ");
+    const requests = loopringExchange.getProcessedRequests(0, loopringExchange.getNumProcessedRequests());
+    console.log(requests);
+
+    for (let i = 0; i < loopringExchange.getNumDeposits(); i++) {
+      const deposit = loopringExchange.getDeposit(i);
+      console.log(deposit);
     }*/
   }
 
@@ -3061,49 +3095,73 @@ export class ExchangeTestUtil {
     for (let accountID = 0; accountID < stateA.accounts.length; accountID++) {
       const accountA = stateA.accounts[accountID];
       const accountB = stateB.accounts[accountID];
+      this.compareAccounts(accountA, accountB);
+    }
+  }
 
-      for (const tokenID of Object.keys(accountA.balances)) {
-        const balanceValueA = accountA.balances[Number(tokenID)];
-        const balanceValueB = accountB.balances[Number(tokenID)];
+  public compareStateWithExplorer(state: ExchangeState) {
+    const exchange = this.loopringExplorer.getExchangeById(this.exchangeId);
 
-        for (const orderID of Object.keys(balanceValueA.tradeHistory)) {
-          const tradeHistoryValueA =
-            balanceValueA.tradeHistory[Number(orderID)];
-          const tradeHistoryValueB =
-            balanceValueB.tradeHistory[Number(orderID)];
+    assert.equal(
+      exchange.getNumAccounts(),
+      state.accounts.length,
+      "number of accounts does not match"
+    );
+    for (let accountID = 0; accountID < state.accounts.length; accountID++) {
+      const accountA = state.accounts[accountID];
+      const accountB = exchange.getAccount(accountID);
+      this.compareAccounts(accountA, accountB);
+    }
+  }
 
-          assert(
-            tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled),
-            "trade history filled does not match"
-          );
-          assert.equal(
-            tradeHistoryValueA.cancelled,
-            tradeHistoryValueB.cancelled,
-            "cancelled does not match"
-          );
-          assert.equal(
-            tradeHistoryValueA.orderID,
-            tradeHistoryValueB.orderID,
-            "orderID does not match"
-          );
-        }
+  public compareAccounts(accountA: any, accountB: any) {
+    for (let tokenID = 0; tokenID < constants.MAX_NUM_TOKENS; tokenID++) {
+      let balanceValueA = accountA.balances[tokenID];
+      let balanceValueB = accountB.balances[tokenID];
+
+      balanceValueA = balanceValueA || { balance: new BN(0), tradeHistory: {} };
+      balanceValueB = balanceValueB || { balance: new BN(0), tradeHistory: {} };
+
+      for (const orderID of Object.keys(balanceValueA.tradeHistory).concat(Object.keys(balanceValueB.tradeHistory))) {
+        let tradeHistoryValueA =
+          balanceValueA.tradeHistory[Number(orderID)];
+        let tradeHistoryValueB =
+          balanceValueB.tradeHistory[Number(orderID)];
+
+        tradeHistoryValueA = tradeHistoryValueA || {filled: new BN(0), cancelled: false, orderID: 0};
+        tradeHistoryValueB = tradeHistoryValueB || {filled: new BN(0), cancelled: false, orderID: 0};
+
         assert(
-          balanceValueA.balance.eq(balanceValueB.balance),
-          "balance does not match"
+          tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled),
+          "trade history filled does not match"
+        );
+        assert.equal(
+          tradeHistoryValueA.cancelled,
+          tradeHistoryValueB.cancelled,
+          "cancelled does not match"
+        );
+        assert.equal(
+          tradeHistoryValueA.orderID,
+          tradeHistoryValueB.orderID,
+          "orderID does not match"
         );
       }
-      assert.equal(
-        accountA.publicKeyX,
-        accountB.publicKeyX,
-        "pubKeyX does not match"
+      assert(
+        balanceValueA.balance.eq(balanceValueB.balance),
+        "balance does not match"
       );
-      assert.equal(
-        accountA.publicKeyY,
-        accountB.publicKeyY,
-        "pubKeyY does not match"
-      );
-      assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
     }
+    assert.equal(
+      accountA.publicKeyX,
+      accountB.publicKeyX,
+      "pubKeyX does not match"
+    );
+    assert.equal(
+      accountA.publicKeyY,
+      accountB.publicKeyY,
+      "pubKeyY does not match"
+    );
+    assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
   }
 
   public validateRingSettlements(

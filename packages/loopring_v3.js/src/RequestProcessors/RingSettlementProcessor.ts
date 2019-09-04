@@ -109,25 +109,14 @@ export class RingSettlementProcessor {
         const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
         const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
 
-        // Update the state with the onchain data
-        const settlementValues = this.settleRing(
-          state,
+        const settlementValues = this.calculateSettlementValues(
           protocolFeeTakerBips,
           protocolFeeMakerBips,
-          operatorAccountID,
           fillSA,
           fillSB,
-          buyA,
-          buyB,
-          tokenA,
-          tokenB,
-          orderIdA,
-          accountIdA,
           feeBipsA,
-          rebateBipsA,
-          orderIdB,
-          accountIdB,
           feeBipsB,
+          rebateBipsA,
           rebateBipsB
         );
 
@@ -137,6 +126,7 @@ export class RingSettlementProcessor {
 
           accountIdA,
           orderIdA,
+          buyA,
           tokenA,
           fillSA: settlementValues.fillSA,
           feeA: settlementValues.feeA,
@@ -145,6 +135,7 @@ export class RingSettlementProcessor {
 
           accountIdB,
           orderIdB,
+          buyB,
           tokenB,
           fillSB: settlementValues.fillSB,
           feeB: settlementValues.feeB,
@@ -152,6 +143,8 @@ export class RingSettlementProcessor {
           rebateB: settlementValues.rebateB,
         };
         trades.push(trade);
+
+        this.processRingSettlement(state, operatorAccountID, trade);
       }
 
       // Update operator nonce
@@ -165,6 +158,7 @@ export class RingSettlementProcessor {
 
           accountIdA: 0,
           orderIdA: 0,
+          buyA: true,
           tokenA: 0,
           fillSA: new BN(0),
           feeA: new BN(0),
@@ -173,6 +167,7 @@ export class RingSettlementProcessor {
 
           accountIdB: 0,
           orderIdB: 0,
+          buyB: true,
           tokenB: 0,
           fillSB: new BN(0),
           feeB: new BN(0),
@@ -185,117 +180,65 @@ export class RingSettlementProcessor {
     return trades;
   }
 
-  public static revertBlock(state: State, block: Block) {
-    // Nothing to do
-  }
-
-  private static settleRing(
-    state: State,
-    protocolFeeTakerBips: number,
-    protocolFeeMakerBips: number,
-    operatorId: number,
-    fillSA: BN,
-    fillSB: BN,
-    buyA: boolean,
-    buyB: boolean,
-    tokenA: number,
-    tokenB: number,
-    orderIdA: number,
-    accountIdA: number,
-    feeBipsA: number,
-    rebateBipsA: number,
-    orderIdB: number,
-    accountIdB: number,
-    feeBipsB: number,
-    rebateBipsB: number
-  ) {
-    const s = this.calculateSettlementValues(
-      protocolFeeTakerBips,
-      protocolFeeMakerBips,
-      fillSA,
-      fillSB,
-      feeBipsA,
-      feeBipsB,
-      rebateBipsA,
-      rebateBipsB
-    );
-
+  private static processRingSettlement(state: State, operatorId: number, trade: Trade) {
     // Update accountA
-    const accountA = state.accounts[accountIdA];
-    accountA.balances[tokenA] = accountA.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
-    accountA.balances[tokenB] = accountA.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
+    const accountA = state.accounts[trade.accountIdA];
+    accountA.balances[trade.tokenA] = accountA.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
+    accountA.balances[trade.tokenB] = accountA.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
 
-    accountA.balances[tokenA].balance = accountA.balances[tokenA].balance.sub(s.fillSA);
-    accountA.balances[tokenB].balance = accountA.balances[tokenB].balance.add(s.fillBA.sub(s.feeA).add(s.rebateA));
+    accountA.balances[trade.tokenA].balance = accountA.balances[trade.tokenA].balance.sub(trade.fillSA);
+    accountA.balances[trade.tokenB].balance = accountA.balances[trade.tokenB].balance.add(trade.fillSB.sub(trade.feeA).add(trade.rebateA));
 
     // Update accountB
-    const accountB = state.accounts[accountIdB];
-    accountB.balances[tokenB] = accountB.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-    accountB.balances[tokenA] = accountB.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
+    const accountB = state.accounts[trade.accountIdB];
+    accountB.balances[trade.tokenB] = accountB.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
+    accountB.balances[trade.tokenA] = accountB.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
 
-    accountB.balances[tokenB].balance = accountB.balances[tokenB].balance.sub(s.fillSB);
-    accountB.balances[tokenA].balance = accountB.balances[tokenA].balance.add(s.fillBB.sub(s.feeB).add(s.rebateB));
+    accountB.balances[trade.tokenB].balance = accountB.balances[trade.tokenB].balance.sub(trade.fillSB);
+    accountB.balances[trade.tokenA].balance = accountB.balances[trade.tokenA].balance.add(trade.fillSA.sub(trade.feeB).add(trade.rebateB));
 
     // Update trade history A
     {
-    const tradeHistorySlotA =
-        orderIdA % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
-    accountA.balances[tokenA].tradeHistory[tradeHistorySlotA] = accountA.balances[tokenA].tradeHistory[tradeHistorySlotA] || {filled: new BN(0), cancelled: false, orderID: 0};
-    const tradeHistoryA =
-        accountA.balances[tokenA].tradeHistory[tradeHistorySlotA];
-    tradeHistoryA.filled =
-        orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
-    tradeHistoryA.filled = tradeHistoryA.filled.add(
-        buyA ? s.fillBA : s.fillSA
-    );
-    tradeHistoryA.cancelled =
-        orderIdA > tradeHistoryA.orderID ? false : tradeHistoryA.cancelled;
-    tradeHistoryA.orderID =
-        orderIdA > tradeHistoryA.orderID ? orderIdA : tradeHistoryA.orderID;
+      const tradeHistorySlotA = trade.orderIdA % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] = accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] || {filled: new BN(0), cancelled: false, orderID: 0};
+      const tradeHistoryA = accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA];
+      tradeHistoryA.filled = trade.orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
+      tradeHistoryA.filled = tradeHistoryA.filled.add(trade.buyA ? trade.fillSB : trade.fillSA);
+      tradeHistoryA.cancelled = trade.orderIdA > tradeHistoryA.orderID ? false : tradeHistoryA.cancelled;
+      tradeHistoryA.orderID = trade.orderIdA > tradeHistoryA.orderID ? trade.orderIdA : tradeHistoryA.orderID;
     }
     // Update trade history B
     {
-    const tradeHistorySlotB =
-        orderIdB % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
-    accountB.balances[tokenB].tradeHistory[tradeHistorySlotB] = accountB.balances[tokenB].tradeHistory[tradeHistorySlotB] || {filled: new BN(0), cancelled: false, orderID: 0};
-    const tradeHistoryB =
-        accountB.balances[tokenB].tradeHistory[tradeHistorySlotB];
-    tradeHistoryB.filled =
-        orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
-    tradeHistoryB.filled = tradeHistoryB.filled.add(
-        buyB ? s.fillBB : s.fillSB
-    );
-    tradeHistoryB.cancelled =
-        orderIdB > tradeHistoryB.orderID ? false : tradeHistoryB.cancelled;
-    tradeHistoryB.orderID =
-        orderIdB > tradeHistoryB.orderID ? orderIdB : tradeHistoryB.orderID;
+      const tradeHistorySlotB = trade.orderIdB % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] = accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] || {filled: new BN(0), cancelled: false, orderID: 0};
+      const tradeHistoryB = accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB];
+      tradeHistoryB.filled = trade.orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
+      tradeHistoryB.filled = tradeHistoryB.filled.add(trade.buyB ? trade.fillSA : trade.fillSB);
+      tradeHistoryB.cancelled = trade.orderIdB > tradeHistoryB.orderID ? false : tradeHistoryB.cancelled;
+      tradeHistoryB.orderID = trade.orderIdB > tradeHistoryB.orderID ? trade.orderIdB : tradeHistoryB.orderID;
     }
 
     // Update protocol fee recipient
     const protocolFeeAccount = state.accounts[0];
-    protocolFeeAccount.balances[tokenB] = protocolFeeAccount.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-    protocolFeeAccount.balances[tokenA] = protocolFeeAccount.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
+    protocolFeeAccount.balances[trade.tokenB] = protocolFeeAccount.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
+    protocolFeeAccount.balances[trade.tokenA] = protocolFeeAccount.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
     // - Order A
-    protocolFeeAccount.balances[tokenB].balance = protocolFeeAccount.balances[tokenB].balance.add(s.protocolFeeA);
+    protocolFeeAccount.balances[trade.tokenB].balance = protocolFeeAccount.balances[trade.tokenB].balance.add(trade.protocolFeeA);
     // - Order B
-    protocolFeeAccount.balances[tokenA].balance = protocolFeeAccount.balances[tokenA].balance.add(s.protocolFeeB);
+    protocolFeeAccount.balances[trade.tokenA].balance = protocolFeeAccount.balances[trade.tokenA].balance.add(trade.protocolFeeB);
 
     // Update operator
     const operator = state.accounts[operatorId];
-    operator.balances[tokenB] = operator.balances[tokenB] || { balance: new BN(0), tradeHistory: {} };
-    operator.balances[tokenA] = operator.balances[tokenA] || { balance: new BN(0), tradeHistory: {} };
+    operator.balances[trade.tokenB] = operator.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
+    operator.balances[trade.tokenA] = operator.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
     // - FeeA
-    operator.balances[tokenB].balance = operator.balances[tokenB].balance
-    .add(s.feeA)
-    .sub(s.protocolFeeA)
-    .sub(s.rebateA);
+    operator.balances[trade.tokenB].balance = operator.balances[trade.tokenB].balance.add(trade.feeA).sub(trade.protocolFeeA).sub(trade.rebateA);
     // - FeeB
-    operator.balances[tokenA].balance = operator.balances[tokenA].balance
-    .add(s.feeB)
-    .sub(s.protocolFeeB)
-    .sub(s.rebateB);
+    operator.balances[trade.tokenA].balance = operator.balances[trade.tokenA].balance.add(trade.feeB).sub(trade.protocolFeeB).sub(trade.rebateB);
+  }
 
-    return s;
+  public static revertBlock(state: State, block: Block) {
+    // Nothing to do
   }
 
   private static calculateSettlementValues(

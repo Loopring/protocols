@@ -14,36 +14,40 @@ export class DepositProcessor {
     for (let i = startIdx; i < startIdx + length; i++) {
       const deposit = state.deposits[i];
 
-      assert(deposit.accountID <= state.accounts.length, "accountID invalid");
-      // New account
-      if (deposit.accountID === state.accounts.length) {
-        const newAccount: Account = {
-          accountId: deposit.accountID,
-          owner: state.accountIdToOwner[deposit.accountID],
-
-          publicKeyX: "0",
-          publicKeyY: "0",
-          nonce: 0,
-          balances: {},
-        };
-        state.accounts.push(newAccount);
-      }
-      const account = state.accounts[deposit.accountID];
-      account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || { balance: new BN(0), tradeHistory: {} };
-
-      // Update state
-      account.balances[deposit.tokenID].balance = account.balances[deposit.tokenID].balance.add(deposit.amount);
-      if (account.balances[deposit.tokenID].balance.gt(constants.MAX_AMOUNT)) {
-        account.balances[deposit.tokenID].balance = constants.MAX_AMOUNT;
-      }
-      account.publicKeyX = deposit.publicKeyX;
-      account.publicKeyY = deposit.publicKeyY;
+      this.processDeposit(state, deposit);
 
       deposit.blockIdx = block.blockIdx;
       deposit.requestIdx = state.processedRequests.length + i - startIdx;
       deposits.push(deposit);
     }
     return deposits;
+  }
+
+  public static processDeposit(state: State, deposit: Deposit) {
+    assert(deposit.accountID <= state.accounts.length, "accountID invalid");
+    // New account
+    if (deposit.accountID === state.accounts.length) {
+      const newAccount: Account = {
+        accountId: deposit.accountID,
+        owner: state.accountIdToOwner[deposit.accountID],
+
+        publicKeyX: "0",
+        publicKeyY: "0",
+        nonce: 0,
+        balances: {},
+      };
+      state.accounts.push(newAccount);
+    }
+    const account = state.accounts[deposit.accountID];
+    account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || { balance: new BN(0), tradeHistory: {} };
+
+    // Update state
+    account.balances[deposit.tokenID].balance = account.balances[deposit.tokenID].balance.add(deposit.amount);
+    if (account.balances[deposit.tokenID].balance.gt(constants.MAX_AMOUNT)) {
+      account.balances[deposit.tokenID].balance = constants.MAX_AMOUNT;
+    }
+    account.publicKeyX = deposit.publicKeyX;
+    account.publicKeyY = deposit.publicKeyY;
   }
 
   public static revertBlock(state: State, block: Block) {
