@@ -21,7 +21,7 @@ export class OnchainWithdrawalProcessor {
 
       const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xFF;
       const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xFFFFF;
-      const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("0xFFFFFFF", 16)).toNumber(), constants.Float28Encoding);
+      const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(), constants.Float28Encoding);
 
       if (!shutdown) {
         const onchainWithdrawal = state.onchainWithdrawals[startIdx + i];
