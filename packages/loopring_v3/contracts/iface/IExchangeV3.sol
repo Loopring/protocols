@@ -552,7 +552,7 @@ contract IExchangeV3 is IExchange
         external;
 
     /// @dev Reverts the exchange's virtual blockchain until a specific block index.
-    ///      The first unverified block can be reverted,  but there will be a fine in LRC.
+    ///      Any non-finalized block can be reverted but there will be a fine in LRC.
     ///
     ///      This method can only be called by the operator when not in withdrawal mode.
     ///
