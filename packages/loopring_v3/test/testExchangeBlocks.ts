@@ -895,17 +895,6 @@ contract("Exchange", (accounts: string[]) => {
           );
           assert(blocksA.length === 1);
 
-          // Try to notify too early
-          await expectThrow(
-            exchangeTestUtil.revertBlock(blocksA[0].blockIdx),
-            "PROOF_NOT_TOO_LATE"
-          );
-
-          // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
-            exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1
-          );
-
           // Revert the block again, now correctly
           await exchangeTestUtil.revertBlock(blocksA[0].blockIdx);
 
