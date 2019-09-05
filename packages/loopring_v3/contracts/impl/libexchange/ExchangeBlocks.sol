@@ -193,12 +193,6 @@ library ExchangeBlocks
         // (this way we always revert to a guaranteed valid block and don't revert multiple times)
         require(blockIdx == S.numBlocksFinalized, "PREV_BLOCK_NOT_FINALIZED");
 
-        // Check if this block is verified too late
-        require(
-            now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "PROOF_NOT_TOO_LATE"
-        );
-
         // Fine the exchange
         uint fine = S.loopring.revertFineLRC();
         S.loopring.burnExchangeStake(S.id, fine);
