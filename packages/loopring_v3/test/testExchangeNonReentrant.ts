@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import fs = require("fs");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
@@ -81,7 +81,7 @@ contract("Exchange", (accounts: string[]) => {
         const values: any[] = [];
         for (const input of externalFunction.inputs) {
           if (input.type === "address") {
-            values.push(constants.zeroAddress);
+            values.push(Constants.zeroAddress);
           } else if (input.type === "bytes") {
             values.push(web3.utils.hexToBytes("0x"));
           } else if (input.type.startsWith("uint256[]")) {
@@ -110,7 +110,7 @@ contract("Exchange", (accounts: string[]) => {
             new BN(0),
             testTokenAddress,
             web3.utils.toBN(amount),
-            constants.emptyBytes,
+            Constants.emptyBytes,
             { from: owner, value: ethToSend }
           ),
           "INSUFFICIENT_FUND"
@@ -123,7 +123,7 @@ contract("Exchange", (accounts: string[]) => {
           new BN(0),
           testTokenAddress,
           web3.utils.toBN(amount),
-          constants.emptyBytes,
+          Constants.emptyBytes,
           { from: owner, value: ethToSend }
         );
       });

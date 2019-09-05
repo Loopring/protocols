@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { RingInfo } from "./types";
@@ -41,7 +41,7 @@ contract("Exchange", (accounts: string[]) => {
     expectedAmount: BN
   ) => {
     const recipient =
-      owner === constants.zeroAddress
+      owner === Constants.zeroAddress
         ? await loopring.protocolFeeVault()
         : owner;
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(
@@ -346,7 +346,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(
-          constants.zeroAddress,
+          Constants.zeroAddress,
           ring.orderA.tokenB
         ),
         "NOT_IN_WITHDRAW_MODE"
@@ -358,7 +358,7 @@ contract("Exchange", (accounts: string[]) => {
         0,
         ring.orderA.tokenB,
         protocolFeeA.mul(new BN(2)),
-        constants.zeroAddress
+        Constants.zeroAddress
       );
 
       // Operator doesn't do anything for a long time
@@ -368,12 +368,12 @@ contract("Exchange", (accounts: string[]) => {
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
       await withdrawFromMerkleTreeChecked(
-        constants.zeroAddress,
+        Constants.zeroAddress,
         ring.orderA.tokenB,
         protocolFeeA
       );
       await withdrawFromMerkleTreeChecked(
-        constants.zeroAddress,
+        Constants.zeroAddress,
         ring.orderB.tokenB,
         protocolFeeB
       );

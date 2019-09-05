@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, RingInfo } from "./types";
@@ -172,7 +172,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.requestShutdownWithdrawal(
             exchangeId,
             accountID,
-            constants.zeroAddress,
+            Constants.zeroAddress,
             new BN(0)
           );
         }

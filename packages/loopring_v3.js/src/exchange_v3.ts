@@ -2,17 +2,17 @@ import BN = require("bn.js");
 import fs = require("fs");
 import Web3 from "web3";
 import { Bitstream } from "./bitstream";
-import * as constants from "./constants";
+import { Constants } from "./constants";
 import poseidon = require("./poseidon");
-import { ProtocolV3 } from "./ProtocolV3";
-import { SparseMerkleTree } from "./SparseMerkleTree";
+import { ProtocolV3 } from "./protocol_v3";
+import { SparseMerkleTree } from "./sparse_merkle_tree";
 import {BlockType, BlockState, ForgeMode, Block, Deposit, OnchainWithdrawal,
-        TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData, State, ExchangeFees, ProtocolFees} from "./types";
-import { DepositProcessor } from "./RequestProcessors/DepositProcessor";
-import { OnchainWithdrawalProcessor } from "./RequestProcessors/OnchainWithdrawalProcessor";
-import { RingSettlementProcessor } from "./RequestProcessors/RingSettlementProcessor";
-import { OffchainWithdrawalProcessor } from "./RequestProcessors/OffchainWithdrawalProcessor";
-import { OrderCancellationProcessor } from "./RequestProcessors/OrderCancellationProcessor";
+        TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData, ExchangeState, ExchangeFees, ProtocolFees} from "./types";
+import { DepositProcessor } from "./request_processors/deposit_processor";
+import { OnchainWithdrawalProcessor } from "./request_processors/onchain_withdrawal_processor";
+import { RingSettlementProcessor } from "./request_processors/ring_settlement_processor";
+import { OffchainWithdrawalProcessor } from "./request_processors/offchain_withdrawal_processor";
+import { OrderCancellationProcessor } from "./request_processors/order_cancellation_processor";
 
 interface Revert {
   blockIdx: number;
@@ -46,7 +46,7 @@ export class ExchangeV3 {
 
   private tokens: Token[] = [];
 
-  private state: State;
+  private state: ExchangeState;
 
   private blocks: Block[] = [];
 
@@ -113,7 +113,7 @@ export class ExchangeV3 {
       data: "0x",
       offchainData: "0x",
 
-      operator: constants.zeroAddress,
+      operator: Constants.zeroAddress,
 
       blockState: BlockState.FINALIZED,
 
@@ -133,7 +133,7 @@ export class ExchangeV3 {
       totalNumOffchainWithdrawalsProcessed: 0,
       totalNumOrderCancellationsProcessed: 0,
 
-      transactionHash: constants.zeroAddress,
+      transactionHash: Constants.zeroAddress,
 
       valid: true,
     };
@@ -842,7 +842,7 @@ export class ExchangeV3 {
     const protocolPoolAccount: Account = {
       exchangeId: this.state.exchangeId,
       accountId: 0,
-      owner: constants.zeroAddress,
+      owner: Constants.zeroAddress,
 
       publicKeyX: "0",
       publicKeyY: "0",

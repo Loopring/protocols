@@ -1,11 +1,11 @@
 import BN = require("bn.js");
 import { Bitstream } from "../bitstream";
-import * as constants from "../constants";
+import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, OffchainWithdrawal, State} from "../types";
+import {Account, Block, OffchainWithdrawal, ExchangeState} from "../types";
 
 export class OffchainWithdrawalProcessor {
-  public static processBlock(state: State, block: Block) {
+  public static processBlock(state: ExchangeState, block: Block) {
     const withdrawals: OffchainWithdrawal[] = [];
     if (state.onchainDataAvailability) {
       const data = new Bitstream(block.data);
@@ -20,10 +20,10 @@ export class OffchainWithdrawalProcessor {
 
         const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xFF;
         const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xFFFFF;
-        const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(), constants.Float28Encoding);
+        const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(), Constants.Float28Encoding);
 
         const feeTokenID = data.extractUint8(daOffset + i * 3);
-        const fee = fromFloat(data.extractUint16(daOffset + i * 3 + 1), constants.Float16Encoding);
+        const fee = fromFloat(data.extractUint16(daOffset + i * 3 + 1), Constants.Float16Encoding);
 
         const offchainWithdrawal: OffchainWithdrawal = {
             exchangeId: state.exchangeId,
@@ -57,7 +57,7 @@ export class OffchainWithdrawalProcessor {
     return withdrawals;
   }
 
-  public static processOffchainWithdrawal(state: State, operatorAccountID: number, offchainWithdrawal: OffchainWithdrawal) {
+  public static processOffchainWithdrawal(state: ExchangeState, operatorAccountID: number, offchainWithdrawal: OffchainWithdrawal) {
     const account = state.accounts[offchainWithdrawal.accountID];
     account.balances[offchainWithdrawal.tokenID] = account.balances[offchainWithdrawal.tokenID] || { balance: new BN(0), tradeHistory: {} };
     account.balances[offchainWithdrawal.feeTokenID] = account.balances[offchainWithdrawal.feeTokenID] || { balance: new BN(0), tradeHistory: {} };
@@ -75,7 +75,7 @@ export class OffchainWithdrawalProcessor {
     operator.balances[offchainWithdrawal.feeTokenID].balance = operator.balances[offchainWithdrawal.feeTokenID].balance.add(offchainWithdrawal.fee);
   }
 
-  public static revertBlock(state: State, block: Block) {
+  public static revertBlock(state: ExchangeState, block: Block) {
     // Nothing to do
   }
 }

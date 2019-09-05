@@ -1,7 +1,6 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants, roundToFloatValue } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
-import { roundToFloatValue } from "./float";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { DepositInfo, RingInfo } from "./types";
 
@@ -46,7 +45,7 @@ contract("Exchange", (accounts: string[]) => {
     await exchange.createOrUpdateAccount(
       keyPair.publicKeyX,
       keyPair.publicKeyY,
-      constants.emptyBytes,
+      Constants.emptyBytes,
       { from: owner, value: fee, gasPrice: 0 }
     );
 
@@ -206,7 +205,7 @@ contract("Exchange", (accounts: string[]) => {
       keyPair.publicKeyY,
       token,
       amount,
-      constants.emptyBytes,
+      Constants.emptyBytes,
       { from: owner, value: ethValue, gasPrice: 0 }
     );
 
@@ -270,7 +269,7 @@ contract("Exchange", (accounts: string[]) => {
   ) => {
     const expectedAmount = roundToFloatValue(
       uExpectedAmount,
-      constants.Float28Encoding
+      Constants.Float28Encoding
     );
     const recipient =
       accountID === 0 ? await loopring.protocolFeeVault() : owner;
@@ -439,7 +438,7 @@ contract("Exchange", (accounts: string[]) => {
       const tokenID = await exchangeTestUtil.getTokenID(deposit.token);
       let amountWithdrawn = roundToFloatValue(
         deposit.amount,
-        constants.Float28Encoding
+        Constants.Float28Encoding
       );
       if (!expectedSuccess[i]) {
         amountWithdrawn = new BN(0);
@@ -451,7 +450,7 @@ contract("Exchange", (accounts: string[]) => {
     for (let i = 0; i < deposits.length; i++) {
       let amountWithdrawn = roundToFloatValue(
         deposits[i].amount,
-        constants.Float28Encoding
+        Constants.Float28Encoding
       );
       if (!expectedSuccess[i]) {
         amountWithdrawn = new BN(0);
@@ -562,7 +561,7 @@ contract("Exchange", (accounts: string[]) => {
         exchange.createOrUpdateAccount(
           keyPair.publicKeyX,
           keyPair.publicKeyY,
-          constants.emptyBytes,
+          Constants.emptyBytes,
           {
             from: owner,
             value: new BN(0)
@@ -575,7 +574,7 @@ contract("Exchange", (accounts: string[]) => {
         exchange.createOrUpdateAccount(
           keyPair.publicKeyX,
           keyPair.publicKeyY,
-          constants.emptyBytes,
+          Constants.emptyBytes,
           {
             from: owner,
             value: totalFee.sub(new BN(1))
@@ -587,9 +586,9 @@ contract("Exchange", (accounts: string[]) => {
       // Invalid public key (pubKey > scalarField)
       await expectThrow(
         exchange.createOrUpdateAccount(
-          constants.scalarField,
+          Constants.scalarField,
           keyPair.publicKeyY,
-          constants.emptyBytes,
+          Constants.emptyBytes,
           { from: owner, value: totalFee }
         ),
         "INVALID_PUBKEY"
@@ -597,8 +596,8 @@ contract("Exchange", (accounts: string[]) => {
       await expectThrow(
         exchange.createOrUpdateAccount(
           keyPair.publicKeyY,
-          constants.scalarField,
-          constants.emptyBytes,
+          Constants.scalarField,
+          Constants.emptyBytes,
           { from: owner, value: totalFee }
         ),
         "INVALID_PUBKEY"
@@ -608,7 +607,7 @@ contract("Exchange", (accounts: string[]) => {
         exchange.createOrUpdateAccount(
           "0",
           keyPair.publicKeyY,
-          constants.emptyBytes,
+          Constants.emptyBytes,
           {
             from: owner,
             value: totalFee
@@ -1321,7 +1320,7 @@ contract("Exchange", (accounts: string[]) => {
         0,
         0,
         ring.orderA.tokenB,
-        constants.zeroAddress,
+        Constants.zeroAddress,
         protocolFeeA
       );
       await withdrawChecked(
@@ -1329,7 +1328,7 @@ contract("Exchange", (accounts: string[]) => {
         1,
         0,
         ring.orderB.tokenB,
-        constants.zeroAddress,
+        Constants.zeroAddress,
         protocolFeeB
       );
     });
@@ -1339,7 +1338,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
-      const amount = constants.MAX_AMOUNT.sub(new BN(97));
+      const amount = Constants.MAX_AMOUNT.sub(new BN(97));
       const token = exchangeTestUtil.getTokenAddress("TEST");
 
       // Deposit
@@ -1371,7 +1370,7 @@ contract("Exchange", (accounts: string[]) => {
       const account = (await exchangeTestUtil.loadExchangeState(exchangeID))
         .accounts[accountID];
       assert(
-        account.balances[tokenID].balance.eq(constants.MAX_AMOUNT),
+        account.balances[tokenID].balance.eq(Constants.MAX_AMOUNT),
         "Balance should be MAX_AMOUNT"
       );
 
@@ -1380,7 +1379,7 @@ contract("Exchange", (accounts: string[]) => {
         exchangeID,
         accountID,
         token,
-        constants.MAX_AMOUNT,
+        Constants.MAX_AMOUNT,
         owner
       );
 
@@ -1397,7 +1396,7 @@ contract("Exchange", (accounts: string[]) => {
         accountID,
         token,
         owner,
-        constants.MAX_AMOUNT
+        Constants.MAX_AMOUNT
       );
     });
 

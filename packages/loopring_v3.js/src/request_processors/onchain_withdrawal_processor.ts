@@ -1,11 +1,11 @@
 import BN = require("bn.js");
 import { Bitstream } from "../bitstream";
-import * as constants from "../constants";
+import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, OnchainWithdrawal, State} from "../types";
+import {Account, Block, OnchainWithdrawal, ExchangeState} from "../types";
 
 export class OnchainWithdrawalProcessor {
-  public static processBlock(state: State, block: Block) {
+  public static processBlock(state: ExchangeState, block: Block) {
     let offset = 4 + 32 + 32 + 32 + 32;
     const data = new Bitstream(block.data);
     const startIdx = data.extractUint32(offset);
@@ -21,7 +21,7 @@ export class OnchainWithdrawalProcessor {
 
       const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xFF;
       const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xFFFFF;
-      const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(), constants.Float28Encoding);
+      const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(), Constants.Float28Encoding);
 
       if (!shutdown) {
         const onchainWithdrawal = state.onchainWithdrawals[startIdx + i];
@@ -43,7 +43,7 @@ export class OnchainWithdrawalProcessor {
           tokenID,
           amountRequested: new BN(0),
           amountWithdrawn,
-          transactionHash: constants.zeroAddress,
+          transactionHash: Constants.zeroAddress,
         };
         this.processOnchainWithdrawal(state, shutdown, onchainWithdrawal);
       }
@@ -51,7 +51,7 @@ export class OnchainWithdrawalProcessor {
     return withdrawals;
   }
 
-  public static processOnchainWithdrawal(state: State, shutdown: boolean, onchainWithdrawal: OnchainWithdrawal) {
+  public static processOnchainWithdrawal(state: ExchangeState, shutdown: boolean, onchainWithdrawal: OnchainWithdrawal) {
     // When a withdrawal is done before the deposit (account creation) we shouldn't
     // do anything. Just leave everything as it is.
     if (onchainWithdrawal.accountID < state.accounts.length) {
@@ -73,7 +73,7 @@ export class OnchainWithdrawalProcessor {
     }
   }
 
-  public static revertBlock(state: State, block: Block) {
+  public static revertBlock(state: ExchangeState, block: Block) {
     const startIdx = block.totalNumRequestsProcessed - 1;
     const endIdx = startIdx - block.numRequestsProcessed;
     for (let i = startIdx; i > endIdx; i--) {

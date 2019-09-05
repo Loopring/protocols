@@ -1,10 +1,10 @@
 import fs = require("fs");
 import Web3 from "web3";
-import * as constants from "./constants";
-import { ProtocolV3 } from "./ProtocolV3";
-import { ExchangeV3 } from "./ExchangeV3";
+import { Constants } from "./constants";
+import { ProtocolV3 } from "./protocol_v3";
+import { ExchangeV3 } from "./exchange_v3";
 
-export class LoopringExplorer {
+export class Explorer {
   private web3: Web3;
 
   private universalRegistryAbi: string;
@@ -16,7 +16,7 @@ export class LoopringExplorer {
   private syncedToEthereumBlockIdx: number;
 
   private protocols: ProtocolV3[] = [];
-  private defaultProtocolAddress = constants.zeroAddress;
+  private defaultProtocolAddress = Constants.zeroAddress;
 
   private exchanges: ExchangeV3[] = [];
 
@@ -130,7 +130,7 @@ export class LoopringExplorer {
       const protocol = new ProtocolV3();
       protocol.initialize(this.web3, event.returnValues.protocol,  event.returnValues.implementationManager, version);
       this.protocols.push(protocol);
-      if (this.defaultProtocolAddress === constants.zeroAddress) {
+      if (this.defaultProtocolAddress === Constants.zeroAddress) {
         this.defaultProtocolAddress = protocol.getAddress();
       }
     } else {

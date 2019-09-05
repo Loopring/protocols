@@ -1,6 +1,5 @@
 import BN = require("bn.js");
-import { Bitstream } from "./bitstream";
-import * as constants from "./constants";
+import { Bitstream, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, BlockType, DepositInfo, RingInfo } from "./types";
@@ -84,7 +83,7 @@ contract("Exchange", (accounts: string[]) => {
               1,
               blockVersion + 1,
               web3.utils.hexToBytes(bs.getData()),
-              constants.emptyBytes,
+              Constants.emptyBytes,
               { from: exchangeTestUtil.exchangeOperator }
             ),
             "CANNOT_VERIFY_BLOCK"
@@ -112,7 +111,7 @@ contract("Exchange", (accounts: string[]) => {
               2,
               blockVersion,
               web3.utils.hexToBytes(bs.getData()),
-              constants.emptyBytes,
+              Constants.emptyBytes,
               { from: exchangeTestUtil.exchangeOperator }
             ),
             "INVALID_EXCHANGE_ID"
@@ -140,7 +139,7 @@ contract("Exchange", (accounts: string[]) => {
               2,
               blockVersion,
               web3.utils.hexToBytes(bs.getData()),
-              constants.emptyBytes,
+              Constants.emptyBytes,
               { from: exchangeTestUtil.exchangeOperator }
             ),
             "INVALID_MERKLE_ROOT"
@@ -175,7 +174,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_MERKLE_ROOT"
@@ -212,7 +211,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_TIMESTAMP"
@@ -237,7 +236,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_TIMESTAMP"
@@ -278,7 +277,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_PROTOCOL_FEES"
@@ -300,7 +299,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_PROTOCOL_FEES"
@@ -401,7 +400,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_REQUEST_RANGE"
@@ -424,7 +423,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_REQUEST_RANGE"
@@ -447,7 +446,7 @@ contract("Exchange", (accounts: string[]) => {
                   8,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_REQUEST_RANGE"
@@ -470,7 +469,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_STARTING_HASH"
@@ -493,7 +492,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_ENDING_HASH"
@@ -1220,7 +1219,7 @@ contract("Exchange", (accounts: string[]) => {
             2,
             0,
             web3.utils.hexToBytes("0x0"),
-            constants.emptyBytes,
+            Constants.emptyBytes,
             { from: exchangeTestUtil.testContext.orderOwners[0] }
           ),
           "UNAUTHORIZED"

@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { SparseMerkleTree } from "./SparseMerkleTree";
+import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 export enum BlockType {
     RING_SETTLEMENT = 0,
@@ -203,7 +203,7 @@ export enum BlockType {
     balanceMerkleProof: string[];
   }
 
-  export interface State {
+  export interface ExchangeState {
     exchangeId: number;
     accounts: Account[];
 
@@ -216,4 +216,16 @@ export enum BlockType {
     processedRequests: any[];
 
     onchainDataAvailability: boolean;
+  }
+
+  export interface KeyPair {
+    publicKeyX: string;
+    publicKeyY: string;
+    secretKey: string;
+  }
+
+  export interface Signature {
+    Rx: string;
+    Ry: string;
+    s: string;
   }

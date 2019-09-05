@@ -1,11 +1,11 @@
 import BN = require("bn.js");
 import { Bitstream } from "../bitstream";
-import * as constants from "../constants";
+import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, OrderCancellation, State} from "../types";
+import {Account, Block, OrderCancellation, ExchangeState} from "../types";
 
 export class OrderCancellationProcessor {
-  public static processBlock(state: State, block: Block) {
+  public static processBlock(state: ExchangeState, block: Block) {
     const data = new Bitstream(block.data);
     let offset = 4 + 32 + 32 + 32;
 
@@ -37,7 +37,7 @@ export class OrderCancellationProcessor {
         const orderID = accountIdAndOrderId & 0xfffff;
 
         // Decode the float values
-        const fee = fromFloat(fFee, constants.Float16Encoding);
+        const fee = fromFloat(fFee, Constants.Float16Encoding);
 
         const orderCancellation: OrderCancellation = {
           exchangeId: state.exchangeId,
@@ -71,12 +71,12 @@ export class OrderCancellationProcessor {
     return orderCancellations;
   }
 
-  public static processOrderCancellation(state: State, operatorAccountID: number, orderCancellation: OrderCancellation) {
+  public static processOrderCancellation(state: ExchangeState, operatorAccountID: number, orderCancellation: OrderCancellation) {
     const account = state.accounts[orderCancellation.accountID];
     account.balances[orderCancellation.orderTokenID] = account.balances[orderCancellation.orderTokenID] || { balance: new BN(0), tradeHistory: {} };
     account.balances[orderCancellation.feeTokenID] = account.balances[orderCancellation.feeTokenID] || { balance: new BN(0), tradeHistory: {} };
 
-    const tradeHistorySlot = orderCancellation.orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+    const tradeHistorySlot = orderCancellation.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
 
     // Update balance
     account.balances[orderCancellation.feeTokenID].balance = account.balances[orderCancellation.feeTokenID].balance.sub(orderCancellation.fee);
@@ -99,7 +99,7 @@ export class OrderCancellationProcessor {
     operator.balances[orderCancellation.feeTokenID].balance = operator.balances[orderCancellation.feeTokenID].balance.add(orderCancellation.fee);
   }
 
-  public static revertBlock(state: State, block: Block) {
+  public static revertBlock(state: ExchangeState, block: Block) {
     // Nothing to do
   }
 }

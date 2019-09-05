@@ -4,19 +4,14 @@ import fs = require("fs");
 import path = require("path");
 import { performance } from "perf_hooks";
 import { SHA256 } from "sha2";
-import snarkjs = require("snarkjs");
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
-import { Bitstream } from "./bitstream";
 import { compress, CompressionType } from "./compression";
-import * as constants from "./constants";
+import { Bitstream, Constants, EdDSA, Explorer, toFloat, Poseidon } from "loopringV3.js";
 import { Context } from "./context";
 import { expectThrow } from "./expectThrow";
-import eddsa = require("./eddsa");
-import { toFloat } from "./float";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
-import poseidon = require("./poseidon");
-import Loopring = require("loopringV3.js");
+
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
 import {
@@ -41,8 +36,6 @@ import {
   WithdrawalRequest,
   WithdrawBlock
 } from "./types";
-
-const bigInt = snarkjs.bigInt;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -70,7 +63,7 @@ export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
 
-  public loopringExplorer: any;
+  public explorer: Explorer;
 
   public ringSettlementBlockSizes = [1, 2, 4];
   public depositBlockSizes = [4, 8];
@@ -159,8 +152,8 @@ export class ExchangeTestUtil {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
 
-    this.loopringExplorer = new Loopring.LoopringExplorer();
-    await this.loopringExplorer.initialize(web3, this.universalRegistry.address);
+    this.explorer = new Explorer();
+    await this.explorer.initialize(web3, this.universalRegistry.address);
 
     // Initialize LoopringV3
     this.protocolFeeVault = this.testContext.deployer;
@@ -272,7 +265,7 @@ export class ExchangeTestUtil {
       keyPair.secretKey,
       keyPair.publicKeyX,
       keyPair.publicKeyY,
-      constants.zeroAddress,
+      Constants.zeroAddress,
       new BN(1)
     );
     this.dummyAccountId = depositInfo.accountID;
@@ -293,7 +286,7 @@ export class ExchangeTestUtil {
       keyPair.secretKey,
       keyPair.publicKeyX,
       keyPair.publicKeyY,
-      constants.zeroAddress,
+      Constants.zeroAddress,
       new BN(1)
     );
     return depositInfo.accountID;
@@ -447,7 +440,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(14, 6, 53);
+    const hasher = Poseidon.createHash(14, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
@@ -473,13 +466,13 @@ export class ExchangeTestUtil {
 
     // Create signature
     const startSign = performance.now();
-    order.signature = eddsa.sign(account.secretKey, order.hash);
+    order.signature = EdDSA.sign(account.secretKey, order.hash);
     const endSign = performance.now();
     // console.log("Sign order time: " + (endSign - startSign));
 
     // Verify signature
     const startVerify = performance.now();
-    const success = eddsa.verify(order.hash, order.signature, [
+    const success = EdDSA.verify(order.hash, order.signature, [
       account.publicKeyX,
       account.publicKeyY
     ]);
@@ -493,7 +486,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(3, 6, 51);
+    const hasher = Poseidon.createHash(3, 6, 51);
     const account = this.accounts[this.exchangeId][block.operatorAccountID];
 
     // Calculate hash
@@ -501,10 +494,10 @@ export class ExchangeTestUtil {
     const hash = hasher(inputs).toString(10);
 
     // Create signature
-    block.signature = eddsa.sign(account.secretKey, hash);
+    block.signature = EdDSA.sign(account.secretKey, hash);
 
     // Verify signature
-    const success = eddsa.verify(hash, block.signature, [
+    const success = EdDSA.verify(hash, block.signature, [
       account.publicKeyX,
       account.publicKeyY
     ]);
@@ -516,7 +509,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(9, 6, 53);
+    const hasher = Poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][cancel.accountID];
 
     // Calculate hash
@@ -533,10 +526,10 @@ export class ExchangeTestUtil {
     const hash = hasher(inputs).toString(10);
 
     // Create signature
-    cancel.signature = eddsa.sign(account.secretKey, hash);
+    cancel.signature = EdDSA.sign(account.secretKey, hash);
 
     // Verify signature
-    const success = eddsa.verify(hash, cancel.signature, [
+    const success = EdDSA.verify(hash, cancel.signature, [
       account.publicKeyX,
       account.publicKeyY
     ]);
@@ -548,7 +541,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = poseidon.createHash(9, 6, 53);
+    const hasher = Poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
 
     // Calculate hash
@@ -565,10 +558,10 @@ export class ExchangeTestUtil {
     const hash = hasher(inputs).toString(10);
 
     // Create signature
-    withdrawal.signature = eddsa.sign(account.secretKey, hash);
+    withdrawal.signature = EdDSA.sign(account.secretKey, hash);
 
     // Verify signature
-    const success = eddsa.verify(hash, withdrawal.signature, [
+    const success = EdDSA.verify(hash, withdrawal.signature, [
       account.publicKeyX,
       account.publicKeyY
     ]);
@@ -666,7 +659,7 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    return eddsa.getKeyPair();
+    return EdDSA.getKeyPair();
   }
 
   public flattenList = (l: any[]) => {
@@ -733,7 +726,7 @@ export class ExchangeTestUtil {
     let ethToSend = feeETH.add(feeSurplus);
 
     if (amount.gt(0)) {
-      if (token !== constants.zeroAddress) {
+      if (token !== Constants.zeroAddress) {
         const Token = this.testContext.tokenAddrInstanceMap.get(token);
         await Token.setBalance(owner, amount);
         await Token.approve(this.exchange.address, amount, { from: owner });
@@ -748,7 +741,7 @@ export class ExchangeTestUtil {
 
     const callerEthBalanceBefore = await this.getOnchainBalance(
       caller,
-      constants.zeroAddress
+      Constants.zeroAddress
     );
 
     const tx = await contract.updateAccountAndDeposit(
@@ -756,7 +749,7 @@ export class ExchangeTestUtil {
       new BN(publicKeyY),
       token,
       web3.utils.toBN(amount),
-      constants.emptyBytes,
+      Constants.emptyBytes,
       { from: caller, value: ethToSend, gasPrice: 0 }
     );
     // logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
@@ -764,7 +757,7 @@ export class ExchangeTestUtil {
     // Check if the correct fee amount was paid
     const callerEthBalanceAfter = await this.getOnchainBalance(
       caller,
-      constants.zeroAddress
+      Constants.zeroAddress
     );
     assert(
       callerEthBalanceAfter.eq(
@@ -896,7 +889,7 @@ export class ExchangeTestUtil {
 
     const callerEthBalanceBefore = await this.getOnchainBalance(
       caller,
-      constants.zeroAddress
+      Constants.zeroAddress
     );
 
     // Submit the withdraw request
@@ -921,7 +914,7 @@ export class ExchangeTestUtil {
     // Check if the correct fee amount was paid
     const callerEthBalanceAfter = await this.getOnchainBalance(
       caller,
-      constants.zeroAddress
+      Constants.zeroAddress
     );
     assert(
       callerEthBalanceAfter.eq(
@@ -1902,7 +1895,7 @@ export class ExchangeTestUtil {
           for (const withdrawal of block.withdrawals) {
             bs.addNumber(withdrawal.feeTokenID, 1);
             bs.addNumber(
-              toFloat(new BN(withdrawal.fee), constants.Float16Encoding),
+              toFloat(new BN(withdrawal.fee), Constants.Float16Encoding),
               2
             );
           }
@@ -2036,7 +2029,7 @@ export class ExchangeTestUtil {
   }
 
   public hashLabels(labels: number[]) {
-    const hasher = poseidon.createHash(66, 6, 56);
+    const hasher = Poseidon.createHash(66, 6, 56);
     const numInputs = 64;
 
     const numStages = Math.floor((labels.length + numInputs - 1) / numInputs);
@@ -2194,11 +2187,11 @@ export class ExchangeTestUtil {
           const orderB = ringSettlement.ring.orderB;
 
           da.addNumber(
-            orderA.orderID * 2 ** constants.NUM_BITS_ORDERID + orderB.orderID,
+            orderA.orderID * 2 ** Constants.NUM_BITS_ORDERID + orderB.orderID,
             5
           );
           da.addNumber(
-            orderA.accountID * 2 ** constants.NUM_BITS_ACCOUNTID +
+            orderA.accountID * 2 ** Constants.NUM_BITS_ACCOUNTID +
               orderB.accountID,
             5
           );
@@ -2454,13 +2447,13 @@ export class ExchangeTestUtil {
         bs.addNumber(block.operatorAccountID, 3);
         for (const cancel of cancels) {
           bs.addNumber(
-            cancel.accountID * 2 ** constants.NUM_BITS_ACCOUNTID +
+            cancel.accountID * 2 ** Constants.NUM_BITS_ACCOUNTID +
               cancel.orderID,
             5
           );
           bs.addNumber(cancel.orderTokenID, 1);
           bs.addNumber(cancel.feeTokenID, 1);
-          bs.addNumber(toFloat(cancel.fee, constants.Float16Encoding), 2);
+          bs.addNumber(toFloat(cancel.fee, Constants.Float16Encoding), 2);
         }
       }
 
@@ -2486,7 +2479,7 @@ export class ExchangeTestUtil {
   public async registerTokens() {
     for (const token of this.testContext.allTokens) {
       const tokenAddress =
-        token === null ? constants.zeroAddress : token.address;
+        token === null ? Constants.zeroAddress : token.address;
       const symbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
       // console.log(symbol + ": " + tokenAddress);
 
@@ -2560,8 +2553,8 @@ export class ExchangeTestUtil {
     const tx = await this.universalRegistry.forgeExchange(
       forgeMode,
       onchainDataAvailability,
-      constants.zeroAddress,
-      constants.zeroAddress,
+      Constants.zeroAddress,
+      Constants.zeroAddress,
       { from: owner }
     );
 
@@ -2627,9 +2620,9 @@ export class ExchangeTestUtil {
 
   public async syncExplorer() {
     await this.evmMine();
-    await this.loopringExplorer.sync(await web3.eth.getBlockNumber());
+    await this.explorer.sync(await web3.eth.getBlockNumber());
 
-    const loopringExchange = this.loopringExplorer.getExchangeById(this.exchangeId);
+    const loopringExchange = this.explorer.getExchangeById(this.exchangeId);
     //console.log("stakes:");
     //console.log(loopringExchange.getExchangeStake().toString(10));
     //console.log(loopringExchange.getProtocolFeeStake().toString(10));
@@ -2662,11 +2655,11 @@ export class ExchangeTestUtil {
     }*/
   }
 
-  public async revertLoopringExplorer(blockIdx: number) {
+  public async revertExplorer(blockIdx: number) {
     await this.evmMine();
-    await this.loopringExplorer.sync(await web3.eth.getBlockNumber());
+    await this.explorer.sync(await web3.eth.getBlockNumber());
 
-    /*const loopringExchange = this.loopringExplorer.getExchangeById(this.exchangeId);
+    /*const loopringExchange = this.explorer.getExchangeById(this.exchangeId);
     loopringExchange.revertToBlockTest(0);
 
     for (let i = 0; i < loopringExchange.getNumBlocks(); i++) {
@@ -2856,7 +2849,7 @@ export class ExchangeTestUtil {
     const data = JSON.parse(fs.readFileSync(filename, "ascii"));
     // console.log(data);
 
-    // const loopringExchange = this.loopringExplorer.getExchange(this.exchangeId);
+    // const loopringExchange = this.explorer.getExchange(this.exchangeId);
     // const proofJs = loopringExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
     // console.log(proofJs);
 
@@ -2909,7 +2902,7 @@ export class ExchangeTestUtil {
     if (owner !== this.testContext.deployer) {
       // Burn complete existing balance
       const existingBalance = await this.getOnchainBalance(owner, token);
-      await Token.transfer(constants.zeroAddress, existingBalance, {
+      await Token.transfer(Constants.zeroAddress, existingBalance, {
         from: owner
       });
     }
@@ -2987,7 +2980,7 @@ export class ExchangeTestUtil {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
-    if (token === constants.zeroAddress) {
+    if (token === Constants.zeroAddress) {
       return new BN(await web3.eth.getBalance(owner));
     } else {
       const Token = await this.contracts.DummyToken.at(token);
@@ -3100,7 +3093,7 @@ export class ExchangeTestUtil {
   }
 
   public compareStateWithExplorer(state: ExchangeState) {
-    const exchange = this.loopringExplorer.getExchangeById(this.exchangeId);
+    const exchange = this.explorer.getExchangeById(this.exchangeId);
     if (!exchange.hasOnchainDataAvailability()) {
       // We can't compare the state
       return;
@@ -3126,7 +3119,7 @@ export class ExchangeTestUtil {
   }
 
   public compareAccounts(accountA: any, accountB: any) {
-    for (let tokenID = 0; tokenID < constants.MAX_NUM_TOKENS; tokenID++) {
+    for (let tokenID = 0; tokenID < Constants.MAX_NUM_TOKENS; tokenID++) {
       let balanceValueA = accountA.balances[tokenID];
       let balanceValueB = accountB.balances[tokenID];
 
@@ -3453,7 +3446,7 @@ export class ExchangeTestUtil {
         simulatorReport.exchangeStateAfter.accounts[cancel.accountID];
 
       const tradeHistorySlot =
-        cancel.orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+        cancel.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       let tradeHistoryBefore =
         accountBefore.balances[cancel.orderTokenID].tradeHistory[
           tradeHistorySlot
@@ -3511,7 +3504,7 @@ export class ExchangeTestUtil {
     for (const order of orders) {
       // Make sure the trading history for the orders exists
       const tradeHistorySlot =
-        order.orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+        order.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       if (
         !state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[
           tradeHistorySlot
@@ -3903,7 +3896,7 @@ export class ExchangeTestUtil {
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 
-    tokenSymbolAddrMap.set("ETH", constants.zeroAddress);
+    tokenSymbolAddrMap.set("ETH", Constants.zeroAddress);
     tokenSymbolAddrMap.set("WETH", this.contracts.WETHToken.address);
     tokenSymbolAddrMap.set("LRC", this.contracts.LRCToken.address);
     tokenSymbolAddrMap.set("GTO", this.contracts.GTOToken.address);
@@ -3915,13 +3908,13 @@ export class ExchangeTestUtil {
 
     for (const token of allTokens) {
       if (token === null) {
-        tokenAddrDecimalsMap.set(constants.zeroAddress, 18);
+        tokenAddrDecimalsMap.set(Constants.zeroAddress, 18);
       } else {
         tokenAddrDecimalsMap.set(token.address, await token.decimals());
       }
     }
 
-    tokenAddrSymbolMap.set(constants.zeroAddress, "ETH");
+    tokenAddrSymbolMap.set(Constants.zeroAddress, "ETH");
     tokenAddrSymbolMap.set(this.contracts.WETHToken.address, "WETH");
     tokenAddrSymbolMap.set(this.contracts.LRCToken.address, "LRC");
     tokenAddrSymbolMap.set(this.contracts.GTOToken.address, "GTO");
@@ -3931,7 +3924,7 @@ export class ExchangeTestUtil {
     tokenAddrSymbolMap.set(this.contracts.INDBToken.address, "INDB");
     tokenAddrSymbolMap.set(this.contracts.TESTToken.address, "TEST");
 
-    tokenAddrInstanceMap.set(constants.zeroAddress, null);
+    tokenAddrInstanceMap.set(Constants.zeroAddress, null);
     tokenAddrInstanceMap.set(this.contracts.WETHToken.address, weth);
     tokenAddrInstanceMap.set(this.contracts.LRCToken.address, lrc);
     tokenAddrInstanceMap.set(this.contracts.GTOToken.address, gto);
@@ -4037,7 +4030,7 @@ export class ExchangeTestUtil {
     order: OrderInfo
   ) {
     const tradeHistorySlot =
-      order.orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      order.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
     const before =
       accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const after =

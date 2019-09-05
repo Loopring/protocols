@@ -43,6 +43,7 @@
   },
   "dependencies": {
     "@types/bitwise-xor": "0.0.30",
+    "@types/web3": "^1.0.19",
     "any-promise": "1.3.0",
     "bignumber.js": "^4.1.0",
     "blake-hash": "^1.1.0",

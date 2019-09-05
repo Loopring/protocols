@@ -1,8 +1,8 @@
 import BN = require("bn.js");
 import { Bitstream } from "../bitstream";
-import * as constants from "../constants";
+import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, State, Trade} from "../types";
+import {Account, Block, ExchangeState, Trade} from "../types";
 
 interface SettlementValues {
   fillSA: BN;
@@ -24,7 +24,7 @@ interface Range {
 }
 
 export class RingSettlementProcessor {
-  public static processBlock(state: State, block: Block) {
+  public static processBlock(state: ExchangeState, block: Block) {
     let data: Bitstream;
     if (state.onchainDataAvailability) {
       // Reverse circuit transform
@@ -102,8 +102,8 @@ export class RingSettlementProcessor {
         const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
 
         // Decode the float values
-        const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
-        const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
+        const fillSA = fromFloat(fFillSA, Constants.Float24Encoding);
+        const fillSB = fromFloat(fFillSB, Constants.Float24Encoding);
 
         const settlementValues = this.calculateSettlementValues(
           protocolFeeTakerBips,
@@ -178,7 +178,7 @@ export class RingSettlementProcessor {
     return trades;
   }
 
-  private static processRingSettlement(state: State, operatorId: number, trade: Trade) {
+  private static processRingSettlement(state: ExchangeState, operatorId: number, trade: Trade) {
     // Update accountA
     const accountA = state.accounts[trade.accountIdA];
     accountA.balances[trade.tokenA] = accountA.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
@@ -197,7 +197,7 @@ export class RingSettlementProcessor {
 
     // Update trade history A
     {
-      const tradeHistorySlotA = trade.orderIdA % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      const tradeHistorySlotA = trade.orderIdA % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] = accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] || {filled: new BN(0), cancelled: false, orderID: 0};
       const tradeHistoryA = accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA];
       tradeHistoryA.filled = trade.orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
@@ -207,7 +207,7 @@ export class RingSettlementProcessor {
     }
     // Update trade history B
     {
-      const tradeHistorySlotB = trade.orderIdB % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      const tradeHistorySlotB = trade.orderIdB % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] = accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] || {filled: new BN(0), cancelled: false, orderID: 0};
       const tradeHistoryB = accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB];
       tradeHistoryB.filled = trade.orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
@@ -235,7 +235,7 @@ export class RingSettlementProcessor {
     operator.balances[trade.tokenA].balance = operator.balances[trade.tokenA].balance.add(trade.feeB).sub(trade.protocolFeeB).sub(trade.rebateB);
   }
 
-  public static revertBlock(state: State, block: Block) {
+  public static revertBlock(state: ExchangeState, block: Block) {
     // Nothing to do
   }
 

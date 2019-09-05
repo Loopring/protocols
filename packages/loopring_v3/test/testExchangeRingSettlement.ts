@@ -1,8 +1,7 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
-import { expectThrow } from "./expectThrow";
+import { Constants, Signature } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo, Signature } from "./types";
+import { OrderInfo, RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -1354,7 +1353,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.depositTo(
         ring.orderA.accountID,
         "TEST",
-        constants.MAX_AMOUNT.sub(ring.orderA.amountB).add(new BN(1))
+        Constants.MAX_AMOUNT.sub(ring.orderA.amountB).add(new BN(1))
       );
 
       await exchangeTestUtil.commitDeposits(exchangeID);
@@ -1629,7 +1628,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY
+          orderID: orderID + 2 ** Constants.TREE_DEPTH_TRADING_HISTORY
         },
         orderB: {
           tokenS: "GTO",
@@ -1664,7 +1663,7 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY
+          orderID: orderID + 2 ** Constants.TREE_DEPTH_TRADING_HISTORY
         },
         orderB: {
           tokenS: "GTO",

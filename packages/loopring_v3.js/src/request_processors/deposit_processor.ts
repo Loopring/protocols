@@ -1,10 +1,10 @@
 import BN = require("bn.js");
 import { Bitstream } from "../bitstream";
-import * as constants from "../constants";
-import {Account, Block, Deposit, State} from "../types";
+import { Constants } from "../constants";
+import {Account, Block, Deposit, ExchangeState} from "../types";
 
 export class DepositProcessor {
-  public static processBlock(state: State, block: Block) {
+  public static processBlock(state: ExchangeState, block: Block) {
     const offset = 4 + 32 + 32 + 32 + 32;
     const data = new Bitstream(block.data);
     const startIdx = data.extractUint32(offset);
@@ -23,7 +23,7 @@ export class DepositProcessor {
     return deposits;
   }
 
-  public static processDeposit(state: State, deposit: Deposit) {
+  public static processDeposit(state: ExchangeState, deposit: Deposit) {
     assert(deposit.accountID <= state.accounts.length, "accountID invalid");
     // New account
     if (deposit.accountID === state.accounts.length) {
@@ -44,14 +44,14 @@ export class DepositProcessor {
 
     // Update state
     account.balances[deposit.tokenID].balance = account.balances[deposit.tokenID].balance.add(deposit.amount);
-    if (account.balances[deposit.tokenID].balance.gt(constants.MAX_AMOUNT)) {
-      account.balances[deposit.tokenID].balance = constants.MAX_AMOUNT;
+    if (account.balances[deposit.tokenID].balance.gt(Constants.MAX_AMOUNT)) {
+      account.balances[deposit.tokenID].balance = Constants.MAX_AMOUNT;
     }
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
   }
 
-  public static revertBlock(state: State, block: Block) {
+  public static revertBlock(state: ExchangeState, block: Block) {
     const startIdx = block.totalNumRequestsProcessed - 1;
     const endIdx = startIdx - block.numRequestsProcessed;
     for (let i = startIdx; i > endIdx; i--) {

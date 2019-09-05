@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import { Signature } from "loopringV3.js";
 
 export enum BlockState {
   NEW = 0,
@@ -12,18 +13,6 @@ export enum BlockType {
   ONCHAIN_WITHDRAWAL,
   OFFCHAIN_WITHDRAWAL,
   ORDER_CANCELLATION
-}
-
-export interface KeyPair {
-  publicKeyX: string;
-  publicKeyY: string;
-  secretKey: string;
-}
-
-export interface Signature {
-  Rx: string;
-  Ry: string;
-  s: string;
 }
 
 export interface OrderInfo {
