@@ -7,7 +7,7 @@ import poseidon = require("./poseidon");
 import { ProtocolV3 } from "./ProtocolV3";
 import { SparseMerkleTree } from "./SparseMerkleTree";
 import {BlockType, BlockState, ForgeMode, Block, Deposit, OnchainWithdrawal,
-        TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData, State} from "./types";
+        TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData, State, ExchangeFees, ProtocolFees} from "./types";
 import { DepositProcessor } from "./RequestProcessors/DepositProcessor";
 import { OnchainWithdrawalProcessor } from "./RequestProcessors/OnchainWithdrawalProcessor";
 import { RingSettlementProcessor } from "./RequestProcessors/RingSettlementProcessor";
@@ -24,7 +24,6 @@ export class ExchangeV3 {
 
   private exchangeV3Abi: string;
   private exchangeAddress: string;
-  private exchangeId: number;
   private exchange: any;
   private forgeMode: ForgeMode;
   private protocol: ProtocolV3;
@@ -40,6 +39,7 @@ export class ExchangeV3 {
   private operator: string;
 
   private shutdown: boolean;
+  private shutdownStartTime: number;
   private inMaintenenance: boolean;
   private inWithdrawalMode: boolean;
   private totalTimeInMaintenanceSeconds: number;
@@ -57,13 +57,15 @@ export class ExchangeV3 {
 
   private genesisMerkleRoot = "19576940549163814464655809526001218205804522676808413160044023933932119144961";
 
+  private exchangeFees: ExchangeFees;
+  private protocolFees: ProtocolFees;
+
   private reverts: Revert[] = [];
 
   public async initialize(web3: Web3, exchangeAddress: string, exchangeId: number, owner: string,
                           onchainDataAvailability: boolean, forgeMode: ForgeMode, protocol: ProtocolV3, implementation: string) {
     this.web3 = web3;
     this.exchangeAddress = exchangeAddress;
-    this.exchangeId = exchangeId;
     this.owner = owner;
     this.operator = owner;
     this.forgeMode = forgeMode;
@@ -84,12 +86,14 @@ export class ExchangeV3 {
     this.exchangeCreationTimestamp = await this.exchange.methods.getExchangeCreationTimestamp().call();
 
     this.shutdown = false;
+    this.shutdownStartTime = 0;
     this.inMaintenenance = false;
     this.inWithdrawalMode = false;
     this.totalTimeInMaintenanceSeconds = 0;
 
     // Reset state
     this.state = {
+      exchangeId,
       accounts: [],
       accountIdToOwner: {},
       ownerToAccountId: {},
@@ -100,6 +104,7 @@ export class ExchangeV3 {
     };
 
     const genesisBlock: Block = {
+      exchangeId,
       blockIdx: 0,
 
       blockType: BlockType.RING_SETTLEMENT,
@@ -111,6 +116,9 @@ export class ExchangeV3 {
       operator: constants.zeroAddress,
 
       blockState: BlockState.FINALIZED,
+
+      blockFeeWithdrawn: true,
+      blockFeeAmountWithdrawn: new BN(0),
 
       merkleRoot: this.genesisMerkleRoot,
 
@@ -133,6 +141,7 @@ export class ExchangeV3 {
     this.numBlocksFinalized = 1;
 
     const genesisDeposit: Deposit = {
+      exchangeId,
       depositIdx: 0,
       timestamp: this.exchangeCreationTimestamp,
 
@@ -147,6 +156,7 @@ export class ExchangeV3 {
     this.state.deposits.push(genesisDeposit);
 
     const genesisWithdrawal: OnchainWithdrawal = {
+      exchangeId,
       withdrawalIdx: 0,
       timestamp: this.exchangeCreationTimestamp,
 
@@ -159,6 +169,22 @@ export class ExchangeV3 {
     this.state.onchainWithdrawals.push(genesisWithdrawal);
 
     this.setGenesisState();
+
+    this.exchangeFees = {
+      exchangeId,
+      accountCreationFeeETH: new BN(0),
+      accountUpdateFeeETH: new BN(0),
+      depositFeeETH: new BN(0),
+      withdrawalFeeETH: new BN(0),
+    };
+
+    this.protocolFees = {
+      exchangeId,
+      takerFeeBips: 0,
+      makerFeeBips: 0,
+      previousTakerFeeBips: 0,
+      previousMakerFeeBips: 0,
+    };
   }
 
   public async sync(ethereumBlockTo: number) {
@@ -170,10 +196,7 @@ export class ExchangeV3 {
     for (const event of events) {
       //console.log(event.event);
       if (event.event === "BlockCommitted") {
-        const block = await this.processBlockCommitted(event);
-        this.processBlock(block, false);
-        // Debugging
-        this.buildMerkleTree();
+        await this.processBlockCommitted(event);
       } else if (event.event === "AccountCreated") {
         await this.processAccountCreated(event);
       } else if (event.event === "DepositRequested") {
@@ -190,8 +213,14 @@ export class ExchangeV3 {
         await this.processShutdown(event);
       } else if (event.event === "OperatorChanged") {
         await this.processOperatorChanged(event);
+      } else if (event.event === "BlockFeeWithdrawn") {
+        await this.processBlockFeeWithdrawn(event);
       } else if (event.event === "Revert") {
         await this.processRevert(event);
+      } else if (event.event === "FeesUpdated") {
+        await this.processFeesUpdated(event);
+      } else if (event.event === "ProtocolFeesUpdated") {
+        await this.processProtocolFeesUpdated(event);
       } else if (event.event === "OwnershipTransferred") {
         await this.processOwnershipTransferred(event);
       }
@@ -403,7 +432,7 @@ export class ExchangeV3 {
   /// Meta
 
   public getExchangeId() {
-    return this.exchangeId;
+    return this.state.exchangeId;
   }
 
   public getAddress() {
@@ -439,15 +468,19 @@ export class ExchangeV3 {
   }
 
   public getExchangeStake() {
-    return this.protocol.getExchangeStake(this.exchangeId);
+    return this.protocol.getExchangeStake(this.state.exchangeId);
   }
 
   public getProtocolFeeStake() {
-    return this.protocol.getProtocolFeeStake(this.exchangeId);
+    return this.protocol.getProtocolFeeStake(this.state.exchangeId);
   }
 
   public isShutdown() {
     return this.shutdown;
+  }
+
+  public getShutdownStartTime() {
+    return this.shutdownStartTime;
   }
 
   public isInMaintenenance() {
@@ -460,6 +493,18 @@ export class ExchangeV3 {
 
   public getTotalTimeInMaintenanceSeconds() {
     return this.totalTimeInMaintenanceSeconds;
+  }
+
+  public getExchangeFees() {
+    return this.exchangeFees;
+  }
+
+  public getProtocolFees() {
+    return this.protocolFees;
+  }
+
+  public getNumReverts() {
+    return this.reverts.length;
   }
 
   /// Private
@@ -532,6 +577,7 @@ export class ExchangeV3 {
 
     // Create the block
     const newBlock: Block = {
+      exchangeId: this.state.exchangeId,
       blockIdx,
 
       blockType,
@@ -543,6 +589,9 @@ export class ExchangeV3 {
       operator: transaction.from,
 
       blockState: BlockState.COMMITTED,
+
+      blockFeeWithdrawn: false,
+      blockFeeAmountWithdrawn: new BN(0),
 
       merkleRoot,
 
@@ -562,7 +611,10 @@ export class ExchangeV3 {
       valid,
     };
     this.blocks.push(newBlock);
-    return newBlock;
+
+    this.processBlock(newBlock, false);
+    // Debugging
+    this.buildMerkleTree();
   }
 
   private async processAccountCreated(event: any) {
@@ -581,6 +633,7 @@ export class ExchangeV3 {
     const timestamp = ethereumBlock.timestamp;
 
     const deposit: Deposit = {
+      exchangeId: this.state.exchangeId,
       depositIdx: parseInt(event.returnValues.depositIdx),
       timestamp,
 
@@ -604,6 +657,7 @@ export class ExchangeV3 {
     const timestamp = ethereumBlock.timestamp;
 
     const onchainWithdrawal: OnchainWithdrawal = {
+      exchangeId: this.state.exchangeId,
       withdrawalIdx: parseInt(event.returnValues.withdrawalIdx),
       timestamp,
 
@@ -658,11 +712,22 @@ export class ExchangeV3 {
 
   private async processShutdown(event: any) {
     this.shutdown = true;
+    this.shutdownStartTime = parseInt(event.returnValues.timestamp);
   }
 
   private async processOperatorChanged(event: any) {
     assert(this.operator === event.returnValues.oldOperator, "unexpected operator");
     this.operator = event.returnValues.newOperator;
+  }
+
+  private async processBlockFeeWithdrawn(event: any) {
+    const blockIdx = parseInt(event.returnValues.blockIdx);
+    const amount = new BN(event.returnValues.amount, 10);
+
+    assert(blockIdx < this.blocks.length, "unexpected blockIdx");
+    const block = this.blocks[blockIdx];
+    block.blockFeeWithdrawn = true;
+    block.blockFeeAmountWithdrawn = amount;
   }
 
   private async processRevert(event: any) {
@@ -674,6 +739,21 @@ export class ExchangeV3 {
     this.reverts.push(revert);
 
     this.revertToBlock(blockIdx - 1);
+  }
+
+  private async processFeesUpdated(event: any) {
+    assert(this.state.exchangeId === parseInt(event.returnValues.exchangeId), "unexpected exchangeId");
+    this.exchangeFees.accountCreationFeeETH = new BN(event.returnValues.accountCreationFeeETH, 10);
+    this.exchangeFees.accountUpdateFeeETH = new BN(event.returnValues.accountUpdateFeeETH, 10);
+    this.exchangeFees.depositFeeETH = new BN(event.returnValues.depositFeeETH, 10);
+    this.exchangeFees.withdrawalFeeETH = new BN(event.returnValues.withdrawalFeeETH, 10);
+  }
+
+  private async processProtocolFeesUpdated(event: any) {
+    this.protocolFees.takerFeeBips = parseInt(event.returnValues.takerFeeBips);
+    this.protocolFees.makerFeeBips = parseInt(event.returnValues.makerFeeBips);
+    this.protocolFees.previousTakerFeeBips = parseInt(event.returnValues.previousTakerFeeBips);
+    this.protocolFees.previousMakerFeeBips = parseInt(event.returnValues.previousMakerFeeBips);
   }
 
   private async processOwnershipTransferred(event: any) {
@@ -760,6 +840,7 @@ export class ExchangeV3 {
   private setGenesisState() {
     this.state.accounts = [];
     const protocolPoolAccount: Account = {
+      exchangeId: this.state.exchangeId,
       accountId: 0,
       owner: constants.zeroAddress,
 

@@ -117,6 +117,7 @@ export class RingSettlementProcessor {
         );
 
         const trade: Trade = {
+          exchangeId: state.exchangeId,
           requestIdx: state.processedRequests.length + i,
           blockIdx: block.blockIdx,
 
@@ -149,6 +150,7 @@ export class RingSettlementProcessor {
     } else {
       for (let i = 0; i < block.blockSize; i++) {
         const trade: Trade = {
+          exchangeId: state.exchangeId,
           requestIdx: state.processedRequests.length + i,
           blockIdx: block.blockIdx,
 

@@ -26,6 +26,7 @@ export class OffchainWithdrawalProcessor {
         const fee = fromFloat(data.extractUint16(daOffset + i * 3 + 1), constants.Float16Encoding);
 
         const offchainWithdrawal: OffchainWithdrawal = {
+            exchangeId: state.exchangeId,
             requestIdx: state.processedRequests.length + i,
             blockIdx: block.blockIdx,
             accountID,
@@ -41,6 +42,7 @@ export class OffchainWithdrawalProcessor {
     } else {
       for (let i = 0; i < block.blockSize; i++) {
         const offchainWithdrawal: OffchainWithdrawal = {
+          exchangeId: state.exchangeId,
           requestIdx: state.processedRequests.length + i,
           blockIdx: block.blockIdx,
           accountID: 0,

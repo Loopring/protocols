@@ -36,6 +36,7 @@ export class OnchainWithdrawalProcessor {
         this.processOnchainWithdrawal(state, shutdown, onchainWithdrawal);
       } else {
         const onchainWithdrawal: OnchainWithdrawal = {
+          exchangeId: state.exchangeId,
           withdrawalIdx: 0,
           timestamp: 0,
           accountID,

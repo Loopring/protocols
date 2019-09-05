@@ -28,6 +28,7 @@ export class DepositProcessor {
     // New account
     if (deposit.accountID === state.accounts.length) {
       const newAccount: Account = {
+        exchangeId: state.exchangeId,
         accountId: deposit.accountID,
         owner: state.accountIdToOwner[deposit.accountID],
 

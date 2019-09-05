@@ -24,6 +24,7 @@ export enum BlockType {
   }
 
   export interface Block {
+    exchangeId: number;
     blockIdx: number;
 
     blockType: BlockType;
@@ -35,6 +36,9 @@ export enum BlockType {
     operator: string;
 
     blockState: BlockState;
+
+    blockFeeWithdrawn: boolean;
+    blockFeeAmountWithdrawn: BN;
 
     merkleRoot: string;
 
@@ -63,6 +67,7 @@ export enum BlockType {
   }
 
   export interface Deposit {
+    exchangeId: number;
     blockIdx?: number;
     requestIdx?: number;
 
@@ -79,6 +84,7 @@ export enum BlockType {
   }
 
   export interface OnchainWithdrawal {
+    exchangeId: number;
     blockIdx?: number;
     requestIdx?: number;
 
@@ -94,6 +100,7 @@ export enum BlockType {
   }
 
   export interface Trade {
+    exchangeId: number;
     blockIdx: number;
     requestIdx: number;
 
@@ -117,6 +124,7 @@ export enum BlockType {
   }
 
   export interface OffchainWithdrawal {
+    exchangeId: number;
     blockIdx: number;
     requestIdx: number;
 
@@ -128,6 +136,7 @@ export enum BlockType {
   }
 
   export interface OrderCancellation {
+    exchangeId: number;
     blockIdx: number,
     requestIdx: number,
 
@@ -152,6 +161,7 @@ export enum BlockType {
   }
 
   export interface Account {
+    exchangeId: number;
     accountId: number;
     owner: string;
 
@@ -161,6 +171,24 @@ export enum BlockType {
     balances: { [key: number]: Balance };
 
     balancesMerkleTree?: SparseMerkleTree;
+  }
+
+  export interface ExchangeFees {
+    exchangeId: number;
+
+    accountCreationFeeETH: BN;
+    accountUpdateFeeETH: BN;
+    depositFeeETH: BN;
+    withdrawalFeeETH: BN;
+  }
+
+  export interface ProtocolFees {
+    exchangeId: number;
+
+    takerFeeBips: number;
+    makerFeeBips: number;
+    previousTakerFeeBips: number;
+    previousMakerFeeBips: number;
   }
 
   export interface WithdrawFromMerkleTreeData {
@@ -176,6 +204,7 @@ export enum BlockType {
   }
 
   export interface State {
+    exchangeId: number;
     accounts: Account[];
 
     accountIdToOwner: { [key: number]: string };

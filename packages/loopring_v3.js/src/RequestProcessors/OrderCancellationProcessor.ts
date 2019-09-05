@@ -40,6 +40,7 @@ export class OrderCancellationProcessor {
         const fee = fromFloat(fFee, constants.Float16Encoding);
 
         const orderCancellation: OrderCancellation = {
+          exchangeId: state.exchangeId,
           requestIdx: state.processedRequests.length + i,
           blockIdx: block.blockIdx,
           accountID,
@@ -55,6 +56,7 @@ export class OrderCancellationProcessor {
     } else {
       for (let i = 0; i < block.blockSize; i++) {
         const orderCancellation: OrderCancellation = {
+          exchangeId: state.exchangeId,
           requestIdx: state.processedRequests.length + i,
           blockIdx: block.blockIdx,
           accountID: 0,
