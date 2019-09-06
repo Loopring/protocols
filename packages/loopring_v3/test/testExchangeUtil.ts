@@ -3204,19 +3204,6 @@ export class ExchangeTestUtil {
         ringBlock.protocolMakerFeeBips
       );
 
-      if (ringBlock.onchainDataAvailability) {
-        // Verify onchain data can be used to update the Merkle tree correctly
-        const reconstructedState = simulator.settleRingFromOnchainData(
-          bs,
-          ringIndex,
-          latestState
-        );
-        this.compareStates(
-          simulatorReport.exchangeStateAfter,
-          reconstructedState
-        );
-      }
-
       for (const detailedTransfer of simulatorReport.detailedTransfers) {
         this.logDetailedTokenTransfer(detailedTransfer, addressBook);
       }
@@ -3376,20 +3363,6 @@ export class ExchangeTestUtil {
         operatorAccountID
       );
 
-      if (withdrawBlock.onchainDataAvailability) {
-        // Verify onchain data can be used to update the Merkle tree correctly
-        const reconstructedState = simulator.offchainWithdrawFromOnchainData(
-          bs,
-          withdrawBlock.withdrawals.length,
-          withdrawalIndex,
-          latestState
-        );
-        this.compareStates(
-          simulatorReport.exchangeStateAfter,
-          reconstructedState
-        );
-      }
-
       const accountBefore = latestState.accounts[withdrawal.accountID];
       const accountAfter =
         simulatorReport.exchangeStateAfter.accounts[withdrawal.accountID];
@@ -3427,19 +3400,6 @@ export class ExchangeTestUtil {
         latestState,
         operatorAccountID
       );
-
-      if (cancelBlock.onchainDataAvailability) {
-        // Verify onchain data can be used to update the Merkle tree correctly
-        const reconstructedState = simulator.cancelOrderFromOnchainData(
-          bs,
-          cancelIndex,
-          latestState
-        );
-        this.compareStates(
-          simulatorReport.exchangeStateAfter,
-          reconstructedState
-        );
-      }
 
       const accountBefore = latestState.accounts[cancel.accountID];
       const accountAfter =
