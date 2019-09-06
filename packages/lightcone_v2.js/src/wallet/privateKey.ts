@@ -138,12 +138,14 @@ export class PrivateKey {
 
   /**
    * create Or Update Account in DEX
-   * @param gasPrice in gwei
+   * @param gasPrice: in gwei
+   * @param password: user password
    */
-  public async createOrUpdateAccount(gasPrice: number) {
+  public async createOrUpdateAccount(password: string, gasPrice: number) {
     try {
       const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
         this.account,
+        password,
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
@@ -252,7 +254,6 @@ export class PrivateKey {
       order.orderId = orderId;
       order.validSince = Math.floor(validSince);
       order.validUntil = Math.floor(validUntil);
-      order.buy = false;
       return exchange.submitOrder(this.account, order);
     } catch (e) {
       throw e;

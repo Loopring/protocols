@@ -1,5 +1,3 @@
-import settings from "./settings";
-
 const data = require("./data");
 const config = data.configs;
 
@@ -21,16 +19,11 @@ async function isinWhiteList(address) {
   });
 }
 
-function initTokenConfig() {
-  return config.tokens;
-}
-
 function getChainId() {
   return config.chainId;
 }
 
 function getTokenBySymbol(symbol) {
-  console.log("getTokenBySymbol: ", getTokens());
   if (!symbol) {
     return {};
   }
@@ -55,8 +48,7 @@ function getCustomTokens() {
 }
 
 function getTokens() {
-  console.log("getTokens");
-  return settings.getTokensConfig();
+  return config.tokens;
 }
 
 function getMarketByPair(pair) {
@@ -94,7 +86,7 @@ function getProjectByLrx(lrx) {
 }
 
 function getSupportedMarketsTokenR() {
-  return settings.getMarketR();
+  return config.getMarketR();
 }
 
 function isSupportedMarket(market) {
@@ -172,7 +164,7 @@ function getTokenSupportedMarkets(token) {
 }
 
 function getMarkets() {
-  return settings.getMarketPairs();
+  return config.getMarketPairs();
 }
 
 function getGasLimitByType(type) {
@@ -194,7 +186,6 @@ function getWallets() {
 }
 
 export default {
-  initTokenConfig,
   getTokenBySymbol,
   getTokenByAddress,
   getTokens,

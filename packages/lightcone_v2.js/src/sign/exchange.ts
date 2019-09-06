@@ -33,7 +33,7 @@ export class Exchange {
     console.log("init exchange");
 
     // TODO: add config back when we can remove localStorage dependency in config
-    config.initTokenConfig();
+    config.getTokens();
 
     this.contractURL = contractURL;
     updateHost(contractURL);
@@ -57,10 +57,14 @@ export class Exchange {
     return [].concat.apply([], l);
   };
 
-  public async createOrUpdateAccount(wallet: WalletAccount, gasPrice: number) {
+  public async createOrUpdateAccount(
+    wallet: WalletAccount,
+    password: string,
+    gasPrice: number
+  ) {
     try {
       this.checkIfInitialized();
-      const keyPair = generateKeyPair(wallet.getAddress());
+      const keyPair = generateKeyPair(wallet.getAddress() + password);
       this.currentWalletAccount = wallet;
       const transaction = await this.createAccountAndDeposit(
         keyPair.publicKeyX,
@@ -282,7 +286,7 @@ export class Exchange {
 
     order.exchangeId =
       order.exchangeId !== undefined ? order.exchangeId : this.exchangeID;
-    order.buy = order.buy !== undefined ? order.buy : true;
+    order.buy = order.buy !== undefined ? order.buy : false;
     order.allOrNone = order.allOrNone ? order.allOrNone : false;
 
     order.maxFeeBips = order.maxFeeBips !== undefined ? order.maxFeeBips : 20; // TODO: config
