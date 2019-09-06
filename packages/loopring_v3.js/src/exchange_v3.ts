@@ -114,6 +114,7 @@ export class ExchangeV3 {
       offchainData: "0x",
 
       operator: Constants.zeroAddress,
+      origin: Constants.zeroAddress,
 
       blockState: BlockState.FINALIZED,
 
@@ -588,7 +589,8 @@ export class ExchangeV3 {
       data,
       offchainData,
 
-      operator: transaction.from,
+      operator: this.operator,
+      origin: transaction.from,
 
       blockState: BlockState.COMMITTED,
 

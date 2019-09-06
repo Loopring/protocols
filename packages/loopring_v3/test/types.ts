@@ -164,6 +164,7 @@ export interface Block {
   blockVersion: number;
   blockState: BlockState;
   operator: string;
+  origin: string;
   operatorId: number;
   data: string;
   offchainData: string;

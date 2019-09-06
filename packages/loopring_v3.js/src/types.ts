@@ -34,6 +34,7 @@ export enum BlockType {
     offchainData: string;
 
     operator: string;
+    origin: string;
 
     blockState: BlockState;
 

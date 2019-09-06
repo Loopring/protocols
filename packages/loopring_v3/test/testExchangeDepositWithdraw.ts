@@ -906,7 +906,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await withdrawChecked(
         blockIdx,
         witdrawalRequest.slotIdx,
@@ -1033,7 +1033,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await withdrawChecked(
         blockIdx,
         0,
@@ -1091,7 +1091,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await withdrawChecked(blockIdx, 0, accountID, token, owner, balance);
     });
 
@@ -1134,7 +1134,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await withdrawChecked(
         blockIdx,
         0,
@@ -1193,7 +1193,7 @@ contract("Exchange", (accounts: string[]) => {
       );*/
 
       // Try to withdraw before the block is committed
-      const nextBlockIdx1 = (await exchange.getBlockHeight()).toNumber() + 1;
+      const nextBlockIdx1 = await exchangeTestUtil.getNumBlocksOnchain();
       /*await expectThrow(
         exchange.withdrawFromApprovedWithdrawal(nextBlockIdx, witdrawalRequestA.slotIdx),
         "INVALID_BLOCKIDX",
@@ -1230,7 +1230,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Try to withdraw before the block is committed
-      const nextBlockIdx2 = (await exchange.getBlockHeight()).toNumber() + 1;
+      const nextBlockIdx2 = await exchangeTestUtil.getNumBlocksOnchain();
       /*await expectThrow(
         exchange.withdrawFromApprovedWithdrawal(nextBlockIdx, witdrawalRequestA.slotIdx),
         "INVALID_BLOCKIDX",
@@ -1314,7 +1314,7 @@ contract("Exchange", (accounts: string[]) => {
         .div(new BN(100000));
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await withdrawChecked(
         blockIdx,
         0,
@@ -1389,7 +1389,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
       // Withdraw
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await withdrawChecked(
         blockIdx,
         witdrawalRequest.slotIdx,
@@ -1462,7 +1462,7 @@ contract("Exchange", (accounts: string[]) => {
           0
         );
       }
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
 
       // Incorrect block index
@@ -1591,7 +1591,7 @@ contract("Exchange", (accounts: string[]) => {
           0
         );
       }
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
 
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -1677,7 +1677,7 @@ contract("Exchange", (accounts: string[]) => {
           0
         );
       }
-      const blockIdx = (await exchange.getBlockHeight()).toNumber();
+      const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 

@@ -407,7 +407,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
 
-      const finalizedBlockIdx = (await exchangeTestUtil.exchange.getBlockHeight()).toNumber();
+      const finalizedBlockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
 
       const depositInfoB = await exchangeTestUtil.deposit(
         exchangeID,

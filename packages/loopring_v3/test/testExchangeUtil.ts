@@ -228,6 +228,7 @@ export class ExchangeTestUtil {
         blockVersion: 0,
         blockState: BlockState.FINALIZED,
         operator: Constants.zeroAddress,
+        origin: Constants.zeroAddress,
         operatorId: 0,
         data: "0x",
         offchainData: "0x",
@@ -1109,7 +1110,7 @@ export class ExchangeTestUtil {
     data: string,
     validate: boolean = true
   ) {
-    const nextBlockIdx = (await this.exchange.getBlockHeight()).toNumber() + 1;
+    const nextBlockIdx = await this.getNumBlocksOnchain();
     const inputFilename =
       "./blocks/block_" + exchangeID + "_" + nextBlockIdx + "_info.json";
     const outputFilename =
@@ -1186,7 +1187,7 @@ export class ExchangeTestUtil {
     // Make sure the keys are generated
     await this.generateKeys(filename);
 
-    const blockHeightBefore = await this.exchange.getBlockHeight();
+    const numBlocksBefore = await this.getNumBlocksOnchain();
 
     const blockVersion = 0;
     let offchainData = this.getRandomInt(2) === 0 ? ("0x0ff" + this.blocks[this.exchangeId].length) : "0x";
@@ -1209,9 +1210,9 @@ export class ExchangeTestUtil {
       "[commitBlock] Gas used: " + tx.receipt.gasUsed
     );
 
-    const blockHeightAfter = await this.exchange.getBlockHeight();
-    assert(
-      blockHeightAfter.eq(blockHeightBefore.add(new BN(1))),
+    const numBlocksAfter = await this.getNumBlocksOnchain();
+    assert.equal(
+      numBlocksAfter, numBlocksBefore + 1,
       "block height should be incremented by 1"
     );
 
@@ -1223,13 +1224,13 @@ export class ExchangeTestUtil {
     );
     const items = eventArr.map((eventObj: any) => {
       return {
-        blockIdx: eventObj.args.blockIdx,
+        blockIdx: eventObj.args.blockIdx.toNumber(),
         publicDataHash: eventObj.args.publicDataHash
       };
     });
     assert(items.length === 1, "a single BlockCommitted needs to be emited");
-    assert(
-      blockHeightAfter.eq(items[0].blockIdx),
+    assert.equal(
+      items[0].blockIdx, numBlocksAfter - 1,
       "block index should be equal to block height"
     );
     assert.equal(
@@ -1238,7 +1239,7 @@ export class ExchangeTestUtil {
       "public data hash needs to match"
     );
 
-    const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
+    const blockIdx = await this.getNumBlocksOnchain() - 1;
 
     // Check the block data
     const blockData = await this.exchange.getBlock(blockIdx);
@@ -1255,6 +1256,7 @@ export class ExchangeTestUtil {
       blockVersion,
       blockState: BlockState.COMMITTED,
       operator: this.operator ? this.operator.address : this.exchangeOperator,
+      origin: this.exchangeOperator,
       operatorId,
       data,
       offchainData,
@@ -1356,7 +1358,7 @@ export class ExchangeTestUtil {
       proofs.push(...block.proof);
     }
 
-    const numBlocksFinalizedBefore = await this.exchange.getNumBlocksFinalized();
+    const numBlocksFinalizedBefore = await this.getNumBlocksFinalizedOnchain();
 
     const blockDataBefore: any[] = [];
     for (const block of blocks) {
@@ -1422,10 +1424,10 @@ export class ExchangeTestUtil {
     }
 
     // Check numBlocksFinalized
-    const numBlocksFinalizedAfter = await this.exchange.getNumBlocksFinalized();
-    const numBlocks = (await this.exchange.getBlockHeight()).toNumber() + 1;
+    const numBlocksFinalizedAfter = await this.getNumBlocksFinalizedOnchain();
+    const numBlocks = await this.getNumBlocksOnchain();
     let numBlockFinalizedExpected = 0;
-    let idx = numBlocksFinalizedBefore.toNumber() + 1;
+    let idx = numBlocksFinalizedBefore;
     while (
       idx < numBlocks &&
       (await this.exchange.getBlock(idx)).blockState.toNumber() ===
@@ -1435,8 +1437,8 @@ export class ExchangeTestUtil {
       idx++;
     }
     assert.equal(
-      numBlocksFinalizedAfter.toNumber(),
-      numBlocksFinalizedBefore.toNumber() + numBlockFinalizedExpected,
+      numBlocksFinalizedAfter,
+      numBlocksFinalizedBefore + numBlockFinalizedExpected,
       "num blocks finalized different than expected"
     );
 
@@ -1448,17 +1450,17 @@ export class ExchangeTestUtil {
         web3.eth.blockNumber
       );
       const items = eventArr.map((eventObj: any) => {
-        return { blockIdx: eventObj.args.blockIdx };
+        return { blockIdx: eventObj.args.blockIdx.toNumber() };
       });
       assert.equal(
         items.length,
         numBlockFinalizedExpected,
         "different number of blocks finalized than expected"
       );
-      const startIdx = numBlocksFinalizedBefore.toNumber() + 1;
+      const startIdx = numBlocksFinalizedBefore;
       for (let i = startIdx; i < startIdx + numBlockFinalizedExpected; i++) {
         assert.equal(
-          items[i - startIdx].blockIdx.toNumber(),
+          items[i - startIdx].blockIdx,
           i,
           "finalized blockIdx needs to match"
         );
@@ -1473,10 +1475,11 @@ export class ExchangeTestUtil {
 
     const exchangeBlocks = this.blocks[this.exchangeId];
     for (let i = 1; i < exchangeBlocks.length; i++) {
-      if (exchangeBlocks[i - 1].blockState === BlockState.FINALIZED && exchangeBlocks[i].blockState === BlockState.VERIFIED) {
+      if (exchangeBlocks[i - 1].blockState === BlockState.FINALIZED &&
+          (exchangeBlocks[i].blockState === BlockState.VERIFIED) || (exchangeBlocks[i].blockState === BlockState.FINALIZED)) {
         exchangeBlocks[i].blockState = BlockState.FINALIZED;
       } else {
-        assert.equal(i - 1, numBlockFinalizedExpected, "unexpected number of finalized blocks");
+        assert.equal(i, numBlocksFinalizedAfter, "unexpected number of finalized blocks");
         break;
       }
     }
@@ -1627,7 +1630,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -1697,7 +1700,7 @@ export class ExchangeTestUtil {
   public async loadExchangeState(exchangeID: number, blockIdx?: number) {
     // Read in the state
     if (blockIdx === undefined) {
-      blockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      blockIdx = await this.getNumBlocksOnchain() - 1;
     }
     const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
@@ -1907,7 +1910,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -2187,7 +2190,7 @@ export class ExchangeTestUtil {
       }
       const labelHash = this.hashLabels(labels);
 
-      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
@@ -2466,7 +2469,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -2747,8 +2750,8 @@ export class ExchangeTestUtil {
 
     const revertFineLRC = await this.loopringV3.revertFineLRC();
 
-    const numBlocksBefore = (await this.exchange.getBlockHeight()).toNumber();
-    const numBlocksFinalizedBefore = (await this.exchange.getNumBlocksFinalized()).toNumber();
+    const numBlocksBefore = await this.getNumBlocksOnchain();
+    const numBlocksFinalizedBefore = await this.getNumBlocksFinalizedOnchain();
     const lrcBalanceBefore = await this.getOnchainBalance(
       this.loopringV3.address,
       "LRC"
@@ -2760,8 +2763,8 @@ export class ExchangeTestUtil {
       from: this.exchangeOperator
     });
 
-    const numBlocksAfter = (await this.exchange.getBlockHeight()).toNumber();
-    const numBlocksFinalizedAfter = (await this.exchange.getNumBlocksFinalized()).toNumber();
+    const numBlocksAfter = await this.getNumBlocksOnchain();
+    const numBlocksFinalizedAfter = await this.getNumBlocksFinalizedOnchain();
     const lrcBalanceAfter = await this.getOnchainBalance(
       this.loopringV3.address,
       "LRC"
@@ -2791,6 +2794,11 @@ export class ExchangeTestUtil {
 
     logInfo("Reverted to block " + (blockIdx - 1));
     this.pendingBlocks[this.exchangeId] = [];
+
+    // Revert the test state
+    for (let i = this.blocks[this.exchangeId].length - 1; i >= blockIdx; i--) {
+      this.blocks[this.exchangeId].pop();
+    }
 
     // Check the current state against the explorer state
     await this.checkExplorerState();
@@ -2887,7 +2895,7 @@ export class ExchangeTestUtil {
 
     const exchangeID = this.exchangeId;
 
-    const blockIdx = (await this.exchange.getBlockHeight()).toNumber();
+    const blockIdx = await this.getNumBlocksOnchain() - 1;
     const filename = "withdraw_proof.json";
     const result = childProcess.spawnSync(
       "python3",
@@ -2986,6 +2994,14 @@ export class ExchangeTestUtil {
         }
       );
     });
+  }
+
+  public async getNumBlocksOnchain() {
+    return (await this.exchange.getBlockHeight()).toNumber() + 1;
+  }
+
+  public async getNumBlocksFinalizedOnchain() {
+    return (await this.exchange.getNumBlocksFinalized()).toNumber() + 1;
   }
 
   public evmMine() {
@@ -3152,10 +3168,10 @@ export class ExchangeTestUtil {
 
   public async checkExplorerState() {
     // Get the current state
-    const blockHeight = (await this.exchange.getBlockHeight()).toNumber();
+    const numBlocksOnchain = await this.getNumBlocksOnchain();
     const state = await this.loadExchangeState(
       this.exchangeId,
-      blockHeight
+      numBlocksOnchain - 1
     );
 
     await this.syncExplorer();
@@ -3200,6 +3216,7 @@ export class ExchangeTestUtil {
       assert.equal(explorerBlock.data, testBlock.data, "unexpected data");
       assert.equal(explorerBlock.offchainData, testBlock.offchainData, "unexpected offchainData");
       assert.equal(explorerBlock.operator, testBlock.operator, "unexpected operator");
+      assert.equal(explorerBlock.origin, testBlock.origin, "unexpected origin");
       assert.equal(explorerBlock.blockState, testBlock.blockState, "unexpected blockState");
       assert.equal(explorerBlock.blockFeeWithdrawn, testBlock.blockFeeWithdrawn, "unexpected blockFeeWithdrawn");
       if (explorerBlock.blockFeeWithdrawn) {
