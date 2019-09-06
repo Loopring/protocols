@@ -170,20 +170,22 @@ export class ExchangeV3 {
 
     this.setGenesisState();
 
+    const fees = await this.exchange.methods.getFees().call();
     this.exchangeFees = {
       exchangeId,
-      accountCreationFeeETH: new BN(0),
-      accountUpdateFeeETH: new BN(0),
-      depositFeeETH: new BN(0),
-      withdrawalFeeETH: new BN(0),
+      accountCreationFeeETH: new BN(fees._accountCreationFeeETH, 10),
+      accountUpdateFeeETH: new BN(fees._accountUpdateFeeETH, 10),
+      depositFeeETH: new BN(fees._depositFeeETH, 10),
+      withdrawalFeeETH: new BN(fees._withdrawalFeeETH, 10),
     };
 
+    const protocolFeeValues = await this.exchange.methods.getProtocolFeeValues().call();
     this.protocolFees = {
       exchangeId,
-      takerFeeBips: 0,
-      makerFeeBips: 0,
-      previousTakerFeeBips: 0,
-      previousMakerFeeBips: 0,
+      takerFeeBips: parseInt(protocolFeeValues.takerFeeBips),
+      makerFeeBips: parseInt(protocolFeeValues.makerFeeBips),
+      previousTakerFeeBips: parseInt(protocolFeeValues.previousTakerFeeBips),
+      previousMakerFeeBips: parseInt(protocolFeeValues.previousMakerFeeBips),
     };
   }
 
@@ -538,7 +540,7 @@ export class ExchangeV3 {
       blockSize = parseInt(decodedInputs[1]);
       blockVersion = parseInt(decodedInputs[2]);
       onchainData = decodedInputs[3];
-      offchainData = decodedInputs[4];
+      offchainData = decodedInputs[4] === null ? "0x" : decodedInputs[4];
     } else {
       console.log("block " + blockIdx + " was committed with an unsupported function signature");
       valid = false;

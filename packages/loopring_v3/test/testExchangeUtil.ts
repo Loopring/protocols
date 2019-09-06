@@ -93,6 +93,7 @@ export class ExchangeTestUtil {
   public protocolFeeVaultContract: any;
   public universalRegistry: any;
 
+  public blocks: Block[][] = [];
   public accounts: Account[][] = [];
 
   public operators: number[] = [];
@@ -217,6 +218,29 @@ export class ExchangeTestUtil {
       };
       accountsT.push(account);
       this.accounts.push(accountsT);
+
+      const blocksT: Block[] = [];
+      const genesisBlock: Block = {
+        blockIdx: 0,
+        filename: null,
+        blockType: BlockType.RING_SETTLEMENT,
+        blockSize: 0,
+        blockVersion: 0,
+        blockState: BlockState.FINALIZED,
+        operator: Constants.zeroAddress,
+        operatorId: 0,
+        data: "0x",
+        offchainData: "0x",
+        compressedData: "0x",
+        publicDataHash: "0",
+        publicInput: "0",
+        blockFeeWithdrawn: true,
+        blockFeeAmountWithdrawn: new BN(0),
+        committedTimestamp: 0,
+        transactionHash: Constants.zeroAddress
+      };
+      blocksT.push(genesisBlock);
+      this.blocks.push(blocksT);
 
       const pendingBlocks: Block[] = [];
       this.pendingBlocks.push(pendingBlocks);
@@ -1165,15 +1189,20 @@ export class ExchangeTestUtil {
     const blockHeightBefore = await this.exchange.getBlockHeight();
 
     const blockVersion = 0;
+    let offchainData = this.getRandomInt(2) === 0 ? ("0x0ff" + this.blocks[this.exchangeId].length) : "0x";
+    if (offchainData.length % 2 == 1) {
+      offchainData += "0";
+    }
     const operatorContract = this.operator ? this.operator : this.exchange;
     const tx = await operatorContract.commitBlock(
       web3.utils.toBN(blockType),
       web3.utils.toBN(blockSize),
       web3.utils.toBN(blockVersion),
       web3.utils.hexToBytes(compressedData),
-      web3.utils.hexToBytes("0x"),
+      web3.utils.hexToBytes(offchainData),
       { from: this.exchangeOperator }
     );
+    const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
 
     logInfo(
       "\x1b[46m%s\x1b[0m",
@@ -1218,52 +1247,36 @@ export class ExchangeTestUtil {
       "block state needs to be COMMITTED"
     );
 
-    await this.syncExplorer();
-
     const block: Block = {
       blockIdx,
       filename,
       blockType,
       blockSize,
       blockVersion,
+      blockState: BlockState.COMMITTED,
+      operator: this.operator ? this.operator.address : this.exchangeOperator,
       operatorId,
+      data,
+      offchainData,
       compressedData,
       publicDataHash,
-      publicInput
+      publicInput,
+      blockFeeWithdrawn: false,
+      blockFeeAmountWithdrawn: new BN(0),
+      committedTimestamp: ethBlock.timestamp,
+      transactionHash: tx.receipt.transactionHash
     };
     this.pendingBlocks[this.exchangeId].push(block);
+    this.blocks[this.exchangeId].push(block);
+
+    // Check the current state against the explorer state
+    await this.checkExplorerState();
+
     return block;
   }
 
   public async generateKeys(blockFilename: string) {
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
-
-    const result = childProcess.spawnSync(
-      "build/circuit/dex_circuit",
-      ["-createkeys", blockFilename],
-      { stdio: doDebugLogging() ? "inherit" : "ignore" }
-    );
-    assert(result.status === 0, "generateKeys failed: " + blockFilename);
-
-    let verificationKeyFilename = "keys/";
-    if (block.blockType === BlockType.RING_SETTLEMENT) {
-      verificationKeyFilename += "trade";
-    } else if (block.blockType === BlockType.DEPOSIT) {
-      verificationKeyFilename += "deposit";
-    } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
-      verificationKeyFilename += "withdraw_onchain";
-    } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-      verificationKeyFilename += "withdraw_offchain";
-    } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
-      verificationKeyFilename += "cancel";
-    }
-    verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
-    verificationKeyFilename += block.blockSize + "_vk.json";
-
-    // Read the verification key and set it in the smart contract
-    const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
-    const vkFlattened = this.flattenList(this.flattenVK(vk));
-    // console.log(vkFlattened);
     const blockVersion = 0;
 
     const isCircuitRegistered = await this.blockVerifier.isCircuitRegistered(
@@ -1273,6 +1286,33 @@ export class ExchangeTestUtil {
       blockVersion
     );
     if (!isCircuitRegistered) {
+      const result = childProcess.spawnSync(
+        "build/circuit/dex_circuit",
+        ["-createkeys", blockFilename],
+        { stdio: doDebugLogging() ? "inherit" : "ignore" }
+      );
+      assert(result.status === 0, "generateKeys failed: " + blockFilename);
+
+      let verificationKeyFilename = "keys/";
+      if (block.blockType === BlockType.RING_SETTLEMENT) {
+        verificationKeyFilename += "trade";
+      } else if (block.blockType === BlockType.DEPOSIT) {
+        verificationKeyFilename += "deposit";
+      } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+        verificationKeyFilename += "withdraw_onchain";
+      } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
+        verificationKeyFilename += "withdraw_offchain";
+      } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
+        verificationKeyFilename += "cancel";
+      }
+      verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
+      verificationKeyFilename += block.blockSize + "_vk.json";
+
+      // Read the verification key and set it in the smart contract
+      const vk = JSON.parse(fs.readFileSync(verificationKeyFilename, "ascii"));
+      const vkFlattened = this.flattenList(this.flattenVK(vk));
+      // console.log(vkFlattened);
+
       await this.blockVerifier.registerCircuit(
         block.blockType,
         block.onchainDataAvailability,
@@ -1424,6 +1464,25 @@ export class ExchangeTestUtil {
         );
       }
     }
+
+    // Update test state
+    for (const block of blocks) {
+      assert.equal(block.blockState, BlockState.COMMITTED, "incorrect block state");
+      block.blockState = BlockState.VERIFIED;
+    }
+
+    const exchangeBlocks = this.blocks[this.exchangeId];
+    for (let i = 1; i < exchangeBlocks.length; i++) {
+      if (exchangeBlocks[i - 1].blockState === BlockState.FINALIZED && exchangeBlocks[i].blockState === BlockState.VERIFIED) {
+        exchangeBlocks[i].blockState = BlockState.FINALIZED;
+      } else {
+        assert.equal(i - 1, numBlockFinalizedExpected, "unexpected number of finalized blocks");
+        break;
+      }
+    }
+
+    // Check the current state against the explorer state
+    await this.checkExplorerState();
 
     return proofs;
   }
@@ -1611,9 +1670,6 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename
       );
-
-      await this.syncExplorer();
-      this.compareStateWithExplorer(stateAfter);
 
       const numAvailableSlotsAfter = await this.exchange.getNumAvailableDepositSlots();
       const numDepositRequestsProcessedAfter = await this.exchange.getNumDepositRequestsProcessed();
@@ -1929,9 +1985,6 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename
       );
-
-      await this.syncExplorer();
-      this.compareStateWithExplorer(stateAfter);
 
       const numAvailableSlotsAfter = await this.exchange.getNumAvailableWithdrawalSlots();
       const numWithdrawalRequestsProcessedAfter = await this.exchange.getNumWithdrawalRequestsProcessed();
@@ -2259,9 +2312,6 @@ export class ExchangeTestUtil {
         blockFilename
       );
       blocks.push(blockInfo);
-
-      await this.syncExplorer();
-      this.compareStateWithExplorer(stateAfter);
     }
 
     this.pendingRings[exchangeID] = [];
@@ -2468,9 +2518,6 @@ export class ExchangeTestUtil {
         bs.getData(),
         blockFilename
       );
-
-      await this.syncExplorer();
-      this.compareStateWithExplorer(stateAfter);
     }
 
     this.pendingCancels[exchangeID] = [];
@@ -2584,6 +2631,9 @@ export class ExchangeTestUtil {
     this.exchangeOperator = operator;
     this.exchangeId = exchangeID;
     this.onchainDataAvailability = onchainDataAvailability;
+
+    const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
+    this.blocks[exchangeID][0].committedTimestamp = exchangeCreationTimestamp;
 
     await this.exchange.setFees(
       accountCreationFeeInETH,
@@ -2741,6 +2791,9 @@ export class ExchangeTestUtil {
 
     logInfo("Reverted to block " + (blockIdx - 1));
     this.pendingBlocks[this.exchangeId] = [];
+
+    // Check the current state against the explorer state
+    await this.checkExplorerState();
   }
 
   public async withdrawBlockFeeChecked(
@@ -2821,6 +2874,11 @@ export class ExchangeTestUtil {
       }),
       "FEE_WITHDRAWN_ALREADY"
     );
+
+    this.blocks[this.exchangeId][blockIdx].blockFeeWithdrawn = true;
+    this.blocks[this.exchangeId][blockIdx].blockFeeAmountWithdrawn = totalBlockFee;
+
+    await this.checkExplorerState();
   }
 
   public async createMerkleTreeInclusionProof(owner: string, token: string) {
@@ -3092,7 +3150,15 @@ export class ExchangeTestUtil {
     }
   }
 
-  public compareStateWithExplorer(state: ExchangeState) {
+  public async checkExplorerState() {
+    // Get the current state
+    const blockHeight = (await this.exchange.getBlockHeight()).toNumber();
+    const state = await this.loadExchangeState(
+      this.exchangeId,
+      blockHeight
+    );
+
+    await this.syncExplorer();
     const exchange = this.explorer.getExchangeById(this.exchangeId);
     if (!exchange.hasOnchainDataAvailability()) {
       // We can't compare the state
@@ -3106,6 +3172,7 @@ export class ExchangeTestUtil {
       return;
     }
 
+    // Compare accounts
     assert.equal(
       exchange.getNumAccounts(),
       state.accounts.length,
@@ -3115,6 +3182,31 @@ export class ExchangeTestUtil {
       const accountA = state.accounts[accountID];
       const accountB = exchange.getAccount(accountID);
       this.compareAccounts(accountA, accountB);
+    }
+
+    // Compare blocks
+    assert.equal(
+      exchange.getNumBlocks(),
+      this.blocks[this.exchangeId].length,
+      "number of blocks does not match"
+    );
+    for (let blockIdx = 0; blockIdx < this.blocks[this.exchangeId].length; blockIdx++) {
+      const explorerBlock = exchange.getBlock(blockIdx);
+      const testBlock = this.blocks[this.exchangeId][blockIdx];
+      assert.equal(explorerBlock.exchangeId, this.exchangeId, "unexpected exchangeId");
+      assert.equal(explorerBlock.blockIdx, testBlock.blockIdx, "unexpected blockIdx");
+      assert.equal(explorerBlock.blockType, testBlock.blockType, "unexpected blockType");
+      assert.equal(explorerBlock.blockVersion, testBlock.blockVersion, "unexpected blockVersion");
+      assert.equal(explorerBlock.data, testBlock.data, "unexpected data");
+      assert.equal(explorerBlock.offchainData, testBlock.offchainData, "unexpected offchainData");
+      assert.equal(explorerBlock.operator, testBlock.operator, "unexpected operator");
+      assert.equal(explorerBlock.blockState, testBlock.blockState, "unexpected blockState");
+      assert.equal(explorerBlock.blockFeeWithdrawn, testBlock.blockFeeWithdrawn, "unexpected blockFeeWithdrawn");
+      if (explorerBlock.blockFeeWithdrawn) {
+        assert(explorerBlock.blockFeeAmountWithdrawn.eq(testBlock.blockFeeAmountWithdrawn), "unexpected blockFeeAmountWithdrawn");
+      }
+      assert.equal(explorerBlock.committedTimestamp, testBlock.committedTimestamp, "unexpected committedTimestamp");
+      assert.equal(explorerBlock.transactionHash, testBlock.transactionHash, "unexpected transactionHash");
     }
   }
 

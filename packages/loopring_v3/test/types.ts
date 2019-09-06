@@ -4,7 +4,8 @@ import { Signature } from "loopringV3.js";
 export enum BlockState {
   NEW = 0,
   COMMITTED,
-  VERIFIED
+  VERIFIED,
+  FINALIZED
 }
 
 export enum BlockType {
@@ -161,11 +162,19 @@ export interface Block {
   blockType: BlockType;
   blockSize: number;
   blockVersion: number;
+  blockState: BlockState;
+  operator: string;
   operatorId: number;
+  data: string;
+  offchainData: string;
   compressedData: string;
   publicDataHash: string;
   publicInput: string;
   proof?: string[];
+  blockFeeWithdrawn: boolean;
+  blockFeeAmountWithdrawn?: BN;
+  committedTimestamp: number;
+  transactionHash: string;
 }
 
 export interface Account {
