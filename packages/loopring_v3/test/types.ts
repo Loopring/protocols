@@ -1,20 +1,5 @@
 import BN = require("bn.js");
-import { Signature } from "loopringV3.js";
-
-export enum BlockState {
-  NEW = 0,
-  COMMITTED,
-  VERIFIED,
-  FINALIZED
-}
-
-export enum BlockType {
-  RING_SETTLEMENT = 0,
-  DEPOSIT,
-  ONCHAIN_WITHDRAWAL,
-  OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION
-}
+import { BlockState, BlockType, Signature } from "loopringV3.js";
 
 export interface OrderInfo {
   owner?: string;

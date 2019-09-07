@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, BlockType, DepositInfo, RingInfo } from "./types";
+import { Block, RingInfo } from "./types";
 
 const BlockVerifier = artifacts.require("BlockVerifier");
 

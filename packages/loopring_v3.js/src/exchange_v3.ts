@@ -195,7 +195,7 @@ export class ExchangeV3 {
       return;
     }
 
-    const events = await this.exchange.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx, toBlock: ethereumBlockTo});
+    const events = await this.exchange.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
     for (const event of events) {
       //console.log(event.event);
       if (event.event === "BlockCommitted") {
@@ -300,7 +300,7 @@ export class ExchangeV3 {
 
     const account = this.state.accounts[accountID];
     const accountMerkleProof = this.merkleTree.createProof(accountID);
-    const balanceMerkleProof = account.balancesMerkleTree.createProof(accountID);
+    const balanceMerkleProof = account.balancesMerkleTree.createProof(tokenID);
 
     const withdrawFromMerkleTreeData: WithdrawFromMerkleTreeData = {
       owner: account.owner,
@@ -531,6 +531,7 @@ export class ExchangeV3 {
     let offchainData = "0x";
     let data = "";
 
+    // Get the block data from the transaction data
     const commitBlockFunctionSignature = "0x39d07df5";
     const transaction = await this.web3.eth.getTransaction(event.transactionHash);
     if (transaction.input.startsWith(commitBlockFunctionSignature)) {
@@ -543,7 +544,7 @@ export class ExchangeV3 {
       onchainData = decodedInputs[3];
       offchainData = decodedInputs[4] === null ? "0x" : decodedInputs[4];
     } else {
-      console.log("block " + blockIdx + " was committed with an unsupported function signature");
+      // console.log("block " + blockIdx + " was committed with an unsupported function signature");
       valid = false;
     }
 
@@ -558,7 +559,7 @@ export class ExchangeV3 {
       this.decompressor.options.address = decompressorAddress;
       data = await this.decompressor.methods.decompress(this.web3.utils.hexToBytes(compressedData)).call();
     } else {
-      console.log("unsupported data compression mode");
+      // console.log("unsupported data compression mode");
       valid = false;
       data = onchainData;
     }

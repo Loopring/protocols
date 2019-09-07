@@ -844,17 +844,6 @@ class State(object):
                                     None)
         return cancellation
 
-    def createWithdrawProof(self, exchangeID, accountID, tokenID):
-        account = copyAccountInfo(self.getAccount(accountID))
-        balance = copyBalanceInfo(self.getAccount(accountID)._balancesLeafs[str(tokenID)])
-        accountProof = self._accountsTree.createProof(accountID)
-        balanceProof = self.getAccount(accountID)._balancesTree.createProof(tokenID)
-
-        return WithdrawProof(exchangeID, accountID, tokenID,
-                             account, balance,
-                             self.getRoot(),
-                             accountProof, balanceProof)
-
     def updateAccountTree(self, accountID):
         self._accountsTree.update(accountID, self.getAccount(accountID).hash())
 

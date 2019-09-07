@@ -40,7 +40,7 @@ export class Explorer {
       return;
     }
 
-    const events = await this.universalRegistry.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx, toBlock: ethereumBlockTo});
+    const events = await this.universalRegistry.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
     for (const event of events) {
       //console.log(event.event);
       if (event.event === "ProtocolRegistered") {

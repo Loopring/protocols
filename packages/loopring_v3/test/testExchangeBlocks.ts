@@ -1,8 +1,8 @@
 import BN = require("bn.js");
-import { Bitstream, Constants } from "loopringV3.js";
+import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, BlockType, DepositInfo, RingInfo } from "./types";
+import { Block, DepositInfo, RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;

@@ -253,9 +253,9 @@ contract("Exchange", (accounts: string[]) => {
         owner,
         token
       );
-      proof.balance.balance = new BN(proof.balance.balance).mul(new BN(2));
+      proof.balance = proof.balance.mul(new BN(2));
       await expectThrow(
-        exchangeTestUtil.withdrawFromMerkleTreeWithProof(owner, token, proof),
+        exchangeTestUtil.withdrawFromMerkleTreeWithProof(proof),
         "INVALID_MERKLE_TREE_DATA"
       );
 
@@ -290,21 +290,25 @@ contract("Exchange", (accounts: string[]) => {
         "NOT_IN_WITHDRAW_MODE"
       );
 
-      // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(
+      // Do another deposit with the same amount to the account and process it in a block
+      await exchangeTestUtil.deposit(
         exchangeID,
-        accountID,
+        owner,
+        keyPair.secretKey,
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
         token,
-        balance,
-        owner
+        balance
       );
+      await exchangeTestUtil.commitDeposits(exchangeID);
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE + 1
       );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
+      // (Only the first deposit was finalized, so only that amount can be withdrawn from the Merkle tree)
       await withdrawFromMerkleTreeChecked(owner, token, balance);
     });
 

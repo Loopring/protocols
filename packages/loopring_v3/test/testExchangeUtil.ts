@@ -7,7 +7,7 @@ import { SHA256 } from "sha2";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { compress, CompressionType } from "./compression";
-import { Bitstream, Constants, EdDSA, Explorer, toFloat, Poseidon } from "loopringV3.js";
+import { Bitstream, BlockState, BlockType, Constants, EdDSA, Explorer, toFloat, Poseidon, WithdrawFromMerkleTreeData } from "loopringV3.js";
 import { Context } from "./context";
 import { expectThrow } from "./expectThrow";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
@@ -19,8 +19,6 @@ import {
   AccountLeaf,
   Balance,
   Block,
-  BlockState,
-  BlockType,
   Cancel,
   CancelBlock,
   Deposit,
@@ -2672,7 +2670,6 @@ export class ExchangeTestUtil {
   }
 
   public async syncExplorer() {
-    await this.evmMine();
     await this.explorer.sync(await web3.eth.getBlockNumber());
 
     const loopringExchange = this.explorer.getExchangeById(this.exchangeId);
@@ -2709,7 +2706,6 @@ export class ExchangeTestUtil {
   }
 
   public async revertExplorer(blockIdx: number) {
-    await this.evmMine();
     await this.explorer.sync(await web3.eth.getBlockNumber());
 
     /*const loopringExchange = this.explorer.getExchangeById(this.exchangeId);
@@ -2893,52 +2889,23 @@ export class ExchangeTestUtil {
     const accountID = await this.getAccountID(owner);
     const tokenID = this.getTokenIdFromNameOrAddress(token);
 
-    const exchangeID = this.exchangeId;
-
-    const blockIdx = await this.getNumBlocksOnchain() - 1;
-    const filename = "withdraw_proof.json";
-    const result = childProcess.spawnSync(
-      "python3",
-      [
-        "operator/create_withdraw_proof.py",
-        "" + exchangeID,
-        "" + blockIdx,
-        "" + accountID,
-        "" + tokenID,
-        filename
-      ],
-      { stdio: doDebugLogging() ? "inherit" : "ignore" }
-    );
-    assert(result.status === 0, "create_withdraw_proof failed!");
-
-    // Read in the Merkle proof
-    const data = JSON.parse(fs.readFileSync(filename, "ascii"));
-    // console.log(data);
-
-    // const loopringExchange = this.explorer.getExchange(this.exchangeId);
-    // const proofJs = loopringExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
-    // console.log(proofJs);
-
-    return data.proof;
+    await this.syncExplorer();
+    const explorerExchange = this.explorer.getExchangeById(this.exchangeId);
+    explorerExchange.buildMerkleTreeForWithdrawalMode();
+    return explorerExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
   }
 
-  public async withdrawFromMerkleTreeWithProof(
-    owner: string,
-    token: string,
-    proof: any
-  ) {
-    const accountID = await this.getAccountID(owner);
-    const account = this.accounts[this.exchangeId][accountID];
+  public async withdrawFromMerkleTreeWithProof(data: WithdrawFromMerkleTreeData) {
     const tx = await this.exchange.withdrawFromMerkleTreeFor(
-      owner,
-      token,
-      account.publicKeyX,
-      account.publicKeyY,
-      web3.utils.toBN(proof.account.nonce),
-      web3.utils.toBN(proof.balance.balance),
-      web3.utils.toBN(proof.balance.tradingHistoryRoot),
-      proof.accountProof,
-      proof.balanceProof
+      data.owner,
+      data.token,
+      data.publicKeyX,
+      data.publicKeyY,
+      web3.utils.toBN(data.nonce),
+      data.balance,
+      web3.utils.toBN(data.tradeHistoryRoot),
+      data.accountMerkleProof,
+      data.balanceMerkleProof
     );
     logInfo(
       "\x1b[46m%s\x1b[0m",
@@ -2948,7 +2915,7 @@ export class ExchangeTestUtil {
 
   public async withdrawFromMerkleTree(owner: string, token: string) {
     const proof = await this.createMerkleTreeInclusionProof(owner, token);
-    await this.withdrawFromMerkleTreeWithProof(owner, token, proof);
+    await this.withdrawFromMerkleTreeWithProof(proof);
   }
 
   public async withdrawFromDepositRequest(requestIdx: number) {
