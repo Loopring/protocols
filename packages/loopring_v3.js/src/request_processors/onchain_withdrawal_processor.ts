@@ -4,6 +4,9 @@ import { Constants } from "../constants";
 import { fromFloat } from "../float";
 import {Account, Block, OnchainWithdrawal, ExchangeState} from "../types";
 
+/**
+ * Processes on-chain withdrawal requests.
+ */
 export class OnchainWithdrawalProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     let offset = 4 + 32 + 32 + 32 + 32;
@@ -74,6 +77,7 @@ export class OnchainWithdrawalProcessor {
   }
 
   public static revertBlock(state: ExchangeState, block: Block) {
+    // Remove the data in the requests that they were processed in a block
     const startIdx = block.totalNumRequestsProcessed - 1;
     const endIdx = startIdx - block.numRequestsProcessed;
     for (let i = startIdx; i > endIdx; i--) {

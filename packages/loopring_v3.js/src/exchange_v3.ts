@@ -19,6 +19,9 @@ interface Revert {
   numBlocks: number;
 }
 
+/**
+ * Processes all data of an Exchange v3 exchange contract.
+ */
 export class ExchangeV3 {
   private web3: Web3;
 
@@ -27,7 +30,7 @@ export class ExchangeV3 {
   private exchange: any;
   private forgeMode: ForgeMode;
   private protocol: ProtocolV3;
-  private implementation: string;
+  private implementationAddress: string;
   private exchangeCreationTimestamp: number;
 
   private decompressorAbi: string;
@@ -62,15 +65,26 @@ export class ExchangeV3 {
 
   private reverts: Revert[] = [];
 
+  /**
+   * Initializes an Exchange
+   * @param   web3                      The web3 instance that will be used to get the necessary data from Ethereum
+   * @param   exchangeAddress           The address of the exchange
+   * @param   exchangeId                The exchange ID
+   * @param   owner                     The owner of the exchange
+   * @param   onchainDataAvailability   The availability of on-chain data
+   * @param   forgeMode                 The forge mode the exchange was created with
+   * @param   protocol                  The protocol of the exchange
+   * @param   implementationAddress     The address of the implementation
+   */
   public async initialize(web3: Web3, exchangeAddress: string, exchangeId: number, owner: string,
-                          onchainDataAvailability: boolean, forgeMode: ForgeMode, protocol: ProtocolV3, implementation: string) {
+                          onchainDataAvailability: boolean, forgeMode: ForgeMode, protocol: ProtocolV3, implementationAddress: string) {
     this.web3 = web3;
     this.exchangeAddress = exchangeAddress;
     this.owner = owner;
     this.operator = owner;
     this.forgeMode = forgeMode;
     this.protocol = protocol;
-    this.implementation = implementation;
+    this.implementationAddress = implementationAddress;
 
     this.syncedToEthereumBlockIdx = 0;
 
@@ -103,6 +117,7 @@ export class ExchangeV3 {
       onchainDataAvailability,
     };
 
+    // Create the genesis block
     const genesisBlock: Block = {
       exchangeId,
       blockIdx: 0,
@@ -124,6 +139,8 @@ export class ExchangeV3 {
       merkleRoot: this.genesisMerkleRoot,
 
       committedTimestamp: this.exchangeCreationTimestamp,
+      verifiedTimestamp: this.exchangeCreationTimestamp,
+      finalizedTimestamp: this.exchangeCreationTimestamp,
 
       numRequestsProcessed: 0,
       totalNumRequestsProcessed: 0,
@@ -141,6 +158,7 @@ export class ExchangeV3 {
     this.blocks.push(genesisBlock);
     this.numBlocksFinalized = 1;
 
+    // Create the genesis deposit
     const genesisDeposit: Deposit = {
       exchangeId,
       depositIdx: 0,
@@ -156,6 +174,7 @@ export class ExchangeV3 {
     };
     this.state.deposits.push(genesisDeposit);
 
+    // Create the genesis withdrawal
     const genesisWithdrawal: OnchainWithdrawal = {
       exchangeId,
       withdrawalIdx: 0,
@@ -169,8 +188,10 @@ export class ExchangeV3 {
     };
     this.state.onchainWithdrawals.push(genesisWithdrawal);
 
+    // Intitialze the state of the Merkle tree
     this.setGenesisState();
 
+    // Get the exchange fees from the contract
     const fees = await this.exchange.methods.getFees().call();
     this.exchangeFees = {
       exchangeId,
@@ -180,6 +201,7 @@ export class ExchangeV3 {
       withdrawalFeeETH: new BN(fees._withdrawalFeeETH, 10),
     };
 
+    // Get the protocol fees from the contract
     const protocolFeeValues = await this.exchange.methods.getProtocolFeeValues().call();
     this.protocolFees = {
       exchangeId,
@@ -190,14 +212,18 @@ export class ExchangeV3 {
     };
   }
 
+  /**
+   * Syncs the protocol up to (and including) the given Ethereum block index.
+   * @param   ethereumBlockTo   The Ethereum block index to sync to
+   */
   public async sync(ethereumBlockTo: number) {
     if (ethereumBlockTo <= this.syncedToEthereumBlockIdx) {
       return;
     }
 
+    // Process the events
     const events = await this.exchange.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
     for (const event of events) {
-      //console.log(event.event);
       if (event.event === "BlockCommitted") {
         await this.processBlockCommitted(event);
       } else if (event.event === "AccountCreated") {
@@ -235,17 +261,12 @@ export class ExchangeV3 {
     this.inWithdrawalMode = await this.exchange.methods.isInWithdrawalMode().call();
     this.totalTimeInMaintenanceSeconds = await this.exchange.methods.getTotalTimeInMaintenanceSeconds().call();
 
-    //this.buildMerkleTree();
-    //for (let i = 0; i < this.accounts.length; i++) {
-    //  const proof = this.merkleTree.createProof(i);
-    //  console.log("- " + i);
-    //  console.log(proof);
-    //}
-
     this.syncedToEthereumBlockIdx = ethereumBlockTo;
   }
 
-  // This builds the Merkle tree on the current state from scratch
+  /**
+   * Builds the Merkle tree on the current state
+   */
   public buildMerkleTree() {
     if (!this.state.onchainDataAvailability) {
       // We cannot build the Merkle tree without on-chain data-availability
@@ -257,6 +278,7 @@ export class ExchangeV3 {
     }
     this.hasher = poseidon.createHash(5, 6, 52);
 
+    // Make empty trees so we have all necessary default values
     const tradeHistoryMerkleTree = new SparseMerkleTree(7);
     tradeHistoryMerkleTree.newTree(this.hasher([0, 0, 0]).toString(10));
     const balancesMerkleTree = new SparseMerkleTree(4);
@@ -264,6 +286,7 @@ export class ExchangeV3 {
     this.merkleTree = new SparseMerkleTree(10);
     this.merkleTree.newTree(this.hasher([0, 0, 0, balancesMerkleTree.getRoot()]).toString(10));
 
+    // Run over all account data and build the Merkle tree
     for (const account of this.state.accounts) {
       account.balancesMerkleTree = new SparseMerkleTree(4);
       account.balancesMerkleTree.newTree(this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10));
@@ -283,16 +306,30 @@ export class ExchangeV3 {
     assert.equal(this.merkleTree.getRoot(), this.blocks[this.blocks.length - 1].merkleRoot, "Merkle tree root inconsistent");
   }
 
+  /**
+   * Builds the Merkle tree on the state necessary for withdrawal mode
+   * (on the state of the last finalized block).
+   */
   public buildMerkleTreeForWithdrawalMode() {
     this.revertToBlock(this.numBlocksFinalized - 1);
     this.buildMerkleTree();
   }
 
-  public revertToBlockTest(blockIdx: number) {
+  /**
+   * Reverts to the state of the specified block
+   * @param   blockIdx   The block index to revert the state to
+   */
+  public revertToBlockIdx(blockIdx: number) {
     this.revertToBlock(blockIdx);
-    this.buildMerkleTree();
   }
 
+  /**
+   * Returns the data necessary to withdraw directly from the Merkle tree on-chain
+   * (only avaible in withdrawal mode).
+   * @param   accountID   The account ID of the balance to withdraw
+   * @param   tokenID     The token ID of the balance to withdraw
+   * @return  The necessary data for withdrawFromMerkleTree(for)
+   */
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
     assert(this.state.onchainDataAvailability, "cannot create the Merkle proofs for an exchange without on-chain data-availability");
     assert(accountID < this.state.accounts.length, "invalid account ID");
@@ -318,56 +355,112 @@ export class ExchangeV3 {
 
   /// Blocks
 
+  /**
+   * The total number of blocks committed on-chain
+   * @return  The total number of blocks
+   */
   public getNumBlocks() {
     return this.blocks.length;
   }
 
+  /**
+   * Gets the blocks using the blocks's index in the list of all blocks
+   * @param   index   The index of the block
+   * @return  The block on the given index
+   */
   public getBlock(blockIdx: number) {
     return this.blocks[blockIdx];
   }
 
+  /**
+   * The total number of blocks finalized
+   * @return  The number of finalized blocks
+   */
   public getNumBlocksFinalized() {
     return this.numBlocksFinalized;
   }
 
   /// Tokens
 
+   /**
+   * The total number of tokens registered on the exchange
+   * @return  The total number of tokens
+   */
   public getNumTokens() {
     return this.tokens.length;
   }
 
+  /**
+   * Gets the token with the specified token ID
+   * @param   tokenID   The ID of the token
+   * @return  The token with the given tokenID
+   */
   public getToken(tokenID: number) {
     return this.tokens[tokenID];
   }
 
   /// Accounts
 
+  /**
+   * The total number of accounts registered in the Merkle tree
+   * (note that this can be less than registered on-chain because the account
+   * registration needs to be processed in a block).
+   * @return  The total number of accounts
+   */
   public getNumAccounts() {
     return this.state.accounts.length;
   }
 
-  public getAccount(accountId: number) {
-    return this.state.accounts[accountId];
+  /**
+   * Gets the account with the specified account ID
+   * @param   accountID   The ID of the account
+   * @return  The account with the given accountID
+   */
+  public getAccount(accountID: number) {
+    return this.state.accounts[accountID];
   }
 
+  /**
+   * Gets the account with the specified owner
+   * @param   owner   The owner of the account
+   * @return  The account with the given owner
+   */
   public getAccountByOwner(owner: string) {
     return this.state.accounts[this.getAccountId(owner)];
   }
 
+  /**
+   * Gets the accountID of the specified owner
+   * @param   owner   The owner of the account
+   * @return  The accountID of the given owner
+   */
   public getAccountId(owner: string) {
     return this.state.ownerToAccountId[owner];
   }
 
   /// Processed requests
 
+  /**
+   * The total number of requests processed in blocks on the exchange
+   * @return  The total number of processed requests
+   */
   public getNumProcessedRequests() {
     return this.state.processedRequests.length;
   }
 
+  /**
+   * Gets a processed request with the specified index
+   * @return  The processed request
+   */
   public getProcessedRequest(requestIdx: number) {
     return this.state.processedRequests[requestIdx];
   }
 
+  /**
+   * Gets the processed requests within the specified range.
+   * This function will automatically clamp to a valid range.
+   * @return  The processed requests
+   */
   public getProcessedRequests(startIdx: number, count: number) {
     const requests: any[] = [];
     if (startIdx >= this.state.processedRequests.length) {
@@ -380,6 +473,10 @@ export class ExchangeV3 {
     return requests;
   }
 
+  /**
+   * Gets the processed requests that were processed in the specified block
+   * @return  The processed requests in the given block
+   */
   public getRequestsInBlock(blockIdx: number) {
     if(blockIdx === 0 || blockIdx >= this.blocks.length) {
       return [];
@@ -390,14 +487,27 @@ export class ExchangeV3 {
 
   /// Deposits
 
+  /**
+   * Returns the total number of deposits done on-chain
+   * @return  The total number of deposits
+   */
   public getNumDeposits() {
     return this.state.deposits.length;
   }
 
+  /**
+   * Returns the deposit with the specified depositIdx
+   * @return  The requested deposit
+   */
   public getDeposit(depositIdx: number) {
     return this.state.deposits[depositIdx];
   }
 
+  /**
+   * Returns the deposits within the specified range.
+   * This function will automatically clamp to a valid range.
+   * @return  The requested deposits
+   */
   public getDeposits(startIdx: number, count: number) {
     const deposits: Deposit[] = [];
     if (startIdx >= this.state.deposits.length) {
@@ -412,14 +522,27 @@ export class ExchangeV3 {
 
   /// On-chain withdrawals
 
+  /**
+   * Returns the total number of on-chain withdrawal requests
+   * @return  The total number of on-chain withdrawals
+   */
   public getNumOnchainWithdrawalRequests() {
     return this.state.onchainWithdrawals.length;
   }
 
+  /**
+   * Returns the withdrawal with the specified withdrawalIdx
+   * @return  The requested deposit
+   */
   public getOnchainWithdrawalRequest(withdrawalIdx: number) {
     return this.state.onchainWithdrawals[withdrawalIdx];
   }
 
+  /**
+   * Returns the withdrawals within the specified range.
+   * This function will automatically clamp to a valid range.
+   * @return  The requested on-chain withdrawals
+   */
   public getOnchainWithdrawalRequests(startIdx: number, count: number) {
     const withdrawals: OnchainWithdrawal[] = [];
     if (startIdx >= this.state.onchainWithdrawals.length) {
@@ -434,78 +557,154 @@ export class ExchangeV3 {
 
   /// Meta
 
+  /**
+   * Gets the ID of the exchange
+   * @return  The exchange ID
+   */
   public getExchangeId() {
     return this.state.exchangeId;
   }
 
+  /**
+   * Gets the address of the contract
+   * @return  The address of the contract
+   */
   public getAddress() {
     return this.exchangeAddress;
   }
 
+  /**
+   * Gets the exchange owner
+   * @return  The owner of the exchange
+   */
   public getOwner() {
     return this.owner;
   }
 
+  /**
+   * Gets the exchange operator
+   * @return  The operator of the exchange
+   */
   public getOperator() {
     return this.operator;
   }
 
-   public hasOnchainDataAvailability() {
+  /**
+   * Returns if this exchange has on-chain data-availability or not
+   * @return  True if the exchange has on-chain data-availability, else false
+   */
+  public hasOnchainDataAvailability() {
     return this.state.onchainDataAvailability;
   }
 
+  /**
+   * Gets the forge mode of the exchange
+   * @return  The forge mode of the exchange
+   */
   public getForgeMode() {
     return this.forgeMode;
   }
 
+  /**
+   * Gets the protocol of the exchange
+   * @return  The exchange's protocol
+   */
   public getProtocol() {
     return this.protocol;
   }
 
-  public getImplementation() {
-    return this.implementation;
+  /**
+   * Gets the implementaton address of the exchange
+   * @return  The exchange's implementation
+   */
+  public getImplementationAddress() {
+    return this.implementationAddress;
   }
 
+  /**
+   * Gets the time the exchange was created
+   * @return  The exchange creation timestamp
+   */
   public getExchangeCreationTimestamp() {
     return this.exchangeCreationTimestamp;
   }
 
+  /**
+   * Returns the exchange stake amount (in LRC)
+   * @return  The amount staked in LRC
+   */
   public getExchangeStake() {
     return this.protocol.getExchangeStake(this.state.exchangeId);
   }
 
+  /**
+   * Returns the protocol fee stake amount (in LRC)
+   * @return  The amount staked in LRC
+   */
   public getProtocolFeeStake() {
     return this.protocol.getProtocolFeeStake(this.state.exchangeId);
   }
 
+  /**
+   * Returns whether the exchange is shutdown
+   * @return  True if the exchange is shutdown, else false
+   */
   public isShutdown() {
     return this.shutdown;
   }
 
+  /**
+   * Returns the time when the exchange was shutdown
+   * @return  The shutdownn start time.
+   */
   public getShutdownStartTime() {
     return this.shutdownStartTime;
   }
 
+  /**
+   * Returns whether the exchange is in maintenance mode
+   * @return  True if the exchange is in maintenance mode, else false
+   */
   public isInMaintenenance() {
     return this.inMaintenenance;
   }
 
+  /**
+   * Returns whether the exchange is in withdrawal mode
+   * @return  True if the exchange is in withdrawal mode, else false
+   */
   public isInWithdrawalMode() {
     return this.inWithdrawalMode;
   }
 
+  /**
+   * Returns the total amount of seconds the exchange has been in withdrawal mode
+   * @return  The total amount of seconds in maintenance mode
+   */
   public getTotalTimeInMaintenanceSeconds() {
     return this.totalTimeInMaintenanceSeconds;
   }
 
+  /**
+   * Returns the fees for on-chain requests on this exchange
+   * @return  The on-chain fees
+   */
   public getExchangeFees() {
     return this.exchangeFees;
   }
 
+  /**
+   * Returns the current protocol fees on this exchange
+   * @return  The protocol fees
+   */
   public getProtocolFees() {
     return this.protocolFees;
   }
 
+  /**
+   * Returns the number of times a block was reverted on this exchange
+   * @return  The number of reverts
+   */
   public getNumReverts() {
     return this.reverts.length;
   }
@@ -618,8 +817,11 @@ export class ExchangeV3 {
     this.blocks.push(newBlock);
 
     this.processBlock(newBlock, false);
-    // Debugging
+    // TODO: remove (Only done here for debugging)
     this.buildMerkleTree();
+    for (let i = 0; i < this.state.accounts.length; i++) {
+      this.merkleTree.createProof(i);
+    }
   }
 
   private async processAccountCreated(event: any) {
@@ -679,9 +881,10 @@ export class ExchangeV3 {
     // Make sure the tokens are in the right order
     assert.equal(this.tokens.length, parseInt(event.returnValues.tokenId), "Unexpected tokenId");
     const token: Token = {
-        tokenID: this.tokens.length,
-        address: event.returnValues.token,
-        enabled: true,
+      exchangeId: this.state.exchangeId,
+      tokenID: this.tokens.length,
+      address: event.returnValues.token,
+      enabled: true,
     };
     this.tokens.push(token);
   }
@@ -809,6 +1012,7 @@ export class ExchangeV3 {
       return;
     }
 
+    // Revert the necessary blocks
     for (let i = this.blocks.length - 1; i > blockIdx; i--) {
       const block = this.blocks.pop();
 
@@ -827,6 +1031,7 @@ export class ExchangeV3 {
           assert(false, "Unknown block type");
         }
 
+        // Remove the requests processed by the reverted block from the list
         const startIdx = this.state.processedRequests.length - 1;
         const endIdx = startIdx - block.numRequestsProcessed;
         for (let i = startIdx; i > endIdx; i--) {
@@ -842,6 +1047,9 @@ export class ExchangeV3 {
     }
   }
 
+  /**
+   * Resets the state stored in the Merkle tree back to its initial state
+   */
   private setGenesisState() {
     this.state.accounts = [];
     const protocolPoolAccount: Account = {

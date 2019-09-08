@@ -38,7 +38,7 @@ def copyAccountInfo(account):
     return c
 
 def getDefaultAccount():
-    return Account(0, Point(0, 0))
+    return Account(Point(0, 0))
 
 class Fill(object):
     def __init__(self, amountS, amountB):
@@ -137,8 +137,7 @@ class TradeHistoryLeaf(object):
 
 
 class Account(object):
-    def __init__(self, secretKey, publicKey):
-        self.secretKey = str(secretKey)
+    def __init__(self, publicKey):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
@@ -152,7 +151,6 @@ class Account(object):
         return poseidon([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
-        self.secretKey = jAccount["secretKey"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
@@ -682,7 +680,7 @@ class State(object):
                               balanceDeltaA_O, balanceDeltaB_O)
 
 
-    def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, token, amount):
+    def deposit(self, accountID, publicKeyX, publicKeyY, token, amount):
         # Copy the initial merkle root
         rootBefore = self._accountsTree._root
 
@@ -695,13 +693,12 @@ class State(object):
 
         # Create the account if necessary
         if not(str(accountID) in self._accounts):
-            self._accounts[str(accountID)] = Account(secretKey, Point(publicKeyX, publicKeyY))
+            self._accounts[str(accountID)] = Account(Point(publicKeyX, publicKeyY))
 
         account = self.getAccount(accountID)
         balanceUpdate = account.updateBalance(token, amount)
 
         # Update keys
-        account.secretKey = str(secretKey)
         account.publicKeyX = str(publicKeyX)
         account.publicKeyY = str(publicKeyY)
 

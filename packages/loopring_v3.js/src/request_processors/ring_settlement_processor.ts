@@ -23,6 +23,9 @@ interface Range {
   length: number;
 }
 
+/**
+ * Processes ring settlement requests.
+ */
 export class RingSettlementProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     let data: Bitstream;

@@ -69,13 +69,15 @@ export interface RingBlock {
 }
 
 export interface Deposit {
+  exchangeId: number;
   depositIdx: number;
   accountID: number;
-  secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
   tokenID: number;
   amount: BN;
+  timestamp?: number;
+  transactionHash?: string;
 }
 
 export interface DepositBlock {
@@ -88,6 +90,7 @@ export interface DepositBlock {
 }
 
 export interface WithdrawalRequest {
+  exchangeId: number;
   accountID: number;
   tokenID: number;
   amount: BN;
@@ -102,6 +105,8 @@ export interface WithdrawalRequest {
   withdrawalFee?: BN;
 
   signature?: Signature;
+  timestamp?: number;
+  transactionHash?: string;
 }
 
 export interface Withdrawal {
@@ -160,6 +165,8 @@ export interface Block {
   blockFeeWithdrawn: boolean;
   blockFeeAmountWithdrawn?: BN;
   committedTimestamp: number;
+  verifiedTimestamp?: number;
+  finalizedTimestamp?: number;
   transactionHash: string;
 }
 

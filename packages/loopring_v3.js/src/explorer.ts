@@ -4,6 +4,9 @@ import { Constants } from "./constants";
 import { ProtocolV3 } from "./protocol_v3";
 import { ExchangeV3 } from "./exchange_v3";
 
+/**
+ * Processes all on-chain data from Loopring in an easy to access way.
+ */
 export class Explorer {
   private web3: Web3;
 
@@ -20,6 +23,11 @@ export class Explorer {
 
   private exchanges: ExchangeV3[] = [];
 
+  /**
+   * Initializes the Explorer
+   * @param   web3                       The web3 instance that will be used to get the necessary data from Ethereum
+   * @param   universalRegistryAddress   The address of the universal registry address
+   */
   public async initialize(web3: Web3, universalRegistryAddress: string) {
     this.web3 = web3;
     this.universalRegistryAddress = universalRegistryAddress;
@@ -35,14 +43,18 @@ export class Explorer {
     this.owner = await this.universalRegistry.methods.owner().call();
   }
 
+  /**
+   * Syncs the explorer up to (and including) the given Ethereum block index.
+   * @param   ethereumBlockTo   The Ethereum block index to sync to
+   */
   public async sync(ethereumBlockTo: number) {
     if (ethereumBlockTo <= this.syncedToEthereumBlockIdx) {
       return;
     }
 
+    // Process the events
     const events = await this.universalRegistry.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
     for (const event of events) {
-      //console.log(event.event);
       if (event.event === "ProtocolRegistered") {
           await this.processProtocolRegistered(event);
       } else if (event.event === "ProtocolEnabled") {
@@ -58,10 +70,12 @@ export class Explorer {
       }
     }
 
+    // Sync the exchange
     for (const exchange of this.exchanges) {
       await exchange.sync(ethereumBlockTo);
     }
 
+    // Sync the protocols
     for (const protocol of this.protocols) {
       await protocol.sync(ethereumBlockTo);
     }
@@ -69,6 +83,11 @@ export class Explorer {
     this.syncedToEthereumBlockIdx = ethereumBlockTo;
   }
 
+  /**
+   * Gets a protocol using the protocol's address
+   * @param   address   The address of the protocol
+   * @return  The protocol with the address that was given
+   */
   public getProtocolByAddress(address: string) {
     for (let i = 0; i < this.protocols.length; i++) {
       if (this.protocols[i].getAddress() === address) {
@@ -78,6 +97,11 @@ export class Explorer {
     return undefined;
   }
 
+  /**
+   * Gets a protocol using the protocol's version
+   * @param   version   The version of the protocol
+   * @return   The protocol with the version that was given
+   */
   public getProtocolByVersion(version: string) {
     for (let i = 0; i < this.protocols.length; i++) {
       if (this.protocols[i].getVersion() === version) {
@@ -87,20 +111,39 @@ export class Explorer {
     return undefined;
   }
 
+  /**
+   * The total number of exchanges created through the universal registry contract
+   * @return  The total number of exchanges
+   */
   public getNumExchanges() {
     return this.exchanges.length;
   }
 
+  /**
+   * Gets an exchange using the exchange's index in the list of all exchanges
+   * @param   index   The index of the exchange
+   * @return  The exchange on the given index
+   */
   public getExchange(idx: number) {
     assert(idx < this.exchanges.length, "invalid index");
     return this.exchanges[idx];
   }
 
+  /**
+   * Gets an exchange using the exchange's ID
+   * @param   exchangeId   The ID of the exchange
+   * @return  The exchange with the ID
+   */
   public getExchangeById(exchangeId: number) {
     assert(exchangeId > 0 && exchangeId <= this.exchanges.length, "invalid exchangeId");
     return this.exchanges[exchangeId - 1];
   }
 
+  /**
+   * Gets an exchange using the exchange's address
+   * @param   exchangeAddress   The address of the exchange
+   * @return  The exchange with the given address
+   */
   public getExchangeByAddress(exchangeAddress: string) {
     for (const exchange of this.exchanges) {
       if (exchange.getAddress() === exchangeAddress) {
@@ -110,14 +153,27 @@ export class Explorer {
     return undefined;
   }
 
+  /**
+   * The total number of protocols registered in the universal registry contract
+   * @return  The total number of protocols
+   */
   public getNumProtocols() {
     return this.protocols.length;
   }
 
+  /**
+   * Gets a protocol using the prtoocols's index in the list of all protocols
+   * @param   index   The index of the protocol
+   * @return  The protocol on the given index
+   */
   public getProtocol(idx: number) {
     return this.protocols[idx];
   }
 
+  /**
+   * Gets the owner of the universal registry contract
+   * @return  The owner of the contract
+   */
   public getOwner() {
     return this.owner;
   }

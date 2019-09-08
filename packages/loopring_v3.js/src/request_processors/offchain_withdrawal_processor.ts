@@ -4,6 +4,9 @@ import { Constants } from "../constants";
 import { fromFloat } from "../float";
 import {Account, Block, OffchainWithdrawal, ExchangeState} from "../types";
 
+/**
+ * Processes off-chain withdrawal requests.
+ */
 export class OffchainWithdrawalProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     const withdrawals: OffchainWithdrawal[] = [];

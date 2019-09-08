@@ -4,6 +4,9 @@ import { Constants } from "../constants";
 import { fromFloat } from "../float";
 import {Account, Block, OrderCancellation, ExchangeState} from "../types";
 
+/**
+ * Processes order cancellation requests.
+ */
 export class OrderCancellationProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     const data = new Bitstream(block.data);

@@ -3,6 +3,9 @@ import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
 import {Account, Block, Deposit, ExchangeState} from "../types";
 
+/**
+ * Processes deposit requests.
+ */
 export class DepositProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     const offset = 4 + 32 + 32 + 32 + 32;
@@ -52,6 +55,7 @@ export class DepositProcessor {
   }
 
   public static revertBlock(state: ExchangeState, block: Block) {
+    // Remove the data in the requests that they were processed in a block
     const startIdx = block.totalNumRequestsProcessed - 1;
     const endIdx = startIdx - block.numRequestsProcessed;
     for (let i = startIdx; i > endIdx; i--) {
