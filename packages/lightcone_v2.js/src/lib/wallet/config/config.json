@@ -30,12 +30,7 @@
       "name": "Test"
     }
   ],
-  "supportedTokenRInMarkets": [
-    "WETH",
-    "LRC",
-    "USDT",
-    "TUSD"
-  ],
+  "supportedTokenRInMarkets": ["WETH", "LRC", "USDT", "TUSD"],
   "markets": [
     {
       "tokenx": "LRC",
@@ -811,6 +806,7 @@
   ],
   "tokens": [
     {
+      "id": "0",
       "symbol": "ETH",
       "name": "Ether",
       "digits": 18,
@@ -823,18 +819,7 @@
       "minTradeValue": 0.001
     },
     {
-      "symbol": "WETH_OLD",
-      "name": "Wrapped Ether",
-      "digits": 18,
-      "address": "0x2956356cD2a2bf3202F771F50D3D14A367b48070",
-      "unit": "WETH",
-      "website": "https://weth.io",
-      "allowance": "1000000000000000000000",
-      "allowanceWarn": "100000000000000000000",
-      "precision": 6,
-      "minTradeValue": 0.001
-    },
-    {
+      "id": "1",
       "symbol": "WETH",
       "name": "Wrapped Ether",
       "digits": 18,
@@ -847,10 +832,11 @@
       "minTradeValue": 0.001
     },
     {
+      "id": 2,
       "symbol": "LRC",
       "name": "Loopring",
       "digits": 18,
-      "address": "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD",
+      "address": "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615",
       "unit": "LRC",
       "website": "https://loopring.org",
       "allowance": "1000000000000000000000",

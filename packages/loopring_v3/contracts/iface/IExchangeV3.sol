@@ -559,12 +559,7 @@ contract IExchangeV3 is IExchange
         external;
 
     /// @dev Reverts the exchange's virtual blockchain until a specific block index.
-    ///      After MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds (the timeout), if a valid
-    ///      proof is still not submitted onchain, the operator can call this method to trigger
-    ///      the blockchain to revert.
-    ///
-    ///      If more than one blocks (A, B) are missing proofs after the required timeout,
-    ///      one can only trigger the blockchain to revert until A.
+    ///      Any non-finalized block can be reverted but there will be a fine in LRC.
     ///
     ///      This method can only be called by the operator when not in withdrawal mode.
     ///

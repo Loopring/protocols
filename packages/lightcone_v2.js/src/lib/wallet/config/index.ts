@@ -1,5 +1,3 @@
-import settings from "./settings";
-
 const data = require("./data");
 const config = data.configs;
 
@@ -19,17 +17,6 @@ async function isinWhiteList(address) {
     );
     return !!result;
   });
-}
-
-function initTokenConfig() {
-  const tokens = [];
-  tokens.push({
-    symbol: "LRC",
-    digits: 18,
-    address: "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615",
-    precision: 6
-  });
-  settings.setTokensConfig(tokens);
 }
 
 function getChainId() {
@@ -61,7 +48,7 @@ function getCustomTokens() {
 }
 
 function getTokens() {
-  return settings.getTokensConfig();
+  return config.tokens;
 }
 
 function getMarketByPair(pair) {
@@ -99,7 +86,7 @@ function getProjectByLrx(lrx) {
 }
 
 function getSupportedMarketsTokenR() {
-  return settings.getMarketR();
+  return config.getMarketR();
 }
 
 function isSupportedMarket(market) {
@@ -177,7 +164,7 @@ function getTokenSupportedMarkets(token) {
 }
 
 function getMarkets() {
-  return settings.getMarketPairs();
+  return config.getMarketPairs();
 }
 
 function getGasLimitByType(type) {
@@ -199,7 +186,6 @@ function getWallets() {
 }
 
 export default {
-  initTokenConfig,
   getTokenBySymbol,
   getTokenByAddress,
   getTokens,

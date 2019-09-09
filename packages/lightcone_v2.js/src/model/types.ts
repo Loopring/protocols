@@ -20,37 +20,43 @@ export interface Signature {
   s: string;
 }
 
-export interface OrderInfo {
+export class OrderInfo {
   owner: string;
   tokenS: string;
   tokenB: string;
-  amountS: BN;
-  amountB: BN;
+  amountSInBN: BN;
+  amountBInBN: BN;
+  amountS: string;
+  amountB: string;
 
-  exchangeID?: number;
-  accountID?: number;
-  orderID?: number;
+  exchangeId?: number;
+  accountId?: number;
+  orderId: number;
 
-  dualAuthPublicKeyX?: string;
-  dualAuthPublicKeyY?: string;
-  dualAuthSecretKey?: string;
+  tradingPubKeyX: string;
+  tradingPubKeyY: string;
+  tradingPrivKey: string;
 
-  tokenIdS?: number;
-  tokenIdB?: number;
+  dualAuthPubKeyX?: string;
+  dualAuthPubKeyY?: string;
+  dualAuthPrivKey?: string;
+
+  tokenSId?: number;
+  tokenBId?: number;
 
   allOrNone?: boolean;
   validSince: number;
   validUntil: number;
-  maxFeeBips: number;
-  buy: boolean;
+  maxFeeBips?: number;
+  buy?: boolean;
 
   feeBips?: number;
   rebateBips?: number;
 
-  balanceS?: BN;
-  balanceB?: BN;
-
   hash?: string;
+  tradingSigRx: string;
+  tradingSigRy: string;
+  tradingSigS: string;
   signature?: Signature;
 
   [key: string]: any;

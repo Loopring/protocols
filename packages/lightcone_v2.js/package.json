@@ -11,15 +11,13 @@
     }
   },
   "scripts": {
-    "build:proto": "rimraf src/grpc/proto_gen && mkdir src/grpc/proto_gen && node src/grpc/proto",
-    "build": "npm run build:proto && rimraf dist && tsc",
-    "lint": "prettier --write \"src/**/*.ts\" --ignore-path \"src/grpc/proto_gen/**\"",
+    "dev": "rimraf dist && tsc",
+    "lint": "prettier --write \"src/**/*.ts\"",
     "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
   },
   "keywords": [
     "ethereum",
-    "zksnark",
-    "grpc"
+    "zksnark"
   ],
   "repository": {
     "type": "git",
@@ -40,9 +38,6 @@
     "ethereumjs-util": "5.2.0",
     "ethereumjs-wallet": "0.6.0",
     "google-protobuf": "^3.9.0-rc.1",
-    "grpc": "^1.21.1",
-    "grpc-loader": "^2.0.1",
-    "grpc-web": "^1.0.4",
     "hdkey": "0.7.1",
     "isomorphic-fetch": "2.2.1",
     "nodeunit": "^0.11.3",
@@ -64,8 +59,6 @@
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
     "ethlint": "^1.2.4",
-    "grpc-tools": "^1.6.6",
-    "grpc_tools_node_protoc_ts": "^2.5.1",
     "husky": "^3.0.0",
     "mocha": "^5.2.0",
     "prettier": "^1.18.2",

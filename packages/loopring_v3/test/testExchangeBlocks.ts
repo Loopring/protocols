@@ -894,17 +894,6 @@ contract("Exchange", (accounts: string[]) => {
           );
           assert(blocksA.length === 1);
 
-          // Try to notify too early
-          await expectThrow(
-            exchangeTestUtil.revertBlock(blocksA[0].blockIdx),
-            "PROOF_NOT_TOO_LATE"
-          );
-
-          // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
-            exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1
-          );
-
           // Revert the block again, now correctly
           await exchangeTestUtil.revertBlock(blocksA[0].blockIdx);
 
@@ -960,7 +949,7 @@ contract("Exchange", (accounts: string[]) => {
             blockFee = blockFee.add(deposit.fee);
           }
           await exchangeTestUtil.commitDeposits(exchangeId);
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
 
           // Try to withdraw before the block is finalized
           await expectThrow(
@@ -1011,7 +1000,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1046,7 +1035,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (everything burned)
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1083,7 +1072,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1122,7 +1111,8 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1 - 1;
+          const blockIdx =
+            (await exchangeTestUtil.getNumBlocksOnchain()) - 1 - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1161,7 +1151,8 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1 - 1;
+          const blockIdx =
+            (await exchangeTestUtil.getNumBlocksOnchain()) - 1 - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1196,7 +1187,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Try to withdraw a block fee from a  block type doesn't have any
-          const blockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await expectThrow(
             exchange.withdrawBlockFee(
               blockIdx,
