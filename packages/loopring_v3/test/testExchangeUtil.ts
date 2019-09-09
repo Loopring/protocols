@@ -2149,7 +2149,11 @@ export class ExchangeTestUtil {
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const trans of block.internalTransferres) {
-          bs.addNumber(trans.accountFromID * 2 ** 20 + trans.accountToID, 5);
+          bs.addNumber(
+            trans.accountFromID * 2 ** constants.NUM_BITS_ACCOUNTID +
+              trans.accountToID,
+            5
+          ); // 20bits * 2
           bs.addNumber(trans.transTokenID, 1); // 8 bit
           bs.addNumber(trans.fAmountTrans, 3); // 24 bit
           bs.addNumber(trans.feeTokenID, 1); // 8 bit

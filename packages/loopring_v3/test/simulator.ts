@@ -369,7 +369,9 @@ export class Simulator {
     const combinedAccountIDs = bs.extractUint40(offset);
     offset += 5;
 
-    const accountFromID = Math.floor(combinedAccountIDs / 2 ** 20);
+    const accountFromID = Math.floor(
+      combinedAccountIDs / 2 ** constants.NUM_BITS_ACCOUNTID
+    );
     const accountToID = combinedAccountIDs & 0xfffff;
 
     const token = bs.extractUint8(offset);
