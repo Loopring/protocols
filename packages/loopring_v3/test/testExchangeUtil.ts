@@ -95,7 +95,7 @@ export class ExchangeTestUtil {
   public accounts: Account[][] = [];
 
   public deposits: Deposit[][] = [];
-  public onchainWithdrawals: OnchainWithdrawal[][] = [];
+  public onchainWithdrawals: WithdrawalRequest[][] = [];
 
   public operators: number[] = [];
 
@@ -785,6 +785,7 @@ export class ExchangeTestUtil {
       amount
     );
     deposit.timestamp = ethBlock.timestamp;
+    deposit.transactionHash = tx.receipt.transactionHash;
     this.deposits[exchangeID].push(deposit);
     return depositInfo;
   }
@@ -880,6 +881,7 @@ export class ExchangeTestUtil {
         gasPrice: 0
       });
     }
+    const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
     // logInfo("\x1b[46m%s\x1b[0m", "[WithdrawRequest] Gas used: " + tx.receipt.gasUsed);
 
     // Check if the correct fee amount was paid
@@ -904,7 +906,7 @@ export class ExchangeTestUtil {
     });
     const withdrawalIdx = items[0][0].toNumber();
 
-    this.addWithdrawalRequest(
+    const withdrawalRequest = this.addWithdrawalRequest(
       this.pendingOnchainWithdrawalRequests[exchangeID],
       accountID,
       tokenID,
@@ -915,9 +917,10 @@ export class ExchangeTestUtil {
       withdrawalIdx,
       withdrawalFee
     );
-    return this.pendingOnchainWithdrawalRequests[exchangeID][
-      this.pendingOnchainWithdrawalRequests[exchangeID].length - 1
-    ];
+    withdrawalRequest.timestamp = ethBlock.timestamp;
+    withdrawalRequest.transactionHash = tx.receipt.transactionHash;
+    this.onchainWithdrawals[this.exchangeId].push(withdrawalRequest);
+    return withdrawalRequest;
   }
 
   public async requestShutdownWithdrawal(
@@ -1026,7 +1029,7 @@ export class ExchangeTestUtil {
     withdrawalIdx?: number,
     withdrawalFee?: BN
   ) {
-    withdrawalRequests.push({
+    const withdrawalRequest: WithdrawalRequest = {
       exchangeId: this.exchangeId,
       accountID,
       tokenID,
@@ -1036,7 +1039,9 @@ export class ExchangeTestUtil {
       label,
       withdrawalIdx,
       withdrawalFee
-    });
+    }
+    withdrawalRequests.push(withdrawalRequest);
+    return withdrawalRequest;
   }
 
   public sendRing(exchangeID: number, ring: RingInfo) {
@@ -2630,14 +2635,14 @@ export class ExchangeTestUtil {
     };
     this.deposits[exchangeId] = [genesisDeposit];
 
-    const genesisWithdrawal: OnchainWithdrawal = {
+    const genesisWithdrawal: WithdrawalRequest = {
       exchangeId,
       withdrawalIdx: 0,
       timestamp: exchangeCreationTimestamp,
 
       accountID: 0,
       tokenID: 0,
-      amountRequested: new BN(0),
+      amount: new BN(0),
 
       transactionHash: "0x",
     };
@@ -3127,7 +3132,7 @@ export class ExchangeTestUtil {
       this.blocks[this.exchangeId].length,
       "number of blocks does not match"
     );
-    for (let blockIdx = 0; blockIdx < this.blocks[this.exchangeId].length; blockIdx++) {
+    for (let blockIdx = 0; blockIdx < exchange.getNumBlocks(); blockIdx++) {
       const explorerBlock = exchange.getBlock(blockIdx);
       const testBlock = this.blocks[this.exchangeId][blockIdx];
       assert.equal(explorerBlock.exchangeId, this.exchangeId, "unexpected exchangeId");
@@ -3151,6 +3156,42 @@ export class ExchangeTestUtil {
         assert.equal(explorerBlock.finalizedTimestamp, testBlock.finalizedTimestamp, "unexpected finalizedTimestamp");
       }
       assert.equal(explorerBlock.transactionHash, testBlock.transactionHash, "unexpected transactionHash");
+    }
+
+    // Compare deposits
+    assert.equal(
+      exchange.getNumDeposits(),
+      this.deposits[this.exchangeId].length,
+      "number of deposits does not match"
+    );
+    for (let depositIdx = 0; depositIdx < exchange.getNumDeposits(); depositIdx++) {
+      const explorerDeposit = exchange.getDeposit(depositIdx);
+      const testDeposit = this.deposits[this.exchangeId][depositIdx];
+      assert.equal(explorerDeposit.exchangeId, testDeposit.exchangeId, "unexpected exchangeId");
+      assert.equal(explorerDeposit.depositIdx, testDeposit.depositIdx, "unexpected depositIdx");
+      assert.equal(explorerDeposit.timestamp, testDeposit.timestamp, "unexpected timestamp");
+      assert.equal(explorerDeposit.accountID, testDeposit.accountID, "unexpected accountID");
+      assert.equal(explorerDeposit.tokenID, testDeposit.tokenID, "unexpected tokenID");
+      assert(explorerDeposit.amount.eq(testDeposit.amount), "unexpected amount");
+      assert.equal(explorerDeposit.publicKeyX, testDeposit.publicKeyX, "unexpected publicKeyX");
+      assert.equal(explorerDeposit.publicKeyY, testDeposit.publicKeyY, "unexpected publicKeyY");
+    }
+
+    // Compare on-chain withdrawal requests
+    assert.equal(
+      exchange.getNumOnchainWithdrawalRequests(),
+      this.onchainWithdrawals[this.exchangeId].length,
+      "number of on-chain withdrawals does not match"
+    );
+    for (let withdrawalIdx = 0; withdrawalIdx < exchange.getNumOnchainWithdrawalRequests(); withdrawalIdx++) {
+      const explorerWithdrawal = exchange.getOnchainWithdrawalRequest(withdrawalIdx);
+      const testWithdrawal = this.onchainWithdrawals[this.exchangeId][withdrawalIdx];
+      assert.equal(explorerWithdrawal.exchangeId, this.exchangeId, "unexpected exchangeId");
+      assert.equal(explorerWithdrawal.withdrawalIdx, testWithdrawal.withdrawalIdx, "unexpected withdrawalIdx");
+      assert.equal(explorerWithdrawal.timestamp, testWithdrawal.timestamp, "unexpected timestamp");
+      assert.equal(explorerWithdrawal.accountID, testWithdrawal.accountID, "unexpected accountID");
+      assert.equal(explorerWithdrawal.tokenID, testWithdrawal.tokenID, "unexpected tokenID");
+      assert(explorerWithdrawal.amountRequested.eq(testWithdrawal.amount), "unexpected amountRequested");
     }
   }
 

@@ -95,9 +95,9 @@ export interface WithdrawalRequest {
   tokenID: number;
   amount: BN;
 
-  feeTokenID: number;
-  fee: BN;
-  label: number;
+  feeTokenID?: number;
+  fee?: BN;
+  label?: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
