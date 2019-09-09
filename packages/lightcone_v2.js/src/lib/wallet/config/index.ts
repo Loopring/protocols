@@ -1,8 +1,8 @@
+//const config = require('./config.json');
 const data = require("./data");
 const config = data.configs;
-
+const fees = config.fees;
 const txs = config.txs;
-const projects = data.projects;
 
 function requestWhiteList() {
   const url =
@@ -21,6 +21,18 @@ async function isinWhiteList(address) {
 
 function getChainId() {
   return config.chainId;
+}
+
+function getExchangeId() {
+  return config.exchangeId;
+}
+
+function getWalletId() {
+  return config.walletAddressId;
+}
+
+function getMaxFeeBips() {
+  return config.maxFeeBips;
 }
 
 function getTokenBySymbol(symbol) {
@@ -58,35 +70,6 @@ function getMarketByPair(pair) {
       return getMarketBySymbol(pairArr[0], pairArr[1]);
     }
   }
-}
-
-function getProjectByName(name) {
-  if (!name) {
-    return {};
-  }
-  return projects.find(
-    project => project.name.toLowerCase() === name.toLowerCase()
-  );
-}
-
-function getProjectById(id) {
-  if (!id) {
-    return {};
-  }
-  return projects.find(project => project.projectId === id);
-}
-
-function getProjectByLrx(lrx) {
-  if (!lrx) {
-    return {};
-  }
-  return projects.find(
-    project => project.lrx.toLowerCase() === lrx.toLowerCase()
-  );
-}
-
-function getSupportedMarketsTokenR() {
-  return config.getMarketR();
 }
 
 function isSupportedMarket(market) {
@@ -133,30 +116,6 @@ function getMarketsByTokenL(token) {
   return getMarkets().filter(item => item.tokenx === token);
 }
 
-function getTokenSupportedMarket(token) {
-  const supportedToken = getSupportedMarketsTokenR();
-  let foundMarket = "";
-  if (supportedToken) {
-    if (supportedToken.includes(token)) {
-      const markets = getMarketsByTokenR(token);
-      if (markets) {
-        foundMarket = markets[0].tokenx + "-" + markets[0].tokeny;
-      }
-    } else {
-      const tokenR = supportedToken.find((x, i) => {
-        const market = token + "-" + x;
-        if (isSupportedMarket(market)) {
-          return true;
-        }
-      });
-      if (tokenR) {
-        foundMarket = token + "-" + tokenR;
-      }
-    }
-  }
-  return foundMarket;
-}
-
 function getTokenSupportedMarkets(token) {
   const leftMarket = getMarketsByTokenL(token);
   const rightMarket = getMarketsByTokenR(token);
@@ -164,7 +123,7 @@ function getTokenSupportedMarkets(token) {
 }
 
 function getMarkets() {
-  return config.getMarketPairs();
+  return config.markets;
 }
 
 function getGasLimitByType(type) {
@@ -173,12 +132,18 @@ function getGasLimitByType(type) {
   }
 }
 
+function getFeeByType(type) {
+  if (type) {
+    return fees.find(fee => type === fee.type);
+  }
+}
+
 function getWalletAddress() {
   return config.walletAddress;
 }
 
-function getDelegateAddress() {
-  return config.delegateAddress;
+function getExchangeAddress() {
+  return config.exchangeAddress;
 }
 
 function getWallets() {
@@ -191,19 +156,18 @@ export default {
   getTokens,
   getMarketBySymbol,
   getMarketByPair,
-  getProjectByName,
-  getProjectById,
-  getProjectByLrx,
   getGasLimitByType,
+  getFeeByType,
   isinWhiteList,
   getChainId,
+  getExchangeId,
+  getWalletId,
+  getMaxFeeBips,
   isSupportedMarket,
-  getSupportedMarketsTokenR,
   getMarketsByTokenR,
-  getTokenSupportedMarket,
   getTokenSupportedMarkets,
   getMarkets,
   getWalletAddress,
-  getDelegateAddress,
+  getExchangeAddress,
   getWallets
 };

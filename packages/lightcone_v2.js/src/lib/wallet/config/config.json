@@ -1,35 +1,11 @@
 {
-  "defaultPricePrecision": 8,
-  "defaultVolumePrecision": 8,
-  "defaultLrcFeePermillage": 2,
   "defaultGasPrice": 21,
-  "defaultMarginSplitPercentage": 50,
-  "defaultGasLimit": "0x30d40",
-  "defaultExpireTime": 1,
-  "defaultExpireTimeUnit": "day",
-  "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+  "defaultGasLimit": "0x7a120",
   "chainId": 1,
-  "bindContractAddress": "0xbf78B6E180ba2d1404c92Fc546cbc9233f616C42",
-  "minimumLrcfeeInEth": 0.00045,
-  "demoAccount": "0xeba7136a36da0f5e16c6bdbc739c716bb5b65a00",
-  "localStorageVersion": 201807311200,
-  "walletAddress": "0xBd8e06Fbe2727DA28aC99150BE29C920007bdE3c",
-  "contracts": [
-    {
-      "address": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
-      "version": "v1.5.1"
-    }
-  ],
-  "relays": [
-    {
-      "value": "//relay1.loopr.io",
-      "name": "Default Loopring Relay"
-    },
-    {
-      "value": "//13.112.62.24",
-      "name": "Test"
-    }
-  ],
+  "exchangeId": 2,
+  "walletAddressId": 0,
+  "maxFeeBips": 20,
+  "exchangeAddress": "0x3d88d9C4adC342cEff41855CF540844268390BE6",
   "supportedTokenRInMarkets": ["WETH", "LRC", "USDT", "TUSD"],
   "markets": [
     {
@@ -796,12 +772,34 @@
       "gasLimit": "0x249f0"
     },
     {
-      "type": "cancelAllOrder",
-      "gasLimit": "0x186a0"
+      "type": "create",
+      "gasLimit": "0x7a1200"
     },
     {
-      "type": "cancelOrderByTokenPair",
-      "gasLimit": "0x186a0"
+      "type": "depositTo",
+      "gasLimit": "0x7a1200"
+    },
+    {
+      "type": "withdrawFrom",
+      "gasLimit": "0x7a1200"
+    }
+  ],
+  "fees": [
+    {
+      "type": "create",
+      "feeInWEI": "100000000000000"
+    },
+    {
+      "type": "update",
+      "feeInWEI": "100000000000000"
+    },
+    {
+      "type": "deposit",
+      "feeInWEI": "100000000000000"
+    },
+    {
+      "type": "withdraw",
+      "feeInWEI": "100000000000000"
     }
   ],
   "tokens": [
