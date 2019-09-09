@@ -6,7 +6,6 @@ import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 
-import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { MetaMaskAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
@@ -14,7 +13,6 @@ import { OrderInfo } from "../model/types";
 export class MetaMask {
   public web3: Web3;
   public address: string;
-  public ethNode: Eth;
   public account: MetaMaskAccount;
 
   public constructor(web3, account) {
@@ -39,7 +37,7 @@ export class MetaMask {
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
-        _spender: "0x3d88d9C4adC342cEff41855CF540844268390BE6", // TODO
+        _spender: config.getExchangeAddress(),
         _value: amount
       }),
       chainId: config.getChainId(),
@@ -158,9 +156,11 @@ export class MetaMask {
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
 
-      let bigNumber = fm.toBig(amountS).times(fm.toBig(1000000000000000000));
+      let tokenSell = config.getTokenBySymbol(tokenS);
+      let tokenBuy = config.getTokenBySymbol(tokenB);
+      let bigNumber = fm.toBig(amountS).times("1e" + tokenSell.digits);
       order.amountSInBN = fm.toBN(bigNumber);
-      bigNumber = fm.toBig(amountB).times(fm.toBig(1000000000000000000));
+      bigNumber = fm.toBig(amountB).times(fm.toBig("1e" + tokenBuy.digits));
       order.amountBInBN = fm.toBN(bigNumber);
       order.amountS = order.amountSInBN.toString(10);
       order.amountB = order.amountBInBN.toString(10);

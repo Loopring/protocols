@@ -2,9 +2,7 @@
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
-import * as datas from "../lib/wallet/config/data";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
-import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
@@ -13,13 +11,6 @@ import { exchange } from "../sign/exchange";
 export class PrivateKey {
   public account: PrivateKeyAccount;
   public address: string;
-  public ethNode: Eth;
-
-  public constructor() {
-    this.ethNode = new Eth("http://localhost:8545"); // TODO: config
-    // this.account = walletUtil.fromPrivateKey('');
-  }
-
   public getAddress() {
     return this.account.getAddress();
   }
@@ -58,11 +49,9 @@ export class PrivateKey {
       chainId: config.getChainId(),
       nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("token_transfer").gasLimit) // TODO: new gas limit
+      gasLimit: fm.toHex(config.getGasLimitByType("token_transfer").gasLimit)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx);
   }
 
   /**
@@ -79,7 +68,7 @@ export class PrivateKey {
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
-        _spender: datas.configs.delegateAddress,
+        _spender: config.getExchangeAddress(),
         _value: amount
       }),
       chainId: config.getChainId(),
@@ -107,9 +96,7 @@ export class PrivateKey {
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
       gasLimit: fm.toHex(config.getGasLimitByType("deposit").gasLimit)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx);
   }
 
   /**
@@ -131,9 +118,7 @@ export class PrivateKey {
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
       gasLimit: fm.toHex(config.getGasLimitByType("withdraw").gasLimit)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx);
   }
 
   /**
@@ -244,9 +229,11 @@ export class PrivateKey {
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
 
-      let bigNumber = fm.toBig(amountS).times(fm.toBig(1000000000000000000));
+      let tokenSell = config.getTokenBySymbol(tokenS);
+      let tokenBuy = config.getTokenBySymbol(tokenB);
+      let bigNumber = fm.toBig(amountS).times("1e" + tokenSell.digits);
       order.amountSInBN = fm.toBN(bigNumber);
-      bigNumber = fm.toBig(amountB).times(fm.toBig(1000000000000000000));
+      bigNumber = fm.toBig(amountB).times(fm.toBig("1e" + tokenBuy.digits));
       order.amountBInBN = fm.toBN(bigNumber);
       order.amountS = order.amountSInBN.toString(10);
       order.amountB = order.amountBInBN.toString(10);
