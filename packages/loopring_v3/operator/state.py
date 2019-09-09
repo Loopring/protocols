@@ -891,8 +891,8 @@ class State(object):
         balanceT = int(self.getAccount(accountFromID).getBalance(transTokenID))
         uAmountTrans = int(amountRequested) if (int(amountRequested) < balanceT) else balanceT
 
-        fAmountTrans = toFloat(uAmountTrans, Float28Encoding)
-        amountTrans = fromFloat(fAmountTrans, Float28Encoding)
+        fAmountTrans = toFloat(uAmountTrans, Float24Encoding)
+        amountTrans = fromFloat(fAmountTrans, Float24Encoding)
         balanceUpdateT_From = self.getAccount(accountFromID).updateBalance(transTokenID, -amountTrans)
 
         self.getAccount(accountFromID).nonce += 1

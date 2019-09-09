@@ -324,7 +324,7 @@ export class Simulator {
       : transfer.amount;
     const amountTrans = roundToFloatValue(
       amountToTrans,
-      constants.Float28Encoding
+      constants.Float24Encoding
     );
 
     // Update the Merkle tree with the input data
@@ -349,7 +349,7 @@ export class Simulator {
   public internalTransferFromOnchainData(
     bs: Bitstream,
     blockSize: number,
-    withdrawalIndex: number,
+    transIndex: number,
     exchangeState: ExchangeState
   ) {
     let offset = 0;
@@ -360,23 +360,23 @@ export class Simulator {
 
     const operatorAccountID = bs.extractUint24(offset);
     offset += 3;
-    const onchainDataOffset = offset;
 
     // Jump to the specified withdrawal
-    const onchainDataSize = 14;
-    offset += withdrawalIndex * onchainDataSize;
+    const onchainDataSize = 12;
+    offset += transIndex * onchainDataSize;
 
-    // Extract onchain data
-    const accountFromID = bs.extractUint24(offset);
-    offset += 3;
+    // Further extraction of packed data
+    const combinedAccountIDs = bs.extractUint40(offset);
+    offset += 5;
 
-    const accountToID = bs.extractUint24(offset);
-    offset += 3;
+    const accountFromID = Math.floor(combinedAccountIDs / 2 ** 20);
+    const accountToID = combinedAccountIDs & 0xfffff;
 
     const token = bs.extractUint8(offset);
     offset += 1;
-    const fAmountTrans = bs.extractUint32(offset);
-    offset += 4;
+
+    const fAmountTrans = bs.extractUint24(offset);
+    offset += 3;
 
     // Extract offchain data
     const feeToken = bs.extractUint8(offset);
@@ -386,7 +386,7 @@ export class Simulator {
 
     // Decode the float values
     const fee = fromFloat(fFee, constants.Float16Encoding);
-    const amountTrans = fromFloat(fAmountTrans, constants.Float28Encoding);
+    const amountTrans = fromFloat(fAmountTrans, constants.Float24Encoding);
 
     // Update the Merkle tree with the onchain data
     const newExchangeState = this.internalTransfer(

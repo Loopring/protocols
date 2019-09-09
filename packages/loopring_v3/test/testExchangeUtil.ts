@@ -2149,10 +2149,9 @@ export class ExchangeTestUtil {
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
         for (const trans of block.internalTransferres) {
-          bs.addNumber(trans.accountFromID, 3); // 20 bit
-          bs.addNumber(trans.accountToID, 3); // 20 bit
+          bs.addNumber(trans.accountFromID * 2 ** 20 + trans.accountToID, 5);
           bs.addNumber(trans.transTokenID, 1); // 8 bit
-          bs.addNumber(trans.fAmountTrans, 4); // 28 bit
+          bs.addNumber(trans.fAmountTrans, 3); // 24 bit
           bs.addNumber(trans.feeTokenID, 1); // 8 bit
           bs.addNumber(
             toFloat(new BN(trans.fee), constants.Float16Encoding),
