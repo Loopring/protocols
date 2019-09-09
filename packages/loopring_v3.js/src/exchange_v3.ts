@@ -6,8 +6,22 @@ import { Constants } from "./constants";
 import poseidon = require("./poseidon");
 import { ProtocolV3 } from "./protocol_v3";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
-import {BlockType, BlockState, ForgeMode, Block, Deposit, OnchainWithdrawal,
-        TradeHistory, Token, Balance, Account, WithdrawFromMerkleTreeData, ExchangeState, ExchangeFees, ProtocolFees} from "./types";
+import {
+  BlockType,
+  BlockState,
+  ForgeMode,
+  Block,
+  Deposit,
+  OnchainWithdrawal,
+  TradeHistory,
+  Token,
+  Balance,
+  Account,
+  WithdrawFromMerkleTreeData,
+  ExchangeState,
+  ExchangeFees,
+  ProtocolFees
+} from "./types";
 import { DepositProcessor } from "./request_processors/deposit_processor";
 import { OnchainWithdrawalProcessor } from "./request_processors/onchain_withdrawal_processor";
 import { RingSettlementProcessor } from "./request_processors/ring_settlement_processor";
@@ -58,7 +72,8 @@ export class ExchangeV3 {
   private hasher: any;
   private merkleTree: SparseMerkleTree;
 
-  private genesisMerkleRoot = "19576940549163814464655809526001218205804522676808413160044023933932119144961";
+  private genesisMerkleRoot =
+    "19576940549163814464655809526001218205804522676808413160044023933932119144961";
 
   private exchangeFees: ExchangeFees;
   private protocolFees: ProtocolFees;
@@ -76,8 +91,16 @@ export class ExchangeV3 {
    * @param   protocol                  The protocol of the exchange
    * @param   implementationAddress     The address of the implementation
    */
-  public async initialize(web3: Web3, exchangeAddress: string, exchangeId: number, owner: string,
-                          onchainDataAvailability: boolean, forgeMode: ForgeMode, protocol: ProtocolV3, implementationAddress: string) {
+  public async initialize(
+    web3: Web3,
+    exchangeAddress: string,
+    exchangeId: number,
+    owner: string,
+    onchainDataAvailability: boolean,
+    forgeMode: ForgeMode,
+    protocol: ProtocolV3,
+    implementationAddress: string
+  ) {
     this.web3 = web3;
     this.exchangeAddress = exchangeAddress;
     this.owner = owner;
@@ -90,14 +113,19 @@ export class ExchangeV3 {
 
     const ABIPath = "ABI/version30/";
     this.exchangeV3Abi = fs.readFileSync(ABIPath + "IExchangeV3.abi", "ascii");
-    this.decompressorAbi = fs.readFileSync(ABIPath + "IDecompressor.abi", "ascii");
+    this.decompressorAbi = fs.readFileSync(
+      ABIPath + "IDecompressor.abi",
+      "ascii"
+    );
 
     this.exchange = new web3.eth.Contract(JSON.parse(this.exchangeV3Abi));
     this.exchange.options.address = this.exchangeAddress;
 
     this.decompressor = new web3.eth.Contract(JSON.parse(this.decompressorAbi));
 
-    this.exchangeCreationTimestamp = await this.exchange.methods.getExchangeCreationTimestamp().call();
+    this.exchangeCreationTimestamp = await this.exchange.methods
+      .getExchangeCreationTimestamp()
+      .call();
 
     this.shutdown = false;
     this.shutdownStartTime = 0;
@@ -114,7 +142,7 @@ export class ExchangeV3 {
       deposits: [],
       onchainWithdrawals: [],
       processedRequests: [],
-      onchainDataAvailability,
+      onchainDataAvailability
     };
 
     // Create the genesis block
@@ -153,7 +181,7 @@ export class ExchangeV3 {
 
       transactionHash: Constants.zeroAddress,
 
-      valid: true,
+      valid: true
     };
     this.blocks.push(genesisBlock);
     this.numBlocksFinalized = 1;
@@ -170,7 +198,7 @@ export class ExchangeV3 {
       publicKeyX: "0",
       publicKeyY: "0",
 
-      transactionHash: "0x",
+      transactionHash: "0x"
     };
     this.state.deposits.push(genesisDeposit);
 
@@ -184,7 +212,7 @@ export class ExchangeV3 {
       tokenID: 0,
       amountRequested: new BN(0),
 
-      transactionHash: "0x",
+      transactionHash: "0x"
     };
     this.state.onchainWithdrawals.push(genesisWithdrawal);
 
@@ -198,17 +226,19 @@ export class ExchangeV3 {
       accountCreationFeeETH: new BN(fees._accountCreationFeeETH, 10),
       accountUpdateFeeETH: new BN(fees._accountUpdateFeeETH, 10),
       depositFeeETH: new BN(fees._depositFeeETH, 10),
-      withdrawalFeeETH: new BN(fees._withdrawalFeeETH, 10),
+      withdrawalFeeETH: new BN(fees._withdrawalFeeETH, 10)
     };
 
     // Get the protocol fees from the contract
-    const protocolFeeValues = await this.exchange.methods.getProtocolFeeValues().call();
+    const protocolFeeValues = await this.exchange.methods
+      .getProtocolFeeValues()
+      .call();
     this.protocolFees = {
       exchangeId,
       takerFeeBips: parseInt(protocolFeeValues.takerFeeBips),
       makerFeeBips: parseInt(protocolFeeValues.makerFeeBips),
       previousTakerFeeBips: parseInt(protocolFeeValues.previousTakerFeeBips),
-      previousMakerFeeBips: parseInt(protocolFeeValues.previousMakerFeeBips),
+      previousMakerFeeBips: parseInt(protocolFeeValues.previousMakerFeeBips)
     };
   }
 
@@ -222,7 +252,10 @@ export class ExchangeV3 {
     }
 
     // Process the events
-    const events = await this.exchange.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
+    const events = await this.exchange.getPastEvents("allEvents", {
+      fromBlock: this.syncedToEthereumBlockIdx + 1,
+      toBlock: ethereumBlockTo
+    });
     for (const event of events) {
       if (event.event === "BlockCommitted") {
         await this.processBlockCommitted(event);
@@ -258,8 +291,12 @@ export class ExchangeV3 {
     // Get some values directly from the smart contract because we cannot depend on events
     // (we can go automatically out of maintenance mode and automatically into withdrawal mode)
     this.inMaintenenance = await this.exchange.methods.isInMaintenance().call();
-    this.inWithdrawalMode = await this.exchange.methods.isInWithdrawalMode().call();
-    this.totalTimeInMaintenanceSeconds = await this.exchange.methods.getTotalTimeInMaintenanceSeconds().call();
+    this.inWithdrawalMode = await this.exchange.methods
+      .isInWithdrawalMode()
+      .call();
+    this.totalTimeInMaintenanceSeconds = await this.exchange.methods
+      .getTotalTimeInMaintenanceSeconds()
+      .call();
 
     this.syncedToEthereumBlockIdx = ethereumBlockTo;
   }
@@ -282,28 +319,61 @@ export class ExchangeV3 {
     const tradeHistoryMerkleTree = new SparseMerkleTree(7);
     tradeHistoryMerkleTree.newTree(this.hasher([0, 0, 0]).toString(10));
     const balancesMerkleTree = new SparseMerkleTree(4);
-    balancesMerkleTree.newTree(this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10));
+    balancesMerkleTree.newTree(
+      this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10)
+    );
     this.merkleTree = new SparseMerkleTree(10);
-    this.merkleTree.newTree(this.hasher([0, 0, 0, balancesMerkleTree.getRoot()]).toString(10));
+    this.merkleTree.newTree(
+      this.hasher([0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
+    );
 
     // Run over all account data and build the Merkle tree
     for (const account of this.state.accounts) {
       account.balancesMerkleTree = new SparseMerkleTree(4);
-      account.balancesMerkleTree.newTree(this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10));
+      account.balancesMerkleTree.newTree(
+        this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10)
+      );
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
         balanceValue.tradeHistoryTree = new SparseMerkleTree(7);
-        balanceValue.tradeHistoryTree.newTree(this.hasher([0, 0, 0]).toString(10));
+        balanceValue.tradeHistoryTree.newTree(
+          this.hasher([0, 0, 0]).toString(10)
+        );
         for (const orderID of Object.keys(balanceValue.tradeHistory)) {
           const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
-          balanceValue.tradeHistoryTree.update(Number(orderID), this.hasher([tradeHistoryValue.filled, tradeHistoryValue.cancelled, tradeHistoryValue.orderID]).toString(10));
+          balanceValue.tradeHistoryTree.update(
+            Number(orderID),
+            this.hasher([
+              tradeHistoryValue.filled,
+              tradeHistoryValue.cancelled,
+              tradeHistoryValue.orderID
+            ]).toString(10)
+          );
         }
-        account.balancesMerkleTree.update(Number(tokenID), this.hasher([balanceValue.balance, balanceValue.tradeHistoryTree.getRoot()]).toString(10));
+        account.balancesMerkleTree.update(
+          Number(tokenID),
+          this.hasher([
+            balanceValue.balance,
+            balanceValue.tradeHistoryTree.getRoot()
+          ]).toString(10)
+        );
       }
-      this.merkleTree.update(account.accountId, this.hasher([account.publicKeyX, account.publicKeyY, account.nonce, account.balancesMerkleTree.getRoot()]).toString(10));
+      this.merkleTree.update(
+        account.accountId,
+        this.hasher([
+          account.publicKeyX,
+          account.publicKeyY,
+          account.nonce,
+          account.balancesMerkleTree.getRoot()
+        ]).toString(10)
+      );
     }
     // console.log("Merkle root: " + this.merkleTree.getRoot());
-    assert.equal(this.merkleTree.getRoot(), this.blocks[this.blocks.length - 1].merkleRoot, "Merkle tree root inconsistent");
+    assert.equal(
+      this.merkleTree.getRoot(),
+      this.blocks[this.blocks.length - 1].merkleRoot,
+      "Merkle tree root inconsistent"
+    );
   }
 
   /**
@@ -331,7 +401,10 @@ export class ExchangeV3 {
    * @return  The necessary data for withdrawFromMerkleTree(for)
    */
   public getWithdrawFromMerkleTreeData(accountID: number, tokenID: number) {
-    assert(this.state.onchainDataAvailability, "cannot create the Merkle proofs for an exchange without on-chain data-availability");
+    assert(
+      this.state.onchainDataAvailability,
+      "cannot create the Merkle proofs for an exchange without on-chain data-availability"
+    );
     assert(accountID < this.state.accounts.length, "invalid account ID");
     assert(tokenID < this.tokens.length, "invalid token ID");
 
@@ -348,7 +421,7 @@ export class ExchangeV3 {
       balance: account.balances[tokenID].balance,
       tradeHistoryRoot: account.balances[tokenID].tradeHistoryTree.getRoot(),
       accountMerkleProof,
-      balanceMerkleProof,
+      balanceMerkleProof
     };
     return withdrawFromMerkleTreeData;
   }
@@ -382,7 +455,7 @@ export class ExchangeV3 {
 
   /// Tokens
 
-   /**
+  /**
    * The total number of tokens registered on the exchange
    * @return  The total number of tokens
    */
@@ -466,7 +539,10 @@ export class ExchangeV3 {
     if (startIdx >= this.state.processedRequests.length) {
       return [];
     }
-    const endIdx = Math.min(startIdx + count, this.state.processedRequests.length);
+    const endIdx = Math.min(
+      startIdx + count,
+      this.state.processedRequests.length
+    );
     for (let i = startIdx; i < endIdx; i++) {
       requests.push(this.getProcessedRequest(i));
     }
@@ -478,11 +554,14 @@ export class ExchangeV3 {
    * @return  The processed requests in the given block
    */
   public getRequestsInBlock(blockIdx: number) {
-    if(blockIdx === 0 || blockIdx >= this.blocks.length) {
+    if (blockIdx === 0 || blockIdx >= this.blocks.length) {
       return [];
     }
     const block = this.getBlock(blockIdx);
-    return this.getProcessedRequests(block.totalNumRequestsProcessed - block.numRequestsProcessed, block.numRequestsProcessed);
+    return this.getProcessedRequests(
+      block.totalNumRequestsProcessed - block.numRequestsProcessed,
+      block.numRequestsProcessed
+    );
   }
 
   /// Deposits
@@ -548,7 +627,10 @@ export class ExchangeV3 {
     if (startIdx >= this.state.onchainWithdrawals.length) {
       return [];
     }
-    const endIdx = Math.min(startIdx + count, this.state.onchainWithdrawals.length);
+    const endIdx = Math.min(
+      startIdx + count,
+      this.state.onchainWithdrawals.length
+    );
     for (let i = startIdx; i < endIdx; i++) {
       withdrawals.push(this.getOnchainWithdrawalRequest(i));
     }
@@ -715,7 +797,7 @@ export class ExchangeV3 {
     let valid = true;
 
     // Make sure the blocks are in the right order
-    const blockIdx =  parseInt(event.returnValues.blockIdx);
+    const blockIdx = parseInt(event.returnValues.blockIdx);
     assert.equal(blockIdx, this.blocks.length, "Unexpected blockIdx");
 
     // Get the timestamp from the block
@@ -732,11 +814,16 @@ export class ExchangeV3 {
 
     // Get the block data from the transaction data
     const commitBlockFunctionSignature = "0x39d07df5";
-    const transaction = await this.web3.eth.getTransaction(event.transactionHash);
+    const transaction = await this.web3.eth.getTransaction(
+      event.transactionHash
+    );
     if (transaction.input.startsWith(commitBlockFunctionSignature)) {
       // Get the inputs to commitBlock
       // Note: this will not work if an operator contract is used with a different function signature
-      const decodedInputs = this.web3.eth.abi.decodeParameters(["uint8", "uint16", "uint8", "bytes", "bytes"], "0x" + transaction.input.slice(2 + 4*2));
+      const decodedInputs = this.web3.eth.abi.decodeParameters(
+        ["uint8", "uint16", "uint8", "bytes", "bytes"],
+        "0x" + transaction.input.slice(2 + 4 * 2)
+      );
       blockType = parseInt(decodedInputs[0]);
       blockSize = parseInt(decodedInputs[1]);
       blockVersion = parseInt(decodedInputs[2]);
@@ -756,7 +843,9 @@ export class ExchangeV3 {
       const decompressorAddress = "0x" + onchainData.slice(4, 4 + 40);
       const compressedData = "0x" + onchainData.slice(4 + 40);
       this.decompressor.options.address = decompressorAddress;
-      data = await this.decompressor.methods.decompress(this.web3.utils.hexToBytes(compressedData)).call();
+      data = await this.decompressor.methods
+        .decompress(this.web3.utils.hexToBytes(compressedData))
+        .call();
     } else {
       // console.log("unsupported data compression mode");
       valid = false;
@@ -806,21 +895,26 @@ export class ExchangeV3 {
 
       totalNumTradesProccesed: lastBlock.totalNumTradesProccesed,
       totalNumDepositsProccesed: lastBlock.totalNumDepositsProccesed,
-      totalNumOnchainWithdrawalsProcessed: lastBlock.totalNumOnchainWithdrawalsProcessed,
-      totalNumOffchainWithdrawalsProcessed: lastBlock.totalNumOffchainWithdrawalsProcessed,
-      totalNumOrderCancellationsProcessed: lastBlock.totalNumOrderCancellationsProcessed,
+      totalNumOnchainWithdrawalsProcessed:
+        lastBlock.totalNumOnchainWithdrawalsProcessed,
+      totalNumOffchainWithdrawalsProcessed:
+        lastBlock.totalNumOffchainWithdrawalsProcessed,
+      totalNumOrderCancellationsProcessed:
+        lastBlock.totalNumOrderCancellationsProcessed,
 
       transactionHash: event.transactionHash,
 
-      valid,
+      valid
     };
     this.blocks.push(newBlock);
 
     this.processBlock(newBlock, false);
     // TODO: remove (Only done here for debugging)
-    this.buildMerkleTree();
-    for (let i = 0; i < this.state.accounts.length; i++) {
-      this.merkleTree.createProof(i);
+    if (this.state.onchainDataAvailability) {
+      this.buildMerkleTree();
+      for (let i = 0; i < this.state.accounts.length; i++) {
+        this.merkleTree.createProof(i);
+      }
     }
   }
 
@@ -833,7 +927,11 @@ export class ExchangeV3 {
 
   private async processDepositRequested(event: any) {
     // Make sure the deposits are in the right order
-    assert.equal(this.state.deposits.length, parseInt(event.returnValues.depositIdx), "Unexpected depositIdx");
+    assert.equal(
+      this.state.deposits.length,
+      parseInt(event.returnValues.depositIdx),
+      "Unexpected depositIdx"
+    );
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
@@ -850,14 +948,18 @@ export class ExchangeV3 {
       publicKeyX: event.returnValues.pubKeyX,
       publicKeyY: event.returnValues.pubKeyY,
 
-      transactionHash: event.transactionHash,
+      transactionHash: event.transactionHash
     };
     this.state.deposits.push(deposit);
   }
 
   private async processWithdrawalRequested(event: any) {
     // Make sure the onchain withdrawals are in the right order
-    assert.equal(this.state.onchainWithdrawals.length, parseInt(event.returnValues.withdrawalIdx), "Unexpected withdrawalIdx");
+    assert.equal(
+      this.state.onchainWithdrawals.length,
+      parseInt(event.returnValues.withdrawalIdx),
+      "Unexpected withdrawalIdx"
+    );
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
@@ -872,19 +974,23 @@ export class ExchangeV3 {
       tokenID: parseInt(event.returnValues.tokenID),
       amountRequested: new BN(event.returnValues.amount, 10),
 
-      transactionHash: event.transactionHash,
+      transactionHash: event.transactionHash
     };
     this.state.onchainWithdrawals.push(onchainWithdrawal);
   }
 
   private async processTokenRegistered(event: any) {
     // Make sure the tokens are in the right order
-    assert.equal(this.tokens.length, parseInt(event.returnValues.tokenId), "Unexpected tokenId");
+    assert.equal(
+      this.tokens.length,
+      parseInt(event.returnValues.tokenId),
+      "Unexpected tokenId"
+    );
     const token: Token = {
       exchangeId: this.state.exchangeId,
       tokenID: this.tokens.length,
       address: event.returnValues.token,
-      enabled: true,
+      enabled: true
     };
     this.tokens.push(token);
   }
@@ -895,7 +1001,11 @@ export class ExchangeV3 {
 
     const block = this.blocks[blockIdx];
     // Make sure the block is in the expected state
-    assert.equal(block.blockState, BlockState.COMMITTED, "Unexpected block state");
+    assert.equal(
+      block.blockState,
+      BlockState.COMMITTED,
+      "Unexpected block state"
+    );
     block.blockState = BlockState.VERIFIED;
 
     // Get the timestamp from the block
@@ -909,7 +1019,11 @@ export class ExchangeV3 {
 
     const block = this.blocks[blockIdx];
     // Make sure the block is in the expected state
-    assert.equal(block.blockState, BlockState.VERIFIED, "Unexpected block state");
+    assert.equal(
+      block.blockState,
+      BlockState.VERIFIED,
+      "Unexpected block state"
+    );
     block.blockState = BlockState.FINALIZED;
 
     // Get the timestamp from the block
@@ -924,7 +1038,10 @@ export class ExchangeV3 {
   }
 
   private async processOperatorChanged(event: any) {
-    assert(this.operator === event.returnValues.oldOperator, "unexpected operator");
+    assert(
+      this.operator === event.returnValues.oldOperator,
+      "unexpected operator"
+    );
     this.operator = event.returnValues.newOperator;
   }
 
@@ -942,7 +1059,7 @@ export class ExchangeV3 {
     const blockIdx = parseInt(event.returnValues.blockIdx);
     const revert: Revert = {
       blockIdx,
-      numBlocks: this.blocks.length - blockIdx,
+      numBlocks: this.blocks.length - blockIdx
     };
     this.reverts.push(revert);
 
@@ -950,18 +1067,37 @@ export class ExchangeV3 {
   }
 
   private async processFeesUpdated(event: any) {
-    assert(this.state.exchangeId === parseInt(event.returnValues.exchangeId), "unexpected exchangeId");
-    this.exchangeFees.accountCreationFeeETH = new BN(event.returnValues.accountCreationFeeETH, 10);
-    this.exchangeFees.accountUpdateFeeETH = new BN(event.returnValues.accountUpdateFeeETH, 10);
-    this.exchangeFees.depositFeeETH = new BN(event.returnValues.depositFeeETH, 10);
-    this.exchangeFees.withdrawalFeeETH = new BN(event.returnValues.withdrawalFeeETH, 10);
+    assert(
+      this.state.exchangeId === parseInt(event.returnValues.exchangeId),
+      "unexpected exchangeId"
+    );
+    this.exchangeFees.accountCreationFeeETH = new BN(
+      event.returnValues.accountCreationFeeETH,
+      10
+    );
+    this.exchangeFees.accountUpdateFeeETH = new BN(
+      event.returnValues.accountUpdateFeeETH,
+      10
+    );
+    this.exchangeFees.depositFeeETH = new BN(
+      event.returnValues.depositFeeETH,
+      10
+    );
+    this.exchangeFees.withdrawalFeeETH = new BN(
+      event.returnValues.withdrawalFeeETH,
+      10
+    );
   }
 
   private async processProtocolFeesUpdated(event: any) {
     this.protocolFees.takerFeeBips = parseInt(event.returnValues.takerFeeBips);
     this.protocolFees.makerFeeBips = parseInt(event.returnValues.makerFeeBips);
-    this.protocolFees.previousTakerFeeBips = parseInt(event.returnValues.previousTakerFeeBips);
-    this.protocolFees.previousMakerFeeBips = parseInt(event.returnValues.previousMakerFeeBips);
+    this.protocolFees.previousTakerFeeBips = parseInt(
+      event.returnValues.previousTakerFeeBips
+    );
+    this.protocolFees.previousMakerFeeBips = parseInt(
+      event.returnValues.previousMakerFeeBips
+    );
   }
 
   private async processOwnershipTransferred(event: any) {
@@ -982,17 +1118,26 @@ export class ExchangeV3 {
           block.totalNumDepositsProccesed += replay ? 0 : requests.length;
         } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
           requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
-          block.totalNumOnchainWithdrawalsProcessed += replay ? 0 : requests.length;
+          block.totalNumOnchainWithdrawalsProcessed += replay
+            ? 0
+            : requests.length;
         } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-          requests = OffchainWithdrawalProcessor.processBlock(this.state, block);
-          block.totalNumOffchainWithdrawalsProcessed += replay ? 0 : requests.length;
+          requests = OffchainWithdrawalProcessor.processBlock(
+            this.state,
+            block
+          );
+          block.totalNumOffchainWithdrawalsProcessed += replay
+            ? 0
+            : requests.length;
         } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
           requests = OrderCancellationProcessor.processBlock(this.state, block);
-          block.totalNumOrderCancellationsProcessed += replay ? 0 : requests.length;
+          block.totalNumOrderCancellationsProcessed += replay
+            ? 0
+            : requests.length;
         } else {
           assert(false, "Unknown block type");
         }
-      } catch(e) {
+      } catch (e) {
         // console.log("Error detected while processing block: ");
         // console.log(e);
         block.valid = false;
@@ -1060,7 +1205,7 @@ export class ExchangeV3 {
       publicKeyX: "0",
       publicKeyY: "0",
       nonce: 0,
-      balances: {},
+      balances: {}
     };
     this.state.accounts.push(protocolPoolAccount);
   }
