@@ -2,9 +2,7 @@
 import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
-import * as datas from "../lib/wallet/config/data";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
-import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
@@ -13,13 +11,6 @@ import { exchange } from "../sign/exchange";
 export class PrivateKey {
   public account: PrivateKeyAccount;
   public address: string;
-  public ethNode: Eth;
-
-  public constructor() {
-    this.ethNode = new Eth("http://localhost:8545"); // TODO: config
-    // this.account = walletUtil.fromPrivateKey('');
-  }
-
   public getAddress() {
     return this.account.getAddress();
   }
@@ -28,13 +19,13 @@ export class PrivateKey {
    * Transfer token
    * @param toAddr string to address
    * @param symbol string symbol of token to transfer
-   * @param amount number amount to transfer, e.g. 1.5
+   * @param amount string number amount to transfer, e.g. '1.5'
    * @param gasPrice in gwei
    */
   public async transfer(
     toAddr: string,
     symbol: string,
-    amount: number,
+    amount: string,
     gasPrice: number
   ) {
     let to, value, data: string;
@@ -58,11 +49,9 @@ export class PrivateKey {
       chainId: config.getChainId(),
       nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("token_transfer").gasLimit) // TODO: new gas limit
+      gasLimit: fm.toHex(config.getGasLimitByType("token_transfer").gasInWEI)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx);
   }
 
   /**
@@ -79,23 +68,23 @@ export class PrivateKey {
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
-        _spender: datas.configs.delegateAddress,
+        _spender: config.getExchangeAddress(),
         _value: amount
       }),
       chainId: config.getChainId(),
       nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("approve").gasLimit)
+      gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
     return this.account.signEthereumTx(rawTx.raw);
   }
 
   /**
    * Convert eth -> weth
-   * @param amount number amount to deposit, e.g. 1.5
+   * @param amount string number amount to deposit, e.g. '1.5'
    * @param gasPrice in gwei
    */
-  public async deposit(amount: number, gasPrice: number) {
+  public async deposit(amount: string, gasPrice: number) {
     const weth = config.getTokenBySymbol("WETH");
     const value = fm.toHex(fm.toBig(amount).times(1e18));
     const rawTx = new Transaction({
@@ -105,19 +94,17 @@ export class PrivateKey {
       chainId: config.getChainId(),
       nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("deposit").gasLimit)
+      gasLimit: fm.toHex(config.getGasLimitByType("deposit").gasInWEI)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx);
   }
 
   /**
    * Convert weth -> eth
-   * @param amount number amount to withdraw, e.g. 1.5
+   * @param amount string number amount to withdraw, e.g. '1.5'
    * @param gasPrice in gwei
    */
-  public async withdraw(amount: number, gasPrice: number) {
+  public async withdraw(amount: string, gasPrice: number) {
     const weth = config.getTokenBySymbol("WETH");
     const value = fm.toHex(fm.toBig(amount).times(1e18));
     const rawTx = new Transaction({
@@ -129,11 +116,9 @@ export class PrivateKey {
       chainId: config.getChainId(),
       nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("withdraw").gasLimit)
+      gasLimit: fm.toHex(config.getGasLimitByType("withdraw").gasInWEI)
     });
-    const signedTx = this.account.signEthereumTx(rawTx);
-
-    return this.account.sendTransaction(this.ethNode, signedTx);
+    return this.account.signEthereumTx(rawTx);
   }
 
   /**
@@ -162,10 +147,10 @@ export class PrivateKey {
   /**
    * Deposit to Dex
    * @param symbol string symbol of token to deposit
-   * @param amount number amount to deposit, e.g. 1.5
+   * @param amount string number amount to deposit, e.g. '1.5'
    * @param gasPrice in gwei
    */
-  public async depositTo(symbol: string, amount: number, gasPrice: number) {
+  public async depositTo(symbol: string, amount: string, gasPrice: number) {
     try {
       const rawTx = await exchange.deposit(
         this.account,
@@ -182,10 +167,10 @@ export class PrivateKey {
   /**
    * Withdraw from Dex
    * @param symbol string symbol of token to withdraw
-   * @param amount number amount to withdraw, e.g. 1.5
+   * @param amount string number amount to withdraw, e.g. '1.5'
    * @param gasPrice in gwei
    */
-  public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
+  public async withdrawFrom(symbol: string, amount: string, gasPrice: number) {
     try {
       const rawTx = await exchange.withdraw(
         this.account,
@@ -210,8 +195,8 @@ export class PrivateKey {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
-   * @param amountS: amount of token sell, in number
-   * @param amountB: amount of token buy, in number
+   * @param amountS: amount of token sell, in string number
+   * @param amountB: amount of token buy, in string number
    * @param orderId: next order ID, needed by order signature
    * @param validSince: valid beginning period of this order, SECOND in timestamp
    * @param validUntil: valid ending period of this order, SECOND in timestamp
@@ -226,8 +211,8 @@ export class PrivateKey {
     tradingPubKeyX: string,
     tradingPubKeyY: string,
     tradingPrivKey: string,
-    amountS: number,
-    amountB: number,
+    amountS: string,
+    amountB: string,
     orderId: number,
     validSince: number,
     validUntil: number
@@ -244,9 +229,11 @@ export class PrivateKey {
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
 
-      let bigNumber = fm.toBig(amountS).times(fm.toBig(1000000000000000000));
+      let tokenSell = config.getTokenBySymbol(tokenS);
+      let tokenBuy = config.getTokenBySymbol(tokenB);
+      let bigNumber = fm.toBig(amountS).times("1e" + tokenSell.digits);
       order.amountSInBN = fm.toBN(bigNumber);
-      bigNumber = fm.toBig(amountB).times(fm.toBig(1000000000000000000));
+      bigNumber = fm.toBig(amountB).times(fm.toBig("1e" + tokenBuy.digits));
       order.amountBInBN = fm.toBN(bigNumber);
       order.amountS = order.amountSInBN.toString(10);
       order.amountB = order.amountBInBN.toString(10);

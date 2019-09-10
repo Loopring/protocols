@@ -6,7 +6,6 @@ import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 
-import Eth from "../lib/wallet/ethereum/eth";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { MetaMaskAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
@@ -14,7 +13,6 @@ import { OrderInfo } from "../model/types";
 export class MetaMask {
   public web3: Web3;
   public address: string;
-  public ethNode: Eth;
   public account: MetaMaskAccount;
 
   public constructor(web3, account) {
@@ -39,13 +37,13 @@ export class MetaMask {
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
-        _spender: "0x3d88d9C4adC342cEff41855CF540844268390BE6", // TODO
+        _spender: config.getExchangeAddress(),
         _value: amount
       }),
       chainId: config.getChainId(),
       nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("approve").gasLimit)
+      gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
     return this.account.signEthereumTx(rawTx.raw);
   }
@@ -75,11 +73,11 @@ export class MetaMask {
 
   /**
    * Deposit to Dex
-   * @param symbol string symbol of token to deposit
-   * @param amount number amount to deposit, e.g. 1.5
-   * @param gasPrice in gwei
+   * @param symbol: string symbol of token to deposit
+   * @param amount: string number amount to deposit, e.g. '1.5'
+   * @param gasPrice: in gwei
    */
-  public async depositTo(symbol: string, amount: number, gasPrice: number) {
+  public async depositTo(symbol: string, amount: string, gasPrice: number) {
     try {
       const rawTx = await exchange.deposit(
         this.account,
@@ -95,11 +93,11 @@ export class MetaMask {
 
   /**
    * Withdraw from Dex
-   * @param symbol string symbol of token to withdraw
-   * @param amount number amount to withdraw, e.g. 1.5
-   * @param gasPrice in gwei
+   * @param symbol: string symbol of token to withdraw
+   * @param amount: string number amount to withdraw, e.g. '1.5'
+   * @param gasPrice: in gwei
    */
-  public async withdrawFrom(symbol: string, amount: number, gasPrice: number) {
+  public async withdrawFrom(symbol: string, amount: string, gasPrice: number) {
     try {
       const rawTx = await exchange.withdraw(
         this.account,
@@ -124,8 +122,8 @@ export class MetaMask {
    * @param tradingPubKeyX: trading public key X of account, decimal string
    * @param tradingPubKeyY: trading public key Y of account, decimal string
    * @param tradingPrivKey: trading private key of account, decimal string
-   * @param amountS: amount of token sell, in number
-   * @param amountB: amount of token buy, in number
+   * @param amountS: amount of token sell, in string number
+   * @param amountB: amount of token buy, in string number
    * @param orderId: next order ID, needed by order signature
    * @param validSince: valid beginning period of this order, SECOND in timestamp
    * @param validUntil: valid ending period of this order, SECOND in timestamp
@@ -140,8 +138,8 @@ export class MetaMask {
     tradingPubKeyX: string,
     tradingPubKeyY: string,
     tradingPrivKey: string,
-    amountS: number,
-    amountB: number,
+    amountS: string,
+    amountB: string,
     orderId: number,
     validSince: number,
     validUntil: number
@@ -158,9 +156,11 @@ export class MetaMask {
       order.tradingPubKeyY = tradingPubKeyY;
       order.tradingPrivKey = tradingPrivKey;
 
-      let bigNumber = fm.toBig(amountS).times(fm.toBig(1000000000000000000));
+      let tokenSell = config.getTokenBySymbol(tokenS);
+      let tokenBuy = config.getTokenBySymbol(tokenB);
+      let bigNumber = fm.toBig(amountS).times("1e" + tokenSell.digits);
       order.amountSInBN = fm.toBN(bigNumber);
-      bigNumber = fm.toBig(amountB).times(fm.toBig(1000000000000000000));
+      bigNumber = fm.toBig(amountB).times(fm.toBig("1e" + tokenBuy.digits));
       order.amountBInBN = fm.toBN(bigNumber);
       order.amountS = order.amountSInBN.toString(10);
       order.amountB = order.amountBInBN.toString(10);
