@@ -1,9 +1,8 @@
 import BN = require("bn.js");
-import { Bitstream } from "./bitstream";
-import * as constants from "./constants";
+import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, BlockType, DepositInfo, RingInfo } from "./types";
+import { Block, DepositInfo, RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -84,7 +83,7 @@ contract("Exchange", (accounts: string[]) => {
               1,
               blockVersion + 1,
               web3.utils.hexToBytes(bs.getData()),
-              constants.emptyBytes,
+              Constants.emptyBytes,
               { from: exchangeTestUtil.exchangeOperator }
             ),
             "CANNOT_VERIFY_BLOCK"
@@ -112,7 +111,7 @@ contract("Exchange", (accounts: string[]) => {
               2,
               blockVersion,
               web3.utils.hexToBytes(bs.getData()),
-              constants.emptyBytes,
+              Constants.emptyBytes,
               { from: exchangeTestUtil.exchangeOperator }
             ),
             "INVALID_EXCHANGE_ID"
@@ -140,7 +139,7 @@ contract("Exchange", (accounts: string[]) => {
               2,
               blockVersion,
               web3.utils.hexToBytes(bs.getData()),
-              constants.emptyBytes,
+              Constants.emptyBytes,
               { from: exchangeTestUtil.exchangeOperator }
             ),
             "INVALID_MERKLE_ROOT"
@@ -175,7 +174,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_MERKLE_ROOT"
@@ -212,7 +211,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_TIMESTAMP"
@@ -237,7 +236,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_TIMESTAMP"
@@ -278,7 +277,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_PROTOCOL_FEES"
@@ -300,7 +299,7 @@ contract("Exchange", (accounts: string[]) => {
                 2,
                 blockVersion,
                 web3.utils.hexToBytes(bs.getData()),
-                constants.emptyBytes,
+                Constants.emptyBytes,
                 { from: exchangeTestUtil.exchangeOperator }
               ),
               "INVALID_PROTOCOL_FEES"
@@ -401,7 +400,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_REQUEST_RANGE"
@@ -424,7 +423,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_REQUEST_RANGE"
@@ -447,7 +446,7 @@ contract("Exchange", (accounts: string[]) => {
                   8,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_REQUEST_RANGE"
@@ -470,7 +469,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_STARTING_HASH"
@@ -493,7 +492,7 @@ contract("Exchange", (accounts: string[]) => {
                   2,
                   blockVersion,
                   web3.utils.hexToBytes(bs.getData()),
-                  constants.emptyBytes,
+                  Constants.emptyBytes,
                   { from: exchangeTestUtil.exchangeOperator }
                 ),
                 "INVALID_ENDING_HASH"
@@ -578,8 +577,8 @@ contract("Exchange", (accounts: string[]) => {
           for (const block of blocks) {
             await exchangeTestUtil.verifyBlocks([block]);
           }
-          const numBlocks = (await exchange.getBlockHeight()).toNumber();
-          const numBlocksFinalized = (await exchange.getNumBlocksFinalized()).toNumber();
+          const numBlocks = await exchangeTestUtil.getNumBlocksOnchain();
+          const numBlocksFinalized = await exchangeTestUtil.getNumBlocksFinalizedOnchain();
           assert.equal(
             numBlocksFinalized,
             numBlocks,
@@ -644,8 +643,8 @@ contract("Exchange", (accounts: string[]) => {
           // Verify all blocks at once
           await exchangeTestUtil.verifyBlocks(blocks);
 
-          const numBlocks = (await exchange.getBlockHeight()).toNumber();
-          const numBlocksFinalized = (await exchange.getNumBlocksFinalized()).toNumber();
+          const numBlocks = await exchangeTestUtil.getNumBlocksOnchain();
+          const numBlocksFinalized = await exchangeTestUtil.getNumBlocksFinalizedOnchain();
           assert.equal(
             numBlocksFinalized,
             numBlocks,
@@ -950,7 +949,7 @@ contract("Exchange", (accounts: string[]) => {
             blockFee = blockFee.add(deposit.fee);
           }
           await exchangeTestUtil.commitDeposits(exchangeId);
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
 
           // Try to withdraw before the block is finalized
           await expectThrow(
@@ -1001,7 +1000,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1036,7 +1035,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (everything burned)
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1073,7 +1072,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1112,7 +1111,8 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = (await exchange.getBlockHeight()) - 1;
+          const blockIdx =
+            (await exchangeTestUtil.getNumBlocksOnchain()) - 1 - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1151,7 +1151,8 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Withdraw the blockFee (half the complete block fee)
-          const blockIdx = (await exchange.getBlockHeight()) - 1;
+          const blockIdx =
+            (await exchangeTestUtil.getNumBlocksOnchain()) - 1 - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
             blockIdx,
             exchangeTestUtil.exchangeOperator,
@@ -1186,7 +1187,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
           // Try to withdraw a block fee from a  block type doesn't have any
-          const blockIdx = await exchange.getBlockHeight();
+          const blockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
           await expectThrow(
             exchange.withdrawBlockFee(
               blockIdx,
@@ -1209,7 +1210,7 @@ contract("Exchange", (accounts: string[]) => {
             2,
             0,
             web3.utils.hexToBytes("0x0"),
-            constants.emptyBytes,
+            Constants.emptyBytes,
             { from: exchangeTestUtil.testContext.orderOwners[0] }
           ),
           "UNAUTHORIZED"

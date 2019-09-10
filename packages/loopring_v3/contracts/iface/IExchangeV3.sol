@@ -169,6 +169,13 @@ contract IExchangeV3 is IExchange
         view
         returns (bool);
 
+    /// @dev Returns whether the exchange is in maintenance.
+    /// @return Returns true if the exchange is in maintenance, else false.
+    function isInMaintenance()
+        external
+        view
+        returns (bool);
+
     // -- Accounts --
 
     /// @dev Gets the number of accounts registered on this exchange.

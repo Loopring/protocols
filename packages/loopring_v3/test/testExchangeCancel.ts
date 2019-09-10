@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
 
@@ -31,7 +31,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1
+          orderID: 2 ** Constants.TREE_DEPTH_TRADING_HISTORY - 1
         },
         orderB: {
           tokenS: "GTO",
@@ -77,7 +77,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1
+          orderID: 2 ** Constants.TREE_DEPTH_TRADING_HISTORY - 1
         },
         orderB: {
           tokenS: "GTO",
@@ -119,7 +119,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "GTO",
           amountS: new BN(web3.utils.toWei("110", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1
+          orderID: 2 ** Constants.TREE_DEPTH_TRADING_HISTORY - 1
         },
         orderB: {
           tokenS: "GTO",
@@ -193,7 +193,7 @@ contract("Exchange", (accounts: string[]) => {
       );
       await exchangeTestUtil.commitCancels(exchangeId);
 
-      ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      ring.orderA.orderID += 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       ring.orderA.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderA);
 
@@ -243,7 +243,7 @@ contract("Exchange", (accounts: string[]) => {
           tokenB: "WETH",
           amountS: new BN(web3.utils.toWei("400", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
-          orderID: orderID + 2 ** constants.TREE_DEPTH_TRADING_HISTORY,
+          orderID: orderID + 2 ** Constants.TREE_DEPTH_TRADING_HISTORY,
           accountID: ringA.orderB.accountID,
           owner: ringA.orderB.owner
         },
@@ -309,7 +309,7 @@ contract("Exchange", (accounts: string[]) => {
         "0",
         "1",
         "0",
-        constants.zeroAddress,
+        Constants.zeroAddress,
         new BN(0)
       );
       await exchangeTestUtil.commitDeposits(exchangeId);

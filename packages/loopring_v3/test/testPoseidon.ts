@@ -1,9 +1,8 @@
 import BN = require("bn.js");
 import crypto = require("crypto");
 import { Artifacts } from "../util/Artifacts";
-import * as constants from "./constants";
+import { Constants, Poseidon } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
-import poseidon = require("./poseidon");
 
 contract("Poseidon", (accounts: string[]) => {
   const contracts = new Artifacts(artifacts);
@@ -11,7 +10,7 @@ contract("Poseidon", (accounts: string[]) => {
 
   const getRand = () => {
     const entropy = crypto.randomBytes(32);
-    return new BN(entropy.toString("hex"), 16).mod(constants.scalarField);
+    return new BN(entropy.toString("hex"), 16).mod(Constants.scalarField);
   };
 
   before(async () => {
@@ -19,7 +18,7 @@ contract("Poseidon", (accounts: string[]) => {
   });
 
   it("Poseidon t5/f6/p52", async () => {
-    const hasher = poseidon.createHash(5, 6, 52);
+    const hasher = Poseidon.createHash(5, 6, 52);
     // Test some random hashes
     const numIterations = 128;
     for (let i = 0; i < numIterations; i++) {
@@ -39,7 +38,7 @@ contract("Poseidon", (accounts: string[]) => {
     for (let i = 0; i < 5; i++) {
       const inputs: BN[] = [];
       for (let j = 0; j < 5; j++) {
-        inputs.push(i === j ? constants.scalarField : new BN(0));
+        inputs.push(i === j ? Constants.scalarField : new BN(0));
       }
       await expectThrow(
         poseidonContract.hash_t5f6p52(...inputs),
