@@ -6,16 +6,14 @@ import config from "../lib/wallet/config";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { updateHost } from "../lib/wallet/ethereum/utils";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
-import { DexAccount, OrderInfo } from "../model/types";
+import { OrderInfo } from "../model/types";
 
 export class Exchange {
-  private currentDexAccount: DexAccount;
   private currentWalletAccount: WalletAccount;
 
   // Init when web app launches
   private hasInitialized: boolean;
   public contractURL: string;
-  private accounts: Map<WalletAccount, DexAccount>;
 
   public constructor() {
     this.hasInitialized = false;
@@ -23,13 +21,8 @@ export class Exchange {
 
   public async init(contractURL: string) {
     console.log("init exchange");
-
-    config.getTokens();
-
-    this.contractURL = contractURL;
     updateHost(contractURL);
-
-    this.accounts = new Map<WalletAccount, DexAccount>();
+    this.contractURL = contractURL;
     this.hasInitialized = true;
   }
 
@@ -57,7 +50,7 @@ export class Exchange {
         keyPair.publicKeyX,
         keyPair.publicKeyY,
         "",
-        0,
+        "0",
         gasPrice
       );
       return {
@@ -74,7 +67,7 @@ export class Exchange {
     publicX: string,
     publicY: string,
     symbol: string,
-    amount: number,
+    amount: string,
     gasPrice: number
   ) {
     try {
@@ -109,7 +102,7 @@ export class Exchange {
         chainId: config.getChainId(),
         nonce: fm.toHex(nonce),
         gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-        gasLimit: fm.toHex(config.getGasLimitByType("create").gasLimit)
+        gasLimit: fm.toHex(config.getGasLimitByType("create").gasInWEI)
       });
     } catch (err) {
       console.error("Failed in method createOrUpdateAccount. Error: ", err);
@@ -120,7 +113,7 @@ export class Exchange {
   public async deposit(
     wallet: WalletAccount,
     symbol: string,
-    amount: number,
+    amount: string,
     gasPrice: number
   ) {
     let to, value, data: string;
@@ -162,7 +155,7 @@ export class Exchange {
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)), // todo
-          gasLimit: fm.toHex(config.getGasLimitByType("depositTo").gasLimit)
+          gasLimit: fm.toHex(config.getGasLimitByType("depositTo").gasInWEI)
         });
       }
     } catch (err) {
@@ -174,7 +167,7 @@ export class Exchange {
   public async withdraw(
     wallet: WalletAccount,
     symbol: string,
-    amount: number,
+    amount: string,
     gasPrice: number
   ) {
     let to, value, data: string;
@@ -203,7 +196,7 @@ export class Exchange {
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
           gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-          gasLimit: fm.toHex(config.getGasLimitByType("withdrawFrom").gasLimit)
+          gasLimit: fm.toHex(config.getGasLimitByType("withdrawFrom").gasInWEI)
         });
       }
     } catch (err) {
@@ -243,11 +236,11 @@ export class Exchange {
       Ry: order.tradingSigRy,
       s: order.tradingSigS
     };
-    console.log("\n######################################");
+    console.log("\n####################################");
     console.log("order.signature.Rx", order.signature.Rx);
     console.log("order.signature.Ry", order.signature.Ry);
     console.log("order.signature.s", order.signature.s);
-    console.log("\n######################################");
+    console.log("\n####################################");
 
     return order;
   }
@@ -380,10 +373,6 @@ export class Exchange {
     // simpleOrderCancellationReq.setSig(edDSASignature);
     //
     // return grpcClientService.cancelOrder(simpleOrderCancellationReq);
-  }
-
-  private getAccountId() {
-    return this.currentDexAccount.accountID;
   }
 
   private getAddress() {

@@ -10,15 +10,21 @@ describe("eddsa sign test", function() {
 
   before(async () => {});
 
-  it("signOrder", function(done) {
+  it("sign order", function(done) {
     const order = new OrderInfo();
     order.accountId = 14;
     order.exchangeId = 2;
     order.orderId = 0;
     order.tokenSId = 1;
     order.tokenBId = 3;
-    order.amountB = fm.toBN("200000000000000000000");
-    order.amountS = fm.toBN("100000000000000000000");
+
+    let bigNumber = fm.toBig("100000000000000000000");
+    order.amountSInBN = fm.toBN(bigNumber);
+    bigNumber = fm.toBig("200000000000000000000");
+    order.amountBInBN = fm.toBN(bigNumber);
+    order.amountS = order.amountSInBN.toString(10);
+    order.amountB = order.amountBInBN.toString(10);
+
     order.allOrNone = false;
     order.buy = true;
     order.validSince = 1562889050;
@@ -30,17 +36,18 @@ describe("eddsa sign test", function() {
     order.dualAuthPubKeyY =
       "13988417089423714365999155658785932995359651021112875121671679566610495100815";
 
-    const sig_expected = {
+    const expected = {
       Rx:
-        "1392831638855767888909228525141486718535676115241474867106958028260154150299",
+        "13651799909885976664251115226943539985598571675195809568932793750488772489104",
       Ry:
-        "4442260899531951092081675440942248551719241132649342104195219900458764826357",
+        "3369917775284329477708632590886050485924539204109267138771494392207843879746",
       s:
-        "545409791028477278330913711954571584440372221933064557654064435480272401532",
-      hash:
-        "16897219267575501329660852240897644379269300600349974465189740126871955587001"
+        "6837769863647504484029513326714077586748320692238588071121340945692285762515"
     };
-    exchange.signOrder(order);
+    let signedOrder = exchange.signOrder(order);
+    assert.strictEqual(signedOrder.signature.Rx, expected.Rx);
+    assert.strictEqual(signedOrder.signature.Ry, expected.Ry);
+    assert.strictEqual(signedOrder.signature.s, expected.s);
     done();
   });
 
@@ -54,7 +61,6 @@ describe("eddsa sign test", function() {
         "21709653362655094841217318150615954140561437115749994376567240539798473592233",
       secretKey: "1268930117"
     };
-
     assert.strictEqual(keyPair.publicKeyX, expected.publicKeyX);
     assert.strictEqual(keyPair.publicKeyY, expected.publicKeyY);
     assert.strictEqual(keyPair.secretKey, expected.secretKey);

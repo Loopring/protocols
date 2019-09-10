@@ -2,11 +2,10 @@
   "defaultGasPrice": 21,
   "defaultGasLimit": "0x7a120",
   "chainId": 1,
-  "exchangeId": 2,
+  "exchangeId": 1,
   "walletAddressId": 0,
   "maxFeeBips": 20,
-  "exchangeAddress": "0x3d88d9C4adC342cEff41855CF540844268390BE6",
-  "supportedTokenRInMarkets": ["WETH", "LRC", "USDT", "TUSD"],
+  "exchangeAddress": "0x0a12284E50e0D8df909D84f41bcAdaf57722b947",
   "markets": [
     {
       "tokenx": "LRC",
@@ -749,57 +748,57 @@
   "txs": [
     {
       "type": "eth_transfer",
-      "gasLimit": "0x5208"
+      "gasInWEI": 21000
     },
     {
       "type": "token_transfer",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "approve",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "withdraw",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "deposit",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "cancelOrder",
-      "gasLimit": "0x249f0"
+      "gasInWEI": 150000
     },
     {
       "type": "create",
-      "gasLimit": "0x7a1200"
+      "gasInWEI": 1000000
     },
     {
       "type": "depositTo",
-      "gasLimit": "0x7a1200"
+      "gasInWEI": 1000000
     },
     {
       "type": "withdrawFrom",
-      "gasLimit": "0x7a1200"
+      "gasInWEI": 1000000
     }
   ],
   "fees": [
     {
       "type": "create",
-      "feeInWEI": "100000000000000"
+      "feeInWEI": 11000000000000000
     },
     {
       "type": "update",
-      "feeInWEI": "100000000000000"
+      "feeInWEI": 10000000000000000
     },
     {
       "type": "deposit",
-      "feeInWEI": "100000000000000"
+      "feeInWEI": 10000000000000000
     },
     {
       "type": "withdraw",
-      "feeInWEI": "100000000000000"
+      "feeInWEI": 10000000000000000
     }
   ],
   "tokens": [
