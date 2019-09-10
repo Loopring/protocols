@@ -155,7 +155,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         view
         returns (bool registered);
 
-    /// @dev Checks if a protocol has been eanbled.
+    /// @dev Checks if a protocol has been enabled.
     /// @param protocol The address of the protocol.
     /// @return enabled True if the prococol is registered and enabled.
     function isProtocolEnabled(

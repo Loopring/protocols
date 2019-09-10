@@ -1,7 +1,6 @@
 import BN = require("bn.js");
-import { Bitstream } from "./bitstream";
-import * as constants from "./constants";
-import { fromFloat, roundToFloatValue } from "./float";
+import { Bitstream, Constants } from "loopringV3.js";
+import { fromFloat, roundToFloatValue } from "loopringV3.js";
 import { logDebug, logInfo } from "./logs";
 import {
   AccountLeaf,
@@ -52,7 +51,7 @@ export class Simulator {
     if (deposit.accountID === exchangeState.accounts.length) {
       // Make sure all tokens exist
       const balances: { [key: number]: Balance } = {};
-      for (let i = 0; i < constants.MAX_NUM_TOKENS; i++) {
+      for (let i = 0; i < Constants.MAX_NUM_TOKENS; i++) {
         balances[i] = {
           balance: new BN(0),
           tradeHistory: {}
@@ -70,8 +69,8 @@ export class Simulator {
     account.balances[deposit.tokenID].balance = account.balances[
       deposit.tokenID
     ].balance.add(deposit.amount);
-    if (account.balances[deposit.tokenID].balance.gt(constants.MAX_AMOUNT)) {
-      account.balances[deposit.tokenID].balance = constants.MAX_AMOUNT;
+    if (account.balances[deposit.tokenID].balance.gt(Constants.MAX_AMOUNT)) {
+      account.balances[deposit.tokenID].balance = Constants.MAX_AMOUNT;
     }
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
@@ -102,7 +101,7 @@ export class Simulator {
       const amountToWithdraw = shutdown ? balance : amountToWithdrawMin;
       const amountWithdrawn = roundToFloatValue(
         amountToWithdraw,
-        constants.Float28Encoding
+        Constants.Float28Encoding
       );
 
       let amountToSubtract = amountWithdrawn;
@@ -135,7 +134,7 @@ export class Simulator {
     exchangeState: ExchangeState,
     operatorAccountID: number
   ) {
-    const fee = roundToFloatValue(withdrawal.fee, constants.Float16Encoding);
+    const fee = roundToFloatValue(withdrawal.fee, Constants.Float16Encoding);
 
     const account = exchangeState.accounts[withdrawal.accountID];
     let balance = account.balances[withdrawal.tokenID].balance;
@@ -147,7 +146,7 @@ export class Simulator {
       : withdrawal.amount;
     const amountWithdrawn = roundToFloatValue(
       amountToWithdraw,
-      constants.Float28Encoding
+      Constants.Float28Encoding
     );
 
     // Update the Merkle tree with the input data
@@ -166,71 +165,6 @@ export class Simulator {
       exchangeStateAfter: newExchangeState
     };
     return simulatorReport;
-  }
-
-  public offchainWithdrawFromOnchainData(
-    bs: Bitstream,
-    blockSize: number,
-    withdrawalIndex: number,
-    exchangeState: ExchangeState
-  ) {
-    let offset = 0;
-
-    // General data
-    const exchangeID = bs.extractUint32(offset);
-    offset += 4 + 32 + 32;
-
-    const onchainDataOffset = offset;
-
-    // Jump to the specified withdrawal
-    const onchainDataSize = 7;
-    offset += withdrawalIndex * onchainDataSize;
-
-    // Extract onchain data
-    const token = bs.extractUint8(offset);
-    offset += 1;
-    const accountIdAndAmountWithdrawn = bs.extractUint48(offset);
-    offset += 6;
-
-    offset = onchainDataOffset + 32 + blockSize * onchainDataSize;
-
-    // General data
-    const operatorAccountID = bs.extractUint24(offset);
-    offset += 3;
-
-    // Jump to the specified withdrawal
-    const offchainDataSize = 3;
-    offset += withdrawalIndex * offchainDataSize;
-
-    // Extract offchain data
-    const feeToken = bs.extractUint8(offset);
-    offset += 1;
-    const fFee = bs.extractUint16(offset);
-    offset += 2;
-
-    // Further extraction of packed data
-    const accountID = Math.floor(accountIdAndAmountWithdrawn / 2 ** 28);
-    const fAmountWithdrawn = accountIdAndAmountWithdrawn & 0xfffffff;
-
-    // Decode the float values
-    const fee = fromFloat(fFee, constants.Float16Encoding);
-    const amountWithdrawn = fromFloat(
-      fAmountWithdrawn,
-      constants.Float28Encoding
-    );
-
-    // Update the Merkle tree with the onchain data
-    const newExchangeState = this.offchainWithdraw(
-      exchangeState,
-      operatorAccountID,
-      accountID,
-      token,
-      amountWithdrawn,
-      feeToken,
-      fee
-    );
-
-    return newExchangeState;
   }
 
   public offchainWithdraw(
@@ -266,62 +200,12 @@ export class Simulator {
     return newExchangeState;
   }
 
-  public cancelOrderFromOnchainData(
-    bs: Bitstream,
-    cancelIndex: number,
-    exchangeState: ExchangeState
-  ) {
-    let offset = 0;
-
-    // General data
-    const exchangeID = bs.extractUint32(offset);
-    offset += 4 + 32 + 32 + 32;
-
-    // General data
-    const operatorAccountID = bs.extractUint24(offset);
-    offset += 3;
-
-    // Jump to the specified withdrawal
-    const onchainDataSize = 9;
-    offset += cancelIndex * onchainDataSize;
-
-    // Extract onchain data
-    const accountIdAndOrderId = bs.extractUint40(offset);
-    offset += 5;
-    const orderToken = bs.extractUint8(offset);
-    offset += 1;
-    const feeToken = bs.extractUint8(offset);
-    offset += 1;
-    const fFee = bs.extractUint16(offset);
-    offset += 2;
-
-    // Further extraction of packed data
-    const accountID = Math.floor(accountIdAndOrderId / 2 ** 20);
-    const orderID = accountIdAndOrderId & 0xfffff;
-
-    // Decode the float values
-    const fee = fromFloat(fFee, constants.Float16Encoding);
-
-    // Update the Merkle tree with the onchain data
-    const newExchangeState = this.cancelOrder(
-      exchangeState,
-      operatorAccountID,
-      accountID,
-      orderToken,
-      orderID,
-      feeToken,
-      fee
-    );
-
-    return newExchangeState;
-  }
-
   public cancelOrderFromInputData(
     cancel: Cancel,
     exchangeState: ExchangeState,
     operatorAccountID: number
   ) {
-    const fee = roundToFloatValue(cancel.fee, constants.Float16Encoding);
+    const fee = roundToFloatValue(cancel.fee, Constants.Float16Encoding);
 
     // Update the Merkle tree with the input data
     const newExchangeState = this.cancelOrder(
@@ -354,7 +238,7 @@ export class Simulator {
 
     const account = newExchangeState.accounts[accountID];
     const tradeHistorySlot =
-      orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
 
     // Update balance
     account.balances[feeTokenID].balance = account.balances[
@@ -383,103 +267,6 @@ export class Simulator {
     operator.balances[feeTokenID].balance = operator.balances[
       feeTokenID
     ].balance.add(fee);
-
-    return newExchangeState;
-  }
-
-  public settleRingFromOnchainData(
-    data: Bitstream,
-    ringIndex: number,
-    exchangeState: ExchangeState
-  ) {
-    let offset = 0;
-
-    // General data
-    const exchangeID = data.extractUint32(offset);
-    offset += 4 + 32 + 32 + 4;
-    const protocolFeeTakerBips = data.extractUint8(offset);
-    offset += 1;
-    const protocolFeeMakerBips = data.extractUint8(offset);
-    offset += 1;
-    // LabelHash
-    offset += 32;
-    const operatorAccountID = data.extractUint24(offset);
-    offset += 3;
-
-    // Jump to the specified ring
-    const ringSize = 20;
-    offset += ringIndex * ringSize;
-
-    // Order IDs
-    const orderIds = data.extractUint40(offset);
-    offset += 5;
-
-    // Accounts
-    const accounts = data.extractUint40(offset);
-    offset += 5;
-
-    // Order A
-    const tokenA = data.extractUint8(offset);
-    offset += 1;
-    const fFillSA = data.extractUint24(offset);
-    offset += 3;
-    const orderDataA = data.extractUint8(offset);
-    offset += 1;
-
-    // Order B
-    const tokenB = data.extractUint8(offset);
-    offset += 1;
-    const fFillSB = data.extractUint24(offset);
-    offset += 3;
-    const orderDataB = data.extractUint8(offset);
-    offset += 1;
-
-    // Further extraction of packed data
-    const orderIdA = Math.floor(orderIds / 2 ** 20);
-    const orderIdB = orderIds & 0xfffff;
-
-    const orderOwnerA = Math.floor(accounts / 2 ** 20);
-    const orderOwnerB = accounts & 0xfffff;
-
-    const buyMaskA = orderDataA & 0b10000000;
-    const rebateMaskA = orderDataA & 0b01000000;
-    const feeOrRebateA = orderDataA & 0b00111111;
-    const buyA = buyMaskA > 0;
-    const feeBipsA = rebateMaskA > 0 ? 0 : feeOrRebateA;
-    const rebateBipsA = rebateMaskA > 0 ? feeOrRebateA : 0;
-
-    const buyMaskB = orderDataB & 0b10000000;
-    const rebateMaskB = orderDataB & 0b01000000;
-    const feeOrRebateB = orderDataB & 0b00111111;
-    const buyB = buyMaskB > 0;
-    const feeBipsB = rebateMaskB > 0 ? 0 : feeOrRebateB;
-    const rebateBipsB = rebateMaskB > 0 ? feeOrRebateB : 0;
-
-    // Decode the float values
-    const fillSA = fromFloat(fFillSA, constants.Float24Encoding);
-    const fillSB = fromFloat(fFillSB, constants.Float24Encoding);
-
-    // Update the Merkle tree with the onchain data
-    const { newExchangeState, s } = this.settleRing(
-      exchangeState,
-      protocolFeeTakerBips,
-      protocolFeeMakerBips,
-      operatorAccountID,
-      fillSA,
-      fillSB,
-      buyA,
-      buyB,
-      tokenA,
-      tokenB,
-      orderIdA,
-      orderOwnerA,
-      feeBipsA,
-      rebateBipsA,
-      orderIdB,
-      orderOwnerB,
-      feeBipsB,
-      rebateBipsB
-    );
 
     return newExchangeState;
   }
@@ -527,8 +314,8 @@ export class Simulator {
       fillB.B = new BN(0);
     }
 
-    fillA.S = roundToFloatValue(fillA.S, constants.Float24Encoding);
-    fillB.S = roundToFloatValue(fillB.S, constants.Float24Encoding);
+    fillA.S = roundToFloatValue(fillA.S, Constants.Float24Encoding);
+    fillB.S = roundToFloatValue(fillB.S, Constants.Float24Encoding);
 
     // Validate
     this.validateOrder(
@@ -818,7 +605,7 @@ export class Simulator {
     // Update trade history A
     {
       const tradeHistorySlotA =
-        orderIdA % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+        orderIdA % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       const tradeHistoryA =
         accountA.balances[tokenA].tradeHistory[tradeHistorySlotA];
       tradeHistoryA.filled =
@@ -834,7 +621,7 @@ export class Simulator {
     // Update trade history B
     {
       const tradeHistorySlotB =
-        orderIdB % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+        orderIdB % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       const tradeHistoryB =
         accountB.balances[tokenB].tradeHistory[tradeHistorySlotB];
       tradeHistoryB.filled =
@@ -1014,7 +801,7 @@ export class Simulator {
 
   private getTradeHistory(order: OrderInfo, accountData: any) {
     const tradeHistorySlot =
-      order.orderID % 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      order.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
     let tradeHistory =
       accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     if (!tradeHistory) {

@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { DepositInfo, RingInfo } from "./types";
 
@@ -68,7 +68,7 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.getRandomAmount(),
       "LRC",
       new BN(0),
-      exchangeTestUtil.getRandomInt(2 ** constants.NUM_BITS_LABEL)
+      exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
     );
   };
 
@@ -77,10 +77,10 @@ contract("Exchange", (accounts: string[]) => {
       exchangeId,
       depositInfo.accountID,
       exchangeTestUtil.getRandomInt(exchangeTestUtil.MAX_NUM_TOKENS),
-      exchangeTestUtil.getRandomInt(2 ** constants.TREE_DEPTH_TRADING_HISTORY),
+      exchangeTestUtil.getRandomInt(2 ** Constants.TREE_DEPTH_TRADING_HISTORY),
       1,
       new BN(0),
-      exchangeTestUtil.getRandomInt(2 ** constants.NUM_BITS_LABEL)
+      exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
     );
   };
 

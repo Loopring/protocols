@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, Deposit } from "./types";
 
@@ -68,7 +68,7 @@ contract("Operator", (accounts: string[]) => {
         deposit.amount,
         "LRC",
         new BN(0),
-        exchangeTestUtil.getRandomInt(2 ** constants.NUM_BITS_LABEL)
+        exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
       );
     }
     await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);

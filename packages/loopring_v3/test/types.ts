@@ -1,30 +1,5 @@
 import BN = require("bn.js");
-
-export enum BlockState {
-  NEW = 0,
-  COMMITTED,
-  VERIFIED
-}
-
-export enum BlockType {
-  RING_SETTLEMENT = 0,
-  DEPOSIT,
-  ONCHAIN_WITHDRAWAL,
-  OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION
-}
-
-export interface KeyPair {
-  publicKeyX: string;
-  publicKeyY: string;
-  secretKey: string;
-}
-
-export interface Signature {
-  Rx: string;
-  Ry: string;
-  s: string;
-}
+import { BlockState, BlockType, Signature } from "loopringV3.js";
 
 export interface OrderInfo {
   owner?: string;
@@ -94,13 +69,15 @@ export interface RingBlock {
 }
 
 export interface Deposit {
+  exchangeId: number;
   depositIdx: number;
   accountID: number;
-  secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
   tokenID: number;
   amount: BN;
+  timestamp?: number;
+  transactionHash?: string;
 }
 
 export interface DepositBlock {
@@ -113,13 +90,14 @@ export interface DepositBlock {
 }
 
 export interface WithdrawalRequest {
+  exchangeId: number;
   accountID: number;
   tokenID: number;
   amount: BN;
 
-  feeTokenID: number;
-  fee: BN;
-  label: number;
+  feeTokenID?: number;
+  fee?: BN;
+  label?: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
@@ -127,6 +105,8 @@ export interface WithdrawalRequest {
   withdrawalFee?: BN;
 
   signature?: Signature;
+  timestamp?: number;
+  transactionHash?: string;
 }
 
 export interface Withdrawal {
@@ -172,11 +152,22 @@ export interface Block {
   blockType: BlockType;
   blockSize: number;
   blockVersion: number;
+  blockState: BlockState;
+  operator: string;
+  origin: string;
   operatorId: number;
+  data: string;
+  offchainData: string;
   compressedData: string;
   publicDataHash: string;
   publicInput: string;
   proof?: string[];
+  blockFeeWithdrawn: boolean;
+  blockFeeAmountWithdrawn?: BN;
+  committedTimestamp: number;
+  verifiedTimestamp?: number;
+  finalizedTimestamp?: number;
+  transactionHash: string;
 }
 
 export interface Account {

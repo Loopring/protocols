@@ -1,8 +1,8 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, BlockType, DepositInfo, RingInfo } from "./types";
+import { Block, RingInfo } from "./types";
 
 const BlockVerifier = artifacts.require("BlockVerifier");
 
@@ -446,7 +446,7 @@ contract("BlockVerifier", (accounts: string[]) => {
           onchainDataAvailability,
           commitBlocksSize1[0].blockSize,
           commitBlocksSize1[0].blockVersion,
-          [constants.scalarField],
+          [Constants.scalarField],
           commitBlocksSize1[0].proof,
           { from: anyone }
         ),
@@ -590,7 +590,7 @@ contract("BlockVerifier", (accounts: string[]) => {
         publicInputs.length
       );
       publicInputs[publicDataIdxToModify] =
-        "0x" + constants.scalarField.toString(16);
+        "0x" + Constants.scalarField.toString(16);
 
       await expectThrow(
         blockVerifier.verifyProofs(
