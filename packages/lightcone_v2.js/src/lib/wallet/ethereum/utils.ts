@@ -20,7 +20,7 @@ export async function getTransactionCount(address, tag) {
     try {
       validator.validate({ value: tag, type: "RPC_TAG" });
     } catch (e) {
-      throw new Error("Invalid tag, must be one of latest, pending,earliest");
+      throw new Error("Invalid tag, must be one of latest, pending, earliest");
     }
   }
   const params = [address, tag];

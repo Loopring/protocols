@@ -1,5 +1,3 @@
-import { RestApiServer } from "./api/restApiServer";
-
 import common from "./lib/wallet/common";
 import ethereum from "./lib/wallet/ethereum";
 import ContractUtils from "./lib/wallet/ethereum/contracts/Contracts";
@@ -11,7 +9,6 @@ import { MetaMask } from "./wallet/metaMask";
 import { privateKey } from "./wallet/privateKey";
 
 export {
-  RestApiServer,
   common,
   ethereum,
   exchange,
