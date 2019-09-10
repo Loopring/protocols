@@ -1,4 +1,4 @@
-import fs = require("fs");
+const fs = require("fs");
 import Web3 from "web3";
 import { Constants } from "./constants";
 import { ProtocolV3 } from "./protocol_v3";
@@ -34,9 +34,14 @@ export class Explorer {
     this.syncedToEthereumBlockIdx = 0;
 
     const ABIPath = "ABI/version30/";
-    this.universalRegistryAbi = fs.readFileSync(ABIPath + "IUniversalRegistry.abi", "ascii");
+    this.universalRegistryAbi = fs.readFileSync(
+      ABIPath + "IUniversalRegistry.abi",
+      "ascii"
+    );
 
-    this.universalRegistry = new web3.eth.Contract(JSON.parse(this.universalRegistryAbi));
+    this.universalRegistry = new web3.eth.Contract(
+      JSON.parse(this.universalRegistryAbi)
+    );
     this.universalRegistry.options.address = this.universalRegistryAddress.toLowerCase();
 
     // Get the latest owner
@@ -53,10 +58,13 @@ export class Explorer {
     }
 
     // Process the events
-    const events = await this.universalRegistry.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
+    const events = await this.universalRegistry.getPastEvents("allEvents", {
+      fromBlock: this.syncedToEthereumBlockIdx + 1,
+      toBlock: ethereumBlockTo
+    });
     for (const event of events) {
       if (event.event === "ProtocolRegistered") {
-          await this.processProtocolRegistered(event);
+        await this.processProtocolRegistered(event);
       } else if (event.event === "ProtocolEnabled") {
         await this.processProtocolEnabled(event);
       } else if (event.event === "ProtocolDisabled") {
@@ -135,7 +143,10 @@ export class Explorer {
    * @return  The exchange with the ID
    */
   public getExchangeById(exchangeId: number) {
-    assert(exchangeId > 0 && exchangeId <= this.exchanges.length, "invalid exchangeId");
+    assert(
+      exchangeId > 0 && exchangeId <= this.exchanges.length,
+      "invalid exchangeId"
+    );
     return this.exchanges[exchangeId - 1];
   }
 
@@ -182,9 +193,14 @@ export class Explorer {
 
   private async processProtocolRegistered(event: any) {
     const version = event.returnValues.version;
-    if(version === "3.0") {
+    if (version === "3.0") {
       const protocol = new ProtocolV3();
-      protocol.initialize(this.web3, event.returnValues.protocol,  event.returnValues.implementationManager, version);
+      protocol.initialize(
+        this.web3,
+        event.returnValues.protocol,
+        event.returnValues.implementationManager,
+        version
+      );
       this.protocols.push(protocol);
       if (this.defaultProtocolAddress === Constants.zeroAddress) {
         this.defaultProtocolAddress = protocol.getAddress();
@@ -213,10 +229,21 @@ export class Explorer {
     assert(protocol !== undefined, "unknown protocol");
 
     const exchange = new ExchangeV3();
-    await exchange.initialize(this.web3, event.returnValues.exchangeAddress, parseInt(event.returnValues.exchangeId), event.returnValues.owner,
-                              JSON.parse(event.returnValues.onchainDataAvailability), parseInt(event.returnValues.forgeMode),
-                              protocol, event.returnValues.implementation);
-    assert.equal(exchange.getExchangeId(), this.exchanges.length + 1, "unexpected exchange id");
+    await exchange.initialize(
+      this.web3,
+      event.returnValues.exchangeAddress,
+      parseInt(event.returnValues.exchangeId),
+      event.returnValues.owner,
+      JSON.parse(event.returnValues.onchainDataAvailability),
+      parseInt(event.returnValues.forgeMode),
+      protocol,
+      event.returnValues.implementation
+    );
+    assert.equal(
+      exchange.getExchangeId(),
+      this.exchanges.length + 1,
+      "unexpected exchange id"
+    );
     this.exchanges.push(exchange);
   }
 

@@ -1,9 +1,9 @@
-import BN = require("bn.js");
-import fs = require("fs");
+import BN from "bn.js";
+const fs = require("fs");
 import Web3 from "web3";
 import { Bitstream } from "./bitstream";
 import { Constants } from "./constants";
-import poseidon = require("./poseidon");
+const poseidon = require("./poseidon");
 import { ProtocolV3 } from "./protocol_v3";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 import {

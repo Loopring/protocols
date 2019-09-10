@@ -1,6 +1,6 @@
 import { BigNumber } from "bignumber.js";
-import BN = require("bn.js");
-import abi = require("ethereumjs-abi");
+import BN from "bn.js";
+const abi = require("ethereumjs-abi");
 
 export class Bitstream {
   private data: string;

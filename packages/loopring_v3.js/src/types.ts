@@ -1,4 +1,4 @@
-import BN = require("bn.js");
+import BN from "bn.js";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 
 /**
@@ -19,7 +19,7 @@ export enum BlockState {
   NEW = 0,
   COMMITTED,
   VERIFIED,
-  FINALIZED,
+  FINALIZED
 }
 
 /**
@@ -29,7 +29,7 @@ export enum ForgeMode {
   AUTO_UPGRADABLE = 0,
   MANUAL_UPGRADABLE,
   PROXIED,
-  NATIVE,
+  NATIVE
 }
 
 /**
@@ -193,7 +193,7 @@ export interface Trade {
   /** Whether the taker order is a buy or sell order. */
   buyA: boolean;
   /** The token the taker order sells. */
-  tokenA: number,
+  tokenA: number;
   /** The amount of tokens (in tokenS) the taker sells. */
   fillSA: BN;
   /** The fee (in tokenB) paid by the taker. */
@@ -210,7 +210,7 @@ export interface Trade {
   /** Whether the maker order is a buy or sell order. */
   buyB: boolean;
   /** The token the maker order sells. */
-  tokenB: number,
+  tokenB: number;
   /** The amount of tokens (in tokenS) the maker sells. */
   fillSB: BN;
   /** The fee (in tokenB) paid by the maker. */
@@ -371,7 +371,6 @@ export interface WithdrawFromMerkleTreeData {
   /** The Merkle proof for the balance leaf. */
   balanceMerkleProof: string[];
 }
-
 
 /**
  * The keypair data for EdDSA.

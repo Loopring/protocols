@@ -1,8 +1,8 @@
-import BN = require("bn.js");
+import BN from "bn.js";
 import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, OrderCancellation, ExchangeState} from "../types";
+import { Account, Block, OrderCancellation, ExchangeState } from "../types";
 
 /**
  * Processes order cancellation requests.
@@ -50,11 +50,15 @@ export class OrderCancellationProcessor {
           orderTokenID,
           orderID,
           feeTokenID,
-          fee,
+          fee
         };
         orderCancellations.push(orderCancellation);
 
-        this.processOrderCancellation(state, operatorAccountID, orderCancellation);
+        this.processOrderCancellation(
+          state,
+          operatorAccountID,
+          orderCancellation
+        );
       }
     } else {
       for (let i = 0; i < block.blockSize; i++) {
@@ -66,7 +70,7 @@ export class OrderCancellationProcessor {
           orderTokenID: 0,
           orderID: 0,
           feeTokenID: 0,
-          fee: new BN(0),
+          fee: new BN(0)
         };
         orderCancellations.push(orderCancellation);
       }
@@ -74,22 +78,38 @@ export class OrderCancellationProcessor {
     return orderCancellations;
   }
 
-  public static processOrderCancellation(state: ExchangeState, operatorAccountID: number, orderCancellation: OrderCancellation) {
+  public static processOrderCancellation(
+    state: ExchangeState,
+    operatorAccountID: number,
+    orderCancellation: OrderCancellation
+  ) {
     const account = state.accounts[orderCancellation.accountID];
-    account.balances[orderCancellation.orderTokenID] = account.balances[orderCancellation.orderTokenID] || { balance: new BN(0), tradeHistory: {} };
-    account.balances[orderCancellation.feeTokenID] = account.balances[orderCancellation.feeTokenID] || { balance: new BN(0), tradeHistory: {} };
+    account.balances[orderCancellation.orderTokenID] = account.balances[
+      orderCancellation.orderTokenID
+    ] || { balance: new BN(0), tradeHistory: {} };
+    account.balances[orderCancellation.feeTokenID] = account.balances[
+      orderCancellation.feeTokenID
+    ] || { balance: new BN(0), tradeHistory: {} };
 
-    const tradeHistorySlot = orderCancellation.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+    const tradeHistorySlot =
+      orderCancellation.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
 
     // Update balance
-    account.balances[orderCancellation.feeTokenID].balance = account.balances[orderCancellation.feeTokenID].balance.sub(orderCancellation.fee);
+    account.balances[orderCancellation.feeTokenID].balance = account.balances[
+      orderCancellation.feeTokenID
+    ].balance.sub(orderCancellation.fee);
     account.nonce++;
 
     // Update trade history
-    account.balances[orderCancellation.orderTokenID].tradeHistory[tradeHistorySlot] =
-      account.balances[orderCancellation.orderTokenID].tradeHistory[tradeHistorySlot] ||
-      {filled: new BN(0), cancelled: false, orderID: 0};
-    const tradeHistory = account.balances[orderCancellation.orderTokenID].tradeHistory[tradeHistorySlot];
+    account.balances[orderCancellation.orderTokenID].tradeHistory[
+      tradeHistorySlot
+    ] = account.balances[orderCancellation.orderTokenID].tradeHistory[
+      tradeHistorySlot
+    ] || { filled: new BN(0), cancelled: false, orderID: 0 };
+    const tradeHistory =
+      account.balances[orderCancellation.orderTokenID].tradeHistory[
+        tradeHistorySlot
+      ];
     if (tradeHistory.orderID < orderCancellation.orderID) {
       tradeHistory.filled = new BN(0);
     }
@@ -98,8 +118,12 @@ export class OrderCancellationProcessor {
 
     // Update operator
     const operator = state.accounts[operatorAccountID];
-    operator.balances[orderCancellation.feeTokenID] = operator.balances[orderCancellation.feeTokenID] || { balance: new BN(0), tradeHistory: {} };
-    operator.balances[orderCancellation.feeTokenID].balance = operator.balances[orderCancellation.feeTokenID].balance.add(orderCancellation.fee);
+    operator.balances[orderCancellation.feeTokenID] = operator.balances[
+      orderCancellation.feeTokenID
+    ] || { balance: new BN(0), tradeHistory: {} };
+    operator.balances[orderCancellation.feeTokenID].balance = operator.balances[
+      orderCancellation.feeTokenID
+    ].balance.add(orderCancellation.fee);
   }
 
   public static revertBlock(state: ExchangeState, block: Block) {

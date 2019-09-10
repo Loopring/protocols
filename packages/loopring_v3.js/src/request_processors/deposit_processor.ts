@@ -1,7 +1,7 @@
-import BN = require("bn.js");
+import BN from "bn.js";
 import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
-import {Account, Block, Deposit, ExchangeState} from "../types";
+import { Account, Block, Deposit, ExchangeState } from "../types";
 
 /**
  * Processes deposit requests.
@@ -38,15 +38,20 @@ export class DepositProcessor {
         publicKeyX: "0",
         publicKeyY: "0",
         nonce: 0,
-        balances: {},
+        balances: {}
       };
       state.accounts.push(newAccount);
     }
     const account = state.accounts[deposit.accountID];
-    account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || { balance: new BN(0), tradeHistory: {} };
+    account.balances[deposit.tokenID] = account.balances[deposit.tokenID] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
 
     // Update state
-    account.balances[deposit.tokenID].balance = account.balances[deposit.tokenID].balance.add(deposit.amount);
+    account.balances[deposit.tokenID].balance = account.balances[
+      deposit.tokenID
+    ].balance.add(deposit.amount);
     if (account.balances[deposit.tokenID].balance.gt(Constants.MAX_AMOUNT)) {
       account.balances[deposit.tokenID].balance = Constants.MAX_AMOUNT;
     }

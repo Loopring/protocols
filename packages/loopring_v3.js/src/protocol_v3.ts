@@ -1,5 +1,5 @@
-import BN = require("bn.js");
-import fs = require("fs");
+import BN from "bn.js";
+const fs = require("fs");
 import Web3 from "web3";
 
 interface StakeAmounts {
@@ -34,7 +34,12 @@ export class ProtocolV3 {
    * @param   loopringAddress                The address of the protocol address
    * @param   version                        The version of the protocol
    */
-  public async initialize(web3: Web3, loopringAddress: string, implementationManagerAddress: string, version: string) {
+  public async initialize(
+    web3: Web3,
+    loopringAddress: string,
+    implementationManagerAddress: string,
+    version: string
+  ) {
     this.web3 = web3;
     this.loopringAddress = loopringAddress;
     this.implementationManagerAddress = implementationManagerAddress;
@@ -63,7 +68,10 @@ export class ProtocolV3 {
     }
 
     // Process the events
-    const events = await this.loopring.getPastEvents("allEvents", {fromBlock: this.syncedToEthereumBlockIdx + 1, toBlock: ethereumBlockTo});
+    const events = await this.loopring.getPastEvents("allEvents", {
+      fromBlock: this.syncedToEthereumBlockIdx + 1,
+      toBlock: ethereumBlockTo
+    });
     for (const event of events) {
       if (event.event === "ExchangeStakeDeposited") {
         await this.processExchangeStakeDeposited(event);
@@ -136,7 +144,10 @@ export class ProtocolV3 {
    * @return  The amount staked in LRC
    */
   public getExchangeStake(exchangeId: number) {
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
     return this.stakeAmounts[exchangeId].exchangeStake;
   }
 
@@ -146,7 +157,10 @@ export class ProtocolV3 {
    * @return  The amount staked in LRC
    */
   public getProtocolFeeStake(exchangeId: number) {
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
     return this.stakeAmounts[exchangeId].protocolFeeStake;
   }
 
@@ -155,36 +169,61 @@ export class ProtocolV3 {
   private async processExchangeStakeDeposited(event: any) {
     const exchangeId = parseInt(event.returnValues.exchangeId);
     const amount = new BN(event.returnValues.amount);
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
-    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[exchangeId].exchangeStake.add(amount);
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
+    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[
+      exchangeId
+    ].exchangeStake.add(amount);
   }
 
   private async processExchangeStakeWithdrawn(event: any) {
     const exchangeId = parseInt(event.returnValues.exchangeId);
     const amount = new BN(event.returnValues.amount);
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
-    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[exchangeId].exchangeStake.sub(amount);
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
+    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[
+      exchangeId
+    ].exchangeStake.sub(amount);
   }
 
   private async processExchangeStakeBurned(event: any) {
     const exchangeId = parseInt(event.returnValues.exchangeId);
     const amount = new BN(event.returnValues.amount);
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
-    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[exchangeId].exchangeStake.sub(amount);
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
+    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[
+      exchangeId
+    ].exchangeStake.sub(amount);
   }
 
   private async processProtocolFeeStakeDeposited(event: any) {
     const exchangeId = parseInt(event.returnValues.exchangeId);
     const amount = new BN(event.returnValues.amount);
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
-    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[exchangeId].exchangeStake.add(amount);
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
+    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[
+      exchangeId
+    ].exchangeStake.add(amount);
   }
 
   private async processProtocolFeeStakeWithdrawn(event: any) {
     const exchangeId = parseInt(event.returnValues.exchangeId);
     const amount = new BN(event.returnValues.amount);
-    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || { exchangeStake: new BN(0), protocolFeeStake: new BN(0) };
-    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[exchangeId].exchangeStake.sub(amount);
+    this.stakeAmounts[exchangeId] = this.stakeAmounts[exchangeId] || {
+      exchangeStake: new BN(0),
+      protocolFeeStake: new BN(0)
+    };
+    this.stakeAmounts[exchangeId].exchangeStake = this.stakeAmounts[
+      exchangeId
+    ].exchangeStake.sub(amount);
   }
 
   private async processOwnershipTransferred(event: any) {

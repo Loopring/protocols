@@ -1,4 +1,4 @@
-import BN = require("bn.js");
+import BN from "bn.js";
 import { FloatEncoding } from "./float";
 
 export class Constants {
@@ -27,16 +27,6 @@ export class Constants {
   static readonly Float16Encoding: FloatEncoding = {
     numBitsExponent: 5,
     numBitsMantissa: 11,
-    exponentBase: 10
-  };
-  static readonly Float12Encoding: FloatEncoding = {
-    numBitsExponent: 5,
-    numBitsMantissa: 7,
-    exponentBase: 10
-  };
-  static readonly Float8Encoding: FloatEncoding = {
-    numBitsExponent: 5,
-    numBitsMantissa: 3,
     exponentBase: 10
   };
 

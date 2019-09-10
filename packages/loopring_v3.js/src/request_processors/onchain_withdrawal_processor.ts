@@ -1,8 +1,8 @@
-import BN = require("bn.js");
+import BN from "bn.js";
 import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, OnchainWithdrawal, ExchangeState} from "../types";
+import { Account, Block, OnchainWithdrawal, ExchangeState } from "../types";
 
 /**
  * Processes on-chain withdrawal requests.
@@ -16,20 +16,27 @@ export class OnchainWithdrawalProcessor {
     const length = data.extractUint32(offset);
     offset += 4;
 
-    const shutdown = (length === 0);
+    const shutdown = length === 0;
 
     const withdrawals: OnchainWithdrawal[] = [];
     for (let i = 0; i < (shutdown ? block.blockSize : length); i++) {
       const approvedWitdrawal = data.extractUint56(offset + i * 7);
 
-      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xFF;
-      const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xFFFFF;
-      const amountWithdrawn = fromFloat(approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(), Constants.Float28Encoding);
+      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xff;
+      const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xfffff;
+      const amountWithdrawn = fromFloat(
+        approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(),
+        Constants.Float28Encoding
+      );
 
       if (!shutdown) {
         const onchainWithdrawal = state.onchainWithdrawals[startIdx + i];
         assert.equal(tokenID, onchainWithdrawal.tokenID, "unexpected tokenID");
-        assert.equal(accountID, onchainWithdrawal.accountID, "unexpected accountID");
+        assert.equal(
+          accountID,
+          onchainWithdrawal.accountID,
+          "unexpected accountID"
+        );
 
         onchainWithdrawal.amountWithdrawn = amountWithdrawn;
         onchainWithdrawal.blockIdx = block.blockIdx;
@@ -46,7 +53,7 @@ export class OnchainWithdrawalProcessor {
           tokenID,
           amountRequested: new BN(0),
           amountWithdrawn,
-          transactionHash: Constants.zeroAddress,
+          transactionHash: Constants.zeroAddress
         };
         this.processOnchainWithdrawal(state, shutdown, onchainWithdrawal);
       }
@@ -54,18 +61,28 @@ export class OnchainWithdrawalProcessor {
     return withdrawals;
   }
 
-  public static processOnchainWithdrawal(state: ExchangeState, shutdown: boolean, onchainWithdrawal: OnchainWithdrawal) {
+  public static processOnchainWithdrawal(
+    state: ExchangeState,
+    shutdown: boolean,
+    onchainWithdrawal: OnchainWithdrawal
+  ) {
     // When a withdrawal is done before the deposit (account creation) we shouldn't
     // do anything. Just leave everything as it is.
     if (onchainWithdrawal.accountID < state.accounts.length) {
       const account = state.accounts[onchainWithdrawal.accountID];
-      account.balances[onchainWithdrawal.tokenID] = account.balances[onchainWithdrawal.tokenID] || { balance: new BN(0), tradeHistory: {} };
+      account.balances[onchainWithdrawal.tokenID] = account.balances[
+        onchainWithdrawal.tokenID
+      ] || { balance: new BN(0), tradeHistory: {} };
 
       const balance = account.balances[onchainWithdrawal.tokenID].balance;
-      const amountToSubtract = shutdown ? balance : onchainWithdrawal.amountWithdrawn;
+      const amountToSubtract = shutdown
+        ? balance
+        : onchainWithdrawal.amountWithdrawn;
 
       // Update balance
-      account.balances[onchainWithdrawal.tokenID].balance = account.balances[onchainWithdrawal.tokenID].balance.sub(amountToSubtract);
+      account.balances[onchainWithdrawal.tokenID].balance = account.balances[
+        onchainWithdrawal.tokenID
+      ].balance.sub(amountToSubtract);
 
       if (shutdown) {
         account.publicKeyX = "0";

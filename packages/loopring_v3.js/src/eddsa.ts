@@ -2,7 +2,7 @@
 // https://github.com/iden3/circomlib
 
 const createBlakeHash = require("blake-hash");
-import crypto = require("crypto");
+const crypto = require("crypto");
 const bigInt = require("snarkjs").bigInt;
 const babyJub = require("./babyjub");
 const poseidon = require("./poseidon.js");

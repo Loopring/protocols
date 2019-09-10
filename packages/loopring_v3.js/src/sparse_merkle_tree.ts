@@ -1,4 +1,4 @@
-import poseidon = require("./poseidon");
+const poseidon = require("./poseidon");
 
 class EphemDB {
   private kv: { [key: string]: string };
@@ -39,15 +39,15 @@ export class SparseMerkleTree {
   public newTree(defaultLeafHash: string) {
     let h = defaultLeafHash;
     for (let i = 0; i < this.depth; i++) {
-        const newh = this.hasher(new Array(4).fill(h)).toString(10);
-        this.db.put(newh, new Array(4).fill(h));
-        h = newh;
+      const newh = this.hasher(new Array(4).fill(h)).toString(10);
+      this.db.put(newh, new Array(4).fill(h));
+      h = newh;
     }
     this.root = h;
   }
 
   public update(address: number, value: string) {
-    let v = this.root
+    let v = this.root;
     let path = address;
     let path2 = address;
 
@@ -55,7 +55,9 @@ export class SparseMerkleTree {
     for (let i = 0; i < this.depth; i++) {
       const children = this.db.get(v);
       sidenodes.push(children);
-      const child_index = Math.floor(path / Math.pow(this.numChildren, this.depth - 1)) % this.numChildren;
+      const child_index =
+        Math.floor(path / Math.pow(this.numChildren, this.depth - 1)) %
+        this.numChildren;
       v = children[child_index];
       path *= this.numChildren;
     }
@@ -72,7 +74,7 @@ export class SparseMerkleTree {
       }
       const newv = this.hasher(leafs).toString(10);
       this.db.put(newv, leafs);
-      path2 = Math.floor(path2 / this.numChildren)
+      path2 = Math.floor(path2 / this.numChildren);
       v = newv;
     }
 
@@ -84,11 +86,15 @@ export class SparseMerkleTree {
     let path = address;
     const proof = new Array(this.depth * (this.numChildren - 1));
     for (let i = 0; i < this.depth; i++) {
-      const child_index = Math.floor(path / Math.pow(this.numChildren, this.depth - 1)) % this.numChildren;
+      const child_index =
+        Math.floor(path / Math.pow(this.numChildren, this.depth - 1)) %
+        this.numChildren;
       let proofIdx = 0;
       for (let c = 0; c < this.numChildren; c++) {
         if (c !== child_index) {
-          proof[(this.depth - 1 - i) * (this.numChildren - 1) + proofIdx++] = this.db.get(v)[c];
+          proof[
+            (this.depth - 1 - i) * (this.numChildren - 1) + proofIdx++
+          ] = this.db.get(v)[c];
         }
       }
       v = this.db.get(v)[child_index];
@@ -102,7 +108,7 @@ export class SparseMerkleTree {
     let path = address;
     let v = value;
     let proofIdx = 0;
-    for (let i  = 0; i < this.depth; i++) {
+    for (let i = 0; i < this.depth; i++) {
       const inputs = [];
       for (let c = 0; c < this.numChildren; c++) {
         if (path % this.numChildren == c) {

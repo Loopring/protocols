@@ -1,8 +1,8 @@
-import BN = require("bn.js");
+import BN from "bn.js";
 import { Bitstream } from "../bitstream";
 import { Constants } from "../constants";
 import { fromFloat } from "../float";
-import {Account, Block, ExchangeState, Trade} from "../types";
+import { Account, Block, ExchangeState, Trade } from "../types";
 
 interface SettlementValues {
   fillSA: BN;
@@ -140,7 +140,7 @@ export class RingSettlementProcessor {
           fillSB: settlementValues.fillSB,
           feeB: settlementValues.feeB,
           protocolFeeB: settlementValues.protocolFeeB,
-          rebateB: settlementValues.rebateB,
+          rebateB: settlementValues.rebateB
         };
         trades.push(trade);
 
@@ -173,7 +173,7 @@ export class RingSettlementProcessor {
           fillSB: new BN(0),
           feeB: new BN(0),
           protocolFeeB: new BN(0),
-          rebateB: new BN(0),
+          rebateB: new BN(0)
         };
         trades.push(trade);
       }
@@ -181,61 +181,149 @@ export class RingSettlementProcessor {
     return trades;
   }
 
-  private static processRingSettlement(state: ExchangeState, operatorId: number, trade: Trade) {
+  private static processRingSettlement(
+    state: ExchangeState,
+    operatorId: number,
+    trade: Trade
+  ) {
     // Update accountA
     const accountA = state.accounts[trade.accountIdA];
-    accountA.balances[trade.tokenA] = accountA.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
-    accountA.balances[trade.tokenB] = accountA.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
+    accountA.balances[trade.tokenA] = accountA.balances[trade.tokenA] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
+    accountA.balances[trade.tokenB] = accountA.balances[trade.tokenB] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
 
-    accountA.balances[trade.tokenA].balance = accountA.balances[trade.tokenA].balance.sub(trade.fillSA);
-    accountA.balances[trade.tokenB].balance = accountA.balances[trade.tokenB].balance.add(trade.fillSB.sub(trade.feeA).add(trade.rebateA));
+    accountA.balances[trade.tokenA].balance = accountA.balances[
+      trade.tokenA
+    ].balance.sub(trade.fillSA);
+    accountA.balances[trade.tokenB].balance = accountA.balances[
+      trade.tokenB
+    ].balance.add(trade.fillSB.sub(trade.feeA).add(trade.rebateA));
 
     // Update accountB
     const accountB = state.accounts[trade.accountIdB];
-    accountB.balances[trade.tokenB] = accountB.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
-    accountB.balances[trade.tokenA] = accountB.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
+    accountB.balances[trade.tokenB] = accountB.balances[trade.tokenB] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
+    accountB.balances[trade.tokenA] = accountB.balances[trade.tokenA] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
 
-    accountB.balances[trade.tokenB].balance = accountB.balances[trade.tokenB].balance.sub(trade.fillSB);
-    accountB.balances[trade.tokenA].balance = accountB.balances[trade.tokenA].balance.add(trade.fillSA.sub(trade.feeB).add(trade.rebateB));
+    accountB.balances[trade.tokenB].balance = accountB.balances[
+      trade.tokenB
+    ].balance.sub(trade.fillSB);
+    accountB.balances[trade.tokenA].balance = accountB.balances[
+      trade.tokenA
+    ].balance.add(trade.fillSA.sub(trade.feeB).add(trade.rebateB));
 
     // Update trade history A
     {
-      const tradeHistorySlotA = trade.orderIdA % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
-      accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] = accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] || {filled: new BN(0), cancelled: false, orderID: 0};
-      const tradeHistoryA = accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA];
-      tradeHistoryA.filled = trade.orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
-      tradeHistoryA.filled = tradeHistoryA.filled.add(trade.buyA ? trade.fillSB : trade.fillSA);
-      tradeHistoryA.cancelled = trade.orderIdA > tradeHistoryA.orderID ? false : tradeHistoryA.cancelled;
-      tradeHistoryA.orderID = trade.orderIdA > tradeHistoryA.orderID ? trade.orderIdA : tradeHistoryA.orderID;
+      const tradeHistorySlotA =
+        trade.orderIdA % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+      accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] = accountA
+        .balances[trade.tokenA].tradeHistory[tradeHistorySlotA] || {
+        filled: new BN(0),
+        cancelled: false,
+        orderID: 0
+      };
+      const tradeHistoryA =
+        accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA];
+      tradeHistoryA.filled =
+        trade.orderIdA > tradeHistoryA.orderID
+          ? new BN(0)
+          : tradeHistoryA.filled;
+      tradeHistoryA.filled = tradeHistoryA.filled.add(
+        trade.buyA ? trade.fillSB : trade.fillSA
+      );
+      tradeHistoryA.cancelled =
+        trade.orderIdA > tradeHistoryA.orderID
+          ? false
+          : tradeHistoryA.cancelled;
+      tradeHistoryA.orderID =
+        trade.orderIdA > tradeHistoryA.orderID
+          ? trade.orderIdA
+          : tradeHistoryA.orderID;
     }
     // Update trade history B
     {
-      const tradeHistorySlotB = trade.orderIdB % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
-      accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] = accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] || {filled: new BN(0), cancelled: false, orderID: 0};
-      const tradeHistoryB = accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB];
-      tradeHistoryB.filled = trade.orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
-      tradeHistoryB.filled = tradeHistoryB.filled.add(trade.buyB ? trade.fillSA : trade.fillSB);
-      tradeHistoryB.cancelled = trade.orderIdB > tradeHistoryB.orderID ? false : tradeHistoryB.cancelled;
-      tradeHistoryB.orderID = trade.orderIdB > tradeHistoryB.orderID ? trade.orderIdB : tradeHistoryB.orderID;
+      const tradeHistorySlotB =
+        trade.orderIdB % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+      accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] = accountB
+        .balances[trade.tokenB].tradeHistory[tradeHistorySlotB] || {
+        filled: new BN(0),
+        cancelled: false,
+        orderID: 0
+      };
+      const tradeHistoryB =
+        accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB];
+      tradeHistoryB.filled =
+        trade.orderIdB > tradeHistoryB.orderID
+          ? new BN(0)
+          : tradeHistoryB.filled;
+      tradeHistoryB.filled = tradeHistoryB.filled.add(
+        trade.buyB ? trade.fillSA : trade.fillSB
+      );
+      tradeHistoryB.cancelled =
+        trade.orderIdB > tradeHistoryB.orderID
+          ? false
+          : tradeHistoryB.cancelled;
+      tradeHistoryB.orderID =
+        trade.orderIdB > tradeHistoryB.orderID
+          ? trade.orderIdB
+          : tradeHistoryB.orderID;
     }
 
     // Update protocol fee recipient
     const protocolFeeAccount = state.accounts[0];
-    protocolFeeAccount.balances[trade.tokenB] = protocolFeeAccount.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
-    protocolFeeAccount.balances[trade.tokenA] = protocolFeeAccount.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
+    protocolFeeAccount.balances[trade.tokenB] = protocolFeeAccount.balances[
+      trade.tokenB
+    ] || { balance: new BN(0), tradeHistory: {} };
+    protocolFeeAccount.balances[trade.tokenA] = protocolFeeAccount.balances[
+      trade.tokenA
+    ] || { balance: new BN(0), tradeHistory: {} };
     // - Order A
-    protocolFeeAccount.balances[trade.tokenB].balance = protocolFeeAccount.balances[trade.tokenB].balance.add(trade.protocolFeeA);
+    protocolFeeAccount.balances[
+      trade.tokenB
+    ].balance = protocolFeeAccount.balances[trade.tokenB].balance.add(
+      trade.protocolFeeA
+    );
     // - Order B
-    protocolFeeAccount.balances[trade.tokenA].balance = protocolFeeAccount.balances[trade.tokenA].balance.add(trade.protocolFeeB);
+    protocolFeeAccount.balances[
+      trade.tokenA
+    ].balance = protocolFeeAccount.balances[trade.tokenA].balance.add(
+      trade.protocolFeeB
+    );
 
     // Update operator
     const operator = state.accounts[operatorId];
-    operator.balances[trade.tokenB] = operator.balances[trade.tokenB] || { balance: new BN(0), tradeHistory: {} };
-    operator.balances[trade.tokenA] = operator.balances[trade.tokenA] || { balance: new BN(0), tradeHistory: {} };
+    operator.balances[trade.tokenB] = operator.balances[trade.tokenB] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
+    operator.balances[trade.tokenA] = operator.balances[trade.tokenA] || {
+      balance: new BN(0),
+      tradeHistory: {}
+    };
     // - FeeA
-    operator.balances[trade.tokenB].balance = operator.balances[trade.tokenB].balance.add(trade.feeA).sub(trade.protocolFeeA).sub(trade.rebateA);
+    operator.balances[trade.tokenB].balance = operator.balances[
+      trade.tokenB
+    ].balance
+      .add(trade.feeA)
+      .sub(trade.protocolFeeA)
+      .sub(trade.rebateA);
     // - FeeB
-    operator.balances[trade.tokenA].balance = operator.balances[trade.tokenA].balance.add(trade.feeB).sub(trade.protocolFeeB).sub(trade.rebateB);
+    operator.balances[trade.tokenA].balance = operator.balances[
+      trade.tokenA
+    ].balance
+      .add(trade.feeB)
+      .sub(trade.protocolFeeB)
+      .sub(trade.rebateB);
   }
 
   public static revertBlock(state: ExchangeState, block: Block) {
@@ -313,7 +401,10 @@ export class RingSettlementProcessor {
         }
         let partialRangeLength = 0;
         for (const subrange of subranges) {
-          const dataPart = transformed.extractData(offset + totalRangeLength * r + partialRangeLength, subrange.length);
+          const dataPart = transformed.extractData(
+            offset + totalRangeLength * r + partialRangeLength,
+            subrange.length
+          );
           ringData = this.replaceAt(ringData, subrange.offset * 2, dataPart);
           partialRangeLength += subrange.length;
         }
@@ -336,6 +427,10 @@ export class RingSettlementProcessor {
   }
 
   private static replaceAt(data: string, index: number, replacement: string) {
-    return (data.substr(0, index) + replacement + data.substr(index + replacement.length));
+    return (
+      data.substr(0, index) +
+      replacement +
+      data.substr(index + replacement.length)
+    );
   }
 }
