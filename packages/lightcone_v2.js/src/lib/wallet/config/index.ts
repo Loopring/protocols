@@ -1,5 +1,8 @@
 //const config = require('./config.json');
+import BigNumber from "../common/formatter";
+
 const data = require("./data");
+const fm = require("../common/formatter");
 const config = data.configs;
 const fees = config.fees;
 const txs = config.txs;
@@ -61,6 +64,24 @@ function getCustomTokens() {
 
 function getTokens() {
   return config.tokens;
+}
+
+function fromWEI(symbol, valueInWEI, precision = 4) {
+  const token = getTokenBySymbol(symbol);
+  if (!token) {
+    return 0;
+  }
+  const value = fm.toBig(valueInWEI).div("1e" + token.digits);
+  return value.toNumber().toFixed(precision);
+}
+
+function toWEI(symbol, value) {
+  const token = getTokenBySymbol(symbol);
+  if (!token) {
+    return 0;
+  }
+  const valueInBN = fm.toBig(value).times("1e" + token.digits);
+  return valueInBN.toString(10);
 }
 
 function getMarketByPair(pair) {
@@ -169,5 +190,7 @@ export default {
   getMarkets,
   getWalletAddress,
   getExchangeAddress,
-  getWallets
+  getWallets,
+  fromWEI,
+  toWEI
 };

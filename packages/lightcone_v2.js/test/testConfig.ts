@@ -7,7 +7,7 @@ describe("config test", function() {
 
   before(async () => {});
 
-  it("signOrder", function(done) {
+  it("config value", function(done) {
     assert.strictEqual(config.getChainId(), 1);
     assert.strictEqual(config.getMaxFeeBips(), 20);
     assert.strictEqual(
@@ -30,6 +30,18 @@ describe("config test", function() {
       config.getFeeByType("deposit").feeInWEI,
       10000000000000000
     );
+    done();
+  });
+
+  it("convert from wei & to wei", function(done) {
+    let fromWEI = config.fromWEI("LRC", 1e19);
+    assert.strictEqual(fromWEI, "10.0000");
+    fromWEI = config.fromWEI("LRC", 1e19, 2);
+    assert.strictEqual(fromWEI, "10.00");
+
+    let toWEI = config.toWEI("LRC", 10);
+    assert.strictEqual(toWEI, (1e19).toString(10));
+
     done();
   });
 });
