@@ -1,12 +1,15 @@
-import { BitArray } from "../lib/sign/bitarray";
-import { generateKeyPair, sign } from "../lib/sign/eddsa";
+import { EdDSA } from "../lib/sign/eddsa";
 import { ethereum } from "../lib/wallet";
+import { performance } from "perf_hooks";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { updateHost } from "../lib/wallet/ethereum/utils";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
-import { OrderInfo } from "../model/types";
+import { OrderInfo, WithdrawalRequest } from "../model/types";
+import * as Poseidon from "../lib/sign/poseidon";
+
+const assert = require("assert");
 
 export class Exchange {
   private currentWalletAccount: WalletAccount;
@@ -28,14 +31,10 @@ export class Exchange {
 
   private checkIfInitialized() {
     if (this.hasInitialized === false) {
-      console.warn("lightcone_v2.js is not initialized yet");
-      throw "lightcone_v2.js is not initialized yet";
+      console.warn("lightcone_v3.js is not initialized yet");
+      throw "lightcone_v3.js is not initialized yet";
     }
   }
-
-  public flattenList = (l: any[]) => {
-    return [].concat.apply([], l);
-  };
 
   public async createOrUpdateAccount(
     wallet: WalletAccount,
@@ -44,7 +43,7 @@ export class Exchange {
   ) {
     try {
       this.checkIfInitialized();
-      const keyPair = generateKeyPair(wallet.getAddress() + password);
+      const keyPair = EdDSA.generateKeyPair(wallet.getAddress() + password);
       this.currentWalletAccount = wallet;
       const transaction = await this.createAccountAndDeposit(
         keyPair.publicKeyX,
@@ -205,175 +204,139 @@ export class Exchange {
     }
   }
 
+  public signWithdrawal(withdrawal: WithdrawalRequest) {
+    if (withdrawal.signature !== undefined) {
+      return;
+    }
+
+    const account = withdrawal.account;
+    const hasher = Poseidon.createHash(9, 6, 53);
+
+    // Calculate hash
+    const inputs = [
+      config.getExchangeId(),
+      account.accountId,
+      withdrawal.tokenID,
+      withdrawal.amount,
+      withdrawal.feeTokenID,
+      withdrawal.fee,
+      withdrawal.label,
+      account.nonce
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    withdrawal.signature = EdDSA.sign(account.keyPair.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, withdrawal.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+  }
+
   public signOrder(order: OrderInfo) {
     if (order.signature !== undefined) {
       return;
     }
-    const message = new BitArray();
-    message.addNumber(config.getExchangeId(), 32);
-    message.addNumber(order.orderId, 20);
-    message.addNumber(order.accountId, 20);
-    message.addString(order.dualAuthPubKeyX, 254);
-    message.addString(order.dualAuthPubKeyY, 254);
-    message.addNumber(order.tokenSId, 8);
-    message.addNumber(order.tokenBId, 8);
-    message.addBN(order.amountSInBN, 96);
-    message.addBN(order.amountBInBN, 96);
-    message.addNumber(order.allOrNone ? 1 : 0, 1);
-    message.addNumber(order.validSince, 32);
-    message.addNumber(order.validUntil, 32);
-    message.addNumber(order.maxFeeBips, 6);
-    message.addNumber(order.buy ? 1 : 0, 1);
+    const account = order.account;
+    const hasher = Poseidon.createHash(14, 6, 53);
 
-    const sig = sign(order.tradingPrivKey, message.getBits());
-    order.hash = sig.hash;
-    order.tradingSigRx = sig.R[0].toString();
-    order.tradingSigRy = sig.R[1].toString();
-    order.tradingSigS = sig.S.toString();
+    // Calculate hash
+    const startHash = performance.now();
+    const inputs = [
+      config.getExchangeId(),
+      order.orderId,
+      account.accountId,
+      order.tokenSId,
+      order.tokenBId,
+      order.amountSInBN,
+      order.amountBInBN,
+      order.allOrNone ? 1 : 0,
+      order.validSince,
+      order.validUntil,
+      order.maxFeeBips,
+      order.buy ? 1 : 0,
+      order.label
+    ];
+    order.hash = hasher(inputs).toString(10);
+    const endHash = performance.now();
+    console.log("Hash order time: " + (endHash - startHash));
 
-    order.signature = {
-      Rx: order.tradingSigRx,
-      Ry: order.tradingSigRy,
-      s: order.tradingSigS
-    };
-    console.log("\n####################################");
-    console.log("order.signature.Rx", order.signature.Rx);
-    console.log("order.signature.Ry", order.signature.Ry);
-    console.log("order.signature.s", order.signature.s);
-    console.log("\n####################################");
+    // Create signature
+    const startSign = performance.now();
+    order.signature = EdDSA.sign(account.keyPair.secretKey, order.hash);
+    const endSign = performance.now();
+    console.log("Sign order time: " + (endSign - startSign));
 
+    // Verify signature
+    const startVerify = performance.now();
+    const success = EdDSA.verify(order.hash, order.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+    const endVerify = performance.now();
+    console.log("Verify order signature time: " + (endVerify - startVerify));
     return order;
   }
 
   public async setupOrder(order: OrderInfo) {
+    const tokenBuy = config.getTokenBySymbol(order.tokenB);
+    const tokenSell = config.getTokenBySymbol(order.tokenS);
+
     if (!order.tokenS.startsWith("0x")) {
-      order.tokenS = config.getTokenBySymbol(order.tokenS).address;
+      order.tokenS = tokenSell.address;
     }
-
     if (!order.tokenB.startsWith("0x")) {
-      order.tokenB = config.getTokenBySymbol(order.tokenB).address;
+      order.tokenB = tokenBuy.address;
     }
+    order.tokenSId = tokenSell.id;
+    order.tokenBId = tokenBuy.id;
 
-    if (!order.dualAuthPubKeyX || !order.dualAuthPubKeyY) {
-      const keyPair = generateKeyPair(this.currentWalletAccount.getAddress());
-      order.dualAuthPubKeyX = keyPair.publicKeyX;
-      order.dualAuthPubKeyY = keyPair.publicKeyY;
-      order.dualAuthPrivKey = keyPair.secretKey;
-    }
-
-    // order.tokenSId = config.getTokenBySymbol(order.tokenS).id;
-    // order.tokenBId = config.getTokenBySymbol(order.tokenB).id;
+    let bigNumber = fm.toBig(order.amountS).times("1e" + tokenSell.digits);
+    order.amountSInBN = fm.toBN(bigNumber);
+    bigNumber = fm.toBig(order.amountB).times("1e" + tokenBuy.digits);
+    order.amountBInBN = fm.toBN(bigNumber);
 
     order.exchangeId =
       order.exchangeId !== undefined
         ? order.exchangeId
         : config.getExchangeId();
     order.buy = order.buy !== undefined ? order.buy : false;
-    order.allOrNone = order.allOrNone ? order.allOrNone : false;
 
     order.maxFeeBips =
       order.maxFeeBips !== undefined
         ? order.maxFeeBips
         : config.getMaxFeeBips();
+    order.allOrNone = order.allOrNone ? order.allOrNone : false;
+
     order.feeBips =
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
     order.rebateBips = order.rebateBips !== undefined ? order.rebateBips : 0;
-    order.walletAccountId =
-      order.walletAccountId !== undefined
-        ? order.walletAccountId
-        : config.getWalletId();
 
+    order.label = order.label !== undefined ? order.label : config.getLabel();
+
+    assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
+    assert(order.feeBips < 64, "feeBips >= 64");
+    assert(order.rebateBips < 64, "rebateBips >= 64");
+    assert(order.label < 2 ** 16, "order.label >= 2**16");
+
+    // Sign the order
     return this.signOrder(order);
+  }
+
+  public getRandomInt(max: number) {
+    return Math.floor(Math.random() * max);
   }
 
   public async submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
     this.currentWalletAccount = wallet;
-    // In setupOrder, we will use currentWalletAccount.
     return await this.setupOrder(orderInfo);
-
-    // order.setExchangeId(orderInfo.exchangeId);
-    //
-    // const orderId = new OrderID();
-    // orderId.setValue(orderInfo.orderId);
-    // order.setOrderId(orderId);
-    //
-    // const accountId = new AccountID();
-    // accountId.setValue(orderInfo.accountId);
-    // order.setOrderId(accountId);
-    //
-    // const walletID = new AccountID();
-    // walletID.setValue(orderInfo.walletAccountID);
-    // order.setOrderId(walletID);
-    //
-    // const tokenS = new TokenID();
-    // tokenS.setValue(orderInfo.tokenSId);
-    // order.setOrderId(tokenS);
-    //
-    // const tokenB = new TokenID();
-    // tokenB.setValue(orderInfo.tokenBId);
-    // order.setOrderId(tokenB);
-    //
-    // const tokenAmounts = new TokenAmounts();
-    // const amountS = Exchange.genAmount(orderInfo.amountS);
-    // const amountB = Exchange.genAmount(orderInfo.amountB);
-    // tokenAmounts.setAmountS(amountS);
-    // tokenAmounts.setAmountB(amountB);
-    // order.setAmounts(tokenAmounts);
-    //
-    // let bips = Exchange.genBips(orderInfo.maxFeeBips);
-    // order.setMaxFee(bips);
-    // bips = Exchange.genBips(orderInfo.feeBips);
-    // order.setFee(bips);
-    // bips = Exchange.genBips(orderInfo.rebateBips);
-    // order.setRebate(bips);
-    //
-    // order.setAllOrNone(orderInfo.allOrNone);
-    // order.setValidSince(orderInfo.validSince);
-    // order.setValidUntil(orderInfo.validUntil);
-    // order.setBuy(orderInfo.buy);
-    //
-    // const tradingPubKey = Exchange.genPubKey(
-    //   this.currentDexAccount.publicKeyX,
-    //   this.currentDexAccount.publicKeyY
-    // );
-    // order.setTradingPubKey(tradingPubKey);
-    //
-    // const dualPubKey = Exchange.genPubKey(
-    //   orderInfo.dualAuthPubKeyX,
-    //   orderInfo.dualAuthPubKeyY
-    // );
-    // order.setDualAuthPubKey(dualPubKey);
-    //
-    // const dualPriKey = Exchange.genPriKey(orderInfo.dualAuthPrivKey);
-    // order.setDualAuthPrivKey(dualPriKey);
-    //
-    // const tradingSig = Exchange.genSignature(orderInfo.signature);
-    // order.setTradingSig(tradingSig);
-    //
-    // return grpcClientService.submitOrder(order);
   }
 
-  public async cancelOrder(orderInfo: OrderInfo) {
-    // const simpleOrderCancellationReq = new SimpleOrderCancellationReq();
-    // simpleOrderCancellationReq.setExchangeId(orderInfo.exchangeId);
-    // simpleOrderCancellationReq.setAccountId(orderInfo.accountId);
-    // simpleOrderCancellationReq.setMarketId(orderInfo.tokenSId);
-    // simpleOrderCancellationReq.setOrderUuid(orderInfo.orderId);
-    //
-    // const timeStamp = new Date().getTime();
-    // simpleOrderCancellationReq.setTimestamp(timeStamp);
-    //
-    // const message = new BitArray();
-    // const bits = message.addBN(fm.toBN(timeStamp), 32);
-    // const sig = sign(this.currentDexAccount.secretKey, bits);
-    // const edDSASignature = new EdDSASignature();
-    // edDSASignature.setS(sig.S);
-    // edDSASignature.setRx(sig.R[0].toString());
-    // edDSASignature.setRy(sig.R[1].toString());
-    // simpleOrderCancellationReq.setSig(edDSASignature);
-    //
-    // return grpcClientService.cancelOrder(simpleOrderCancellationReq);
-  }
+  public async cancelOrder(orderInfo: OrderInfo) {}
 
   private getAddress() {
     return this.currentWalletAccount.getAddress();

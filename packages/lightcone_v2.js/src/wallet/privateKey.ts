@@ -6,7 +6,7 @@ import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 import Transaction from "../lib/wallet/ethereum/transaction";
 import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
-import { exchange } from "../sign/exchange";
+import { exchange } from "..";
 
 export class PrivateKey {
   public account: PrivateKeyAccount;

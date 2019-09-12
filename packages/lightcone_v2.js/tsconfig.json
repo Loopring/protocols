@@ -15,7 +15,8 @@
   "include": [
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
-    "src/**/*"
+    "src/**/*",
+    "test/**/*"
   ],
   "exclude": []
 }

@@ -55,7 +55,7 @@ export async function estimateGas(tx) {
   });
 }
 
-export async function getAccountBalance(address, tag) {
+export async function getAccountBalance(address, tag?) {
   try {
     validator.validate({ value: address, type: "ADDRESS" });
   } catch (e) {

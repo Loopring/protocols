@@ -3,7 +3,7 @@
   "defaultGasLimit": "0x7a120",
   "chainId": 1,
   "exchangeId": 1,
-  "walletAddressId": 0,
+  "label": 211,
   "maxFeeBips": 20,
   "exchangeAddress": "0x0a12284E50e0D8df909D84f41bcAdaf57722b947",
   "markets": [
@@ -803,11 +803,11 @@
   ],
   "tokens": [
     {
-      "id": "0",
+      "id": 0,
       "symbol": "ETH",
       "name": "Ether",
       "digits": 18,
-      "address": "",
+      "address": "0x0",
       "unit": "ETH",
       "website": "https://ethereum.org",
       "allowance": "1000000000000000000000",
@@ -816,7 +816,7 @@
       "minTradeValue": 0.001
     },
     {
-      "id": "1",
+      "id": 1,
       "symbol": "WETH",
       "name": "Wrapped Ether",
       "digits": 18,
