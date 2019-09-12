@@ -1,7 +1,12 @@
 // Hack: Failed to import src files directly.
 import { exchange } from "../src";
 import { EdDSA } from "../src/lib/sign/eddsa";
-import { OrderInfo, DexAccount, KeyPair } from "../src/model/types";
+import {
+  OrderInfo,
+  DexAccount,
+  KeyPair,
+  WithdrawalRequest
+} from "../src/model/types";
 const assert = require("assert");
 
 describe("eddsa sign test", function() {
@@ -9,7 +14,7 @@ describe("eddsa sign test", function() {
 
   before(async () => {});
 
-  it("generate key pair1", function(done) {
+  it("generate key pair", function(done) {
     const seed = "0xE20cF871f1646d8651ee9dC95AAB1d93160b3467" + "Abc!12345";
     let keyPair = EdDSA.generateKeyPair(seed);
     const expected = {
@@ -23,6 +28,65 @@ describe("eddsa sign test", function() {
     assert.strictEqual(keyPair.publicKeyY, expected.publicKeyY);
     assert.strictEqual(keyPair.secretKey, expected.secretKey);
     console.log("test generateKeyPair completed!");
+    done();
+  });
+
+  it("sign withdrawal", function(done) {
+    const withdrawal = new WithdrawalRequest();
+    const account = new DexAccount();
+    account.keyPair = new KeyPair();
+    let keyPair = EdDSA.generateKeyPair("random");
+
+    account.accountId = 14;
+    account.nonce = 0;
+    account.keyPair.publicKeyX = keyPair.publicKeyX;
+    account.keyPair.publicKeyY = keyPair.publicKeyY;
+    account.keyPair.secretKey = keyPair.secretKey;
+
+    withdrawal.account = account;
+    withdrawal.token = "ETH";
+    withdrawal.amount = "10";
+
+    const expected = {
+      hash:
+        "9082927133608456435392580906245595382897267089874121158509960306991979128069",
+      Rx:
+        "6986051336760886678025257987504758221214483685758443507283705146806089259925",
+      Ry:
+        "1036142663123672209259827850184147770942504250129743285250118147812752750238",
+      s:
+        "1003550105633923991392692516759607835743048124557466298159621476474267228123"
+    };
+    let signedWithdrawal = exchange.setupWithdrawal(withdrawal);
+    assert.strictEqual(signedWithdrawal.hash, expected.hash);
+    assert.strictEqual(signedWithdrawal.signature.Rx, expected.Rx);
+    assert.strictEqual(signedWithdrawal.signature.Ry, expected.Ry);
+    assert.strictEqual(signedWithdrawal.signature.s, expected.s);
+    done();
+  });
+
+  it("verify withdrawal", function(done) {
+    const withdrawal = new WithdrawalRequest();
+    const account = new DexAccount();
+    account.keyPair = new KeyPair();
+    let keyPair = EdDSA.generateKeyPair("random");
+
+    account.accountId = 14;
+    account.nonce = 0;
+    account.keyPair.publicKeyX = keyPair.publicKeyX;
+    account.keyPair.publicKeyY = keyPair.publicKeyY;
+    account.keyPair.secretKey = keyPair.secretKey;
+
+    withdrawal.account = account;
+    withdrawal.token = "ETH";
+    withdrawal.amount = "10";
+
+    let signed = exchange.setupWithdrawal(withdrawal);
+    const success = EdDSA.verify(signed.hash, signed.signature, [
+      account.keyPair.publicKeyX,
+      account.keyPair.publicKeyY
+    ]);
+    assert.strictEqual(success, true);
     done();
   });
 
@@ -80,9 +144,9 @@ describe("eddsa sign test", function() {
     order.validSince = 1562889050;
     order.validUntil = 1562924050;
 
-    let signedOrder = await exchange.setupOrder(order);
+    let signed = await exchange.setupOrder(order);
 
-    const success = EdDSA.verify(signedOrder.hash, signedOrder.signature, [
+    const success = EdDSA.verify(signed.hash, signed.signature, [
       account.keyPair.publicKeyX,
       account.keyPair.publicKeyY
     ]);

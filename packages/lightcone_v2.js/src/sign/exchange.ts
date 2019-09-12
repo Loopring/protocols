@@ -204,11 +204,34 @@ export class Exchange {
     }
   }
 
+  public setupWithdrawal(withdrawal: WithdrawalRequest) {
+    let token = config.getTokenBySymbol(withdrawal.token);
+    let bigNumber = fm.toBig(withdrawal.amount).times("1e" + token.digits);
+    withdrawal.tokenId = token.id;
+    withdrawal.amountInBN = fm.toBN(bigNumber);
+
+    const feeToken =
+      withdrawal.feeToken !== undefined
+        ? withdrawal.feeToken
+        : config.getWithdrawFeeToken();
+    token = config.getTokenBySymbol(feeToken);
+    const fee =
+      withdrawal.fee !== undefined ? withdrawal.fee : config.getWithdrawFee();
+    bigNumber = fm.toBig(fee).times("1e" + token.digits);
+
+    withdrawal.feeToken = feeToken;
+    withdrawal.feeTokenID = token.id;
+    withdrawal.fee = fee;
+    withdrawal.feeInBN = fm.toBN(bigNumber);
+    withdrawal.label =
+      withdrawal.label !== undefined ? withdrawal.label : config.getLabel();
+    return this.signWithdrawal(withdrawal);
+  }
+
   public signWithdrawal(withdrawal: WithdrawalRequest) {
     if (withdrawal.signature !== undefined) {
       return;
     }
-
     const account = withdrawal.account;
     const hasher = Poseidon.createHash(9, 6, 53);
 
@@ -216,16 +239,17 @@ export class Exchange {
     const inputs = [
       config.getExchangeId(),
       account.accountId,
-      withdrawal.tokenID,
-      withdrawal.amount,
+      withdrawal.tokenId,
+      withdrawal.amountInBN,
       withdrawal.feeTokenID,
-      withdrawal.fee,
+      withdrawal.feeInBN,
       withdrawal.label,
       account.nonce
     ];
     const hash = hasher(inputs).toString(10);
 
     // Create signature
+    withdrawal.hash = hash;
     withdrawal.signature = EdDSA.sign(account.keyPair.secretKey, hash);
 
     // Verify signature
@@ -234,6 +258,7 @@ export class Exchange {
       account.keyPair.publicKeyY
     ]);
     assert(success, "Failed to verify signature");
+    return withdrawal;
   }
 
   public signOrder(order: OrderInfo) {
@@ -315,7 +340,6 @@ export class Exchange {
     order.feeBips =
       order.feeBips !== undefined ? order.feeBips : order.maxFeeBips;
     order.rebateBips = order.rebateBips !== undefined ? order.rebateBips : 0;
-
     order.label = order.label !== undefined ? order.label : config.getLabel();
 
     assert(order.maxFeeBips < 64, "maxFeeBips >= 64");

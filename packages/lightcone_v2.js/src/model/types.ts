@@ -24,24 +24,19 @@ export interface Signature {
   s: string;
 }
 
-export interface WithdrawalRequest {
+export class WithdrawalRequest {
   account: DexAccount;
-
-  tokenID: number;
-  amount: BN;
-
+  token: string;
+  tokenId?: number;
+  amount: string;
+  amountInBN?: BN;
+  feeToken: string;
   feeTokenID?: number;
-  fee?: BN;
-
+  fee: string;
+  feeInBN?: BN;
   label?: number;
-
-  withdrawalIdx?: number;
-  slotIdx?: number;
-
-  withdrawalFee?: BN;
   signature?: Signature;
-  timestamp?: number;
-  transactionHash?: string;
+  hash?: string;
 }
 
 export class OrderInfo {

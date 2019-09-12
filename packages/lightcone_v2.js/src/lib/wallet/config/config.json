@@ -4,6 +4,8 @@
   "chainId": 1,
   "exchangeId": 1,
   "label": 211,
+  "fee": "0.01",
+  "feeToken": "ETH",
   "maxFeeBips": 20,
   "exchangeAddress": "0x0a12284E50e0D8df909D84f41bcAdaf57722b947",
   "markets": [
