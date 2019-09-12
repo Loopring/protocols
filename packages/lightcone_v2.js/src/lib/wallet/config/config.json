@@ -1,7 +1,7 @@
 {
   "defaultGasPrice": 21,
   "defaultGasLimit": "0x7a120",
-  "chainId": 1,
+  "chainId": 4,
   "exchangeId": 1,
   "walletAddressId": 0,
   "maxFeeBips": 20,

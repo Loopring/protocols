@@ -8,7 +8,7 @@ describe("config test", function() {
   before(async () => {});
 
   it("config value", function(done) {
-    assert.strictEqual(config.getChainId(), 1);
+    assert.strictEqual(config.getChainId(), 4);
     assert.strictEqual(config.getMaxFeeBips(), 20);
     assert.strictEqual(
       config.getExchangeAddress(),
