@@ -27,6 +27,8 @@ export async function getTransactionCount(address, tag) {
   const body = {};
   body["method"] = "eth_getTransactionCount";
   body["params"] = params;
+  // Set id
+  body["id"] = 1;
   return request(host, {
     method: "post",
     body
@@ -38,7 +40,8 @@ export async function getGasPrice() {
   const body = {};
   body["method"] = "eth_gasPrice";
   body["params"] = params;
-
+  // Set id
+  body["id"] = 1;
   return request(host, {
     method: "post",
     body
@@ -49,6 +52,8 @@ export async function estimateGas(tx) {
   const body = {};
   body["method"] = "eth_estimateGas";
   body["params"] = [tx];
+  // Set id
+  body["id"] = 1;
   return request(host, {
     method: "post",
     body
@@ -73,6 +78,8 @@ export async function getAccountBalance(address, tag) {
   const body = {};
   body["method"] = "eth_getBalance";
   body["params"] = params;
+  // Set id
+  body["id"] = 1;
   return request(host, {
     method: "post",
     body
@@ -89,6 +96,8 @@ export async function getTransactionByhash(hash) {
   const body = {};
   body["method"] = "eth_getTransactionByHash";
   body["params"] = params;
+  // Set id
+  body["id"] = 1;
   return request(host, {
     method: "post",
     body
@@ -105,6 +114,8 @@ export async function getTransactionRecipt(hash) {
   const body = {};
   body["method"] = "eth_getTransactionReceipt";
   body["params"] = params;
+  // Set id
+  body["id"] = 1;
   return request(host, {
     method: "post",
     body
