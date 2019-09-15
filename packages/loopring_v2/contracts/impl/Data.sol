@@ -36,13 +36,43 @@ library Data {
         uint numSpendables;
     }
 
+    struct BrokerAction {
+        bytes32 hash;
+        address broker;
+        uint[] orderIndices;
+        uint numOrders;
+        uint[] transferIndices;
+        uint numTransfers;
+        address tokenS;
+        address tokenB;
+        address feeToken;
+    }
+
     struct BrokerTransfer {
+        bytes32 hash;
         address token;
-        address recipient;
         uint amount;
-        Order order;
-        bool isFee;
-        uint receivedAmount;
+        address recipient;
+    }
+
+    struct BrokerOrder {
+        address owner;
+        bytes32 orderHash;
+        uint fillAmountB;
+        uint requestedAmountS;
+        uint requestedFeeAmount;
+        address tokenRecipient;
+        bytes extraData;
+    }
+
+    struct BrokerApprovalRequest {
+        BrokerOrder[] orders;
+        address tokenS;
+        address tokenB;
+        address feeToken;
+        uint totalFillAmountB;
+        uint totalRequestedAmountS;
+        uint totalRequestedFeeAmount;
     }
 
     struct Context {
@@ -61,7 +91,11 @@ library Data {
         uint feePtr;
         uint transferData;
         uint transferPtr;
+        BrokerOrder[] brokerOrders;
+        BrokerAction[] brokerActions;
         BrokerTransfer[] brokerTransfers;
+        uint numBrokerOrders;
+        uint numBrokerActions;
         uint numBrokerTransfers;
     }
 
@@ -148,7 +182,7 @@ library Data {
         uint fillAmountB;
     }
 
-    struct Ring{
+    struct Ring {
         uint size;
         Participation[] participations;
         bytes32 hash;

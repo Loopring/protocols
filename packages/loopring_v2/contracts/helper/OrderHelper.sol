@@ -278,6 +278,7 @@ library OrderHelper {
                 order.hash,
                 order.sig
             );
+            require(order.valid, 'INVALID_SIGNATURE');
         }
     }
 
@@ -294,6 +295,7 @@ library OrderHelper {
                 miningHash,
                 order.dualAuthSig
             );
+            require(order.valid, 'INVALID_DUAL_AUTH_SIGNATURE');
         }
     }
 
@@ -307,6 +309,10 @@ library OrderHelper {
         if(order.allOrNone) {
             order.valid = order.valid && (order.filledAmountS == order.amountS);
         }
+    }
+
+    function getBrokerHash(Data.Order memory order) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(order.broker, order.tokenS, order.tokenB, order.feeToken));
     }
 
     function getSpendableS(

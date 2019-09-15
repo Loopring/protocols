@@ -14,26 +14,22 @@
  * limitations under the License.
  */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 import { IBrokerDelegate } from "../iface/IBrokerDelegate.sol";
+import { Data } from "../impl/Data.sol";
 import { ERC20 } from "../lib/ERC20.sol"; 
 
 contract DummyBrokerDelegate is IBrokerDelegate {
 
-  function brokerRequestAllowance(
-    address owner, 
-    address receivedToken,
-    uint receivedAmount,
-    address orderTokenRecipient,
-    address requestedToken, 
-    uint requestedAmount, 
-    address requestedRecipient,
-    bytes memory extraOrderData,
-    bool isFee
-  ) public {
-    address payable payableTokenAddress = address(uint160(requestedToken));
-    ERC20 token = ERC20(payableTokenAddress);
-    token.approve(msg.sender, requestedAmount);
+  function brokerRequestAllowance(Data.BrokerApprovalRequest memory request) public {
+    ERC20 tokenS = ERC20(request.tokenS);
+    tokenS.approve(msg.sender, request.totalRequestedAmountS);
+
+    if (request.totalRequestedFeeAmount > 0) {
+      ERC20 feeToken = ERC20(request.feeToken);
+      feeToken.approve(msg.sender, request.totalRequestedFeeAmount);
+    }
   }
 
   function brokerBalanceOf(address owner, address tokenAddress) public view returns (uint) {

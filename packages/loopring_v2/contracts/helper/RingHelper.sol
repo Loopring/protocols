@@ -364,11 +364,21 @@ library RingHelper {
             ctx.transferPtr = addTokenTransfer(
                 ctx.transferData,
                 ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                prevP.order.tokenRecipient,
+                amountSToBuyer
+            );
+
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
                 p.order.feeToken,
                 p.order.owner,
                 address(ctx.feeHolder),
                 amountFeeToFeeHolder
             );
+
             ctx.transferPtr = addTokenTransfer(
                 ctx.transferData,
                 ctx.transferPtr,
@@ -377,53 +387,46 @@ library RingHelper {
                 address(ctx.feeHolder),
                 amountSToFeeHolder
             );
-            ctx.transferPtr = addTokenTransfer(
-                ctx.transferData,
-                ctx.transferPtr,
-                p.order.tokenS,
-                p.order.owner,
-                prevP.order.tokenRecipient,
-                amountSToBuyer
-            );
         } else {
             
             // Calculates amount received from other participant
-            uint amountBFromSeller = prevP.fillAmountS
+            uint receivableAmountB = prevP.fillAmountS
                 .sub(prevP.feeAmountS)
                 .sub(p.feeAmountB.sub(p.rebateB)); // seller fee amount after rebate
 
             addBrokerTokenTransfer(
                 ctx,
-                p.order.feeToken,
-                address(ctx.feeHolder),
-                amountFeeToFeeHolder,
-                p.order,
-                true,
-                0
-            );
-            addBrokerTokenTransfer(
-                ctx,
-                p.order.tokenS,
-                address(ctx.feeHolder),
-                amountSToFeeHolder,
-                p.order,
-                true,
-                0
-            );
-            addBrokerTokenTransfer(
-                ctx,
+                p,
+                receivableAmountB, // receivable amount incremented/set in called function for order
                 p.order.tokenS,
                 prevP.order.tokenRecipient,
                 amountSToBuyer,
-                p.order,
-                false,
-                amountBFromSeller
+                false
+            );
+
+            addBrokerTokenTransfer(
+                ctx,
+                p,
+                0, // receivable amount set to 0 for fee transfers
+                p.order.feeToken,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder,
+                true // this transfer concerns the fee token
+            );
+
+            addBrokerTokenTransfer(
+                ctx,
+                p,
+                0, // receivable amount set to 0 for fee transfers
+                p.order.tokenS,
+                address(ctx.feeHolder),
+                amountSToFeeHolder,
+                false
             );
         }
         
 
         // NOTICE: Dolomite does not take the margin ever. We still track it for the order's history.
-        // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
         // ctx.transferPtr = addTokenTransfer(
         //     ctx.transferData,
         //     ctx.transferPtr,
@@ -436,25 +439,112 @@ library RingHelper {
 
     function addBrokerTokenTransfer(
         Data.Context memory ctx,
-        address token, 
-        address to,
-        uint amount,
-        Data.Order memory order,
-        bool isForFee,
-        uint receivedAmount
-        )
+        Data.Participation memory participation,
+        uint receivableAmount,
+        address requestToken, 
+        address recipient,
+        uint requestAmount,
+        bool isForFeeToken
+    )
         internal
         pure
     {
-        if (amount > 0) {
-            ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(
-                token,
-                to,
-                amount,
-                order,
-                isForFee,
-                receivedAmount);
-            ctx.numBrokerTransfers++;
+        if (requestAmount > 0) {
+            bytes32 actionHash = participation.order.getBrokerHash();
+            bytes32 transferHash = keccak256(abi.encodePacked(actionHash, requestToken, recipient));
+            
+            Data.BrokerAction memory action;
+            bool isActionNewlyCreated = false;
+
+            uint index = 0;
+            bool found = false;
+
+            // Find a preexisting BrokerAction
+            for (index = 0; index < ctx.numBrokerActions; index++) {
+                if (ctx.brokerActions[index].hash == actionHash) {
+                    action = ctx.brokerActions[index];
+                    found = true;
+                    break;
+                }
+            }
+
+            // If none exist, create a new BrokerAction
+            if (!found) {
+                action = Data.BrokerAction({
+                    hash: actionHash,
+                    broker: participation.order.broker,
+                    orderIndices: new uint[](ctx.brokerOrders.length),
+                    numOrders: 0,
+                    transferIndices: new uint[](ctx.brokerTransfers.length * 3),
+                    numTransfers: 0,
+                    tokenS: participation.order.tokenS,
+                    tokenB: participation.order.tokenB,
+                    feeToken: participation.order.feeToken
+                });
+                ctx.brokerActions[ctx.numBrokerActions] = action;
+                ctx.numBrokerActions += 1;
+                isActionNewlyCreated = true;
+            } else {
+                found = false;
+            }
+
+            // Find a preexisting BrokerOrder for the participant's order from those registered with the action
+            if (!isActionNewlyCreated) {
+                for (index = 0; index < action.numOrders; index++) {
+                    if (ctx.brokerOrders[action.orderIndices[index]].orderHash == participation.order.hash) {
+                        Data.BrokerOrder memory brokerOrder = ctx.brokerOrders[action.orderIndices[index]];
+                        brokerOrder.fillAmountB += receivableAmount;
+                        
+                        if (isForFeeToken) {
+                            brokerOrder.requestedFeeAmount += requestAmount;
+                        } else {
+                            brokerOrder.requestedAmountS += requestAmount;
+                        }
+
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+
+            // If none exist, create a new BrokerOrder
+            if (!found) {
+                ctx.brokerOrders[ctx.numBrokerOrders] = Data.BrokerOrder({
+                    owner: participation.order.owner,
+                    orderHash: participation.order.hash,
+                    fillAmountB: receivableAmount,
+                    requestedAmountS: isForFeeToken ? 0 : requestAmount,
+                    requestedFeeAmount: isForFeeToken ? requestAmount : 0,
+                    tokenRecipient: participation.order.tokenRecipient,
+                    extraData: participation.order.transferDataS
+                });
+                action.orderIndices[action.numOrders] = ctx.numBrokerOrders;
+                action.numOrders += 1;
+                ctx.numBrokerOrders += 1;
+            } else {
+                found = false;
+            }
+
+            // Find a preexisting BrokerTransfer from those registered with the action
+            if (!isActionNewlyCreated) {
+                for (index = 0; index < action.numTransfers; index++) {
+                    if (ctx.brokerTransfers[action.transferIndices[index]].hash == transferHash) {
+                        Data.BrokerTransfer memory transfer = ctx.brokerTransfers[action.transferIndices[index]];
+                        transfer.amount += requestAmount;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            // If none exist, create a new BrokerTransfer
+            if (!found) {
+                ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(transferHash, requestToken, requestAmount, recipient);
+                action.transferIndices[action.numTransfers] = ctx.numBrokerTransfers;
+                action.numTransfers += 1;
+                ctx.numBrokerTransfers += 1;
+            }
         }
     }
 

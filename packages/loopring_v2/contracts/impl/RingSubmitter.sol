@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 import "../helper/MiningHelper.sol";
 import "../helper/OrderHelper.sol";
@@ -37,7 +38,6 @@ import "../lib/ERC20SafeTransfer.sol";
 
 import "./Data.sol";
 import "./ExchangeDeserializer.sol";
-
 
 /// @title An Implementation of IRingSubmitter.
 /// @author Daniel Wang - <daniel@loopring.org>,
@@ -144,7 +144,11 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             0,
             0,
             0,
-            new Data.BrokerTransfer[](rings.length * 4),
+            new Data.BrokerOrder[](orders.length),
+            new Data.BrokerAction[](orders.length),
+            new Data.BrokerTransfer[](orders.length * 3),
+            0,
+            0,
             0
         );
 
@@ -193,7 +197,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         for (i = 0; i < rings.length; i++) {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
-            ring.checkForSubRings();
+            // ring.checkForSubRings(); we submit rings of size 2 - there's no need to check for sub-rings
             ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
                 ring.adjustOrderStates();
@@ -545,30 +549,37 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function batchBrokerTransferTokens(Data.Context memory ctx, Data.Order[] memory orders) internal {
-        for (uint i = 0; i < ctx.numBrokerTransfers; i++) {
-            Data.BrokerTransfer memory transfer = ctx.brokerTransfers[i];
-          
-            IBrokerDelegate(transfer.order.broker).brokerRequestAllowance(
-                transfer.order.owner,
-                transfer.order.tokenB,
-                transfer.receivedAmount,
-                transfer.order.tokenRecipient,
-                transfer.token,
-                transfer.amount,
-                transfer.recipient,
-                transfer.order.transferDataS,
-                transfer.isFee
-            );
+        for (uint i = 0; i < ctx.numBrokerActions; i++) {
+            Data.BrokerAction memory action = ctx.brokerActions[i];
+            Data.BrokerApprovalRequest memory request = Data.BrokerApprovalRequest({
+                orders: new Data.BrokerOrder[](action.numOrders),
+                tokenS: action.tokenS,
+                tokenB: action.tokenB,
+                feeToken: action.feeToken,
+                totalFillAmountB: 0,
+                totalRequestedAmountS: 0,
+                totalRequestedFeeAmount: 0
+            });
+            
+            for (uint b = 0; b < action.numOrders; b++) {
+                request.orders[b] = ctx.brokerOrders[action.orderIndices[b]];
+                request.totalFillAmountB += request.orders[b].fillAmountB;
+                request.totalRequestedAmountS += request.orders[b].requestedAmountS;
+                request.totalRequestedFeeAmount += request.orders[b].requestedFeeAmount;
+            }
 
-            // If the recipient is the broker, do not transfer the tokens
-            // The broker should check for this and internally handle it
-            // if applicable
-            if (transfer.recipient != transfer.order.broker) {
-                require(transfer.token.safeTransferFrom(
-                    transfer.order.broker, 
-                    transfer.recipient, 
-                    transfer.amount
-                ), TRANSFER_FAILURE);
+            IBrokerDelegate(action.broker).brokerRequestAllowance(request);
+
+            for (uint j = 0; j < action.numTransfers; j++) {
+                Data.BrokerTransfer memory transfer = ctx.brokerTransfers[action.transferIndices[j]];
+
+                if (transfer.recipient != action.broker) {
+                    require(transfer.token.safeTransferFrom(
+                        action.broker, 
+                        transfer.recipient, 
+                        transfer.amount
+                    ), TRANSFER_FAILURE);
+                }
             }
         }
     }
