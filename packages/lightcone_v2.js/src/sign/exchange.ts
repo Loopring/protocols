@@ -40,6 +40,7 @@ export class Exchange {
   public async createOrUpdateAccount(
     wallet: WalletAccount,
     password: string,
+    nonce: number,
     gasPrice: number
   ) {
     try {
@@ -51,6 +52,7 @@ export class Exchange {
         keyPair.publicKeyY,
         "",
         "0",
+        nonce,
         gasPrice
       );
       return {
@@ -68,6 +70,7 @@ export class Exchange {
     publicY: string,
     symbol: string,
     amount: string,
+    nonce: number,
     gasPrice: number
   ) {
     try {
@@ -94,7 +97,6 @@ export class Exchange {
         }
       );
 
-      const nonce = await ethereum.wallet.getNonce(this.getAddress());
       return new Transaction({
         to: config.getExchangeAddress(),
         value: fm.toHex(config.getFeeByType("create").feeInWEI),
@@ -114,6 +116,7 @@ export class Exchange {
     wallet: WalletAccount,
     symbol: string,
     amount: string,
+    nonce: number,
     gasPrice: number
   ) {
     let to, value, data: string;
@@ -147,14 +150,13 @@ export class Exchange {
           value = fee;
         }
 
-        const nonce = await ethereum.wallet.getNonce(this.getAddress());
         return new Transaction({
           to: config.getExchangeAddress(),
           value: fm.toHex(value),
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
-          gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)), // todo
+          gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
           gasLimit: fm.toHex(config.getGasLimitByType("depositTo").gasInWEI)
         });
       }
@@ -168,6 +170,7 @@ export class Exchange {
     wallet: WalletAccount,
     symbol: string,
     amount: string,
+    nonce: number,
     gasPrice: number
   ) {
     let to, value, data: string;
@@ -188,14 +191,13 @@ export class Exchange {
           }
         );
         value = fee;
-        const nonce = await ethereum.wallet.getNonce(this.getAddress());
         return new Transaction({
           to: config.getExchangeAddress(),
           value: fm.toHex(value),
           data: data,
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
-          gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+          gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
           gasLimit: fm.toHex(config.getGasLimitByType("withdrawFrom").gasInWEI)
         });
       }

@@ -1,6 +1,5 @@
 // Hack: Failed to import src files directly.
 import { exchange } from "../src";
-import ethereum from "../src/lib/wallet/ethereum";
 import { fromPrivateKey } from "../src/lib/wallet/ethereum/walletAccount";
 import assert = require("assert");
 
@@ -16,7 +15,12 @@ describe("eddsa sign test", function() {
 
   it("create account", async function() {
     let account = fromPrivateKey(pk);
-    let rawTx = await exchange.createOrUpdateAccount(account, "Abc!12345", 10);
+    let rawTx = await exchange.createOrUpdateAccount(
+      account,
+      "Abc!12345",
+      10,
+      10
+    );
     const expected = {
       address: "0xf5090a0c79ec3cF9edEA0E8FA335a0b0c73cA257",
       publicKeyX:
@@ -29,11 +33,5 @@ describe("eddsa sign test", function() {
     assert.strictEqual(rawTx.keyPair.publicKeyX, expected.publicKeyX);
     assert.strictEqual(rawTx.keyPair.publicKeyY, expected.publicKeyY);
     assert.strictEqual(rawTx.keyPair.secretKey, expected.secretKey);
-
-    let accountBalance = await ethereum.utils.getAccountBalance(
-      account.getAddress(),
-      ""
-    );
-    console.log(accountBalance);
   });
 });

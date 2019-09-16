@@ -10,10 +10,6 @@ describe("config test", function() {
   it("config value", function(done) {
     assert.strictEqual(config.getChainId(), 1);
     assert.strictEqual(config.getMaxFeeBips(), 20);
-    assert.strictEqual(
-      config.getExchangeAddress(),
-      "0x0a12284E50e0D8df909D84f41bcAdaf57722b947"
-    );
 
     let tokens = config.getTokens();
     assert.strictEqual(tokens.length, 124);
@@ -38,10 +34,8 @@ describe("config test", function() {
     assert.strictEqual(fromWEI, "10.0000");
     fromWEI = config.fromWEI("LRC", 1e19, 2);
     assert.strictEqual(fromWEI, "10.00");
-
     let toWEI = config.toWEI("LRC", 10);
     assert.strictEqual(toWEI, (1e19).toString(10));
-
     done();
   });
 });

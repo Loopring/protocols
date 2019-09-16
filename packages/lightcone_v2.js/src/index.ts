@@ -6,14 +6,12 @@ import Utils from "./lib/wallet/common/utils";
 
 import { exchange } from "./sign/exchange";
 import { MetaMask } from "./wallet/metaMask";
-import { privateKey } from "./wallet/privateKey";
 
 export {
   common,
   ethereum,
   exchange,
   MetaMask,
-  privateKey,
   ContractUtils,
   EthRpcUtils,
   Utils

@@ -51,13 +51,19 @@ export class MetaMask {
   /**
    * create Or Update Account in DEX
    * @param gasPrice: in gwei
+   * @param nonce: Ethereum nonce of this address
    * @param password: user password
    */
-  public async createOrUpdateAccount(password: string, gasPrice: number) {
+  public async createOrUpdateAccount(
+    password: string,
+    nonce: number,
+    gasPrice: number
+  ) {
     try {
       const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
         this.account,
         password,
+        nonce,
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
@@ -75,14 +81,21 @@ export class MetaMask {
    * Deposit to Dex
    * @param symbol: string symbol of token to deposit
    * @param amount: string number amount to deposit, e.g. '1.5'
+   * @param nonce: Ethereum nonce of this address
    * @param gasPrice: in gwei
    */
-  public async depositTo(symbol: string, amount: string, gasPrice: number) {
+  public async depositTo(
+    symbol: string,
+    amount: string,
+    nonce: number,
+    gasPrice: number
+  ) {
     try {
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
         amount,
+        nonce,
         gasPrice
       );
       return this.account.signEthereumTx(rawTx.raw);
@@ -95,14 +108,21 @@ export class MetaMask {
    * Withdraw from Dex
    * @param symbol: string symbol of token to withdraw
    * @param amount: string number amount to withdraw, e.g. '1.5'
+   * @param nonce: Ethereum nonce of this address
    * @param gasPrice: in gwei
    */
-  public async withdrawFrom(symbol: string, amount: string, gasPrice: number) {
+  public async withdrawFrom(
+    symbol: string,
+    amount: string,
+    nonce: number,
+    gasPrice: number
+  ) {
     try {
       const rawTx = await exchange.withdraw(
         this.account,
         symbol,
         amount,
+        nonce,
         gasPrice
       );
       return this.account.signEthereumTx(rawTx.raw);
