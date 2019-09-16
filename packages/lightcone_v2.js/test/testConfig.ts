@@ -1,6 +1,8 @@
 // Hack: Failed to import src files directly.
 import assert = require("assert");
 import config from "../src/lib/wallet/config";
+import * as fm from "../src/lib/wallet/common/formatter";
+import BigNumber from "bignumber.js";
 
 describe("config test", function() {
   this.timeout(1000);
@@ -10,10 +12,6 @@ describe("config test", function() {
   it("config value", function(done) {
     assert.strictEqual(config.getChainId(), 4);
     assert.strictEqual(config.getMaxFeeBips(), 20);
-    assert.strictEqual(
-      config.getExchangeAddress(),
-      "0x0a12284E50e0D8df909D84f41bcAdaf57722b947"
-    );
 
     let tokens = config.getTokens();
     assert.strictEqual(tokens.length, 124);
@@ -38,10 +36,26 @@ describe("config test", function() {
     assert.strictEqual(fromWEI, "10.0000");
     fromWEI = config.fromWEI("LRC", 1e19, 2);
     assert.strictEqual(fromWEI, "10.00");
-
     let toWEI = config.toWEI("LRC", 10);
     assert.strictEqual(toWEI, (1e19).toString(10));
+    done();
+  });
 
+  it("convert from gwei & to gwei", function(done) {
+    let gwei = new BigNumber(10);
+    let wei = fm.fromGWEI(gwei);
+    assert.notStrictEqual(wei, new BigNumber(1e10));
+    gwei = fm.toGWEI(wei);
+    assert.notStrictEqual(gwei, new BigNumber(10));
+    done();
+  });
+
+  it("wallet depth", function(done) {
+    let wallets = config.getWallets();
+    assert.strictEqual(wallets.length, 9);
+    wallets.forEach(a => {
+      assert.notStrictEqual(a.wallet.length, 0);
+    });
     done();
   });
 });

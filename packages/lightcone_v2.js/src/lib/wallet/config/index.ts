@@ -1,6 +1,4 @@
 //const config = require('./config.json');
-import BigNumber from "../common/formatter";
-
 const data = require("./data");
 const fm = require("../common/formatter");
 const config = data.configs;

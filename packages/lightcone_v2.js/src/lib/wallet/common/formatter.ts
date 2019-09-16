@@ -100,6 +100,24 @@ export function toBN(mixed) {
 }
 
 /**
+ *
+ * @param mixed number | BigNumber |  BN  | Buffer | string
+ * @returns {BN}
+ */
+export function fromGWEI(value) {
+  return toBig(value).times(1e9);
+}
+
+/**
+ *
+ * @param mixed number | BigNumber |  BN  | Buffer | string
+ * @returns {BN}
+ */
+export function toGWEI(valueInWEI) {
+  return toBig(valueInWEI).div(1e9);
+}
+
+/**
  * Returns formatted hex string of a given private key
  * @param mixed Buffer| string
  * @returns {string}
