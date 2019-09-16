@@ -49,4 +49,13 @@ describe("config test", function() {
     assert.notStrictEqual(gwei, new BigNumber(10));
     done();
   });
+
+  it("wallet depth", function(done) {
+    let wallets = config.getWallets();
+    assert.strictEqual(wallets.length, 9);
+    wallets.forEach(a => {
+      assert.notStrictEqual(a.wallet.length, 0);
+    });
+    done();
+  });
 });

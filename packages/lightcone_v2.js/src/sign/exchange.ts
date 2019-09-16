@@ -11,32 +11,6 @@ import { OrderInfo } from "../model/types";
 export class Exchange {
   private currentWalletAccount: WalletAccount;
 
-  // Init when web app launches
-  private hasInitialized: boolean;
-  public contractURL: string;
-
-  public constructor() {
-    this.hasInitialized = false;
-  }
-
-  public async init(contractURL: string) {
-    console.log("init exchange");
-    updateHost(contractURL);
-    this.contractURL = contractURL;
-    this.hasInitialized = true;
-  }
-
-  private checkIfInitialized() {
-    if (this.hasInitialized === false) {
-      console.warn("lightcone_v2.js is not initialized yet");
-      throw "lightcone_v2.js is not initialized yet";
-    }
-  }
-
-  public flattenList = (l: any[]) => {
-    return [].concat.apply([], l);
-  };
-
   public async createOrUpdateAccount(
     wallet: WalletAccount,
     password: string,
@@ -44,7 +18,6 @@ export class Exchange {
     gasPrice: number
   ) {
     try {
-      this.checkIfInitialized();
       const keyPair = generateKeyPair(wallet.getAddress() + password);
       this.currentWalletAccount = wallet;
       const transaction = await this.createAccountAndDeposit(
@@ -74,8 +47,6 @@ export class Exchange {
     gasPrice: number
   ) {
     try {
-      this.checkIfInitialized();
-
       let address, value: string;
       const token = config.getTokenBySymbol(symbol);
 
@@ -121,7 +92,6 @@ export class Exchange {
   ) {
     let to, value, data: string;
     try {
-      this.checkIfInitialized();
       const token = config.getTokenBySymbol(symbol);
       const fee = config.getFeeByType("deposit").feeInWEI;
       value = fm.toBig(amount).times("1e" + token.digits);
@@ -175,7 +145,6 @@ export class Exchange {
   ) {
     let to, value, data: string;
     try {
-      this.checkIfInitialized();
       const token = config.getTokenBySymbol(symbol);
       const fee = config.getFeeByType("withdraw").feeInWEI;
       value = fm.toBig(amount).times("1e" + token.digits);
@@ -290,69 +259,7 @@ export class Exchange {
 
   public async submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
     this.currentWalletAccount = wallet;
-    // In setupOrder, we will use currentWalletAccount.
     return await this.setupOrder(orderInfo);
-
-    // order.setExchangeId(orderInfo.exchangeId);
-    //
-    // const orderId = new OrderID();
-    // orderId.setValue(orderInfo.orderId);
-    // order.setOrderId(orderId);
-    //
-    // const accountId = new AccountID();
-    // accountId.setValue(orderInfo.accountId);
-    // order.setOrderId(accountId);
-    //
-    // const walletID = new AccountID();
-    // walletID.setValue(orderInfo.walletAccountID);
-    // order.setOrderId(walletID);
-    //
-    // const tokenS = new TokenID();
-    // tokenS.setValue(orderInfo.tokenSId);
-    // order.setOrderId(tokenS);
-    //
-    // const tokenB = new TokenID();
-    // tokenB.setValue(orderInfo.tokenBId);
-    // order.setOrderId(tokenB);
-    //
-    // const tokenAmounts = new TokenAmounts();
-    // const amountS = Exchange.genAmount(orderInfo.amountS);
-    // const amountB = Exchange.genAmount(orderInfo.amountB);
-    // tokenAmounts.setAmountS(amountS);
-    // tokenAmounts.setAmountB(amountB);
-    // order.setAmounts(tokenAmounts);
-    //
-    // let bips = Exchange.genBips(orderInfo.maxFeeBips);
-    // order.setMaxFee(bips);
-    // bips = Exchange.genBips(orderInfo.feeBips);
-    // order.setFee(bips);
-    // bips = Exchange.genBips(orderInfo.rebateBips);
-    // order.setRebate(bips);
-    //
-    // order.setAllOrNone(orderInfo.allOrNone);
-    // order.setValidSince(orderInfo.validSince);
-    // order.setValidUntil(orderInfo.validUntil);
-    // order.setBuy(orderInfo.buy);
-    //
-    // const tradingPubKey = Exchange.genPubKey(
-    //   this.currentDexAccount.publicKeyX,
-    //   this.currentDexAccount.publicKeyY
-    // );
-    // order.setTradingPubKey(tradingPubKey);
-    //
-    // const dualPubKey = Exchange.genPubKey(
-    //   orderInfo.dualAuthPubKeyX,
-    //   orderInfo.dualAuthPubKeyY
-    // );
-    // order.setDualAuthPubKey(dualPubKey);
-    //
-    // const dualPriKey = Exchange.genPriKey(orderInfo.dualAuthPrivKey);
-    // order.setDualAuthPrivKey(dualPriKey);
-    //
-    // const tradingSig = Exchange.genSignature(orderInfo.signature);
-    // order.setTradingSig(tradingSig);
-    //
-    // return grpcClientService.submitOrder(order);
   }
 
   public async cancelOrder(orderInfo: OrderInfo) {
@@ -375,10 +282,6 @@ export class Exchange {
     // simpleOrderCancellationReq.setSig(edDSASignature);
     //
     // return grpcClientService.cancelOrder(simpleOrderCancellationReq);
-  }
-
-  private getAddress() {
-    return this.currentWalletAccount.getAddress();
   }
 }
 

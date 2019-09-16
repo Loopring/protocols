@@ -1,37 +1,34 @@
 import Web3 from "web3";
 
 import { exchange } from "..";
-import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
 
 import Transaction from "../lib/wallet/ethereum/transaction";
-import { MetaMaskAccount } from "../lib/wallet/ethereum/walletAccount";
+import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
 
-export class MetaMask {
-  public web3: Web3;
-  public address: string;
-  public account: MetaMaskAccount;
+export class Account {
+  public account: WalletAccount;
 
-  public constructor(web3, account) {
-    this.web3 = web3;
-    this.account = new MetaMaskAccount(web3, account, account);
-    this.address = account;
-  }
-
-  public getAddress() {
-    return this.account.getAddress();
+  public constructor(account) {
+    this.account = account;
   }
 
   /**
    * Approve
-   * @param symbol approve token symbol
-   * @param amount number amount to approve, e.g. 1.5
-   * @param gasPrice in gwei
+   * @param symbol: approve token symbol
+   * @param amount: number amount to approve, e.g. 1.5
+   * @param nonce: Ethereum nonce of this address
+   * @param gasPrice: gas price in gwei
    */
-  public async approve(symbol: string, amount: number, gasPrice: number) {
+  public async approve(
+    symbol: string,
+    amount: number,
+    nonce: number,
+    gasPrice: number
+  ) {
     const token = config.getTokenBySymbol(symbol);
     const rawTx = new Transaction({
       to: token.address,
@@ -41,7 +38,7 @@ export class MetaMask {
         _value: amount
       }),
       chainId: config.getChainId(),
-      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
+      nonce: fm.toHex(nonce),
       gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
@@ -82,7 +79,7 @@ export class MetaMask {
    * @param symbol: string symbol of token to deposit
    * @param amount: string number amount to deposit, e.g. '1.5'
    * @param nonce: Ethereum nonce of this address
-   * @param gasPrice: in gwei
+   * @param gasPrice: gas price in gwei
    */
   public async depositTo(
     symbol: string,
@@ -109,7 +106,7 @@ export class MetaMask {
    * @param symbol: string symbol of token to withdraw
    * @param amount: string number amount to withdraw, e.g. '1.5'
    * @param nonce: Ethereum nonce of this address
-   * @param gasPrice: in gwei
+   * @param gasPrice: gas price in gwei
    */
   public async withdrawFrom(
     symbol: string,

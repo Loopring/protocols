@@ -7,9 +7,7 @@ import assert = require("assert");
 describe("eddsa sign test", function() {
   this.timeout(1000);
 
-  before(async () => {
-    exchange.init("http://localhost:8545");
-  });
+  before(async () => {});
 
   let pk = "0x923a8a6b3e00af1ea8668c6842b7ecc028c5d40646189557bd5d2a948a44aaad";
 
