@@ -1,5 +1,3 @@
-import Web3 from "web3";
-
 import { exchange } from "..";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";

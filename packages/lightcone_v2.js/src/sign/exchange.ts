@@ -283,3 +283,5 @@ export class Exchange {
     // return grpcClientService.cancelOrder(simpleOrderCancellationReq);
   }
 }
+
+export const exchange: Exchange = new Exchange();
