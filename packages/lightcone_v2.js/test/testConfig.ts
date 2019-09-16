@@ -1,6 +1,8 @@
 // Hack: Failed to import src files directly.
 import assert = require("assert");
 import config from "../src/lib/wallet/config";
+import * as fm from "../src/lib/wallet/common/formatter";
+import BigNumber from "bignumber.js";
 
 describe("config test", function() {
   this.timeout(1000);
@@ -36,6 +38,15 @@ describe("config test", function() {
     assert.strictEqual(fromWEI, "10.00");
     let toWEI = config.toWEI("LRC", 10);
     assert.strictEqual(toWEI, (1e19).toString(10));
+    done();
+  });
+
+  it("convert from gwei & to gwei", function(done) {
+    let gwei = new BigNumber(10);
+    let wei = fm.fromGWEI(gwei);
+    assert.notStrictEqual(wei, new BigNumber(1e10));
+    gwei = fm.toGWEI(wei);
+    assert.notStrictEqual(gwei, new BigNumber(10));
     done();
   });
 });
