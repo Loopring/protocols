@@ -42,8 +42,7 @@
     "isomorphic-fetch": "2.2.1",
     "nodeunit": "^0.11.3",
     "snarkjs": "0.1.11",
-    "socket.io-client": "2.0.4",
-    "web3": "^1.0.0-beta.36"
+    "socket.io-client": "2.0.4"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",

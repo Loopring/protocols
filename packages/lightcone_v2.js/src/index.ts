@@ -5,15 +5,13 @@ import EthRpcUtils from "./lib/wallet/ethereum/eth";
 import Utils from "./lib/wallet/common/utils";
 
 import { exchange } from "./sign/exchange";
-import { MetaMask } from "./wallet/metaMask";
-import { privateKey } from "./wallet/privateKey";
+import { Account } from "./wallet/account";
 
 export {
   common,
   ethereum,
   exchange,
-  MetaMask,
-  privateKey,
+  Account,
   ContractUtils,
   EthRpcUtils,
   Utils

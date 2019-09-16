@@ -1,69 +1,33 @@
-// @ts-ignore
-import { ethereum } from "../lib/wallet";
+import { exchange } from "..";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
+
 import Transaction from "../lib/wallet/ethereum/transaction";
-import { PrivateKeyAccount } from "../lib/wallet/ethereum/walletAccount";
+import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
-import { exchange } from "../sign/exchange";
 
-export class PrivateKey {
-  public account: PrivateKeyAccount;
-  public address: string;
-  public getAddress() {
-    return this.account.getAddress();
-  }
+export class Account {
+  public account: WalletAccount;
 
-  /**
-   * Transfer token
-   * @param toAddr string to address
-   * @param symbol string symbol of token to transfer
-   * @param amount string number amount to transfer, e.g. '1.5'
-   * @param gasPrice in gwei
-   */
-  public async transfer(
-    toAddr: string,
-    symbol: string,
-    amount: string,
-    gasPrice: number
-  ) {
-    let to, value, data: string;
-    const token = config.getTokenBySymbol(symbol);
-    value = fm.toHex(fm.toBig(amount).times("1e" + token.digits));
-    if (symbol === "ETH") {
-      to = toAddr;
-      data = fm.toHex("0x");
-    } else {
-      to = token.address;
-      data = ethereum.abi.Contracts.ERC20Token.encodeInputs("transfer", {
-        _to: to,
-        _value: value
-      });
-      value = "0x0";
-    }
-    const rawTx = new Transaction({
-      to: to,
-      value: value,
-      data: data,
-      chainId: config.getChainId(),
-      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("token_transfer").gasInWEI)
-    });
-    return this.account.signEthereumTx(rawTx);
+  public constructor(account) {
+    this.account = account;
   }
 
   /**
    * Approve
-   * @param symbol approve token symbol
-   * @param amount number amount to approve, e.g. 1.5
-   * @param gasPrice in gwei
+   * @param symbol: approve token symbol
+   * @param amount: number amount to approve, e.g. 1.5
+   * @param nonce: Ethereum nonce of this address
+   * @param gasPrice: gas price in gwei
    */
-  public async approve(symbol: string, amount: number, gasPrice: number) {
+  public async approve(
+    symbol: string,
+    amount: number,
+    nonce: number,
+    gasPrice: number
+  ) {
     const token = config.getTokenBySymbol(symbol);
-    console.log("In approve(symbol: string, amount: number, gasPrice: number)");
-    console.log(token);
     const rawTx = new Transaction({
       to: token.address,
       value: "0x0",
@@ -72,65 +36,29 @@ export class PrivateKey {
         _value: amount
       }),
       chainId: config.getChainId(),
-      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+      nonce: fm.toHex(nonce),
+      gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
     return this.account.signEthereumTx(rawTx.raw);
   }
 
   /**
-   * Convert eth -> weth
-   * @param amount string number amount to deposit, e.g. '1.5'
-   * @param gasPrice in gwei
-   */
-  public async deposit(amount: string, gasPrice: number) {
-    const weth = config.getTokenBySymbol("WETH");
-    const value = fm.toHex(fm.toBig(amount).times(1e18));
-    const rawTx = new Transaction({
-      to: weth.address,
-      value: value,
-      data: Contracts.WETH.encodeInputs("deposit", {}),
-      chainId: config.getChainId(),
-      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("deposit").gasInWEI)
-    });
-    return this.account.signEthereumTx(rawTx);
-  }
-
-  /**
-   * Convert weth -> eth
-   * @param amount string number amount to withdraw, e.g. '1.5'
-   * @param gasPrice in gwei
-   */
-  public async withdraw(amount: string, gasPrice: number) {
-    const weth = config.getTokenBySymbol("WETH");
-    const value = fm.toHex(fm.toBig(amount).times(1e18));
-    const rawTx = new Transaction({
-      to: weth.address,
-      value: "0x0",
-      data: Contracts.WETH.encodeInputs("withdraw", {
-        wad: value
-      }),
-      chainId: config.getChainId(),
-      nonce: fm.toHex(await ethereum.wallet.getNonce(this.getAddress())),
-      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
-      gasLimit: fm.toHex(config.getGasLimitByType("withdraw").gasInWEI)
-    });
-    return this.account.signEthereumTx(rawTx);
-  }
-
-  /**
    * create Or Update Account in DEX
    * @param gasPrice: in gwei
+   * @param nonce: Ethereum nonce of this address
    * @param password: user password
    */
-  public async createOrUpdateAccount(password: string, gasPrice: number) {
+  public async createOrUpdateAccount(
+    password: string,
+    nonce: number,
+    gasPrice: number
+  ) {
     try {
       const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
         this.account,
         password,
+        nonce,
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
@@ -146,16 +74,23 @@ export class PrivateKey {
 
   /**
    * Deposit to Dex
-   * @param symbol string symbol of token to deposit
-   * @param amount string number amount to deposit, e.g. '1.5'
-   * @param gasPrice in gwei
+   * @param symbol: string symbol of token to deposit
+   * @param amount: string number amount to deposit, e.g. '1.5'
+   * @param nonce: Ethereum nonce of this address
+   * @param gasPrice: gas price in gwei
    */
-  public async depositTo(symbol: string, amount: string, gasPrice: number) {
+  public async depositTo(
+    symbol: string,
+    amount: string,
+    nonce: number,
+    gasPrice: number
+  ) {
     try {
       const rawTx = await exchange.deposit(
         this.account,
         symbol,
         amount,
+        nonce,
         gasPrice
       );
       return this.account.signEthereumTx(rawTx.raw);
@@ -166,16 +101,23 @@ export class PrivateKey {
 
   /**
    * Withdraw from Dex
-   * @param symbol string symbol of token to withdraw
-   * @param amount string number amount to withdraw, e.g. '1.5'
-   * @param gasPrice in gwei
+   * @param symbol: string symbol of token to withdraw
+   * @param amount: string number amount to withdraw, e.g. '1.5'
+   * @param nonce: Ethereum nonce of this address
+   * @param gasPrice: gas price in gwei
    */
-  public async withdrawFrom(symbol: string, amount: string, gasPrice: number) {
+  public async withdrawFrom(
+    symbol: string,
+    amount: string,
+    nonce: number,
+    gasPrice: number
+  ) {
     try {
       const rawTx = await exchange.withdraw(
         this.account,
         symbol,
         amount,
+        nonce,
         gasPrice
       );
       return this.account.signEthereumTx(rawTx.raw);
@@ -247,5 +189,3 @@ export class PrivateKey {
     }
   }
 }
-
-export const privateKey: PrivateKey = new PrivateKey();
