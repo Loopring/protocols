@@ -39,7 +39,7 @@ export class Account {
       }),
       chainId: config.getChainId(),
       nonce: fm.toHex(nonce),
-      gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+      gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
     return this.account.signEthereumTx(rawTx.raw);

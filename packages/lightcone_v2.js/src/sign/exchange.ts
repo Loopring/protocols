@@ -4,7 +4,6 @@ import { ethereum } from "../lib/wallet";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Transaction from "../lib/wallet/ethereum/transaction";
-import { updateHost } from "../lib/wallet/ethereum/utils";
 import { WalletAccount } from "../lib/wallet/ethereum/walletAccount";
 import { OrderInfo } from "../model/types";
 
@@ -74,7 +73,7 @@ export class Exchange {
         data: data,
         chainId: config.getChainId(),
         nonce: fm.toHex(nonce),
-        gasPrice: fm.toHex(fm.toBig(gasPrice).times(1e9)),
+        gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
         gasLimit: fm.toHex(config.getGasLimitByType("create").gasInWEI)
       });
     } catch (err) {
@@ -284,5 +283,3 @@ export class Exchange {
     // return grpcClientService.cancelOrder(simpleOrderCancellationReq);
   }
 }
-
-export const exchange: Exchange = new Exchange();

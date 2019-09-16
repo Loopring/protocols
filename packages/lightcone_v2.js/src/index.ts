@@ -4,13 +4,13 @@ import ContractUtils from "./lib/wallet/ethereum/contracts/Contracts";
 import EthRpcUtils from "./lib/wallet/ethereum/eth";
 import Utils from "./lib/wallet/common/utils";
 
-import { exchange } from "./sign/exchange";
+import { Exchange } from "./sign/exchange";
 import { Account } from "./wallet/account";
 
 export {
   common,
   ethereum,
-  exchange,
+  Exchange,
   Account,
   ContractUtils,
   EthRpcUtils,
