@@ -1,4 +1,4 @@
-import { Bitstream } from "./bitstream";
+import { Bitstream } from "loopringV3.js";
 
 export enum CompressionType {
   NONE = 0,

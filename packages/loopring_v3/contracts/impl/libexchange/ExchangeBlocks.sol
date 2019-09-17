@@ -189,15 +189,8 @@ library ExchangeBlocks
         ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
         require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "INVALID_BLOCK_STATE");
 
-        // The specified block needs to be the first block not finalized
-        // (this way we always revert to a guaranteed valid block and don't revert multiple times)
-        require(blockIdx == S.numBlocksFinalized, "PREV_BLOCK_NOT_FINALIZED");
-
-        // Check if this block is verified too late
-        require(
-            now > specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-            "PROOF_NOT_TOO_LATE"
-        );
+        // The specified block needs to a non-finialized one.
+        require(blockIdx >= S.numBlocksFinalized, "FINALIZED_BLOCK_REVERT_PROHIBITED");
 
         // Fine the exchange
         uint fine = S.loopring.revertFineLRC();

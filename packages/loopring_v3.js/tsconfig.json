@@ -2,21 +2,19 @@
   "compilerOptions": {
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
-    "outDir": "./transpiled/",
+    "outDir": "build",
     "sourceMap": true,
-    "noImplicitAny": true,
+    "inlineSources": true,
     "module": "commonjs",
     "target": "es6",
-    "baseUrl": ".",
+    "lib": ["es6"],
     "allowJs": true
   },
   "include": [
-    "node_modules/loopringV3.js/index.ts",
-    "node_modules/loopringV3.js/src/**/*",
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
-    "./util/**/*",
-    "./test/**/*",
-    "./migrations/**/*"
-  ]
+    "src/**/*",
+    "index.ts"
+  ],
+  "exclude": []
 }

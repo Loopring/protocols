@@ -161,13 +161,12 @@ def createDepositBlock(state, data):
 
     for depositInfo in data["deposits"]:
         accountID = int(depositInfo["accountID"])
-        secretKey = int(depositInfo["secretKey"])
         publicKeyX = int(depositInfo["publicKeyX"])
         publicKeyY = int(depositInfo["publicKeyY"])
         token = int(depositInfo["tokenID"])
         amount = int(depositInfo["amount"])
 
-        deposit = state.deposit(accountID, secretKey, publicKeyX, publicKeyY, token, amount)
+        deposit = state.deposit(accountID, publicKeyX, publicKeyY, token, amount)
 
         block.deposits.append(deposit)
 

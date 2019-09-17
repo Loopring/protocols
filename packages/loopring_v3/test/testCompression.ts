@@ -1,4 +1,4 @@
-import { Bitstream } from "./bitstream";
+import { Bitstream } from "loopringV3.js";
 import { calculateCalldataCost, compressLZ, decompressLZ } from "./compression";
 
 const LzDecompressor = artifacts.require("LzDecompressor");

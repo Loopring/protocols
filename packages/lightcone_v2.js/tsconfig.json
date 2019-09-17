@@ -2,9 +2,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "sourceMap": true,
-    "noImplicitAny": false,  // Enable when it's ready.
-    "strictNullChecks": false,  // may not use
-    "noImplicitThis": false,  // may not use
+    "noImplicitAny": false, // Enable when it's ready.
+    "strictNullChecks": false, // may not use
+    "noImplicitThis": false, // may not use
     "resolveJsonModule": true,
     "module": "commonjs",
     "target": "es6",
@@ -15,9 +15,7 @@
   "include": [
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
-    "src/**/*",
+    "src/**/*"
   ],
-  "exclude": [
-    
-  ]
+  "exclude": []
 }
