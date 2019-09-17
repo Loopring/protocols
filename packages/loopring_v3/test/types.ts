@@ -129,7 +129,7 @@ export interface InternalTransferRequest {
 }
 
 export interface InternalTransferBlock {
-  transferres: InternalTransferRequest[];
+  transfers: InternalTransferRequest[];
 
   onchainDataAvailability?: boolean;
 

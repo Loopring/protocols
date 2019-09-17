@@ -114,7 +114,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the deposit
-      await exchangeTestUtil.commitInternalTransferRequests(exchangeID);
+      await exchangeTestUtil.commitInternalTransfers(exchangeID);
 
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -169,7 +169,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the deposit
-      await exchangeTestUtil.commitInternalTransferRequests(exchangeID);
+      await exchangeTestUtil.commitInternalTransfers(exchangeID);
 
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
@@ -224,7 +224,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the deposit but not validate off-line, try leaving check to contract.
-      await exchangeTestUtil.commitInternalTransferRequests(exchangeID, false);
+      await exchangeTestUtil.commitInternalTransfers(exchangeID, false);
 
       // Verify the block
       await expectThrow(

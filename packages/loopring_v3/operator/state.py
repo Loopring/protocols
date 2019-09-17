@@ -888,10 +888,8 @@ class State(object):
         proof = self._accountsTree.createProof(accountFromID)
 
         balanceUpdateF_From = self.getAccount(accountFromID).updateBalance(feeTokenID, -feeValue)
-        balanceT = int(self.getAccount(accountFromID).getBalance(transTokenID))
-        uAmountTrans = int(amountRequested) if (int(amountRequested) < balanceT) else balanceT
 
-        fAmountTrans = toFloat(uAmountTrans, Float24Encoding)
+        fAmountTrans = toFloat(amountRequested, Float24Encoding)
         amountTrans = fromFloat(fAmountTrans, Float24Encoding)
         balanceUpdateT_From = self.getAccount(accountFromID).updateBalance(transTokenID, -amountTrans)
 
@@ -901,8 +899,8 @@ class State(object):
         accountAfter = copyAccountInfo(self.getAccount(accountFromID))
         rootAfter = self._accountsTree._root
         accountUpdate_From = AccountUpdateData(accountFromID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        
-        # Update accout To
+
+        # Update account To
         rootToBefore = self._accountsTree._root
         accountToBefore = copyAccountInfo(self.getAccount(accountToID))
         nonceTo = accountToBefore.nonce
@@ -915,16 +913,18 @@ class State(object):
         accountToAfter = copyAccountInfo(self.getAccount(accountToID))
         rootToAfter = self._accountsTree._root
         accountUpdate_To = AccountUpdateData(accountToID, proofTo, rootToBefore, rootToAfter, accountToBefore, accountToAfter)
+
         # Operator payment
         # This is done after all internal transfer are processed
+
         internalTrans = InternalTransfer(exchangeID,
-                                    accountFromID, accountToID,
-                                    transTokenID, amountRequested, fAmountTrans,
-                                    feeTokenID, fee, label,
-                                    nonce, nonceTo,
-                                    balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
-                                    balanceUpdateT_To, accountUpdate_To,
-                                    None)
+                                         accountFromID, accountToID,
+                                         transTokenID, amountRequested, fAmountTrans,
+                                         feeTokenID, fee, label,
+                                         nonce, nonceTo,
+                                         balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
+                                         balanceUpdateT_To, accountUpdate_To,
+                                         None)
         return internalTrans
 
     def createWithdrawProof(self, exchangeID, accountID, tokenID):

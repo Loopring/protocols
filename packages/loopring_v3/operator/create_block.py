@@ -58,10 +58,10 @@ class OrderCancellationBlock(object):
 class InternalTransferBlock(object):
     def __init__(self):
         self.blockType = 5
-        self.internalTransferres = []
+        self.transfers = []
 
     def toJSON(self):
-        self.blockSize = len(self.internalTransferres)
+        self.blockSize = len(self.transfers)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 def orderFromJSON(jOrder, state):
@@ -278,7 +278,7 @@ def createInternalTransferBlock(state, data):
     block.merkleRootBefore = str(state.getRoot())
     block.operatorAccountID = int(data["operatorAccountID"])
 
-    for transInfo in data["transferres"]:
+    for transInfo in data["transfers"]:
         accountFromID = int(transInfo["accountFromID"])
         accountToID = int(transInfo["accountToID"])
         transTokenID = int(transInfo["transTokenID"])
@@ -287,20 +287,20 @@ def createInternalTransferBlock(state, data):
         fee = int(transInfo["fee"])
         label = int(transInfo["label"])
 
-        trans = state.internalTransfer(block.exchangeID, block.operatorAccountID,
+        transfer = state.internalTransfer(block.exchangeID, block.operatorAccountID,
                                         accountFromID, accountToID, transTokenID,
                                         amount, feeTokenID, fee, label)
 
-        trans.signature = transInfo["signature"]
-        block.internalTransferres.append(trans)
+        transfer.signature = transInfo["signature"]
+        block.transfers.append(transfer)
 
     # Operator payments
     account = state.getAccount(block.operatorAccountID)
     rootBefore = state._accountsTree._root
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
-    for trans in block.internalTransferres:
-        trans.balanceUpdateF_O = account.updateBalance(trans.feeTokenID, int(trans.fee))
+    for transfer in block.transfers:
+        transfer.balanceUpdateF_O = account.updateBalance(transfer.feeTokenID, int(transfer.fee))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root

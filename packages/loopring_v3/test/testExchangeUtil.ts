@@ -148,7 +148,7 @@ export class ExchangeTestUtil {
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
-  private pendingInternalTransferRequests: InternalTransferRequest[][] = [];
+  private pendingInternalTransfers: InternalTransferRequest[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingCancels: Cancel[][] = [];
@@ -211,8 +211,8 @@ export class ExchangeTestUtil {
       const onchainWithdrawalRequests: WithdrawalRequest[] = [];
       this.pendingOnchainWithdrawalRequests.push(onchainWithdrawalRequests);
 
-      const internalTransferres: InternalTransferRequest[] = [];
-      this.pendingInternalTransferRequests.push(internalTransferres);
+      const internalTransfers: InternalTransferRequest[] = [];
+      this.pendingInternalTransfers.push(internalTransfers);
 
       const cancels: Cancel[] = [];
       this.pendingCancels.push(cancels);
@@ -891,7 +891,7 @@ export class ExchangeTestUtil {
     const transTokenID = this.tokenAddressToIDMap.get(token);
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
 
-    this.pendingInternalTransferRequests[exchangeID].push({
+    this.pendingInternalTransfers[exchangeID].push({
       accountFromID,
       accountToID,
       transTokenID,
@@ -901,8 +901,8 @@ export class ExchangeTestUtil {
       label
     });
 
-    return this.pendingInternalTransferRequests[exchangeID][
-      this.pendingInternalTransferRequests[exchangeID].length - 1
+    return this.pendingInternalTransfers[exchangeID][
+      this.pendingInternalTransfers[exchangeID].length - 1
     ];
   }
 
@@ -2053,31 +2053,31 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async commitInternalTransferRequests(
+  public async commitInternalTransfers(
     exchangeID: number,
     validateWhenCreate: boolean = true
   ) {
-    let pendingTransferres = this.pendingInternalTransferRequests[exchangeID];
+    let pendingTransfers = this.pendingInternalTransfers[exchangeID];
 
-    if (pendingTransferres.length === 0) {
+    if (pendingTransfers.length === 0) {
       return;
     }
 
     const blockType = BlockType.INTERNAL_TRANSFER;
 
     let numTransferDone = 0;
-    while (numTransferDone < pendingTransferres.length) {
-      const transferres: InternalTransferRequest[] = [];
+    while (numTransferDone < pendingTransfers.length) {
+      const transfers: InternalTransferRequest[] = [];
       let numRequestsInBlock = 0;
-      // Get all transferres for the block
+      // Get all transfers for the block
       const blockSizes = this.interfalTransferBlockSizes;
       const blockSize = this.getBestBlockSize(
-        pendingTransferres.length - numTransferDone,
+        pendingTransfers.length - numTransferDone,
         blockSizes
       );
       for (let b = numTransferDone; b < numTransferDone + blockSize; b++) {
-        if (b < pendingTransferres.length) {
-          transferres.push(pendingTransferres[b]);
+        if (b < pendingTransfers.length) {
+          transfers.push(pendingTransfers[b]);
           numRequestsInBlock++;
         } else {
           const dummyInternalTransferresRequest: InternalTransferRequest = {
@@ -2089,28 +2089,28 @@ export class ExchangeTestUtil {
             fee: new BN(0),
             label: 0
           };
-          transferres.push(dummyInternalTransferresRequest);
+          transfers.push(dummyInternalTransferresRequest);
         }
       }
-      assert(transferres.length === blockSize);
+      assert(transfers.length === blockSize);
       numTransferDone += blockSize;
 
       // Hash the labels
       const labels: number[] = [];
-      for (const trans of transferres) {
-        labels.push(trans.label);
+      for (const transfer of transfers) {
+        labels.push(transfer.label);
       }
       const labelHash = this.hashLabels(labels);
 
       // Sign the offchain withdrawals
-      for (const trans of transferres) {
-        this.signInternalTransfer(trans);
+      for (const transfer of transfers) {
+        this.signInternalTransfer(transfer);
       }
 
       // Block info
       const operator = await this.getActiveOperator(exchangeID);
       const internalTransferBlock: InternalTransferBlock = {
-        transferres,
+        transfers,
         onchainDataAvailability: this.onchainDataAvailability,
         operatorAccountID: operator
       };
@@ -2148,17 +2148,17 @@ export class ExchangeTestUtil {
       bs.addBN(new BN(labelHash, 10), 32);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
-        for (const trans of block.internalTransferres) {
+        for (const transfer of block.transfers) {
           bs.addNumber(
-            trans.accountFromID * 2 ** constants.NUM_BITS_ACCOUNTID +
-              trans.accountToID,
+            transfer.accountFromID * 2 ** constants.NUM_BITS_ACCOUNTID +
+              transfer.accountToID,
             5
           ); // 20bits * 2
-          bs.addNumber(trans.transTokenID, 1); // 8 bit
-          bs.addNumber(trans.fAmountTrans, 3); // 24 bit
-          bs.addNumber(trans.feeTokenID, 1); // 8 bit
+          bs.addNumber(transfer.transTokenID, 1); // 8 bit
+          bs.addNumber(transfer.fAmountTrans, 3); // 24 bit
+          bs.addNumber(transfer.feeTokenID, 1); // 8 bit
           bs.addNumber(
-            toFloat(new BN(trans.fee), constants.Float16Encoding),
+            toFloat(new BN(transfer.fee), constants.Float16Encoding),
             2
           ); // 16 bit
         }
@@ -2182,7 +2182,7 @@ export class ExchangeTestUtil {
       );
     }
 
-    this.pendingInternalTransferRequests[exchangeID] = [];
+    this.pendingInternalTransfers[exchangeID] = [];
   }
 
   public async commitOffchainWithdrawalRequests(exchangeID: number) {
@@ -3520,7 +3520,7 @@ export class ExchangeTestUtil {
     for (const [
       transIndex,
       transfer
-    ] of internalTransferBlock.transferres.entries()) {
+    ] of internalTransferBlock.transfers.entries()) {
       const simulator = new Simulator();
       const simulatorReport = simulator.internalTransferFromInputData(
         transfer,
@@ -3532,7 +3532,7 @@ export class ExchangeTestUtil {
         // Verify onchain data can be used to update the Merkle tree correctly
         const reconstructedState = simulator.internalTransferFromOnchainData(
           bs,
-          internalTransferBlock.transferres.length,
+          internalTransferBlock.transfers.length,
           transIndex,
           latestState
         );

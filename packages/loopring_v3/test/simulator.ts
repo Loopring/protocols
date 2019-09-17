@@ -319,11 +319,8 @@ export class Simulator {
     if (transfer.transTokenID === transfer.feeTokenID) {
       balanceFrom = balanceFrom.sub(fee);
     }
-    const amountToTrans = balanceFrom.lt(transfer.amount)
-      ? balanceFrom
-      : transfer.amount;
     const amountTrans = roundToFloatValue(
-      amountToTrans,
+      transfer.amount,
       constants.Float24Encoding
     );
 
