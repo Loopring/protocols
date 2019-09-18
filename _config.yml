@@ -1,1 +1,8 @@
+---
+---
+
+@import "{{ site.theme }}";
 theme: jekyll-theme-cayman
+title: Loopring
+description: An Open Protocol for Scalable, Non-Custodial Exchanges
+show_downloads: false
