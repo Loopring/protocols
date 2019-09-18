@@ -507,7 +507,6 @@ library RingHelper {
                 }
             }
             
-
             // If none exist, create a new BrokerOrder
             if (!found) {
                 ctx.brokerOrders[ctx.numBrokerOrders] = Data.BrokerOrder({

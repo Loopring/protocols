@@ -75,6 +75,20 @@ library Data {
         uint totalRequestedFeeAmount;
     }
 
+    struct BrokerInterceptorReport {
+        address owner;
+        address broker;
+        bytes32 orderHash;
+        address tokenB;
+        address tokenS;
+        address feeToken;
+        uint fillAmountB;
+        uint spentAmountS;
+        uint spentFeeAmount;
+        address tokenRecipient;
+        bytes extraData;
+    }
+
     struct Context {
         address lrcTokenAddress;
         ITradeDelegate  delegate;

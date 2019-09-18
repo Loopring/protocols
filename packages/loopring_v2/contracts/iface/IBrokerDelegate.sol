@@ -31,8 +31,19 @@ interface IBrokerDelegate {
    * are provided (tokenS, totalAmountS, tokenB, totalAmountB, orderTokenRecipient, extraOrderData)
    * to aid in any calculations or on-chain exchange of assets that may be required. The last 4
    * parameters concern the actual token approval being requested of the broker.
+   *
+   * @returns Whether or not onOrderFillReport should be called for orders using this broker
    */
-  function brokerRequestAllowance(Data.BrokerApprovalRequest calldata request) external;
+  function brokerRequestAllowance(Data.BrokerApprovalRequest calldata request) external returns (bool);
+
+  /*
+   * After Loopring performs all of the transfers necessary to complete all the submitted
+   * rings it will call this function for every order's brokerInterceptor (if set) passing
+   * along the final fill counts for tokenB, tokenS and feeToken. This allows actions to be
+   * performed on a per-order basis after all tokenS/feeToken funds have left the order owner's
+   * possesion and the tokenB funds have been transfered to the order owner's intended recipient
+   */
+  function onOrderFillReport(Data.BrokerInterceptorReport calldata fillReport) external;
 
   /*
    * Get the available token balance controlled by the broker on behalf of an address (owner)

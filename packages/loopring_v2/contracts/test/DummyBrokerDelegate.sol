@@ -21,8 +21,9 @@ import { Data } from "../impl/Data.sol";
 import { ERC20 } from "../lib/ERC20.sol"; 
 
 contract DummyBrokerDelegate is IBrokerDelegate {
+  event OnOrderFillReport(Data.BrokerInterceptorReport report);
 
-  function brokerRequestAllowance(Data.BrokerApprovalRequest memory request) public {
+  function brokerRequestAllowance(Data.BrokerApprovalRequest memory request) public returns (bool) {
     ERC20 tokenS = ERC20(request.tokenS);
     tokenS.approve(msg.sender, request.totalRequestedAmountS);
 
@@ -30,6 +31,12 @@ contract DummyBrokerDelegate is IBrokerDelegate {
       ERC20 feeToken = ERC20(request.feeToken);
       feeToken.approve(msg.sender, request.totalRequestedFeeAmount);
     }
+
+    return true;
+  }
+
+  function onOrderFillReport(Data.BrokerInterceptorReport memory fillReport) public {
+    emit OnOrderFillReport(fillReport);
   }
 
   function brokerBalanceOf(address owner, address tokenAddress) public view returns (uint) {

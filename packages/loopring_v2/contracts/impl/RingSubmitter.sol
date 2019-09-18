@@ -549,6 +549,9 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     }
 
     function batchBrokerTransferTokens(Data.Context memory ctx, Data.Order[] memory orders) internal {
+        Data.BrokerInterceptorReport[] memory reportQueue = new Data.BrokerInterceptorReport[](orders.length);
+        uint reportCount = 0;
+
         for (uint i = 0; i < ctx.numBrokerActions; i++) {
             Data.BrokerAction memory action = ctx.brokerActions[i];
             Data.BrokerApprovalRequest memory request = Data.BrokerApprovalRequest({
@@ -568,7 +571,26 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                 request.totalRequestedFeeAmount += request.orders[b].requestedFeeAmount;
             }
 
-            IBrokerDelegate(action.broker).brokerRequestAllowance(request);
+            bool requiresReport = IBrokerDelegate(action.broker).brokerRequestAllowance(request);
+            
+            if (requiresReport) {
+                for (uint k = 0; k < request.orders.length; k++) {
+                    reportQueue[reportCount] = Data.BrokerInterceptorReport({
+                        owner: request.orders[k].owner,
+                        broker: action.broker,
+                        orderHash: request.orders[k].orderHash,
+                        tokenB: action.tokenB,
+                        tokenS: action.tokenS,
+                        feeToken: action.feeToken,
+                        fillAmountB: request.orders[k].fillAmountB,
+                        spentAmountS: request.orders[k].requestedAmountS,
+                        spentFeeAmount: request.orders[k].requestedFeeAmount,
+                        tokenRecipient: request.orders[k].tokenRecipient,
+                        extraData: request.orders[k].extraData
+                    });
+                    reportCount += 1;
+                }
+            }
 
             for (uint j = 0; j < action.numTransfers; j++) {
                 Data.BrokerTransfer memory transfer = ctx.brokerTransfers[action.transferIndices[j]];
@@ -581,6 +603,10 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     ), TRANSFER_FAILURE);
                 }
             }
+        }
+
+        for (uint m = 0; m < reportCount; m++) {
+            IBrokerDelegate(reportQueue[m].broker).onOrderFillReport(reportQueue[m]);
         }
     }
 
