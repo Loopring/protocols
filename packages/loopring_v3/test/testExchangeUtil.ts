@@ -80,7 +80,7 @@ export class ExchangeTestUtil {
   public depositBlockSizes = [4, 8];
   public onchainWithdrawalBlockSizes = [4, 8];
   public offchainWithdrawalBlockSizes = [4, 8];
-  public interfalTransferBlockSizes = [2, 4];
+  public transferBlockSizes = [4, 8];
   public orderCancellationBlockSizes = [4, 8];
 
   public loopringV3: any;
@@ -852,6 +852,26 @@ export class ExchangeTestUtil {
     );
   }
 
+  public async depositToOwner(owner: string, token: string, amount: BN) {
+    let accountID = await this.getAccountID(owner);
+    if (accountID === undefined) {
+      const keyPair = this.getKeyPairEDDSA();
+      const depositInfo = await this.deposit(
+        this.exchangeId,
+        owner,
+        keyPair.secretKey,
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        token,
+        amount
+      );
+      accountID = depositInfo.accountID;
+    } else {
+      await this.depositTo(accountID, token, amount);
+    }
+    return accountID;
+  }
+
   public async requestInternalTransfer(
     exchangeID: number,
     accountFromID: number,
@@ -864,6 +884,9 @@ export class ExchangeTestUtil {
   ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const transTokenID = this.tokenAddressToIDMap.get(token);
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
@@ -2097,10 +2120,7 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async commitInternalTransfers(
-    exchangeID: number,
-    validateWhenCreate: boolean = true
-  ) {
+  public async commitInternalTransfers(exchangeID: number) {
     let pendingTransfers = this.pendingInternalTransfers[exchangeID];
 
     if (pendingTransfers.length === 0) {
@@ -2114,7 +2134,7 @@ export class ExchangeTestUtil {
       const transfers: InternalTransferRequest[] = [];
       let numRequestsInBlock = 0;
       // Get all transfers for the block
-      const blockSizes = this.interfalTransferBlockSizes;
+      const blockSizes = this.transferBlockSizes;
       const blockSize = this.getBestBlockSize(
         pendingTransfers.length - numTransferDone,
         blockSizes
@@ -2124,7 +2144,7 @@ export class ExchangeTestUtil {
           transfers.push(pendingTransfers[b]);
           numRequestsInBlock++;
         } else {
-          const dummyInternalTransferresRequest: InternalTransferRequest = {
+          const dummyInternalTransferRequest: InternalTransferRequest = {
             accountFromID: this.dummyAccountId,
             accountToID: this.dummyAccountId,
             transTokenID: 0,
@@ -2133,7 +2153,7 @@ export class ExchangeTestUtil {
             fee: new BN(0),
             label: 0
           };
-          transfers.push(dummyInternalTransferresRequest);
+          transfers.push(dummyInternalTransferRequest);
         }
       }
       assert(transfers.length === blockSize);
@@ -2174,8 +2194,7 @@ export class ExchangeTestUtil {
       const [blockIdx, blockFilename] = await this.createBlock(
         exchangeID,
         blockType,
-        jWithdrawalsInfo,
-        validateWhenCreate
+        jWithdrawalsInfo
       );
 
       // Store state after
@@ -2209,7 +2228,7 @@ export class ExchangeTestUtil {
       }
 
       // Validate state change
-      this.validateInternalTranferres(
+      this.validateInternalTranfers(
         internalTransferBlock,
         bs,
         stateBefore,
@@ -3803,14 +3822,12 @@ export class ExchangeTestUtil {
       const accountAfter =
         simulatorReport.exchangeStateAfter.accounts[withdrawal.accountID];
 
-      if (withdrawal.tokenID > 0) {
-        this.prettyPrintBalanceChange(
-          withdrawal.accountID,
-          withdrawal.tokenID,
-          accountBefore.balances[withdrawal.tokenID].balance,
-          accountAfter.balances[withdrawal.tokenID].balance
-        );
-      }
+      this.prettyPrintBalanceChange(
+        withdrawal.accountID,
+        withdrawal.tokenID,
+        accountBefore.balances[withdrawal.tokenID].balance,
+        accountAfter.balances[withdrawal.tokenID].balance
+      );
 
       latestState = simulatorReport.exchangeStateAfter;
     }
@@ -3820,7 +3837,7 @@ export class ExchangeTestUtil {
     logInfo("----------------------------------------------------");
   }
 
-  public validateInternalTranferres(
+  public validateInternalTranfers(
     internalTransferBlock: InternalTransferBlock,
     bs: Bitstream,
     stateBefore: ExchangeState,
@@ -3840,32 +3857,52 @@ export class ExchangeTestUtil {
         operatorAccountID
       );
 
-      if (internalTransferBlock.onchainDataAvailability) {
-        // Verify onchain data can be used to update the Merkle tree correctly
-        const reconstructedState = simulator.internalTransferFromOnchainData(
-          bs,
-          internalTransferBlock.transfers.length,
-          transIndex,
-          latestState
-        );
-        this.compareStates(
-          simulatorReport.exchangeStateAfter,
-          reconstructedState
-        );
-      }
-
-      const accountBefore = latestState.accounts[transfer.accountFromID];
-      const accountAfter =
+      const accountFromBefore = latestState.accounts[transfer.accountFromID];
+      const accountFromAfter =
         simulatorReport.exchangeStateAfter.accounts[transfer.accountFromID];
 
-      if (transfer.transTokenID > 0) {
-        this.prettyPrintBalanceChange(
-          transfer.accountFromID,
-          transfer.transTokenID,
-          accountBefore.balances[transfer.transTokenID].balance,
-          accountAfter.balances[transfer.transTokenID].balance
-        );
+      const accountToBefore = latestState.accounts[transfer.accountToID];
+      const accountToAfter =
+        simulatorReport.exchangeStateAfter.accounts[transfer.accountToID];
+
+      const accountOperatorBefore = latestState.accounts[operatorAccountID];
+      const accountOperatorAfter =
+        simulatorReport.exchangeStateAfter.accounts[operatorAccountID];
+
+      let addressBook: { [id: number]: string } = {};
+      for (const detailedTransfer of simulatorReport.detailedTransfers) {
+        this.logDetailedTokenTransfer(detailedTransfer, addressBook);
       }
+
+      logInfo("+ State changes:");
+      logInfo("- From:");
+      this.prettyPrintBalanceChange(
+        transfer.accountFromID,
+        transfer.transTokenID,
+        accountFromBefore.balances[transfer.transTokenID].balance,
+        accountFromAfter.balances[transfer.transTokenID].balance
+      );
+      this.prettyPrintBalanceChange(
+        transfer.accountFromID,
+        transfer.feeTokenID,
+        accountFromBefore.balances[transfer.feeTokenID].balance,
+        accountFromAfter.balances[transfer.feeTokenID].balance
+      );
+      logInfo("- To:");
+      this.prettyPrintBalanceChange(
+        transfer.accountToID,
+        transfer.transTokenID,
+        accountToBefore.balances[transfer.transTokenID].balance,
+        accountToAfter.balances[transfer.transTokenID].balance
+      );
+      logInfo("- Operator:");
+      this.prettyPrintBalanceChange(
+        operatorAccountID,
+        transfer.feeTokenID,
+        accountOperatorBefore.balances[transfer.feeTokenID].balance,
+        accountOperatorAfter.balances[transfer.feeTokenID].balance
+      );
+      logInfo("----");
 
       latestState = simulatorReport.exchangeStateAfter;
     }
@@ -3982,13 +4019,8 @@ export class ExchangeTestUtil {
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
-    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
-    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
-    const prettyBalance = balance
-      .div(web3.utils.toBN(10 ** decimals))
-      .toString(10);
-    logInfo(accountID + ": " + prettyBalance + " " + tokenSymbol);
+    const prettyBalance = this.getPrettyAmount(tokenID, balance);
+    logInfo(accountID + ": " + prettyBalance);
   }
 
   public prettyPrintBalanceChange(
@@ -3997,25 +4029,10 @@ export class ExchangeTestUtil {
     balanceBefore: BN,
     balanceAfter: BN
   ) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
-    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
-    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
-    const prettyBalanceBefore = balanceBefore
-      .div(web3.utils.toBN(10 ** decimals))
-      .toString(10);
-    const prettyBalanceAfter = balanceAfter
-      .div(web3.utils.toBN(10 ** decimals))
-      .toString(10);
+    const prettyBalanceBefore = this.getPrettyAmount(tokenID, balanceBefore);
+    const prettyBalanceAfter = this.getPrettyAmount(tokenID, balanceAfter);
     logInfo(
-      accountID +
-        ": " +
-        prettyBalanceBefore +
-        " " +
-        tokenSymbol +
-        " -> " +
-        prettyBalanceAfter +
-        " " +
-        tokenSymbol
+      accountID + ": " + prettyBalanceBefore + " -> " + prettyBalanceAfter
     );
   }
 
@@ -4441,7 +4458,10 @@ export class ExchangeTestUtil {
     const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
-    const amountDec = Number(amount.toString(10)) / 10 ** decimals;
+    let amountDec = Number(amount.toString(10)) / 10 ** decimals;
+    if (Math.abs(amountDec) < 0.0000000000001) {
+      amountDec = 0;
+    }
     return amountDec + " " + tokenSymbol;
   }
 

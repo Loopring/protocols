@@ -11,7 +11,7 @@ import {
   ExchangeState,
   OrderInfo,
   RingInfo,
-  RingSettlementSimulatorReport,
+  DetailedSimulatorReport,
   SimulatorReport,
   TradeHistory,
   WithdrawalRequest,
@@ -270,70 +270,39 @@ export class Simulator {
       fee
     );
 
-    const simulatorReport: SimulatorReport = {
+    const paymentsFrom: DetailedTokenTransfer = {
+      description: "From",
+      token: 0,
+      from: transfer.accountFromID,
+      to: operatorAccountID,
+      amount: new BN(0),
+      subPayments: []
+    };
+    const payAmount: DetailedTokenTransfer = {
+      description: "Amount",
+      token: transfer.transTokenID,
+      from: transfer.accountFromID,
+      to: transfer.accountToID,
+      amount: transfer.amount,
+      subPayments: []
+    };
+    const payFee: DetailedTokenTransfer = {
+      description: "Fee",
+      token: transfer.feeTokenID,
+      from: transfer.accountFromID,
+      to: operatorAccountID,
+      amount: transfer.fee,
+      subPayments: []
+    };
+    paymentsFrom.subPayments.push(payAmount);
+    paymentsFrom.subPayments.push(payFee);
+
+    const simulatorReport: DetailedSimulatorReport = {
       exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState
+      exchangeStateAfter: newExchangeState,
+      detailedTransfers: [paymentsFrom]
     };
     return simulatorReport;
-  }
-
-  public internalTransferFromOnchainData(
-    bs: Bitstream,
-    blockSize: number,
-    transIndex: number,
-    exchangeState: ExchangeState
-  ) {
-    let offset = 0;
-
-    // General data
-    const exchangeID = bs.extractUint32(offset);
-    offset += 4 + 32 + 32 + 32; // skip before & after merkle, and lable.
-
-    const operatorAccountID = bs.extractUint24(offset);
-    offset += 3;
-
-    // Jump to the specified withdrawal
-    const onchainDataSize = 12;
-    offset += transIndex * onchainDataSize;
-
-    // Further extraction of packed data
-    const combinedAccountIDs = bs.extractUint40(offset);
-    offset += 5;
-
-    const accountFromID = Math.floor(
-      combinedAccountIDs / 2 ** Constants.NUM_BITS_ACCOUNTID
-    );
-    const accountToID = combinedAccountIDs & 0xfffff;
-
-    const token = bs.extractUint8(offset);
-    offset += 1;
-
-    const fAmountTrans = bs.extractUint24(offset);
-    offset += 3;
-
-    // Extract offchain data
-    const feeToken = bs.extractUint8(offset);
-    offset += 1;
-    const fFee = bs.extractUint16(offset);
-    offset += 2;
-
-    // Decode the float values
-    const fee = fromFloat(fFee, Constants.Float16Encoding);
-    const amountTrans = fromFloat(fAmountTrans, Constants.Float24Encoding);
-
-    // Update the Merkle tree with the onchain data
-    const newExchangeState = this.internalTransfer(
-      exchangeState,
-      operatorAccountID,
-      accountFromID,
-      accountToID,
-      token,
-      amountTrans,
-      feeToken,
-      fee
-    );
-
-    return newExchangeState;
   }
 
   public cancelOrderFromInputData(
@@ -625,7 +594,7 @@ export class Simulator {
     detailedTransfers.push(paymentsB);
     detailedTransfers.push(paymentsOperator);
 
-    const simulatorReport: RingSettlementSimulatorReport = {
+    const simulatorReport: DetailedSimulatorReport = {
       exchangeStateBefore: exchangeState,
       exchangeStateAfter: newExchangeState,
       detailedTransfers

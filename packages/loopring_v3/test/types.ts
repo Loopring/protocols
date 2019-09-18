@@ -233,7 +233,7 @@ export interface DetailedTokenTransfer {
   subPayments: DetailedTokenTransfer[];
 }
 
-export interface RingSettlementSimulatorReport {
+export interface DetailedSimulatorReport {
   exchangeStateBefore: ExchangeState;
   exchangeStateAfter: ExchangeState;
   detailedTransfers: DetailedTokenTransfer[];

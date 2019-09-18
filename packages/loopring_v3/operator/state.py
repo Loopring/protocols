@@ -411,6 +411,7 @@ class OffchainWithdrawal(object):
                  exchangeID,
                  accountID, tokenID, amountRequested, fAmountWithdrawn,
                  feeTokenID, fee, label,
+                 feeValue,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_O,
                  nonce):
@@ -424,6 +425,8 @@ class OffchainWithdrawal(object):
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
         self.label = str(label)
+
+        self.feeValue = feeValue
 
         self.balanceUpdateF_A = balanceUpdateF_A
         self.balanceUpdateW_A = balanceUpdateW_A
@@ -439,6 +442,7 @@ class Cancellation(object):
                  accountID, orderTokenID, orderID,
                  feeTokenID, fee, label,
                  nonce,
+                 feeValue,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateF_O):
         self.exchangeID = exchangeID
@@ -450,6 +454,8 @@ class Cancellation(object):
         self.fee = str(fee)
         self.label = str(label)
         self.nonce = nonce
+
+        self.feeValue = feeValue
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
         self.balanceUpdateT_A = balanceUpdateT_A
@@ -465,6 +471,7 @@ class InternalTransfer(object):
                  transTokenID, amountRequested, fAmountTrans,
                  feeTokenID, fee, label,
                  nonceFrom, nonceTo,
+                 feeValue,
                  balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
                  balanceUpdateT_To, accountUpdate_To,
                  balanceUpdateF_O):
@@ -480,6 +487,8 @@ class InternalTransfer(object):
         self.label = int(label)
         self.nonceFrom = nonceFrom
         self.nonceTo = nonceTo
+
+        self.feeValue = feeValue
 
         self.balanceUpdateF_From = balanceUpdateF_From
         self.balanceUpdateT_From = balanceUpdateT_From
@@ -834,6 +843,7 @@ class State(object):
         withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
                                         feeTokenID, fee, label,
+                                        feeValue,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         None,
                                         nonce)
@@ -868,6 +878,7 @@ class State(object):
                                     accountID, orderTokenID, orderID,
                                     feeTokenID, fee, label,
                                     nonce,
+                                    feeValue,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     None)
         return cancellation
@@ -919,6 +930,7 @@ class State(object):
                                          transTokenID, amountRequested, fAmountTrans,
                                          feeTokenID, fee, label,
                                          nonce, nonceTo,
+                                         feeValue,
                                          balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
                                          balanceUpdateT_To, accountUpdate_To,
                                          None)

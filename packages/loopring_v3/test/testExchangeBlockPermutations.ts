@@ -60,8 +60,8 @@ contract("Exchange", (accounts: string[]) => {
     );
   };
 
-  const doRandomOffchainWithdrawal = (depositInfo: DepositInfo) => {
-    exchangeTestUtil.requestWithdrawalOffchain(
+  const doRandomOffchainWithdrawal = async (depositInfo: DepositInfo) => {
+    await exchangeTestUtil.requestWithdrawalOffchain(
       exchangeId,
       depositInfo.accountID,
       depositInfo.token,
@@ -81,6 +81,22 @@ contract("Exchange", (accounts: string[]) => {
       1,
       new BN(0),
       exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
+    );
+  };
+
+  const doRandomInternalTransfer = async (
+    depositInfoA: DepositInfo,
+    depositInfoB: DepositInfo
+  ) => {
+    await exchangeTestUtil.requestInternalTransfer(
+      exchangeId,
+      depositInfoA.accountID,
+      depositInfoB.accountID,
+      depositInfoA.token,
+      depositInfoA.amount.div(new BN(10)),
+      depositInfoA.token,
+      depositInfoA.amount.div(new BN(100)),
+      exchangeTestUtil.getRandomInt(1000)
     );
   };
 
@@ -210,6 +226,34 @@ contract("Exchange", (accounts: string[]) => {
             await doRandomOrderCancellation(randomDeposit);
           }
           await exchangeTestUtil.commitCancels(exchangeId);
+        }
+        await verify();
+      }
+    });
+
+    it("Internal transfer", async () => {
+      const bDataAvailabilities = [true, false];
+      for (const bDataAvailability of bDataAvailabilities) {
+        await createExchange(bDataAvailability);
+
+        // Do some deposits
+        const numDeposits = 8;
+        const deposits: DepositInfo[] = [];
+        for (let i = 0; i < numDeposits; i++) {
+          deposits.push(await doRandomDeposit());
+        }
+        await exchangeTestUtil.commitDeposits(exchangeId);
+
+        const blockSizes = exchangeTestUtil.transferBlockSizes;
+        for (const blockSize of blockSizes) {
+          for (let i = 0; i < blockSize; i++) {
+            const randomDepositA =
+              deposits[exchangeTestUtil.getRandomInt(numDeposits)];
+            const randomDepositB =
+              deposits[exchangeTestUtil.getRandomInt(numDeposits)];
+            await doRandomInternalTransfer(randomDepositA, randomDepositB);
+          }
+          await exchangeTestUtil.commitInternalTransfers(exchangeId);
         }
         await verify();
       }

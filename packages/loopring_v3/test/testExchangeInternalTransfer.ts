@@ -1,236 +1,349 @@
 import BN = require("bn.js");
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { expectThrow } from "./expectThrow";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
-  let exchange: any;
-  let loopring: any;
   let exchangeID = 0;
+
+  let ownerA: string;
+  let ownerB: string;
+  let ownerC: string;
+  let ownerD: string;
 
   const createExchange = async (bSetupTestState: boolean = true) => {
     exchangeID = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],
       bSetupTestState
     );
-    exchange = exchangeTestUtil.exchange;
+  };
+
+  const transfer = async (
+    from: string,
+    to: string,
+    token: string,
+    amount: BN,
+    feeToken: string,
+    fee: BN,
+    amountToDeposit?: BN,
+    feeToDeposit?: BN
+  ) => {
+    if (amountToDeposit === undefined) {
+      amountToDeposit = amount;
+    }
+    if (feeToDeposit === undefined) {
+      feeToDeposit = fee;
+    }
+    // From
+    let accountFromId = await exchangeTestUtil.depositToOwner(
+      from,
+      token,
+      amountToDeposit
+    );
+    await exchangeTestUtil.depositTo(accountFromId, feeToken, feeToDeposit);
+    // To
+    let accountToId = await exchangeTestUtil.depositToOwner(
+      to,
+      token,
+      new BN(0)
+    );
+    // Do the transfer
+    const request = await exchangeTestUtil.requestInternalTransfer(
+      exchangeID,
+      accountFromId,
+      accountToId,
+      token,
+      amount,
+      feeToken,
+      fee,
+      exchangeTestUtil.getRandomInt(1000)
+    );
+    return request;
   };
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
-    exchange = exchangeTestUtil.exchange;
-    loopring = exchangeTestUtil.loopringV3;
     exchangeID = 1;
+
+    ownerA = exchangeTestUtil.testContext.orderOwners[0];
+    ownerB = exchangeTestUtil.testContext.orderOwners[1];
+    ownerC = exchangeTestUtil.testContext.orderOwners[2];
+    ownerD = exchangeTestUtil.testContext.orderOwners[3];
   });
 
-  describe("DepositInternalTransfer", function() {
+  describe("InternalTransfer", function() {
     this.timeout(0);
 
-    it("Internal transfer (normal account)", async () => {
+    it("transfer (from != to, token == feeToken)", async () => {
       await createExchange();
 
-      const initBalance = new BN(web3.utils.toWei("7", "ether"));
-      const token = exchangeTestUtil.getTokenAddress("ETH");
-      const transAmount1 = new BN(web3.utils.toWei("2", "ether"));
-      const transAmount2 = new BN(web3.utils.toWei("1.5", "ether"));
-      const feeToken = exchangeTestUtil.getTokenAddress("ETH");
-      const feeToO = new BN(web3.utils.toWei("0.1", "ether"));
+      const token = "ETH";
+      const feeToken = token;
+      const amount = new BN(web3.utils.toWei("4.8", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
-      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoA = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerA,
-        keyPairA.secretKey,
-        keyPairA.publicKeyX,
-        keyPairA.publicKeyY,
-        token,
-        initBalance
-      );
-
-      // init B by 0
-      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
-      const keyPairB = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoB = await exchangeTestUtil.deposit(
-        exchangeID,
+      // Do some transfers
+      await transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      await transfer(
         ownerB,
-        keyPairB.secretKey,
-        keyPairB.publicKeyX,
-        keyPairB.publicKeyY,
-        token,
-        initBalance
-      );
-
-      // init C by 0
-      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
-      const keyPairC = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoC = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerC,
-        keyPairC.secretKey,
-        keyPairC.publicKeyX,
-        keyPairC.publicKeyY,
-        token,
-        new BN(0)
-      );
-
-      // init D by 0
-      const ownerD = exchangeTestUtil.testContext.orderOwners[3];
-      const keyPairD = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoD = await exchangeTestUtil.deposit(
-        exchangeID,
         ownerD,
-        keyPairD.secretKey,
-        keyPairD.publicKeyX,
-        keyPairD.publicKeyY,
         token,
-        new BN(0)
+        amount.mul(new BN(2)),
+        feeToken,
+        fee.mul(new BN(2))
       );
+      await transfer(ownerB, ownerA, token, amount, feeToken, fee);
 
+      // Commit the deposits
       await exchangeTestUtil.commitDeposits(exchangeID);
-
-      // Do the request
-      await exchangeTestUtil.requestInternalTransfer(
-        exchangeID,
-        depositInfoA.accountID,
-        depositInfoC.accountID,
-        token,
-        transAmount1,
-        feeToken,
-        feeToO,
-        0
-      );
-
-      await exchangeTestUtil.requestInternalTransfer(
-        exchangeID,
-        depositInfoB.accountID,
-        depositInfoD.accountID,
-        token,
-        transAmount2,
-        feeToken,
-        feeToO,
-        0
-      );
-
-      // Commit the deposit
+      // Commit the transfers
       await exchangeTestUtil.commitInternalTransfers(exchangeID);
 
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
     });
 
-    it("Internal transfer partial block with dummy trans", async () => {
+    it("transfer (from != to, token != feeToken)", async () => {
       await createExchange();
 
-      const initBalance = new BN(web3.utils.toWei("7", "ether"));
-      const token = exchangeTestUtil.getTokenAddress("ETH");
-      const transAmount1 = new BN(web3.utils.toWei("1", "ether"));
-      const feeToken = exchangeTestUtil.getTokenAddress("ETH");
-      const feeToO = new BN(web3.utils.toWei("0.1", "ether"));
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("2.9", "ether"));
+      const fee = new BN(web3.utils.toWei("12.3", "ether"));
 
-      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoA = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerA,
-        keyPairA.secretKey,
-        keyPairA.publicKeyX,
-        keyPairA.publicKeyY,
+      // Do a transfer
+      await transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      await transfer(
+        ownerB,
+        ownerD,
         token,
-        initBalance
-      );
-
-      // init C by 0
-      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
-      const keyPairC = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoC = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerC,
-        keyPairC.secretKey,
-        keyPairC.publicKeyX,
-        keyPairC.publicKeyY,
-        token,
-        new BN(0)
-      );
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-
-      // Do the request
-      await exchangeTestUtil.requestInternalTransfer(
-        exchangeID,
-        depositInfoA.accountID,
-        depositInfoC.accountID,
-        token,
-        transAmount1,
+        amount.mul(new BN(2)),
         feeToken,
-        new BN(0),
-        0
+        fee.mul(new BN(2))
       );
+      await transfer(ownerB, ownerA, token, amount, feeToken, fee);
 
-      // Commit the deposit
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      // Commit the transfers
       await exchangeTestUtil.commitInternalTransfers(exchangeID);
 
       // Verify the block
       await exchangeTestUtil.verifyPendingBlocks(exchangeID);
     });
 
-    it("Internal transfer insufficient balance", async () => {
+    it("transfer (from == to, token == feeToken)", async () => {
       await createExchange();
 
-      const initBalance = new BN(web3.utils.toWei("1", "ether"));
-      const token = exchangeTestUtil.getTokenAddress("ETH");
-      const transAmount1 = new BN(web3.utils.toWei("1", "ether"));
-      const feeToken = exchangeTestUtil.getTokenAddress("ETH");
-      const feeToO = new BN(web3.utils.toWei("0.1", "ether"));
+      const token = "ETH";
+      const feeToken = token;
+      const amount = new BN(web3.utils.toWei("4.8", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
 
-      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const keyPairA = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoA = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerA,
-        keyPairA.secretKey,
-        keyPairA.publicKeyX,
-        keyPairA.publicKeyY,
+      // Do some transfers transfer
+      await transfer(ownerA, ownerA, token, amount, feeToken, fee);
+      await transfer(
+        ownerB,
+        ownerB,
         token,
-        initBalance
+        amount.mul(new BN(2)),
+        feeToken,
+        fee.mul(new BN(2))
+      );
+      await transfer(
+        ownerC,
+        ownerC,
+        token,
+        amount.mul(new BN(3)),
+        feeToken,
+        fee.mul(new BN(3))
+      );
+      await transfer(
+        ownerD,
+        ownerD,
+        token,
+        amount.mul(new BN(4)),
+        feeToken,
+        fee.mul(new BN(4))
       );
 
-      // init C by 0
-      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
-      const keyPairC = exchangeTestUtil.getKeyPairEDDSA();
-      const depositInfoC = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerC,
-        keyPairC.secretKey,
-        keyPairC.publicKeyX,
-        keyPairC.publicKeyY,
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      // Commit the transfers
+      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+    });
+
+    it("transfer (from != to, token != feeToken)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("2.9", "ether"));
+      const fee = new BN(web3.utils.toWei("12.3", "ether"));
+
+      // Do a transfer
+      await transfer(ownerA, ownerA, token, amount, feeToken, fee);
+      await transfer(
+        ownerB,
+        ownerB,
         token,
+        amount.mul(new BN(2)),
+        feeToken,
+        fee.mul(new BN(2))
+      );
+      await transfer(
+        ownerC,
+        ownerC,
+        token,
+        amount.mul(new BN(3)),
+        feeToken,
+        fee.mul(new BN(3))
+      );
+      await transfer(
+        ownerD,
+        ownerD,
+        token,
+        amount.mul(new BN(4)),
+        feeToken,
+        fee.mul(new BN(4))
+      );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      // Commit the transfers
+      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+    });
+
+    it("transfer (from == to == operator)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("1", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      // Do some transfers transfer
+      await transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      await transfer(ownerA, ownerA, token, amount, feeToken, fee);
+      await transfer(ownerA, ownerB, token, amount, token, fee);
+      await transfer(ownerA, ownerA, token, amount, token, fee);
+
+      exchangeTestUtil.setActiveOperator(
+        await exchangeTestUtil.getAccountID(ownerA)
+      );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      // Commit the transfers
+      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+
+      // Verify the block
+      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+    });
+
+    it("insufficient balance (token == feeToken)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = token;
+      const amount = new BN(web3.utils.toWei("4.8", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      // Do some transfers
+      await transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        amount,
         new BN(0)
       );
 
+      // Commit the deposits
       await exchangeTestUtil.commitDeposits(exchangeID);
 
-      // Do the request
-      await exchangeTestUtil.requestInternalTransfer(
-        exchangeID,
-        depositInfoA.accountID,
-        depositInfoC.accountID,
+      // Commit the transfers
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      } catch {
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
+    });
+
+    it("insufficient balance (token, token != feeToken)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("4.8", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      // Do some transfers
+      await transfer(
+        ownerA,
+        ownerB,
         token,
-        transAmount1,
+        amount,
         feeToken,
-        feeToO,
-        0
+        fee,
+        amount.div(new BN(2)),
+        fee
       );
 
-      // Commit the deposit but not validate off-line, try leaving check to contract.
-      await exchangeTestUtil.commitInternalTransfers(exchangeID, false);
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
 
-      // Verify the block
-      await expectThrow(
-        exchangeTestUtil.verifyPendingBlocks(exchangeID),
-        "INVALID_PROOF"
+      // Commit the transfers
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      } catch {
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
+    });
+
+    it("insufficient balance (feeToken, token != feeToken)", async () => {
+      await createExchange();
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("4.8", "ether"));
+      const fee = new BN(web3.utils.toWei("0.1", "ether"));
+
+      // Do some transfers
+      await transfer(
+        ownerA,
+        ownerB,
+        token,
+        amount,
+        feeToken,
+        fee,
+        amount,
+        new BN(0)
       );
+
+      // Commit the deposits
+      await exchangeTestUtil.commitDeposits(exchangeID);
+
+      // Commit the transfers
+      let receivedThrow = false;
+      try {
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      } catch {
+        receivedThrow = true;
+      }
+      assert(receivedThrow, "did not receive expected invalid block error");
     });
   }); // end of describe()
 }); // end of contract()

@@ -27,6 +27,7 @@ import { OnchainWithdrawalProcessor } from "./request_processors/onchain_withdra
 import { RingSettlementProcessor } from "./request_processors/ring_settlement_processor";
 import { OffchainWithdrawalProcessor } from "./request_processors/offchain_withdrawal_processor";
 import { OrderCancellationProcessor } from "./request_processors/order_cancellation_processor";
+import { InternalTransferProcessor } from "./request_processors/internal_transfer_processor";
 
 interface Revert {
   blockIdx: number;
@@ -178,6 +179,7 @@ export class ExchangeV3 {
       totalNumOnchainWithdrawalsProcessed: 1,
       totalNumOffchainWithdrawalsProcessed: 0,
       totalNumOrderCancellationsProcessed: 0,
+      totalNumOrderInternalTransfersProcessed: 0,
 
       transactionHash: Constants.zeroAddress,
 
@@ -901,6 +903,8 @@ export class ExchangeV3 {
         lastBlock.totalNumOffchainWithdrawalsProcessed,
       totalNumOrderCancellationsProcessed:
         lastBlock.totalNumOrderCancellationsProcessed,
+      totalNumOrderInternalTransfersProcessed:
+        lastBlock.totalNumOrderInternalTransfersProcessed,
 
       transactionHash: event.transactionHash,
 
@@ -1134,6 +1138,11 @@ export class ExchangeV3 {
           block.totalNumOrderCancellationsProcessed += replay
             ? 0
             : requests.length;
+        } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
+          requests = InternalTransferProcessor.processBlock(this.state, block);
+          block.totalNumOrderInternalTransfersProcessed += replay
+            ? 0
+            : requests.length;
         } else {
           assert(false, "Unknown block type");
         }
@@ -1172,6 +1181,8 @@ export class ExchangeV3 {
           OffchainWithdrawalProcessor.revertBlock(this.state, block);
         } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
           OrderCancellationProcessor.revertBlock(this.state, block);
+        } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
+          InternalTransferProcessor.revertBlock(this.state, block);
         } else {
           assert(false, "Unknown block type");
         }

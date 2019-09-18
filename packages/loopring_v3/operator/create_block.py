@@ -224,7 +224,7 @@ def createOffchainWithdrawalBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for withdrawal in block.withdrawals:
-        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, int(withdrawal.fee))
+        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, int(withdrawal.feeValue))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -261,7 +261,7 @@ def createOrderCancellationBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for cancel in block.cancels:
-        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, int(cancel.fee))
+        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, int(cancel.feeValue))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
@@ -299,7 +299,7 @@ def createInternalTransferBlock(state, data):
     accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
     proof = state._accountsTree.createProof(block.operatorAccountID)
     for transfer in block.transfers:
-        transfer.balanceUpdateF_O = account.updateBalance(transfer.feeTokenID, int(transfer.fee))
+        transfer.balanceUpdateF_O = account.updateBalance(transfer.feeTokenID, int(transfer.feeValue))
     state.updateAccountTree(block.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
     rootAfter = state._accountsTree._root
