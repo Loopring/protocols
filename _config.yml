@@ -2,7 +2,7 @@
 ---
 
 @import "{{ site.theme }}";
-theme: jekyll-theme-slate
+theme: jekyll-theme-minimal
 title: Loopring
 description: An Open Protocol for Scalable, Non-Custodial Exchanges
 show_downloads: false
