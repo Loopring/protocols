@@ -1,9 +1,0 @@
-{
-  "extends": "solium:recommended",
-  "rules": {
-    "imports-on-top": 0,
-    "variable-declarations": 0,
-    "indentation": ["error", 4],
-    "quotes": ["error", "double"]
-  }
-}

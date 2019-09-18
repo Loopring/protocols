@@ -1,1 +1,0 @@
-[{"constant":true,"inputs":[{"name":"_addr","type":"address"}],"name":"isContract","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"view","type":"function"}]

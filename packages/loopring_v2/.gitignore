@@ -1,8 +1,0 @@
-node_modules/
-build/
-transpiled/
-.DS_Store
-.node-*
-*.log
-ganache_account_keys.txt
-deployedAddresses.json

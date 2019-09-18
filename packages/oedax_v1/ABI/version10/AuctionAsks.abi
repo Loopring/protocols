@@ -1,1 +1,0 @@
-[{"anonymous":false,"inputs":[{"indexed":false,"name":"user","type":"address"},{"indexed":false,"name":"accepted","type":"uint256"},{"indexed":false,"name":"time","type":"uint256"}],"name":"Ask","type":"event"}]
