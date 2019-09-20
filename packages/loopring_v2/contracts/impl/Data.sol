@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IBrokerRegistry.sol";
 import "../iface/IBurnRateTable.sol";
@@ -36,6 +36,59 @@ library Data {
         uint numSpendables;
     }
 
+    struct BrokerAction {
+        bytes32 hash;
+        address broker;
+        uint[] orderIndices;
+        uint numOrders;
+        uint[] transferIndices;
+        uint numTransfers;
+        address tokenS;
+        address tokenB;
+        address feeToken;
+    }
+
+    struct BrokerTransfer {
+        bytes32 hash;
+        address token;
+        uint amount;
+        address recipient;
+    }
+
+    struct BrokerOrder {
+        address owner;
+        bytes32 orderHash;
+        uint fillAmountB;
+        uint requestedAmountS;
+        uint requestedFeeAmount;
+        address tokenRecipient;
+        bytes extraData;
+    }
+
+    struct BrokerApprovalRequest {
+        BrokerOrder[] orders;
+        address tokenS;
+        address tokenB;
+        address feeToken;
+        uint totalFillAmountB;
+        uint totalRequestedAmountS;
+        uint totalRequestedFeeAmount;
+    }
+
+    struct BrokerInterceptorReport {
+        address owner;
+        address broker;
+        bytes32 orderHash;
+        address tokenB;
+        address tokenS;
+        address feeToken;
+        uint fillAmountB;
+        uint spentAmountS;
+        uint spentFeeAmount;
+        address tokenRecipient;
+        bytes extraData;
+    }
+
     struct Context {
         address lrcTokenAddress;
         ITradeDelegate  delegate;
@@ -52,6 +105,12 @@ library Data {
         uint feePtr;
         uint transferData;
         uint transferPtr;
+        BrokerOrder[] brokerOrders;
+        BrokerAction[] brokerActions;
+        BrokerTransfer[] brokerTransfers;
+        uint numBrokerOrders;
+        uint numBrokerActions;
+        uint numBrokerTransfers;
     }
 
     struct Mining {
@@ -137,7 +196,7 @@ library Data {
         uint fillAmountB;
     }
 
-    struct Ring{
+    struct Ring {
         uint size;
         Participation[] participations;
         bytes32 hash;

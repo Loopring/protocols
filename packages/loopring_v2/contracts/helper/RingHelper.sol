@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IRingSubmitter.sol";
 import "../impl/Data.sol";
@@ -30,6 +30,18 @@ library RingHelper {
     using MathUint for uint;
     using OrderHelper for Data.Order;
     using ParticipationHelper for Data.Participation;
+
+    /// @dev   Event emitted when fee rebates are distributed (waiveFeePercentage < 0)
+    ///         _ringHash   The hash of the ring whose order(s) will receive the rebate
+    ///         _orderHash  The hash of the order that will receive the rebate
+    ///         _feeToken   The address of the token that will be paid to the _orderHash's owner
+    ///         _feeAmount  The amount to be paid to the owner
+    event DistributeFeeRebate(
+        bytes32 indexed _ringHash,
+        bytes32 indexed _orderHash,
+        address         _feeToken,
+        uint            _feeAmount
+    );
 
     function updateHash(
         Data.Ring memory ring
@@ -73,7 +85,6 @@ library RingHelper {
         }
 
         uint i;
-        int j;
         uint prevIndex;
 
         for (i = 0; i < ring.size; i++) {
@@ -82,28 +93,23 @@ library RingHelper {
             );
         }
 
-        uint smallest = 0;
-        for (j = int(ring.size) - 1; j >= 0; j--) {
-            prevIndex = (uint(j) + ring.size - 1) % ring.size;
-            smallest = calculateOrderFillAmounts(
-                ctx,
-                ring.participations[uint(j)],
-                ring.participations[prevIndex],
-                uint(j),
-                smallest
-            );
-        }
-        for (j = int(ring.size) - 1; j >= int(smallest); j--) {
-            prevIndex = (uint(j) + ring.size - 1) % ring.size;
-            calculateOrderFillAmounts(
-                ctx,
-                ring.participations[uint(j)],
-                ring.participations[prevIndex],
-                uint(j),
-                smallest
-            );
+        // Match the orders
+        Data.Participation memory taker = ring.participations[0];
+        Data.Participation memory maker = ring.participations[1];
+
+        if (taker.order.isBuy()) {
+            uint spread = matchRing(taker, maker);
+            taker.fillAmountS = maker.fillAmountB; // For BUY orders owner can sell less to get what is wanted (keeps spread)
+            taker.splitS = spread;
+        } else {
+            matchRing(maker, taker);
+            taker.fillAmountB = maker.fillAmountS; // For SELL orders owner sells max and can get more than expected (spends spread)
+            taker.splitS = 0;
         }
 
+        maker.splitS = 0;
+
+        // Validate matched orders
         for (i = 0; i < ring.size; i++) {
             // Check if the fill amounts of the participation are valid
             ring.valid = ring.valid && ring.participations[i].checkFills();
@@ -135,6 +141,27 @@ library RingHelper {
         for (i = 0; i < ring.size; i++) {
             ring.participations[i].order.resetReservations();
         }
+    }
+
+    function matchRing(
+        Data.Participation memory buyer,
+        Data.Participation memory seller
+        )
+        internal
+        pure
+        returns (uint)
+    {
+        if (buyer.fillAmountB < seller.fillAmountS) {
+            // Amount seller wants less than amount maker sells
+            seller.fillAmountS = buyer.fillAmountB;
+            seller.fillAmountB = seller.fillAmountS.mul(seller.order.amountB) / seller.order.amountS;
+        } else {
+            buyer.fillAmountB = seller.fillAmountS;
+            buyer.fillAmountS = buyer.fillAmountB.mul(buyer.order.amountS) / buyer.order.amountB;
+        }
+
+        require(buyer.fillAmountS >= seller.fillAmountB, "NOT-MATCHABLE");
+        return buyer.fillAmountS.sub(seller.fillAmountB); // Return spread
     }
 
     function calculateOrderFillAmounts(
@@ -171,11 +198,22 @@ library RingHelper {
         internal
         pure
     {
-        ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
+        // NOTICE: deprecated logic, rings must be of size 2 now
+        // ring.valid = ring.valid && (ring.size > 1 && ring.size <= 8); // invalid ring size
+        
+        ring.valid = ring.valid && ring.size == 2;
+
+        // Ring must consist of a buy and a sell
+        ring.valid = ring.valid && (
+            (ring.participations[0].order.isBuy() && !ring.participations[1].order.isBuy()) ||
+            (ring.participations[1].order.isBuy() && !ring.participations[0].order.isBuy())
+        );
+
         for (uint i = 0; i < ring.size; i++) {
             uint prev = (i + ring.size - 1) % ring.size;
             ring.valid = ring.valid && ring.participations[i].order.valid;
             ring.valid = ring.valid && ring.participations[i].order.tokenS == ring.participations[prev].order.tokenB;
+            ring.valid = ring.valid && !ring.participations[i].order.P2P; // No longer support P2P orders
         }
     }
 
@@ -223,7 +261,6 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
-        view
     {
         payFees(ring, ctx, mining);
         transferTokens(ring, ctx, mining.feeRecipient);
@@ -303,20 +340,19 @@ library RingHelper {
         pure
         returns (uint)
     {
-        uint buyerFeeAmountAfterRebateB = prevP.feeAmountB.sub(prevP.rebateB);
-
         // If the buyer needs to pay fees in tokenB, the seller needs
         // to send the tokenS amount to the fee holder contract
         uint amountSToBuyer = p.fillAmountS
             .sub(p.feeAmountS)
-            .sub(buyerFeeAmountAfterRebateB);
+            .sub(prevP.feeAmountB.sub(prevP.rebateB)); // buyer fee amount after rebate
 
         uint amountSToFeeHolder = p.feeAmountS
             .sub(p.rebateS)
-            .add(buyerFeeAmountAfterRebateB);
+            .add(prevP.feeAmountB.sub(prevP.rebateB)); // buyer fee amount after rebate
 
         uint amountFeeToFeeHolder = p.feeAmount
             .sub(p.rebateFee);
+
 
         if (p.order.tokenS == p.order.feeToken) {
             amountSToFeeHolder = amountSToFeeHolder.add(amountFeeToFeeHolder);
@@ -324,40 +360,191 @@ library RingHelper {
         }
 
         // Transfers
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.feeToken,
-            p.order.owner,
-            address(ctx.feeHolder),
-            amountFeeToFeeHolder
-        );
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            address(ctx.feeHolder),
-            amountSToFeeHolder
-        );
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            prevP.order.tokenRecipient,
-            amountSToBuyer
-        );
+        if (p.order.broker == address(0x0)) {
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                prevP.order.tokenRecipient,
+                amountSToBuyer
+            );
 
-        // Miner (or for P2P the taker) gets the margin without sharing it with the wallet or burning
-        ctx.transferPtr = addTokenTransfer(
-            ctx.transferData,
-            ctx.transferPtr,
-            p.order.tokenS,
-            p.order.owner,
-            feeRecipient,
-            p.splitS
-        );
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.feeToken,
+                p.order.owner,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder
+            );
+
+            ctx.transferPtr = addTokenTransfer(
+                ctx.transferData,
+                ctx.transferPtr,
+                p.order.tokenS,
+                p.order.owner,
+                address(ctx.feeHolder),
+                amountSToFeeHolder
+            );
+        } else {
+            
+            // Calculates amount received from other participant
+            uint receivableAmountB = prevP.fillAmountS
+                .sub(prevP.feeAmountS)
+                .sub(p.feeAmountB.sub(p.rebateB)); // seller fee amount after rebate
+
+            addBrokerTokenTransfer(
+                ctx,
+                p,
+                receivableAmountB, // receivable amount incremented/set in called function for order
+                p.order.tokenS,
+                prevP.order.tokenRecipient,
+                amountSToBuyer,
+                false
+            );
+
+            addBrokerTokenTransfer(
+                ctx,
+                p,
+                0, // receivable amount set to 0 for fee transfers
+                p.order.feeToken,
+                address(ctx.feeHolder),
+                amountFeeToFeeHolder,
+                true // this transfer concerns the fee token
+            );
+
+            addBrokerTokenTransfer(
+                ctx,
+                p,
+                0, // receivable amount set to 0 for fee transfers
+                p.order.tokenS,
+                address(ctx.feeHolder),
+                amountSToFeeHolder,
+                false
+            );
+        }
+        
+
+        // NOTICE: Dolomite does not take the margin ever. We still track it for the order's history.
+        // ctx.transferPtr = addTokenTransfer(
+        //     ctx.transferData,
+        //     ctx.transferPtr,
+        //     p.order.tokenS,
+        //     p.order.owner,
+        //     feeRecipient,
+        //     p.splitS
+        // );
+    }
+
+    function addBrokerTokenTransfer(
+        Data.Context memory ctx,
+        Data.Participation memory participation,
+        uint receivableAmount,
+        address requestToken, 
+        address recipient,
+        uint requestAmount,
+        bool isForFeeToken
+    )
+        internal
+        pure
+    {
+        if (requestAmount > 0) {
+            bytes32 actionHash = participation.order.getBrokerHash();
+            bytes32 transferHash = keccak256(abi.encodePacked(actionHash, requestToken, recipient));
+            
+            Data.BrokerAction memory action;
+            bool isActionNewlyCreated = false;
+
+            uint index = 0;
+            bool found = false;
+
+            // Find a preexisting BrokerAction
+            for (index = 0; index < ctx.numBrokerActions; index++) {
+                if (ctx.brokerActions[index].hash == actionHash) {
+                    action = ctx.brokerActions[index];
+                    found = true;
+                    break;
+                }
+            }
+
+            // If none exist, create a new BrokerAction
+            if (!found) {
+                action = Data.BrokerAction({
+                    hash: actionHash,
+                    broker: participation.order.broker,
+                    orderIndices: new uint[](ctx.brokerOrders.length),
+                    numOrders: 0,
+                    transferIndices: new uint[](ctx.brokerTransfers.length * 3),
+                    numTransfers: 0,
+                    tokenS: participation.order.tokenS,
+                    tokenB: participation.order.tokenB,
+                    feeToken: participation.order.feeToken
+                });
+                ctx.brokerActions[ctx.numBrokerActions] = action;
+                ctx.numBrokerActions += 1;
+                isActionNewlyCreated = true;
+            } else {
+                found = false;
+            }
+
+            // Find a preexisting BrokerOrder for the participant's order from those registered with the action
+            if (!isActionNewlyCreated) {
+                for (index = 0; index < action.numOrders; index++) {
+                    if (ctx.brokerOrders[action.orderIndices[index]].orderHash == participation.order.hash) {
+                        Data.BrokerOrder memory brokerOrder = ctx.brokerOrders[action.orderIndices[index]];
+                        brokerOrder.fillAmountB += receivableAmount;
+                        
+                        if (isForFeeToken) {
+                            brokerOrder.requestedFeeAmount += requestAmount;
+                        } else {
+                            brokerOrder.requestedAmountS += requestAmount;
+                        }
+
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            
+            // If none exist, create a new BrokerOrder
+            if (!found) {
+                ctx.brokerOrders[ctx.numBrokerOrders] = Data.BrokerOrder({
+                    owner: participation.order.owner,
+                    orderHash: participation.order.hash,
+                    fillAmountB: receivableAmount,
+                    requestedAmountS: isForFeeToken ? 0 : requestAmount,
+                    requestedFeeAmount: isForFeeToken ? requestAmount : 0,
+                    tokenRecipient: participation.order.tokenRecipient,
+                    extraData: participation.order.transferDataS
+                });
+                action.orderIndices[action.numOrders] = ctx.numBrokerOrders;
+                action.numOrders += 1;
+                ctx.numBrokerOrders += 1;
+            } else {
+                found = false;
+            }
+
+            // Find a preexisting BrokerTransfer from those registered with the action
+            if (!isActionNewlyCreated) {
+                for (index = 0; index < action.numTransfers; index++) {
+                    if (ctx.brokerTransfers[action.transferIndices[index]].hash == transferHash) {
+                        Data.BrokerTransfer memory transfer = ctx.brokerTransfers[action.transferIndices[index]];
+                        transfer.amount += requestAmount;
+                        found = true;
+                        break;
+                    }
+                }
+            }
+
+            // If none exist, create a new BrokerTransfer
+            if (!found) {
+                ctx.brokerTransfers[ctx.numBrokerTransfers] = Data.BrokerTransfer(transferHash, requestToken, requestAmount, recipient);
+                action.transferIndices[action.numTransfers] = ctx.numBrokerTransfers;
+                action.numTransfers += 1;
+                ctx.numBrokerTransfers += 1;
+            }
+        }
     }
 
     function addTokenTransfer(
@@ -416,7 +603,6 @@ library RingHelper {
         Data.Mining memory mining
         )
         internal
-        view
     {
         Data.FeeContext memory feeCtx;
         feeCtx.ring = ring;
@@ -435,7 +621,6 @@ library RingHelper {
         Data.Participation memory p
         )
         internal
-        view
         returns (uint)
     {
         feeCtx.walletPercentage = p.order.P2P ? 100 : (
@@ -469,7 +654,6 @@ library RingHelper {
         uint totalAmount
         )
         internal
-        view
         returns (uint)
     {
         if (totalAmount == 0) {
@@ -594,12 +778,13 @@ library RingHelper {
         uint minerFee
         )
         internal
-        pure
     {
         for (uint i = 0; i < feeCtx.ring.size; i++) {
             if (feeCtx.ring.participations[i].order.waiveFeePercentage < 0) {
                 uint feeToOwner = minerFee
                     .mul(uint(-feeCtx.ring.participations[i].order.waiveFeePercentage)) / feeCtx.ctx.feePercentageBase;
+
+                emit DistributeFeeRebate(feeCtx.ring.hash, feeCtx.ring.participations[i].order.hash, token, feeToOwner);
 
                 feeCtx.ctx.feePtr = addFeePayment(
                     feeCtx.ctx.feeData,

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 
 /// @title IRingSubmitter
@@ -40,6 +40,18 @@ contract IRingSubmitter {
     ///         _ringHash  The hash of the ring
     event InvalidRing(
         bytes32 _ringHash
+    );
+
+    /// @dev   Event emitted when fee rebates are distributed (waiveFeePercentage < 0)
+    ///         _ringHash   The hash of the ring whose order(s) will receive the rebate
+    ///         _orderHash  The hash of the order that will receive the rebate
+    ///         _feeToken   The address of the token that will be paid to the _orderHash's owner
+    ///         _feeAmount  The amount to be paid to the owner
+    event DistributeFeeRebate(
+        bytes32 indexed _ringHash,
+        bytes32 indexed _orderHash,
+        address         _feeToken,
+        uint            _feeAmount
     );
 
     /// @dev   Submit order-rings for validation and settlement.

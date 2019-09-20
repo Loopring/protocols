@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../impl/Data.sol";
 import "../lib/MathUint.sol";
@@ -42,7 +42,7 @@ library ParticipationHelper {
             // No need to check the fee balance of the owner if feeToken == tokenB,
             // fillAmountB will be used to pay the fee.
             if (!(p.order.feeToken == p.order.tokenB &&
-                  p.order.owner == p.order.tokenRecipient &&
+                  // p.order.owner == p.order.tokenRecipient &&
                   p.order.feeAmount <= p.order.amountB)) {
                 // Check how much fee needs to be paid. We limit fillAmountS to how much
                 // fee the order owner can pay.
@@ -83,14 +83,22 @@ library ParticipationHelper {
             p.feeAmountB = p.fillAmountB.mul(p.order.tokenBFeePercentage) / ctx.feePercentageBase;
         } else {
             // Calculate matching fees
-            p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
             p.feeAmountS = 0;
             p.feeAmountB = 0;
+
+            // Use primary token fill ratio to calculate fee
+            // if it's a BUY order, use the amount B (tokenB is the primary)
+            // if it's a SELL order, use the amount S (tokenS is the primary)
+            if (p.order.isBuy()) {
+                p.feeAmount = p.order.feeAmount.mul(p.fillAmountB) / p.order.amountB;
+            } else {
+                p.feeAmount = p.order.feeAmount.mul(p.fillAmountS) / p.order.amountS;
+            }
 
             // If feeToken == tokenB AND owner == tokenRecipient, try to pay using fillAmountB
 
             if (p.order.feeToken == p.order.tokenB &&
-                p.order.owner == p.order.tokenRecipient &&
+                // p.order.owner == p.order.tokenRecipient &&
                 p.fillAmountB >= p.feeAmount) {
                 p.feeAmountB = p.feeAmount;
                 p.feeAmount = 0;
@@ -109,16 +117,13 @@ library ParticipationHelper {
         }
 
         if ((p.fillAmountS - p.feeAmountS) >= prevP.fillAmountB) {
-            // The taker gets the margin
-            // This is the old way of calculating the margin split. GET RID OF IT so the user wins, always :-)
-            //  p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
+            // NOTICE: this line commented as order recipient should receive the margin
+            // p.splitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
 
-            // Margin is given to the user
-            uint marginSplitS = (p.fillAmountS - p.feeAmountS) - prevP.fillAmountB;
-            p.fillAmountS = prevP.fillAmountB + p.feeAmountS + marginSplitS;
-            p.splitS = 0;
+            p.fillAmountS = prevP.fillAmountB + p.feeAmountS;
             return true;
         } else {
+            revert('INVALID_FEES');
             return false;
         }
         
@@ -131,18 +136,21 @@ library ParticipationHelper {
         pure
         returns (bool valid)
     {
+        // NOTICE: deprecated logic, order recipient can get better price as they receive margin
         // Check if the rounding error of the calculated fillAmountB is larger than 1%.
         // If that's the case, this partipation in invalid
         // p.fillAmountB := p.fillAmountS.mul(p.order.amountB) / p.order.amountS
-        valid = !MathUint.hasRoundingError(
-            p.fillAmountS,
-            p.order.amountB,
-            p.order.amountS
-        );
+        // valid = !MathUint.hasRoundingError(
+        //     p.fillAmountS,
+        //     p.order.amountB,
+        //     p.order.amountS
+        // );
 
         // We at least need to buy and sell something
-        valid = valid && p.fillAmountS > 0;
+        valid = p.fillAmountS > 0;
         valid = valid && p.fillAmountB > 0;
+
+        require(valid, 'INVALID_FILLS');
     }
 
     function adjustOrderState(
@@ -155,14 +163,10 @@ library ParticipationHelper {
         p.order.filledAmountS += p.fillAmountS + p.splitS;
 
         // Update spendables
-        uint totalAmountS = p.fillAmountS + p.splitS;
+        uint totalAmountS = p.fillAmountS;
         uint totalAmountFee = p.feeAmount;
         p.order.tokenSpendableS.amount = p.order.tokenSpendableS.amount.sub(totalAmountS);
         p.order.tokenSpendableFee.amount = p.order.tokenSpendableFee.amount.sub(totalAmountFee);
-        if (p.order.brokerInterceptor != address(0x0)) {
-            p.order.brokerSpendableS.amount = p.order.brokerSpendableS.amount.sub(totalAmountS);
-            p.order.brokerSpendableFee.amount = p.order.brokerSpendableFee.amount.sub(totalAmountFee);
-        }
     }
 
     function revertOrderState(

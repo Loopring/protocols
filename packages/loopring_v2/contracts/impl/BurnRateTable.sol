@@ -15,7 +15,7 @@
   limitations under the License.
 */
 
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../iface/IBurnRateTable.sol";
 import "../lib/ERC20.sol";
@@ -30,7 +30,6 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
     using ERC20SafeTransfer for address;
 
     address public lrcAddress = address(0x0);
-    address public wethAddress = address(0x0);
 
     constructor(
         address _lrcAddress,
@@ -39,13 +38,9 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
         public
     {
         require(_lrcAddress != address(0x0), ZERO_ADDRESS);
-        require(_wethAddress != address(0x0), ZERO_ADDRESS);
         lrcAddress = _lrcAddress;
-        wethAddress = _wethAddress;
 
-        // Set fixed LRC and WETH burn rates
         setFixedTokenTier(lrcAddress, TIER_1);
-        setFixedTokenTier(wethAddress, TIER_3);
     }
 
     function setFixedTokenTier(
@@ -86,7 +81,6 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
     {
         require(token != address(0x0), ZERO_ADDRESS);
         require(token != lrcAddress, BURN_RATE_FROZEN);
-        require(token != wethAddress, BURN_RATE_FROZEN);
 
         uint currentTier = getTokenTier(token);
 
@@ -125,7 +119,7 @@ contract BurnRateTable is IBurnRateTable, NoDefaultFunc {
     {
         TokenData storage tokenData = tokens[token];
         // Fall back to lowest tier
-        tier = (now > tokenData.validUntil) ? TIER_4 : tokenData.tier;
+        tier = (now > tokenData.validUntil) ? TIER_2 : tokenData.tier;
     }
 
 }

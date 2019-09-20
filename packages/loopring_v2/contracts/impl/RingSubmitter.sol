@@ -14,7 +14,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
+pragma experimental ABIEncoderV2;
 
 import "../helper/MiningHelper.sol";
 import "../helper/OrderHelper.sol";
@@ -28,14 +29,15 @@ import "../iface/IOrderBook.sol";
 import "../iface/IRingSubmitter.sol";
 import "../iface/ITradeDelegate.sol";
 import "../iface/ITradeHistory.sol";
+import "../iface/IBrokerDelegate.sol";
 
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/NoDefaultFunc.sol";
+import "../lib/ERC20SafeTransfer.sol";
 
 import "./Data.sol";
 import "./ExchangeDeserializer.sol";
-
 
 /// @title An Implementation of IRingSubmitter.
 /// @author Daniel Wang - <daniel@loopring.org>,
@@ -47,11 +49,12 @@ import "./ExchangeDeserializer.sol";
 ///     https://github.com/jonasshen
 ///     https://github.com/Hephyrius
 contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
-    using MathUint      for uint;
-    using BytesUtil     for bytes;
-    using OrderHelper     for Data.Order;
-    using RingHelper      for Data.Ring;
-    using MiningHelper    for Data.Mining;
+    using MathUint          for uint;
+    using BytesUtil         for bytes;
+    using OrderHelper       for Data.Order;
+    using RingHelper        for Data.Ring;
+    using MiningHelper      for Data.Mining;
+    using ERC20SafeTransfer for address;
 
     address public  lrcTokenAddress             = address(0x0);
     address public  wethTokenAddress            = address(0x0);
@@ -118,6 +121,13 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
     {
         uint i;
         bytes32[] memory tokenBurnRates;
+
+        (
+            Data.Mining  memory mining,
+            Data.Order[] memory orders,
+            Data.Ring[]  memory rings
+        ) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
+
         Data.Context memory ctx = Data.Context(
             lrcTokenAddress,
             ITradeDelegate(delegateAddress),
@@ -133,27 +143,26 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
             0,
             0,
             0,
+            0,
+            new Data.BrokerOrder[](orders.length),
+            new Data.BrokerAction[](orders.length),
+            new Data.BrokerTransfer[](orders.length * 3),
+            0,
+            0,
             0
         );
-
-        // Check if the highest bit of ringIndex is '1'
-        require((ctx.ringIndex >> 63) == 0, REENTRY);
 
         // Set the highest bit of ringIndex to '1' (IN STORAGE!)
         ringIndex = ctx.ringIndex | (1 << 63);
 
-        (
-            Data.Mining  memory mining,
-            Data.Order[] memory orders,
-            Data.Ring[]  memory rings
-        ) = ExchangeDeserializer.deserialize(lrcTokenAddress, data);
+        // Check if the highest bit of ringIndex is '1'
+        require((ctx.ringIndex >> 63) == 0, REENTRY);
 
         // Allocate memory that is used to batch things for all rings
         setupLists(ctx, orders, rings);
 
         for (i = 0; i < orders.length; i++) {
             orders[i].updateHash();
-            orders[i].updateBrokerAndInterceptor(ctx);
         }
 
         batchGetFilledAndCheckCancelled(ctx, orders);
@@ -188,7 +197,7 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
         for (i = 0; i < rings.length; i++) {
             Data.Ring memory ring = rings[i];
             ring.checkOrdersValid();
-            ring.checkForSubRings();
+            // ring.checkForSubRings(); we submit rings of size 2 - there's no need to check for sub-rings
             ring.calculateFillAmountAndFee(ctx);
             if (ring.valid) {
                 ring.adjustOrderStates();
@@ -216,6 +225,8 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
 
         // Do all token transfers for all rings
         batchTransferTokens(ctx);
+        // Do all broker token transfers for all rings
+        batchBrokerTransferTokens(ctx, orders);
         // Do all fee payments for all rings
         batchPayFees(ctx);
         // Update all order stats
@@ -534,6 +545,68 @@ contract RingSubmitter is IRingSubmitter, NoDefaultFunc {
                     )
                 )
             }
+        }
+    }
+
+    function batchBrokerTransferTokens(Data.Context memory ctx, Data.Order[] memory orders) internal {
+        Data.BrokerInterceptorReport[] memory reportQueue = new Data.BrokerInterceptorReport[](orders.length);
+        uint reportCount = 0;
+
+        for (uint i = 0; i < ctx.numBrokerActions; i++) {
+            Data.BrokerAction memory action = ctx.brokerActions[i];
+            Data.BrokerApprovalRequest memory request = Data.BrokerApprovalRequest({
+                orders: new Data.BrokerOrder[](action.numOrders),
+                tokenS: action.tokenS,
+                tokenB: action.tokenB,
+                feeToken: action.feeToken,
+                totalFillAmountB: 0,
+                totalRequestedAmountS: 0,
+                totalRequestedFeeAmount: 0
+            });
+            
+            for (uint b = 0; b < action.numOrders; b++) {
+                request.orders[b] = ctx.brokerOrders[action.orderIndices[b]];
+                request.totalFillAmountB += request.orders[b].fillAmountB;
+                request.totalRequestedAmountS += request.orders[b].requestedAmountS;
+                request.totalRequestedFeeAmount += request.orders[b].requestedFeeAmount;
+            }
+
+            bool requiresReport = IBrokerDelegate(action.broker).brokerRequestAllowance(request);
+            
+            if (requiresReport) {
+                for (uint k = 0; k < request.orders.length; k++) {
+                    reportQueue[reportCount] = Data.BrokerInterceptorReport({
+                        owner: request.orders[k].owner,
+                        broker: action.broker,
+                        orderHash: request.orders[k].orderHash,
+                        tokenB: action.tokenB,
+                        tokenS: action.tokenS,
+                        feeToken: action.feeToken,
+                        fillAmountB: request.orders[k].fillAmountB,
+                        spentAmountS: request.orders[k].requestedAmountS,
+                        spentFeeAmount: request.orders[k].requestedFeeAmount,
+                        tokenRecipient: request.orders[k].tokenRecipient,
+                        extraData: request.orders[k].extraData
+                    });
+                    reportCount += 1;
+                }
+            }
+
+            for (uint j = 0; j < action.numTransfers; j++) {
+                Data.BrokerTransfer memory transfer = ctx.brokerTransfers[action.transferIndices[j]];
+
+                if (transfer.recipient != action.broker) {
+                    require(transfer.token.safeTransferFrom(
+                        action.broker, 
+                        transfer.recipient, 
+                        transfer.amount
+                    ), TRANSFER_FAILURE);
+                }
+            }
+        }
+
+        for (uint m = 0; m < reportCount; m++) {
+            IBrokerDelegate(reportQueue[m].broker).onOrderFillReport(reportQueue[m]);
         }
     }
 

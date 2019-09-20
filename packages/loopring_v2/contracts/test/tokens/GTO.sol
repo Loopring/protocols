@@ -14,16 +14,16 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.2;
+pragma solidity 0.5.7;
 
 import "../DummyToken.sol";
 
 contract GTO is DummyToken {
 
     constructor() DummyToken(
-        "GTO_TEST",
-        "GTO",
-        18,
+        "WBTC_TEST",
+        "WBTC",
+        8,
         10 ** 27
     ) public
     {

@@ -13,9 +13,10 @@ module.exports = {
         optimizer: {
           enabled: true,
           runs: 10000
-        }
+        },
+        evmVersion: 'constantinople',
       },
-      version: "0.5.2"
+      version: "0.5.7"
     }
   },
   networks: {
