@@ -10,7 +10,9 @@
         ]
     },
     "jsRules":
-    {},
+    {
+        "object-literal-sort-keys": false
+    },
     "rules":
     {
         "no-console": false,
