@@ -1,0 +1,8 @@
+node_modules
+Dockerfile
+docker-compose.yml
+.vscode
+.git
+.gitignore
+.soliumignore
+.soliumrc.json
