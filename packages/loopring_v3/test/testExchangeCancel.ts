@@ -1,49 +1,98 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
-
   let exchangeTestUtil: ExchangeTestUtil;
 
   let exchangeId = 0;
 
-  before( async () => {
+  before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
   });
 
   beforeEach(async () => {
     // Fresh Exchange for each test
-    exchangeId = await exchangeTestUtil.createExchange(exchangeTestUtil.testContext.stateOwners[0], true);
+    exchangeId = await exchangeTestUtil.createExchange(
+      exchangeTestUtil.testContext.stateOwners[0],
+      true
+    );
   });
 
   describe("Cancel", function() {
     this.timeout(0);
 
-    it("Cancel", async () => {
+    it("Cancel (orderToken != feeToken)", async () => {
       const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1,
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            orderID: 2,
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 0.0 },
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("110", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 2 ** Constants.TREE_DEPTH_TRADING_HISTORY - 1
         },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          orderID: 2
+        },
+        expected: {
+          orderA: {
+            filledFraction: 0.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 0.0 }
+        }
+      };
+
+      await exchangeTestUtil.setupRing(ring);
+      await exchangeTestUtil.sendRing(exchangeId, ring);
+
+      const feeToken = "LRC";
+      const feeAmount = new BN(web3.utils.toWei("1.5", "ether"));
+      await exchangeTestUtil.depositTo(
+        ring.orderB.accountID,
+        feeToken,
+        feeAmount
+      );
+
+      await exchangeTestUtil.commitDeposits(exchangeId);
+
+      await exchangeTestUtil.cancelOrder(ring.orderB, feeToken, feeAmount);
+      await exchangeTestUtil.commitCancels(exchangeId);
+
+      await exchangeTestUtil.commitRings(exchangeId);
+
+      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+    });
+
+    it("Cancel (orderToken == feeToken)", async () => {
+      const ring: RingInfo = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("110", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 2 ** Constants.TREE_DEPTH_TRADING_HISTORY - 1
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          orderID: 2
+        },
+        expected: {
+          orderA: {
+            filledFraction: 0.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 0.0 }
+        }
       };
 
       await exchangeTestUtil.setupRing(ring);
@@ -51,8 +100,11 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
-      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0];
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("1", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
@@ -62,104 +114,27 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Cancel (owner == operator)", async () => {
       const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1,
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            orderID: 2,
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 0.0 },
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("110", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 2 ** Constants.TREE_DEPTH_TRADING_HISTORY - 1
         },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeId, ring);
-
-      await exchangeTestUtil.commitDeposits(exchangeId);
-
-      exchangeTestUtil.setActiveOperator(ring.orderB.accountID);
-
-      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0];
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
-      await exchangeTestUtil.commitCancels(exchangeId);
-
-      await exchangeTestUtil.commitRings(exchangeId);
-
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
-    });
-
-    it("Cancel (owner == wallet)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1,
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            orderID: 2,
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 0.0 },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          orderID: 2
         },
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeId, ring);
-
-      await exchangeTestUtil.commitDeposits(exchangeId);
-
-      const walletAccountID = ring.orderA.accountID;
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
-      await exchangeTestUtil.commitCancels(exchangeId);
-
-      await exchangeTestUtil.commitRings(exchangeId);
-
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
-    });
-
-    it("Cancel (owner == wallet == operator)", async () => {
-      const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("110", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            orderID: 2 ** constants.TREE_DEPTH_TRADING_HISTORY - 1,
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            orderID: 2,
-          },
         expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 0.0 },
-        },
+          orderA: {
+            filledFraction: 0.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 0.0 }
+        }
       };
 
       await exchangeTestUtil.setupRing(ring);
@@ -169,8 +144,11 @@ contract("Exchange", (accounts: string[]) => {
 
       exchangeTestUtil.setActiveOperator(ring.orderA.accountID);
 
-      const walletAccountID = ring.orderA.accountID;
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("1", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("1", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.commitRings(exchangeId);
@@ -181,37 +159,41 @@ contract("Exchange", (accounts: string[]) => {
     it("Reuse trade history slot that was cancelled", async () => {
       const orderID = 123;
       const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-            orderID: 4,
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-            orderID,
-          },
-        expected: {
-          orderA: { filledFraction: 1.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 1.0 },
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 4
         },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          orderID
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
       };
 
       await exchangeTestUtil.setupRing(ring);
 
       await exchangeTestUtil.commitDeposits(exchangeId);
 
-      const walletAccountID = exchangeTestUtil.wallets[exchangeId][0];
-      await exchangeTestUtil.cancelOrder(ring.orderA, walletAccountID, "WETH", new BN(web3.utils.toWei("0", "ether")));
+      await exchangeTestUtil.cancelOrder(
+        ring.orderA,
+        "WETH",
+        new BN(web3.utils.toWei("0", "ether"))
+      );
       await exchangeTestUtil.commitCancels(exchangeId);
 
-      ring.orderA.orderID += 2 ** constants.TREE_DEPTH_TRADING_HISTORY;
+      ring.orderA.orderID += 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
       ring.orderA.signature = undefined;
       exchangeTestUtil.signOrder(ring.orderA);
 
@@ -221,26 +203,98 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
     });
 
+    it("Cancel an order with orderID > tradeHistory.orderID", async () => {
+      const orderID = 1987;
+      const ringA: RingInfo = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 4
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          orderID
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ringA);
+
+      const ringB: RingInfo = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: 5
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("400", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          orderID: orderID + 2 ** Constants.TREE_DEPTH_TRADING_HISTORY,
+          accountID: ringA.orderB.accountID,
+          owner: ringA.orderB.owner
+        },
+        expected: {
+          orderA: {
+            filledFraction: 0.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 0.0 }
+        }
+      };
+      await exchangeTestUtil.setupRing(ringB);
+
+      await exchangeTestUtil.commitDeposits(exchangeId);
+      await exchangeTestUtil.sendRing(exchangeId, ringA);
+      await exchangeTestUtil.commitRings(exchangeId);
+
+      await exchangeTestUtil.cancelOrder(
+        ringB.orderB,
+        "WETH",
+        new BN(web3.utils.toWei("0", "ether"))
+      );
+      await exchangeTestUtil.commitCancels(exchangeId);
+
+      await exchangeTestUtil.sendRing(exchangeId, ringB);
+      await exchangeTestUtil.commitRings(exchangeId);
+
+      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+    });
+
     it("Cancel all orders from an account by changing the account's public key", async () => {
       const ring: RingInfo = {
-        orderA:
-          {
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: new BN(web3.utils.toWei("100", "ether")),
-            amountB: new BN(web3.utils.toWei("200", "ether")),
-          },
-        orderB:
-          {
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: new BN(web3.utils.toWei("200", "ether")),
-            amountB: new BN(web3.utils.toWei("100", "ether")),
-          },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(web3.utils.toWei("0", "ether")) },
-          orderB: { filledFraction: 0.0 },
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether"))
         },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether"))
+        },
+        expected: {
+          orderA: {
+            filledFraction: 0.0,
+            spread: new BN(web3.utils.toWei("0", "ether"))
+          },
+          orderB: { filledFraction: 0.0 }
+        }
       };
 
       await exchangeTestUtil.setupRing(ring);
@@ -249,9 +303,15 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeId, ring);
 
       // Change the account's public key
-      await exchangeTestUtil.deposit(exchangeId, ring.orderB.owner,
-                                     "0", "0", "0",
-                                     constants.zeroAddress, new BN(0));
+      await exchangeTestUtil.deposit(
+        exchangeId,
+        ring.orderB.owner,
+        "0",
+        "1",
+        "0",
+        Constants.zeroAddress,
+        new BN(0)
+      );
       await exchangeTestUtil.commitDeposits(exchangeId);
 
       // Try to use the ring
@@ -264,6 +324,5 @@ contract("Exchange", (accounts: string[]) => {
       }
       assert(receivedThrow, "did not receive expected invalid block error");
     });
-
   });
 });

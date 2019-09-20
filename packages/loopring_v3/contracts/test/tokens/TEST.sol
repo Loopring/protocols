@@ -14,10 +14,10 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../DummyToken.sol";
-import "../../iface/IExchange.sol";
+import "../../iface/IExchangeV3.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TEST is DummyToken {
@@ -50,7 +50,7 @@ contract TEST is DummyToken {
 
     function transfer(
         address _to,
-        uint256 _value
+        uint _value
         )
         public
         returns (bool)
@@ -67,7 +67,7 @@ contract TEST is DummyToken {
     function transferFrom(
         address _from,
         address _to,
-        uint256 _value
+        uint _value
         )
         public
         returns (bool)

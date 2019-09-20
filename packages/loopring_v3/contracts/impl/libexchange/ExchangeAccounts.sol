@@ -14,9 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../../lib/MathUint.sol";
+
+import "../../iface/IAddressWhitelist.sol";
 
 import "./ExchangeBalances.sol";
 import "./ExchangeData.sol";
@@ -49,7 +51,7 @@ library ExchangeAccounts
         ExchangeData.State storage S,
         address owner
         )
-        public
+        external
         view
         returns (
             uint24 accountID,
@@ -65,26 +67,44 @@ library ExchangeAccounts
 
     function createOrUpdateAccount(
         ExchangeData.State storage S,
-        uint pubKeyX,
-        uint pubKeyY
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes calldata permission
         )
-        public
+        external
         returns (
             uint24 accountID,
             bool   isAccountNew,
             bool   isAccountUpdated
         )
     {
-        // We allow pubKeyX and/or pubKeyY to be 0 for normal accounts to
-        // disable offchain request signing.
-
         isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
         if (isAccountNew) {
+            if (S.addressWhitelist != address(0)) {
+                require(
+                    IAddressWhitelist(S.addressWhitelist).isWhitelisted(msg.sender, permission),
+                    "ADDRESS_NOT_WHITELISTED"
+                );
+            }
             accountID = createAccount(S, pubKeyX, pubKeyY);
             isAccountUpdated = false;
         } else {
             (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
         }
+    }
+
+    function getAccountID(
+        ExchangeData.State storage S,
+        address owner
+        )
+        public
+        view
+        returns (uint24 accountID)
+    {
+        accountID = S.ownerToAccountId[owner];
+        require(accountID != 0, "ADDRESS_HAS_NO_ACCOUNT");
+
+        accountID = accountID - 1;
     }
 
     function createAccount(
@@ -122,7 +142,10 @@ library ExchangeAccounts
         uint pubKeyY
         )
         private
-        returns (uint24 accountID, bool isAccountUpdated)
+        returns (
+            uint24 accountID,
+            bool   isAccountUpdated
+        )
     {
         require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");
 
@@ -141,48 +164,5 @@ library ExchangeAccounts
                 pubKeyY
             );
         }
-    }
-
-    // == Internal Functions ==
-    function getAccountID(
-        ExchangeData.State storage S,
-        address owner
-        )
-        internal
-        view
-        returns (uint24 accountID)
-    {
-        accountID = S.ownerToAccountId[owner];
-        require(accountID != 0, "ADDRESS_HAS_NO_ACCOUNT");
-
-        accountID = accountID - 1;
-    }
-
-    function isAccountBalanceCorrect(
-        ExchangeData.Account storage account,
-        bytes32 merkleRoot,
-        uint24 accountID,
-        uint16 tokenID,
-        uint32 nonce,
-        uint96 balance,
-        uint256 tradeHistoryRoot,
-        uint256[20] memory accountMerkleProof,
-        uint256[8]  memory balanceMerkleProof
-        )
-        public
-        view
-    {
-        ExchangeBalances.isAccountBalanceCorrect(
-            uint256(merkleRoot),
-            accountID,
-            tokenID,
-            account.pubKeyX,
-            account.pubKeyY,
-            nonce,
-            balance,
-            tradeHistoryRoot,
-            accountMerkleProof,
-            balanceMerkleProof
-        );
     }
 }

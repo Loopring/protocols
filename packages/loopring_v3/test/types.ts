@@ -1,30 +1,5 @@
 import BN = require("bn.js");
-
-export enum BlockState {
-  NEW = 0,
-  COMMITTED,
-  VERIFIED,
-}
-
-export enum BlockType {
-  RING_SETTLEMENT = 0,
-  DEPOSIT,
-  ONCHAIN_WITHDRAWAL,
-  OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION,
-}
-
-export interface KeyPair {
-  publicKeyX: string;
-  publicKeyY: string;
-  secretKey: string;
-}
-
-export interface Signature {
-  Rx: string;
-  Ry: string;
-  s: string;
-}
+import { BlockState, BlockType, Signature } from "loopringV3.js";
 
 export interface OrderInfo {
   owner?: string;
@@ -37,9 +12,7 @@ export interface OrderInfo {
   accountID?: number;
   orderID?: number;
 
-  dualAuthPublicKeyX?: string;
-  dualAuthPublicKeyY?: string;
-  dualAuthSecretKey?: string;
+  label?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -76,13 +49,8 @@ export interface RingInfo {
   orderA: OrderInfo;
   orderB: OrderInfo;
 
-  ringMatcherAccountID?: number;
   tokenID?: number;
   fee?: BN;
-
-  ringMatcherSignature?: Signature;
-  dualAuthASignature?: Signature;
-  dualAuthBSignature?: Signature;
 
   expected?: RingExpectation;
 }
@@ -96,16 +64,20 @@ export interface RingBlock {
   timestamp?: number;
   exchangeID?: number;
   operatorAccountID?: number;
+
+  signature?: Signature;
 }
 
 export interface Deposit {
+  exchangeId: number;
   depositIdx: number;
   accountID: number;
-  secretKey: string;
   publicKeyX: string;
   publicKeyY: string;
   tokenID: number;
   amount: BN;
+  timestamp?: number;
+  transactionHash?: string;
 }
 
 export interface DepositBlock {
@@ -118,14 +90,14 @@ export interface DepositBlock {
 }
 
 export interface WithdrawalRequest {
+  exchangeId: number;
   accountID: number;
   tokenID: number;
   amount: BN;
 
-  walletAccountID: number;
-  feeTokenID: number;
-  fee: BN;
-  walletSplitPercentage: number;
+  feeTokenID?: number;
+  fee?: BN;
+  label?: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
@@ -133,6 +105,8 @@ export interface WithdrawalRequest {
   withdrawalFee?: BN;
 
   signature?: Signature;
+  timestamp?: number;
+  transactionHash?: string;
 }
 
 export interface Withdrawal {
@@ -157,10 +131,9 @@ export interface Cancel {
   accountID: number;
   orderTokenID: number;
   orderID: number;
-  walletAccountID: number;
   feeTokenID: number;
   fee: BN;
-  walletSplitPercentage: number;
+  label?: number;
 
   signature?: Signature;
 }
@@ -176,8 +149,25 @@ export interface CancelBlock {
 export interface Block {
   blockIdx: number;
   filename: string;
+  blockType: BlockType;
+  blockSize: number;
+  blockVersion: number;
+  blockState: BlockState;
+  operator: string;
+  origin: string;
   operatorId: number;
+  data: string;
+  offchainData: string;
   compressedData: string;
+  publicDataHash: string;
+  publicInput: string;
+  proof?: string[];
+  blockFeeWithdrawn: boolean;
+  blockFeeAmountWithdrawn?: BN;
+  committedTimestamp: number;
+  verifiedTimestamp?: number;
+  finalizedTimestamp?: number;
+  transactionHash: string;
 }
 
 export interface Account {
@@ -197,14 +187,14 @@ export interface TradeHistory {
 
 export interface Balance {
   balance: BN;
-  tradeHistory: {[key: number]: TradeHistory};
+  tradeHistory: { [key: number]: TradeHistory };
 }
 
 export interface AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
-  balances: {[key: number]: Balance};
+  balances: { [key: number]: Balance };
 }
 
 export interface ExchangeState {

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "./ERC20.sol";
 
@@ -24,14 +24,14 @@ import "./ERC20.sol";
 contract BurnableERC20 is ERC20
 {
     function burn(
-        uint256 value
+        uint value
         )
         public
         returns (bool);
 
     function burnFrom(
         address from,
-        uint256 value
+        uint value
         )
         public
         returns (bool);

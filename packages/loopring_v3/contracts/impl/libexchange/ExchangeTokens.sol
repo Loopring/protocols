@@ -14,13 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
-
+pragma solidity ^0.5.11;
 
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/NoDefaultFunc.sol";
 
 import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
@@ -39,6 +37,32 @@ library ExchangeTokens
         uint16  indexed tokenId
     );
 
+    function registerToken(
+        ExchangeData.State storage S,
+        address tokenAddress
+        )
+        external
+        returns (uint16 tokenID)
+    {
+        tokenID = registerToken(
+            S,
+            tokenAddress,
+            getLRCFeeForRegisteringOneMoreToken(S)
+        );
+    }
+
+    function getTokenAddress(
+        ExchangeData.State storage S,
+        uint16 tokenID
+        )
+        external
+        view
+        returns (address)
+    {
+        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
+        return S.tokens[tokenID].token;
+    }
+
     function getLRCFeeForRegisteringOneMoreToken(
         ExchangeData.State storage S
         )
@@ -53,24 +77,10 @@ library ExchangeTokens
 
     function registerToken(
         ExchangeData.State storage S,
-        address tokenAddress
-        )
-        public
-        returns (uint16 tokenID)
-    {
-        tokenID = registerToken(
-            S,
-            tokenAddress,
-            getLRCFeeForRegisteringOneMoreToken(S)
-        );
-    }
-
-    function registerToken(
-        ExchangeData.State storage S,
         address tokenAddress,
         uint    amountToBurn
         )
-        internal
+        public
         returns (uint16 tokenID)
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -93,7 +103,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        internal
+        public
         view
         returns (uint16 tokenID)
     {
@@ -102,23 +112,11 @@ library ExchangeTokens
         tokenID = tokenID - 1;
     }
 
-    function getTokenAddress(
-        ExchangeData.State storage S,
-        uint16 tokenID
-        )
-        internal
-        view
-        returns (address)
-    {
-        require(tokenID < S.tokens.length, "INVALID_TOKEN_ID");
-        return S.tokens[tokenID].token;
-    }
-
     function disableTokenDeposit(
         ExchangeData.State storage S,
         address tokenAddress
         )
-        public
+        external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
 
@@ -136,7 +134,7 @@ library ExchangeTokens
         ExchangeData.State storage S,
         address tokenAddress
         )
-        public
+        external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         uint16 tokenID = getTokenID(S, tokenAddress);

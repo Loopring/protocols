@@ -3,7 +3,6 @@ declare module 'ethereumjs-abi';
 declare module 'ethereumjs-util';
 declare module 'es6-promisify';
 declare module 'sha2';
-declare module 'snarkjs';
 
 // declare module 'protocol-simulator-core';
 

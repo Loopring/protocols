@@ -1,20 +1,20 @@
-import { Bitstream } from "./bitstream";
+import { Bitstream } from "loopringV3.js";
 
 export enum CompressionType {
   NONE = 0,
-  LZ,
+  LZ
 }
 
 export enum CompressionSpeed {
   FAST = 0,
   MEDIUM,
-  SLOW,
+  SLOW
 }
 
 const GAS_COST_ZERO_BYTE = 4;
 const GAS_COST_NONZERO_BYTE = 68;
 
-export const calculateCalldataCost = (data: string)  => {
+export const calculateCalldataCost = (data: string) => {
   assert(data.length % 2 === 0, "data needs to be an integer number of bytes");
   let cost = 0;
   let i = data.startsWith("0x") ? 2 : 0;
@@ -28,7 +28,7 @@ export const calculateCalldataCost = (data: string)  => {
   return cost;
 };
 
-const isAllZeros = (data: string)  => {
+const isAllZeros = (data: string) => {
   assert(data.length % 2 === 0, "data needs to be an integer number of bytes");
   let i = data.startsWith("0x") ? 2 : 0;
   let bAllZeros = true;
@@ -41,7 +41,11 @@ const isAllZeros = (data: string)  => {
   return bAllZeros;
 };
 
-export function compress(data: string, mode: CompressionType, externalContractAddress?: string) {
+export function compress(
+  data: string,
+  mode: CompressionType,
+  externalContractAddress?: string
+) {
   if (mode === CompressionType.NONE) {
     const bitstream = new Bitstream();
     bitstream.addNumber(CompressionType.NONE, 1);
@@ -73,16 +77,25 @@ export function decompress(data: string) {
   }
 }
 
-export function compressLZ(input: string, speed: CompressionSpeed = CompressionSpeed.MEDIUM) {
+export function compressLZ(
+  input: string,
+  speed: CompressionSpeed = CompressionSpeed.MEDIUM
+) {
   const minGasSavedForReplacement = GAS_COST_NONZERO_BYTE * 10;
-  const minLengthReplacement = Math.floor(minGasSavedForReplacement / GAS_COST_NONZERO_BYTE);
+  const minLengthReplacement = Math.floor(
+    minGasSavedForReplacement / GAS_COST_NONZERO_BYTE
+  );
 
   // Limit the maximum offset for now because the compressor uses brute force
   // to find repeated patterns for now
-  const maxOffset = (speed === CompressionSpeed.FAST) ? 1024 :
-                    (speed === CompressionSpeed.MEDIUM) ? 2048 :
-                    (speed === CompressionSpeed.SLOW) ? 4096 :
-                    assert(false, "unknown compression speed");
+  const maxOffset =
+    speed === CompressionSpeed.FAST
+      ? 1024
+      : speed === CompressionSpeed.MEDIUM
+      ? 2048
+      : speed === CompressionSpeed.SLOW
+      ? 4096
+      : assert(false, "unknown compression speed");
   const maxLength = 2 ** 16 - 1;
 
   assert(maxOffset < 2 ** 16, "max offset too large");
@@ -105,7 +118,7 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
     }
   };
 
-  const startTime = (new Date()).getTime();
+  const startTime = new Date().getTime();
 
   const stream = new Bitstream(input);
   assert(stream.length() > 0, "cannot compress empty input");
@@ -128,12 +141,21 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
     let bestGasSaved = 0;
     for (let s = Math.max(0, pos - maxOffset); s < pos; s++) {
       let length = 0;
-      while (length < maxLength && (pos + length) < dataLength && data[s + length] === data[pos + length]) {
+      while (
+        length < maxLength &&
+        pos + length < dataLength &&
+        data[s + length] === data[pos + length]
+      ) {
         length++;
       }
       if (length >= minLengthReplacement) {
-        const gasSaved = calculateCalldataCost(stream.extractData(bestStartIndex, length));
-        if (gasSaved > bestGasSaved || (gasSaved === bestGasSaved && s > bestStartIndex)) {
+        const gasSaved = calculateCalldataCost(
+          stream.extractData(bestStartIndex, length)
+        );
+        if (
+          gasSaved > bestGasSaved ||
+          (gasSaved === bestGasSaved && s > bestStartIndex)
+        ) {
           bestGasSaved = gasSaved;
           bestStartIndex = s;
           bestLength = length;
@@ -175,13 +197,17 @@ export function compressLZ(input: string, speed: CompressionSpeed = CompressionS
   // Write out remaining literals
   writeLiterals();
 
-  const endTime = (new Date()).getTime();
+  const endTime = new Date().getTime();
   // console.log("Compression time: " + (endTime - startTime) + "ms.");
 
   // console.log("o: " + data.getData());
   // console.log("compressed: " + compressed.getData());
   const decompressed = decompressLZ(compressed.getData());
-  assert.equal(input, decompressed, "decompressed data does not match original data");
+  assert.equal(
+    input,
+    decompressed,
+    "decompressed data does not match original data"
+  );
   // console.log("r: " + decompressed);
 
   return compressed.getData();

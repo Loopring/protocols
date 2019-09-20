@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 
 /// @title IUserStakingPool
@@ -37,31 +37,30 @@ contract IUserStakingPool
     event LRCWithdrawn    (address user,  uint amount);
     event LRCRewarded     (address user,  uint amount);
 
-    /// @dev Set a new IProtocolFeeVault address, only callable by the owner.
+    /// @dev Sets a new IProtocolFeeVault address, only callable by the owner.
     /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.
     function setProtocolFeeVault(address _protocolFeeVaultAddress)
-        external
-        ;
+        external;
 
-    /// @dev Return the total number of LRC staked.
+    /// @dev Returns the total number of LRC staked.
     function getTotalStaking()
         external
         view
         returns (uint);
 
-    /// @dev Return information related to a specific user.
+    /// @dev Returns information related to a specific user.
     /// @param user The user address.
     /// @return withdrawalWaitTime Time in seconds that the user has to wait before any LRC can be withdrawn.
     /// @return rewardWaitTime Time in seconds that the user has to wait before any LRC reward can be claimed.
-    /// @return stakeAmount The amount of LRC staked.
-    /// @return claimableReward The amount of LRC reward waiting to be claimed.
+    /// @return balance The amount of LRC staked or rewarded.
+    /// @return claimableReward The amount of LRC reward claimable.
     function getUserStaking(address user)
-        view
         external
+        view
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,
-            uint stakeAmount,
+            uint balance,
             uint claimableReward
         );
 

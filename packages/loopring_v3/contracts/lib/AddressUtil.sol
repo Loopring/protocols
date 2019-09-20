@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 
 /// @title Utility Functions for addresses
@@ -47,6 +47,7 @@ library AddressUtil
     }
 
     // Works like address.send but with a customizable gas limit
+    // Make sure your code is safe for reentrancy when using this function!
     function sendETH(
         address to,
         uint    amount,
@@ -59,10 +60,12 @@ library AddressUtil
             return true;
         }
         address payable recipient = to.toPayable();
+        /* solium-disable-next-line */
         (success, ) = recipient.call.value(amount).gas(gasLimit)("");
     }
 
     // Works like address.transfer but with a customizable gas limit
+    // Make sure your code is safe for reentrancy when using this function!
     function transferETH(
         address to,
         uint    amount,

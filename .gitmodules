@@ -1,3 +1,4 @@
 [submodule "packages/loopring_v3/ethsnarks"]
 	path = packages/loopring_v3/ethsnarks
 	url = https://github.com/HarryR/ethsnarks
+	branch = master

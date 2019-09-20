@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
@@ -47,37 +47,15 @@ library ExchangeDeposits
         uint            pubKeyY
     );
 
-    function getNumDepositRequestsProcessed(
-        ExchangeData.State storage S
-      )
-        public
-        view
-        returns (uint)
-    {
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-        return currentBlock.numDepositRequestsCommitted;
-    }
-
-    function getNumAvailableDepositSlots(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
-    }
-
     function getDepositRequest(
         ExchangeData.State storage S,
         uint index
         )
-        public
+        external
         view
         returns (
           bytes32 accumulatedHash,
-          uint256 accumulatedFee,
+          uint    accumulatedFee,
           uint32  timestamp
         )
     {
@@ -95,7 +73,7 @@ library ExchangeDeposits
         uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
-        public
+        external
     {
         require(recipient != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
@@ -117,6 +95,15 @@ library ExchangeDeposits
             amount,
             feeETH
         );
+
+        // We allow invalid public keys to be set for accounts to
+        // disable offchain request signing.
+        // Make sure we can detect accounts that were not yet created in the circuits
+        // by forcing the pubKeyX to be non-zero.
+        require(account.pubKeyX > 0, "INVALID_PUBKEY");
+        // Make sure the public key can be stored in the SNARK field
+        require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
+        require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
 
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
@@ -147,6 +134,8 @@ library ExchangeDeposits
         );
         S.deposits.push(_deposit);
 
+        S.tokenBalances[tokenAddress] = S.tokenBalances[tokenAddress].add(amount);
+
         emit DepositRequested(
             uint32(S.depositChain.length - 1),
             accountID,
@@ -155,6 +144,28 @@ library ExchangeDeposits
             account.pubKeyX,
             account.pubKeyY
         );
+    }
+
+    function getNumDepositRequestsProcessed(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
+        return currentBlock.numDepositRequestsCommitted;
+    }
+
+    function getNumAvailableDepositSlots(
+        ExchangeData.State storage S
+        )
+        public
+        view
+        returns (uint)
+    {
+        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
+        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
     }
 
     function transferDeposit(

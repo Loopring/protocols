@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../../lib/MathUint.sol";
 
@@ -37,15 +37,18 @@ library ExchangeGenesis
     function initializeGenesisBlock(
         ExchangeData.State storage S,
         uint    _id,
-        address payable _loopringAddress,
+        address _loopringAddress,
         address payable _operator,
-        bool    _onchainDataAvailability
+        bool    _onchainDataAvailability,
+        bytes32 _genesisBlockHash
         )
-        public
+        external
     {
         require(0 != _id, "INVALID_ID");
         require(address(0) != _loopringAddress, "ZERO_ADDRESS");
         require(address(0) != _operator, "ZERO_ADDRESS");
+        require(_genesisBlockHash != 0, "ZERO_GENESIS_BLOCK_HASH");
+        require(S.id == 0, "INITIALIZED_ALREADY");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
@@ -58,7 +61,7 @@ library ExchangeGenesis
         S.lrcAddress = loopring.lrcAddress();
 
         ExchangeData.Block memory genesisBlock = ExchangeData.Block(
-            0x06ea7e01611a784ff676387ee0a6f58933eb184d8a2ff765608488e7e8da76d3,
+            _genesisBlockHash,
             0x0,
             ExchangeData.BlockState.VERIFIED,
             ExchangeData.BlockType(0),
@@ -86,8 +89,8 @@ library ExchangeGenesis
         // for padding deposits and on-chain withdrawal requests.
         ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
             address(0),
-            uint256(0),
-            uint256(0)
+            uint(0),
+            uint(0)
         );
 
         S.accounts.push(protocolFeePoolAccount);

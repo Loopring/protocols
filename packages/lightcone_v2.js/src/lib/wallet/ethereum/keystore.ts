@@ -1,5 +1,5 @@
-import {fromEthSale, fromPrivateKey, fromV1, fromV3} from 'ethereumjs-wallet';
-import {clearHexPrefix} from '../common/formatter';
+import { fromEthSale, fromPrivateKey, fromV1, fromV3 } from "ethereumjs-wallet";
+import { clearHexPrefix } from "../common/formatter";
 
 /**
  * Returns private key of given keystore
@@ -8,28 +8,28 @@ import {clearHexPrefix} from '../common/formatter';
  * @returns {Buffer}
  */
 export function decryptKeystoreToPkey(keystore, password) {
-    let wallet;
-    const parsed = JSON.parse(keystore);
-    switch (determineKeystoreType(keystore)) {
-        case 'presale':
-            wallet = decryptPresaleToPrivKey(keystore, password);
-            break;
-        case 'v1-unencrypted':
-            wallet = Buffer.from(parsed.private, 'hex');
-            break;
-        case 'v1-encrypted':
-            wallet = decryptMewV1ToPrivKey(keystore, password);
-            break;
-        case 'v2-unencrypted':
-            wallet = Buffer.from(parsed.privKey, 'hex');
-            break;
-        case 'v2-v3-utc':
-            wallet = decryptUtcKeystoreToPkey(keystore, password);
-            break;
-        default:
-            throw new Error('unrecognized type of keystore');
-    }
-    return wallet;
+  let wallet;
+  const parsed = JSON.parse(keystore);
+  switch (determineKeystoreType(keystore)) {
+    case "presale":
+      wallet = decryptPresaleToPrivKey(keystore, password);
+      break;
+    case "v1-unencrypted":
+      wallet = Buffer.from(parsed.private, "hex");
+      break;
+    case "v1-encrypted":
+      wallet = decryptMewV1ToPrivKey(keystore, password);
+      break;
+    case "v2-unencrypted":
+      wallet = Buffer.from(parsed.privKey, "hex");
+      break;
+    case "v2-v3-utc":
+      wallet = decryptUtcKeystoreToPkey(keystore, password);
+      break;
+    default:
+      throw new Error("unrecognized type of keystore");
+  }
+  return wallet;
 }
 
 /**
@@ -39,7 +39,7 @@ export function decryptKeystoreToPkey(keystore, password) {
  * @returns {{version, id, address, crypto}}  keystore
  */
 export function pkeyToKeystore(privateKey, password) {
-    return fromPrivateKey(privateKey).toV3(password, {c: 1024, n: 1024});
+  return fromPrivateKey(privateKey).toV3(password, { c: 1024, n: 1024 });
 }
 
 /**
@@ -49,7 +49,7 @@ export function pkeyToKeystore(privateKey, password) {
  * @returns {Buffer}
  */
 export function decryptUtcKeystoreToPkey(keystore, password) {
-    return fromV3(keystore, password, true).getPrivateKey();
+  return fromV3(keystore, password, true).getPrivateKey();
 }
 
 /**
@@ -58,20 +58,20 @@ export function decryptUtcKeystoreToPkey(keystore, password) {
  * @returns {string}
  */
 export function determineKeystoreType(keystore) {
-    const parsed = JSON.parse(keystore);
-    if (parsed.encseed) {
-        return 'presale';
-    } else if (parsed.Crypto || parsed.crypto) {
-        return 'v2-v3-utc';
-    } else if (parsed.hash && parsed.locked === true) {
-        return 'v1-encrypted';
-    } else if (parsed.hash && parsed.locked === false) {
-        return 'v1-unencrypted';
-    } else if (parsed.publisher === 'MyEtherWallet') {
-        return 'v2-unencrypted';
-    } else {
-        throw new Error('Invalid keystore');
-    }
+  const parsed = JSON.parse(keystore);
+  if (parsed.encseed) {
+    return "presale";
+  } else if (parsed.Crypto || parsed.crypto) {
+    return "v2-v3-utc";
+  } else if (parsed.hash && parsed.locked === true) {
+    return "v1-encrypted";
+  } else if (parsed.hash && parsed.locked === false) {
+    return "v1-unencrypted";
+  } else if (parsed.publisher === "MyEtherWallet") {
+    return "v2-unencrypted";
+  } else {
+    throw new Error("Invalid keystore");
+  }
 }
 
 /**
@@ -81,7 +81,7 @@ export function determineKeystoreType(keystore) {
  * @returns {Buffer}
  */
 export function decryptPresaleToPrivKey(keystore, password) {
-    return fromEthSale(keystore, password).getPrivateKey();
+  return fromEthSale(keystore, password).getPrivateKey();
 }
 
 /**
@@ -91,7 +91,7 @@ export function decryptPresaleToPrivKey(keystore, password) {
  * @returns {Buffer}
  */
 export function decryptMewV1ToPrivKey(keystore, password) {
-    return fromV1(keystore, password).getPrivateKey();
+  return fromV1(keystore, password).getPrivateKey();
 }
 
 /**
@@ -100,20 +100,20 @@ export function decryptMewV1ToPrivKey(keystore, password) {
  * @returns {boolean}
  */
 export function isKeystorePassRequired(keystore) {
-    switch (determineKeystoreType(keystore)) {
-        case 'presale':
-            return true;
-        case 'v1-unencrypted':
-            return false;
-        case 'v1-encrypted':
-            return true;
-        case 'v2-unencrypted':
-            return false;
-        case 'v2-v3-utc':
-            return true;
-        default:
-            return false;
-    }
+  switch (determineKeystoreType(keystore)) {
+    case "presale":
+      return true;
+    case "v1-unencrypted":
+      return false;
+    case "v1-encrypted":
+      return true;
+    case "v2-unencrypted":
+      return false;
+    case "v2-v3-utc":
+      return true;
+    default:
+      return false;
+  }
 }
 
 /**
@@ -122,6 +122,12 @@ export function isKeystorePassRequired(keystore) {
  * @returns {string}
  */
 export function getFileName(address) {
-    const ts = new Date();
-    return ['UTC--', ts.toJSON().replace(/:/g, '-'), '--', clearHexPrefix(address), '.json'].join('');
+  const ts = new Date();
+  return [
+    "UTC--",
+    ts.toJSON().replace(/:/g, "-"),
+    "--",
+    clearHexPrefix(address),
+    ".json"
+  ].join("");
 }

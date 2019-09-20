@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../../lib/MathUint.sol";
 
@@ -22,6 +22,8 @@ import "./ExchangeData.sol";
 
 
 /// @title ExchangeMode.
+/// @dev All methods in this lib are internal, therefore, there is no need
+///      to deploy this library independently.
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeMode

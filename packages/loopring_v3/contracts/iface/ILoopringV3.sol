@@ -14,22 +14,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
+
+import "./ILoopring.sol";
 
 
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopringV3
+contract ILoopringV3 is ILoopring
 {
     // == Events ==
-    event ExchangeCreated(
-        uint    indexed exchangeId,
-        address indexed exchangeAddress,
-        address indexed owner,
-        address         operator,
-        uint            burnedLRC
-    );
 
     event ExchangeStakeDeposited(
         uint    indexed exchangeId,
@@ -60,10 +55,6 @@ contract ILoopringV3
         uint            time
     );
 
-    event ProtocolFeeVaultUpdated(
-        address payable protocolFeeVault
-    );
-
     // == Public Variables ==
     struct Exchange
     {
@@ -71,17 +62,16 @@ contract ILoopringV3
         uint    exchangeStake;
         uint    protocolFeeStake;
     }
-    Exchange[] public exchanges;
 
-    uint    public totalStake;
+    mapping (uint => Exchange) internal exchanges;
 
-    address public lrcAddress;
+    string  constant public version = "3.0";
+
     address public wethAddress;
-    address public exchangeDeployerAddress;
+    uint    public totalStake;
     address public blockVerifierAddress;
-    uint    public exchangeCreationCostLRC;
+    address public downtimeCostCalculator;
     uint    public maxWithdrawalFee;
-    uint    public downtimePriceLRCPerMinute;
     uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
@@ -98,16 +88,17 @@ contract ILoopringV3
     address payable public protocolFeeVault;
 
     // == Public Functions ==
-    /// @dev Update the global exchange settings.
+    /// @dev Updates the global exchange settings.
     ///      This function can only be called by the owner of this contract.
     ///
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateSettings(
-        address _blockVerifierAddress,
+        address payable _protocolFeeVault,   // address(0) not allowed
+        address _blockVerifierAddress,       // address(0) not allowed
+        address _downtimeCostCalculator,     // address(0) allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
-        uint    _downtimePriceLRCPerMinute,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -117,47 +108,20 @@ contract ILoopringV3
         )
         external;
 
-    /// @dev Update the global protocol fee settings.
+    /// @dev Updates the global protocol fee settings.
     ///      This function can only be called by the owner of this contract.
     ///
     ///      Warning: these new values will be used by existing and
     ///      new Loopring exchanges.
     function updateProtocolFeeSettings(
-        uint8   _minProtocolTakerFeeBips,
-        uint8   _maxProtocolTakerFeeBips,
-        uint8   _minProtocolMakerFeeBips,
-        uint8   _maxProtocolMakerFeeBips,
-        uint    _targetProtocolTakerFeeStake,
-        uint    _targetProtocolMakerFeeStake
+        uint8 _minProtocolTakerFeeBips,
+        uint8 _maxProtocolTakerFeeBips,
+        uint8 _minProtocolMakerFeeBips,
+        uint8 _maxProtocolMakerFeeBips,
+        uint  _targetProtocolTakerFeeStake,
+        uint  _targetProtocolMakerFeeStake
         )
         external;
-
-    /// @dev Update the protocol fee manager.
-    ///      This function can only be called by the owner of this contract.
-    ///
-    ///      Warning: this new address will be used by existing and
-    ///      new Loopring exchanges.
-    function setProtocolFeeVault(
-        address payable _protocolFeeVault
-        )
-        external;
-
-    /// @dev Create a new exchange. msg.sender will become the owner of the new exchange.
-    /// @param  operator The operator address of the exchange who will be responsible for
-    ///         submitting blocks and proofs.
-    /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
-    ///         exchange. Note that this value can not be changed once the exchange is created.
-    /// @return exchangeId The id of the exchange.
-    /// @return exchangeAddress The address of the newly deployed exchange contract.
-    function createExchange(
-        address payable operator,
-        bool onchainDataAvailability
-        )
-        external
-        returns (
-            uint exchangeId,
-            address exchangeAddress
-        );
 
     /// @dev Returns whether the Exchange has staked enough to commit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
@@ -176,7 +140,7 @@ contract ILoopringV3
         view
         returns (bool);
 
-    /// @dev Get the amount of staked LRC for an exchange.
+    /// @dev Gets the amount of staked LRC for an exchange.
     /// @param exchangeId The id of the exchange
     /// @return stakedLRC The amount of LRC
     function getExchangeStake(
@@ -186,7 +150,7 @@ contract ILoopringV3
         view
         returns (uint stakedLRC);
 
-    /// @dev Burn a certain amount of staked LRC for a specific exchange.
+    /// @dev Burns a certain amount of staked LRC for a specific exchange.
     ///      This function is meant to be called only from exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @return burnedLRC The amount of LRC burned. If the amount is greater than
@@ -195,10 +159,10 @@ contract ILoopringV3
         uint exchangeId,
         uint amount
         )
-        public
+        external
         returns (uint burnedLRC);
 
-    /// @dev Stake more LRC for an exchange.
+    /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
@@ -209,21 +173,21 @@ contract ILoopringV3
         external
         returns (uint stakedLRC);
 
-    /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
+    /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
     /// @return stakedLRC The amount of LRC withdrawn
     function withdrawExchangeStake(
-        uint exchangeId,
+        uint    exchangeId,
         address recipient,
-        uint requestedAmount
+        uint    requestedAmount
         )
-        public
+        external
         returns (uint amount);
 
-    /// @dev Stake more LRC for an exchange.
+    /// @dev Stakes more LRC for an exchange.
     /// @param  exchangeId The id of the exchange
     /// @param  amountLRC The amount of LRC to stake
     /// @return stakedLRC The total amount of LRC staked for the exchange
@@ -234,19 +198,19 @@ contract ILoopringV3
         external
         returns (uint stakedLRC);
 
-    /// @dev Withdraw a certain amount of staked LRC for an exchange to the given address.
+    /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
     ///      This function is meant to be called only from within exchange contracts.
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  amount The amount of LRC to withdraw
     function withdrawProtocolFeeStake(
-        uint exchangeId,
+        uint    exchangeId,
         address recipient,
-        uint amount
+        uint    amount
         )
         external;
 
-    /// @dev Get the protocol fee values for an exchange.
+    /// @dev Gets the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
     /// @param onchainDataAvailability True if the exchange has on-chain
     ///        data-availability, else false
@@ -258,10 +222,18 @@ contract ILoopringV3
         )
         external
         view
-        returns (uint8 takerFeeBips, uint8 makerFeeBips);
+        returns (
+            uint8 takerFeeBips,
+            uint8 makerFeeBips
+        );
 
-    /// @dev Allow ETH to be sent directly to this contract (to collect the protocol fees)
-    function()
+    /// @dev Returns the exchange's protocol fee stake.
+    /// @param  exchangeId The exchange's id.
+    /// @return protocolFeeStake The exchange's protocol fee stake.
+    function getProtocolFeeStake(
+        uint exchangeId
+        )
         external
-        payable;
+        view
+        returns (uint protocolFeeStake);
 }

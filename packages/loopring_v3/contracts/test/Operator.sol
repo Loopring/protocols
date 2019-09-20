@@ -14,21 +14,21 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
-import "../iface/IExchange.sol";
+import "../iface/IExchangeV3.sol";
 
 
 contract Operator {
 
-    IExchange exchange;
+    IExchangeV3 exchange;
 
     constructor(
         address _exchangeAddress
         )
         public
     {
-        exchange = IExchange(_exchangeAddress);
+        exchange = IExchangeV3(_exchangeAddress);
     }
 
     function commitBlock(
@@ -43,13 +43,13 @@ contract Operator {
         exchange.commitBlock(blockType, blockSize, blockVersion, data, offchainData);
     }
 
-    function verifyBlock(
-        uint blockIdx,
-        uint256[8] calldata proof
+    function verifyBlocks(
+        uint[] calldata blockIndices,
+        uint[] calldata proofs
         )
         external
     {
-        exchange.verifyBlock(blockIdx, proof);
+        exchange.verifyBlocks(blockIndices, proofs);
     }
 
     function revertBlock(

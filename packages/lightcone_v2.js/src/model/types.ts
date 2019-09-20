@@ -1,4 +1,4 @@
-import BN = require('bn.js');
+import BN = require("bn.js");
 
 export enum BlockType {
   RING_SETTLEMENT = 0,
@@ -20,37 +20,43 @@ export interface Signature {
   s: string;
 }
 
-export interface OrderInfo {
+export class OrderInfo {
   owner: string;
   tokenS: string;
   tokenB: string;
-  amountS: BN;
-  amountB: BN;
+  amountSInBN: BN;
+  amountBInBN: BN;
+  amountS: string;
+  amountB: string;
 
-  exchangeID?: number;
-  accountID?: number;
-  orderID?: number;
+  exchangeId?: number;
+  accountId?: number;
+  orderId: number;
 
-  dualAuthPublicKeyX?: string;
-  dualAuthPublicKeyY?: string;
-  dualAuthSecretKey?: string;
+  tradingPubKeyX: string;
+  tradingPubKeyY: string;
+  tradingPrivKey: string;
 
-  tokenIdS?: number;
-  tokenIdB?: number;
+  dualAuthPubKeyX?: string;
+  dualAuthPubKeyY?: string;
+  dualAuthPrivKey?: string;
+
+  tokenSId?: number;
+  tokenBId?: number;
 
   allOrNone?: boolean;
   validSince: number;
   validUntil: number;
-  maxFeeBips: number;
-  buy: boolean;
+  maxFeeBips?: number;
+  buy?: boolean;
 
   feeBips?: number;
   rebateBips?: number;
 
-  balanceS?: BN;
-  balanceB?: BN;
-
   hash?: string;
+  tradingSigRx: string;
+  tradingSigRy: string;
+  tradingSigS: string;
   signature?: Signature;
 
   [key: string]: any;
@@ -196,14 +202,14 @@ export interface TradeHistory {
 
 export interface Balance {
   balance: BN;
-  tradeHistory: {[key: number]: TradeHistory};
+  tradeHistory: { [key: number]: TradeHistory };
 }
 
 export interface AccountLeaf {
   publicKeyX: string;
   publicKeyY: string;
   nonce: number;
-  balances: {[key: number]: Balance};
+  balances: { [key: number]: Balance };
 }
 
 export interface Realm {
@@ -240,7 +246,7 @@ export interface DepositInfo {
   depositIdx: number;
 }
 
-export let io : {
+export let io: {
   connect(url: string): Socket;
 };
 

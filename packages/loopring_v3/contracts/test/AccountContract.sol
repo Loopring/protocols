@@ -14,9 +14,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
-import "../iface/IExchange.sol";
+import "../iface/IExchangeV3.sol";
 
 import "../lib/MathUint.sol";
 
@@ -25,7 +25,7 @@ contract AccountContract {
 
     using MathUint          for uint;
 
-    IExchange exchange;
+    IExchangeV3 exchange;
 
     uint[16] private dummyStorageVariables;
 
@@ -34,14 +34,15 @@ contract AccountContract {
         )
         public
     {
-        exchange = IExchange(_exchangeAddress);
+        exchange = IExchangeV3(_exchangeAddress);
     }
 
     function updateAccountAndDeposit(
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
-        uint96  amount
+        uint96  amount,
+        bytes   calldata permission
         )
         external
         payable
@@ -57,7 +58,8 @@ contract AccountContract {
             pubKeyX,
             pubKeyY,
             token,
-            amount
+            amount,
+            permission
         );
         uint balanceAfter = address(this).balance;
         msg.sender.transfer(balanceAfter.sub(balanceBefore));

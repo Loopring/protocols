@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -37,7 +37,7 @@ contract TransferContract {
     function safeTransferWithGasLimit(
         address token,
         address to,
-        uint256 value,
+        uint    value,
         uint    gasLimit
         )
         external
@@ -52,7 +52,7 @@ contract TransferContract {
         address token,
         address from,
         address to,
-        uint256 value,
+        uint    value,
         uint    gasLimit
         )
         external

@@ -14,44 +14,125 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
+
+import "../thirdparty/Verifier.sol";
+import "../thirdparty/BatchVerifier.sol";
+
+import "../lib/Claimable.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IBlockVerifier.sol";
 
-import "../lib/Claimable.sol";
-
 import "../impl/libexchange/ExchangeData.sol";
-
-import "../thirdparty/Verifier.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BlockVerifier is IBlockVerifier, Claimable
+contract BlockVerifier is Claimable, ReentrancyGuard, IBlockVerifier
 {
-    mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => uint256[18])))) verificationKeys;
+    struct Circuit
+    {
+        bool registered;
+        bool enabled;
+        uint[18] verificationKey;
+    }
 
-    function setVerifyingKey(
+    mapping (bool => mapping (uint8 => mapping (uint16 => mapping (uint8 => Circuit)))) public circuits;
+
+    constructor() Claimable() public {}
+
+    function registerCircuit(
+        uint8    blockType,
+        bool     onchainDataAvailability,
+        uint16   blockSize,
+        uint8    blockVersion,
+        uint[18] calldata vk
+        )
+        external
+        nonReentrant
+        onlyOwner
+    {
+        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
+        require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
+        Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
+        require(circuit.registered == false, "ALREADY_REGISTERED");
+
+        for (uint i = 0; i < 18; i++) {
+            circuit.verificationKey[i] = vk[i];
+        }
+        circuit.registered = true;
+        circuit.enabled = true;
+
+        emit CircuitRegistered(
+            blockType,
+            onchainDataAvailability,
+            blockSize,
+            blockVersion
+        );
+    }
+
+    function disableCircuit(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
+        )
+        external
+        nonReentrant
+        onlyOwner
+    {
+        Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
+        require(circuit.registered == true, "NOT_REGISTERED");
+        require(circuit.enabled == true, "ALREADY_DISABLED");
+
+        circuit.enabled = false;
+
+        emit CircuitDisabled(
+            blockType,
+            onchainDataAvailability,
+            blockSize,
+            blockVersion
+        );
+    }
+
+    function verifyProofs(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
         uint8  blockVersion,
-        uint256[18] calldata vk
+        uint[] calldata publicInputs,
+        uint[] calldata proofs
         )
         external
-        onlyOwner
+        view
+        returns (bool)
     {
-        // While vk[0] could be 0, we don't allow it so we can use this to easily check
-        // if the verification key is set
-        require(vk[0] != 0, "INVALID_DATA");
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
-        for (uint i = 0; i < 18; i++) {
-            verificationKeys[onchainDataAvailability][blockType][blockSize][blockVersion][i] = vk[i];
+        Circuit storage circuit = circuits[dataAvailability][blockType][blockSize][blockVersion];
+        require(circuit.registered == true, "NOT_REGISTERED");
+
+        uint[18] storage vk = circuit.verificationKey;
+        uint[14] memory _vk = [
+            vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
+            vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
+        ];
+        uint[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
+
+        if (publicInputs.length == 1) {
+            return Verifier.Verify(_vk, _vk_gammaABC, proofs, publicInputs);
+        } else {
+            return BatchVerifier.BatchVerify(
+                _vk,
+                _vk_gammaABC,
+                proofs,
+                publicInputs,
+                publicInputs.length
+            );
         }
     }
 
-    function canVerify(
+    function isCircuitRegistered(
         uint8  blockType,
         bool   onchainDataAvailability,
         uint16 blockSize,
@@ -62,38 +143,26 @@ contract BlockVerifier is IBlockVerifier, Claimable
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        return verificationKeys[dataAvailability][blockType][blockSize][blockVersion][0] != 0;
+        return circuits[dataAvailability][blockType][blockSize][blockVersion].registered;
     }
 
-    function verifyProof(
-        uint8   blockType,
-        bool    onchainDataAvailability,
-        uint16  blockSize,
-        uint8   blockVersion,
-        bytes32 publicDataHash,
-        uint256[8] calldata proof
+    function isCircuitEnabled(
+        uint8  blockType,
+        bool   onchainDataAvailability,
+        uint16 blockSize,
+        uint8  blockVersion
         )
         external
         view
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        uint256[18] storage vk = verificationKeys[dataAvailability][blockType][blockSize][blockVersion];
-
-        uint256[14] memory _vk = [
-            vk[0], vk[1], vk[2], vk[3], vk[4], vk[5], vk[6],
-            vk[7], vk[8], vk[9], vk[10], vk[11], vk[12], vk[13]
-        ];
-        uint256[4] memory _vk_gammaABC = [vk[14], vk[15], vk[16], vk[17]];
-        // Maybe we should strip the highest bits of the hash so we don't have any overflow (uint256/prime field)
-        uint256[1] memory publicInputs = [uint256(publicDataHash)];
-
-        return Verifier.Verify(_vk, _vk_gammaABC, proof, publicInputs);
+        return circuits[dataAvailability][blockType][blockSize][blockVersion].enabled;
     }
 
     function needsDataAvailability(
         uint8 blockType,
-        bool onchainDataAvailability
+        bool  onchainDataAvailability
         )
         internal
         pure

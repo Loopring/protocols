@@ -14,20 +14,22 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
-import "../iface/IProtocolFeeVault.sol";
-
-import "..//lib/Claimable.sol";
+import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
+
+import "../iface/IProtocolFeeVault.sol";
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
-contract IOedax {
-
+contract IOedax
+{
     /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
     /// @param bidToken The bid (quote) token.
     /// @param minAskAmount The minimum ask amount.
@@ -35,7 +37,7 @@ contract IOedax {
     /// @param P Numerator part of the target price `p`.
     /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
     /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T1 The maximum auction duration in second.
+    /// @param T1 The minimum auction duration in second.
     /// @param T2 The maximum auction duration in second.
     /// @return auctionAddr Auction address.
     function createAuction(
@@ -60,17 +62,20 @@ contract IOedax {
 
 
 /// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
-contract IAuction {
+contract IAuction
+{
     function settle() public;
     function ask(uint amount) external returns (uint accepted);
 }
 
 
-/// @title An Implementation of IUserStakingPool.
+/// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ProtocolFeeVault is IProtocolFeeVault, Claimable
+contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 {
     uint public constant MIN_ETHER_TO_KEEP = 1 ether;
+    using AddressUtil       for address;
+    using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
@@ -78,22 +83,22 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         address _lrcAddress,
         address _userStakingPoolAddress
         )
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         require(_userStakingPoolAddress != address(0), "ZERO_ADDRESS");
 
-        owner = msg.sender;
         allowOwnerWithdrawal = true;
-
         lrcAddress = _lrcAddress;
         userStakingPoolAddress = _userStakingPoolAddress;
     }
 
-    function claim(
-        uint    amount
+    function claimStakingReward(
+        uint amount
         )
         external
+        nonReentrant
     {
         require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
 
@@ -162,14 +167,14 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         uint    amount
         )
         external
+        nonReentrant
         onlyOwner
     {
         require(allowOwnerWithdrawal, "DISABLED_ALREADY");
         require(token != lrcAddress, "INVALD_TOKEN");
 
         if (token == address(0)) {
-            address payable recipient = address(uint160(owner));
-            require(recipient.send(amount), "TRANSFER_FAILURE");
+            owner.transferETH(amount, gasleft());
         } else {
             require(token.safeTransfer(owner, amount), "TRANSFER_FAILURE");
         }
@@ -179,6 +184,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
 
     function withdrawLRCToDAO()
         external
+        nonReentrant
     {
         require(daoAddress != address(0), "ZERO_DAO_ADDRESS");
         uint amountDAO;
@@ -200,6 +206,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
 
     function settleAuction(address auction)
         external
+        nonReentrant
     {
         require(auction != address(0), "ZERO_ADDRESS");
         IAuction(auction).settle();
@@ -217,6 +224,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         uint    T
         )
         external
+        nonReentrant
         onlyOwner
         returns (
             address payable auctionAddr
@@ -244,9 +252,7 @@ contract ProtocolFeeVault is IProtocolFeeVault, Claimable
         );
 
         if (tokenS == address(0)) {
-            bool success;
-            (success, ) = auctionAddr.call.value(amountS)("");
-            require(success, "TRANSFER_FAILURE");
+            auctionAddr.transferETH(amountS, gasleft());
         } else {
             require(ERC20(tokenS).approve(auctionAddr, amountS), "AUTH_FAILED");
             IAuction(auctionAddr).ask(amountS);

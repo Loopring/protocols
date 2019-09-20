@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 
 /// @title ReentrancyGuard
@@ -25,21 +25,22 @@ pragma solidity 0.5.7;
 ///      the number of times the value is changed
 contract ReentrancyGuard
 {
-    // Set to 1 so we don't have an expensive 0 -> 1 SSTORE
-    uint256 private _guardValue = 1;
+    //The default value must be 0 in order to work behind a proxy.
+    uint private _guardValue;
 
     // Use this modifier on a function to prevent reentrancy
     modifier nonReentrant()
     {
         // Check if the guard value has its original value
-        require(_guardValue == 1, "REENTRANCY");
+        require(_guardValue == 0, "REENTRANCY");
+
         // Set the value to something else
-        _guardValue = 2;
+        _guardValue = 1;
 
         // Function body
         _;
 
         // Set the value back
-        _guardValue = 1;
+        _guardValue = 0;
     }
 }

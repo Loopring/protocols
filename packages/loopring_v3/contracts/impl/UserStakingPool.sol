@@ -14,44 +14,40 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
-import "../iface/IUserStakingPool.sol";
-import "../iface/IProtocolFeeVault.sol";
-
-import "..//lib/Claimable.sol";
-import "../lib/ERC20SafeTransfer.sol";
+import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
+import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
+
+import "../iface/IProtocolFeeVault.sol";
+import "../iface/IUserStakingPool.sol";
 
 
 /// @title An Implementation of IUserStakingPool.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract UserStakingPool is IUserStakingPool, Claimable
+contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 {
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    struct Stake {
-        address user;
-        uint    stake;
+    struct Staking {
+        uint    balance;        // Total amount of LRC staked or rewarded
         uint    depositedAt;
-        uint    claimedAt; // timestamp from which more points will be accumulated
-        uint    claimedReward;
+        uint    claimedAt;      // timestamp from which more points will be accumulated
+        uint    claimedReward;  // Total amount of LRC claimed as reward.
     }
 
-    Stake private total;
-    mapping (address => Stake) private users;
+    Staking private total;
+    mapping (address => Staking) private stakings;
 
-    constructor(
-        address _lrcAddress
-        )
+    constructor(address _lrcAddress)
+        Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
-
-        owner = msg.sender;
-
         lrcAddress = _lrcAddress;
     }
 
@@ -64,31 +60,32 @@ contract UserStakingPool is IUserStakingPool, Claimable
     }
 
     function getTotalStaking()
-        view
         external
+        view
         returns (uint)
     {
-        return total.stake;
+        return total.balance;
     }
 
     function getUserStaking(address user)
-        view
         external
+        view
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,
-            uint stakeAmount,
+            uint balance,
             uint claimableReward
         )
     {
-        withdrawalWaitTime = userWithdrawalWaitTime(user);
-        rewardWaitTime = userClaimWaitTime(user);
-        stakeAmount = users[user].stake;
-        (, , claimableReward) = userOutstandingReward(user);
+        withdrawalWaitTime = getUserWithdrawalWaitTime(user);
+        rewardWaitTime = getUserClaimWaitTime(user);
+        balance = stakings[user].balance;
+        (, , claimableReward) = getUserClaimableReward(user);
     }
 
     function stake(uint amount)
         external
+        nonReentrant
     {
         require(amount > 0, "ZERO_VALUE");
 
@@ -98,60 +95,42 @@ contract UserStakingPool is IUserStakingPool, Claimable
             "TRANSFER_FAILURE"
         );
 
-        Stake storage user = users[msg.sender];
+        Staking storage user = stakings[msg.sender];
 
-        // Update the user's stake
-        user.depositedAt = user.stake
-            .mul(user.depositedAt)
-            .add(amount.mul(now)) / user.stake.add(amount);
-
-        if (user.claimedAt == 0) {
-            user.claimedAt = user.depositedAt;
-        } else {
-            user.claimedAt = user.stake
-                .mul(user.claimedAt)
-                .add(amount.mul(now)) / user.stake.add(amount);
+        if (user.balance == 0) {
+            numAddresses += 1;
         }
 
-        if (user.stake == 0) {
-            numAddresses = numAddresses.add(1);
-        }
-
-        user.stake = user.stake.add(amount);
-
-        // update total stake the same way (create an internal function for this)
-        total.depositedAt = total.stake
-            .mul(total.depositedAt)
-            .add(amount.mul(now)) / total.stake.add(amount);
-
-        if (total.claimedAt == 0) {
-            total.claimedAt = total.depositedAt;
-        } else {
-            total.claimedAt = total.stake
-                .mul(total.claimedAt)
-                .add(amount.mul(now)) / total.stake.add(amount);
-        }
-
-        total.stake = total.stake.add(amount);
+        updateStaking(user, amount);
+        updateStaking(total, amount);
 
         emit LRCStaked(msg.sender, amount);
     }
 
     function withdraw(uint amount)
         external
-    { 
-        require(userWithdrawalWaitTime(msg.sender) == 0);
+        nonReentrant
+    {
+        require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
-        Stake storage user = users[msg.sender];
-        require(user.stake >= amount);
+        // automatical claim when possible
+        if (protocolFeeVaultAddress != address(0) &&
+            getUserClaimWaitTime(msg.sender) == 0) {
+            claimReward();
+        }
 
-        uint _amount = amount == 0 ? user.stake : amount;
+        Staking storage user = stakings[msg.sender];
+        require(user.balance >= amount, "INSUFFICIENT_FUND");
 
-        total.stake = total.stake.sub(_amount);
-        user.stake = user.stake.sub(_amount);
+        uint _amount = (amount == 0) ? user.balance : amount;
+        require(_amount > 0, "ZERO_VALUE");
 
-        if (user.stake == 0) {
-            numAddresses = numAddresses.sub(1);
+        total.balance = total.balance.sub(_amount);
+        user.balance = user.balance.sub(_amount);
+
+        if (user.balance == 0) {
+            numAddresses -= 1;
+            delete stakings[msg.sender];
         }
 
         // transfer LRC to user
@@ -165,66 +144,99 @@ contract UserStakingPool is IUserStakingPool, Claimable
 
     function claim()
         external
+        nonReentrant
         returns (uint claimedAmount)
     {
-        require(userClaimWaitTime(msg.sender) == 0);
-
-        uint totalPoints;
-        uint userPoints;
-
-        (totalPoints, userPoints, claimedAmount) = userOutstandingReward(msg.sender);
-
-        IProtocolFeeVault(protocolFeeVaultAddress).claim(claimedAmount);
-
-        total.stake = total.stake.add(claimedAmount);
-        total.claimedReward = total.claimedReward.add(claimedAmount);
-        total.claimedAt = totalPoints.sub(userPoints) / total.stake;
-
-        Stake storage user = users[msg.sender];
-        user.stake = user.stake.add(claimedAmount);
-        user.claimedReward = user.claimedReward.add(claimedAmount);
-        user.claimedAt = now;
-
-        emit LRCRewarded(msg.sender, claimedAmount);
+        return claimReward();
     }
 
     // -- Private Function --
 
-    function userWithdrawalWaitTime(address user)
-        view
+    function claimReward()
         private
-        returns (uint _seconds)
+        returns (uint claimedAmount)
     {
-        if (users[user].depositedAt.add(MIN_WITHDRAW_DELAY) <= now) return 0;
-        else return users[user].depositedAt.add(MIN_WITHDRAW_DELAY).sub(now);
+        require(protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
+        require(getUserClaimWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
+
+        uint totalPoints;
+        uint userPoints;
+
+        (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
+        if (claimedAmount > 0) {
+
+            IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
+
+            total.balance = total.balance.add(claimedAmount);
+            total.claimedReward = total.claimedReward.add(claimedAmount);
+            total.claimedAt = (totalPoints >= userPoints) ?
+            now.sub(totalPoints.sub(userPoints) / total.balance) : now;
+
+            Staking storage user = stakings[msg.sender];
+            user.balance = user.balance.add(claimedAmount);
+            user.claimedReward = user.claimedReward.add(claimedAmount);
+            user.claimedAt = now;
+        }
+
+        emit LRCRewarded(msg.sender, claimedAmount);
     }
 
-    function userClaimWaitTime(address user)
-        view
+    function updateStaking(
+        Staking storage staking,
+        uint  additionalBalance
+        )
         private
-        returns (uint minutes_)
     {
-       if (users[user].claimedAt.add(MIN_CLAIM_DELAY) <= now) return 0;
-       else return users[user].claimedAt.add(MIN_CLAIM_DELAY).sub(now);
+        uint balance = staking.balance.add(additionalBalance);
+
+        staking.depositedAt = staking.balance
+            .mul(staking.depositedAt)
+            .add(additionalBalance.mul(now)) / balance;
+
+        staking.claimedAt = (staking.claimedAt == 0) ?
+            staking.depositedAt :
+            staking.balance
+                .mul(staking.claimedAt)
+                .add(additionalBalance.mul(now)) / balance;
+
+        staking.balance = balance;
     }
 
-    function userOutstandingReward(address userAddress)
-        view
+    function getUserWithdrawalWaitTime(address user)
         private
+        view
+        returns (uint)
+    {
+        uint time = stakings[user].depositedAt.add(MIN_WITHDRAW_DELAY);
+        return (time <= now) ? 0 : time.sub(now);
+    }
+
+    function getUserClaimWaitTime(address user)
+        private
+        view
+        returns (uint)
+    {
+        uint time = stakings[user].claimedAt.add(MIN_CLAIM_DELAY);
+        return (time <= now) ? 0 : time.sub(now);
+    }
+
+    function getUserClaimableReward(address user)
+        private
+        view
         returns (
-            uint userPoints,
             uint totalPoints,
-            uint outstandindReward
+            uint userPoints,
+            uint claimableReward
         )
     {
-        Stake storage user = users[userAddress];
+        Staking storage staking = stakings[user];
 
-        totalPoints = total.stake.mul(now.sub(total.claimedAt));
-        userPoints = user.stake.mul(now.sub(user.claimedAt));
+        totalPoints = total.balance.mul(now.sub(total.claimedAt));
+        userPoints = staking.balance.mul(now.sub(staking.claimedAt));
 
         if (totalPoints != 0 && userPoints != 0) {
-            (, , , , , , , outstandindReward) = IProtocolFeeVault(protocolFeeVaultAddress).getLRCFeeStats();
-            outstandindReward = outstandindReward.mul(userPoints) / totalPoints;
+            (, , , , , , , claimableReward) = IProtocolFeeVault(protocolFeeVaultAddress).getLRCFeeStats();
+            claimableReward = claimableReward.mul(userPoints) / totalPoints;
         }
     }
 }

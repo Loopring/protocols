@@ -1,60 +1,77 @@
-import {getTransactionCount} from "./utils";
-import {toNumber} from "../common/formatter";
-import validator from './validator';
+import { getTransactionCount } from "./utils";
+import { toNumber } from "../common/formatter";
+import validator from "./validator";
 
-const setWallet = (wallet) => {
-    const wallets = localStorage.wallet ? JSON.parse(localStorage.wallet) : [];
-    const otherWallets = wallets.filter(w => w.address.toLowerCase() !== wallet.address.toLowerCase());
-    otherWallets.push({address: wallet.address, nonce: toNumber(wallet.nonce) + 1});
-    localStorage.wallet = JSON.stringify(otherWallets)
+const setWallet = wallet => {
+  const wallets =
+    typeof localStorage !== "undefined" && localStorage.wallet
+      ? JSON.parse(localStorage.wallet)
+      : [];
+  const otherWallets = wallets.filter(
+    w => w.address.toLowerCase() !== wallet.address.toLowerCase()
+  );
+  otherWallets.push({
+    address: wallet.address,
+    nonce: toNumber(wallet.nonce) + 1
+  });
+  if (typeof localStorage !== "undefined") {
+    localStorage.wallet = JSON.stringify(otherWallets);
+  }
 };
 
-const getWallet = (address) => {
-    const wallets = localStorage.wallet ? JSON.parse(localStorage.wallet) : [];
-    return wallets.find((wallet) => wallet.address.toLowerCase() === address.toLowerCase())
+const getWallet = address => {
+  const wallets =
+    typeof localStorage !== "undefined" && localStorage.wallet
+      ? JSON.parse(localStorage.wallet)
+      : [];
+  console.log("get wallets");
+  return wallets.find(
+    wallet => wallet.address.toLowerCase() === address.toLowerCase()
+  );
 };
 
-const getNonce = async (address) => {
-    try {
-        validator.validate({value: address, type: "ADDRESS"});
-        const nonce = toNumber((await getTransactionCount(address, 'pending'))['result']) || 0;
-        const localNonce = getWallet(address) && getWallet(address).nonce ? getWallet(address).nonce : 0;
-        return Math.max(nonce, localNonce)
-    } catch (e) {
-        throw  new Error(e.message)
-    }
+const getNonce = async address => {
+  try {
+    validator.validate({ value: address, type: "ADDRESS" });
+    const nonce =
+      toNumber((await getTransactionCount(address, "pending"))["result"]) || 0;
+    const localNonce =
+      getWallet(address) && getWallet(address).nonce
+        ? getWallet(address).nonce
+        : 0;
+    return Math.max(nonce, localNonce);
+  } catch (e) {
+    throw new Error(e.message);
+  }
 };
 
 const storeUnlockedAddress = (unlockType, address) => {
-    localStorage.unlockedType = unlockType;
-    localStorage.unlockedAddress = address
+  localStorage.unlockedType = unlockType;
+  localStorage.unlockedAddress = address;
 };
 
 const getUnlockedAddress = () => {
-    return localStorage.unlockedAddress || ''
+  return localStorage.unlockedAddress || "";
 };
 
 const getUnlockedType = () => {
-    return localStorage.unlockedType || ''
+  return localStorage.unlockedType || "";
 };
 
 const clearUnlockedAddress = () => {
-    localStorage.unlockedType = '';
-    localStorage.unlockedAddress = ''
+  localStorage.unlockedType = "";
+  localStorage.unlockedAddress = "";
 };
 
-const isInWhiteList = (address) => {
-
-};
+const isInWhiteList = address => {};
 
 export default {
-    setWallet,
-    getWallet,
-    isInWhiteList,
-    getNonce,
-    storeUnlockedAddress,
-    getUnlockedAddress,
-    getUnlockedType,
-    clearUnlockedAddress
-}
-
+  setWallet,
+  getWallet,
+  isInWhiteList,
+  getNonce,
+  storeUnlockedAddress,
+  getUnlockedAddress,
+  getUnlockedType,
+  clearUnlockedAddress
+};

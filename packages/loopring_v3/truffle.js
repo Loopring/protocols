@@ -1,9 +1,45 @@
-var fs = require("fs");
-var HDWalletProvider = require("truffle-hdwallet-provider");
-var mnemonic = "your mnemonic phases here.";
-// or you may read your mnemonic phases from a file:
-// var mnemonic = fs.readFileSync(process.env.HOME + "/priv/mnemonic.txt", "utf8");
-// console.log("mnemonic", mnemonic);
+require("dotenv").config({ path: require("find-config")(".env") });
+const HDWalletProvider = require("truffle-hdwallet-provider");
+const PrivateKeyProvider = require("truffle-privatekey-provider");
+
+// Please config the following env variables in `.env` in any parent directory
+// as follows:
+//```
+//ETHERSCAN_API_KEY=<YOUR_KEY>
+//INFURA_PROJECT_ID=<YOUR_PROJECT_ID>
+//WALLET_PRIVATE_KEY=<YOUR_PRIVATE_KEY>
+//WALLET_MNEMONIC=<YOUR_MNEMONIC>
+//```
+//
+// OR in command line add something like this:
+//     `DOTENV_CONFIG_ETHERSCAN_API_KEY=value npm run mycommand`
+
+const getWalletProvider = function(network) {
+  if (process.env.INFURA_PROJECT_ID == "") {
+    console.log(process.env);
+    console.error(">>>> ERROR: INFURA_PROJECT_ID is missing !!!");
+    return;
+  }
+  var infuraAPI =
+    "https://" + network + ".infura.io/v3/" + process.env.INFURA_PROJECT_ID;
+
+  var provider;
+  if (process.env.WALLET_PRIVATE_KEY != "") {
+    provider = new PrivateKeyProvider(
+      process.env.WALLET_PRIVATE_KEY,
+      infuraAPI
+    );
+  } else if (process.env.WALLET_MNEMONIC != "") {
+    provider = new HDWalletProvider(process.env.WALLET_MNEMONIC, infuraAPI);
+  } else {
+    console.log(process.env);
+    console.error(
+      ">>>> ERROR: WALLET_PRIVATE_KEY or WALLET_MNEMONIC has to be set !!!"
+    );
+    return;
+  }
+  return provider;
+};
 
 module.exports = {
   compilers: {
@@ -11,72 +47,71 @@ module.exports = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100
+          runs: 200
         }
       },
-      version: "0.5.7"
+      version: "0.5.11"
     }
+  },
+  plugins: ["truffle-plugin-verify"],
+  api_keys: {
+    etherscan: process.env.ETHERSCAN_API_KEY
+  },
+  verify: {
+    preamble: "Author: Loopring Foundation (Loopring Project Ltd)"
   },
   networks: {
     live: {
-      host: "localhost",
-      port: 8546,
-      network_id: '1', // main-net
-      gasPrice: 5000000000
+      provider: function() {
+        return getWalletProvider("mainnet");
+      },
+      network_id: "1", // main-net
+      gasPrice: 3000000000
     },
     testnet: {
       host: "localhost",
       port: 8545,
-      network_id: '2', // main-net
+      network_id: "2", // main-net
       gasPrice: 21000000000
     },
     ropsten: {
-      network_id: 3,
+      network_id: "3",
       provider: function() {
-        var provider = new HDWalletProvider(mnemonic, "https://ropsten.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
-        // console.log("addresses:", provider.getAddresses());
-        // my address: 0xe8c5366C6f9Dc800cae753804CCbf1B6Ffa666fa
-        return provider;
-      },
-      gasPrice: 21000000000
-    },
-    rinkeby: {
-      network_id: 4,
-      provider: function() {
-        return new HDWalletProvider(mnemonic, "https://rinkeby.infura.io/hM4sFGiBdqbnGTxk5YT2", 1);
+        return getWalletProvider("ropsten");
       },
       gasPrice: 1000000000,
       gas: 6700000
     },
-    priv: {
-      host: "localhost",
-      port: 8545,
-      network_id: '50', // main-net
-      gasPrice: 5000000000,
-      gas: 4500000
+    rinkeby: {
+      network_id: "4",
+      provider: function() {
+        return getWalletProvider("rinkeby");
+      },
+      gasPrice: 1000000000,
+      gas: 6700000
     },
     development: {
       host: "localhost",
       port: 8545,
-      network_id: "*", // Match any network id
+      network_id: "*",
       gasPrice: 21000000000,
       gas: 6700000
     },
     coverage: {
       host: "localhost",
       network_id: "*",
-      port: 8555,         // <-- If you change this, also set the port option in .solcover.js.
+      port: 8555, // <-- If you change this, also set the port option in .solcover.js.
       gas: 0xfffffffffff, // <-- Use this high gas value
-      gasPrice: 0x01      // <-- Use this low gas price
+      gasPrice: 0x01 // <-- Use this low gas price
     },
     docker: {
       host: "ganache",
       port: 8545,
-      network_id: "*", // Match any network id
+      network_id: "*",
       gasPrice: 21000000000,
       gas: 6700000
     }
   },
-  test_directory: 'transpiled/test',
-  migrations_directory: 'transpiled/migrations',
+  test_directory: "transpiled/test",
+  migrations_directory: "transpiled/migrations"
 };

@@ -14,13 +14,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity 0.5.7;
+pragma solidity ^0.5.11;
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
 
 /// @title ExchangeData
+/// @dev All methods in this lib are internal, therefore, there is no need
+///      to deploy this library independently.
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeData
@@ -86,7 +88,7 @@ library ExchangeData
     // per-exchange (virtual) blockchain.
     struct Block
     {
-        // The merkle root of the offchain data stored in a merkle tree. The merkle tree
+        // The merkle root of the offchain data stored in a Merkle tree. The Merkle tree
         // stores balances for users using an account model.
         bytes32 merkleRoot;
 
@@ -149,7 +151,7 @@ library ExchangeData
     struct Request
     {
         bytes32 accumulatedHash;
-        uint256 accumulatedFee;
+        uint    accumulatedFee;
         uint32  timestamp;
     }
 
@@ -159,6 +161,11 @@ library ExchangeData
         uint24 accountID;
         uint16 tokenID;
         uint96 amount;
+    }
+
+    function SNARK_SCALAR_FIELD() internal pure returns (uint) {
+        // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
+        return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
     }
 
     function MAX_PROOF_GENERATION_TIME_IN_SECONDS() internal pure returns (uint32) { return 1 hours; }
@@ -197,6 +204,7 @@ library ExchangeData
         uint    numDowntimeMinutes;
         uint    downtimeStart;
 
+        address addressWhitelist;
         uint    accountCreationFeeETH;
         uint    accountUpdateFeeETH;
         uint    depositFeeETH;
@@ -215,6 +223,9 @@ library ExchangeData
 
         // A map from an account owner to a token to if the balance is withdrawn
         mapping (address => mapping (address => bool)) withdrawnInWithdrawMode;
+
+        // A map from token address to their accumulated balances
+        mapping (address => uint) tokenBalances;
 
         // A block's state will become FINALIZED when and only when this block is VERIFIED
         // and all previous blocks in the chain have become FINALIZED.
