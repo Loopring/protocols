@@ -36,7 +36,7 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
   describe("submitRings", () => {
     let simpleRingGas = 0;
     let typicalRingGas = 0;
-    let p2pRingGas = 0;
+    // let p2pRingGas = 0;
     let multiRingGas = 0;
 
     it("the first one, always cost more gas than expected, ignore this one", async () => {
@@ -113,7 +113,7 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenS: "GTO",
             tokenB: "WETH",
             amountS: 5e18,
-            amountB: 45e18,
+            amountB: 50e18,
             balanceS: 1e26,
             balanceFee: 1e26,
             balanceB: 1e26,
@@ -125,40 +125,40 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
       typicalRingGas = res.tx.receipt.gasUsed;
     });
 
-    it("single typical P2P ring", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            owner: "0",
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: 100e18,
-            amountB: 380e18,
-            tokenSFeePercentage: 60,  // == 6.0%
-            tokenBFeePercentage: 100,  // == 10.0%
-            walletAddr: "0",
-            balanceS: 1e26,
-            balanceB: 1e26,
-          },
-          {
-            owner: "1",
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 400e18,
-            amountB: 94e18,
-            tokenSFeePercentage: 50,  // == 5.0%
-            tokenBFeePercentage: 25,  // == 2.5%
-            walletAddr: "1",
-            balanceS: 1e26,
-            balanceB: 1e26,
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
-      p2pRingGas = res.tx.receipt.gasUsed;
-    });
+    // it("single typical P2P ring", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     rings: [[0, 1]],
+    //     orders: [
+    //       {
+    //         owner: "0",
+    //         tokenS: "GTO",
+    //         tokenB: "WETH",
+    //         amountS: 100e18,
+    //         amountB: 380e18,
+    //         tokenSFeePercentage: 60,  // == 6.0%
+    //         tokenBFeePercentage: 100,  // == 10.0%
+    //         walletAddr: "0",
+    //         balanceS: 1e26,
+    //         balanceB: 1e26,
+    //       },
+    //       {
+    //         owner: "1",
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         amountS: 400e18,
+    //         amountB: 94e18,
+    //         tokenSFeePercentage: 50,  // == 5.0%
+    //         tokenBFeePercentage: 25,  // == 2.5%
+    //         walletAddr: "1",
+    //         balanceS: 1e26,
+    //         balanceB: 1e26,
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   const res = await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+    //   p2pRingGas = res.tx.receipt.gasUsed;
+    // });
 
     it("typical multi-ring case where an order is filled by multiple orders", async () => {
       const ringsInfo: pjs.RingsInfo = {
@@ -170,6 +170,7 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenB: "WETH",
             amountS: 100e18,
             amountB: 10e18,
+            feeAmount: 0,
             balanceS: 1e26,
             balanceFee: 1e26,
             balanceB: 1e26,
@@ -180,6 +181,7 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenB: "GTO",
             amountS: 5e18,
             amountB: 50e18,
+            feeAmount: 0,
             balanceS: 1e26,
             balanceFee: 1e26,
             balanceB: 1e26,
@@ -189,7 +191,8 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
             tokenS: "WETH",
             tokenB: "GTO",
             amountS: 5e18,
-            amountB: 45e18,
+            amountB: 50e18,
+            feeAmount: 0,
             balanceS: 1e26,
             balanceFee: 1e26,
             balanceB: 1e26,
@@ -207,10 +210,9 @@ contract("SubmitRings_Benchmark", (accounts: string[]) => {
       pjs.logInfo("Benchmark gas usage report: ");
       pjs.logInfo("simpleRingGas:  " + simpleRingGas);
       pjs.logInfo("typicalRingGas: " + typicalRingGas);
-      pjs.logInfo("p2pRingGas:     " + p2pRingGas);
       pjs.logInfo("multiRingGas:   " + multiRingGas);
 
-      const average = Math.floor((simpleRingGas + typicalRingGas + p2pRingGas + multiRingGas) / 4);
+      const average = Math.floor((simpleRingGas + typicalRingGas + multiRingGas) / 3);
       pjs.logInfo("average:        " + average);
       pjs.logInfo("-".repeat(32));
     });
