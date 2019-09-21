@@ -43,36 +43,6 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
   });
 
   describe("submitRing", () => {
-    it("single 2-size ring, with price gap", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: 5e18,
-            amountB: 45e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
-    });
-
     // it("single 3-size ring, with price gap", async () => {
     //   const ringsInfo: pjs.RingsInfo = {
     //     description: "simple single 3-size ring, with price gap",

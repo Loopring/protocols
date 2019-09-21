@@ -47,49 +47,6 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, with price gap",
-    rings: [[0, 1]],
-    orders: [
-      {
-        index: 0,
-        tokenS: tokenSymbols[2],
-        tokenB: tokenSymbols[1],
-        amountS: 100e18,
-        amountB: 10e18,
-        trancheB: tokenSymbols[1],
-        feeToken: tokenSymbols[1],
-        feeAmount: 0,
-      },
-      {
-        index: 1,
-        tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[2],
-        amountS: 5e18,
-        amountB: 45e18,
-        trancheB: tokenSymbols[1],
-        feeToken: tokenSymbols[2],
-        feeAmount: 0,
-      },
-    ],
-    expected: {
-      rings: [
-        {
-          orders: [
-            {
-              filledFraction: 0.5,
-              margin: -5,
-            },
-            {
-              filledFraction: 1.0,
-              margin: 0,
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  {
     description: "single 2-size ring, pay fee in WETH",
     rings: [[0, 1]],
     orders: [
@@ -1262,71 +1219,6 @@ export const ringsInfoList: RingsInfo[] = [
             },
             {
               filledFraction: 0.1,
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  {
-    description: "multiple 2-size rings, share the same order",
-    rings: [[0, 1], [0, 2]],
-    orders: [
-      {
-        index: 0,
-        tokenS: tokenSymbols[2],
-        tokenB: tokenSymbols[1],
-        amountS: 100e18,
-        amountB: 10e18,
-        trancheB: tokenSymbols[1],
-        feeToken: tokenSymbols[1],
-        feeAmount: 0,
-      },
-      {
-        index: 1,
-        tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[2],
-        amountS: 5e18,
-        amountB: 50e18,
-        trancheB: tokenSymbols[1],
-        feeToken: tokenSymbols[2],
-        feeAmount: 0,
-      },
-      {
-        index: 2,
-        tokenS: tokenSymbols[1],
-        tokenB: tokenSymbols[2],
-        amountS: 5e18,
-        amountB: 45e18,
-        trancheB: tokenSymbols[1],
-        feeToken: tokenSymbols[2],
-        feeAmount: 0,
-      },
-    ],
-    expected: {
-      rings: [
-        {
-          orders: [
-            {
-              filledFraction: 0.5,
-              margin: 0,
-            },
-            {
-              filledFraction: 1.0,
-              margin: 0,
-            },
-          ],
-        },
-        {
-          orders: [
-            {
-              filledFraction: 0.5,
-              margin: -5,
-            },
-            {
-              filledFraction: 1.0,
-              margin: 0,
             },
           ],
         },
@@ -2522,46 +2414,6 @@ export const ringsInfoList: RingsInfo[] = [
   },
 
   {
-    description: "single 2-size ring, buying/selling tokens with decimals == 0",
-    rings: [[0, 1]],
-    orders: [
-      {
-        index: 0,
-        tokenS: "INDA",
-        tokenB: "INDB",
-        amountS: 160,
-        amountB: 40,
-        trancheB: "INDA",
-      },
-      {
-        index: 1,
-        tokenS: "INDB",
-        tokenB: "INDA",
-        amountS: 20,
-        amountB: 50,
-        trancheB: "INDA",
-      },
-    ],
-    expected: {
-      decimalsPrecision: 0,
-      rings: [
-        {
-          orders: [
-            {
-              filledFraction: 0.5,
-              margin: 0,
-            },
-            {
-              filledFraction: 1.0,
-              margin: 5,
-            },
-          ],
-        },
-      ],
-    },
-  },
-
-  {
     description: "single 2-size ring, using token with decimals == 0 as feeToken",
     rings: [[0, 1]],
     orders: [
@@ -2572,14 +2424,13 @@ export const ringsInfoList: RingsInfo[] = [
         feeToken: "INDA",
         amountS: 1e18,
         amountB: 100e18,
-        feeAmount: 10,
       },
       {
         index: 1,
         tokenS: "LRC",
         tokenB: "WETH",
         amountS: 70e18,
-        amountB: 0.6e18,
+        amountB: 0.7e18,
       },
     ],
     expected: {

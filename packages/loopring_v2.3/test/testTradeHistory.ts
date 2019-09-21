@@ -526,28 +526,28 @@ contract("TradeHistory", (accounts: string[]) => {
 
   });
 
-  describe("anyone", () => {
-    it("should be able to check if order cutoffs are valid", async () => {
-      const orders: Order[] = [];
-      addOrder(orders, broker1, user1, 123, 1000, 123);
-      const data = toCutoffBatch(orders);
-      const result = await tradeHistory.batchGetFilledAndCheckCancelled(data);
-      assertOrdersValid(result, [true]);
-    });
-
-    it("should not be able to check if order cutoffs are valid with malformed data", async () => {
-      const orders: Order[] = [];
-      addOrder(orders, broker1, user1, 123, 1000, 123);
-      const data = toCutoffBatch(orders);
-      data.pop();
-      await expectThrow(tradeHistory.batchGetFilledAndCheckCancelled(data), "INVALID_SIZE");
-    });
-
-    it("should not be able to batch update filled", async () => {
-      const hash1 = 123;
-      const updates: FilledUpdate[] = [];
-      addFilledUpdate(updates, hash1, web3.utils.toBN(1.5e18));
-      await expectThrow(batchUpdateFilledChecked(updates), "UNAUTHORIZED");
-    });
-  });
+  // describe("anyone", () => {
+  //   it("should be able to check if order cutoffs are valid", async () => {
+  //     const orders: Order[] = [];
+  //     addOrder(orders, broker1, user1, 123, 1000, 123);
+  //     const data = toCutoffBatch(orders);
+  //     const result = await tradeHistory.batchGetFilledAndCheckCancelled(data);
+  //     assertOrdersValid(result, [true]);
+  //   });
+  //
+  //   it("should not be able to check if order cutoffs are valid with malformed data", async () => {
+  //     const orders: Order[] = [];
+  //     addOrder(orders, broker1, user1, 123, 1000, 123);
+  //     const data = toCutoffBatch(orders);
+  //     data.pop();
+  //     await expectThrow(tradeHistory.batchGetFilledAndCheckCancelled(data), "INVALID_SIZE");
+  //   });
+  //
+  //   it("should not be able to batch update filled", async () => {
+  //     const hash1 = 123;
+  //     const updates: FilledUpdate[] = [];
+  //     addFilledUpdate(updates, hash1, web3.utils.toBN(1.5e18));
+  //     await expectThrow(batchUpdateFilledChecked(updates), "UNAUTHORIZED");
+  //   });
+  // });
 });
