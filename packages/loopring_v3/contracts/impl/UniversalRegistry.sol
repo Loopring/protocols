@@ -34,10 +34,10 @@ contract UniversalRegistry is IUniversalRegistry {
     struct Protocol
     {
         address protocol;
-        address manager;
-        string  version;
         bool    registered;
         bool    enabled;
+        address manager;
+        string  version;
     }
 
     // IExchange addresses => IProtocol addresses
