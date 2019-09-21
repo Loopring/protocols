@@ -130,186 +130,186 @@ contract("FeeHolder", (accounts: string[]) => {
     testToken = TestToken.address;
   });
 
-  describe("authorized address", () => {
-    it("should be able to add fee balances in batch", async () => {
-      {
-        const feePayments = new FeePayments();
-        feePayments.add(user1, token1, web3.utils.toBN(1.23 * 1e18));
-        feePayments.add(user2, token2, web3.utils.toBN(3.21 * 1e19));
-        feePayments.add(user1, token2, web3.utils.toBN(2.71 * 1e19));
-        feePayments.add(user3, token3, web3.utils.toBN(4.91 * 1e19));
-        feePayments.add(user1, token1, web3.utils.toBN(1.48 * 1e19));
-        feePayments.add(user3, token1, web3.utils.toBN(2.61 * 1e19));
-        await batchAddFeeBalancesChecked(feePayments);
-      }
-      {
-        const feePayments = new FeePayments();
-        feePayments.add(user3, token1, web3.utils.toBN(1.23 * 1e18));
-        feePayments.add(user1, token3, web3.utils.toBN(3.21 * 1e19));
-        feePayments.add(user2, token2, web3.utils.toBN(2.71 * 1e19));
-        feePayments.add(user3, token3, web3.utils.toBN(2.61 * 1e19));
-        await batchAddFeeBalancesChecked(feePayments);
-      }
-    });
+  // describe("authorized address", () => {
+  //   it("should be able to add fee balances in batch", async () => {
+  //     {
+  //       const feePayments = new FeePayments();
+  //       feePayments.add(user1, token1, web3.utils.toBN(1.23 * 1e18));
+  //       feePayments.add(user2, token2, web3.utils.toBN(3.21 * 1e19));
+  //       feePayments.add(user1, token2, web3.utils.toBN(2.71 * 1e19));
+  //       feePayments.add(user3, token3, web3.utils.toBN(4.91 * 1e19));
+  //       feePayments.add(user1, token1, web3.utils.toBN(1.48 * 1e19));
+  //       feePayments.add(user3, token1, web3.utils.toBN(2.61 * 1e19));
+  //       await batchAddFeeBalancesChecked(feePayments);
+  //     }
+  //     {
+  //       const feePayments = new FeePayments();
+  //       feePayments.add(user3, token1, web3.utils.toBN(1.23 * 1e18));
+  //       feePayments.add(user1, token3, web3.utils.toBN(3.21 * 1e19));
+  //       feePayments.add(user2, token2, web3.utils.toBN(2.71 * 1e19));
+  //       feePayments.add(user3, token3, web3.utils.toBN(2.61 * 1e19));
+  //       await batchAddFeeBalancesChecked(feePayments);
+  //     }
+  //   });
 
-    it("should be able to withdraw tokens to burn", async () => {
-      const dummyToken1 = await DummyToken.at(token1);
-      const amount = web3.utils.toBN(2.4e18);
-      // Make sure the contract has enough funds
-      await dummyToken1.setBalance(feeHolder.address, amount);
+  //   it("should be able to withdraw tokens to burn", async () => {
+  //     const dummyToken1 = await DummyToken.at(token1);
+  //     const amount = web3.utils.toBN(2.4e18);
+  //     // Make sure the contract has enough funds
+  //     await dummyToken1.setBalance(feeHolder.address, amount);
 
-      const feePayments = new FeePayments();
-      feePayments.add(feeHolder.address, token1, amount);
-      await batchAddFeeBalancesChecked(feePayments);
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(feeHolder.address, token1, amount);
+  //     await batchAddFeeBalancesChecked(feePayments);
 
-      // Withdraw the tokens that need to be burned
-      await withdrawBurnedChecked(dummyBurnManager, token1, amount);
-    });
+  //     // Withdraw the tokens that need to be burned
+  //     await withdrawBurnedChecked(dummyBurnManager, token1, amount);
+  //   });
 
-    it("should not be able to send fee payments in an incorrect format", async () => {
-      const feePayments = new FeePayments();
-      feePayments.add(user1, token1, web3.utils.toBN(1.23 * 1e18));
-      feePayments.add(user2, token2, web3.utils.toBN(3.21 * 1e19));
-      const batch = feePayments.getData();
-      batch.pop();
-      await expectThrow(dummyExchange.batchAddFeeBalances(batch), "INVALID_SIZE");
-    });
-  });
+  //   it("should not be able to send fee payments in an incorrect format", async () => {
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(user1, token1, web3.utils.toBN(1.23 * 1e18));
+  //     feePayments.add(user2, token2, web3.utils.toBN(3.21 * 1e19));
+  //     const batch = feePayments.getData();
+  //     batch.pop();
+  //     await expectThrow(dummyExchange.batchAddFeeBalances(batch), "INVALID_SIZE");
+  //   });
+  // });
 
-  describe("anyone", () => {
-    it("should be able to withdraw tokens of its own", async () => {
-      const dummyToken1 = await DummyToken.at(token1);
-      const dummyToken2 = await DummyToken.at(token2);
-      const amount11 = web3.utils.toBN(1.78e18);
-      const amount12 = web3.utils.toBN(2.18e18);
-      const amount21 = web3.utils.toBN(4.21e18);
-      // Make sure the contract has enough funds
-      await dummyToken1.setBalance(feeHolder.address, amount11.add(amount12));
-      await dummyToken2.setBalance(feeHolder.address, amount21);
+  // describe("anyone", () => {
+  //   it("should be able to withdraw tokens of its own", async () => {
+  //     const dummyToken1 = await DummyToken.at(token1);
+  //     const dummyToken2 = await DummyToken.at(token2);
+  //     const amount11 = web3.utils.toBN(1.78e18);
+  //     const amount12 = web3.utils.toBN(2.18e18);
+  //     const amount21 = web3.utils.toBN(4.21e18);
+  //     // Make sure the contract has enough funds
+  //     await dummyToken1.setBalance(feeHolder.address, amount11.add(amount12));
+  //     await dummyToken2.setBalance(feeHolder.address, amount21);
 
-      const feePayments = new FeePayments();
-      feePayments.add(user1, token1, amount11);
-      feePayments.add(user2, token1, amount12);
-      feePayments.add(user1, token2, amount21);
-      await batchAddFeeBalancesChecked(feePayments);
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(user1, token1, amount11);
+  //     feePayments.add(user2, token1, amount12);
+  //     feePayments.add(user1, token2, amount21);
+  //     await batchAddFeeBalancesChecked(feePayments);
 
-      await withdrawTokenChecked(user1, token1, amount11);
-      await withdrawTokenChecked(user1, token2, amount21);
-    });
+  //     await withdrawTokenChecked(user1, token1, amount11);
+  //     await withdrawTokenChecked(user1, token2, amount21);
+  //   });
 
-    it("should be able to withdraw tokens of its own in parts", async () => {
-      const dummyToken1 = await DummyToken.at(token1);
-      const amount = web3.utils.toBN(1.78e18);
-      // Make sure the contract has enough funds
-      await dummyToken1.setBalance(feeHolder.address, amount);
+  //   it("should be able to withdraw tokens of its own in parts", async () => {
+  //     const dummyToken1 = await DummyToken.at(token1);
+  //     const amount = web3.utils.toBN(1.78e18);
+  //     // Make sure the contract has enough funds
+  //     await dummyToken1.setBalance(feeHolder.address, amount);
 
-      const feePayments = new FeePayments();
-      feePayments.add(user1, token1, amount);
-      await batchAddFeeBalancesChecked(feePayments);
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(user1, token1, amount);
+  //     await batchAddFeeBalancesChecked(feePayments);
 
-      await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(4)));
-      await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(2)));
-      await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(4)));
-    });
+  //     await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(4)));
+  //     await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(2)));
+  //     await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(4)));
+  //   });
 
-    it("should not be able to withdraw more tokens than allowed", async () => {
-      const dummyToken1 = await DummyToken.at(token1);
-      const dummyToken2 = await DummyToken.at(token2);
-      const amount = web3.utils.toBN(2.4e18);
-      // Make sure the contract has enough funds
-      await dummyToken1.setBalance(feeHolder.address, amount);
-      await dummyToken2.setBalance(feeHolder.address, amount);
+  //   it("should not be able to withdraw more tokens than allowed", async () => {
+  //     const dummyToken1 = await DummyToken.at(token1);
+  //     const dummyToken2 = await DummyToken.at(token2);
+  //     const amount = web3.utils.toBN(2.4e18);
+  //     // Make sure the contract has enough funds
+  //     await dummyToken1.setBalance(feeHolder.address, amount);
+  //     await dummyToken2.setBalance(feeHolder.address, amount);
 
-      const feePayments = new FeePayments();
-      feePayments.add(user1, token1, amount);
-      feePayments.add(user2, token2, amount);
-      await batchAddFeeBalancesChecked(feePayments);
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(user1, token1, amount);
+  //     feePayments.add(user2, token2, amount);
+  //     await batchAddFeeBalancesChecked(feePayments);
 
-      // Withdraw half the available balance
-      await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(2)));
-      // Amount is greater than what's available
-      await expectThrow(withdrawTokenChecked(user1, token1, amount), "INVALID_VALUE");
-      // Other user shouldn't be able to withdraw those funds
-      await expectThrow(withdrawTokenChecked(user2, token1, amount.div(web3.utils.toBN(2))), "INVALID_VALUE");
-      // User shouldn't be able to withdraw tokens it didn't get paid
-      await expectThrow(withdrawTokenChecked(user1, token2, amount), "INVALID_VALUE");
-    });
+  //     // Withdraw half the available balance
+  //     await withdrawTokenChecked(user1, token1, amount.div(web3.utils.toBN(2)));
+  //     // Amount is greater than what's available
+  //     await expectThrow(withdrawTokenChecked(user1, token1, amount), "INVALID_VALUE");
+  //     // Other user shouldn't be able to withdraw those funds
+  //     await expectThrow(withdrawTokenChecked(user2, token1, amount.div(web3.utils.toBN(2))), "INVALID_VALUE");
+  //     // User shouldn't be able to withdraw tokens it didn't get paid
+  //     await expectThrow(withdrawTokenChecked(user1, token2, amount), "INVALID_VALUE");
+  //   });
 
-    it("should not be able to withdraw tokens to burn", async () => {
-      const dummyToken1 = await DummyToken.at(token1);
-      const amount = web3.utils.toBN(2.4e18);
-      // Make sure the contract has enough funds
-      await dummyToken1.setBalance(feeHolder.address, amount);
+  //   it("should not be able to withdraw tokens to burn", async () => {
+  //     const dummyToken1 = await DummyToken.at(token1);
+  //     const amount = web3.utils.toBN(2.4e18);
+  //     // Make sure the contract has enough funds
+  //     await dummyToken1.setBalance(feeHolder.address, amount);
 
-      const feePayments = new FeePayments();
-      feePayments.add(feeHolder.address, token1, amount);
-      await batchAddFeeBalancesChecked(feePayments);
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(feeHolder.address, token1, amount);
+  //     await batchAddFeeBalancesChecked(feePayments);
 
-      // Try to withdraw the tokens to burn
-      await expectThrow(feeHolder.withdrawBurned(token1, amount, {from: user1}), "UNAUTHORIZED");
-    });
+  //     // Try to withdraw the tokens to burn
+  //     await expectThrow(feeHolder.withdrawBurned(token1, amount, {from: user1}), "UNAUTHORIZED");
+  //   });
 
-    it("should not be able to add fee balances", async () => {
-      const feePayments = new FeePayments();
-      feePayments.add(user1, token1, web3.utils.toBN(1.23 * 1e18));
-      feePayments.add(user2, token2, web3.utils.toBN(3.21 * 1e19));
-      await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}), "UNAUTHORIZED");
-    });
+  //   it("should not be able to add fee balances", async () => {
+  //     const feePayments = new FeePayments();
+  //     feePayments.add(user1, token1, web3.utils.toBN(1.23 * 1e18));
+  //     feePayments.add(user2, token2, web3.utils.toBN(3.21 * 1e19));
+  //     await expectThrow(feeHolder.batchAddFeeBalances(feePayments.getData(), {from: user1}), "UNAUTHORIZED");
+  //   });
 
-    describe("Bad ERC20 tokens", () => {
-      it("withdrawToken should succeed when a token transfer does not throw and returns nothing", async () => {
-        const amount = web3.utils.toBN(1e18);
-        // Make sure the contract has enough funds
-        await TestToken.setBalance(feeHolder.address, amount);
+  //   describe("Bad ERC20 tokens", () => {
+  //     it("withdrawToken should succeed when a token transfer does not throw and returns nothing", async () => {
+  //       const amount = web3.utils.toBN(1e18);
+  //       // Make sure the contract has enough funds
+  //       await TestToken.setBalance(feeHolder.address, amount);
 
-        const feePayments = new FeePayments();
-        feePayments.add(user1, testToken, amount);
-        await batchAddFeeBalancesChecked(feePayments);
+  //       const feePayments = new FeePayments();
+  //       feePayments.add(user1, testToken, amount);
+  //       await batchAddFeeBalancesChecked(feePayments);
 
-        await TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
-        await withdrawTokenChecked(user1, testToken, amount);
-      });
+  //       await TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
+  //       await withdrawTokenChecked(user1, testToken, amount);
+  //     });
 
-      it("withdrawToken should fail when a token transfer 'require' fails", async () => {
-        const amount = web3.utils.toBN(1e18);
-        // Make sure the contract has enough funds
-        await TestToken.setBalance(feeHolder.address, amount);
+  //     it("withdrawToken should fail when a token transfer 'require' fails", async () => {
+  //       const amount = web3.utils.toBN(1e18);
+  //       // Make sure the contract has enough funds
+  //       await TestToken.setBalance(feeHolder.address, amount);
 
-        const feePayments = new FeePayments();
-        feePayments.add(user1, testToken, amount);
-        await batchAddFeeBalancesChecked(feePayments);
+  //       const feePayments = new FeePayments();
+  //       feePayments.add(user1, testToken, amount);
+  //       await batchAddFeeBalancesChecked(feePayments);
 
-        await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
-        await expectThrow(withdrawTokenChecked(user1, testToken, amount), "TRANSFER_FAILURE");
-      });
+  //       await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
+  //       await expectThrow(withdrawTokenChecked(user1, testToken, amount), "TRANSFER_FAILURE");
+  //     });
 
-      it("withdrawToken should fail when a token transfer returns false", async () => {
-        const amount = web3.utils.toBN(1e18);
-        // Make sure the contract has enough funds
-        await TestToken.setBalance(feeHolder.address, amount);
+  //     it("withdrawToken should fail when a token transfer returns false", async () => {
+  //       const amount = web3.utils.toBN(1e18);
+  //       // Make sure the contract has enough funds
+  //       await TestToken.setBalance(feeHolder.address, amount);
 
-        const feePayments = new FeePayments();
-        feePayments.add(user1, testToken, amount);
-        await batchAddFeeBalancesChecked(feePayments);
+  //       const feePayments = new FeePayments();
+  //       feePayments.add(user1, testToken, amount);
+  //       await batchAddFeeBalancesChecked(feePayments);
 
-        await TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
-        await expectThrow(withdrawTokenChecked(user1, testToken, amount), "TRANSFER_FAILURE");
-      });
+  //       await TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
+  //       await expectThrow(withdrawTokenChecked(user1, testToken, amount), "TRANSFER_FAILURE");
+  //     });
 
-      it("withdrawToken should fail when a token transfer returns more than 32 bytes", async () => {
-        const amount = web3.utils.toBN(1e18);
-        // Make sure the contract has enough funds
-        await TestToken.setBalance(feeHolder.address, amount);
+  //     it("withdrawToken should fail when a token transfer returns more than 32 bytes", async () => {
+  //       const amount = web3.utils.toBN(1e18);
+  //       // Make sure the contract has enough funds
+  //       await TestToken.setBalance(feeHolder.address, amount);
 
-        const feePayments = new FeePayments();
-        feePayments.add(user1, testToken, amount);
-        await batchAddFeeBalancesChecked(feePayments);
+  //       const feePayments = new FeePayments();
+  //       feePayments.add(user1, testToken, amount);
+  //       await batchAddFeeBalancesChecked(feePayments);
 
-        await TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
-        await expectThrow(withdrawTokenChecked(user1, testToken, amount), "TRANSFER_FAILURE");
-      });
-    });
+  //       await TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
+  //       await expectThrow(withdrawTokenChecked(user1, testToken, amount), "TRANSFER_FAILURE");
+  //     });
+  //   });
 
-  });
+  // });
 
 });

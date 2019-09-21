@@ -136,187 +136,187 @@ contract("TradeDelegate", (accounts: string[]) => {
     testToken = TestToken.address;
   });
 
-  describe("contract owner", () => {
-    it("should be able to authorize an address", async () => {
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-      await authorizeAddressChecked(dummyExchange2.address, owner);
-      await authorizeAddressChecked(dummyExchange3.address, owner);
-    });
+  // describe("contract owner", () => {
+  //   it("should be able to authorize an address", async () => {
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //     await authorizeAddressChecked(dummyExchange2.address, owner);
+  //     await authorizeAddressChecked(dummyExchange3.address, owner);
+  //   });
 
-    it("should be able to deauthorize an address", async () => {
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-      await authorizeAddressChecked(dummyExchange2.address, owner);
-      await authorizeAddressChecked(dummyExchange3.address, owner);
-      await deauthorizeAddressChecked(dummyExchange2.address, owner);
-      await assertAuthorized(dummyExchange1.address);
-      await assertAuthorized(dummyExchange3.address);
-      await deauthorizeAddressChecked(dummyExchange1.address, owner);
-      await assertAuthorized(dummyExchange3.address);
-      await deauthorizeAddressChecked(dummyExchange3.address, owner);
-    });
+  //   it("should be able to deauthorize an address", async () => {
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //     await authorizeAddressChecked(dummyExchange2.address, owner);
+  //     await authorizeAddressChecked(dummyExchange3.address, owner);
+  //     await deauthorizeAddressChecked(dummyExchange2.address, owner);
+  //     await assertAuthorized(dummyExchange1.address);
+  //     await assertAuthorized(dummyExchange3.address);
+  //     await deauthorizeAddressChecked(dummyExchange1.address, owner);
+  //     await assertAuthorized(dummyExchange3.address);
+  //     await deauthorizeAddressChecked(dummyExchange3.address, owner);
+  //   });
 
-    it("should not be able to authorize a non-contract address", async () => {
-      await expectThrow(authorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
-      await expectThrow(authorizeAddressChecked(user2, owner), "INVALID_ADDRESS");
-    });
+  //   it("should not be able to authorize a non-contract address", async () => {
+  //     await expectThrow(authorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
+  //     await expectThrow(authorizeAddressChecked(user2, owner), "INVALID_ADDRESS");
+  //   });
 
-    it("should not be able to authorize an address twice", async () => {
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-      await expectThrow(authorizeAddressChecked(dummyExchange1.address, owner), "ALREADY_EXIST");
-    });
+  //   it("should not be able to authorize an address twice", async () => {
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //     await expectThrow(authorizeAddressChecked(dummyExchange1.address, owner), "ALREADY_EXIST");
+  //   });
 
-    it("should not be able to deauthorize an unathorized address", async () => {
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-      await expectThrow(deauthorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
-      await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner), "NOT_FOUND");
-    });
+  //   it("should not be able to deauthorize an unathorized address", async () => {
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //     await expectThrow(deauthorizeAddressChecked(zeroAddress, owner), "ZERO_ADDRESS");
+  //     await expectThrow(deauthorizeAddressChecked(dummyExchange2.address, owner), "NOT_FOUND");
+  //   });
 
-    it("should be able to suspend and resume the contract", async () => {
-      await tradeDelegate.suspend({from: owner});
-      // Try to do a transfer
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
-      const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
-      await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
-      // Resume again
-      await tradeDelegate.resume({from: owner});
-      // Try the trade again
-      await batchTransferChecked(transfers);
-    });
+  //   it("should be able to suspend and resume the contract", async () => {
+  //     await tradeDelegate.suspend({from: owner});
+  //     // Try to do a transfer
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //     await setUserBalance(token1, user1, web3.utils.toBN(10e18));
+  //     const transfers: TokenTransfer[] = [];
+  //     addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
+  //     await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
+  //     // Resume again
+  //     await tradeDelegate.resume({from: owner});
+  //     // Try the trade again
+  //     await batchTransferChecked(transfers);
+  //   });
 
-    it("should be able to kill the contract", async () => {
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-      // Suspend is needed before kill
-      await expectThrow(tradeDelegate.kill({from: owner}), "INVALID_STATE");
-      await tradeDelegate.suspend({from: owner});
-      await tradeDelegate.kill({from: owner});
-      // Try to resume again
-      await expectThrow(tradeDelegate.resume({from: owner}), "NOT_OWNER");
-      // Try to do a transfer
-      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
-      const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
-      await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
-    });
-  });
+  //   it("should be able to kill the contract", async () => {
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //     // Suspend is needed before kill
+  //     await expectThrow(tradeDelegate.kill({from: owner}), "INVALID_STATE");
+  //     await tradeDelegate.suspend({from: owner});
+  //     await tradeDelegate.kill({from: owner});
+  //     // Try to resume again
+  //     await expectThrow(tradeDelegate.resume({from: owner}), "NOT_OWNER");
+  //     // Try to do a transfer
+  //     await setUserBalance(token1, user1, web3.utils.toBN(10e18));
+  //     const transfers: TokenTransfer[] = [];
+  //     addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
+  //     await expectThrow(batchTransferChecked(transfers), "INVALID_STATE");
+  //   });
+  // });
 
-  describe("authorized address", () => {
-    beforeEach(async () => {
-      await authorizeAddressChecked(dummyExchange1.address, owner);
-    });
+  // describe("authorized address", () => {
+  //   beforeEach(async () => {
+  //     await authorizeAddressChecked(dummyExchange1.address, owner);
+  //   });
 
-    it("should be able to batch transfer tokens", async () => {
-      // Make sure everyone has enough funds
-      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
-      await setUserBalance(token2, user1, web3.utils.toBN(10e18));
-      await setUserBalance(token2, user2, web3.utils.toBN(10e18));
-      await setUserBalance(token3, user3, web3.utils.toBN(10e18));
-      {
-        const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1.5e18));
-        addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(2.5e18));
-        addTokenTransfer(transfers, token2, user2, user3, web3.utils.toBN(2.2e18));
-        addTokenTransfer(transfers, token2, user2, user1, web3.utils.toBN(0.3e18));
-        addTokenTransfer(transfers, token2, user1, user3, web3.utils.toBN(2.5e18));
-        await batchTransferChecked(transfers);
-      }
-      {
-        const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(1.5e18));
-        addTokenTransfer(transfers, token3, user3, user2, web3.utils.toBN(2.5e18));
-        addTokenTransfer(transfers, token3, user3, user1, web3.utils.toBN(1.5e18));
-        await batchTransferChecked(transfers);
-      }
-      {
-        const transfers: TokenTransfer[] = [];
-        // No tokens to be transfered
-        addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(0));
-        // From == To
-        addTokenTransfer(transfers, token3, user3, user3, web3.utils.toBN(2.5e18));
-        await batchTransferChecked(transfers);
-      }
-    });
+  //   it("should be able to batch transfer tokens", async () => {
+  //     // Make sure everyone has enough funds
+  //     await setUserBalance(token1, user1, web3.utils.toBN(10e18));
+  //     await setUserBalance(token2, user1, web3.utils.toBN(10e18));
+  //     await setUserBalance(token2, user2, web3.utils.toBN(10e18));
+  //     await setUserBalance(token3, user3, web3.utils.toBN(10e18));
+  //     {
+  //       const transfers: TokenTransfer[] = [];
+  //       addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1.5e18));
+  //       addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(2.5e18));
+  //       addTokenTransfer(transfers, token2, user2, user3, web3.utils.toBN(2.2e18));
+  //       addTokenTransfer(transfers, token2, user2, user1, web3.utils.toBN(0.3e18));
+  //       addTokenTransfer(transfers, token2, user1, user3, web3.utils.toBN(2.5e18));
+  //       await batchTransferChecked(transfers);
+  //     }
+  //     {
+  //       const transfers: TokenTransfer[] = [];
+  //       addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(1.5e18));
+  //       addTokenTransfer(transfers, token3, user3, user2, web3.utils.toBN(2.5e18));
+  //       addTokenTransfer(transfers, token3, user3, user1, web3.utils.toBN(1.5e18));
+  //       await batchTransferChecked(transfers);
+  //     }
+  //     {
+  //       const transfers: TokenTransfer[] = [];
+  //       // No tokens to be transfered
+  //       addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(0));
+  //       // From == To
+  //       addTokenTransfer(transfers, token3, user3, user3, web3.utils.toBN(2.5e18));
+  //       await batchTransferChecked(transfers);
+  //     }
+  //   });
 
-    it("should not be able to batch transfer tokens with malformed data", async () => {
-      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
-      const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
-      addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(2e18));
-      const batch = toTransferBatch(transfers);
-      batch.pop();
-      await expectThrow(dummyExchange1.batchTransfer(batch), "INVALID_SIZE");
-    });
+  //   it("should not be able to batch transfer tokens with malformed data", async () => {
+  //     await setUserBalance(token1, user1, web3.utils.toBN(10e18));
+  //     const transfers: TokenTransfer[] = [];
+  //     addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
+  //     addTokenTransfer(transfers, token1, user1, user3, web3.utils.toBN(2e18));
+  //     const batch = toTransferBatch(transfers);
+  //     batch.pop();
+  //     await expectThrow(dummyExchange1.batchTransfer(batch), "INVALID_SIZE");
+  //   });
 
-    it("should not be able to batch transfer tokens with non-ERC20 token address", async () => {
-      const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
-      const batch = toTransferBatch(transfers);
-      await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
-    });
+  //   it("should not be able to batch transfer tokens with non-ERC20 token address", async () => {
+  //     const transfers: TokenTransfer[] = [];
+  //     addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
+  //     const batch = toTransferBatch(transfers);
+  //     await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
+  //   });
 
-    it("should not be able to authorize an address", async () => {
-      await expectThrow(dummyExchange1.authorizeAddress(dummyExchange2.address), "NOT_OWNER");
-    });
+  //   it("should not be able to authorize an address", async () => {
+  //     await expectThrow(dummyExchange1.authorizeAddress(dummyExchange2.address), "NOT_OWNER");
+  //   });
 
-    it("should not be able to deauthorize an address", async () => {
-      await expectThrow(dummyExchange1.authorizeAddress(dummyExchange1.address), "NOT_OWNER");
-    });
+  //   it("should not be able to deauthorize an address", async () => {
+  //     await expectThrow(dummyExchange1.authorizeAddress(dummyExchange1.address), "NOT_OWNER");
+  //   });
 
-    it("should not be able to suspend and resume the contract", async () => {
-      await expectThrow(dummyExchange1.suspend(), "NOT_OWNER");
-      await tradeDelegate.suspend({from: owner});
-      // Try to resume again
-      await expectThrow(dummyExchange1.resume(), "NOT_OWNER");
-      await tradeDelegate.resume({from: owner});
-    });
+  //   it("should not be able to suspend and resume the contract", async () => {
+  //     await expectThrow(dummyExchange1.suspend(), "NOT_OWNER");
+  //     await tradeDelegate.suspend({from: owner});
+  //     // Try to resume again
+  //     await expectThrow(dummyExchange1.resume(), "NOT_OWNER");
+  //     await tradeDelegate.resume({from: owner});
+  //   });
 
-    describe("Bad ERC20 tokens", () => {
-      it("batchTransfer should succeed when a token transfer does not throw and returns nothing", async () => {
-        await TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
-        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
-        const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
-        await batchTransferChecked(transfers);
-      });
+  //   describe("Bad ERC20 tokens", () => {
+  //     it("batchTransfer should succeed when a token transfer does not throw and returns nothing", async () => {
+  //       await TestToken.setTestCase(await TestToken.TEST_NO_RETURN_VALUE());
+  //       await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
+  //       const transfers: TokenTransfer[] = [];
+  //       addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
+  //       await batchTransferChecked(transfers);
+  //     });
 
-      it("batchTransfer should fail when a token transfer 'require' fails", async () => {
-        await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
-        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
-        const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
-        const batch = toTransferBatch(transfers);
-        await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
-      });
+  //     it("batchTransfer should fail when a token transfer 'require' fails", async () => {
+  //       await TestToken.setTestCase(await TestToken.TEST_REQUIRE_FAIL());
+  //       await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
+  //       const transfers: TokenTransfer[] = [];
+  //       addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
+  //       const batch = toTransferBatch(transfers);
+  //       await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
+  //     });
 
-      it("batchTransfer should fail when a token transfer returns false", async () => {
-        await TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
-        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
-        const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
-        const batch = toTransferBatch(transfers);
-        await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
-      });
+  //     it("batchTransfer should fail when a token transfer returns false", async () => {
+  //       await TestToken.setTestCase(await TestToken.TEST_RETURN_FALSE());
+  //       await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
+  //       const transfers: TokenTransfer[] = [];
+  //       addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
+  //       const batch = toTransferBatch(transfers);
+  //       await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
+  //     });
 
-      it("batchTransfer should fail when a token transfer returns more than 32 bytes", async () => {
-        await TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
-        await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
-        const transfers: TokenTransfer[] = [];
-        addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
-        const batch = toTransferBatch(transfers);
-        await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
-      });
-    });
+  //     it("batchTransfer should fail when a token transfer returns more than 32 bytes", async () => {
+  //       await TestToken.setTestCase(await TestToken.TEST_INVALID_RETURN_SIZE());
+  //       await setUserBalance(testToken, user1, web3.utils.toBN(10e18));
+  //       const transfers: TokenTransfer[] = [];
+  //       addTokenTransfer(transfers, testToken, user1, user2, web3.utils.toBN(1e18));
+  //       const batch = toTransferBatch(transfers);
+  //       await expectThrow(dummyExchange1.batchTransfer(batch), "TRANSFER_FAILURE");
+  //     });
+  //   });
 
-  });
+  // });
 
-  describe("anyone", () => {
-    it("should not be able to transfer tokens", async () => {
-      // Make sure everyone has enough funds
-      await setUserBalance(token1, user1, web3.utils.toBN(10e18));
-      const transfers: TokenTransfer[] = [];
-      addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
-      await expectThrow(batchTransferChecked(transfers), "UNAUTHORIZED");
-    });
-  });
+  // describe("anyone", () => {
+  //   it("should not be able to transfer tokens", async () => {
+  //     // Make sure everyone has enough funds
+  //     await setUserBalance(token1, user1, web3.utils.toBN(10e18));
+  //     const transfers: TokenTransfer[] = [];
+  //     addTokenTransfer(transfers, token1, user1, user2, web3.utils.toBN(1e18));
+  //     await expectThrow(batchTransferChecked(transfers), "UNAUTHORIZED");
+  //   });
+  // });
 });

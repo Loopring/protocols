@@ -54,49 +54,49 @@ contract("OrderRegistry", (accounts: string[]) => {
     orderRegistry = await OrderRegistry.new();
   });
 
-  describe("any user", () => {
-    it("should be able to register an order hash", async () => {
-      const orderInfo = createOrder();
+  // describe("any user", () => {
+  //   it("should be able to register an order hash", async () => {
+  //     const orderInfo = createOrder();
 
-      // Calculate the order hash
-      const orderUtil = new OrderUtil(undefined);
-      const orderHash =  orderUtil.getOrderHash(orderInfo);
-      const orderHashHex = "0x" + orderHash.toString("hex");
+  //     // Calculate the order hash
+  //     const orderUtil = new OrderUtil(undefined);
+  //     const orderHash =  orderUtil.getOrderHash(orderInfo);
+  //     const orderHashHex = "0x" + orderHash.toString("hex");
 
-      // Order should not be registered
-      const registeredBefore = await orderRegistry.isOrderHashRegistered(orderOwner1, orderHashHex);
-      assert.equal(registeredBefore, false, "order hash should not yet be registered");
+  //     // Order should not be registered
+  //     const registeredBefore = await orderRegistry.isOrderHashRegistered(orderOwner1, orderHashHex);
+  //     assert.equal(registeredBefore, false, "order hash should not yet be registered");
 
-      // Register the order hash
-      await orderRegistry.registerOrderHash(orderHashHex, {from: orderOwner1});
+  //     // Register the order hash
+  //     await orderRegistry.registerOrderHash(orderHashHex, {from: orderOwner1});
 
-      // Check if the order was successfully registered
-      const registeredAfter = await orderRegistry.isOrderHashRegistered(orderOwner1, orderHashHex);
-      assert.equal(registeredAfter, true, "order hash should be registered");
+  //     // Check if the order was successfully registered
+  //     const registeredAfter = await orderRegistry.isOrderHashRegistered(orderOwner1, orderHashHex);
+  //     assert.equal(registeredAfter, true, "order hash should be registered");
 
-      // The order should only be registered for the submitter
-      const registeredAfter2 = await orderRegistry.isOrderHashRegistered(orderOwner2, orderHashHex);
-      assert.equal(registeredAfter2, false, "order hash should not be registered for someone else");
-    });
+  //     // The order should only be registered for the submitter
+  //     const registeredAfter2 = await orderRegistry.isOrderHashRegistered(orderOwner2, orderHashHex);
+  //     assert.equal(registeredAfter2, false, "order hash should not be registered for someone else");
+  //   });
 
-    it("should not be able to register an order hash twice", async () => {
-      const orderInfo = createOrder();
+  //   it("should not be able to register an order hash twice", async () => {
+  //     const orderInfo = createOrder();
 
-      // Calculate the order hash
-      const orderUtil = new OrderUtil(undefined);
-      const orderHash =  orderUtil.getOrderHash(orderInfo);
-      const orderHashHex = "0x" + orderHash.toString("hex");
+  //     // Calculate the order hash
+  //     const orderUtil = new OrderUtil(undefined);
+  //     const orderHash =  orderUtil.getOrderHash(orderInfo);
+  //     const orderHashHex = "0x" + orderHash.toString("hex");
 
-      // Register the order hash
-      await orderRegistry.registerOrderHash(orderHashHex, {from: orderOwner1});
+  //     // Register the order hash
+  //     await orderRegistry.registerOrderHash(orderHashHex, {from: orderOwner1});
 
-      // Check if the order was successfully registered
-      const registered = await orderRegistry.isOrderHashRegistered(orderOwner1, orderHashHex);
-      assert.equal(registered, true, "order hash should be registered");
+  //     // Check if the order was successfully registered
+  //     const registered = await orderRegistry.isOrderHashRegistered(orderOwner1, orderHashHex);
+  //     assert.equal(registered, true, "order hash should be registered");
 
-      // Try to register the order hash again
-      await expectThrow(orderRegistry.registerOrderHash(orderHashHex, {from: orderOwner1}), "ALREADY_EXIST");
-    });
-  });
+  //     // Try to register the order hash again
+  //     await expectThrow(orderRegistry.registerOrderHash(orderHashHex, {from: orderOwner1}), "ALREADY_EXIST");
+  //   });
+  // });
 
 });

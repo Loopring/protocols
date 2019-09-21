@@ -112,58 +112,58 @@ contract("OrderBook", (accounts: string[]) => {
     orderBook = await OrderBook.new();
   });
 
-  describe("general", () => {
-    it("should not be able to submit an order in an incorrect format", async () => {
-      const order = await getTestOrder(owner1, broker1);
-      // Store order data in a bytes array
-      const orderUtil = new OrderUtil(undefined);
-      let orderData = orderUtil.toOrderBookSubmitParams(order);
-      // Add a byte to the data
-      orderData = orderData + "00";
-      // Try to submit the order
-      await expectThrow(orderBook.submitOrder(orderData, {from: order.owner}), "INVALID_SIZE");
-    });
+  // describe("general", () => {
+  //   it("should not be able to submit an order in an incorrect format", async () => {
+  //     const order = await getTestOrder(owner1, broker1);
+  //     // Store order data in a bytes array
+  //     const orderUtil = new OrderUtil(undefined);
+  //     let orderData = orderUtil.toOrderBookSubmitParams(order);
+  //     // Add a byte to the data
+  //     orderData = orderData + "00";
+  //     // Try to submit the order
+  //     await expectThrow(orderBook.submitOrder(orderData, {from: order.owner}), "INVALID_SIZE");
+  //   });
 
-    it("orders should default to not submitted", async () => {
-      // Check if the order was successfully submitted
-      const orderHash = "0x" + "12".repeat(32);
-      const submitted = await orderBook.orderSubmitted(orderHash);
-      assert.equal(submitted, false, "order should default to not submitted");
-    });
-  });
+  //   it("orders should default to not submitted", async () => {
+  //     // Check if the order was successfully submitted
+  //     const orderHash = "0x" + "12".repeat(32);
+  //     const submitted = await orderBook.orderSubmitted(orderHash);
+  //     assert.equal(submitted, false, "order should default to not submitted");
+  //   });
+  // });
 
-  describe("order owner", () => {
-    it("should be able to submit his order to order book", async () => {
-      const order = await getTestOrder(owner1, broker1);
-      await submitOrderChecked(order, order.owner);
-    });
+  // describe("order owner", () => {
+  //   it("should be able to submit his order to order book", async () => {
+  //     const order = await getTestOrder(owner1, broker1);
+  //     await submitOrderChecked(order, order.owner);
+  //   });
 
-    it("should not be able to submit the same order twice", async () => {
-      const order = await getTestOrder(owner2, broker1);
-      await submitOrderChecked(order, order.owner);
-      await expectThrow(submitOrderChecked(order, order.owner), "ALREADY_EXIST");
-    });
-  });
+  //   it("should not be able to submit the same order twice", async () => {
+  //     const order = await getTestOrder(owner2, broker1);
+  //     await submitOrderChecked(order, order.owner);
+  //     await expectThrow(submitOrderChecked(order, order.owner), "ALREADY_EXIST");
+  //   });
+  // });
 
-  describe("order broker", () => {
-    it("should be able to submit an order he's the broker of to order book", async () => {
-      const order = await getTestOrder(owner1, broker1);
-      await submitOrderChecked(order, order.broker);
-    });
+  // describe("order broker", () => {
+  //   it("should be able to submit an order he's the broker of to order book", async () => {
+  //     const order = await getTestOrder(owner1, broker1);
+  //     await submitOrderChecked(order, order.broker);
+  //   });
 
-    it("should not be able to submit the same order twice", async () => {
-      const order = await getTestOrder(owner2, broker2);
-      await submitOrderChecked(order, order.broker);
-      await expectThrow(submitOrderChecked(order, order.broker), "ALREADY_EXIST");
-    });
-  });
+  //   it("should not be able to submit the same order twice", async () => {
+  //     const order = await getTestOrder(owner2, broker2);
+  //     await submitOrderChecked(order, order.broker);
+  //     await expectThrow(submitOrderChecked(order, order.broker), "ALREADY_EXIST");
+  //   });
+  // });
 
-  describe("anyone", () => {
-    it("should not be able to submit an order he's not the owner/broker of", async () => {
-      const order = await getTestOrder(owner1, broker1);
-      await expectThrow(submitOrderChecked(order, owner2), "UNAUTHORIZED_ONCHAIN_ORDER");
-      await expectThrow(submitOrderChecked(order, broker2), "UNAUTHORIZED_ONCHAIN_ORDER");
-    });
-  });
+  // describe("anyone", () => {
+  //   it("should not be able to submit an order he's not the owner/broker of", async () => {
+  //     const order = await getTestOrder(owner1, broker1);
+  //     await expectThrow(submitOrderChecked(order, owner2), "UNAUTHORIZED_ONCHAIN_ORDER");
+  //     await expectThrow(submitOrderChecked(order, broker2), "UNAUTHORIZED_ONCHAIN_ORDER");
+  //   });
+  // });
 
 });

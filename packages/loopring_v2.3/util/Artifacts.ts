@@ -23,6 +23,7 @@ export class Artifacts {
   public INDBToken: any;
   public TESTToken: any;
   public DeserializerTest: any;
+  public DummyBrokerDelegate: any;
   constructor(artifacts: any) {
     this.RingSubmitter = artifacts.require("impl/RingSubmitter");
     this.OrderCanceller = artifacts.require("impl/OrderCanceller");
@@ -47,5 +48,6 @@ export class Artifacts {
     this.INDBToken = artifacts.require("test/tokens/INDB");
     this.TESTToken = artifacts.require("test/tokens/TEST");
     this.DeserializerTest = artifacts.require("test/DeserializerTest");
+    this.DummyBrokerDelegate = artifacts.require("test/DummyBrokerDelegate");
   }
 }
