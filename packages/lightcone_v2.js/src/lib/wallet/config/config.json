@@ -1,36 +1,11 @@
 {
-  "defaultPricePrecision": 8,
-  "defaultVolumePrecision": 8,
-  "defaultLrcFeePermillage": 2,
   "defaultGasPrice": 21,
-  "defaultMarginSplitPercentage": 50,
-  "defaultGasLimit": "0x30d40",
-  "defaultExpireTime": 1,
-  "defaultExpireTimeUnit": "day",
-  "delegateAddress": "0x17233e07c67d086464fD408148c3ABB56245FA64",
+  "defaultGasLimit": "0x7a120",
   "chainId": 1,
-  "bindContractAddress": "0xbf78B6E180ba2d1404c92Fc546cbc9233f616C42",
-  "minimumLrcfeeInEth": 0.00045,
-  "demoAccount": "0xeba7136a36da0f5e16c6bdbc739c716bb5b65a00",
-  "localStorageVersion": 201807311200,
-  "walletAddress": "0xBd8e06Fbe2727DA28aC99150BE29C920007bdE3c",
-  "contracts": [
-    {
-      "address": "0x8d8812b72d1e4ffCeC158D25f56748b7d67c1e78",
-      "version": "v1.5.1"
-    }
-  ],
-  "relays": [
-    {
-      "value": "//relay1.loopr.io",
-      "name": "Default Loopring Relay"
-    },
-    {
-      "value": "//13.112.62.24",
-      "name": "Test"
-    }
-  ],
-  "supportedTokenRInMarkets": ["WETH", "LRC", "USDT", "TUSD"],
+  "exchangeId": 1,
+  "walletAddressId": 0,
+  "maxFeeBips": 20,
+  "exchangeAddress": "0x1D307532A97879b866A6fE33bf4A517bD28DE854",
   "markets": [
     {
       "tokenx": "LRC",
@@ -773,35 +748,57 @@
   "txs": [
     {
       "type": "eth_transfer",
-      "gasLimit": "0x5208"
+      "gasInWEI": 21000
     },
     {
       "type": "token_transfer",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "approve",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "withdraw",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "deposit",
-      "gasLimit": "0x186a0"
+      "gasInWEI": 100000
     },
     {
       "type": "cancelOrder",
-      "gasLimit": "0x249f0"
+      "gasInWEI": 150000
     },
     {
-      "type": "cancelAllOrder",
-      "gasLimit": "0x186a0"
+      "type": "create",
+      "gasInWEI": 1000000
     },
     {
-      "type": "cancelOrderByTokenPair",
-      "gasLimit": "0x186a0"
+      "type": "depositTo",
+      "gasInWEI": 1000000
+    },
+    {
+      "type": "withdrawFrom",
+      "gasInWEI": 1000000
+    }
+  ],
+  "fees": [
+    {
+      "type": "create",
+      "feeInWEI": 11000000000000000
+    },
+    {
+      "type": "update",
+      "feeInWEI": 10000000000000000
+    },
+    {
+      "type": "deposit",
+      "feeInWEI": 10000000000000000
+    },
+    {
+      "type": "withdraw",
+      "feeInWEI": 10000000000000000
     }
   ],
   "tokens": [
@@ -823,7 +820,7 @@
       "symbol": "WETH",
       "name": "Wrapped Ether",
       "digits": 18,
-      "address": "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2",
+      "address": "0x27Fe4A57c8D3f1BBA8CfD51DFEa3cA4188092E55",
       "unit": "WETH",
       "website": "https://weth.io",
       "allowance": "1000000000000000000000",
@@ -836,7 +833,7 @@
       "symbol": "LRC",
       "name": "Loopring",
       "digits": 18,
-      "address": "0x4FF214811F164dAB1889c83b1fe2c8c27d3dB615",
+      "address": "0x9032DBF5669341C3D95BC02b4bdE90e4e051dB35",
       "unit": "LRC",
       "website": "https://loopring.org",
       "allowance": "1000000000000000000000",

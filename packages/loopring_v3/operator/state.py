@@ -38,7 +38,7 @@ def copyAccountInfo(account):
     return c
 
 def getDefaultAccount():
-    return Account(0, Point(0, 0))
+    return Account(Point(0, 0))
 
 class Fill(object):
     def __init__(self, amountS, amountB):
@@ -137,8 +137,7 @@ class TradeHistoryLeaf(object):
 
 
 class Account(object):
-    def __init__(self, secretKey, publicKey):
-        self.secretKey = str(secretKey)
+    def __init__(self, publicKey):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
@@ -152,7 +151,6 @@ class Account(object):
         return poseidon([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
-        self.secretKey = jAccount["secretKey"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
@@ -413,6 +411,7 @@ class OffchainWithdrawal(object):
                  exchangeID,
                  accountID, tokenID, amountRequested, fAmountWithdrawn,
                  feeTokenID, fee, label,
+                 feeValue,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_O,
                  nonce):
@@ -426,6 +425,8 @@ class OffchainWithdrawal(object):
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
         self.label = str(label)
+
+        self.feeValue = feeValue
 
         self.balanceUpdateF_A = balanceUpdateF_A
         self.balanceUpdateW_A = balanceUpdateW_A
@@ -441,6 +442,7 @@ class Cancellation(object):
                  accountID, orderTokenID, orderID,
                  feeTokenID, fee, label,
                  nonce,
+                 feeValue,
                  tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                  balanceUpdateF_O):
         self.exchangeID = exchangeID
@@ -452,6 +454,8 @@ class Cancellation(object):
         self.fee = str(fee)
         self.label = str(label)
         self.nonce = nonce
+
+        self.feeValue = feeValue
 
         self.tradeHistoryUpdate_A = tradeHistoryUpdate_A
         self.balanceUpdateT_A = balanceUpdateT_A
@@ -467,6 +471,7 @@ class InternalTransfer(object):
                  transTokenID, amountRequested, fAmountTrans,
                  feeTokenID, fee, label,
                  nonceFrom, nonceTo,
+                 feeValue,
                  balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
                  balanceUpdateT_To, accountUpdate_To,
                  balanceUpdateF_O):
@@ -482,6 +487,8 @@ class InternalTransfer(object):
         self.label = int(label)
         self.nonceFrom = nonceFrom
         self.nonceTo = nonceTo
+
+        self.feeValue = feeValue
 
         self.balanceUpdateF_From = balanceUpdateF_From
         self.balanceUpdateT_From = balanceUpdateT_From
@@ -713,7 +720,7 @@ class State(object):
                               balanceDeltaA_O, balanceDeltaB_O)
 
 
-    def deposit(self, accountID, secretKey, publicKeyX, publicKeyY, token, amount):
+    def deposit(self, accountID, publicKeyX, publicKeyY, token, amount):
         # Copy the initial merkle root
         rootBefore = self._accountsTree._root
 
@@ -726,13 +733,12 @@ class State(object):
 
         # Create the account if necessary
         if not(str(accountID) in self._accounts):
-            self._accounts[str(accountID)] = Account(secretKey, Point(publicKeyX, publicKeyY))
+            self._accounts[str(accountID)] = Account(Point(publicKeyX, publicKeyY))
 
         account = self.getAccount(accountID)
         balanceUpdate = account.updateBalance(token, amount)
 
         # Update keys
-        account.secretKey = str(secretKey)
         account.publicKeyX = str(publicKeyX)
         account.publicKeyY = str(publicKeyY)
 
@@ -837,6 +843,7 @@ class State(object):
         withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
                                         feeTokenID, fee, label,
+                                        feeValue,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         None,
                                         nonce)
@@ -871,6 +878,7 @@ class State(object):
                                     accountID, orderTokenID, orderID,
                                     feeTokenID, fee, label,
                                     nonce,
+                                    feeValue,
                                     tradeHistoryUpdate_A, balanceUpdateT_A, balanceUpdateF_A, accountUpdate_A,
                                     None)
         return cancellation
@@ -888,10 +896,8 @@ class State(object):
         proof = self._accountsTree.createProof(accountFromID)
 
         balanceUpdateF_From = self.getAccount(accountFromID).updateBalance(feeTokenID, -feeValue)
-        balanceT = int(self.getAccount(accountFromID).getBalance(transTokenID))
-        uAmountTrans = int(amountRequested) if (int(amountRequested) < balanceT) else balanceT
 
-        fAmountTrans = toFloat(uAmountTrans, Float24Encoding)
+        fAmountTrans = toFloat(amountRequested, Float24Encoding)
         amountTrans = fromFloat(fAmountTrans, Float24Encoding)
         balanceUpdateT_From = self.getAccount(accountFromID).updateBalance(transTokenID, -amountTrans)
 
@@ -901,8 +907,8 @@ class State(object):
         accountAfter = copyAccountInfo(self.getAccount(accountFromID))
         rootAfter = self._accountsTree._root
         accountUpdate_From = AccountUpdateData(accountFromID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        
-        # Update accout To
+
+        # Update account To
         rootToBefore = self._accountsTree._root
         accountToBefore = copyAccountInfo(self.getAccount(accountToID))
         nonceTo = accountToBefore.nonce
@@ -915,28 +921,20 @@ class State(object):
         accountToAfter = copyAccountInfo(self.getAccount(accountToID))
         rootToAfter = self._accountsTree._root
         accountUpdate_To = AccountUpdateData(accountToID, proofTo, rootToBefore, rootToAfter, accountToBefore, accountToAfter)
+
         # Operator payment
         # This is done after all internal transfer are processed
+
         internalTrans = InternalTransfer(exchangeID,
-                                    accountFromID, accountToID,
-                                    transTokenID, amountRequested, fAmountTrans,
-                                    feeTokenID, fee, label,
-                                    nonce, nonceTo,
-                                    balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
-                                    balanceUpdateT_To, accountUpdate_To,
-                                    None)
+                                         accountFromID, accountToID,
+                                         transTokenID, amountRequested, fAmountTrans,
+                                         feeTokenID, fee, label,
+                                         nonce, nonceTo,
+                                         feeValue,
+                                         balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
+                                         balanceUpdateT_To, accountUpdate_To,
+                                         None)
         return internalTrans
-
-    def createWithdrawProof(self, exchangeID, accountID, tokenID):
-        account = copyAccountInfo(self.getAccount(accountID))
-        balance = copyBalanceInfo(self.getAccount(accountID)._balancesLeafs[str(tokenID)])
-        accountProof = self._accountsTree.createProof(accountID)
-        balanceProof = self.getAccount(accountID)._balancesTree.createProof(tokenID)
-
-        return WithdrawProof(exchangeID, accountID, tokenID,
-                             account, balance,
-                             self.getRoot(),
-                             accountProof, balanceProof)
 
     def updateAccountTree(self, accountID):
         self._accountsTree.update(accountID, self.getAccount(accountID).hash())

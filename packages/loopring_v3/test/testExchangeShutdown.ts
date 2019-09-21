@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import * as constants from "./constants";
+import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, RingInfo } from "./types";
@@ -123,7 +123,8 @@ contract("Exchange", (accounts: string[]) => {
         "MERKLE_ROOT_NOT_REVERTED"
       );
 
-      const currentBlockIdx = (await exchange.getBlockHeight()).toNumber();
+      const currentBlockIdx =
+        (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
       const exchangeState = await exchangeTestUtil.loadExchangeState(
         exchangeId,
         currentBlockIdx
@@ -172,7 +173,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.requestShutdownWithdrawal(
             exchangeId,
             accountID,
-            constants.zeroAddress,
+            Constants.zeroAddress,
             new BN(0)
           );
         }
@@ -211,7 +212,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Blocks with shutdown withdrawals should not receive any block fee
-      const lastBlockIdx = (await exchange.getBlockHeight()).toNumber();
+      const lastBlockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
       for (let b = currentBlockIdx + 1; b <= lastBlockIdx; b++) {
         await expectThrow(
           exchangeTestUtil.withdrawBlockFeeChecked(

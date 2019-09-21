@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "outDir": "build",
+    "sourceMap": true,
+    "inlineSources": true,
+    "module": "commonjs",
+    "target": "es6",
+    "lib": ["es6"],
+    "allowJs": true
+  },
+  "include": [
+    "./node_modules/types-bn/index.d.ts",
+    "./globals.d.ts",
+    "src/**/*",
+    "index.ts"
+  ],
+  "exclude": []
+}

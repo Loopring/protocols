@@ -2,7 +2,7 @@
 
 ## About
 
-This is a very early version of Loopring's order-based DEX protocol (version 3.0). The code base is still being tested and is not production ready.
+This is a beta version of Loopring's order-based DEX protocol (version 3.0). The code base is still being audited and is not yet production ready.
 
 To understand several concepts introduced by the Loopring Protocol, such as order-ring, ring-matching, dual-authoring, free-burning, please read our [whitepaper](https://loopring.org/resources/en_whitepaper.pdf) for Loopring Protocol 2.x.
 
