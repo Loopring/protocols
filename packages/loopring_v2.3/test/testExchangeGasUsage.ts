@@ -43,120 +43,90 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
   });
 
   describe("submitRing", () => {
-    it("single 2-size ring, with price gap", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "WETH",
-            amountS: 5e18,
-            amountB: 45e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
-    });
+    // it("single 3-size ring, with price gap", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     description: "simple single 3-size ring, with price gap",
+    //     rings: [[0, 1, 2]],
+    //     orders: [
+    //       {
+    //         index: 0,
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         amountS: 100e18,
+    //         amountB: 10e18,
+    //         balanceS: 1e21,
+    //         balanceFee: 1e21,
+    //         balanceB: 1e21,
+    //       },
+    //       {
+    //         index: 1,
+    //         tokenS: "GTO",
+    //         tokenB: "REP",
+    //         amountS: 5e18,
+    //         amountB: 45e18,
+    //         balanceS: 1e21,
+    //         balanceFee: 1e21,
+    //         balanceB: 1e21,
+    //       },
+    //       {
+    //         index: 2,
+    //         tokenS: "REP",
+    //         tokenB: "WETH",
+    //         amountS: 3e18,
+    //         amountB: 2e18,
+    //         balanceS: 1e21,
+    //         balanceFee: 1e21,
+    //         balanceB: 1e21,
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+    // });
 
-    it("single 3-size ring, with price gap", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        description: "simple single 3-size ring, with price gap",
-        rings: [[0, 1, 2]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "REP",
-            amountS: 5e18,
-            amountB: 45e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-          {
-            index: 2,
-            tokenS: "REP",
-            tokenB: "WETH",
-            amountS: 3e18,
-            amountB: 2e18,
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
-    });
-
-    it("single 3-size ring, with price gap, same dual author", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        description: "simple single 3-size ring, with price gap",
-        rings: [[0, 1, 2]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            dualAuthAddr: "0",
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "REP",
-            amountS: 5e18,
-            amountB: 45e18,
-            dualAuthAddr: "0",
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-          {
-            index: 2,
-            tokenS: "REP",
-            tokenB: "WETH",
-            amountS: 3e18,
-            amountB: 2e18,
-            dualAuthAddr: "0",
-            balanceS: 1e21,
-            balanceFee: 1e21,
-            balanceB: 1e21,
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
-    });
+    // it("single 3-size ring, with price gap, same dual author", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     description: "simple single 3-size ring, with price gap",
+    //     rings: [[0, 1, 2]],
+    //     orders: [
+    //       {
+    //         index: 0,
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         amountS: 100e18,
+    //         amountB: 10e18,
+    //         dualAuthAddr: "0",
+    //         balanceS: 1e21,
+    //         balanceFee: 1e21,
+    //         balanceB: 1e21,
+    //       },
+    //       {
+    //         index: 1,
+    //         tokenS: "GTO",
+    //         tokenB: "REP",
+    //         amountS: 5e18,
+    //         amountB: 45e18,
+    //         dualAuthAddr: "0",
+    //         balanceS: 1e21,
+    //         balanceFee: 1e21,
+    //         balanceB: 1e21,
+    //       },
+    //       {
+    //         index: 2,
+    //         tokenS: "REP",
+    //         tokenB: "WETH",
+    //         amountS: 3e18,
+    //         amountB: 2e18,
+    //         dualAuthAddr: "0",
+    //         balanceS: 1e21,
+    //         balanceFee: 1e21,
+    //         balanceB: 1e21,
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   await exchangeTestUtil.submitRingsAndSimulate(ringsInfo, dummyExchange);
+    // });
   });
 
   describe("submitRing deserialization", () => {
@@ -327,180 +297,180 @@ contract("Exchange_Submit_gas_usage", (accounts: string[]) => {
       showCallDataStats(callData);
     });
 
-    it("single 3-size ring, everything unique", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            feeAmount: 7e18,
-            walletAddr: "0",
-            dualAuthAddr: "0",
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "LRC",
-            amountS: 5e18,
-            amountB: 45e18,
-            feeAmount: 8e18,
-            walletAddr: "1",
-            dualAuthAddr: "1",
-          },
-          {
-            index: 2,
-            tokenS: "LRC",
-            tokenB: "WETH",
-            amountS: 3e18,
-            amountB: 2e18,
-            feeAmount: 9e18,
-            walletAddr: "2",
-            dualAuthAddr: "2",
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
-      const tx = await deserializerTest.deserialize(callData);
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
-      showCallDataStats(callData);
-    });
+    // it("single 3-size ring, everything unique", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     rings: [[0, 1]],
+    //     orders: [
+    //       {
+    //         index: 0,
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         amountS: 100e18,
+    //         amountB: 10e18,
+    //         feeAmount: 7e18,
+    //         walletAddr: "0",
+    //         dualAuthAddr: "0",
+    //       },
+    //       {
+    //         index: 1,
+    //         tokenS: "GTO",
+    //         tokenB: "LRC",
+    //         amountS: 5e18,
+    //         amountB: 45e18,
+    //         feeAmount: 8e18,
+    //         walletAddr: "1",
+    //         dualAuthAddr: "1",
+    //       },
+    //       {
+    //         index: 2,
+    //         tokenS: "LRC",
+    //         tokenB: "WETH",
+    //         amountS: 3e18,
+    //         amountB: 2e18,
+    //         feeAmount: 9e18,
+    //         walletAddr: "2",
+    //         dualAuthAddr: "2",
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+    //   const tx = await deserializerTest.deserialize(callData);
+    //   pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+    //   showCallDataStats(callData);
+    // });
 
-    it("single 3-size ring, fee token the same (not LRC)", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            feeToken: "REP",
-            amountS: 100e18,
-            amountB: 10e18,
-            feeAmount: 7e18,
-            walletAddr: "0",
-            dualAuthAddr: "0",
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "LRC",
-            feeToken: "REP",
-            amountS: 5e18,
-            amountB: 45e18,
-            feeAmount: 8e18,
-            walletAddr: "1",
-            dualAuthAddr: "1",
-          },
-          {
-            index: 2,
-            tokenS: "LRC",
-            tokenB: "WETH",
-            feeToken: "REP",
-            amountS: 3e18,
-            amountB: 2e18,
-            feeAmount: 9e18,
-            walletAddr: "2",
-            dualAuthAddr: "2",
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
-      const tx = await deserializerTest.deserialize(callData);
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
-      showCallDataStats(callData);
-    });
+    // it("single 3-size ring, fee token the same (not LRC)", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     rings: [[0, 1]],
+    //     orders: [
+    //       {
+    //         index: 0,
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         feeToken: "REP",
+    //         amountS: 100e18,
+    //         amountB: 10e18,
+    //         feeAmount: 7e18,
+    //         walletAddr: "0",
+    //         dualAuthAddr: "0",
+    //       },
+    //       {
+    //         index: 1,
+    //         tokenS: "GTO",
+    //         tokenB: "LRC",
+    //         feeToken: "REP",
+    //         amountS: 5e18,
+    //         amountB: 45e18,
+    //         feeAmount: 8e18,
+    //         walletAddr: "1",
+    //         dualAuthAddr: "1",
+    //       },
+    //       {
+    //         index: 2,
+    //         tokenS: "LRC",
+    //         tokenB: "WETH",
+    //         feeToken: "REP",
+    //         amountS: 3e18,
+    //         amountB: 2e18,
+    //         feeAmount: 9e18,
+    //         walletAddr: "2",
+    //         dualAuthAddr: "2",
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+    //   const tx = await deserializerTest.deserialize(callData);
+    //   pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+    //   showCallDataStats(callData);
+    // });
 
-    it("single 3-size ring, wallet shared", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            feeAmount: 7e18,
-            walletAddr: "0",
-            dualAuthAddr: "0",
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "LRC",
-            amountS: 5e18,
-            amountB: 45e18,
-            feeAmount: 8e18,
-            walletAddr: "0",
-            dualAuthAddr: "1",
-          },
-          {
-            index: 2,
-            tokenS: "LRC",
-            tokenB: "WETH",
-            amountS: 3e18,
-            amountB: 2e18,
-            feeAmount: 9e18,
-            walletAddr: "0",
-            dualAuthAddr: "2",
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
-      const tx = await deserializerTest.deserialize(callData);
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
-      showCallDataStats(callData);
-    });
+    // it("single 3-size ring, wallet shared", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     rings: [[0, 1]],
+    //     orders: [
+    //       {
+    //         index: 0,
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         amountS: 100e18,
+    //         amountB: 10e18,
+    //         feeAmount: 7e18,
+    //         walletAddr: "0",
+    //         dualAuthAddr: "0",
+    //       },
+    //       {
+    //         index: 1,
+    //         tokenS: "GTO",
+    //         tokenB: "LRC",
+    //         amountS: 5e18,
+    //         amountB: 45e18,
+    //         feeAmount: 8e18,
+    //         walletAddr: "0",
+    //         dualAuthAddr: "1",
+    //       },
+    //       {
+    //         index: 2,
+    //         tokenS: "LRC",
+    //         tokenB: "WETH",
+    //         amountS: 3e18,
+    //         amountB: 2e18,
+    //         feeAmount: 9e18,
+    //         walletAddr: "0",
+    //         dualAuthAddr: "2",
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+    //   const tx = await deserializerTest.deserialize(callData);
+    //   pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+    //   showCallDataStats(callData);
+    // });
 
-    it("single 3-size ring, dual author shared", async () => {
-      const ringsInfo: pjs.RingsInfo = {
-        rings: [[0, 1]],
-        orders: [
-          {
-            index: 0,
-            tokenS: "WETH",
-            tokenB: "GTO",
-            amountS: 100e18,
-            amountB: 10e18,
-            feeAmount: 7e18,
-            walletAddr: "0",
-            dualAuthAddr: "0",
-          },
-          {
-            index: 1,
-            tokenS: "GTO",
-            tokenB: "LRC",
-            amountS: 5e18,
-            amountB: 45e18,
-            feeAmount: 8e18,
-            walletAddr: "1",
-            dualAuthAddr: "0",
-          },
-          {
-            index: 2,
-            tokenS: "LRC",
-            tokenB: "WETH",
-            amountS: 3e18,
-            amountB: 2e18,
-            feeAmount: 9e18,
-            walletAddr: "2",
-            dualAuthAddr: "0",
-          },
-        ],
-      };
-      await exchangeTestUtil.setupRings(ringsInfo);
-      const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
-      const tx = await deserializerTest.deserialize(callData);
-      pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
-      showCallDataStats(callData);
-    });
+    // it("single 3-size ring, dual author shared", async () => {
+    //   const ringsInfo: pjs.RingsInfo = {
+    //     rings: [[0, 1]],
+    //     orders: [
+    //       {
+    //         index: 0,
+    //         tokenS: "WETH",
+    //         tokenB: "GTO",
+    //         amountS: 100e18,
+    //         amountB: 10e18,
+    //         feeAmount: 7e18,
+    //         walletAddr: "0",
+    //         dualAuthAddr: "0",
+    //       },
+    //       {
+    //         index: 1,
+    //         tokenS: "GTO",
+    //         tokenB: "LRC",
+    //         amountS: 5e18,
+    //         amountB: 45e18,
+    //         feeAmount: 8e18,
+    //         walletAddr: "1",
+    //         dualAuthAddr: "0",
+    //       },
+    //       {
+    //         index: 2,
+    //         tokenS: "LRC",
+    //         tokenB: "WETH",
+    //         amountS: 3e18,
+    //         amountB: 2e18,
+    //         feeAmount: 9e18,
+    //         walletAddr: "2",
+    //         dualAuthAddr: "0",
+    //       },
+    //     ],
+    //   };
+    //   await exchangeTestUtil.setupRings(ringsInfo);
+    //   const callData = await exchangeTestUtil.deserializeRing(ringsInfo);
+    //   const tx = await deserializerTest.deserialize(callData);
+    //   pjs.logInfo("\x1b[46m%s\x1b[0m", "gas used: " + tx.receipt.gasUsed);
+    //   showCallDataStats(callData);
+    // });
 
     it("order filled by 3 other orders", async () => {
       const ringsInfo: pjs.RingsInfo = {

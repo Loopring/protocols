@@ -6,7 +6,8 @@
     "cliOptions":
     {
         "exclude": [
-            "./util/submit_rings.ts"
+            "./util/submit_rings.ts",
+            "node_modules/**"
         ]
     },
     "jsRules":
@@ -20,5 +21,10 @@
         "object-literal-sort-keys": false,
         "interface-name": false
     },
-    "rulesDirectory": []
+    "rulesDirectory": [],
+    "linterOptions": {
+        "exclude": [
+            "node_modules/**"
+        ]
+    }
 }

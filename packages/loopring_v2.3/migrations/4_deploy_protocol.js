@@ -45,7 +45,10 @@ module.exports = function(deployer, network, accounts) {
           OrderBook.address,
           BurnRateTable.address,
         ),
-        deployer.deploy(OrderCanceller, TradeHistory.address),
+        deployer.deploy(OrderCanceller, TradeHistory.address).then(async () => {
+          const tradeHistory = await TradeHistory.deployed();
+          tradeHistory.authorizeAddress(OrderCanceller.address);
+        }),
         deployer.deploy(BurnManager, FeeHolder.address, LRCToken.address),
       ]);
     }).then(() => {
