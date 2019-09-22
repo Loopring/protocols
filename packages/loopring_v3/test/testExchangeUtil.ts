@@ -7,7 +7,18 @@ import { SHA256 } from "sha2";
 import util = require("util");
 import { Artifacts } from "../util/Artifacts";
 import { compress, CompressionType } from "./compression";
-import { Bitstream, BlockState, BlockType, Constants, EdDSA, Explorer, toFloat, Poseidon, WithdrawFromMerkleTreeData, OnchainWithdrawal } from "loopringV3.js";
+import {
+  Bitstream,
+  BlockState,
+  BlockType,
+  Constants,
+  EdDSA,
+  Explorer,
+  toFloat,
+  Poseidon,
+  WithdrawFromMerkleTreeData,
+  OnchainWithdrawal
+} from "loopringV3.js";
 import { Context } from "./context";
 import { expectThrow } from "./expectThrow";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
@@ -26,6 +37,8 @@ import {
   DepositInfo,
   DetailedTokenTransfer,
   ExchangeState,
+  InternalTransferRequest,
+  InternalTransferBlock,
   OrderInfo,
   RingBlock,
   RingInfo,
@@ -67,6 +80,7 @@ export class ExchangeTestUtil {
   public depositBlockSizes = [4, 8];
   public onchainWithdrawalBlockSizes = [4, 8];
   public offchainWithdrawalBlockSizes = [4, 8];
+  public transferBlockSizes = [4, 8];
   public orderCancellationBlockSizes = [4, 8];
 
   public loopringV3: any;
@@ -140,6 +154,7 @@ export class ExchangeTestUtil {
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
+  private pendingInternalTransfers: InternalTransferRequest[][] = [];
   private pendingOffchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingOnchainWithdrawalRequests: WithdrawalRequest[][] = [];
   private pendingCancels: Cancel[][] = [];
@@ -198,6 +213,7 @@ export class ExchangeTestUtil {
       this.pendingOffchainWithdrawalRequests.push([]);
       this.pendingOnchainWithdrawalRequests.push([]);
       this.pendingCancels.push([]);
+      this.pendingInternalTransfers.push([]);
       this.pendingBlocks.push([]);
 
       this.blocks.push([]);
@@ -538,6 +554,39 @@ export class ExchangeTestUtil {
     assert(success, "Failed to verify signature");
   }
 
+  public signInternalTransfer(trans: InternalTransferRequest) {
+    if (trans.signature !== undefined) {
+      return;
+    }
+
+    const hasher = Poseidon.createHash(10, 6, 53);
+    const account = this.accounts[this.exchangeId][trans.accountFromID];
+
+    // Calculate hash
+    const inputs = [
+      this.exchangeId,
+      trans.accountFromID,
+      trans.accountToID,
+      trans.transTokenID,
+      trans.amount,
+      trans.feeTokenID,
+      trans.fee,
+      trans.label,
+      account.nonce++
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    trans.signature = EdDSA.sign(account.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, trans.signature, [
+      account.publicKeyX,
+      account.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+  }
+
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
     let publicKeyX = keyPair.publicKeyX;
@@ -803,6 +852,60 @@ export class ExchangeTestUtil {
     );
   }
 
+  public async depositToOwner(owner: string, token: string, amount: BN) {
+    let accountID = await this.getAccountID(owner);
+    if (accountID === undefined) {
+      const keyPair = this.getKeyPairEDDSA();
+      const depositInfo = await this.deposit(
+        this.exchangeId,
+        owner,
+        keyPair.secretKey,
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        token,
+        amount
+      );
+      accountID = depositInfo.accountID;
+    } else {
+      await this.depositTo(accountID, token, amount);
+    }
+    return accountID;
+  }
+
+  public async requestInternalTransfer(
+    exchangeID: number,
+    accountFromID: number,
+    accountToID: number,
+    token: string,
+    amount: BN,
+    feeToken: string,
+    fee: BN,
+    label: number
+  ) {
+    if (!token.startsWith("0x")) {
+      token = this.testContext.tokenSymbolAddrMap.get(token);
+    }
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const transTokenID = this.tokenAddressToIDMap.get(token);
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    this.pendingInternalTransfers[exchangeID].push({
+      accountFromID,
+      accountToID,
+      transTokenID,
+      amount,
+      feeTokenID,
+      fee,
+      label
+    });
+
+    return this.pendingInternalTransfers[exchangeID][
+      this.pendingInternalTransfers[exchangeID].length - 1
+    ];
+  }
+
   public async requestWithdrawalOffchain(
     exchangeID: number,
     accountID: number,
@@ -1039,7 +1142,7 @@ export class ExchangeTestUtil {
       label,
       withdrawalIdx,
       withdrawalFee
-    }
+    };
     withdrawalRequests.push(withdrawalRequest);
     return withdrawalRequest;
   }
@@ -1143,7 +1246,10 @@ export class ExchangeTestUtil {
     const numBlocksBefore = await this.getNumBlocksOnchain();
 
     const blockVersion = 0;
-    let offchainData = this.getRandomInt(2) === 0 ? ("0x0ff" + this.blocks[this.exchangeId].length) : "0x";
+    let offchainData =
+      this.getRandomInt(2) === 0
+        ? "0x0ff" + this.blocks[this.exchangeId].length
+        : "0x";
     if (offchainData.length % 2 == 1) {
       offchainData += "0";
     }
@@ -1165,7 +1271,8 @@ export class ExchangeTestUtil {
 
     const numBlocksAfter = await this.getNumBlocksOnchain();
     assert.equal(
-      numBlocksAfter, numBlocksBefore + 1,
+      numBlocksAfter,
+      numBlocksBefore + 1,
       "block height should be incremented by 1"
     );
 
@@ -1183,7 +1290,8 @@ export class ExchangeTestUtil {
     });
     assert(items.length === 1, "a single BlockCommitted needs to be emited");
     assert.equal(
-      items[0].blockIdx, numBlocksAfter - 1,
+      items[0].blockIdx,
+      numBlocksAfter - 1,
       "block index should be equal to block height"
     );
     assert.equal(
@@ -1192,7 +1300,7 @@ export class ExchangeTestUtil {
       "public data hash needs to match"
     );
 
-    const blockIdx = await this.getNumBlocksOnchain() - 1;
+    const blockIdx = (await this.getNumBlocksOnchain()) - 1;
 
     // Check the block data
     const blockData = await this.exchange.getBlock(blockIdx);
@@ -1259,6 +1367,8 @@ export class ExchangeTestUtil {
         verificationKeyFilename += "withdraw_offchain";
       } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
         verificationKeyFilename += "cancel";
+      } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
+        verificationKeyFilename += "internal_transfer";
       }
       verificationKeyFilename += block.onchainDataAvailability ? "_DA_" : "_";
       verificationKeyFilename += block.blockSize + "_vk.json";
@@ -1423,21 +1533,32 @@ export class ExchangeTestUtil {
 
     // Update test state
     for (const block of blocks) {
-      assert.equal(block.blockState, BlockState.COMMITTED, "incorrect block state");
+      assert.equal(
+        block.blockState,
+        BlockState.COMMITTED,
+        "incorrect block state"
+      );
       block.blockState = BlockState.VERIFIED;
       block.verifiedTimestamp = ethBlock.timestamp;
     }
 
     const exchangeBlocks = this.blocks[this.exchangeId];
     for (let i = 1; i < exchangeBlocks.length; i++) {
-      if (exchangeBlocks[i - 1].blockState === BlockState.FINALIZED &&
-          (exchangeBlocks[i].blockState === BlockState.VERIFIED) || (exchangeBlocks[i].blockState === BlockState.FINALIZED)) {
+      if (
+        (exchangeBlocks[i - 1].blockState === BlockState.FINALIZED &&
+          exchangeBlocks[i].blockState === BlockState.VERIFIED) ||
+        exchangeBlocks[i].blockState === BlockState.FINALIZED
+      ) {
         if (exchangeBlocks[i].blockState === BlockState.VERIFIED) {
           exchangeBlocks[i].blockState = BlockState.FINALIZED;
           exchangeBlocks[i].finalizedTimestamp = ethBlock.timestamp;
         }
       } else {
-        assert.equal(i, numBlocksFinalizedAfter, "unexpected number of finalized blocks");
+        assert.equal(
+          i,
+          numBlocksFinalizedAfter,
+          "unexpected number of finalized blocks"
+        );
         break;
       }
     }
@@ -1588,7 +1709,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
+      const currentBlockIdx = (await this.getNumBlocksOnchain()) - 1;
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -1658,7 +1779,7 @@ export class ExchangeTestUtil {
   public async loadExchangeState(exchangeID: number, blockIdx?: number) {
     // Read in the state
     if (blockIdx === undefined) {
-      blockIdx = await this.getNumBlocksOnchain() - 1;
+      blockIdx = (await this.getNumBlocksOnchain()) - 1;
     }
     const accounts: AccountLeaf[] = [];
     if (blockIdx > 0) {
@@ -1869,7 +1990,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
+      const currentBlockIdx = (await this.getNumBlocksOnchain()) - 1;
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -1999,6 +2120,134 @@ export class ExchangeTestUtil {
     }
   }
 
+  public async commitInternalTransfers(exchangeID: number) {
+    let pendingTransfers = this.pendingInternalTransfers[exchangeID];
+
+    if (pendingTransfers.length === 0) {
+      return;
+    }
+
+    const blockType = BlockType.INTERNAL_TRANSFER;
+
+    let numTransferDone = 0;
+    while (numTransferDone < pendingTransfers.length) {
+      const transfers: InternalTransferRequest[] = [];
+      let numRequestsInBlock = 0;
+      // Get all transfers for the block
+      const blockSizes = this.transferBlockSizes;
+      const blockSize = this.getBestBlockSize(
+        pendingTransfers.length - numTransferDone,
+        blockSizes
+      );
+      for (let b = numTransferDone; b < numTransferDone + blockSize; b++) {
+        if (b < pendingTransfers.length) {
+          transfers.push(pendingTransfers[b]);
+          numRequestsInBlock++;
+        } else {
+          const dummyInternalTransferRequest: InternalTransferRequest = {
+            accountFromID: this.dummyAccountId,
+            accountToID: this.dummyAccountId,
+            transTokenID: 0,
+            amount: new BN(0),
+            feeTokenID: 0,
+            fee: new BN(0),
+            label: 0
+          };
+          transfers.push(dummyInternalTransferRequest);
+        }
+      }
+      assert(transfers.length === blockSize);
+      numTransferDone += blockSize;
+
+      // Hash the labels
+      const labels: number[] = [];
+      for (const transfer of transfers) {
+        labels.push(transfer.label);
+      }
+      const labelHash = this.hashLabels(labels);
+
+      // Sign the offchain withdrawals
+      for (const transfer of transfers) {
+        this.signInternalTransfer(transfer);
+      }
+
+      // Block info
+      const operator = await this.getActiveOperator(exchangeID);
+      const internalTransferBlock: InternalTransferBlock = {
+        transfers,
+        onchainDataAvailability: this.onchainDataAvailability,
+        operatorAccountID: operator
+      };
+
+      // Store state before
+      const currentBlockIdx = (await this.exchange.getBlockHeight()).toNumber();
+      const stateBefore = await this.loadExchangeState(
+        exchangeID,
+        currentBlockIdx
+      );
+
+      const jWithdrawalsInfo = JSON.stringify(
+        internalTransferBlock,
+        replacer,
+        4
+      );
+      const [blockIdx, blockFilename] = await this.createBlock(
+        exchangeID,
+        blockType,
+        jWithdrawalsInfo
+      );
+
+      // Store state after
+      const stateAfter = await this.loadExchangeState(
+        exchangeID,
+        currentBlockIdx + 1
+      );
+
+      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+      const bs = new Bitstream();
+      bs.addNumber(block.exchangeID, 4);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
+      bs.addBN(new BN(labelHash, 10), 32);
+      if (block.onchainDataAvailability) {
+        bs.addNumber(block.operatorAccountID, 3);
+        for (const transfer of block.transfers) {
+          bs.addNumber(
+            transfer.accountFromID * 2 ** Constants.NUM_BITS_ACCOUNTID +
+              transfer.accountToID,
+            5
+          ); // 20bits * 2
+          bs.addNumber(transfer.transTokenID, 1); // 8 bit
+          bs.addNumber(transfer.fAmountTrans, 3); // 24 bit
+          bs.addNumber(transfer.feeTokenID, 1); // 8 bit
+          bs.addNumber(
+            toFloat(new BN(transfer.fee), Constants.Float16Encoding),
+            2
+          ); // 16 bit
+        }
+      }
+
+      // Validate state change
+      this.validateInternalTranfers(
+        internalTransferBlock,
+        bs,
+        stateBefore,
+        stateAfter
+      );
+
+      // Commit the block
+      await this.commitBlock(
+        operator,
+        blockType,
+        blockSize,
+        bs.getData(),
+        blockFilename
+      );
+    }
+
+    this.pendingInternalTransfers[exchangeID] = [];
+  }
+
   public async commitOffchainWithdrawalRequests(exchangeID: number) {
     return this.commitWithdrawalRequests(false, exchangeID);
   }
@@ -2063,8 +2312,6 @@ export class ExchangeTestUtil {
     logDebug("[JS] labels hash: " + hash.toString(10));
     return hash;
   }
-
-
 
   public async commitRings(exchangeID: number, forcedBlockSize?: number) {
     const pendingRings = this.pendingRings[exchangeID];
@@ -2149,7 +2396,7 @@ export class ExchangeTestUtil {
       }
       const labelHash = this.hashLabels(labels);
 
-      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
+      const currentBlockIdx = (await this.getNumBlocksOnchain()) - 1;
 
       const protocolFees = await this.exchange.getProtocolFeeValues();
       const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
@@ -2428,7 +2675,7 @@ export class ExchangeTestUtil {
       };
 
       // Store state before
-      const currentBlockIdx = await this.getNumBlocksOnchain() - 1;
+      const currentBlockIdx = (await this.getNumBlocksOnchain()) - 1;
       const stateBefore = await this.loadExchangeState(
         exchangeID,
         currentBlockIdx
@@ -2631,7 +2878,7 @@ export class ExchangeTestUtil {
       publicKeyX: "0",
       publicKeyY: "0",
 
-      transactionHash: "0x",
+      transactionHash: "0x"
     };
     this.deposits[exchangeId] = [genesisDeposit];
 
@@ -2644,7 +2891,7 @@ export class ExchangeTestUtil {
       tokenID: 0,
       amount: new BN(0),
 
-      transactionHash: "0x",
+      transactionHash: "0x"
     };
     this.onchainWithdrawals[exchangeId] = [genesisWithdrawal];
 
@@ -2839,7 +3086,9 @@ export class ExchangeTestUtil {
     );
 
     this.blocks[this.exchangeId][blockIdx].blockFeeWithdrawn = true;
-    this.blocks[this.exchangeId][blockIdx].blockFeeAmountWithdrawn = totalBlockFee;
+    this.blocks[this.exchangeId][
+      blockIdx
+    ].blockFeeAmountWithdrawn = totalBlockFee;
 
     await this.checkExplorerState();
   }
@@ -2854,7 +3103,9 @@ export class ExchangeTestUtil {
     return explorerExchange.getWithdrawFromMerkleTreeData(accountID, tokenID);
   }
 
-  public async withdrawFromMerkleTreeWithProof(data: WithdrawFromMerkleTreeData) {
+  public async withdrawFromMerkleTreeWithProof(
+    data: WithdrawFromMerkleTreeData
+  ) {
     const tx = await this.exchange.withdrawFromMerkleTreeFor(
       data.owner,
       data.token,
@@ -3135,27 +3386,80 @@ export class ExchangeTestUtil {
     for (let blockIdx = 0; blockIdx < exchange.getNumBlocks(); blockIdx++) {
       const explorerBlock = exchange.getBlock(blockIdx);
       const testBlock = this.blocks[this.exchangeId][blockIdx];
-      assert.equal(explorerBlock.exchangeId, this.exchangeId, "unexpected exchangeId");
-      assert.equal(explorerBlock.blockIdx, testBlock.blockIdx, "unexpected blockIdx");
-      assert.equal(explorerBlock.blockType, testBlock.blockType, "unexpected blockType");
-      assert.equal(explorerBlock.blockVersion, testBlock.blockVersion, "unexpected blockVersion");
+      assert.equal(
+        explorerBlock.exchangeId,
+        this.exchangeId,
+        "unexpected exchangeId"
+      );
+      assert.equal(
+        explorerBlock.blockIdx,
+        testBlock.blockIdx,
+        "unexpected blockIdx"
+      );
+      assert.equal(
+        explorerBlock.blockType,
+        testBlock.blockType,
+        "unexpected blockType"
+      );
+      assert.equal(
+        explorerBlock.blockVersion,
+        testBlock.blockVersion,
+        "unexpected blockVersion"
+      );
       assert.equal(explorerBlock.data, testBlock.data, "unexpected data");
-      assert.equal(explorerBlock.offchainData, testBlock.offchainData, "unexpected offchainData");
-      assert.equal(explorerBlock.operator, testBlock.operator, "unexpected operator");
+      assert.equal(
+        explorerBlock.offchainData,
+        testBlock.offchainData,
+        "unexpected offchainData"
+      );
+      assert.equal(
+        explorerBlock.operator,
+        testBlock.operator,
+        "unexpected operator"
+      );
       assert.equal(explorerBlock.origin, testBlock.origin, "unexpected origin");
-      assert.equal(explorerBlock.blockState, testBlock.blockState, "unexpected blockState");
-      assert.equal(explorerBlock.blockFeeWithdrawn, testBlock.blockFeeWithdrawn, "unexpected blockFeeWithdrawn");
+      assert.equal(
+        explorerBlock.blockState,
+        testBlock.blockState,
+        "unexpected blockState"
+      );
+      assert.equal(
+        explorerBlock.blockFeeWithdrawn,
+        testBlock.blockFeeWithdrawn,
+        "unexpected blockFeeWithdrawn"
+      );
       if (explorerBlock.blockFeeWithdrawn) {
-        assert(explorerBlock.blockFeeAmountWithdrawn.eq(testBlock.blockFeeAmountWithdrawn), "unexpected blockFeeAmountWithdrawn");
+        assert(
+          explorerBlock.blockFeeAmountWithdrawn.eq(
+            testBlock.blockFeeAmountWithdrawn
+          ),
+          "unexpected blockFeeAmountWithdrawn"
+        );
       }
-      assert.equal(explorerBlock.committedTimestamp, testBlock.committedTimestamp, "unexpected committedTimestamp");
+      assert.equal(
+        explorerBlock.committedTimestamp,
+        testBlock.committedTimestamp,
+        "unexpected committedTimestamp"
+      );
       if (explorerBlock.blockState > BlockState.COMMITTED) {
-        assert.equal(explorerBlock.verifiedTimestamp, testBlock.verifiedTimestamp, "unexpected verifiedTimestamp");
+        assert.equal(
+          explorerBlock.verifiedTimestamp,
+          testBlock.verifiedTimestamp,
+          "unexpected verifiedTimestamp"
+        );
       }
       if (explorerBlock.blockState > BlockState.VERIFIED) {
-        assert.equal(explorerBlock.finalizedTimestamp, testBlock.finalizedTimestamp, "unexpected finalizedTimestamp");
+        assert.equal(
+          explorerBlock.finalizedTimestamp,
+          testBlock.finalizedTimestamp,
+          "unexpected finalizedTimestamp"
+        );
       }
-      assert.equal(explorerBlock.transactionHash, testBlock.transactionHash, "unexpected transactionHash");
+      assert.equal(
+        explorerBlock.transactionHash,
+        testBlock.transactionHash,
+        "unexpected transactionHash"
+      );
     }
 
     // Compare deposits
@@ -3164,17 +3468,52 @@ export class ExchangeTestUtil {
       this.deposits[this.exchangeId].length,
       "number of deposits does not match"
     );
-    for (let depositIdx = 0; depositIdx < exchange.getNumDeposits(); depositIdx++) {
+    for (
+      let depositIdx = 0;
+      depositIdx < exchange.getNumDeposits();
+      depositIdx++
+    ) {
       const explorerDeposit = exchange.getDeposit(depositIdx);
       const testDeposit = this.deposits[this.exchangeId][depositIdx];
-      assert.equal(explorerDeposit.exchangeId, testDeposit.exchangeId, "unexpected exchangeId");
-      assert.equal(explorerDeposit.depositIdx, testDeposit.depositIdx, "unexpected depositIdx");
-      assert.equal(explorerDeposit.timestamp, testDeposit.timestamp, "unexpected timestamp");
-      assert.equal(explorerDeposit.accountID, testDeposit.accountID, "unexpected accountID");
-      assert.equal(explorerDeposit.tokenID, testDeposit.tokenID, "unexpected tokenID");
-      assert(explorerDeposit.amount.eq(testDeposit.amount), "unexpected amount");
-      assert.equal(explorerDeposit.publicKeyX, testDeposit.publicKeyX, "unexpected publicKeyX");
-      assert.equal(explorerDeposit.publicKeyY, testDeposit.publicKeyY, "unexpected publicKeyY");
+      assert.equal(
+        explorerDeposit.exchangeId,
+        testDeposit.exchangeId,
+        "unexpected exchangeId"
+      );
+      assert.equal(
+        explorerDeposit.depositIdx,
+        testDeposit.depositIdx,
+        "unexpected depositIdx"
+      );
+      assert.equal(
+        explorerDeposit.timestamp,
+        testDeposit.timestamp,
+        "unexpected timestamp"
+      );
+      assert.equal(
+        explorerDeposit.accountID,
+        testDeposit.accountID,
+        "unexpected accountID"
+      );
+      assert.equal(
+        explorerDeposit.tokenID,
+        testDeposit.tokenID,
+        "unexpected tokenID"
+      );
+      assert(
+        explorerDeposit.amount.eq(testDeposit.amount),
+        "unexpected amount"
+      );
+      assert.equal(
+        explorerDeposit.publicKeyX,
+        testDeposit.publicKeyX,
+        "unexpected publicKeyX"
+      );
+      assert.equal(
+        explorerDeposit.publicKeyY,
+        testDeposit.publicKeyY,
+        "unexpected publicKeyY"
+      );
     }
 
     // Compare on-chain withdrawal requests
@@ -3183,15 +3522,46 @@ export class ExchangeTestUtil {
       this.onchainWithdrawals[this.exchangeId].length,
       "number of on-chain withdrawals does not match"
     );
-    for (let withdrawalIdx = 0; withdrawalIdx < exchange.getNumOnchainWithdrawalRequests(); withdrawalIdx++) {
-      const explorerWithdrawal = exchange.getOnchainWithdrawalRequest(withdrawalIdx);
-      const testWithdrawal = this.onchainWithdrawals[this.exchangeId][withdrawalIdx];
-      assert.equal(explorerWithdrawal.exchangeId, this.exchangeId, "unexpected exchangeId");
-      assert.equal(explorerWithdrawal.withdrawalIdx, testWithdrawal.withdrawalIdx, "unexpected withdrawalIdx");
-      assert.equal(explorerWithdrawal.timestamp, testWithdrawal.timestamp, "unexpected timestamp");
-      assert.equal(explorerWithdrawal.accountID, testWithdrawal.accountID, "unexpected accountID");
-      assert.equal(explorerWithdrawal.tokenID, testWithdrawal.tokenID, "unexpected tokenID");
-      assert(explorerWithdrawal.amountRequested.eq(testWithdrawal.amount), "unexpected amountRequested");
+    for (
+      let withdrawalIdx = 0;
+      withdrawalIdx < exchange.getNumOnchainWithdrawalRequests();
+      withdrawalIdx++
+    ) {
+      const explorerWithdrawal = exchange.getOnchainWithdrawalRequest(
+        withdrawalIdx
+      );
+      const testWithdrawal = this.onchainWithdrawals[this.exchangeId][
+        withdrawalIdx
+      ];
+      assert.equal(
+        explorerWithdrawal.exchangeId,
+        this.exchangeId,
+        "unexpected exchangeId"
+      );
+      assert.equal(
+        explorerWithdrawal.withdrawalIdx,
+        testWithdrawal.withdrawalIdx,
+        "unexpected withdrawalIdx"
+      );
+      assert.equal(
+        explorerWithdrawal.timestamp,
+        testWithdrawal.timestamp,
+        "unexpected timestamp"
+      );
+      assert.equal(
+        explorerWithdrawal.accountID,
+        testWithdrawal.accountID,
+        "unexpected accountID"
+      );
+      assert.equal(
+        explorerWithdrawal.tokenID,
+        testWithdrawal.tokenID,
+        "unexpected tokenID"
+      );
+      assert(
+        explorerWithdrawal.amountRequested.eq(testWithdrawal.amount),
+        "unexpected amountRequested"
+      );
     }
   }
 
@@ -3203,14 +3573,22 @@ export class ExchangeTestUtil {
       balanceValueA = balanceValueA || { balance: new BN(0), tradeHistory: {} };
       balanceValueB = balanceValueB || { balance: new BN(0), tradeHistory: {} };
 
-      for (const orderID of Object.keys(balanceValueA.tradeHistory).concat(Object.keys(balanceValueB.tradeHistory))) {
-        let tradeHistoryValueA =
-          balanceValueA.tradeHistory[Number(orderID)];
-        let tradeHistoryValueB =
-          balanceValueB.tradeHistory[Number(orderID)];
+      for (const orderID of Object.keys(balanceValueA.tradeHistory).concat(
+        Object.keys(balanceValueB.tradeHistory)
+      )) {
+        let tradeHistoryValueA = balanceValueA.tradeHistory[Number(orderID)];
+        let tradeHistoryValueB = balanceValueB.tradeHistory[Number(orderID)];
 
-        tradeHistoryValueA = tradeHistoryValueA || {filled: new BN(0), cancelled: false, orderID: 0};
-        tradeHistoryValueB = tradeHistoryValueB || {filled: new BN(0), cancelled: false, orderID: 0};
+        tradeHistoryValueA = tradeHistoryValueA || {
+          filled: new BN(0),
+          cancelled: false,
+          orderID: 0
+        };
+        tradeHistoryValueB = tradeHistoryValueB || {
+          filled: new BN(0),
+          cancelled: false,
+          orderID: 0
+        };
 
         assert(
           tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled),
@@ -3444,14 +3822,87 @@ export class ExchangeTestUtil {
       const accountAfter =
         simulatorReport.exchangeStateAfter.accounts[withdrawal.accountID];
 
-      if (withdrawal.tokenID > 0) {
-        this.prettyPrintBalanceChange(
-          withdrawal.accountID,
-          withdrawal.tokenID,
-          accountBefore.balances[withdrawal.tokenID].balance,
-          accountAfter.balances[withdrawal.tokenID].balance
-        );
+      this.prettyPrintBalanceChange(
+        withdrawal.accountID,
+        withdrawal.tokenID,
+        accountBefore.balances[withdrawal.tokenID].balance,
+        accountAfter.balances[withdrawal.tokenID].balance
+      );
+
+      latestState = simulatorReport.exchangeStateAfter;
+    }
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
+    logInfo("----------------------------------------------------");
+  }
+
+  public validateInternalTranfers(
+    internalTransferBlock: InternalTransferBlock,
+    bs: Bitstream,
+    stateBefore: ExchangeState,
+    stateAfter: ExchangeState
+  ) {
+    logInfo("----------------------------------------------------");
+    const operatorAccountID = internalTransferBlock.operatorAccountID;
+    let latestState = stateBefore;
+    for (const [
+      transIndex,
+      transfer
+    ] of internalTransferBlock.transfers.entries()) {
+      const simulator = new Simulator();
+      const simulatorReport = simulator.internalTransferFromInputData(
+        transfer,
+        latestState,
+        operatorAccountID
+      );
+
+      const accountFromBefore = latestState.accounts[transfer.accountFromID];
+      const accountFromAfter =
+        simulatorReport.exchangeStateAfter.accounts[transfer.accountFromID];
+
+      const accountToBefore = latestState.accounts[transfer.accountToID];
+      const accountToAfter =
+        simulatorReport.exchangeStateAfter.accounts[transfer.accountToID];
+
+      const accountOperatorBefore = latestState.accounts[operatorAccountID];
+      const accountOperatorAfter =
+        simulatorReport.exchangeStateAfter.accounts[operatorAccountID];
+
+      let addressBook: { [id: number]: string } = {};
+      for (const detailedTransfer of simulatorReport.detailedTransfers) {
+        this.logDetailedTokenTransfer(detailedTransfer, addressBook);
       }
+
+      logInfo("+ State changes:");
+      logInfo("- From:");
+      this.prettyPrintBalanceChange(
+        transfer.accountFromID,
+        transfer.transTokenID,
+        accountFromBefore.balances[transfer.transTokenID].balance,
+        accountFromAfter.balances[transfer.transTokenID].balance
+      );
+      this.prettyPrintBalanceChange(
+        transfer.accountFromID,
+        transfer.feeTokenID,
+        accountFromBefore.balances[transfer.feeTokenID].balance,
+        accountFromAfter.balances[transfer.feeTokenID].balance
+      );
+      logInfo("- To:");
+      this.prettyPrintBalanceChange(
+        transfer.accountToID,
+        transfer.transTokenID,
+        accountToBefore.balances[transfer.transTokenID].balance,
+        accountToAfter.balances[transfer.transTokenID].balance
+      );
+      logInfo("- Operator:");
+      this.prettyPrintBalanceChange(
+        operatorAccountID,
+        transfer.feeTokenID,
+        accountOperatorBefore.balances[transfer.feeTokenID].balance,
+        accountOperatorAfter.balances[transfer.feeTokenID].balance
+      );
+      logInfo("----");
 
       latestState = simulatorReport.exchangeStateAfter;
     }
@@ -3568,13 +4019,8 @@ export class ExchangeTestUtil {
   }
 
   public prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
-    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
-    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
-    const prettyBalance = balance
-      .div(web3.utils.toBN(10 ** decimals))
-      .toString(10);
-    logInfo(accountID + ": " + prettyBalance + " " + tokenSymbol);
+    const prettyBalance = this.getPrettyAmount(tokenID, balance);
+    logInfo(accountID + ": " + prettyBalance);
   }
 
   public prettyPrintBalanceChange(
@@ -3583,25 +4029,10 @@ export class ExchangeTestUtil {
     balanceBefore: BN,
     balanceAfter: BN
   ) {
-    const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
-    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
-    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
-    const prettyBalanceBefore = balanceBefore
-      .div(web3.utils.toBN(10 ** decimals))
-      .toString(10);
-    const prettyBalanceAfter = balanceAfter
-      .div(web3.utils.toBN(10 ** decimals))
-      .toString(10);
+    const prettyBalanceBefore = this.getPrettyAmount(tokenID, balanceBefore);
+    const prettyBalanceAfter = this.getPrettyAmount(tokenID, balanceAfter);
     logInfo(
-      accountID +
-        ": " +
-        prettyBalanceBefore +
-        " " +
-        tokenSymbol +
-        " -> " +
-        prettyBalanceAfter +
-        " " +
-        tokenSymbol
+      accountID + ": " + prettyBalanceBefore + " -> " + prettyBalanceAfter
     );
   }
 
@@ -4027,7 +4458,10 @@ export class ExchangeTestUtil {
     const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
     const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
     const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
-    const amountDec = Number(amount.toString(10)) / 10 ** decimals;
+    let amountDec = Number(amount.toString(10)) / 10 ** decimals;
+    if (Math.abs(amountDec) < 0.0000000000001) {
+      amountDec = 0;
+    }
     return amountDec + " " + tokenSymbol;
   }
 
