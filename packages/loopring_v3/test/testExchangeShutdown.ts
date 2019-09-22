@@ -123,7 +123,8 @@ contract("Exchange", (accounts: string[]) => {
         "MERKLE_ROOT_NOT_REVERTED"
       );
 
-      const currentBlockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+      const currentBlockIdx =
+        (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
       const exchangeState = await exchangeTestUtil.loadExchangeState(
         exchangeId,
         currentBlockIdx
@@ -211,7 +212,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Blocks with shutdown withdrawals should not receive any block fee
-      const lastBlockIdx = await exchangeTestUtil.getNumBlocksOnchain() - 1;
+      const lastBlockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
       for (let b = currentBlockIdx + 1; b <= lastBlockIdx; b++) {
         await expectThrow(
           exchangeTestUtil.withdrawBlockFeeChecked(

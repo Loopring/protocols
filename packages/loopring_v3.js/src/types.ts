@@ -9,7 +9,8 @@ export enum BlockType {
   DEPOSIT,
   ONCHAIN_WITHDRAWAL,
   OFFCHAIN_WITHDRAWAL,
-  ORDER_CANCELLATION
+  ORDER_CANCELLATION,
+  INTERNAL_TRANSFER
 }
 
 /**
@@ -90,6 +91,8 @@ export interface Block {
   totalNumOffchainWithdrawalsProcessed: number;
   /** The total number of order canellations that were processed up to, and including, this block. */
   totalNumOrderCancellationsProcessed: number;
+  /** The total number of internal transfers that were processed up to, and including, this block. */
+  totalNumOrderInternalTransfersProcessed: number;
 
   /** The Ethereum transaction in which this block was committed. */
   transactionHash: string;
@@ -248,7 +251,7 @@ export interface OffchainWithdrawal {
  * Order cancellation data.
  */
 export interface OrderCancellation {
-  /** The exchange the order canellation request was made on. */
+  /** The exchange the order cancellation request was made on. */
   exchangeId: number;
   /** The block this order cancellation request was pocessed in. */
   blockIdx: number;
@@ -261,6 +264,31 @@ export interface OrderCancellation {
   orderTokenID: number;
   /** The orderID of the order that is being cancelled. */
   orderID: number;
+  /** The token the fee to the operator is paid in. */
+  feeTokenID: number;
+  /** The fee paid to the operator. */
+  fee: BN;
+}
+
+/**
+ * Internal transfer data.
+ */
+export interface InternalTransfer {
+  /** The exchange the internal transfer request was made on. */
+  exchangeId: number;
+  /** The block this internal transfer request was pocessed in. */
+  blockIdx: number;
+  /** The request index of this internal transfer in the processed requests list (@see getProcessedRequest). */
+  requestIdx: number;
+
+  /** The 'from' account for this internal transfer. */
+  accountFromID: number;
+  /** The 'to' account for this internal transfer. */
+  accountToID: number;
+  /** The token that is being transferred. */
+  tokenID: number;
+  /** The amount that was actually withdrawn. */
+  amount: BN;
   /** The token the fee to the operator is paid in. */
   feeTokenID: number;
   /** The fee paid to the operator. */

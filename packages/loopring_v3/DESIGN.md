@@ -1,68 +1,68 @@
 ## Table of Contents
 
-   * [Loopring 3.0](#loopring-30)
-      * [Introduction](#introduction)
-      * [New Development](#new-development)
-      * [Trading with Off-chain Balances](#trading-with-off-chain-balances)
-         * [Apparent Immediate Finality](#apparent-immediate-finality)
-         * [Higher Throughput &amp; Lower Cost](#higher-throughput--lower-cost)
-   * [Design](#design)
-      * [Merkle Tree](#merkle-tree)
-      * [Blocks](#blocks)
-         * [Circuit Permutations](#circuit-permutations)
-         * [Committing and Verifying Blocks On-chain](#committing-and-verifying-blocks-on-chain)
-      * [Operators](#operators)
-      * [Exchanges](#exchanges)
-         * [Exchange Creation](#exchange-creation)
-         * [Exchange Staking](#exchange-staking)
-         * [Exchange Shutdown](#exchange-shutdown)
-         * [Maintenance Mode](#maintenance-mode)
-         * [Token Registration](#token-registration)
-         * [Token Deposit Disabling](#token-deposit-disabling)
-         * [On-chain Fees](#on-chain-fees)
-      * [Fee Model](#fee-model)
-      * [Signatures](#signatures)
-      * [Account Creation](#account-creation)
-      * [Depositing](#depositing)
-      * [Withdrawing](#withdrawing)
-         * [Automatic Distribution of Withdrawals](#automatic-distribution-of-withdrawals)
-         * [Protocol Fee](#protocol-fee)
-         * [Off-chain Withdrawal Request](#off-chain-withdrawal-request)
-         * [On-chain Withdrawal Request](#on-chain-withdrawal-request)
-      * [Ring Settlement](#ring-settlement)
-         * [Rings Accepted in the Circuit](#rings-accepted-in-the-circuit)
-         * [Off-chain Data](#off-chain-data)
-      * [Canceling Orders](#canceling-orders)
-         * [Limit Validity in Time](#limit-validity-in-time)
-         * [Off-chain Order Cancellaton Request](#off-chain-order-cancellaton-request)
-         * [Updating the Account Info](#updating-the-account-info)
-         * [Creating an order with a larger orderID in the same trading history slot](#creating-an-order-with-a-larger-orderid-in-the-same-trading-history-slot)
-         * [The DEX removes the order in the order-book](#the-dex-removes-the-order-in-the-order-book)
-      * [Trading History](#trading-history)
-         * [Order Aliasing](#order-aliasing)
-      * [On-chain Deposit/Withdraw Request Handling](#on-chain-depositwithdraw-request-handling)
-      * [Withdrawal Mode](#withdrawal-mode)
-      * [Wallets](#wallets)
-      * [Brokers](#brokers)
-      * [Timestamp in Circuits](#timestamp-in-circuits)
-      * [On-chain Data](#on-chain-data)
-      * [Compression](#compression)
-      * [Throughput (Ring Settlements)](#throughput-ring-settlements)
-         * [On-chain Data-availability Limit](#on-chain-data-availability-limit)
-         * [Constraints Limit](#constraints-limit)
-         * [Results](#results)
-         * [Future Improvements](#future-improvements)
-         * [Proof Generation Cost](#proof-generation-cost)
-   * [Case Studies](#case-studies)
-      * [DEX with CEX-like Experience](#dex-with-cex-like-experience)
-         * [Setting up the exchange](#setting-up-the-exchange)
-         * [Trading](#trading)
-      * [Deposit and Withdrawal Process](#deposit-and-withdrawal-process)
-
+- [Loopring 3.0](#loopring-30)
+  - [Introduction](#introduction)
+  - [New Development](#new-development)
+  - [Trading with Off-chain Balances](#trading-with-off-chain-balances)
+    - [Apparent Immediate Finality](#apparent-immediate-finality)
+    - [Higher Throughput &amp; Lower Cost](#higher-throughput--lower-cost)
+- [Design](#design)
+  - [Merkle Tree](#merkle-tree)
+  - [Blocks](#blocks)
+    - [Circuit Permutations](#circuit-permutations)
+    - [Committing and Verifying Blocks On-chain](#committing-and-verifying-blocks-on-chain)
+  - [Operators](#operators)
+  - [Exchanges](#exchanges)
+    - [Exchange Creation](#exchange-creation)
+    - [Exchange Staking](#exchange-staking)
+    - [Exchange Shutdown](#exchange-shutdown)
+    - [Maintenance Mode](#maintenance-mode)
+    - [Token Registration](#token-registration)
+    - [Token Deposit Disabling](#token-deposit-disabling)
+    - [On-chain Fees](#on-chain-fees)
+  - [Fee Model](#fee-model)
+  - [Signatures](#signatures)
+  - [Account Creation](#account-creation)
+  - [Depositing](#depositing)
+  - [Withdrawing](#withdrawing)
+    - [Automatic Distribution of Withdrawals](#automatic-distribution-of-withdrawals)
+    - [Protocol Fee](#protocol-fee)
+    - [Off-chain Withdrawal Request](#off-chain-withdrawal-request)
+    - [On-chain Withdrawal Request](#on-chain-withdrawal-request)
+  - [Ring Settlement](#ring-settlement)
+    - [Rings Accepted in the Circuit](#rings-accepted-in-the-circuit)
+    - [Off-chain Data](#off-chain-data)
+  - [Canceling Orders](#canceling-orders)
+    - [Limit Validity in Time](#limit-validity-in-time)
+    - [Off-chain Order Cancellaton Request](#off-chain-order-cancellaton-request)
+    - [Updating the Account Info](#updating-the-account-info)
+    - [Creating an order with a larger orderID in the same trading history slot](#creating-an-order-with-a-larger-orderid-in-the-same-trading-history-slot)
+    - [The DEX removes the order in the order-book](#the-dex-removes-the-order-in-the-order-book)
+  - [Trading History](#trading-history)
+    - [Order Aliasing](#order-aliasing)
+  - [On-chain Deposit/Withdraw Request Handling](#on-chain-depositwithdraw-request-handling)
+  - [Withdrawal Mode](#withdrawal-mode)
+  - [Wallets](#wallets)
+  - [Brokers](#brokers)
+  - [Timestamp in Circuits](#timestamp-in-circuits)
+  - [On-chain Data](#on-chain-data)
+  - [Compression](#compression)
+  - [Throughput (Ring Settlements)](#throughput-ring-settlements)
+    - [On-chain Data-availability Limit](#on-chain-data-availability-limit)
+    - [Constraints Limit](#constraints-limit)
+    - [Results](#results)
+    - [Future Improvements](#future-improvements)
+    - [Proof Generation Cost](#proof-generation-cost)
+- [Case Studies](#case-studies)
+  - [DEX with CEX-like Experience](#dex-with-cex-like-experience)
+    - [Setting up the exchange](#setting-up-the-exchange)
+    - [Trading](#trading)
+  - [Deposit and Withdrawal Process](#deposit-and-withdrawal-process)
 
 # Loopring 3.0
 
 ## Introduction
+
 In Loopring Protocol 3 we want to improve the throughput of the protocol significantly. We do this by using zk-SNARKs -- as much work as possible is done off-chain, and we only verify the work on-chain.
 
 For the highest throughput, we only support off-chain balances. These are balances that are stored in Merkle trees. Users can deposit and withdraw tokens to our smart contracts, and their balance will be updated in the Merkle trees. This way we can transfer tokens between users just by updating the Merkle tree off-chain, there is no need for expensive token transfers on-chain.
@@ -87,9 +87,11 @@ Bellman is also being used more and more instead of libsnark for creating the ci
 ## Trading with Off-chain Balances
 
 ### Apparent Immediate Finality
+
 Off-chain balances are guaranteed to be available for a short time in the future (until a withdrawal), which allows for a CEX like experience. A DEX can settle a ring off-chain and immediately show the final results to the user without having to wait for the on-chain settlement confirmation. Using on-chain balances, users can modify their balances/allowances directly by interfacing with the blockchain, therefore finality is only achieved when the ring settlement is confirmed on-chain.
 
 ### Higher Throughput & Lower Cost
+
 An off-chain token transfer takes only a minimal cost for generating the proof for updating a Merkle tree. The cost of a single on-chain token transfer, however, takes roughly 20,000 gas, and checking the balance/allowance of the sender takes roughly another 5,000 gas. These costs significantly limit the possible throughput and increase the cost of rings settlement.
 
 # Design
@@ -100,14 +102,13 @@ A Merkle tree is used to store all the permanent data needed in the circuits.
 
 ![Merkle Tree](https://i.imgur.com/RcoayPR.png)
 
- There are a lot of ways the Merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). The Merkle tree above has a good balance between complexity, proving times and user-friendliness.
+There are a lot of ways the Merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). The Merkle tree above has a good balance between complexity, proving times and user-friendliness.
 
 - Only a single account needed for all tokens that are or will be registered
 - No special handling for anything. Every actor in the Loopring ecosystem has an account in the same tree.
 - A single nonce for every account (instead of e.g. a nonce for every token a user owns) allowing off-chain requests to be ordered on the account level, which is what users will expect.
 - While trading, 2 token balances are modified for a user (tokenS, tokenB). Because the balances are stored in their own sub-tree, only this smaller sub-tree needs to be updated 2 times. The account itself is modified only a single time (the balances Merkle root is stored inside the account leaf). The same is useful for e.g. operators because they also pay/receive fees in different tokens.
 - The trading history tree is a sub-tree of the token balance. This may seem strange at first, but this is actually very efficient. Because the trading history is stored for tokenS, we already need to update the balance for this token, so updating the trading history only has an extra cost of updating this small sub-tree. The trading-history is not part of the account leaf because that way we'd only have 2^14 leafs for all tokens together. Note that account owners can create [a lot more orders](#Trading-History) for each token than the 2^14 slots available in this tree!
-
 
 ## Blocks
 
@@ -116,10 +117,12 @@ Work of a certain type (e.g. depositing, or ring settlements) is batched togethe
 ### Circuit Permutations
 
 A circuit always does the same. There's no way to do dynamic loops or branching. Let's take the ring settlement circuit as an example:
+
 - The circuit always settles a fixed number of rings
 - The rings always contain the predetermined number of orders
 
 We have 5 circuits:
+
 - Ring Settlement (aka Trade)
 - Deposit
 - Off-chain withdrawal
@@ -131,10 +134,12 @@ Circuits with and without on-chain data-availability are available. We support a
 ### Committing and Verifying Blocks On-chain
 
 Creating a proof for a block can take a long time. If the proof needs to be available at the same time the state is updated on-chain we limit the maximum throughput of the system by the proof generation time. But we don't need the proof immediately. If a block is committed that isn't verified in time we can easily revert the state. This allows for
+
 - faster settlement of rings because operators don't need to wait on the proof generation before they can publish the settlements (and thus also the new Merkle tree states) on-chain.
-- the parallelization of the  proof generation. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
+- the parallelization of the proof generation. Multiple operators can generate a proof at the same time. This isn't possible otherwise because the initial state needs to be known at proof generation time.
 
 We use a simple commit and verify scheme. A block can be in 3 states:
+
 - Committed: The block has been committed on-chain but not yet proven
 - Verified: The block has been committed and has been proven, but a block that was committed before this block has not yet been verified.
 - Finalized: The block and all previous blocks have been proven.
@@ -178,6 +183,7 @@ Exchange has an owner and an operator. The owner is the only one who can call so
 An exchange stakes LRC. Anyone can add to the stake of an exchange by calling `depositExchangeStake`, withdrawing the stake however is only allowed when the exchange is completely [shut down](#exchange-shutdown).
 
 The stake ensures that the exchange behaves correctly. This is done by
+
 - burning a part of the stake if a block isn't proven in time
 - using a part of the stake to ensure the operator automatically distributes the withdrawals of users
 - only allows the stake to be withdrawn when the exchange is shut down by automatically returning the funds of all its users
@@ -190,20 +196,23 @@ The exchange owner can stake LRC to lower the [protocol fee](#trading-protocol-f
 
 Note that the amount staked this way only counts for 50% to reduce the protocol fees because of the extra flexibility compared to the exchange stake. The surplus amount of LRC staked in exchange staking (i.e. everthing above the minimum amount required to commit new blocks) is counted for the complete 100%. This is to incentivize exchange staking which gives more guarantees to users.
 
-The protocol fees can be linearly reduced from `maxProtocolTakerFeeBips` to `minProtocolTakerFeeBips` by staking `targetProtocolTakerFeeStake`LRC,  and from `maxProtocolMakerFeeBips` to `minProtocolMakerFeeBips` by staking `targetProtocolMakerFeeStake`LRC.
+The protocol fees can be linearly reduced from `maxProtocolTakerFeeBips` to `minProtocolTakerFeeBips` by staking `targetProtocolTakerFeeStake`LRC, and from `maxProtocolMakerFeeBips` to `minProtocolMakerFeeBips` by staking `targetProtocolMakerFeeStake`LRC.
 
 ### Exchange Shutdown
 
 The exchange owner can choose to shut down the exchange at any time. However, the stake of an exchange can only be withdrawn when the exchange was shut down completely by returning all funds back to the users. This is done as follows:
+
 - The exchange owner calls `shutdown` on the exchange contract. This will disallow new on-chain requests by users.
 - First, all remaining open on-chain deposit requests need to be processed
 - From this point on only special on-chain withdrawal blocks can be committed. These withdrawals not only withdraw the balance for a token in an account, they also reset the trading history root, the account public key, and the account nonce back to the default values of the Merkle tree
 - Once the complete tree is reset to its initial state (`lastBlock.merkleRoot == genesisBlock.merkleRoot`) the exchange owner is allowed to withdraw the full stake by calling `withdrawExchangeStake`.
 
 An exchange that is shutdown only has a limited amount of time to revert the state back to the initial state before we go into [withdrawal mode](#withdrawal-mode). This maximum amount of time can be calculated as follows:
+
 ```
 maxTimeInShutdown = MAX_TIME_IN_SHUTDOWN_BASE + (numAccounts * MAX_TIME_IN_SHUTDOWN_DELTA)
 ```
+
 In general, the more accounts an exchange has the more withdrawals need to be done when the exchange is shutdown. We also want to limit this amount of time because otherwise funds from users could be stuck for a long time.
 
 This mechanism also guards users against data-availability problems. Even if the Merkle tree cannot be rebuilt by anyone but the operator, this mechanism still ensures all funds will be returned to the users, otherwise, the exchange loses the amount staked.
@@ -233,6 +242,7 @@ The exchange owner can disable deposits of a certain token by calling `disableTo
 The owner of the exchange can set the fees for his exchange by calling `setFees`.
 
 The following on-chain requests can require a fee to be paid in ETH to the exchange:
+
 - Account creation
 - Account update
 - Depositing
@@ -262,17 +272,19 @@ Paid in the tokenB of the order. These are not taxed or do not have any other di
 
 ### Buy/Sell orders
 
-Users can decide if they want to buy a fixed number of tokens (a buy order) of if they want to sell a fixed number of tokens (a sell order).  A buy order contains the maximum price the user wants to spend (by increasing amountS), a sell order contains the minimum price the users wants to get (by decreasing amountB). This allows us to do market orders. Whether an order is a buy or sell order is only important when the order is used as the taker order, the price used in the maker order is always the price defined in the order.
+Users can decide if they want to buy a fixed number of tokens (a buy order) of if they want to sell a fixed number of tokens (a sell order). A buy order contains the maximum price the user wants to spend (by increasing amountS), a sell order contains the minimum price the users wants to get (by decreasing amountB). This allows us to do market orders. Whether an order is a buy or sell order is only important when the order is used as the taker order, the price used in the maker order is always the price defined in the order.
 
 So if there is a positive spread between the taker and the maker order we either use the spread to buy more tokens (sell order) for the taker, or let the taker keep the spread (buy order).
 
 ### Operators pays all actual costs for a trade
 
 The operator is in the best position to decide if a trade is profitable (and if not, he can still choose to do the trade for other reasons):
+
 - The operator receives fees from both orders
 - The operator actively monitors the side-chain/main-chain and cost for settlement
 
 So it makes sense to also let the operator pay:
+
 - The protocol fee for both orders
 - The rebates
 
@@ -331,9 +343,11 @@ The user requests a withdrawal either on-chain or off-chain by sending the opera
 ### Automatic Distribution of Withdrawals
 
 Normally users should not need to call `withdrawFromApprovedWithdrawal` manually. The operator should call `distributeWithdrawals` `MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS` seconds after the withdrawal block was committed. This will distribute all tokens that were withdrawn to the corresponding account owners without any further interaction of the account owner himself. If the operator fails to do so in time, anyone will be able to call the function. The exchange is fined for this by withdrawing a part of the exchange stake for every withdrawal included in the block:
+
 ```
 totalFine = Loopring.withdrawalFineLRC() * numWithdrawalRequestsInBlock
 ```
+
 50% of the fine is used to reward the caller of the function for distributing the withdrawals, the other 50% is burned.
 
 ### Protocol Fee
@@ -377,6 +391,7 @@ A user calls `withdraw` and the request is added to the withdrawal chain. See [h
 ## Ring Settlement
 
 The ring settlement is just as in protocol 2 with some limitations:
+
 - Only 2-order rings
 - No P2P orders (always use fee token)
 - No on-chain registration of orders
@@ -392,6 +407,7 @@ Orders and order-matching are still completely off-chain.
 Only 'valid' rings can be included in a circuit. With 'valid' we mean rings and orders that are completely valid (signatures correct, order data correct,...), but may not result in actually filling the orders. As a general rule of thumb: if some external ring matching entity cannot fully control the parameter used for the rings settlement we allow the ring settlement to gently fail by not doing any token transfers. Rings that are never valid cannot be included in a block.
 
 List of causes that will result in no actual ring settlement, but are still accepted by the circuit:
+
 - An order is expired
 - An order is canceled
 - An order is already completely filled
@@ -404,6 +420,7 @@ List of causes that will result in no actual ring settlement, but are still acce
 ### Off-chain Data
 
 #### Orders
+
 ```
 Order {
   exchangeID (32bit)
@@ -536,8 +553,9 @@ A realistic use case would be for selling some token for one of the available st
 ## On-chain Deposit/Withdraw Request Handling
 
 On-chain deposit and withdrawal requests are added to a small 'blockchain' on-chain. We use separate chains for deposits and withdrawals. For every request we store the following:
+
 - The accumulated hash: The hash of the request data hashed together with the accumulated hash of the previous request.
-- The accumulated fee: The fee of the request added to the  accumulated fee of the previous request.
+- The accumulated fee: The fee of the request added to the accumulated fee of the previous request.
 - The timestamp the request was added.
 
 This setup allows the operator to process any number of requests in a block that he wants (though only a limited number of requests/block type are supported to limit the number of circuits, padding is done when needed). The circuits use the starting accumulated hash and the ending accumulated hash (after padding) as public input. The fee the operator receives for all the requests can easily be calculated by subtracting the accumulated fees of the last and first requests.
@@ -547,12 +565,14 @@ All requests are handled FIFO in their corresponding chain (deposit or withdrawa
 Once the block containing the deposits/withdrawals is finalized the operator can call `withdrawBlockFee` to collect the fee earned by processing the requests.
 
 Because we want on-chain requests to be handled as quickly as possible by the operator, we enforce some limitations on him. However, we also don't want to let operators be overwhelmed by the number of on-chain requests. The following rules apply:
+
 - The maximum number of open on-chain requests is limited by `MAX_OPEN_DEPOSIT_REQUESTS` and `MAX_OPEN_WITHDRAWAL_REQUESTS`. Anyone can check if there are available slots by calling `getNumAvailableWithdrawalSlots` or `getNumAvailableDepositSlots`.
 - If there is an open on-chain request older than `MAX_AGE_REQUEST_UNTIL_FORCED` then the operator can only commit blocks containing requests like this. Priority is given to withdrawals if there are deposit and withdrawal requests forced.
 - The total fee paid to the operator (the sum of all fees of all requests processed in the block) is reduced the older the requests in the block are. As a starting point for this reduction, the last processed request in the block is used. If the block is committed less than `FEE_BLOCK_FINE_START_TIME` seconds afterward the operator receives the complete fee. If not, the fee is linearly reduced for a total time of `FEE_BLOCK_FINE_MAX_DURATION`. From then on the operator does not receive any fee at all. The fine paid by the operator is burned (i.e. sold for LRC and then the LRC is burned).
 - If any request that is still open is older than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE` we automatically go into withdrawal mode.
 
 Current values:
+
 ```
 function MAX_OPEN_DEPOSIT_REQUESTS() internal pure returns (uint16) { return 1024; }
 function MAX_OPEN_WITHDRAWAL_REQUESTS() internal pure returns (uint16) { return 1024; }
@@ -567,11 +587,13 @@ function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 3
 The operator may stop submitting new blocks and proofs at any time. If that happens we need to ensure users can still withdraw their funds.
 
 Exchange can go in withdrawal mode when any of the conditions below are true:
+
 - An on-chain request (either deposit or withdrawal) is open for longer than `MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE`
 - A block remains unfinalized for longer than `MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE`
 
 Once in withdrawal mode, almost all functionality of the exchange is stopped. The operator cannot commit any blocks anymore.
 Users can withdraw their funds using the state of the last finalized block:
+
 - Balances still stored in the Merkle tree can be withdrawn with a Merkle proof by calling `withdrawFromMerkleTree` or `withdrawFromMerkleTreeFor`.
 - Deposits not yet included in a finalized block can be withdrawn using `withdrawFromDepositRequest`
 - Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
@@ -595,12 +617,14 @@ We do however know the approximate time the block will be committed on the Ether
 ## On-chain Data
 
 From the yellow paper:
+
 - 4 gas is paid for every zero byte of data or code for a transaction
 - 68 gas is paid for every non-zero byte of data or code for a transaction
 
 In the calculations below we use 68 gas/byte for our data-availability data.
 
 After Instanbul:
+
 - 4 gas is paid for every zero byte of data or code for a transaction
 - 16 gas is paid for every non-zero byte of data or code for a transaction
 
@@ -609,6 +633,7 @@ The cost for verifying a proof (batched) will also be reduced from 200,000 gas t
 #### Compression
 
 All data sent in the `data` parameter of `commitBlock` can be compressed. The data will be decompressed on-chain respecting the Compression Mode (the first byte in `data`):
+
 - Mode 0: No compression. The data following the mode byte is used as is.
 - Mode 1: An `IDecompressor` address is stored after the mode byte. `IDecompressor.decompress()` will be called to decompress the remaining data.
 
@@ -626,11 +651,13 @@ If the exchange uses an operator contract it's also possible to decompress compr
         - FillS: 3 bytes （24 bits, 19 bits for the mantissa part and 5 for the exponent part)
         - Order data (feeOrRebateBips): 1 byte
 ```
+
 - => **20 bytes/ring**
-- => Calldata cost: (2 * 10) * 68 = **1360 gas/ring**
-- => (After Istanbul) Calldata cost: (2 * 10) * 16 = **320 gas/ring**
+- => Calldata cost: (2 _ 10) _ 68 = **1360 gas/ring**
+- => (After Istanbul) Calldata cost: (2 _ 10) _ 16 = **320 gas/ring**
 
 This data data is further transformed to make it more compressable:
+
 - To group more similar data together we don't store all data for a ring next to each other but group them together for all rings. For _all_ rings, sequentially:
   - orderA.orderID + orderB.orderID
   - orderA.accountID + orderB.accountID
@@ -640,6 +667,7 @@ This data data is further transformed to make it more compressable:
   - orderB.orderData
 
 #### Data-availability for order cancellations
+
 ```
 - Operator account ID: 3 bytes
 - For every cancel:
@@ -649,12 +677,13 @@ This data data is further transformed to make it more compressable:
     - Fee token ID: 1 bytes
     - Fee amount: 2 bytes （16 bits, 11 bits for the mantissa part and 5 for the exponent part)
 ```
-- => **9 bytes/cancel**
-- => Calldata cost: 9 * 68 = **612 gas/cancel**
-- => (After Istanbul) Calldata cost: 9 * 16 = **144 gas/cancel**
 
+- => **9 bytes/cancel**
+- => Calldata cost: 9 \* 68 = **612 gas/cancel**
+- => (After Istanbul) Calldata cost: 9 \* 16 = **144 gas/cancel**
 
 #### Withdrawal data
+
 ```
 // Approved withdrawal data
 - For every withdrawal:
@@ -668,16 +697,17 @@ This data data is further transformed to make it more compressable:
     - Fee token ID: 1 bytes
     - Fee amount: 2 bytes （16 bits, 11 bits for the mantissa part and 5 for the exponent part)
 ```
-- => On-chain: **7 bytes/withdrawal**
-- => On-chain withdrawal calldata cost: 7 * 68 = **476 gas/on-chain withdrawal**
-- => (After Istanbul) On-chain withdrawal calldata cost: 7 * 16 = **112 gas/on-chain withdrawal**
-- => With data-availability: **10 bytes/withdrawal**
-- => With data-availability calldata cost: 10 * 68 = **680 gas/off-chain withdrawal**
-- => (After Istanbul) With data-availability calldata cost: 10 * 16 = **160 gas/off-chain withdrawal**
 
+- => On-chain: **7 bytes/withdrawal**
+- => On-chain withdrawal calldata cost: 7 \* 68 = **476 gas/on-chain withdrawal**
+- => (After Istanbul) On-chain withdrawal calldata cost: 7 \* 16 = **112 gas/on-chain withdrawal**
+- => With data-availability: **10 bytes/withdrawal**
+- => With data-availability calldata cost: 10 \* 68 = **680 gas/off-chain withdrawal**
+- => (After Istanbul) With data-availability calldata cost: 10 \* 16 = **160 gas/off-chain withdrawal**
 
 The approved withdrawal calldata also needs to be stored on-chain so that the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
-- => Data storage cost: (7 / 32) * 20,000 = **4,375 gas/withdrawal**
+
+- => Data storage cost: (7 / 32) \* 20,000 = **4,375 gas/withdrawal**
 
 ## Throughput (Ring Settlements)
 
@@ -702,9 +732,11 @@ The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is genera
 We can only prove circuits with a maximum of `2^28` ~= 268M constraints efficiently (the roots-of-unity of the alt_bn128 curve is `2^28`, so we need to stay below `2^28` constraints so we can use FFT for generating the proof).
 
 Currently, our bring settlement circuit with data-availability support uses ~68,500 constraints/ring:
+
 - `2^28` / 68,500 = 3900 rings/block
 
 Our ring settlement circuit without data-availability support uses ~60,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
+
 - `2^28` / 60,000 = 4500 rings/block
 
 ### Results
@@ -712,48 +744,47 @@ Our ring settlement circuit without data-availability support uses ~60,000 const
 In a single block, we are currently limited by the number of constraints used in the circuit. Committing and verifying a proof costs _only_ ~350,000 gas so multiple blocks can be committed if needed.
 
 Using 2 (6 after istanbul) blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
-- => (8,000,000 - 350,000 * 2) / 1,360 = ~5350 rings/Ethereum block = **~350 rings/second**
-- => (After Istanbul) (8,000,000 - 225,000 * 6) / 320 = ~20800 rings/Ethereum block = **~1400 rings/second**
+
+- => (8,000,000 - 350,000 \* 2) / 1,360 = ~5350 rings/Ethereum block = **~350 rings/second**
+- => (After Istanbul) (8,000,000 - 225,000 \* 6) / 320 = ~20800 rings/Ethereum block = **~1400 rings/second**
 
 Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can commit and verify in a single Ethereum block:
+
 - => 8,000,000 / 350,000 = ~23 blocks/Ethereum block
-- = ~4500 rings/block * 23 blocks/Ethereum block = ~103500 rings/Ethereum block = **~6900 rings/second**
+- = ~4500 rings/block \* 23 blocks/Ethereum block = ~103500 rings/Ethereum block = **~6900 rings/second**
 - (After Istanbul) => 8,000,000 / 225,000 = ~35 blocks/Ethereum block
-- (After Istanbul) = ~4500 rings/block * 35 blocks/Ethereum block = ~157500 rings/Ethereum block = **~10500 rings/second**
+- (After Istanbul) = ~4500 rings/block \* 35 blocks/Ethereum block = ~157500 rings/Ethereum block = **~10500 rings/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
+
 - Gas cost/ring settlement: ~300,000 gas
 - => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**.
 
-
-
-
-|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
-| :----- |:-------------: |:---------------:| :-------------:|
-| Trades per Ethereum Block | 26      | 5350 |      103500|
-| Trades per Second | 2      | 350        |           6900 |
-| Cost per Trade | 300,000 gas | 1500 gas | 77 gas|
-| Cost in USD per Trade <br> (1ETH=XUSD) | 0.1 | X* | X* |
+|                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
+| :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
+| Trades per Ethereum Block              |      26      |                   5350                   |                  103500                   |
+| Trades per Second                      |      2       |                   350                    |                   6900                    |
+| Cost per Trade                         | 300,000 gas  |                 1500 gas                 |                  77 gas                   |
+| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
 
 After Istanbul:
 
-|  | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability)  |
-| :----- |:-------------: |:---------------:| :-------------:|
-| Trades per Ethereum Block | 26      | 20800 |      157500|
-| Trades per Second | 2      | 1400        |           10500 |
-| Cost per Trade | 300,000 gas | 385 gas | 51 gas|
-| Cost in USD per Trade <br> (1ETH=XUSD) | 0.1 | X* | X* |
+|                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
+| :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
+| Trades per Ethereum Block              |      26      |                  20800                   |                  157500                   |
+| Trades per Second                      |      2       |                   1400                   |                   10500                   |
+| Cost per Trade                         | 300,000 gas  |                 385 gas                  |                  51 gas                   |
+| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
 
-* *Cost in USD per Trade* in the table does not cover off-chain proof generation.
+- _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 
 ### Future Improvements
 
 Without on-chain data-availability the throughput can increase another order of magnitude with [recursive SNARKs](https://ethresear.ch/t/reducing-the-verification-cost-of-a-snark-through-hierarchical-aggregation/5128).
 
-
 ### Proof Generation Cost
 
-Using an AWS server we can generate proofs for circuits with 256M contraints in ~40 minutes costing ~$0.001/trade.
+Using an AWS server we can generate proofs for circuits with 256M contraints in ~40 minutes costing ~\$0.001/trade.
 
 # Case Studies
 
@@ -770,6 +801,7 @@ In this case study, let's create a new exchange. The exchange owner just needs t
 Users create orders using accounts created on the exchange. Orders are added to the order books of the DEX.
 
 The DEX matches the order with another order. The order gets completely filled in the ring:
+
 - The GUI of the DEX can be updated immediately with the state after the ring settlement. The order can be shown as filled, but not yet verified.
 - The DEX sends the ring to the operator(s) of the exchange. Because these rings need to be settled in a reasonable time the operator needs to call `commitBlock` soon after receiving rings.
 - The operator generates proofs and calls `verifyBlocks` within the maximum time allowed
@@ -777,6 +809,7 @@ The DEX matches the order with another order. The order gets completely filled i
 The DEX could now show an extra 'Verified" symbol for the filling of the order.
 
 An order can be in the following states:
+
 - **Unmatched** in an order-book
 - **Matched** by the DEX
 - **Committed** in a block sent in `commitBlock`
@@ -802,6 +835,7 @@ The account balance is updated between trades as you'd expect.
 The user then wants to withdraw (a part of) the balance. He can let the operator know on-chain, or he can just send a request off-chain. The only difference is that when the request is made off-chain the operator can choose when to do the withdrawal so there is no guarantee when it will be done. In any case, there will be a delay between the request for withdrawal and when the operator includes the withdrawal in a block. In this period the operator is free to keep using the balances in the account to settle rings.
 
 After some time the operator includes the withdrawal in a block. Two things are done when this happens:
+
 - The balance in the Accounts Merkle tree is subtracted with the amount withdrawn in the circuit (if possible of course, otherwise nothing is withdrawn)
 - The smart contract adds the amount that is withdrawn to a list stored on-chain.
 
@@ -812,5 +846,6 @@ This mechanism is needed to support delayed proof submission. If the proof is av
 Once the operators have submitted all the proofs necessary for the block containing the withdrawal to be finalized, the user is finally able to call `withdrawFromApprovedWithdrawal` on-chain with the necessary information when the withdrawal was done to get the tokens out of the smart contract.
 
 Let's now look at the case where the withdrawal request was done by an operator, but the block containing the withdrawal needs to be reverted. Two things happen automatically by the revert:
+
 - The Merkle tree root is restored as it was before the withdrawal. The balance is restored.
 - The list of withdrawals we stored on-chain for the reverted block is thrown away when reverting. A user was never able to withdraw from these in `withdrawFromApprovedWithdrawal` because the block associated with the withdraw list was never marked as finalized.

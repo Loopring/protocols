@@ -11,10 +11,11 @@ import {
   ExchangeState,
   OrderInfo,
   RingInfo,
-  RingSettlementSimulatorReport,
+  DetailedSimulatorReport,
   SimulatorReport,
   TradeHistory,
-  WithdrawalRequest
+  WithdrawalRequest,
+  InternalTransferRequest
 } from "./types";
 
 interface SettlementValues {
@@ -198,6 +199,110 @@ export class Simulator {
     ].balance.add(fee);
 
     return newExchangeState;
+  }
+
+  public internalTransfer(
+    exchangeState: ExchangeState,
+    operatorAccountID: number,
+    accountFromID: number,
+    accountToID: number,
+    tokenID: number,
+    amountWithdrawn: BN,
+    feeTokenID: number,
+    fee: BN
+  ) {
+    const newExchangeState = this.copyExchangeState(exchangeState);
+
+    const accountFrom = newExchangeState.accounts[accountFromID];
+    const accountTo = newExchangeState.accounts[accountToID];
+
+    // Update balanceF
+    accountFrom.balances[feeTokenID].balance = accountFrom.balances[
+      feeTokenID
+    ].balance.sub(fee);
+
+    // Update balance from
+    accountFrom.balances[tokenID].balance = accountFrom.balances[
+      tokenID
+    ].balance.sub(amountWithdrawn);
+    accountFrom.nonce++;
+
+    // Update balance to
+    accountTo.balances[tokenID].balance = accountTo.balances[
+      tokenID
+    ].balance.add(amountWithdrawn);
+
+    // Update operator
+    const operator = newExchangeState.accounts[operatorAccountID];
+    operator.balances[feeTokenID].balance = operator.balances[
+      feeTokenID
+    ].balance.add(fee);
+
+    return newExchangeState;
+  }
+
+  public internalTransferFromInputData(
+    transfer: InternalTransferRequest,
+    exchangeState: ExchangeState,
+    operatorAccountID: number
+  ) {
+    const fee = roundToFloatValue(transfer.fee, Constants.Float16Encoding);
+
+    const accountFrom = exchangeState.accounts[transfer.accountFromID];
+    let balanceFrom = accountFrom.balances[transfer.transTokenID].balance;
+    if (transfer.transTokenID === transfer.feeTokenID) {
+      balanceFrom = balanceFrom.sub(fee);
+    }
+    const amountTrans = roundToFloatValue(
+      transfer.amount,
+      Constants.Float24Encoding
+    );
+
+    // Update the Merkle tree with the input data
+    const newExchangeState = this.internalTransfer(
+      exchangeState,
+      operatorAccountID,
+      transfer.accountFromID,
+      transfer.accountToID,
+      transfer.transTokenID,
+      amountTrans,
+      transfer.feeTokenID,
+      fee
+    );
+
+    const paymentsFrom: DetailedTokenTransfer = {
+      description: "From",
+      token: 0,
+      from: transfer.accountFromID,
+      to: operatorAccountID,
+      amount: new BN(0),
+      subPayments: []
+    };
+    const payAmount: DetailedTokenTransfer = {
+      description: "Amount",
+      token: transfer.transTokenID,
+      from: transfer.accountFromID,
+      to: transfer.accountToID,
+      amount: transfer.amount,
+      subPayments: []
+    };
+    const payFee: DetailedTokenTransfer = {
+      description: "Fee",
+      token: transfer.feeTokenID,
+      from: transfer.accountFromID,
+      to: operatorAccountID,
+      amount: transfer.fee,
+      subPayments: []
+    };
+    paymentsFrom.subPayments.push(payAmount);
+    paymentsFrom.subPayments.push(payFee);
+
+    const simulatorReport: DetailedSimulatorReport = {
+      exchangeStateBefore: exchangeState,
+      exchangeStateAfter: newExchangeState,
+      detailedTransfers: [paymentsFrom]
+    };
+    return simulatorReport;
   }
 
   public cancelOrderFromInputData(
@@ -489,7 +594,7 @@ export class Simulator {
     detailedTransfers.push(paymentsB);
     detailedTransfers.push(paymentsOperator);
 
-    const simulatorReport: RingSettlementSimulatorReport = {
+    const simulatorReport: DetailedSimulatorReport = {
       exchangeStateBefore: exchangeState,
       exchangeStateAfter: newExchangeState,
       detailedTransfers

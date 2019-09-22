@@ -89,6 +89,29 @@ export interface DepositBlock {
   count: number;
 }
 
+export interface InternalTransferRequest {
+  accountFromID: number;
+  accountToID: number;
+
+  transTokenID: number;
+  amount: BN;
+
+  feeTokenID: number;
+  fee: BN;
+
+  label: number;
+
+  signature?: Signature;
+}
+
+export interface InternalTransferBlock {
+  transfers: InternalTransferRequest[];
+
+  onchainDataAvailability?: boolean;
+
+  operatorAccountID?: number;
+}
+
 export interface WithdrawalRequest {
   exchangeId: number;
   accountID: number;
@@ -210,7 +233,7 @@ export interface DetailedTokenTransfer {
   subPayments: DetailedTokenTransfer[];
 }
 
-export interface RingSettlementSimulatorReport {
+export interface DetailedSimulatorReport {
   exchangeStateBefore: ExchangeState;
   exchangeStateAfter: ExchangeState;
   detailedTransfers: DetailedTokenTransfer[];

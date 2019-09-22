@@ -1,5 +1,6 @@
 import BN from "bn.js";
 import { FloatEncoding } from "./float";
+import { Balance } from "./types";
 
 export class Constants {
   static readonly TREE_DEPTH_TRADING_HISTORY = 14;
@@ -37,4 +38,9 @@ export class Constants {
     "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     10
   );
+
+  static readonly DefaultBalance: Balance = {
+    balance: new BN(0),
+    tradeHistory: {}
+  };
 }
