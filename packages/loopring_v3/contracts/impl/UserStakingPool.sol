@@ -35,8 +35,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     struct Staking {
         uint   balance;        // Total amount of LRC staked or rewarded
-        uint64 depositedAt;
-        uint64 claimedAt;      // timestamp from which more points will be accumulated
+        uint   depositedAt;
+        uint   claimedAt;      // timestamp from which more points will be accumulated
         uint   claimedReward;  // Total amount of LRC claimed as reward.
     }
 
