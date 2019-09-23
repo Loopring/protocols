@@ -82,7 +82,7 @@ contract UniversalRegistry is IUniversalRegistry {
 
         protocols.push(protocol);
         versionMap[version] = protocol;
-        protocolMap[protocol] = Protocol(protocol, manager, version, true, true);
+        protocolMap[protocol] = Protocol(protocol, true, true, manager, version);
 
         if (defaultProtocolAddress == address(0)) {
             defaultProtocolAddress = protocol;
