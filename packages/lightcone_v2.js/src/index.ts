@@ -3,6 +3,7 @@ import ethereum from "./lib/wallet/ethereum";
 import ContractUtils from "./lib/wallet/ethereum/contracts/Contracts";
 import EthRpcUtils from "./lib/wallet/ethereum/eth";
 import Utils from "./lib/wallet/common/utils";
+import config from "./lib/wallet/config";
 
 import { exchange } from "./sign/exchange";
 import { MetaMask } from "./wallet/metaMask";
@@ -10,6 +11,7 @@ import { privateKey } from "./wallet/privateKey";
 
 export {
   common,
+  config,
   ethereum,
   exchange,
   MetaMask,
