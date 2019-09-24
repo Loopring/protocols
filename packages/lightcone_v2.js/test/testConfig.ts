@@ -15,8 +15,51 @@ describe("config test", function() {
 
     let tokens = config.getTokens();
     assert.strictEqual(tokens.length, 124);
+
+    // ETH
+    let eth = config.getTokenBySymbol("ETH");
+    assert.strictEqual(eth.symbol, "ETH");
+    assert.strictEqual(eth.name, "Ether");
+    assert.strictEqual(eth.digits, 18);
+    assert.strictEqual(eth.address, "");
+    assert.strictEqual(eth.unit, "ETH");
+    assert.strictEqual(eth.website, "https://ethereum.org");
+    assert.strictEqual(eth.allowance, "1000000000000000000000");
+    assert.strictEqual(eth.allowanceWarn, "500000000000000000000");
+    assert.strictEqual(eth.precision, 6);
+    assert.strictEqual(eth.minTradeValue, 0.001);
+
+    // WETH
+    let weth = config.getTokenBySymbol("WETH");
+    assert.strictEqual(weth.symbol, "WETH");
+    assert.strictEqual(weth.name, "Wrapped Ether");
+    assert.strictEqual(weth.digits, 18);
+    assert.strictEqual(
+      weth.address,
+      "0x27Fe4A57c8D3f1BBA8CfD51DFEa3cA4188092E55"
+    );
+    assert.strictEqual(weth.unit, "WETH");
+    assert.strictEqual(weth.website, "https://weth.io");
+    assert.strictEqual(weth.allowance, "1000000000000000000000");
+    assert.strictEqual(weth.allowanceWarn, "100000000000000000000");
+    assert.strictEqual(weth.precision, 6);
+    assert.strictEqual(weth.minTradeValue, 0.001);
+
+    // LRC
     let lrc = config.getTokenBySymbol("LRC");
+    assert.strictEqual(lrc.symbol, "LRC");
+    assert.strictEqual(lrc.name, "Loopring");
     assert.strictEqual(lrc.digits, 18);
+    assert.strictEqual(
+      lrc.address,
+      "0x9032DBF5669341C3D95BC02b4bdE90e4e051dB35"
+    );
+    assert.strictEqual(lrc.unit, "LRC");
+    assert.strictEqual(lrc.website, "https://loopring.org");
+    assert.strictEqual(lrc.allowance, "1000000000000000000000");
+    assert.strictEqual(lrc.allowanceWarn, "50000000000000000000");
+    assert.strictEqual(lrc.precision, 6);
+    assert.strictEqual(lrc.minTradeValue, 0.001);
 
     let markets = config.getMarkets();
     assert.strictEqual(markets.length, 43);
