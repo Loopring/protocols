@@ -19,7 +19,13 @@ pragma solidity ^0.5.11;
 
 contract ITokenSeller
 {
-    function sellForLRC(address token, uint amount) external;
+    function sellToken(
+        address tokenS,
+        uint amountS,
+        address tokenB
+        )
+        external
+        returns (bool success);
 }
 
 /// @title IProtocolFeeVault
@@ -86,7 +92,7 @@ contract IProtocolFeeVault
 
     /// @dev Sets token swapper address, only callable by the owner.
     /// @param _tokenSellerAddress The address of Oedax contract.
-    function setTokenSwapper(address _tokenSellerAddress) external;
+    function setTokenSeller(address _tokenSellerAddress) external;
 
     /// @dev Sets the Loopring DAO address, only callable by the owner.
     /// @param _daoAddress The address of the DAO contract.

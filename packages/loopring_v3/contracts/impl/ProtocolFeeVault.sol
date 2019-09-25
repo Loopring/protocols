@@ -87,7 +87,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         remainingBurn = accumulatedBurn.sub(claimedBurn);
     }
 
-    function setTokenSwapper(address _tokenSellerAddress)
+    function setTokenSeller(address _tokenSellerAddress)
         external
         onlyOwner
     {
@@ -141,7 +141,10 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
             token.safeTransferAndVerify(tokenSellerAddress, amount);
         }
 
-        ITokenSeller(tokenSellerAddress).sellForLRC(token, amount);
+        require(
+            ITokenSeller(tokenSellerAddress).sellToken(token, amount, lrcAddress),
+            "SELL_FAILURE"
+        );
 
         emit TokenSold(token, amount);
     }
