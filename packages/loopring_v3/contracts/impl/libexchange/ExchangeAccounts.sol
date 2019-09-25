@@ -82,7 +82,8 @@ library ExchangeAccounts
         if (isAccountNew) {
             if (S.addressWhitelist != address(0)) {
                 require(
-                    IAddressWhitelist(S.addressWhitelist).isWhitelisted(msg.sender, permission),
+                    IAddressWhitelist(S.addressWhitelist)
+                        .isAddressWhitelisted(msg.sender, permission),
                     "ADDRESS_NOT_WHITELISTED"
                 );
             }

@@ -22,11 +22,11 @@ pragma solidity ^0.5.11;
 contract IAddressWhitelist
 {
     /// @dev Checks if an address has been whitelisted.
-    /// @param user The user to check if being whitelisted.
+    /// @param addr The address to check against the whitelist.
     /// @param permission An arbitrary data from the caller to indicate permission.
     /// @return true if the address is whitelisted
-    function isWhitelisted(
-        address user,
+    function isAddressWhitelisted(
+        address addr,
         bytes   memory permission
         )
         public
