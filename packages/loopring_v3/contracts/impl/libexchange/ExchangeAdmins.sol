@@ -224,7 +224,7 @@ library ExchangeAdmins
         amount = totalBalance - userBalance;
 
         if (amount > 0) {
-            require(token.safeTransfer(recipient, amount), "TRANSFER_FAILED");
+            token.safeTransferAndVerify(recipient, amount);
         }
     }
 

@@ -131,10 +131,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         }
 
         // transfer LRC to user
-        require(
-            lrcAddress.safeTransfer(msg.sender, _amount),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferAndVerify(msg.sender, _amount);
 
         emit LRCWithdrawn(msg.sender, _amount);
     }

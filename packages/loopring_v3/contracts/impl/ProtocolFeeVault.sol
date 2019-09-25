@@ -57,12 +57,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         nonReentrant
     {
         require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
-
-        require(
-            lrcAddress.safeTransfer(msg.sender, amount),
-            "TRANSFER_FAILURE"
-        );
-
+        lrcAddress.safeTransferAndVerify(msg.sender, amount);
         claimedReward = claimedReward.add(amount);
     }
 
@@ -119,10 +114,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         uint amountBurn;
         (, , , , , amountBurn, amountDAO, ) = getLRCFeeStats();
 
-        require(
-            lrcAddress.safeTransfer(daoAddress, amountDAO),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferAndVerify(daoAddress, amountDAO);
 
         require(BurnableERC20(lrcAddress).burn(amountBurn), "BURN_FAILURE");
 
@@ -146,10 +138,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         if (token == address(0)) {
             tokenSellerAddress.sendETHAndVerify(amount, gasleft());
         } else {
-            require(
-                token.safeTransfer(tokenSellerAddress, amount),
-                "TRANSFER_FAILURE"
-            );
+            token.safeTransferAndVerify(tokenSellerAddress, amount);
         }
 
         ITokenSeller(tokenSellerAddress).sellForLRC(token, amount);
