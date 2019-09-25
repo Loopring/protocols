@@ -28,8 +28,6 @@
     "watch": "npm-watch compile",
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc && npm run genabi",
     "test": "npm run transpile && node --max-old-space-size=4096 `which truffle` test --network development",
-    "testOnchain": "npm run test -- transpiled/test/onchain/*.js",
-    "testOffchain": "npm run test -- transpiled/test/offchain/*.js",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",

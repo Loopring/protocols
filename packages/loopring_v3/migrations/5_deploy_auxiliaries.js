@@ -7,7 +7,7 @@ var DowntimeCostCalculator = artifacts.require(
 
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
-var protocolFeeValutAddress = "[undeployed]";
+var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "[undeployed]";
 
 module.exports = function(deployer, network, accounts) {
