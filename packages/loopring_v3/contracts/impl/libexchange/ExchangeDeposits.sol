@@ -183,17 +183,14 @@ library ExchangeDeposits
 
         require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
         uint feeSurplus = msg.value.sub(totalRequiredETH);
-        msg.sender.transferETH(feeSurplus, gasleft());
+        msg.sender.sendETHAndVerify(feeSurplus, gasleft());
 
         // Transfer the tokens from the owner into this contract
         if (amount > 0 && tokenAddress != address(0)) {
-            require(
-                tokenAddress.safeTransferFrom(
-                    accountOwner,
-                    address(this),
-                    amount
-                ),
-                "INSUFFICIENT_FUND"
+            tokenAddress.safeTransferFromAndVerify(
+                accountOwner,
+                address(this),
+                amount
             );
         }
     }

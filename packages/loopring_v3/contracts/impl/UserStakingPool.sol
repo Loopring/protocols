@@ -90,10 +90,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         require(amount > 0, "ZERO_VALUE");
 
         // Lets trandfer LRC first.
-        require(
-            lrcAddress.safeTransferFrom(msg.sender, address(this), amount),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amount);
 
         Staking storage user = stakings[msg.sender];
 

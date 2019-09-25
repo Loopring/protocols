@@ -66,7 +66,7 @@ library AddressUtil
 
     // Works like address.transfer but with a customizable gas limit
     // Make sure your code is safe for reentrancy when using this function!
-    function transferETH(
+    function sendETHAndVerify(
         address to,
         uint    amount,
         uint    gasLimit

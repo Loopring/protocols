@@ -27,53 +27,10 @@ import "../lib/ReentrancyGuard.sol";
 import "../iface/IProtocolFeeVault.sol";
 
 
-/// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IOedax.so
-contract IOedax
-{
-    /// @param askToken The ask (base) token. Prices are in form of 'bids/asks'.
-    /// @param bidToken The bid (quote) token.
-    /// @param minAskAmount The minimum ask amount.
-    /// @param minBidAmount The minimum bid amount.
-    /// @param P Numerator part of the target price `p`.
-    /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
-    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T1 The minimum auction duration in second.
-    /// @param T2 The maximum auction duration in second.
-    /// @return auctionAddr Auction address.
-    function createAuction(
-        address askToken,
-        address bidToken,
-        uint    minAskAmount,
-        uint    minBidAmount,
-        uint64  P,
-        uint64  S,
-        uint8   M,
-        uint    T1,
-        uint    T2
-        )
-        public
-        payable
-        returns (address payable auctionAddr);
-
-    mapping (address => uint) public tokenRankMap;
-
-    uint public creatorEtherStake;
-}
-
-
-/// @dev See https://github.com/Loopring/protocols/blob/master/packages/oedax_v1/contracts/iface/IAuction.so
-contract IAuction
-{
-    function settle() public;
-    function ask(uint amount) external returns (uint accepted);
-}
-
-
 /// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 {
-    uint public constant MIN_ETHER_TO_KEEP = 1 ether;
     using AddressUtil       for address;
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
@@ -89,7 +46,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
         require(_userStakingPoolAddress != address(0), "ZERO_ADDRESS");
 
-        allowOwnerWithdrawal = true;
         lrcAddress = _lrcAddress;
         userStakingPoolAddress = _userStakingPoolAddress;
     }
@@ -136,12 +92,13 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         remainingBurn = accumulatedBurn.sub(claimedBurn);
     }
 
-    function setOedax(address _oedaxAddress)
+    function setTokenSwapper(address _tokenSellerAddress)
         external
         onlyOwner
     {
-        require(_oedaxAddress != oedaxAddress, "SAME_ADDRESS");
-        oedaxAddress = _oedaxAddress;
+        require(_tokenSellerAddress != address(0), "ZERO_ADDRESS");
+        require(_tokenSellerAddress != tokenSellerAddress, "SAME_ADDRESS");
+        tokenSellerAddress = _tokenSellerAddress;
     }
 
     function setDAO(address _daoAddress)
@@ -152,35 +109,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         daoAddress = _daoAddress;
     }
 
-    function disableOwnerWithdrawal()
-        external
-        onlyOwner
-    {
-        require(allowOwnerWithdrawal, "DISABLED_ALREADY");
-        require(oedaxAddress != address(0x0), "OEDAX_ADDRESS_ZERO");
-
-        allowOwnerWithdrawal = false;
-    }
-
-    function withdraw(
-        address token,
-        uint    amount
-        )
-        external
-        nonReentrant
-        onlyOwner
-    {
-        require(allowOwnerWithdrawal, "DISABLED_ALREADY");
-        require(token != lrcAddress, "INVALD_TOKEN");
-
-        if (token == address(0)) {
-            owner.transferETH(amount, gasleft());
-        } else {
-            require(token.safeTransfer(owner, amount), "TRANSFER_FAILURE");
-        }
-
-        emit OwnerWithdrawal(token, amount);
-    }
 
     function withdrawLRCToDAO()
         external
@@ -192,7 +120,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         (, , , , , amountBurn, amountDAO, ) = getLRCFeeStats();
 
         require(
-            lrcAddress.safeTransferFrom(address(this), daoAddress, amountDAO),
+            lrcAddress.safeTransfer(daoAddress, amountDAO),
             "TRANSFER_FAILURE"
         );
 
@@ -204,65 +132,28 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         emit LRCWithdrawnToDAO(amountDAO, amountBurn);
     }
 
-    function settleAuction(address auction)
-        external
-        nonReentrant
-    {
-        require(auction != address(0), "ZERO_ADDRESS");
-        IAuction(auction).settle();
-    }
-
-    function auctionOffTokens(
-        address tokenS,
-        uint    amountS,
-        bool    sellForEther,
-        uint    minAskAmount,
-        uint    minBidAmount,
-        uint64  P,
-        uint64  S,
-        uint8   M,
-        uint    T
+    function sellTokenForLRC(
+        address token,
+        uint    amount
         )
         external
         nonReentrant
-        onlyOwner
-        returns (
-            address payable auctionAddr
-        )
     {
-        require(oedaxAddress != address(0), "NO_OEDAX_SET");
-        require(amountS > 0, "ZERO_AMOUNT");
+        require(tokenSellerAddress != address(0), "NO_OEDAX_SET");
+        require(amount > 0, "ZERO_AMOUNT");
+        require(token != lrcAddress, "PROHIBITED");
 
-        address tokenB = sellForEther ? address(0) : lrcAddress;
-        require(tokenS != tokenB, "SAME_TOKEN");
-
-        IOedax oedax = IOedax(oedaxAddress);
-        uint ethStake = oedax.creatorEtherStake();
-
-        auctionAddr = oedax.createAuction.value(ethStake)(
-            tokenS,  // askToken
-            tokenB,  // bidToken
-            minAskAmount,
-            minBidAmount,
-            P,
-            S,
-            M,
-            T,
-            T * 2
-        );
-
-        if (tokenS == address(0)) {
-            auctionAddr.transferETH(amountS, gasleft());
+        if (token == address(0)) {
+            tokenSellerAddress.sendETHAndVerify(amount, gasleft());
         } else {
-            require(ERC20(tokenS).approve(auctionAddr, amountS), "AUTH_FAILED");
-            IAuction(auctionAddr).ask(amountS);
+            require(
+                token.safeTransfer(tokenSellerAddress, amount),
+                "TRANSFER_FAILURE"
+            );
         }
 
-        emit AuctionStarted(
-            tokenS,
-            amountS,
-            tokenB,
-            auctionAddr
-        );
+        ITokenSeller(tokenSellerAddress).sellForLRC(token, amount);
+
+        emit TokenSold(token, amount);
     }
 }

@@ -22,6 +22,20 @@ pragma solidity ^0.5.11;
 /// @author Brecht Devos - <brecht@loopring.org>
 library ERC20SafeTransfer
 {
+    function safeTransferAndVerify(
+        address token,
+        address to,
+        uint    value
+        )
+        internal
+    {
+       safeTransferWithGasLimitAndVerify(
+            token,
+            to,
+            value,
+            gasleft()
+        );
+    }
 
     function safeTransfer(
         address token,
@@ -36,6 +50,20 @@ library ERC20SafeTransfer
             to,
             value,
             gasleft()
+        );
+    }
+
+    function safeTransferWithGasLimitAndVerify(
+        address token,
+        address to,
+        uint    value,
+        uint    gasLimit
+        )
+        internal
+    {
+        require(
+            safeTransferWithGasLimit(token, to, value, gasLimit),
+            "TRANSFER_FAILED"
         );
     }
 
@@ -62,6 +90,24 @@ library ERC20SafeTransfer
         return checkReturnValue(success);
     }
 
+
+    function safeTransferFromAndVerify(
+        address token,
+        address from,
+        address to,
+        uint    value
+        )
+        internal
+    {
+        safeTransferFromWithGasLimitAndVerify(
+            token,
+            from,
+            to,
+            value,
+            gasleft()
+        );
+    }
+
     function safeTransferFrom(
         address token,
         address from,
@@ -78,6 +124,25 @@ library ERC20SafeTransfer
             value,
             gasleft()
         );
+    }
+
+    function safeTransferFromWithGasLimitAndVerify(
+        address token,
+        address from,
+        address to,
+        uint    value,
+        uint    gasLimit
+        )
+        internal
+    {
+        bool result = safeTransferFromWithGasLimit(
+            token,
+            from,
+            to,
+            value,
+            gasLimit
+        );
+        require(result, "TRANSFER_FAILED");
     }
 
     function safeTransferFromWithGasLimit(

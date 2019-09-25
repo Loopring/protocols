@@ -81,8 +81,10 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         onlyOwner
     {
         require(
-            _basePricePerMinute > 0 && _maxPenalty > 0 &&
-            _gracePeriodPricePerMinute > 0 && _maxAwailableDowntimeMinutes > 0,
+            _basePricePerMinute > 0 &&
+            _maxPenalty > 0 &&
+            _gracePeriodPricePerMinute > 0 &&
+            _maxAwailableDowntimeMinutes > 0,
             "ZERO_VALUE"
         );
         require(_gracePeriodPricePerMinute <= _basePricePerMinute, "INVALID_PRICE");
