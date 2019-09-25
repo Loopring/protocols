@@ -54,6 +54,12 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         onlyOwner
     {
+        require(
+            userStakingPoolAddress != _userStakingPoolAddress ||
+            tokenSellerAddress != _tokenSellerAddress ||
+            daoAddress != _daoAddress,
+            "SAME_ADDRESSES"
+        );
         userStakingPoolAddress = _userStakingPoolAddress;
         tokenSellerAddress = _tokenSellerAddress;
         daoAddress = _daoAddress;
