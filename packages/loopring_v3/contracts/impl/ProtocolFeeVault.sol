@@ -80,32 +80,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         claimedReward = claimedReward.add(amount);
     }
 
-    function getLRCFeeStats()
-        public
-        view
-        returns (
-            uint accumulatedFees,
-            uint accumulatedBurn,
-            uint accumulatedDAOFund,
-            uint accumulatedReward,
-            uint remainingFees,
-            uint remainingBurn,
-            uint remainingDAOFund,
-            uint remainingReward
-        )
-    {
-        remainingFees = ERC20(lrcAddress).balanceOf(address(this));
-        accumulatedFees = remainingFees.add(claimedReward).add(claimedDAOFund).add(claimedBurn);
-
-        accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
-        accumulatedDAOFund = accumulatedFees.mul(DAO_PERDENTAGE) / 100;
-        accumulatedBurn = accumulatedFees.sub(accumulatedReward).sub(accumulatedDAOFund);
-
-        remainingReward = accumulatedReward.sub(claimedReward);
-        remainingDAOFund = accumulatedDAOFund.sub(claimedDAOFund);
-        remainingBurn = accumulatedBurn.sub(claimedBurn);
-    }
-
     function fundDAO()
         external
         nonReentrant
@@ -151,5 +125,31 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         );
 
         emit TokenSold(token, amount);
+    }
+
+    function getLRCFeeStats()
+        public
+        view
+        returns (
+            uint accumulatedFees,
+            uint accumulatedBurn,
+            uint accumulatedDAOFund,
+            uint accumulatedReward,
+            uint remainingFees,
+            uint remainingBurn,
+            uint remainingDAOFund,
+            uint remainingReward
+        )
+    {
+        remainingFees = ERC20(lrcAddress).balanceOf(address(this));
+        accumulatedFees = remainingFees.add(claimedReward).add(claimedDAOFund).add(claimedBurn);
+
+        accumulatedReward = accumulatedFees.mul(REWARD_PERCENTAGE) / 100;
+        accumulatedDAOFund = accumulatedFees.mul(DAO_PERDENTAGE) / 100;
+        accumulatedBurn = accumulatedFees.sub(accumulatedReward).sub(accumulatedDAOFund);
+
+        remainingReward = accumulatedReward.sub(claimedReward);
+        remainingDAOFund = accumulatedDAOFund.sub(claimedDAOFund);
+        remainingBurn = accumulatedBurn.sub(claimedBurn);
     }
 }

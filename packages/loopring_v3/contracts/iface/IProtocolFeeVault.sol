@@ -72,6 +72,20 @@ contract IProtocolFeeVault
     /// @param amount The amount of LRC to be claimed.
     function claimStakingReward(uint amount) external;
 
+    /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
+    ///      the predefined percentages.
+    function fundDAO() external;
+
+    /// @dev Sells a non-LRC token or Ether to LRC. If no TokenSeller is set,
+    ///      the tokens or Ether will be sent to the owner.
+    /// @param token The token or ether (0x0) to sell.
+    /// @param amount THe amout of token/ether to sell.
+    function sellTokenForLRC(
+        address token,
+        uint    amount
+        )
+        external;
+
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
     /// @return accumulatedDAOFund The accumulated amount of LRC to burn.
@@ -94,17 +108,4 @@ contract IProtocolFeeVault
             uint remainingDAOFund,
             uint remainingReward
         );
-
-    /// @dev Sells a non-LRC token or Ether to LRC, only callable by the owner.
-    /// @param token The token or ether (0x0) to sell.
-    /// @param amount THe amout of token/ether to sell.
-    function sellTokenForLRC(
-        address token,
-        uint    amount
-        )
-        external;
-
-    /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
-    ///      the predefined percentages.
-    function fundDAO() external;
 }
