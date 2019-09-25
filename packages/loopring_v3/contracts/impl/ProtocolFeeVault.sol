@@ -110,12 +110,13 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         nonReentrant
     {
-        require(daoAddress != address(0), "ZERO_DAO_ADDRESS");
         uint amountDAO;
         uint amountBurn;
         (, , , , , amountBurn, amountDAO, ) = getLRCFeeStats();
 
-        lrcAddress.safeTransferAndVerify(daoAddress, amountDAO);
+        address recipient = daoAddress == address(0) ? owner : daoAddress;
+
+        lrcAddress.safeTransferAndVerify(recipient, amountDAO);
 
         require(BurnableERC20(lrcAddress).burn(amountBurn), "BURN_FAILURE");
 
@@ -132,17 +133,19 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         nonReentrant
     {
-        require(tokenSellerAddress != address(0), "ZERO_TOKEN_SELLER_ADDRESS");
         require(amount > 0, "ZERO_AMOUNT");
         require(token != lrcAddress, "PROHIBITED");
 
+        address recipient = tokenSellerAddress == address(0) ? owner : tokenSellerAddress;
+
         if (token == address(0)) {
-            tokenSellerAddress.sendETHAndVerify(amount, gasleft());
+            recipient.sendETHAndVerify(amount, gasleft());
         } else {
-            token.safeTransferAndVerify(tokenSellerAddress, amount);
+            token.safeTransferAndVerify(recipient, amount);
         }
 
         require(
+            tokenSellerAddress == address(0) ||
             ITokenSeller(tokenSellerAddress).sellToken(token, amount, lrcAddress),
             "SELL_FAILURE"
         );
