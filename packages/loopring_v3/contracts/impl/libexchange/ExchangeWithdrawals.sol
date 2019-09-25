@@ -103,6 +103,7 @@ library ExchangeWithdrawals
 
         // Check ETH value sent, can be larger than the expected withdraw fee
         require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
+
         // Send surplus of ETH back to the sender
         msg.sender.sendETHAndVerify(msg.value.sub(S.withdrawalFeeETH), gasleft());
         // Add the withdraw to the withdraw chain

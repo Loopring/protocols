@@ -17,17 +17,6 @@
 pragma solidity ^0.5.11;
 
 
-contract ITokenSeller
-{
-    function sellToken(
-        address tokenS,
-        uint amountS,
-        address tokenB
-        )
-        external
-        returns (bool success);
-}
-
 /// @title IProtocolFeeVault
 /// @dev This smart contract manages the distribution of protocol fees.
 ///     Tokens other than LRC will be auctioned off for LRC using Oedax. The owner

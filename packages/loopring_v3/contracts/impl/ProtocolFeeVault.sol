@@ -25,7 +25,7 @@ import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IProtocolFeeVault.sol";
-
+import "../iface/ITokenSeller.sol";
 
 /// @title An Implementation of IProtocolFeeVault.
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -103,7 +103,6 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         require(_daoAddress != daoAddress, "SAME_ADDRESS");
         daoAddress = _daoAddress;
     }
-
 
     function withdrawLRCToDAO()
         external
