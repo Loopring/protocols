@@ -16,12 +16,18 @@
 */
 pragma solidity ^0.5.11;
 
-
+/// @title ITokenSeller
+/// @dev Use this contract to sell tokenS for as many tokenB.
+/// @author Daniel Wang  - <daniel@loopring.org>
 contract ITokenSeller
 {
+    /// @dev Sells tokenS for tokenB
+    /// @param tokenS The token or Ether (0x0) to sell.
+    /// @param amountS The amount to sell.
+    /// @param tokenB The token to buy.
     function sellToken(
         address tokenS,
-        uint amountS,
+        uint    amountS,
         address tokenB
         )
         external
