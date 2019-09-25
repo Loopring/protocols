@@ -1,4 +1,4 @@
-import { expectThrow } from "./expectThrow";
+import { expectThrow } from "../expectThrow";
 
 const Claimable = artifacts.require("Claimable");
 
