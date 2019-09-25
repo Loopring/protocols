@@ -95,7 +95,7 @@ contract IProtocolFeeVault
     /// @return remainingBurn The remaining amount of LRC to burn.
     /// @return remainingDAOFund The remaining amount of LRC as developer pool.
     /// @return remainingReward The remaining amount of LRC as staking reward.
-    function getLRCFeeStats()
+    function getProtocolFeeStats()
         public
         view
         returns (

@@ -55,8 +55,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         external
         onlyOwner
     {
-        require(_protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
+        // Allow zero-address
         protocolFeeVaultAddress = _protocolFeeVaultAddress;
+        emit ProtocolFeeVaultChanged(protocolFeeVaultAddress);
     }
 
     function getTotalStaking()
@@ -224,12 +225,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         )
     {
         Staking storage staking = stakings[user];
-
         totalPoints = total.balance.mul(now.sub(total.claimedAt));
         userPoints = staking.balance.mul(now.sub(staking.claimedAt));
 
-        if (totalPoints != 0 && userPoints != 0) {
-            (, , , , , , , claimableReward) = IProtocolFeeVault(protocolFeeVaultAddress).getLRCFeeStats();
+        if (protocolFeeVaultAddress != address(0) &&
+            totalPoints != 0 &&
+            userPoints != 0) {
+            (, , , , , , , claimableReward) = IProtocolFeeVault(protocolFeeVaultAddress).getProtocolFeeStats();
             claimableReward = claimableReward.mul(userPoints) / totalPoints;
         }
     }

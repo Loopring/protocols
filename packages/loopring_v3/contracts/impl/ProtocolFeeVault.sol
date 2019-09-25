@@ -86,7 +86,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     {
         uint amountDAO;
         uint amountBurn;
-        (, , , , , amountBurn, amountDAO, ) = getLRCFeeStats();
+        (, , , , , amountBurn, amountDAO, ) = getProtocolFeeStats();
 
         address recipient = daoAddress == address(0) ? owner : daoAddress;
 
@@ -127,7 +127,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         emit TokenSold(token, amount);
     }
 
-    function getLRCFeeStats()
+    function getProtocolFeeStats()
         public
         view
         returns (
