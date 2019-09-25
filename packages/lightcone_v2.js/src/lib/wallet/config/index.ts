@@ -169,6 +169,10 @@ function getWallets() {
   return data.wallets;
 }
 
+function getMaxAmountInWEI() {
+  return config.maxAmount;
+}
+
 export default {
   getTokenBySymbol,
   getTokenByAddress,
@@ -188,6 +192,7 @@ export default {
   getMarkets,
   getWalletAddress,
   getExchangeAddress,
+  getMaxAmountInWEI,
   getWallets,
   fromWEI,
   toWEI

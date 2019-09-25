@@ -17,23 +17,17 @@ export class Account {
   /**
    * Approve
    * @param symbol: approve token symbol
-   * @param amount: number amount to approve, e.g. 1.5
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public async approve(
-    symbol: string,
-    amount: number,
-    nonce: number,
-    gasPrice: number
-  ) {
+  public approve(symbol: string, nonce: number, gasPrice: number) {
     const token = config.getTokenBySymbol(symbol);
     const rawTx = new Transaction({
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
         _spender: config.getExchangeAddress(),
-        _value: amount
+        _value: config.getMaxAmountInWEI()
       }),
       chainId: config.getChainId(),
       nonce: fm.toHex(nonce),
