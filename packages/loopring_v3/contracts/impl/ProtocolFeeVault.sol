@@ -37,17 +37,32 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     using MathUint          for uint;
 
     constructor(
-        address _lrcAddress,
-        address _userStakingPoolAddress
+        address _lrcAddress
         )
         Claimable()
         public
     {
         require(_lrcAddress != address(0), "ZERO_ADDRESS");
-        require(_userStakingPoolAddress != address(0), "ZERO_ADDRESS");
-
         lrcAddress = _lrcAddress;
+    }
+
+    function updateSettings(
+        address _userStakingPoolAddress,
+        address _tokenSellerAddress,
+        address _daoAddress
+        )
+        external
+        onlyOwner
+    {
         userStakingPoolAddress = _userStakingPoolAddress;
+        tokenSellerAddress = _tokenSellerAddress;
+        daoAddress = _daoAddress;
+
+        emit SettingsUpdated(
+            userStakingPoolAddress,
+            tokenSellerAddress,
+            daoAddress
+        );
     }
 
     function claimStakingReward(
@@ -56,8 +71,12 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         nonReentrant
     {
-        require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
-        lrcAddress.safeTransferAndVerify(msg.sender, amount);
+        require(
+            userStakingPoolAddress != address(0) &&
+            msg.sender == userStakingPoolAddress,
+            "UNAUTHORIZED"
+        );
+        lrcAddress.safeTransferAndVerify(userStakingPoolAddress, amount);
         claimedReward = claimedReward.add(amount);
     }
 
@@ -87,24 +106,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         remainingBurn = accumulatedBurn.sub(claimedBurn);
     }
 
-    function setTokenSeller(address _tokenSellerAddress)
-        external
-        onlyOwner
-    {
-        require(_tokenSellerAddress != address(0), "ZERO_ADDRESS");
-        require(_tokenSellerAddress != tokenSellerAddress, "SAME_ADDRESS");
-        tokenSellerAddress = _tokenSellerAddress;
-    }
-
-    function setDAO(address _daoAddress)
-        external
-        onlyOwner
-    {
-        require(_daoAddress != daoAddress, "SAME_ADDRESS");
-        daoAddress = _daoAddress;
-    }
-
-    function withdrawLRCToDAO()
+    function fundDAO()
         external
         nonReentrant
     {
@@ -120,7 +122,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         claimedBurn = claimedBurn.add(amountBurn);
         claimedDAOFund = claimedDAOFund.add(amountDAO);
 
-        emit LRCWithdrawnToDAO(amountDAO, amountBurn);
+        emit DAOFunded(amountDAO, amountBurn);
     }
 
     function sellTokenForLRC(
@@ -130,7 +132,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         nonReentrant
     {
-        require(tokenSellerAddress != address(0), "NO_OEDAX_SET");
+        require(tokenSellerAddress != address(0), "ZERO_TOKEN_SELLER_ADDRESS");
         require(amount > 0, "ZERO_AMOUNT");
         require(token != lrcAddress, "PROHIBITED");
 

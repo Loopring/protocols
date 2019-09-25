@@ -40,7 +40,7 @@ contract IProtocolFeeVault
     uint claimedDAOFund;
     uint claimedBurn;
 
-    event LRCWithdrawnToDAO(
+    event DAOFunded(
         uint    amountDAO,
         uint    amountBurn
     );
@@ -48,6 +48,22 @@ contract IProtocolFeeVault
         address token,
         uint    amount
     );
+    event SettingsUpdated(
+        address _userStakingPoolAddress,
+        address _tokenSellerAddress,
+        address _daoAddress
+    );
+
+    /// @dev Sets depdending contract address. All these addresses can be zero.
+    /// @param _userStakingPoolAddress The address of the user stking pool.
+    /// @param _tokenSellerAddress The address of the token seller.
+    /// @param _daoAddress The address of the DAO contract.
+    function updateSettings(
+        address _userStakingPoolAddress,
+        address _tokenSellerAddress,
+        address _daoAddress
+        )
+        external;
 
     /// @dev Claims LRC as staking reward to the IUserStakingPool contract.
     ///      Note that this function can only be called by
@@ -79,14 +95,6 @@ contract IProtocolFeeVault
             uint remainingReward
         );
 
-    /// @dev Sets token swapper address, only callable by the owner.
-    /// @param _tokenSellerAddress The address of Oedax contract.
-    function setTokenSeller(address _tokenSellerAddress) external;
-
-    /// @dev Sets the Loopring DAO address, only callable by the owner.
-    /// @param _daoAddress The address of the DAO contract.
-    function setDAO(address _daoAddress) external;
-
     /// @dev Sells a non-LRC token or Ether to LRC, only callable by the owner.
     /// @param token The token or ether (0x0) to sell.
     /// @param amount THe amout of token/ether to sell.
@@ -98,5 +106,5 @@ contract IProtocolFeeVault
 
     /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
     ///      the predefined percentages.
-    function withdrawLRCToDAO() external;
+    function fundDAO() external;
 }
