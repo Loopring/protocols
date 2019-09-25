@@ -27,7 +27,7 @@ import "../iface/ITokenSeller.sol";
 /// @title An Implementation of ITokenSeller.
 /// @dev This contract simply transfers all assets to its owner.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract NoOpTokenSeller is Claimable, ReentrancyGuard, ITokenSeller
+contract NoopTokenSeller is Claimable, ReentrancyGuard, ITokenSeller
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
