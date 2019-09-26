@@ -6,6 +6,7 @@
   "walletAddressId": 0,
   "maxFeeBips": 20,
   "exchangeAddress": "0x1D307532A97879b866A6fE33bf4A517bD28DE854",
+  "maxAmount": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
   "markets": [
     {
       "tokenx": "LRC",
