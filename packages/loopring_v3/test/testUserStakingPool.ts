@@ -26,7 +26,17 @@ contract("UserStakingPool", (accounts: string[]) => {
     userStakingPool = await UserStakingPool.new(mockLRC.address);
   });
 
+  beforeEach(async () => {
+    await mockLRC.reset();
+    await mockProtocolFeeVault.reset();
+  });
+
   describe("UserStakingPool", () => {
+    beforeEach(async () => {
+      await mockLRC.reset();
+      await mockProtocolFeeVault.reset();
+    });
+
     describe("all readonly methods in default state", () => {
       it("should behave as sepected", async () => {
         const totalStaking = await userStakingPool.getTotalStaking();
@@ -39,7 +49,7 @@ contract("UserStakingPool", (accounts: string[]) => {
           3: claimableReward
         } = await userStakingPool.getUserStaking(owner1);
 
-        await timeTravel(1000000 * 2);
+        // await timeTravel(1000000 * 2);
 
         assert(withdrawalWaitTime.eq(MAX_TIME), "withdrawalWaitTime");
         assert(rewardWaitTime.eq(MAX_TIME), "rewardWaitTime");
@@ -54,8 +64,10 @@ contract("UserStakingPool", (accounts: string[]) => {
         const tx = await userStakingPool.stake(amount, { from: owner2 });
 
         truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
-          return evt.user === owner2 && !evt.amount.eq(amount);
+          return owner2 === evt.user && amount.eq(evt.amount);
         });
+
+        truffleAssert.eventNotEmitted(tx, "LRCRewarded");
       });
     });
   });
