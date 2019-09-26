@@ -40,15 +40,15 @@ contract IProtocolFeeVault
     uint claimedDAOFund;
     uint claimedBurn;
 
-    event DAOFunded(
+    event DAOFunded (
         uint    amountDAO,
         uint    amountBurn
     );
-    event TokenSold(
+    event TokenSold (
         address token,
         uint    amount
     );
-    event SettingsUpdated(
+    event SettingsUpdated (
         uint time
     );
 
