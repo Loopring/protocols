@@ -75,11 +75,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         nonReentrant
     {
-        require(
-            userStakingPoolAddress != address(0) &&
-            msg.sender == userStakingPoolAddress,
-            "UNAUTHORIZED"
-        );
+        require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
         lrcAddress.safeTransferAndVerify(userStakingPoolAddress, amount);
         claimedReward = claimedReward.add(amount);
     }
