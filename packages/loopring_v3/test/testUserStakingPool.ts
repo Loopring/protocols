@@ -235,25 +235,25 @@ contract("UserStakingPool", (accounts: string[]) => {
         await userstaking.withdraw(0, { from: owner3 });
       });
       it("ProtocolFeeValut status should as expected", async () => {
-        const feestatus = await protocolfee.getProtocolFeeStats();
+        const stats = await protocolfee.getProtocolFeeStats();
         // 30 is in statkeA test
         assert.equal(
-          feestatus.remainingFees,
+          stats.remainingFees,
           30 + (i + 1) * 36,
           "ProtocolFeeValut remainingFees should as exptectd"
         );
         assert.equal(
-          feestatus.remainingReward,
+          stats.remainingReward,
           0,
           "ProtocolFeeValut remainingReward should as exptectd"
         );
         assert.equal(
-          feestatus.remainingDAOFund,
+          stats.remainingDAOFund,
           20 + (i + 1) * 24,
           "ProtocolFeeValut remainingDAOFund should as exptectd"
         );
         assert.equal(
-          feestatus.remainingBurn,
+          stats.remainingBurn,
           10 + (i + 1) * 12,
           "ProtocolFeeValut remainingBurn should as exptectd"
         );
