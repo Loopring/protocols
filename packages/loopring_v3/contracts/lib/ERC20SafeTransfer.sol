@@ -63,7 +63,7 @@ library ERC20SafeTransfer
     {
         require(
             safeTransferWithGasLimit(token, to, value, gasLimit),
-            "TRANSFER_FAILED"
+            "TRANSFER_FAILURE"
         );
     }
 
@@ -142,7 +142,7 @@ library ERC20SafeTransfer
             value,
             gasLimit
         );
-        require(result, "TRANSFER_FAILED");
+        require(result, "TRANSFER_FAILURE");
     }
 
     function safeTransferFromWithGasLimit(

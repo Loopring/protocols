@@ -1,6 +1,6 @@
 /// Borrowed from https://github.com/gnosis/mock-contract
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.11;
 
 interface MockInterface {
 	/**
