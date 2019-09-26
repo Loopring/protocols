@@ -24,7 +24,7 @@ export class Artifacts {
   public ProtocolFeeVault: any;
 
   constructor(artifacts: any) {
-    this.MockContract = artifacts.require("test/MockContract.sol");
+    this.MockContract = artifacts.require("thirdparty/MockContract.sol");
     this.ExchangeConstants = artifacts.require("impl/lib/ExchangeConstants");
     this.UniversalRegistry = artifacts.require("impl/UniversalRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");
