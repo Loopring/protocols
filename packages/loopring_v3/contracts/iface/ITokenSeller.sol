@@ -25,6 +25,7 @@ contract ITokenSeller
     /// @param tokenS The token or Ether (0x0) to sell.
     /// @param amountS The amount to sell.
     /// @param tokenB The token to buy.
+    /// @return success True if success, false otherwise.
     function sellToken(
         address tokenS,
         uint    amountS,
