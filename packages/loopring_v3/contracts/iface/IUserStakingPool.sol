@@ -33,6 +33,8 @@ contract IUserStakingPool
 
     uint    public numAddresses;
 
+    event ProtocolFeeVaultChanged (address feeVaultAddress);
+
     event LRCStaked       (address user,  uint amount);
     event LRCWithdrawn    (address user,  uint amount);
     event LRCRewarded     (address user,  uint amount);

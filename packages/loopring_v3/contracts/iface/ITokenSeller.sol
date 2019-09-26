@@ -16,19 +16,21 @@
 */
 pragma solidity ^0.5.11;
 
-
-/// @title IAddressWhitelist
-/// @author Daniel Wang - <daniel@loopring.org>
-contract IAddressWhitelist
+/// @title ITokenSeller
+/// @dev Use this contract to sell tokenS for as many tokenB.
+/// @author Daniel Wang  - <daniel@loopring.org>
+contract ITokenSeller
 {
-    /// @dev Checks if an address has been whitelisted.
-    /// @param addr The address to check against the whitelist.
-    /// @param permission An arbitrary data from the caller to indicate permission.
-    /// @return true if the address is whitelisted
-    function isAddressWhitelisted(
-        address addr,
-        bytes   memory permission
+    /// @dev Sells tokenS for tokenB
+    /// @param tokenS The token or Ether (0x0) to sell.
+    /// @param amountS The amount to sell.
+    /// @param tokenB The token to buy.
+    /// @return success True if success, false otherwise.
+    function sellToken(
+        address tokenS,
+        uint    amountS,
+        address tokenB
         )
-        public
-        returns (bool);
+        external
+        returns (bool success);
 }

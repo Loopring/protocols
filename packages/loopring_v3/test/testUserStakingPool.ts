@@ -24,7 +24,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     it("should not stake if dont have any LRC", async () => {
       await expectThrow(
         userstaking.stake(500, { from: owner1 }),
-        "TRANSFER_FAILURE"
+        "TRANSFER_FAILED"
       );
     });
     it("should not withdraw if haven't staked", async () => {
@@ -235,7 +235,7 @@ contract("UserStakingPool", (accounts: string[]) => {
         await userstaking.withdraw(0, { from: owner3 });
       });
       it("ProtocolFeeValut status should as expected", async () => {
-        const feestatus = await protocolfee.getLRCFeeStats();
+        const feestatus = await protocolfee.getProtocolFeeStats();
         // 30 is in statkeA test
         assert.equal(
           feestatus.remainingFees,

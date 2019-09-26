@@ -42,10 +42,7 @@ contract TransferContract {
         )
         external
     {
-        require(
-            token.safeTransferWithGasLimit(to, value, gasLimit),
-            "TRANSFER_FAILURE"
-        );
+        token.safeTransferWithGasLimitAndVerify(to, value, gasLimit);
     }
 
     function safeTransferFromWithGasLimit(
@@ -57,10 +54,7 @@ contract TransferContract {
         )
         external
     {
-        require(
-            token.safeTransferFromWithGasLimit(from, to, value, gasLimit),
-            "TRANSFER_FAILURE"
-        );
+        token.safeTransferFromWithGasLimitAndVerify(from, to, value, gasLimit);
     }
 
     function sendETH(
@@ -70,7 +64,7 @@ contract TransferContract {
         )
         external
     {
-        require(to.sendETH(amount, gasLimit), "TRANSFER_FAILURE");
+        to.sendETHAndVerify(amount, gasLimit);
     }
 
     function setTestCase(

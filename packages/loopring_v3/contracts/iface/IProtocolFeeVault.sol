@@ -33,37 +33,58 @@ contract IProtocolFeeVault
 
     address public userStakingPoolAddress;
     address public lrcAddress;
-    address public oedaxAddress;
+    address public tokenSellerAddress;
     address public daoAddress;
 
     uint claimedReward;
     uint claimedDAOFund;
     uint claimedBurn;
 
-    bool allowOwnerWithdrawal;
-
-    event OwnerWithdrawal(
-        address token,
-        uint    amount
-    );
-    event LRCWithdrawnToDAO(
+    event DAOFunded(
         uint    amountDAO,
         uint    amountBurn
     );
-    event AuctionStarted(
-        address tokenS,
-        uint    amountS,
-        address tokenB,
-        address payable auctionAddr
+    event TokenSold(
+        address token,
+        uint    amount
+    );
+    event SettingsUpdated(
+        address _userStakingPoolAddress,
+        address _tokenSellerAddress,
+        address _daoAddress
     );
 
+    /// @dev Sets depdending contract address. All these addresses can be zero.
+    /// @param _userStakingPoolAddress The address of the user stking pool.
+    /// @param _tokenSellerAddress The address of the token seller.
+    /// @param _daoAddress The address of the DAO contract.
+    function updateSettings(
+        address _userStakingPoolAddress,
+        address _tokenSellerAddress,
+        address _daoAddress
+        )
+        external;
+
     /// @dev Claims LRC as staking reward to the IUserStakingPool contract.
-    ///
     ///      Note that this function can only be called by
     ///      the IUserStakingPool contract.
     ///
     /// @param amount The amount of LRC to be claimed.
     function claimStakingReward(uint amount) external;
+
+    /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
+    ///      the predefined percentages.
+    function fundDAO() external;
+
+    /// @dev Sells a non-LRC token or Ether to LRC. If no TokenSeller is set,
+    ///      the tokens or Ether will be sent to the owner.
+    /// @param token The token or ether (0x0) to sell.
+    /// @param amount THe amout of token/ether to sell.
+    function sellTokenForLRC(
+        address token,
+        uint    amount
+        )
+        external;
 
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
@@ -74,7 +95,7 @@ contract IProtocolFeeVault
     /// @return remainingBurn The remaining amount of LRC to burn.
     /// @return remainingDAOFund The remaining amount of LRC as developer pool.
     /// @return remainingReward The remaining amount of LRC as staking reward.
-    function getLRCFeeStats()
+    function getProtocolFeeStats()
         public
         view
         returns (
@@ -87,59 +108,4 @@ contract IProtocolFeeVault
             uint remainingDAOFund,
             uint remainingReward
         );
-
-    /// @dev Sets Oedax address, only callable by the owner.
-    /// @param _oedaxAddress The address of Oedax contract.
-    function setOedax(address _oedaxAddress) external;
-
-    /// @dev Sets the Loopring DAO address, only callable by the owner.
-    /// @param _daoAddress The address of the DAO contract.
-    function setDAO(address _daoAddress) external;
-
-    /// @dev Permanently disallows owner to withdraw non-LRC protocol fees, only callable by the owner.
-    function disableOwnerWithdrawal() external;
-
-    /// @dev Withdraws non-LRC protocol fees to owner's address, only callable by the owner.
-    /// @param token The token to be withdrawn
-    /// @param amount The amount of token to withdraw.
-    function withdraw(
-        address token,
-        uint    amount
-        )
-        external;
-
-    /// @dev Sells a non-LRC token or Ether to LRC, only callable by the owner.
-    /// @param token The token or ether (0x0) to sell.
-    /// @param amount THe amout of token/ether to sell.
-    /// @param sellForEther True if tokenB should be Ether,false if tokenB is LRC.
-    /// @param minAskAmount The minimum amount that can be used in an ask.
-    /// @param minBidAmount The minimum amount that can be used in a bid.
-    /// @param P Numerator part of the target price `p`.
-    /// @param S Price precision -- (_P / 10**_S) is the float value of the target price.
-    /// @param M Price factor. `p * M` is the maximum price and `p / M` is the minimum price.
-    /// @param T The minimum auction duration in second, the maximam duration will be 2*T.
-    /// @return auctionAddr Auction address.
-    function auctionOffTokens(
-        address token,
-        uint    amount,
-        bool    sellForEther,
-        uint    minAskAmount,
-        uint    minBidAmount,
-        uint64  P,
-        uint64  S,
-        uint8   M,
-        uint    T
-        )
-        external
-        returns (
-            address payable auctionAddr
-        );
-
-    /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
-    ///      the predefined percentages.
-    function withdrawLRCToDAO() external;
-
-    /// @dev Settles a closed Oedax auction,
-    function settleAuction(address auction) external;
-
 }

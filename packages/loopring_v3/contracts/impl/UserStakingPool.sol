@@ -55,8 +55,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         external
         onlyOwner
     {
-        require(_protocolFeeVaultAddress != address(0), "ZERO_ADDRESS");
+        // Allow zero-address
         protocolFeeVaultAddress = _protocolFeeVaultAddress;
+        emit ProtocolFeeVaultChanged(protocolFeeVaultAddress);
     }
 
     function getTotalStaking()
@@ -90,10 +91,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         require(amount > 0, "ZERO_VALUE");
 
         // Lets trandfer LRC first.
-        require(
-            lrcAddress.safeTransferFrom(msg.sender, address(this), amount),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amount);
 
         Staking storage user = stakings[msg.sender];
 
@@ -134,10 +132,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         }
 
         // transfer LRC to user
-        require(
-            lrcAddress.safeTransfer(msg.sender, _amount),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferAndVerify(msg.sender, _amount);
 
         emit LRCWithdrawn(msg.sender, _amount);
     }
@@ -163,8 +158,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint userPoints;
 
         (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
-        if (claimedAmount > 0) {
 
+        if (claimedAmount > 0) {
             IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
             total.balance = total.balance.add(claimedAmount);
@@ -230,12 +225,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         )
     {
         Staking storage staking = stakings[user];
-
         totalPoints = total.balance.mul(now.sub(total.claimedAt));
         userPoints = staking.balance.mul(now.sub(staking.claimedAt));
 
-        if (totalPoints != 0 && userPoints != 0) {
-            (, , , , , , , claimableReward) = IProtocolFeeVault(protocolFeeVaultAddress).getLRCFeeStats();
+        if (protocolFeeVaultAddress != address(0) &&
+            totalPoints != 0 &&
+            userPoints != 0) {
+            (, , , , , , , claimableReward) = IProtocolFeeVault(protocolFeeVaultAddress).getProtocolFeeStats();
             claimableReward = claimableReward.mul(userPoints) / totalPoints;
         }
     }

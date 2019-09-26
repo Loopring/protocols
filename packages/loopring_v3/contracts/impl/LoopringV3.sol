@@ -235,10 +235,7 @@ contract LoopringV3 is ILoopringV3
         Exchange storage exchange = exchanges[exchangeId];
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
-        require(
-            lrcAddress.safeTransferFrom(msg.sender, address(this), amountLRC),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
 
         stakedLRC = exchange.exchangeStake.add(amountLRC);
         exchange.exchangeStake = stakedLRC;
@@ -264,10 +261,7 @@ contract LoopringV3 is ILoopringV3
             requestedAmount : exchange.exchangeStake;
 
         if (amountLRC > 0) {
-            require(
-                lrcAddress.safeTransfer(recipient, amountLRC),
-                "WITHDRAWAL_FAILURE"
-            );
+            lrcAddress.safeTransferAndVerify(recipient, amountLRC);
             exchange.exchangeStake = exchange.exchangeStake.sub(amountLRC);
             totalStake = totalStake.sub(amountLRC);
         }
@@ -288,10 +282,7 @@ contract LoopringV3 is ILoopringV3
         Exchange storage exchange = exchanges[exchangeId];
         require(exchange.exchangeAddress != address(0), "INVALID_EXCHANGE_ID");
 
-        require(
-            lrcAddress.safeTransferFrom(msg.sender, address(this), amountLRC),
-            "TRANSFER_FAILURE"
-        );
+        lrcAddress.safeTransferFromAndVerify(msg.sender, address(this), amountLRC);
 
         stakedLRC = exchange.protocolFeeStake.add(amountLRC);
         exchange.protocolFeeStake = stakedLRC;
@@ -314,10 +305,7 @@ contract LoopringV3 is ILoopringV3
         require(amountLRC <= exchange.protocolFeeStake, "INSUFFICIENT_STAKE");
 
         if (amountLRC > 0) {
-            require(
-                lrcAddress.safeTransfer(recipient, amountLRC),
-                "WITHDRAWAL_FAILURE"
-            );
+            lrcAddress.safeTransferAndVerify(recipient, amountLRC);
             exchange.protocolFeeStake = exchange.protocolFeeStake.sub(amountLRC);
             totalStake = totalStake.sub(amountLRC);
         }
