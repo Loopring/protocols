@@ -2,6 +2,7 @@ import { Artifacts } from "../util/Artifacts";
 import timeTravel from "../util/TimeTravel";
 import { expectThrow } from "./expectThrow";
 import BN = require("bn.js");
+const truffleAssert = require("truffle-assertions");
 
 contract("UserStakingPool", (accounts: string[]) => {
   const contracts = new Artifacts(artifacts);
@@ -25,24 +26,37 @@ contract("UserStakingPool", (accounts: string[]) => {
     userStakingPool = await UserStakingPool.new(mockLRC.address);
   });
 
-  describe("all methods in default state", async () => {
-    it("should behave as sepected", async () => {
-      const totalStaking = await userStakingPool.getTotalStaking();
-      assert.equal(totalStaking, 0, "getTotalStaking");
+  describe("UserStakingPool", () => {
+    describe("all readonly methods in default state", () => {
+      it("should behave as sepected", async () => {
+        const totalStaking = await userStakingPool.getTotalStaking();
+        assert.equal(totalStaking, 0, "getTotalStaking");
 
-      const {
-        0: withdrawalWaitTime,
-        1: rewardWaitTime,
-        2: balance,
-        3: claimableReward
-      } = await userStakingPool.getUserStaking(owner1);
+        const {
+          0: withdrawalWaitTime,
+          1: rewardWaitTime,
+          2: balance,
+          3: claimableReward
+        } = await userStakingPool.getUserStaking(owner1);
 
-      await timeTravel(1000000 * 2);
+        await timeTravel(1000000 * 2);
 
-      assert(withdrawalWaitTime.eq(MAX_TIME), "withdrawalWaitTime");
-      assert(rewardWaitTime.eq(MAX_TIME), "rewardWaitTime");
-      assert(balance.eq(ZERO), "balance");
-      assert(claimableReward.eq(ZERO), "claimableReward");
+        assert(withdrawalWaitTime.eq(MAX_TIME), "withdrawalWaitTime");
+        assert(rewardWaitTime.eq(MAX_TIME), "rewardWaitTime");
+        assert(balance.eq(ZERO), "balance");
+        assert(claimableReward.eq(ZERO), "claimableReward");
+      });
+    });
+
+    describe("when no protocol fee vault is set, a user", () => {
+      it("should still be able to stake and withdrawl LRC", async () => {
+        const amount = new BN("1000" + "000000000000000000", 10);
+        const tx = await userStakingPool.stake(amount, { from: owner2 });
+
+        truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
+          return evt.user === owner2 && !evt.amount.eq(amount);
+        });
+      });
     });
   });
 });
