@@ -33,7 +33,7 @@
     "bip39": "2.5.0",
     "blake-hash": "^1.1.0",
     "bn.js": "^4.11.8",
-    "ethereumjs-abi": "0.6.7",
+    "ethereumjs-abi": "0.6.8",
     "ethereumjs-tx": "1.3.3",
     "ethereumjs-util": "5.2.0",
     "ethereumjs-wallet": "0.6.0",
