@@ -66,7 +66,7 @@
     "bitwise-xor": "0.0.0",
     "blake-hash": "^1.1.0",
     "bluebird": "^3.5.1",
-    "bn.js": "^4.11.8",
+    "bn.js": "^5.0.0",
     "braces": "^2.3.2",
     "es6-iterator": "^2.0.3",
     "es6-map": "^0.1.5",
