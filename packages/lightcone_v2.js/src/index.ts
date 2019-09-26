@@ -5,16 +5,6 @@ import EthRpcUtils from "./lib/wallet/ethereum/eth";
 import Utils from "./lib/wallet/common/utils";
 import config from "./lib/wallet/config";
 
-import { exchange } from "./sign/exchange";
 import { Account } from "./wallet/account";
 
-export {
-  common,
-  config,
-  ethereum,
-  exchange,
-  Account,
-  ContractUtils,
-  EthRpcUtils,
-  Utils
-};
+export { common, config, ethereum, Account, ContractUtils, EthRpcUtils, Utils };

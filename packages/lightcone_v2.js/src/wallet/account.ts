@@ -1,4 +1,4 @@
-import { exchange } from "..";
+import { exchange } from "../sign/exchange";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
@@ -43,20 +43,20 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param password: user password
    */
-  public async createOrUpdateAccount(
+  public createOrUpdateAccount(
     password: string,
     nonce: number,
     gasPrice: number
   ) {
     try {
-      const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
+      const createOrUpdateAccountResposne = exchange.createOrUpdateAccount(
         this.account,
         password,
         nonce,
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
-      const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
+      const signedEthereumTx = this.account.signEthereumTx(rawTx.raw);
       return {
         signedTx: signedEthereumTx,
         keyPair: createOrUpdateAccountResposne["keyPair"]
@@ -73,14 +73,14 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public async depositTo(
+  public depositTo(
     symbol: string,
     amount: string,
     nonce: number,
     gasPrice: number
   ) {
     try {
-      const rawTx = await exchange.deposit(
+      const rawTx = exchange.deposit(
         this.account,
         symbol,
         amount,
@@ -100,14 +100,14 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public async withdrawFrom(
+  public withdrawFrom(
     symbol: string,
     amount: string,
     nonce: number,
     gasPrice: number
   ) {
     try {
-      const rawTx = await exchange.withdraw(
+      const rawTx = exchange.withdraw(
         this.account,
         symbol,
         amount,
