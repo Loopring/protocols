@@ -158,8 +158,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint userPoints;
 
         (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
-        if (claimedAmount > 0) {
 
+        if (claimedAmount > 0) {
             IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
             total.balance = total.balance.add(claimedAmount);

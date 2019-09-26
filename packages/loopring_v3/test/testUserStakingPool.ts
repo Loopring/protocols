@@ -24,7 +24,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     it("should not stake if dont have any LRC", async () => {
       await expectThrow(
         userstaking.stake(500, { from: owner1 }),
-        "TRANSFER_FAILURE"
+        "TRANSFER_FAILED"
       );
     });
     it("should not withdraw if haven't staked", async () => {
