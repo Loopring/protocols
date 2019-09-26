@@ -75,7 +75,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         uint _maxPenalty,
         uint _gracePeriodsMinutes,
         uint _gracePeriodPricePerMinute,
-        uint _maxAwailableDowntimeMinutes
+        uint _maxAvailableDowntimeMinutes
         )
         external
         onlyOwner
@@ -84,7 +84,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
             _basePricePerMinute > 0 &&
             _maxPenalty > 0 &&
             _gracePeriodPricePerMinute > 0 &&
-            _maxAwailableDowntimeMinutes > 0,
+            _maxAvailableDowntimeMinutes > 0,
             "ZERO_VALUE"
         );
         require(_gracePeriodPricePerMinute <= _basePricePerMinute, "INVALID_PRICE");
@@ -101,7 +101,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         maxPenalty = _maxPenalty;
         gracePeriodsMinutes = _gracePeriodsMinutes;
         gracePeriodPricePerMinute = _gracePeriodPricePerMinute;
-        maxAwailableDowntimeMinutes = _maxAwailableDowntimeMinutes;
+        maxAwailableDowntimeMinutes = _maxAvailableDowntimeMinutes;
     }
 
     function getTotalCost(
