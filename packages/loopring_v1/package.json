@@ -42,7 +42,7 @@
     "webpack": "^4.0.0"
   },
   "dependencies": {
-    "@types/bitwise-xor": "0.0.30",
+    "@types/bitwise-xor": "0.0.31",
     "bignumber.js": "^4.1.0",
     "bitwise-xor": "0.0.0",
     "bluebird": "^3.5.1",
