@@ -26,7 +26,6 @@ contract IUserStakingPool
 {
     uint public constant MIN_CLAIM_DELAY        = 90 days;
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
-    uint public constant AUCTION_DURATION       = 7  days;
 
     address public lrcAddress;
     address public protocolFeeVaultAddress;

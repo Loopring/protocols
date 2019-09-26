@@ -1,5 +1,5 @@
 import { Artifacts } from "../util/Artifacts";
-import timeTravel from "../util/TimeTravel";
+import { fastForwardTime } from "../util/TimeTravel";
 import { expectThrow } from "./expectThrow";
 import BN = require("bn.js");
 const truffleAssert = require("truffle-assertions");
@@ -44,8 +44,6 @@ contract("UserStakingPool", (accounts: string[]) => {
           3: claimableReward
         } = await userStakingPool.getUserStaking(owner1);
 
-        await timeTravel(1000000 * 2);
-
         assert(withdrawalWaitTime.eq(MAX_TIME), "withdrawalWaitTime");
         assert(rewardWaitTime.eq(MAX_TIME), "rewardWaitTime");
         assert(balance.eq(ZERO), "balance");
@@ -56,13 +54,28 @@ contract("UserStakingPool", (accounts: string[]) => {
     describe("when no protocol fee vault is set, a user", () => {
       it("should still be able to stake and withdrawl LRC, but no LRC should be rewareded", async () => {
         const amount = new BN("1000" + "000000000000000000", 10);
-        const tx = await userStakingPool.stake(amount, { from: owner2 });
+        var tx = await userStakingPool.stake(amount, { from: owner2 });
 
         truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
           return owner2 === evt.user && amount.eq(evt.amount);
         });
 
         truffleAssert.eventNotEmitted(tx, "LRCRewarded");
+        const MIN_WITHDRAW_DELAY = await userStakingPool.MIN_WITHDRAW_DELAY();
+
+        // Cannot withdrawl before MIN_WITHDRAW_DELAY
+
+        // Fast forward so we can withdraw 1/3 of the token
+        await fastForwardTime(MIN_WITHDRAW_DELAY);
+        const withdrawnAmount = amount.div(new BN(3));
+
+        tx = await userStakingPool.withdraw(withdrawnAmount, { from: owner2 });
+
+        truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
+          return owner2 === evt.user && amount.eq(evt.withdrawnAmount);
+        });
+
+        const outstandingAmount = amount.sub(withdrawnAmount);
       });
     });
   });
