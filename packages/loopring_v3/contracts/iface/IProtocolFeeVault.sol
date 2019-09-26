@@ -55,7 +55,7 @@ contract IProtocolFeeVault
     );
 
     /// @dev Sets depdending contract address. All these addresses can be zero.
-    /// @param _userStakingPoolAddress The address of the user stking pool.
+    /// @param _userStakingPoolAddress The address of the user staking pool.
     /// @param _tokenSellerAddress The address of the token seller.
     /// @param _daoAddress The address of the DAO contract.
     function updateSettings(
