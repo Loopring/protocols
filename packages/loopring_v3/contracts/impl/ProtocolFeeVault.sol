@@ -36,9 +36,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
-    constructor(
-        address _lrcAddress
-        )
+    constructor(address _lrcAddress)
         Claimable()
         public
     {
