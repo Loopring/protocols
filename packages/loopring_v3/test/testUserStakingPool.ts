@@ -61,19 +61,36 @@ contract("UserStakingPool", (accounts: string[]) => {
         });
 
         truffleAssert.eventNotEmitted(tx, "LRCRewarded");
-        const MIN_WITHDRAW_DELAY = await userStakingPool.MIN_WITHDRAW_DELAY();
+        const MIN_WITHDRAW_DELAY = (await userStakingPool.MIN_WITHDRAW_DELAY()).toNumber();
 
         // Cannot withdrawl before MIN_WITHDRAW_DELAY
+        await fastForwardTime(MIN_WITHDRAW_DELAY - 1);
 
-        // Fast forward so we can withdraw 1/3 of the token
-        await fastForwardTime(MIN_WITHDRAW_DELAY);
+        // cannot withdrawl 1 second before the wait period
+        truffleAssert.fails(
+          userStakingPool.withdraw(amount, { from: owner2 }),
+          truffleAssert.ErrorType.REVERT,
+          "NEED_TO_WAIT"
+        );
 
-        // const withdrawnAmount = amount.div(new BN("4", 10));
-        const withdrawnAmount = amount;
+        // Fast forward to exact the time that allows withdrawal
+        // so we can withdraw 1/3 of the token
+        await fastForwardTime(1);
+
+        truffleAssert.fails(
+          userStakingPool.withdraw(amount, { from: owner3 }),
+          truffleAssert.ErrorType.REVERT,
+          "NEED_TO_WAIT",
+          "other account cannot withdraw"
+        );
+
+        const withdrawnAmount = amount.div(new BN("3", 10));
+        //         // const withdrawnAmount = amount;
         tx = await userStakingPool.withdraw(withdrawnAmount, { from: owner2 });
 
         truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
-          return owner2 === evt.user && amount.eq(evt.withdrawnAmount);
+          console.log("LRCWithdrawn: ", evt.amount);
+          return owner2 === evt.user && withdrawnAmount.eq(evt.amount);
         });
 
         const outstandingAmount = amount.sub(withdrawnAmount);
