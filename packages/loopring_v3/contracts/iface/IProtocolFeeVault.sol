@@ -49,9 +49,7 @@ contract IProtocolFeeVault
         uint    amount
     );
     event SettingsUpdated(
-        address _userStakingPoolAddress,
-        address _tokenSellerAddress,
-        address _daoAddress
+        uint time
     );
 
     /// @dev Sets depdending contract address. All these addresses can be zero.

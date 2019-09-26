@@ -85,17 +85,6 @@ library ExchangeDeposits
         uint24 accountID = S.getAccountID(recipient);
         ExchangeData.Account storage account = S.accounts[accountID];
 
-        // Total fee to be paid by the user
-        uint feeETH = additionalFeeETH.add(S.depositFeeETH);
-
-        // Transfer the tokens to this contract
-        transferDeposit(
-            account.owner,
-            tokenAddress,
-            amount,
-            feeETH
-        );
-
         // We allow invalid public keys to be set for accounts to
         // disable offchain request signing.
         // Make sure we can detect accounts that were not yet created in the circuits
@@ -104,6 +93,17 @@ library ExchangeDeposits
         // Make sure the public key can be stored in the SNARK field
         require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
         require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
+
+        // Total fee to be paid by the user
+        uint feeETH = additionalFeeETH.add(S.depositFeeETH);
+
+        // Transfer the tokens to this contract
+        transferDeposit(
+            msg.sender,
+            tokenAddress,
+            amount,
+            feeETH
+        );
 
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
@@ -169,7 +169,7 @@ library ExchangeDeposits
     }
 
     function transferDeposit(
-        address accountOwner,
+        address source,
         address tokenAddress,
         uint    amount,
         uint    feeETH
@@ -188,7 +188,7 @@ library ExchangeDeposits
         // Transfer the tokens from the owner into this contract
         if (amount > 0 && tokenAddress != address(0)) {
             tokenAddress.safeTransferFromAndVerify(
-                accountOwner,
+                source,
                 address(this),
                 amount
             );
