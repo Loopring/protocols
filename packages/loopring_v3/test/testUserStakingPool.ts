@@ -26,13 +26,10 @@ contract("UserStakingPool", (accounts: string[]) => {
 
   describe("all methods in default state", () => {
     it("should behave as sepected", async () => {
-      const totalStaking = await userStakingPool.getTotalStaking();
-      assert.equal(totalStaking, 0, "getTotalStaking");
-
-      const withdrawalWaitTime = await userStakingPool.getUserWithdrawalWaitTime(
-        owner1
-      );
-      assert.equal(withdrawalWaitTime, MAX_TIME, "getUserWithdrawalWaitTime");
+      {
+        const totalStaking = await userStakingPool.getTotalStaking();
+        assert.equal(totalStaking, 0, "getTotalStaking");
+      }
 
       {
         const {
@@ -41,12 +38,6 @@ contract("UserStakingPool", (accounts: string[]) => {
           2: balance,
           3: claimableReward
         } = await userStakingPool.getUserStaking(owner1);
-        const getUserStakingExpected = {
-          0: MAX_TIME,
-          1: MAX_TIME,
-          2: ZERO,
-          3: ZERO
-        };
 
         assert.equal(withdrawalWaitTime, MAX_TIME, "withdrawalWaitTime");
         assert.equal(rewardWaitTime, MAX_TIME, "withdrawalWaitTime");
