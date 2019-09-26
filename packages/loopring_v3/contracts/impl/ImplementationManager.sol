@@ -34,8 +34,7 @@ contract ImplementationManager is IImplementationManager
     // IExchange addresses => Status
     mapping (address => Status) private statusMap;
 
-    /// === Constructor ===
-
+    // -- Constructor --
     constructor(
         address _owner,
         address _protocol,

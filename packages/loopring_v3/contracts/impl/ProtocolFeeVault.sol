@@ -62,11 +62,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         tokenSellerAddress = _tokenSellerAddress;
         daoAddress = _daoAddress;
 
-        emit SettingsUpdated(
-            userStakingPoolAddress,
-            tokenSellerAddress,
-            daoAddress
-        );
+        emit SettingsUpdated(now);
     }
 
     function claimStakingReward(
