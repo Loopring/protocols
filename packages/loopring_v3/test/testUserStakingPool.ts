@@ -24,26 +24,22 @@ contract("UserStakingPool", (accounts: string[]) => {
     userStakingPool = await UserStakingPool.new(mockLRC.address);
   });
 
-  describe("all methods in default state", () => {
+  describe("all methods in default state", async () => {
     it("should behave as sepected", async () => {
-      {
-        const totalStaking = await userStakingPool.getTotalStaking();
-        assert.equal(totalStaking, 0, "getTotalStaking");
-      }
+      const totalStaking = await userStakingPool.getTotalStaking();
+      assert.equal(totalStaking, 0, "getTotalStaking");
 
-      {
-        const {
-          0: withdrawalWaitTime,
-          1: rewardWaitTime,
-          2: balance,
-          3: claimableReward
-        } = await userStakingPool.getUserStaking(owner1);
+      const {
+        0: withdrawalWaitTime,
+        1: rewardWaitTime,
+        2: balance,
+        3: claimableReward
+      } = await userStakingPool.getUserStaking(owner1);
 
-        assert.equal(withdrawalWaitTime, MAX_TIME, "withdrawalWaitTime");
-        assert.equal(rewardWaitTime, MAX_TIME, "withdrawalWaitTime");
-        assert.equal(balance, ZERO, "withdrawalWaitTime");
-        assert.equal(claimableReward, ZERO, "withdrawalWaitTime");
-      }
+      assert(withdrawalWaitTime.eq(MAX_TIME), "withdrawalWaitTime");
+      assert(rewardWaitTime.eq(MAX_TIME), "rewardWaitTime");
+      assert(balance.eq(ZERO), "balance");
+      assert(claimableReward.eq(ZERO), "claimableReward");
     });
   });
 
