@@ -90,7 +90,6 @@ library ERC20SafeTransfer
         return checkReturnValue(success);
     }
 
-
     function safeTransferFromAndVerify(
         address token,
         address from,
@@ -200,5 +199,4 @@ library ERC20SafeTransfer
         }
         return success;
     }
-
 }

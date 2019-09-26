@@ -44,10 +44,12 @@ contract IProtocolFeeVault
         uint    amountDAO,
         uint    amountBurn
     );
+
     event TokenSold (
         address token,
         uint    amount
     );
+
     event SettingsUpdated (
         uint time
     );
