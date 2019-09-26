@@ -164,8 +164,10 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
             total.balance = total.balance.add(claimedAmount);
             total.claimedReward = total.claimedReward.add(claimedAmount);
-            total.claimedAt = uint64((totalPoints >= userPoints) ?
-            now.sub(totalPoints.sub(userPoints) / total.balance) : now);
+            total.claimedAt = uint64(
+                (totalPoints >= userPoints) ?
+                now.sub(totalPoints.sub(userPoints) / total.balance) : now
+            );
 
             Staking storage user = stakings[msg.sender];
             user.balance = user.balance.add(claimedAmount);
@@ -184,15 +186,19 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     {
         uint balance = staking.balance.add(additionalBalance);
 
-        staking.depositedAt = uint64(staking.balance
-            .mul(staking.depositedAt)
-            .add(additionalBalance.mul(now)) / balance);
-
-        staking.claimedAt = uint64((staking.claimedAt == 0) ?
-            staking.depositedAt :
+        staking.depositedAt = uint64(
             staking.balance
-                .mul(staking.claimedAt)
-                .add(additionalBalance.mul(now)) / balance);
+                .mul(staking.depositedAt)
+                .add(additionalBalance.mul(now)) / balance
+        );
+
+        staking.claimedAt = uint64(
+            (staking.claimedAt == 0) ?
+                staking.depositedAt :
+                staking.balance
+                    .mul(staking.claimedAt)
+                    .add(additionalBalance.mul(now)) / balance
+        );
 
         staking.balance = balance;
     }
@@ -231,8 +237,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         if (protocolFeeVaultAddress != address(0) &&
             totalPoints != 0 &&
             userPoints != 0) {
-            (, , , , , , , claimableReward) =
-                IProtocolFeeVault(protocolFeeVaultAddress).getProtocolFeeStats();
+            (, , , , , , , claimableReward) = IProtocolFeeVault(
+                protocolFeeVaultAddress
+            ).getProtocolFeeStats();
             claimableReward = claimableReward.mul(userPoints) / totalPoints;
         }
     }

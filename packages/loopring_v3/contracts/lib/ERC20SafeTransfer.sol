@@ -29,7 +29,7 @@ library ERC20SafeTransfer
         )
         internal
     {
-       safeTransferWithGasLimitAndVerify(
+        safeTransferWithGasLimitAndVerify(
             token,
             to,
             value,

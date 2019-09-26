@@ -144,8 +144,10 @@ contract UniversalRegistry is IUniversalRegistry {
             uint    exchangeId
         )
     {
-        (address _protocol, address _implementation) =
-            getProtocolAndImplementationToUse(protocol, implementation);
+        (address _protocol, address _implementation) = getProtocolAndImplementationToUse(
+            protocol,
+            implementation
+        );
 
         ILoopring loopring = ILoopring(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
