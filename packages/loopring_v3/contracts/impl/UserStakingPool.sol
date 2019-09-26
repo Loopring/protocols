@@ -169,13 +169,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
             total.balance = total.balance.add(claimedAmount);
             total.claimedReward = total.claimedReward.add(claimedAmount);
-            total.claimedAt = (uint64)((totalPoints >= userPoints) ?
+            total.claimedAt = uint64((totalPoints >= userPoints) ?
             now.sub(totalPoints.sub(userPoints) / total.balance) : now);
 
             Staking storage user = stakings[msg.sender];
             user.balance = user.balance.add(claimedAmount);
             user.claimedReward = user.claimedReward.add(claimedAmount);
-            user.claimedAt = (uint64)(now);
+            user.claimedAt = uint64(now);
         }
 
         emit LRCRewarded(msg.sender, claimedAmount);
@@ -189,11 +189,11 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     {
         uint balance = staking.balance.add(additionalBalance);
 
-        staking.depositedAt = (uint64)(staking.balance
+        staking.depositedAt = uint64(staking.balance
             .mul(staking.depositedAt)
             .add(additionalBalance.mul(now)) / balance);
 
-        staking.claimedAt = (uint64)((staking.claimedAt == 0) ?
+        staking.claimedAt = uint64((staking.claimedAt == 0) ?
             staking.depositedAt :
             staking.balance
                 .mul(staking.claimedAt)
