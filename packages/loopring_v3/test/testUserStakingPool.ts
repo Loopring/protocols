@@ -53,7 +53,7 @@ contract("UserStakingPool", (accounts: string[]) => {
 
     describe("when no protocol fee vault is set, a user", () => {
       it("should still be able to stake and withdrawl LRC, but no LRC should be rewareded", async () => {
-        const amount = new BN("1000" + "000000000000000000", 10);
+        const amount = new BN("10000", 10);
         var tx = await userStakingPool.stake(amount, { from: owner2 });
 
         truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
@@ -67,8 +67,9 @@ contract("UserStakingPool", (accounts: string[]) => {
 
         // Fast forward so we can withdraw 1/3 of the token
         await fastForwardTime(MIN_WITHDRAW_DELAY);
-        const withdrawnAmount = amount.div(new BN(3));
 
+        // const withdrawnAmount = amount.div(new BN("4", 10));
+        const withdrawnAmount = amount;
         tx = await userStakingPool.withdraw(withdrawnAmount, { from: owner2 });
 
         truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
