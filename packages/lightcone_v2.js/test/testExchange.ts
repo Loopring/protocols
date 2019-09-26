@@ -1,5 +1,5 @@
 // Hack: Failed to import src files directly.
-import { exchange } from "../src";
+import { exchange } from "../src/sign/exchange";
 import { fromPrivateKey } from "../src/lib/wallet/ethereum/walletAccount";
 import assert = require("assert");
 
