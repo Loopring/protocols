@@ -7,16 +7,52 @@ contract("UserStakingPool", (accounts: string[]) => {
   const MockContract = contracts.MockContract;
   const UserStakingPool = contracts.UserStakingPool;
 
+  const MAX_TIME = new BN("ffffffffffffffff", 16);
+  const ZERO = new BN("0", 10);
+
   const owner1 = accounts[0];
   const owner2 = accounts[1];
   const owner3 = accounts[2];
 
-  before(async () => {});
+  var mockLRC: any;
+  var mockProtocolFeeVault: any;
+  var userStakingPool: any;
 
-  describe("", () => {
-    it("should", async () => {
-      const mock = await MockContract.new();
-      const auction = await UserStakingPool.new(mock.address);
+  before(async () => {
+    mockLRC = await MockContract.new();
+    mockProtocolFeeVault = await MockContract.new();
+    userStakingPool = await UserStakingPool.new(mockLRC.address);
+  });
+
+  describe("all methods in default state", () => {
+    it("should behave as sepected", async () => {
+      const totalStaking = await userStakingPool.getTotalStaking();
+      assert.equal(totalStaking, 0, "getTotalStaking");
+
+      const withdrawalWaitTime = await userStakingPool.getUserWithdrawalWaitTime(
+        owner1
+      );
+      assert.equal(withdrawalWaitTime, MAX_TIME, "getUserWithdrawalWaitTime");
+
+      {
+        const {
+          0: withdrawalWaitTime,
+          1: rewardWaitTime,
+          2: balance,
+          3: claimableReward
+        } = await userStakingPool.getUserStaking(owner1);
+        const getUserStakingExpected = {
+          0: MAX_TIME,
+          1: MAX_TIME,
+          2: ZERO,
+          3: ZERO
+        };
+
+        assert.equal(withdrawalWaitTime, MAX_TIME, "withdrawalWaitTime");
+        assert.equal(rewardWaitTime, MAX_TIME, "withdrawalWaitTime");
+        assert.equal(balance, ZERO, "withdrawalWaitTime");
+        assert.equal(claimableReward, ZERO, "withdrawalWaitTime");
+      }
     });
   });
 

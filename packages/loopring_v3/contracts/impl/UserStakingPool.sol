@@ -35,8 +35,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     struct Staking {
         uint   balance;        // Total amount of LRC staked or rewarded
-        uint64   depositedAt;
-        uint64   claimedAt;      // timestamp from which more points will be accumulated
+        uint64 depositedAt;
+        uint64 claimedAt;      // timestamp from which more points will be accumulated
         uint   claimedReward;  // Total amount of LRC claimed as reward.
     }
 
@@ -208,8 +208,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-        uint time = stakings[user].depositedAt + MIN_WITHDRAW_DELAY;
-        return (time <= now) ? 0 : time.sub(now);
+        uint depositedAt = stakings[user].depositedAt;
+        if (depositedAt == 0) {
+            return (1 << 64) - 1;
+        } else {
+            uint time = depositedAt + MIN_WITHDRAW_DELAY;
+            return (time <= now) ? 0 : time.sub(now);
+        }
     }
 
     function getUserClaimWaitTime(address user)
@@ -217,8 +222,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-        uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
-        return (time <= now) ? 0 : time.sub(now);
+         uint claimedAt = stakings[user].claimedAt;
+         if (claimedAt == 0) {
+            return (1 << 64) - 1;
+         } else {
+            uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
+            return (time <= now) ? 0 : time.sub(now);
+        }
     }
 
     function getUserClaimableReward(address user)
