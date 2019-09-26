@@ -52,7 +52,7 @@
     "@types/bignumber.js": "^4.0.3",
     "@types/bluebird": "3.5.24",
     "@types/lodash": "^4.14.136",
-    "@types/node": "9.3.0",
+    "@types/node": "12.7.8",
     "@types/request-promise-native": "^1.0.15",
     "@typescript-eslint/eslint-plugin": "^2.3.1",
     "@typescript-eslint/parser": "^1.12.0",
