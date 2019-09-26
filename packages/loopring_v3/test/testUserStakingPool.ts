@@ -32,11 +32,6 @@ contract("UserStakingPool", (accounts: string[]) => {
   });
 
   describe("UserStakingPool", () => {
-    beforeEach(async () => {
-      await mockLRC.reset();
-      await mockProtocolFeeVault.reset();
-    });
-
     describe("all readonly methods in default state", () => {
       it("should behave as sepected", async () => {
         const totalStaking = await userStakingPool.getTotalStaking();
@@ -49,7 +44,7 @@ contract("UserStakingPool", (accounts: string[]) => {
           3: claimableReward
         } = await userStakingPool.getUserStaking(owner1);
 
-        // await timeTravel(1000000 * 2);
+        await timeTravel(1000000 * 2);
 
         assert(withdrawalWaitTime.eq(MAX_TIME), "withdrawalWaitTime");
         assert(rewardWaitTime.eq(MAX_TIME), "rewardWaitTime");
@@ -59,7 +54,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     });
 
     describe("when no protocol fee vault is set, a user", () => {
-      it("should still be able to stake and withdrawl LRC", async () => {
+      it("should still be able to stake and withdrawl LRC, but no LRC should be rewareded", async () => {
         const amount = new BN("1000" + "000000000000000000", 10);
         const tx = await userStakingPool.stake(amount, { from: owner2 });
 
