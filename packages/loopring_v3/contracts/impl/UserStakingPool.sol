@@ -35,8 +35,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     struct Staking {
         uint   balance;        // Total amount of LRC staked or rewarded
-        uint   depositedAt;
-        uint   claimedAt;      // timestamp from which more points will be accumulated
+        uint64   depositedAt;
+        uint64   claimedAt;      // timestamp from which more points will be accumulated
         uint   claimedReward;  // Total amount of LRC claimed as reward.
     }
 
@@ -164,13 +164,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
             total.balance = total.balance.add(claimedAmount);
             total.claimedReward = total.claimedReward.add(claimedAmount);
-            total.claimedAt = (totalPoints >= userPoints) ?
-            now.sub(totalPoints.sub(userPoints) / total.balance) : now;
+            total.claimedAt = uint64((totalPoints >= userPoints) ?
+            now.sub(totalPoints.sub(userPoints) / total.balance) : now);
 
             Staking storage user = stakings[msg.sender];
             user.balance = user.balance.add(claimedAmount);
             user.claimedReward = user.claimedReward.add(claimedAmount);
-            user.claimedAt = now;
+            user.claimedAt = uint64(now);
         }
 
         emit LRCRewarded(msg.sender, claimedAmount);
@@ -184,15 +184,15 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     {
         uint balance = staking.balance.add(additionalBalance);
 
-        staking.depositedAt = staking.balance
+        staking.depositedAt = uint64(staking.balance
             .mul(staking.depositedAt)
-            .add(additionalBalance.mul(now)) / balance;
+            .add(additionalBalance.mul(now)) / balance);
 
-        staking.claimedAt = (staking.claimedAt == 0) ?
+        staking.claimedAt = uint64((staking.claimedAt == 0) ?
             staking.depositedAt :
             staking.balance
                 .mul(staking.claimedAt)
-                .add(additionalBalance.mul(now)) / balance;
+                .add(additionalBalance.mul(now)) / balance);
 
         staking.balance = balance;
     }
@@ -202,7 +202,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-        uint time = stakings[user].depositedAt.add(MIN_WITHDRAW_DELAY);
+        uint time = stakings[user].depositedAt + MIN_WITHDRAW_DELAY;
         return (time <= now) ? 0 : time.sub(now);
     }
 
@@ -211,7 +211,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-        uint time = stakings[user].claimedAt.add(MIN_CLAIM_DELAY);
+        uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
         return (time <= now) ? 0 : time.sub(now);
     }
 
