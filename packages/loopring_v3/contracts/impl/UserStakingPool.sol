@@ -231,7 +231,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         if (protocolFeeVaultAddress != address(0) &&
             totalPoints != 0 &&
             userPoints != 0) {
-            (, , , , , , , claimableReward) = IProtocolFeeVault(protocolFeeVaultAddress).getProtocolFeeStats();
+            (, , , , , , , claimableReward) =
+                IProtocolFeeVault(protocolFeeVaultAddress).getProtocolFeeStats();
             claimableReward = claimableReward.mul(userPoints) / totalPoints;
         }
     }
