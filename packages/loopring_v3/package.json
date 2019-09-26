@@ -49,6 +49,7 @@
   },
   "license": "ISC",
   "devDependencies": {
+    "@gnosis.pm/mock-contract": "^3.0.7",
     "@types/bignumber.js": "^4.0.3",
     "@types/bluebird": "3.5.24",
     "@types/lodash": "^4.14.136",

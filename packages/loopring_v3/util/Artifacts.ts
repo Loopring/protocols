@@ -1,4 +1,5 @@
 export class Artifacts {
+  public MockContract: any;
   public ExchangeConstants: any;
   public UniversalRegistry: any;
   public LoopringV3: any;
@@ -23,6 +24,7 @@ export class Artifacts {
   public ProtocolFeeVault: any;
 
   constructor(artifacts: any) {
+    this.MockContract = artifacts.require("test/MockContract.sol");
     this.ExchangeConstants = artifacts.require("impl/lib/ExchangeConstants");
     this.UniversalRegistry = artifacts.require("impl/UniversalRegistry");
     this.LoopringV3 = artifacts.require("impl/LoopringV3");

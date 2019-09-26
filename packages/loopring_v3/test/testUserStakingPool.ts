@@ -1,23 +1,23 @@
+import { Artifacts } from "../util/Artifacts";
 import { expectThrow } from "./expectThrow";
 import BN = require("bn.js");
-import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("UserStakingPool", (accounts: string[]) => {
+  const contracts = new Artifacts(artifacts);
+  const MockContract = contracts.MockContract;
+  const UserStakingPool = contracts.UserStakingPool;
+
   const owner1 = accounts[0];
   const owner2 = accounts[1];
   const owner3 = accounts[2];
-  const emptyAddr = "0x0000000000000000000000000000000000000000";
 
-  let userstaking: any;
-  let protocolfee: any;
-  let exchangeTestUtil: ExchangeTestUtil;
+  before(async () => {});
 
-  before(async () => {
-    exchangeTestUtil = new ExchangeTestUtil();
-    await exchangeTestUtil.initialize(accounts);
-    userstaking = exchangeTestUtil.userStakingPool;
-    protocolfee = exchangeTestUtil.protocolFeeVaultContract;
-    userstaking.setProtocolFeeVault(protocolfee.address);
+  describe("", () => {
+    it("should", async () => {
+      const mock = await MockContract.new();
+      const auction = await UserStakingPool.new(mock.address);
+    });
   });
 
   // describe("stakeA", () => {
