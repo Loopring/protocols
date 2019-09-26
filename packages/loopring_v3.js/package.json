@@ -25,7 +25,7 @@
     "diff": ">=3.5.0",
     "dirty-chai": "^2.0.1",
     "eslint": "^5.16.0",
-    "eslint-config-google": "^0.13.0",
+    "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",
     "ethlint": "^1.2.4",
