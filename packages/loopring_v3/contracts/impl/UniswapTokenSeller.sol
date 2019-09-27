@@ -19,6 +19,7 @@ pragma solidity ^0.5.11;
 import "../iface/ITokenSeller.sol";
 
 import "../lib/ERC20.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "../thirdparty/UniswapExchangeInterface.sol";
 import "../thirdparty/UniswapFactoryInterface.sol";
@@ -28,7 +29,7 @@ import "../thirdparty/UniswapFactoryInterface.sol";
 /// @dev This contract will sell all tokens or Ether received to other tokens or Ether
 //       using the Uniswap contracts.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract UniswapTokenSeller is ITokenSeller {
+contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
     address public uniswapFactorAddress;
     address public recipient;
@@ -60,6 +61,7 @@ contract UniswapTokenSeller is ITokenSeller {
         )
         external
         payable
+        nonReentrant
         returns (bool success)
     {
         require(tokenS != tokenB, "SAME_TOKEN");
