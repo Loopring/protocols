@@ -70,12 +70,14 @@ contract("UserStakingPool", (accounts: string[]) => {
         const amount = new BN("1000" + "000000000000000000", 10);
 
         // - owner2 stakes 1000 LRC
-        var tx = await userStakingPool.stake(amount, { from: owner2 });
+        {
+          const tx = await userStakingPool.stake(amount, { from: owner2 });
 
-        // - Make sure LRc staked
-        truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
-          return owner2 === evt.user && amount.eq(evt.amount);
-        });
+          // - Make sure LRc staked
+          truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
+            return owner2 === evt.user && amount.eq(evt.amount);
+          });
+        }
 
         // - Check user staking stats for owner2
         {
@@ -95,12 +97,10 @@ contract("UserStakingPool", (accounts: string[]) => {
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
 
-        // - Fast forward time by MIN_WITHDRAW_DELAY/2
+        // - Fast forward time by MIN_WITHDRAW_DELAY/2, query and verify user states again
 
-        await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2);
-
-        // - Query and verify user states again
         {
+          await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2);
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
@@ -120,11 +120,10 @@ contract("UserStakingPool", (accounts: string[]) => {
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
 
-        // - Advance time again to just 1 second before the user can withdrawal
-        await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2 - 1);
-
-        // - Query and verify user states again
+        // - Advance time again to just 1 second before the user can withdrawal,
+        //   query and verify user states again
         {
+          await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2 - 1);
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
@@ -145,7 +144,6 @@ contract("UserStakingPool", (accounts: string[]) => {
         }
 
         // - Advance time again by 1 second so user can withdraw
-
         {
           await advanceTimeAndBlockAsync(1);
           const {
