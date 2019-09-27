@@ -20,7 +20,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public approve(symbol: string, nonce: number, gasPrice: number) {
+  public async approve(symbol: string, nonce: number, gasPrice: number) {
     const token = config.getTokenBySymbol(symbol);
     const rawTx = new Transaction({
       to: token.address,
@@ -34,7 +34,7 @@ export class Account {
       gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
-    return this.account.signEthereumTx(rawTx.raw);
+    return await this.account.signEthereumTx(rawTx.raw);
   }
 
   /**
@@ -43,7 +43,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param password: user password
    */
-  public createOrUpdateAccount(
+  public async createOrUpdateAccount(
     password: string,
     nonce: number,
     gasPrice: number
@@ -56,7 +56,7 @@ export class Account {
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
-      const signedEthereumTx = this.account.signEthereumTx(rawTx.raw);
+      const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
       return {
         signedTx: signedEthereumTx,
         keyPair: createOrUpdateAccountResposne["keyPair"]
@@ -73,7 +73,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public depositTo(
+  public async depositTo(
     symbol: string,
     amount: string,
     nonce: number,
@@ -87,7 +87,7 @@ export class Account {
         nonce,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      return await this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -100,7 +100,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public withdrawFrom(
+  public async withdrawFrom(
     symbol: string,
     amount: string,
     nonce: number,
@@ -114,7 +114,7 @@ export class Account {
         nonce,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      return await this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -137,7 +137,7 @@ export class Account {
    * @param validSince: valid beginning period of this order, SECOND in timestamp
    * @param validUntil: valid ending period of this order, SECOND in timestamp
    */
-  public async submitOrder(
+  public submitOrder(
     owner: string,
     accountId: number,
     tokenS: string,
