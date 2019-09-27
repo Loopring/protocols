@@ -215,7 +215,7 @@ export class Exchange {
     return order;
   }
 
-  public async setupOrder(order: OrderInfo) {
+  public setupOrder(order: OrderInfo) {
     if (!order.tokenS.startsWith("0x")) {
       order.tokenS = config.getTokenBySymbol(order.tokenS).address;
     }
@@ -256,9 +256,9 @@ export class Exchange {
     return this.signOrder(order);
   }
 
-  public async submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
+  public submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
     this.currentWalletAccount = wallet;
-    return await this.setupOrder(orderInfo);
+    return this.setupOrder(orderInfo);
   }
 
   public async cancelOrder(orderInfo: OrderInfo) {
