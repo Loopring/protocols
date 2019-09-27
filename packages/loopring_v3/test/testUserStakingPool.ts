@@ -29,6 +29,8 @@ contract("UserStakingPool", (accounts: string[]) => {
 
     MIN_WITHDRAW_DELAY = (await userStakingPool.MIN_WITHDRAW_DELAY()).toNumber();
     MIN_CLAIM_DELAY = (await userStakingPool.MIN_CLAIM_DELAY()).toNumber();
+
+    assert.equal(MIN_WITHDRAW_DELAY, MIN_CLAIM_DELAY, "test assumption failed");
   });
 
   beforeEach(async () => {
