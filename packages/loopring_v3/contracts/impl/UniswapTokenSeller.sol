@@ -19,6 +19,7 @@ pragma solidity ^0.5.11;
 import "../iface/ITokenSeller.sol";
 
 import "../lib/ERC20.sol";
+import "../lib/MathUint.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../thirdparty/UniswapExchangeInterface.sol";
@@ -30,6 +31,10 @@ import "../thirdparty/UniswapFactoryInterface.sol";
 //       using the Uniswap contracts.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
+
+    using MathUint          for uint;
+
+    uint    public constant SLIPPAGE = 1; // 1 percentage
 
     address public uniswapFactorAddress;
     address public recipient;
@@ -82,7 +87,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
             uint minAmountB = exchange.getEthToTokenInputPrice(amountS);
             amountB = exchange.ethToTokenTransferInput.value(amountS)(
-                minAmountB,
+                applySlippage(minAmountB),
                 noDeadline,
                 _recipient
             );
@@ -100,7 +105,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
                 amountB = exchange.tokenToEthTransferInput(
                     amountS,
-                    minAmountB,
+                    applySlippage(minAmountB),
                     noDeadline,
                     _recipient
                 );
@@ -111,7 +116,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
                 amountB = exchange.tokenToTokenTransferInput(
                     amountS,
-                    minAmountB,
+                    applySlippage(minAmountB),
                     0, // do not check minAmountEth
                     noDeadline,
                     _recipient,
@@ -149,5 +154,13 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
                 "APPROVAL_FAILURE"
             );
         }
+    }
+
+    function applySlippage(uint amount)
+        internal
+        view
+        returns (uint)
+    {
+        return amount.mul(100 - SLIPPAGE) / 100;
     }
 }
