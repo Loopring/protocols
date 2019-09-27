@@ -38,12 +38,6 @@ contract("UserStakingPool", (accounts: string[]) => {
     await mockProtocolFeeVault.reset();
   });
 
-  const getTime = async () => {
-    return web3.eth.getBlock("latest").then((block: any) => {
-      return block.timestamp;
-    });
-  };
-
   describe("UserStakingPool", () => {
     describe("all readonly functions in default state", () => {
       it("should return correct values", async () => {
