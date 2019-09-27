@@ -62,7 +62,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       it("can stake LRC and withdraw them all at once without any reward", async () => {
         const amount = new BN("1000" + "000000000000000000", 10);
 
-        const user = accounts[1];
+        const user = accounts[2];
 
         // - Action: user stakes 1000 LRC
         {
@@ -209,7 +209,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     describe("when no protocol fee vault is set, a user", () => {
       it("can stake LRC and withdraw them in multiple withdrawal without any reward", async () => {
         const amount = new BN("1000" + "000000000000000000", 10);
-        const user = accounts[2];
+        const user = accounts[3];
 
         // - Action: user stakes 1000 LRC
         {
@@ -284,7 +284,6 @@ contract("UserStakingPool", (accounts: string[]) => {
         }
 
         // - Action: withdraw all remaining
-
         {
           const tx = await userStakingPool.withdraw(amount, { from: user });
 
@@ -310,7 +309,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             "withdrawalWaitTime"
           );
           assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
-          assert(balance.eq(amount.sub(oneForth)), "balance");
+          assert(balance.eq(ZERO), "balance");
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
       });
