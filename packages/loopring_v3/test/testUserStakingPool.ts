@@ -175,31 +175,33 @@ contract("UserStakingPool", (accounts: string[]) => {
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
 
-        // {
-        //   console.log("time: ", await getTime());
-        //   const {
-        //     0: withdrawalWaitTime,
-        //     1: rewardWaitTime,
-        //     2: balance,
-        //     3: claimableReward
-        //   } = await userStakingPool.getUserStaking(owner2);
+        // - Withdraw all LRC
+        {
+          // - Test user can NOT withdraw
+          const tx = await userStakingPool.withdraw(ZERO, { from: owner2 });
 
-        //   console.log(
-        //     withdrawalWaitTime,
-        //     rewardWaitTime,
-        //     balance,
-        //     claimableReward
-        //   );
-        // }
+          // - Verify LRCWithdrawn event emitted
+          truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
+            return owner2 === evt.user && amount.eq(evt.amount);
+          });
 
-        // // cannot withdrawl 1 second before the wait period
-        //  tx=  await userStakingPool.withdraw(amount, { from: owner2 });
-        // truffleAssert.eventEmitted(tx2, "LRCWithdrawn", (evt: any) => {
-        //   console.log("evt: ", evt)
-        //   return owner2 === evt.user && amount.eq(evt.amount);
-        // });
+          // - Verify LRCRewarded event NOT emitted
 
-        //  truffleAssert.eventNotEmitted(tx, "LRCRewarded");
+          truffleAssert.eventNotEmitted(tx, "LRCRewarded");
+
+          // - Verify stats
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(owner2);
+
+          assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
+          assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
+          assert(balance.eq(ZERO), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
       });
     });
   });
