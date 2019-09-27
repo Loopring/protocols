@@ -21,7 +21,7 @@
   "author": "kongliangzhong",
   "license": "ISC",
   "dependencies": {
-    "async": "^2.6.1",
+    "async": "^3.1.0",
     "bluebird": "^3.5.3",
     "ganache-cli": "^6.2.5",
     "line-reader": "^0.4.0",
