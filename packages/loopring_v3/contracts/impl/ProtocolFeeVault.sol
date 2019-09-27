@@ -116,7 +116,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
         require(
             tokenSellerAddress == address(0) ||
-            ITokenSeller(tokenSellerAddress).sellToken(token, amount, lrcAddress),
+            ITokenSeller(tokenSellerAddress).sellToken(token, lrcAddress),
             "SELL_FAILURE"
         );
 
