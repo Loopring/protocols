@@ -18,27 +18,41 @@ pragma solidity ^0.5.11;
 
 import "../iface/ITokenSeller.sol";
 
-
 import "../lib/ERC20.sol";
+
 import "../thirdparty/UniswapExchangeInterface.sol";
 import "../thirdparty/UniswapFactoryInterface.sol";
 
 
 /// @title An ITokenSeller that sells token on Uniswap.
+/// @dev This contract will sell all tokens or Ether received to other tokens or Ether
+//       using the Uniswap contracts.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract UniswapTokenSeller is ITokenSeller {
 
-    event TokenSold(
+    address public uniswapFactorAddress;
+    address public recipient;
+
+    event TokenSold (
         address indexed seller,
+        address indexed recipient,
         address         tokenS,
-        uint            amountS,
         address         tokenB,
+        uint            amountS,
         uint            amountB,
         uint            time
     );
 
-    address constant public UNISWAP_FACTORY_ADDRESS = address(0);
-    UniswapFactoryInterface factory = UniswapFactoryInterface(UNISWAP_FACTORY_ADDRESS);
+    constructor(
+        address _uniswapFactorAddress,
+        address _recipient
+        )
+        public
+    {
+        require(_uniswapFactorAddress != address(0), "ZERO_ADDRESS");
+        uniswapFactorAddress = _uniswapFactorAddress;
+        recipient = _recipient;
+    }
 
     function sellToken(
         address tokenS,
@@ -49,70 +63,89 @@ contract UniswapTokenSeller is ITokenSeller {
         returns (bool success)
     {
         require(tokenS != tokenB, "SAME_TOKEN");
-        uint amountS;
-        uint deadline = now; // This means there is no deadline at all.
-        uint purchased;
 
-        if (tokenS == address(0)) { // Sell ETH to ERC20
+        // If `recipient` is set to non-zero, we send all purchased Ether/token to it.
+        address _recipient = recipient == address(0) ? msg.sender : recipient;
+
+        uint amountS; // amount to sell
+        uint amountB; // amount bought
+        uint noDeadline = now;
+        UniswapExchangeInterface exchange;
+
+        if (tokenS == address(0)) {
+            // Sell ETH to ERC20
             amountS = address(this).balance;
             require(amountS > 0, "ZERO_AMOUNT");
-            UniswapExchangeInterface exchange = UniswapExchangeInterface(factory.getExchange(tokenB));
+            exchange = getUniswapExchange(tokenB);
 
-            uint minPurchase = exchange.getEthToTokenInputPrice(amountS);
-            purchased = exchange.ethToTokenTransferInput.value(amountS)(
-                minPurchase,
-                deadline,
-                msg.sender
+            uint minAmountB = exchange.getEthToTokenInputPrice(amountS);
+            amountB = exchange.ethToTokenTransferInput.value(amountS)(
+                minAmountB,
+                noDeadline,
+                _recipient
             );
-        } else if (tokenB == address(0)) { // Sell ERC20 to ETH
-
+        } else {
+            // Selling ERC20 to ETH or other ERC20
             amountS = ERC20(tokenS).balanceOf(address(this));
             require(amountS > 0, "ZERO_AMOUNT");
-            UniswapExchangeInterface exchange = UniswapExchangeInterface(factory.getExchange(tokenS));
-            uint minPurchase = exchange.getTokenToEthInputPrice(amountS);
+            exchange = getUniswapExchange(tokenS);
 
-            authorizeUniswap(tokenS, amountS);
-            purchased =exchange.tokenToEthTransferInput(
-                amountS,
-                minPurchase,
-                deadline,
-                msg.sender
-            );
+            approveUniswapExchange(exchange, tokenS, amountS);
 
-        } else { // Sell ERC20 to ERC20
-            amountS = ERC20(tokenS).balanceOf(address(this));
-            require(amountS > 0, "ZERO_AMOUNT");
-            UniswapExchangeInterface exchangeS = UniswapExchangeInterface(factory.getExchange(tokenS));
-            UniswapExchangeInterface exchangeB = UniswapExchangeInterface(factory.getExchange(tokenB));
+            if (tokenB == address(0)) {
+                // Sell ERC20 to ETH
+                uint minAmountB = exchange.getTokenToEthInputPrice(amountS);
 
-            uint minPurchaseEther = exchangeS.getTokenToEthInputPrice(amountS);
-            uint minPurchaseToken = exchangeB.getEthToTokenInputPrice(minPurchaseEther);
+                amountB = exchange.tokenToEthTransferInput(
+                    amountS,
+                    minAmountB,
+                    noDeadline,
+                    _recipient
+                );
+            } else {
+                // Sell ERC20 to ERC20
+                uint minAmountEth = exchange.getTokenToEthInputPrice(amountS);
+                uint minAmountB = getUniswapExchange(tokenB).getEthToTokenInputPrice(minAmountEth);
 
-            authorizeUniswap(tokenS, amountS);
-            purchased = exchangeS.tokenToTokenTransferInput(
-                amountS,
-                minPurchaseToken,
-                0, // min_eth_bought
-                deadline,
-                msg.sender,
-                tokenB
-            );
+                amountB = exchange.tokenToTokenTransferInput(
+                    amountS,
+                    minAmountB,
+                    0, // do not check minAmountEth
+                    noDeadline,
+                    _recipient,
+                    tokenB
+                );
+            }
         }
 
-        emit TokenSold(msg.sender, tokenS, amountS, tokenB, purchased, now);
+        emit TokenSold(msg.sender, _recipient, tokenS, tokenB, amountS, amountB, now);
+
         return true;
     }
 
-    function authorizeUniswap(
+    function getUniswapExchange(address token)
+        private
+        view
+        returns (UniswapExchangeInterface)
+    {
+        UniswapFactoryInterface factory = UniswapFactoryInterface(uniswapFactorAddress);
+        return UniswapExchangeInterface(factory.getExchange(token));
+    }
+
+    function approveUniswapExchange(
+        UniswapExchangeInterface exchange,
         address tokenS,
         uint    amountS
         )
-        internal
+        private
     {
         ERC20 token = ERC20(tokenS);
-        uint allowance = token.allowance(address(this), UNISWAP_FACTORY_ADDRESS);
+        uint allowance = token.allowance(address(this), address(exchange));
         if (allowance < amountS) {
-            require(token.approve(UNISWAP_FACTORY_ADDRESS, 2**256 - 1), "AUTH_FAILURE");
+            require(
+                token.approve(address(exchange), 2 ** 256 - 1),
+                "APPROVAL_FAILURE"
+            );
         }
     }
 }

@@ -221,10 +221,10 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-         uint claimedAt = stakings[user].claimedAt;
-         if (claimedAt == 0) {
+        uint claimedAt = stakings[user].claimedAt;
+        if (claimedAt == 0) {
             return MIN_CLAIM_DELAY;
-         } else {
+        } else {
             uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
             return (time <= now) ? 0 : time.sub(now);
         }
