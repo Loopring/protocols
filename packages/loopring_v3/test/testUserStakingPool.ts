@@ -228,7 +228,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
 
-    it("then check its staking status after MIN_WITHDRAW_DELAY minutes", async () => {
+    it("then check his staking status after MIN_WITHDRAW_DELAY minutes", async () => {
       await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY);
       // - Check: stats
       const {
@@ -244,10 +244,12 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
 
+    const oneForth = amount.div(new BN(4));
+    const remainingAmount = amount.sub(oneForth);
+
     it("then withdraw 1/4 LRC", async () => {
       // - Action: Withdraw all 1/4 LRC
-      const oneForth = amount.div(new BN(4));
-      const remainingAmount = amount.sub(oneForth);
+
       const tx = await userStakingPool.withdraw(oneForth, { from: charles });
 
       // - Check: LRCWithdrawn event emitted
