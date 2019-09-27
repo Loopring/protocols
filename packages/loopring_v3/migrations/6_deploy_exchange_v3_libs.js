@@ -8,16 +8,24 @@ const ExchangeConstants = artifacts.require(
 const ExchangeAccounts = artifacts.require(
   "./impl/libexchange/ExchangeAccounts.sol"
 );
-const ExchangeAdmins = artifacts.require("./impl/libexchange/ExchangeAdmins.sol");
+const ExchangeAdmins = artifacts.require(
+  "./impl/libexchange/ExchangeAdmins.sol"
+);
 const ExchangeBalances = artifacts.require(
   "./impl/libexchange/ExchangeBalances.sol"
 );
-const ExchangeBlocks = artifacts.require("./impl/libexchange/ExchangeBlocks.sol");
+const ExchangeBlocks = artifacts.require(
+  "./impl/libexchange/ExchangeBlocks.sol"
+);
 const ExchangeDeposits = artifacts.require(
   "./impl/libexchange/ExchangeDeposits.sol"
 );
-const ExchangeGenesis = artifacts.require("./impl/libexchange/ExchangeGenesis.sol");
-const ExchangeTokens = artifacts.require("./impl/libexchange/ExchangeTokens.sol");
+const ExchangeGenesis = artifacts.require(
+  "./impl/libexchange/ExchangeGenesis.sol"
+);
+const ExchangeTokens = artifacts.require(
+  "./impl/libexchange/ExchangeTokens.sol"
+);
 const ExchangeWithdrawals = artifacts.require(
   "./impl/libexchange/ExchangeWithdrawals.sol"
 );
@@ -27,14 +35,12 @@ module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
   deployer
     .then(() => {
-        return Promise.all([
-          deployer.deploy(ExchangeConstants) // only for testing purpose
-        ]);
-      })
-    .then(() => {
       return Promise.all([
-        deployer.deploy(ExchangeBalances)
+        deployer.deploy(ExchangeConstants) // only for testing purpose
       ]);
+    })
+    .then(() => {
+      return Promise.all([deployer.deploy(ExchangeBalances)]);
     })
     .then(() => {
       return Promise.all([
@@ -42,9 +48,7 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      return Promise.all([
-        deployer.deploy(ExchangeAccounts)
-      ]);
+      return Promise.all([deployer.deploy(ExchangeAccounts)]);
     })
     .then(() => {
       return Promise.all([

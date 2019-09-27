@@ -703,7 +703,7 @@ contract("Exchange", (accounts: string[]) => {
       );
       await expectThrow(
         exchange.deposit(token, amount, { from: owner, value: depositFee }),
-        "INSUFFICIENT_FUND"
+        "TRANSFER_FAILURE"
       );
 
       // Set the correct balance/approval

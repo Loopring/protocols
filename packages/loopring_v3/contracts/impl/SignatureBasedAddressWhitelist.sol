@@ -29,8 +29,8 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 
     constructor() Claimable() public {}
 
-    function isWhitelisted(
-        address user,
+    function isAddressWhitelisted(
+        address addr,
         bytes   memory permission
         )
         public
@@ -64,7 +64,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
             return false;
         }
 
-        bytes32 hash = keccak256(abi.encode("LOOPRING_DEX_ACCOUNT_CREATION", user, t));
+        bytes32 hash = keccak256(abi.encode("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
         return owner == ecrecover(hash, v, r, s);
     }
 }

@@ -46,11 +46,9 @@ module.exports = function(deployer, network, accounts) {
           "./impl/ProtocolFeeVault.sol"
         );
         return Promise.all([
-          deployer
-            .deploy(ProtocolFeeVault, lrcAddress, userStakingPoolAddress)
-            .then(c => {
-              protocolFeeValutAddress = c.address;
-            })
+          deployer.deploy(ProtocolFeeVault, lrcAddress).then(c => {
+            protocolFeeValutAddress = c.address;
+          })
         ]);
       });
   }

@@ -113,7 +113,7 @@ contract("Exchange", (accounts: string[]) => {
             Constants.emptyBytes,
             { from: owner, value: ethToSend }
           ),
-          "INSUFFICIENT_FUND"
+          "TRANSFER_FAILURE"
         );
 
         // Disable the test and deposit again

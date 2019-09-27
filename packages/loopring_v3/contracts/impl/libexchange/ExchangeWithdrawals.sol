@@ -103,8 +103,13 @@ library ExchangeWithdrawals
 
         // Check ETH value sent, can be larger than the expected withdraw fee
         require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
+
         // Send surplus of ETH back to the sender
-        msg.sender.transferETH(msg.value.sub(S.withdrawalFeeETH), gasleft());
+        uint feeSurplus = msg.value.sub(S.withdrawalFeeETH);
+        if (feeSurplus > 0) {
+            msg.sender.sendETHAndVerify(feeSurplus, gasleft());
+        }
+
         // Add the withdraw to the withdraw chain
         ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
         ExchangeData.Request memory request = ExchangeData.Request(
@@ -374,9 +379,9 @@ library ExchangeWithdrawals
         requestedBlock.blockFeeWithdrawn = true;
 
         // Burn part of the fee by sending it to the protocol fee manager
-        S.loopring.protocolFeeVault().transferETH(feeAmountToBurn, gasleft());
+        S.loopring.protocolFeeVault().sendETHAndVerify(feeAmountToBurn, gasleft());
         // Transfer the fee to the operator
-        feeRecipient.transferETH(feeAmountToOperator, gasleft());
+        feeRecipient.sendETHAndVerify(feeAmountToOperator, gasleft());
 
         emit BlockFeeWithdrawn(blockIdx, feeAmount);
     }
