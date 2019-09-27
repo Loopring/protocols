@@ -34,31 +34,29 @@ contract("UserStakingPool", (accounts: string[]) => {
     await mockProtocolFeeVault.reset();
   });
 
-  describe("When nobody staked anything", () => {
-    describe("user Alice can", () => {
-      const alice = accounts[1];
+  describe("When nobody staked anything, user Alice can", () => {
+    const alice = accounts[1];
 
-      it("query getTotalStaking and get default result", async () => {
-        const totalStaking = await userStakingPool.getTotalStaking();
-        assert(totalStaking.eq(ZERO), "getTotalStaking");
-      });
+    it("query getTotalStaking and get default result", async () => {
+      const totalStaking = await userStakingPool.getTotalStaking();
+      assert(totalStaking.eq(ZERO), "getTotalStaking");
+    });
 
-      it("query getUserStaking and get default result", async () => {
-        const {
-          0: withdrawalWaitTime,
-          1: rewardWaitTime,
-          2: balance,
-          3: claimableReward
-        } = await userStakingPool.getUserStaking(alice);
+    it("query getUserStaking and get default result", async () => {
+      const {
+        0: withdrawalWaitTime,
+        1: rewardWaitTime,
+        2: balance,
+        3: claimableReward
+      } = await userStakingPool.getUserStaking(alice);
 
-        assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
-          "withdrawalWaitTime"
-        );
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
-        assert(balance.eq(ZERO), "balance");
-        assert(claimableReward.eq(ZERO), "claimableReward");
-      });
+      assert(
+        withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+        "withdrawalWaitTime"
+      );
+      assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+      assert(balance.eq(ZERO), "balance");
+      assert(claimableReward.eq(ZERO), "claimableReward");
     });
   });
 
