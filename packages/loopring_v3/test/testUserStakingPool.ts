@@ -37,6 +37,7 @@ contract("UserStakingPool", (accounts: string[]) => {
   describe("When nobody staked anything", () => {
     describe("user Alice can", () => {
       const alice = accounts[1];
+
       it("query getTotalStaking and get default result", async () => {
         const totalStaking = await userStakingPool.getTotalStaking();
         assert(totalStaking.eq(ZERO), "getTotalStaking");
@@ -64,6 +65,7 @@ contract("UserStakingPool", (accounts: string[]) => {
   describe("When no protocol fee vault is set, a user Bob can", () => {
     const bob = accounts[2];
     const amount = new BN("1000" + "000000000000000000", 10);
+
     it("stake 1000 LRC then query getUserStaking", async () => {
       const tx = await userStakingPool.stake(amount, { from: bob });
 
@@ -88,31 +90,30 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(balance.eq(amount), "balance");
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
+
     it("query getUserStaking after MIN_WITHDRAW_DELAY/2 seconds", async () => {
-      // - Action: Fast forward time by MIN_WITHDRAW_DELAY/2
-      {
-        await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2);
+      await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2);
 
-        // - Check: stats
-        const {
-          0: withdrawalWaitTime,
-          1: rewardWaitTime,
-          2: balance,
-          3: claimableReward
-        } = await userStakingPool.getUserStaking(bob);
+      // - Check: stats
+      const {
+        0: withdrawalWaitTime,
+        1: rewardWaitTime,
+        2: balance,
+        3: claimableReward
+      } = await userStakingPool.getUserStaking(bob);
 
-        assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY / 2)),
-          "withdrawalWaitTime"
-        );
-        assert(
-          rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY - MIN_WITHDRAW_DELAY / 2)),
-          "rewardWaitTime"
-        );
-        assert(balance.eq(amount), "balance");
-        assert(claimableReward.eq(ZERO), "claimableReward");
-      }
+      assert(
+        withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY / 2)),
+        "withdrawalWaitTime"
+      );
+      assert(
+        rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY - MIN_WITHDRAW_DELAY / 2)),
+        "rewardWaitTime"
+      );
+      assert(balance.eq(amount), "balance");
+      assert(claimableReward.eq(ZERO), "claimableReward");
     });
+
     it("query getUserStaking 1 second before timeout but still cannot withdraw", async () => {
       await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2 - 1);
 
@@ -135,6 +136,7 @@ contract("UserStakingPool", (accounts: string[]) => {
         truffleAssert.ErrorType.REVERT
       );
     });
+
     it("query getUserStaking right after timeout", async () => {
       await advanceTimeAndBlockAsync(1);
 
@@ -151,6 +153,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(balance.eq(amount), "balance");
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
+
     it("query getUserStaking 1 second after timeout", async () => {
       await advanceTimeAndBlockAsync(1);
 
@@ -167,6 +170,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(balance.eq(amount), "balance");
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
+
     it("withdraw all LRC", async () => {
       const tx = await userStakingPool.withdraw(ZERO, { from: bob });
 
