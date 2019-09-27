@@ -11,10 +11,6 @@ contract("UserStakingPool", (accounts: string[]) => {
 
   const ZERO = new BN(0);
 
-  const owner1 = accounts[0];
-  const owner2 = accounts[1];
-  const owner3 = accounts[2];
-
   var mockLRC: any;
   var mockProtocolFeeVault: any;
   var userStakingPool: any;
@@ -41,6 +37,7 @@ contract("UserStakingPool", (accounts: string[]) => {
   describe("UserStakingPool", () => {
     describe("all readonly functions in default state", () => {
       it("should return correct values", async () => {
+        const user = accounts[1];
         const totalStaking = await userStakingPool.getTotalStaking();
         assert(totalStaking.eq(ZERO), "getTotalStaking");
 
@@ -49,7 +46,7 @@ contract("UserStakingPool", (accounts: string[]) => {
           1: rewardWaitTime,
           2: balance,
           3: claimableReward
-        } = await userStakingPool.getUserStaking(owner1);
+        } = await userStakingPool.getUserStaking(user);
 
         assert(
           withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
@@ -65,13 +62,15 @@ contract("UserStakingPool", (accounts: string[]) => {
       it("can stake LRC and withdraw them all at once without any reward", async () => {
         const amount = new BN("1000" + "000000000000000000", 10);
 
-        // - Action: owner2 stakes 1000 LRC
+        const user = accounts[1];
+
+        // - Action: user stakes 1000 LRC
         {
-          const tx = await userStakingPool.stake(amount, { from: owner2 });
+          const tx = await userStakingPool.stake(amount, { from: user });
 
           // - Check: LRCStaked emitted
           truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
-            return owner2 === evt.user && amount.eq(evt.amount);
+            return user === evt.user && amount.eq(evt.amount);
           });
 
           // - Check: stats
@@ -80,7 +79,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             1: rewardWaitTime,
             2: balance,
             3: claimableReward
-          } = await userStakingPool.getUserStaking(owner2);
+          } = await userStakingPool.getUserStaking(user);
 
           assert(
             withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
@@ -101,7 +100,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             1: rewardWaitTime,
             2: balance,
             3: claimableReward
-          } = await userStakingPool.getUserStaking(owner2);
+          } = await userStakingPool.getUserStaking(user);
 
           assert(
             withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY / 2)),
@@ -125,7 +124,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             1: rewardWaitTime,
             2: balance,
             3: claimableReward
-          } = await userStakingPool.getUserStaking(owner2);
+          } = await userStakingPool.getUserStaking(user);
 
           assert(withdrawalWaitTime.eq(new BN(1)), "withdrawalWaitTime");
           assert(rewardWaitTime.eq(new BN(1)), "rewardWaitTime");
@@ -134,7 +133,7 @@ contract("UserStakingPool", (accounts: string[]) => {
 
           // - Check: withdrawal will fail
           await truffleAssert.fails(
-            userStakingPool.withdraw(ZERO, { from: owner2 }),
+            userStakingPool.withdraw(ZERO, { from: user }),
             truffleAssert.ErrorType.REVERT
           );
         }
@@ -149,7 +148,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             1: rewardWaitTime,
             2: balance,
             3: claimableReward
-          } = await userStakingPool.getUserStaking(owner2);
+          } = await userStakingPool.getUserStaking(user);
 
           assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
           assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
@@ -167,7 +166,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             1: rewardWaitTime,
             2: balance,
             3: claimableReward
-          } = await userStakingPool.getUserStaking(owner2);
+          } = await userStakingPool.getUserStaking(user);
 
           assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
           assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
@@ -177,11 +176,11 @@ contract("UserStakingPool", (accounts: string[]) => {
 
         // - Action: Withdraw all LRC
         {
-          const tx = await userStakingPool.withdraw(ZERO, { from: owner2 });
+          const tx = await userStakingPool.withdraw(ZERO, { from: user });
 
           // - Check: LRCWithdrawn event emitted
           truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
-            return owner2 === evt.user && amount.eq(evt.amount);
+            return user === evt.user && amount.eq(evt.amount);
           });
 
           // - Check: LRCRewarded event NOT emitted
@@ -194,7 +193,7 @@ contract("UserStakingPool", (accounts: string[]) => {
             1: rewardWaitTime,
             2: balance,
             3: claimableReward
-          } = await userStakingPool.getUserStaking(owner2);
+          } = await userStakingPool.getUserStaking(user);
 
           assert(
             withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
@@ -202,6 +201,116 @@ contract("UserStakingPool", (accounts: string[]) => {
           );
           assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
           assert(balance.eq(ZERO), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+      });
+    });
+
+    describe("when no protocol fee vault is set, a user", () => {
+      it("can stake LRC and withdraw them in multiple withdrawal without any reward", async () => {
+        const amount = new BN("1000" + "000000000000000000", 10);
+        const user = accounts[2];
+
+        // - Action: user stakes 1000 LRC
+        {
+          const tx = await userStakingPool.stake(amount, { from: user });
+
+          // - Check: LRCStaked emitted
+          truffleAssert.eventEmitted(tx, "LRCStaked", (evt: any) => {
+            return user === evt.user && amount.eq(evt.amount);
+          });
+
+          // - Check: stats
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(user);
+
+          assert(
+            withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+            "withdrawalWaitTime"
+          );
+          assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+          assert(balance.eq(amount), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+
+        // - Action: Fast forward time by MIN_WITHDRAW_DELAY so user can withdraw
+        {
+          await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY);
+          // - Check: stats
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(user);
+
+          assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
+          assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
+          assert(balance.eq(amount), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+
+        // - Action: Withdraw all 1/4 LRC
+        const oneForth = amount.div(new BN(4));
+        const remainingAmount = amount.sub(oneForth);
+        {
+          const tx = await userStakingPool.withdraw(oneForth, { from: user });
+
+          // - Check: LRCWithdrawn event emitted
+          truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
+            return user === evt.user && oneForth.eq(evt.amount);
+          });
+
+          // - Check: LRCRewarded event NOT emitted
+          truffleAssert.eventNotEmitted(tx, "LRCRewarded");
+
+          // - Check: stats
+          //  Since all LRC has been withdrawan, wait time shall be default
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(user);
+
+          assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
+          assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
+          assert(balance.eq(remainingAmount), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+
+        // - Action: withdraw all remaining
+
+        {
+          const tx = await userStakingPool.withdraw(amount, { from: user });
+
+          // - Check: LRCWithdrawn event emitted
+          truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
+            return user === evt.user && remainingAmount.eq(evt.amount);
+          });
+
+          // - Check: LRCRewarded event NOT emitted
+          truffleAssert.eventNotEmitted(tx, "LRCRewarded");
+
+          // - Check: stats
+          //  Since all LRC has been withdrawan, wait time shall be default
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(user);
+
+          assert(
+            withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+            "withdrawalWaitTime"
+          );
+          assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+          assert(balance.eq(amount.sub(oneForth)), "balance");
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
       });
