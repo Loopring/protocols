@@ -97,7 +97,7 @@ export function sign(strKey, bits) {
   };
 }
 
-export function verify(msg, sig, A) {
+export function verify(msg_bits, sig, A) {
   // Check parameters
   if (typeof sig != "object") return false;
   if (!Array.isArray(sig.R8)) return false;
@@ -108,13 +108,17 @@ export function verify(msg, sig, A) {
   if (!babyJub.inCurve(A)) return false;
   if (sig.S >= babyJub.subOrder) return false;
 
-  const R8p = babyJub.packPoint(sig.R8);
-  const Ap = babyJub.packPoint(A);
-  const hmBuff = pedersenHash(Buffer.concat([R8p, Ap, msg]));
-  const hm = bigInt.leBuff2int(hmBuff);
-
-  const Pleft = babyJub.mulPointEscalar(babyJub.Base8, sig.S);
-  let Pright = babyJub.mulPointEscalar(A, hm.mul(bigInt("8")));
+  const S = bigInt(sig.s);
+  const hash = pedersenHash(
+    toBitsArray([
+      toBitsBigInt(sig.R8[0], 254),
+      toBitsBigInt(A[0], 254),
+      msg_bits
+    ])
+  );
+  const hm = bigInt(hash);
+  const Pleft = babyJub.mulPointEscalar(babyJub.Base8, S);
+  let Pright = babyJub.mulPointEscalar(A, hm);
   Pright = babyJub.addPoint(sig.R8, Pright);
 
   if (!Pleft[0].equals(Pright[0])) return false;
