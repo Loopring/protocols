@@ -26,7 +26,6 @@ contract IUserStakingPool
 {
     uint public constant MIN_CLAIM_DELAY        = 90 days;
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
-    uint public constant AUCTION_DURATION       = 7  days;
 
     address public lrcAddress;
     address public protocolFeeVaultAddress;
@@ -35,9 +34,9 @@ contract IUserStakingPool
 
     event ProtocolFeeVaultChanged (address feeVaultAddress);
 
-    event LRCStaked       (address user,  uint amount);
-    event LRCWithdrawn    (address user,  uint amount);
-    event LRCRewarded     (address user,  uint amount);
+    event LRCStaked       (address indexed user,  uint amount);
+    event LRCWithdrawn    (address indexed user,  uint amount);
+    event LRCRewarded     (address indexed user,  uint amount);
 
     /// @dev Sets a new IProtocolFeeVault address, only callable by the owner.
     /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.

@@ -35,8 +35,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     struct Staking {
         uint   balance;        // Total amount of LRC staked or rewarded
-        uint64   depositedAt;
-        uint64   claimedAt;      // timestamp from which more points will be accumulated
+        uint64 depositedAt;
+        uint64 claimedAt;      // timestamp from which more points will be accumulated
         uint   claimedReward;  // Total amount of LRC claimed as reward.
     }
 
@@ -109,7 +109,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         external
         nonReentrant
     {
-        require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
+        require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT2");
 
         // automatical claim when possible
         if (protocolFeeVaultAddress != address(0) &&
@@ -118,10 +118,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         }
 
         Staking storage user = stakings[msg.sender];
-        require(user.balance >= amount, "INSUFFICIENT_FUND");
 
-        uint _amount = (amount == 0) ? user.balance : amount;
-        require(_amount > 0, "ZERO_VALUE");
+        uint _amount = (amount == 0 || amount > user.balance) ? user.balance : amount;
+        require(_amount > 0, "ZERO_BALANCE");
 
         total.balance = total.balance.sub(_amount);
         user.balance = user.balance.sub(_amount);
@@ -208,8 +207,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-        uint time = stakings[user].depositedAt + MIN_WITHDRAW_DELAY;
-        return (time <= now) ? 0 : time.sub(now);
+        uint depositedAt = stakings[user].depositedAt;
+        if (depositedAt == 0) {
+            return MIN_WITHDRAW_DELAY;
+        } else {
+            uint time = depositedAt + MIN_WITHDRAW_DELAY;
+            return (time <= now) ? 0 : time.sub(now);
+        }
     }
 
     function getUserClaimWaitTime(address user)
@@ -217,8 +221,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         view
         returns (uint)
     {
-        uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
-        return (time <= now) ? 0 : time.sub(now);
+         uint claimedAt = stakings[user].claimedAt;
+         if (claimedAt == 0) {
+            return MIN_CLAIM_DELAY;
+         } else {
+            uint time = stakings[user].claimedAt + MIN_CLAIM_DELAY;
+            return (time <= now) ? 0 : time.sub(now);
+        }
     }
 
     function getUserClaimableReward(address user)
