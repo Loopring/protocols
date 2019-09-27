@@ -34,15 +34,15 @@ contract("UserStakingPool", (accounts: string[]) => {
     await mockProtocolFeeVault.reset();
   });
 
-  describe("When nobody staked anything, user Alice can", () => {
+  describe("When nobody staked anything, user Alice", () => {
     const alice = accounts[1];
 
-    it("query getTotalStaking and get default result", async () => {
+    it("can query getTotalStaking and get default result", async () => {
       const totalStaking = await userStakingPool.getTotalStaking();
       assert(totalStaking.eq(ZERO), "getTotalStaking");
     });
 
-    it("query getUserStaking and get default result", async () => {
+    it("can query getUserStaking and get default result", async () => {
       const {
         0: withdrawalWaitTime,
         1: rewardWaitTime,
@@ -64,7 +64,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     const bob = accounts[2];
     const amount = new BN("1000" + "000000000000000000", 10);
 
-    it("stake 1000 LRC then query getUserStaking", async () => {
+    it("can stake 1000 LRC then query getUserStaking", async () => {
       const tx = await userStakingPool.stake(amount, { from: bob });
 
       // - Check: LRCStaked emitted
@@ -89,7 +89,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
 
-    it("query getUserStaking after MIN_WITHDRAW_DELAY/2 seconds", async () => {
+    it("can query getUserStaking after MIN_WITHDRAW_DELAY/2 seconds", async () => {
       await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2);
 
       // - Check: stats
@@ -112,7 +112,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
 
-    it("query getUserStaking 1 second before timeout but still cannot withdraw", async () => {
+    it("can query getUserStaking 1 second before timeout but still cannot withdraw", async () => {
       await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2 - 1);
 
       // - Check: stats
@@ -135,7 +135,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       );
     });
 
-    it("query getUserStaking right after timeout", async () => {
+    it("can query getUserStaking right after timeout", async () => {
       await advanceTimeAndBlockAsync(1);
 
       // - Check: stats
@@ -152,7 +152,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
 
-    it("query getUserStaking 1 second after timeout", async () => {
+    it("can query getUserStaking 1 second after timeout", async () => {
       await advanceTimeAndBlockAsync(1);
 
       // - Check: stats
@@ -169,7 +169,7 @@ contract("UserStakingPool", (accounts: string[]) => {
       assert(claimableReward.eq(ZERO), "claimableReward");
     });
 
-    it("withdraw all LRC", async () => {
+    it("can withdraw all LRC", async () => {
       const tx = await userStakingPool.withdraw(ZERO, { from: bob });
 
       // - Check: LRCWithdrawn event emitted
