@@ -157,7 +157,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
     }
 
     function applySlippage(uint amount)
-        internal
+        private
         view
         returns (uint)
     {
