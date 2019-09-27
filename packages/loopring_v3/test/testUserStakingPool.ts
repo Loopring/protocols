@@ -43,10 +43,10 @@ contract("UserStakingPool", (accounts: string[]) => {
   };
 
   describe("UserStakingPool", () => {
-    describe("all readonly methods in default state", () => {
-      it("should behave as sepected", async () => {
+    describe("all readonly functions in default state", () => {
+      it("should return correct values", async () => {
         const totalStaking = await userStakingPool.getTotalStaking();
-        assert.equal(totalStaking, 0, "getTotalStaking");
+        assert(totalStaking.eq(ZERO), "getTotalStaking");
 
         const {
           0: withdrawalWaitTime,
@@ -66,7 +66,7 @@ contract("UserStakingPool", (accounts: string[]) => {
     });
 
     describe("when no protocol fee vault is set, a user", () => {
-      it("can stake LRC and withdraw all at once without reward", async () => {
+      it("can stake LRC and withdraw them all at once without any reward", async () => {
         const amount = new BN("1000" + "000000000000000000", 10);
 
         // - owner2 stakes 1000 LRC
@@ -79,7 +79,7 @@ contract("UserStakingPool", (accounts: string[]) => {
 
         // - Check user staking stats for owner2
         {
-          console.log("time: ", await getTime());
+          conole.log("time: ", await getTime());
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
@@ -87,18 +87,11 @@ contract("UserStakingPool", (accounts: string[]) => {
             3: claimableReward
           } = await userStakingPool.getUserStaking(owner2);
 
-          console.log(withdrawalWaitTime);
-          console.log(new BN(MIN_WITHDRAW_DELAY));
-
           assert(
             withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
             "withdrawalWaitTime"
           );
           assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
-
-          console.log(balance);
-          console.log(amount);
-
           assert(balance.eq(amount), "balance");
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
@@ -108,9 +101,7 @@ contract("UserStakingPool", (accounts: string[]) => {
         await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2);
 
         // - Query and verify user states again
-
         {
-          console.log("time: ", await getTime());
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
@@ -126,6 +117,58 @@ contract("UserStakingPool", (accounts: string[]) => {
             rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY - MIN_WITHDRAW_DELAY / 2)),
             "rewardWaitTime"
           );
+          assert(balance.eq(amount), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+
+        // - Advance time again to just 1 second before the user can withdrawal
+        await advanceTimeAndBlockAsync(MIN_WITHDRAW_DELAY / 2 - 1);
+
+        // - Query and verify user states again
+        {
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(owner2);
+
+          assert(withdrawalWaitTime.eq(new BN(1)), "withdrawalWaitTime");
+          assert(rewardWaitTime.eq(new BN(1)), "rewardWaitTime");
+          assert(balance.eq(amount), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+
+        // - Advance time again by 1 second so user can withdraw
+        await advanceTimeAndBlockAsync(1);
+
+        {
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(owner2);
+
+          assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
+          assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
+          assert(balance.eq(amount), "balance");
+          assert(claimableReward.eq(ZERO), "claimableReward");
+        }
+
+        // - Advance time again by 1 more second so user can still withdraw
+        await advanceTimeAndBlockAsync(1);
+
+        {
+          const {
+            0: withdrawalWaitTime,
+            1: rewardWaitTime,
+            2: balance,
+            3: claimableReward
+          } = await userStakingPool.getUserStaking(owner2);
+
+          assert(withdrawalWaitTime.eq(ZERO), "withdrawalWaitTime");
+          assert(rewardWaitTime.eq(ZERO), "rewardWaitTime");
           assert(balance.eq(amount), "balance");
           assert(claimableReward.eq(ZERO), "claimableReward");
         }
