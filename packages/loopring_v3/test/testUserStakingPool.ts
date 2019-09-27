@@ -79,7 +79,6 @@ contract("UserStakingPool", (accounts: string[]) => {
 
         // - Check user staking stats for owner2
         {
-          conole.log("time: ", await getTime());
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
@@ -137,12 +136,18 @@ contract("UserStakingPool", (accounts: string[]) => {
           assert(rewardWaitTime.eq(new BN(1)), "rewardWaitTime");
           assert(balance.eq(amount), "balance");
           assert(claimableReward.eq(ZERO), "claimableReward");
+
+          // - Test user can NOT withdraw
+          await truffleAssert.fails(
+            userStakingPool.withdraw(ZERO, { from: owner2 }),
+            truffleAssert.ErrorType.REVERT
+          );
         }
 
         // - Advance time again by 1 second so user can withdraw
-        await advanceTimeAndBlockAsync(1);
 
         {
+          await advanceTimeAndBlockAsync(1);
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
@@ -157,9 +162,8 @@ contract("UserStakingPool", (accounts: string[]) => {
         }
 
         // - Advance time again by 1 more second so user can still withdraw
-        await advanceTimeAndBlockAsync(1);
-
         {
+          await advanceTimeAndBlockAsync(1);
           const {
             0: withdrawalWaitTime,
             1: rewardWaitTime,
