@@ -34,7 +34,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
     using MathUint          for uint;
 
-    uint    public constant SLIPPAGE = 1; // 1 percentage
+    uint    public constant SLIPPAGE_BIPS = 100; // 1 percentage
 
     address public uniswapFactorAddress;
     address public recipient;
@@ -86,8 +86,11 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
             exchange = getUniswapExchange(tokenB);
 
             uint minAmountB = exchange.getEthToTokenInputPrice(amountS);
+            uint minAmountB2 = exchange.getEthToTokenInputPrice(amountS.mul(2));
+            checkSlippage(minAmountB, minAmountB2);
+
             amountB = exchange.ethToTokenTransferInput.value(amountS)(
-                applySlippage(minAmountB),
+                minAmountB,
                 noDeadline,
                 _recipient
             );
@@ -102,21 +105,28 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
             if (tokenB == address(0)) {
                 // Sell ERC20 to ETH
                 uint minAmountB = exchange.getTokenToEthInputPrice(amountS);
+                uint minAmountB2 = exchange.getTokenToEthInputPrice(amountS.mul(2));
+                checkSlippage(minAmountB, minAmountB2);
 
                 amountB = exchange.tokenToEthTransferInput(
                     amountS,
-                    applySlippage(minAmountB),
+                    minAmountB,
                     noDeadline,
                     _recipient
                 );
             } else {
                 // Sell ERC20 to ERC20
-                uint minAmountEth = exchange.getTokenToEthInputPrice(amountS);
-                uint minAmountB = getUniswapExchange(tokenB).getEthToTokenInputPrice(minAmountEth);
+                uint minAmountB = getUniswapExchange(tokenB).getEthToTokenInputPrice(
+                    exchange.getTokenToEthInputPrice(amountS)
+                );
+                uint minAmountB2 = getUniswapExchange(tokenB).getEthToTokenInputPrice(
+                    exchange.getTokenToEthInputPrice(amountS.mul(2))
+                );
+                checkSlippage(minAmountB, minAmountB2);
 
                 amountB = exchange.tokenToTokenTransferInput(
                     amountS,
-                    applySlippage(minAmountB),
+                    minAmountB,
                     0, // do not check minAmountEth
                     noDeadline,
                     _recipient,
@@ -156,11 +166,15 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         }
     }
 
-    function applySlippage(uint amount)
+    function checkSlippage(
+        uint amountB,
+        uint amountB2
+        )
         private
-        view
-        returns (uint)
+        pure
     {
-        return amount.mul(100 - SLIPPAGE) / 100;
+        require(amountB > 0 && amountB2 > 0, "INVALID_PRICE");
+        uint slippage = amountB.mul(2).sub(amountB2).mul(10000) / amountB;
+        require(slippage <= SLIPPAGE_BIPS, "SLIPPAGE_TOO_LARGE");
     }
 }
