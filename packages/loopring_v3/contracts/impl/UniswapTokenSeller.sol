@@ -34,6 +34,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
     using MathUint          for uint;
 
+    uint256 constant UINT256_MAX = ~uint256(0);
     uint8   public constant MAX_SLIPPAGE_BIPS = 100; // 1 percentage
     address public uniswapFactorAddress;
     address public recipient;
@@ -84,13 +85,14 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
             require(amountS > 0, "ZERO_AMOUNT");
             exchange = getUniswapExchange(tokenB);
 
-            uint minAmountB = exchange.getEthToTokenInputPrice(amountS);
-            uint minAmountB2 = exchange.getEthToTokenInputPrice(amountS.mul(2));
-            slippage = getSlippage(minAmountB, minAmountB2);
+            slippage = getSlippage(
+                exchange.getEthToTokenInputPrice(amountS),
+                exchange.getEthToTokenInputPrice(amountS.mul(2))
+            );
 
             amountB = exchange.ethToTokenTransferInput.value(amountS)(
-                minAmountB,
-                now,
+                1,  // min_tokens_bought
+                UINT256_MAX,
                 _recipient
             );
         } else {
@@ -103,31 +105,30 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
             if (tokenB == address(0)) {
                 // Sell ERC20 to ETH
-                uint minAmountB = exchange.getTokenToEthInputPrice(amountS);
-                uint minAmountB2 = exchange.getTokenToEthInputPrice(amountS.mul(2));
-                slippage = getSlippage(minAmountB, minAmountB2);
+                slippage = getSlippage(
+                    exchange.getTokenToEthInputPrice(amountS),
+                    exchange.getTokenToEthInputPrice(amountS.mul(2))
+                );
 
                 amountB = exchange.tokenToEthTransferInput(
                     amountS,
-                    minAmountB,
-                    now,
+                    1,  // min_eth_bought
+                    UINT256_MAX,
                     _recipient
                 );
             } else {
                 // Sell ERC20 to ERC20
-                uint minAmountB = getUniswapExchange(tokenB).getEthToTokenInputPrice(
-                    exchange.getTokenToEthInputPrice(amountS)
+                UniswapExchangeInterface exchangeB = getUniswapExchange(tokenB);
+                slippage = getSlippage(
+                    exchangeB.getEthToTokenInputPrice(exchange.getTokenToEthInputPrice(amountS)),
+                    exchangeB.getEthToTokenInputPrice(exchange.getTokenToEthInputPrice(amountS.mul(2)))
                 );
-                uint minAmountB2 = getUniswapExchange(tokenB).getEthToTokenInputPrice(
-                    exchange.getTokenToEthInputPrice(amountS.mul(2))
-                );
-                slippage = getSlippage(minAmountB, minAmountB2);
 
                 amountB = exchange.tokenToTokenTransferInput(
                     amountS,
-                    minAmountB,
-                    0, // do not check minAmountEth
-                    now,
+                    1, //  min_tokens_bought
+                    1, //  min_eth_bought
+                    UINT256_MAX,
                     _recipient,
                     tokenB
                 );
