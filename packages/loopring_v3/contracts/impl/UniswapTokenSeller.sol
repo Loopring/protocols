@@ -35,7 +35,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
     using MathUint          for uint;
 
     uint256 constant UINT256_MAX = ~uint256(0);
-    uint8   public constant MAX_SLIPPAGE_BIPS = 100; // 1 percentage
+    uint    public constant MAX_SLIPPAGE_BIPS = 100; // 1 percentage
     address public uniswapFactorAddress;
     address public recipient;
 
@@ -181,10 +181,11 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         )
         private
         pure
-        returns (uint8 slippage)
+        returns (uint8)
     {
         require(amountB > 0 && amountB2 > 0, "INVALID_PRICE");
-        slippage = uint8(amountB.mul(2).sub(amountB2).mul(10000) / amountB);
-        require(slippage <= MAX_SLIPPAGE_BIPS, "SLIPPAGE_TOO_LARGE");
+        uint slippageBips = amountB.mul(2).sub(amountB2).mul(10000) / amountB;
+        require(slippageBips <= MAX_SLIPPAGE_BIPS, "SLIPPAGE_TOO_LARGE");
+        return uint8(slippageBips);
     }
 }
