@@ -36,7 +36,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
     uint256 constant UINT256_MAX = ~uint256(0);
     uint    public constant MAX_SLIPPAGE_BIPS = 100; // 1 percentage
-    address public uniswapFactorAddress;
+    address public uniswapFactoryAddress; // 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95 on live
     address public recipient;
 
     event TokenSold (
@@ -51,13 +51,13 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
     );
 
     constructor(
-        address _uniswapFactorAddress,
+        address _uniswapFactoryAddress,
         address _recipient
         )
         public
     {
-        require(_uniswapFactorAddress != address(0), "ZERO_ADDRESS");
-        uniswapFactorAddress = _uniswapFactorAddress;
+        require(_uniswapFactoryAddress != address(0), "ZERO_ADDRESS");
+        uniswapFactoryAddress = _uniswapFactoryAddress;
         recipient = _recipient;
     }
 
@@ -154,7 +154,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         view
         returns (UniswapExchangeInterface)
     {
-        UniswapFactoryInterface factory = UniswapFactoryInterface(uniswapFactorAddress);
+        UniswapFactoryInterface factory = UniswapFactoryInterface(uniswapFactoryAddress);
         return UniswapExchangeInterface(factory.getExchange(token));
     }
 
