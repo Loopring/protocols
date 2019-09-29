@@ -21,16 +21,15 @@ pragma solidity ^0.5.11;
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ITokenSeller
 {
-    /// @dev Sells tokenS for tokenB
+    /// @dev Sells all tokenS for tokenB
     /// @param tokenS The token or Ether (0x0) to sell.
-    /// @param amountS The amount to sell.
     /// @param tokenB The token to buy.
     /// @return success True if success, false otherwise.
     function sellToken(
         address tokenS,
-        uint    amountS,
         address tokenB
         )
         external
+        payable
         returns (bool success);
 }
