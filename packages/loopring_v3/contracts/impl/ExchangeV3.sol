@@ -604,6 +604,8 @@ contract ExchangeV3 is IExchangeV3
         key |= feeTokenID;
         key <<= 16;
         key |= fFee;
+        key <<= 8;
+        key |= 1;
         key <<= 32;
         key |= salt;
 
