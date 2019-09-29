@@ -66,23 +66,26 @@ library ExchangeDeposits
         timestamp = request.timestamp;
     }
 
-    function depositTo(
+    function deposit(
         ExchangeData.State storage S,
-        address recipient,
+        address from,
+        address to,
         address tokenAddress,
         uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
         external
     {
-        require(recipient != address(0), "ZERO_ADDRESS");
+        require(from != address(0), "ZERO_ADDRESS");
+        require(to != address(0), "ZERO_ADDRESS");
+        require(S.isAuthorized(from), "UNAUTHORIZED");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
-        uint24 accountID = S.getAccountID(recipient);
+        uint24 accountID = S.getAccountID(to);
         ExchangeData.Account storage account = S.accounts[accountID];
 
         // Total fee to be paid by the user
@@ -90,7 +93,7 @@ library ExchangeDeposits
 
         // Transfer the tokens to this contract
         transferDeposit(
-            account.owner,
+            from,
             tokenAddress,
             amount,
             feeETH
@@ -134,7 +137,11 @@ library ExchangeDeposits
         );
         S.deposits.push(_deposit);
 
+        // Keep track how many tokens are deposited in the exchange
         S.tokenBalances[tokenAddress] = S.tokenBalances[tokenAddress].add(amount);
+        // Limit the total token balance to MAX_TOTAL_TOKEN_BALANCE.
+        // This way we can never have overflows when depositing, so users can never lose any funds this way.
+        require(S.tokenBalances[tokenAddress] <= ExchangeData.MAX_TOTAL_TOKEN_BALANCE(), "TOKEN_BALANCE_TOO_HIGH");
 
         emit DepositRequested(
             uint32(S.depositChain.length - 1),

@@ -36,11 +36,12 @@ contract Operator {
         uint16 blockSize,
         uint8  blockVersion,
         bytes calldata data,
+        bytes calldata auxiliaryData,
         bytes calldata offchainData
         )
         external
     {
-        exchange.commitBlock(blockType, blockSize, blockVersion, data, offchainData);
+        exchange.commitBlock(blockType, blockSize, blockVersion, data, auxiliaryData, offchainData);
     }
 
     function verifyBlocks(

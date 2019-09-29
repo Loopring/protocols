@@ -30,6 +30,17 @@ library ExchangeMode
 {
     using MathUint  for uint;
 
+    function isAuthorized(
+        ExchangeData.State storage S,
+        address accountOwner
+        )
+        internal // inline call
+        view
+        returns (bool)
+    {
+        return msg.sender == accountOwner || msg.sender == S.relayer;
+    }
+
     function isInWithdrawalMode(
         ExchangeData.State storage S
         )

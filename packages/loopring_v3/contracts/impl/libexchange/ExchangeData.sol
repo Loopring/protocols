@@ -119,6 +119,9 @@ library ExchangeData
         // The time the block was created.
         uint32 timestamp;
 
+        // The Ethereum block the block was created in.
+        uint32 ethereumBlockNumber;
+
         // The number of onchain deposit requests that have been processed
         // up to and including this block.
         uint32 numDepositRequestsCommitted;
@@ -163,6 +166,18 @@ library ExchangeData
         uint96 amount;
     }
 
+    // The state of a conditional transfer
+    struct ConditionalTransferState
+    {
+        // True if the conditional transfer can be included in a block
+        bool    approved;
+
+        // The blockIdx and the Ethereum block number when this conditional transfer was processed
+        // (the Ethereum block number is used to detect if the block was reverted)
+        uint32  blockIdx;
+        uint32  ethereumBlockNumber;
+    }
+
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;
@@ -186,6 +201,7 @@ library ExchangeData
     function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 60000; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 30000; }
+    function MAX_TOTAL_TOKEN_BALANCE() internal pure returns (uint) { return 2 ** 96 - 1; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
@@ -197,6 +213,7 @@ library ExchangeData
 
         ILoopringV3    loopring;
         IBlockVerifier blockVerifier;
+        address        relayer;
 
         address lrcAddress;
 
@@ -226,6 +243,9 @@ library ExchangeData
 
         // A map from token address to their accumulated balances
         mapping (address => uint) tokenBalances;
+
+        // A map from the conditional transfer key to the ConditionalTransferState
+        mapping (uint => ConditionalTransferState) conditionalTransfers;
 
         // A block's state will become FINALIZED when and only when this block is VERIFIED
         // and all previous blocks in the chain have become FINALIZED.

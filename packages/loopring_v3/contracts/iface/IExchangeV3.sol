@@ -136,6 +136,16 @@ contract IExchangeV3 is IExchange
         uint8 previousMakerFeeBips
     );
 
+    event ConditionalTransferApproved(
+        address indexed fromAccountID,
+        address         toAccountID,
+        address         token,
+        uint96          amount,
+        address         feeToken,
+        uint96          fee,
+        uint32          salt
+    );
+
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
@@ -468,16 +478,27 @@ contract IExchangeV3 is IExchange
     ///            - Number of withdrawals processed: 4 bytes
     ///            - For every withdrawal:
     ///                - Token ID: 1 bytes
-    ///                - Account ID: 2,5 bytes
-    ///                - Amount: 3,5 bytes
+    ///                - Account ID: 2.5 bytes
+    ///                - Amount: 3.5 bytes
     ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
     ///            - For every withdrawal:
     ///                - Token ID: 1 bytes
-    ///                - Account ID: 2,5 bytes
-    ///                - Amount: 3,5 bytes
+    ///                - Account ID: 2.5 bytes
+    ///                - Amount: 3.5 bytes
     ///            - Label hash: 32 bytes
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - Label hash: 32 bytes
+    ///        For TRANSFER blocks add the following data:
+    ///            - Label hash: 32 bytes
+    ///            - Number of conditional transfers (4 bytes)
+    ///            - For every transfer:
+    ///                - From account ID: 2.5 bytes
+    ///                - To account ID: 2.5 bytes
+    ///                - Token ID: 1 bytes
+    ///                - Amount: 3 bytes
+    ///                - Fee token ID: 1 bytes
+    ///                - Fee amount: 2 bytes
+    ///                - Type: (1 bytes) (isConditional ? 1 : 0)
     ///
     ///        The 'onchain data availability' data (if enabled) is added
     ///        at the end. This allows anyone to recreate the Merkle tree
@@ -486,10 +507,10 @@ contract IExchangeV3 is IExchange
     ///        For RING_SETTLEMENT blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
-    ///                - OrderA.orderID: 2,5 bytes
-    ///                - OrderB.orderID: 2,5 bytes
-    ///                - OrderA.accountID: 2,5 bytes
-    ///                - OrderB.accountID: 2,5 bytes
+    ///                - OrderA.orderID: 2.5 bytes
+    ///                - OrderB.orderID: 2.5 bytes
+    ///                - OrderA.accountID: 2.5 bytes
+    ///                - OrderB.accountID: 2.5 bytes
     ///                - For both Orders:
     ///                    - TokenS: 1 bytes
     ///                    - FillS: 3 bytes
@@ -507,8 +528,8 @@ contract IExchangeV3 is IExchange
     ///        For ORDER_CANCELLATION blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every cancel:
-    ///                - Account ID: 2,5 bytes
-    ///                - Order ID: 2,5 bytes
+    ///                - Account ID: 2.5 bytes
+    ///                - Order ID: 2.5 bytes
     ///                - Token ID: 1 bytes
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
@@ -530,6 +551,8 @@ contract IExchangeV3 is IExchange
     ///            - Mode 0: No compression. The data following the mode byte is used as is.
     ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
     ///                      IDecompressor.decompress() will be called to decompress the following data.
+    /// @param auxiliaryData Block specific data that is only used to help process the block on-chain.
+    ///                      It is not used as input for the circuits and it is not necessary for data-availability.
     /// @param offchainData Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
     function commitBlock(
@@ -537,6 +560,7 @@ contract IExchangeV3 is IExchange
         uint16 blockSize,
         uint8  blockVersion,
         bytes  calldata data,
+        bytes  calldata auxiliaryData,
         bytes  calldata offchainData
         )
         external;
@@ -693,6 +717,49 @@ contract IExchangeV3 is IExchange
         )
         external
         payable;
+
+    /// @dev Approves an internal transfer using an on-chain mechanism.
+    ///      All necessary data is on-chain, so no data needs be transferred to the
+    ///      operator using an off-chain method.
+    ///
+    ///      This function can only be called by the relayer.
+    ///
+    /// @param from The address of the account from where the funds are transferred out.
+    /// @param to The address of the account to where 'amount' tokens are transferred.
+    /// @param token The address of the token to transfer, use `0x0` for Ether.
+    /// @param fAmount The 24bit floating point representation of how many tokens need to transferred.
+    /// @param token The address of the fee token, use `0x0` for Ether.
+    /// @param fFee The 16bit floating point representation of how many fee tokens are paid to the _operator_.
+    /// @param salt A 32bit number that makes this transfer unique (this makes it possible to do multiple
+    ///             identical conditional transfers). Can be any number, there is no fixed ordering like with nonces.
+    function approveConditionalTransfer(
+        address from,
+        address to,
+        address token,
+        uint24  fAmount,
+        address feeToken,
+        uint24  fFee,
+        uint32  salt
+        )
+        external;
+
+    /// @dev Allows the relayer to transfer ERC-20 tokens for a user using the allowance
+    ///      the user has set for the exchange.  This way the user only needs to approve a single exchange contract
+    ///      for all exchange/relayer features, which allows for a more seamless user experience.
+    ///
+    ///      This function can only be called by the relayer.
+    ///
+    /// @param from The address of the account that sends the tokens.
+    /// @param to The address to where 'amount' tokens are transferred.
+    /// @param token The address of the token to transfer (ETH is and cannot be suppported).
+    /// @param amount The amount of tokens transferred.
+    function onchainTransferFrom(
+        address from,
+        address to,
+        address token,
+        uint    amount
+        )
+        external;
 
     // -- Withdrawals --
 

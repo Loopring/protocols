@@ -65,6 +65,7 @@ library ExchangeBlocks
         uint16 blockSize,
         uint8  blockVersion,
         bytes  calldata data,
+        bytes  calldata auxiliaryData,
         bytes  calldata /*offchainData*/
         )
         external
@@ -74,7 +75,8 @@ library ExchangeBlocks
             ExchangeData.BlockType(blockType),
             blockSize,
             blockVersion,
-            data
+            data,
+            auxiliaryData
         );
     }
 
@@ -208,10 +210,11 @@ library ExchangeBlocks
         ExchangeData.BlockType blockType,
         uint16 blockSize,
         uint8  blockVersion,
-        bytes  memory data  // This field already has all the dummy (0-valued) requests padded,
-                            // therefore the size of this field totally depends on
-                            // `blockSize` instead of the actual user requests processed
-                            // in this block. This is fine because 0-bytes consume fewer gas.
+        bytes  memory data,  // This field already has all the dummy (0-valued) requests padded,
+                             // therefore the size of this field totally depends on
+                             // `blockSize` instead of the actual user requests processed
+                             // in this block. This is fine because 0-bytes consume fewer gas.
+        bytes  memory auxiliaryData
         )
         private
     {
@@ -236,11 +239,13 @@ library ExchangeBlocks
         );
 
         // Extract the exchange ID from the data
-        uint32 exchangeIdInData = 0;
-        assembly {
-            exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
+        {
+            uint32 exchangeIdInData = 0;
+            assembly {
+                exchangeIdInData := and(mload(add(data, 4)), 0xFFFFFFFF)
+            }
+            require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
         }
-        require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
 
         // Get the current block
         ExchangeData.Block storage prevBlock = S.blocks[S.blocks.length - 1];
@@ -374,10 +379,11 @@ library ExchangeBlocks
                 require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
             }
+        } else if (blockType == ExchangeData.BlockType.TRANSFER) {
+            validateConditionalTransfers(S, uint32(S.blocks.length), data, auxiliaryData);
         } else if (
             blockType != ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL &&
-            blockType != ExchangeData.BlockType.ORDER_CANCELLATION &&
-            blockType != ExchangeData.BlockType.TRANSFER) {
+            blockType != ExchangeData.BlockType.ORDER_CANCELLATION) {
             revert("UNSUPPORTED_BLOCK_TYPE");
         }
 
@@ -408,6 +414,7 @@ library ExchangeBlocks
             blockSize,
             blockVersion,
             uint32(now),
+            uint32(block.number),
             numDepositRequestsCommitted,
             numWithdrawalRequestsCommitted,
             false,
@@ -418,6 +425,61 @@ library ExchangeBlocks
         S.blocks.push(newBlock);
 
         emit BlockCommitted(S.blocks.length - 1, publicDataHash);
+    }
+
+    function validateConditionalTransfers(
+        ExchangeData.State storage S,
+        uint32 newBlockIdx,
+        bytes  memory data,
+        bytes  memory auxiliaryData
+        )
+        private
+    {
+        // Read how many conditional transfers are included in the block
+        uint numConditionalTransfers;
+        assembly {
+            numConditionalTransfers := and(mload(add(data, 104)), 0xFFFFFFFF)
+        }
+        require(auxiliaryData.length == numConditionalTransfers * 6, "INVALID_AUXILIARYDATA");
+
+        // Run over all conditional transfers
+        uint numBytesPerTransfer = 13;
+        for (uint i = 0; i < auxiliaryData.length; i += 6) {
+            // auxiliaryData contains:
+            // - Transfer index: 2 bytes (the position of the conditional transfer inside data)
+            // - Salt: The salt of the transfer
+            uint index;
+            uint salt;
+            assembly {
+                index := and(mload(add(auxiliaryData, add(i, 2))), 0xFFFF)
+                salt := and(mload(add(auxiliaryData, add(i, 6))), 0xFFFFFFFF)
+            }
+            uint offset = 104 + index * numBytesPerTransfer;
+            uint transferData;
+            assembly {
+                transferData := and(mload(add(data, offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            }
+
+            // The key of the transfer is the combination of the transfer DA data and the salt
+            uint key = (transferData << 32) | salt;
+            ExchangeData.ConditionalTransferState memory transferState = S.conditionalTransfers[key];
+            require(transferState.approved, "TRANSFER_UNAUTHORIZED");
+
+            // Make sure the request was either not used yet, or used in a block that was reverted
+            if (transferState.blockIdx != 0 && transferState.blockIdx < S.blocks.length) {
+                // A block exists, but the block could have been changed.
+                // Check if the block has a newer Ethereum block number
+                require(
+                    S.blocks[transferState.blockIdx].ethereumBlockNumber > transferState.ethereumBlockNumber,
+                    "TRANSFER_ALREADY_CONSUMED"
+                );
+            }
+
+            // Update the state
+            transferState.blockIdx = newBlockIdx;
+            transferState.ethereumBlockNumber = uint32(block.number);
+            S.conditionalTransfers[key] = transferState;
+        }
     }
 
     function validateAndUpdateProtocolFeeValues(

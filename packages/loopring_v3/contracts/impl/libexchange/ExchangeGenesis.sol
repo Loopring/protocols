@@ -68,6 +68,7 @@ library ExchangeGenesis
             0,
             0,
             uint32(now),
+            uint32(block.number),
             1,
             1,
             true,

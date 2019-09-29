@@ -29,6 +29,9 @@ import "./libexchange/ExchangeWithdrawals.sol";
 
 import "../iface/IExchangeV3.sol";
 
+import "../lib/ERC20SafeTransfer.sol";
+import "../lib/MathUint.sol";
+
 
 /// @title An Implementation of IExchangeV3.
 /// @dev This contract supports upgradability proxy, therefore its constructor
@@ -49,12 +52,20 @@ contract ExchangeV3 is IExchangeV3
     using ExchangeMode          for ExchangeData.State;
     using ExchangeTokens        for ExchangeData.State;
     using ExchangeWithdrawals   for ExchangeData.State;
+    using ERC20SafeTransfer     for address;
+    using MathUint              for uint;
 
     ExchangeData.State private state;
 
     modifier onlyOperator()
     {
         require(msg.sender == state.operator, "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyRelayer()
+    {
+        require(msg.sender == state.relayer, "UNAUTHORIZED");
         _;
     }
 
@@ -154,6 +165,32 @@ contract ExchangeV3 is IExchangeV3
         )
     {
         return updateAccountAndDepositInternal(
+            msg.sender,
+            pubKeyX,
+            pubKeyY,
+            address(0),
+            0,
+            permission
+        );
+    }
+
+    function createOrUpdateAccount(
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY,
+        bytes   calldata permission
+        )
+        external
+        payable
+        nonReentrant
+        returns (
+            uint24 accountID,
+            bool   isAccountNew,
+            bool   isAccountUpdated
+        )
+    {
+        return updateAccountAndDepositInternal(
+            owner,
             pubKeyX,
             pubKeyY,
             address(0),
@@ -363,6 +400,7 @@ contract ExchangeV3 is IExchangeV3
         uint16 blockSize,
         uint8  blockVersion,
         bytes  calldata /*data*/,
+        bytes  calldata auxiliaryData,
         bytes  calldata offchainData
         )
         external
@@ -419,7 +457,7 @@ contract ExchangeV3 is IExchangeV3
               revert(0, 0)
           }
         }
-        state.commitBlock(blockType, blockSize, blockVersion, decompressed, offchainData);
+        state.commitBlock(blockType, blockSize, blockVersion, decompressed, auxiliaryData, offchainData);
     }
 
     function verifyBlocks(
@@ -491,6 +529,7 @@ contract ExchangeV3 is IExchangeV3
         )
     {
         return updateAccountAndDepositInternal(
+            msg.sender,
             pubKeyX,
             pubKeyY,
             token,
@@ -507,7 +546,7 @@ contract ExchangeV3 is IExchangeV3
         payable
         nonReentrant
     {
-        state.depositTo(msg.sender, token, amount, 0);
+        state.deposit(msg.sender, msg.sender, token, amount, 0);
     }
 
     function depositTo(
@@ -519,7 +558,85 @@ contract ExchangeV3 is IExchangeV3
         payable
         nonReentrant
     {
-        state.depositTo(recipient, tokenAddress, amount, 0);
+        state.deposit(msg.sender, recipient, tokenAddress, amount, 0);
+    }
+
+    function deposit(
+        address from,
+        address to,
+        address tokenAddress,
+        uint96  amount
+        )
+        external
+        payable
+        nonReentrant
+    {
+        state.deposit(from, to, tokenAddress, amount, 0);
+    }
+
+    function approveConditionalTransfer(
+        address from,
+        address to,
+        address token,
+        uint24  fAmount,
+        address feeToken,
+        uint24  fFee,
+        uint32  salt
+        )
+        external
+        nonReentrant
+        onlyRelayer
+    {
+        uint24 fromAccountID = state.getAccountID(from);
+        uint24 toAccountID = state.getAccountID(from);
+        uint16 tokenID = state.getTokenID(token);
+        uint16 feeTokenID = state.getTokenID(feeToken);
+
+        // Same packing as onchain DA + salt
+        uint key = fromAccountID;
+        key <<= 20;
+        key |= toAccountID;
+        key <<= 8;
+        key |= tokenID;
+        key <<= 24;
+        key |= fAmount;
+        key <<= 8;
+        key |= feeTokenID;
+        key <<= 16;
+        key |= fFee;
+        key <<= 32;
+        key |= salt;
+
+        // Make sure we didn't already approve this conditional transfer
+        require(!state.conditionalTransfers[key].approved, "TRANSFER_ALREADY_APPROVED");
+        state.conditionalTransfers[key] = ExchangeData.ConditionalTransferState(
+            true,
+            0,
+            0
+        );
+
+        emit ConditionalTransferApproved(
+            from,
+            to,
+            token,
+            uint96(uint(fAmount).decodeFloat(24)),
+            feeToken,
+            uint96(uint(fFee).decodeFloat(16)),
+            salt
+        );
+    }
+
+    function onchainTransferFrom(
+        address from,
+        address to,
+        address token,
+        uint    amount
+        )
+        external
+        nonReentrant
+        onlyRelayer
+    {
+        require(token.safeTransferFrom(from, to, amount), "TRANSFER_FAILED");
     }
 
     // -- Withdrawals --
@@ -836,6 +953,7 @@ contract ExchangeV3 is IExchangeV3
 
     // == Internal Functions ==
     function updateAccountAndDepositInternal(
+        address owner,
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
@@ -860,6 +978,6 @@ contract ExchangeV3 is IExchangeV3
         } else if (isAccountUpdated) {
             additionalFeeETH = state.accountUpdateFeeETH;
         }
-        state.depositTo(msg.sender, token, amount, additionalFeeETH);
+        state.deposit(owner, owner, token, amount, additionalFeeETH);
     }
 }
