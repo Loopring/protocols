@@ -61,11 +61,11 @@ module.exports = function(deployer, network, accounts) {
 
     deployer_.then(() => {
       return Promise.all([
-        deployer.deploy(
-          UniswapTokenSeller,
-          factoryAddress,
-          protocolFeeValutAddress
-        )
+        deployer
+          .deploy(UniswapTokenSeller, factoryAddress, protocolFeeValutAddress)
+          .then(c => {
+            uniswapTokenSellerAddress = c.address;
+          })
       ]);
     });
   }
