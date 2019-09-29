@@ -445,9 +445,9 @@ library ExchangeBlocks
         // Run over all conditional transfers
         uint numBytesPerTransfer = 13;
         for (uint i = 0; i < auxiliaryData.length; i += 6) {
-            // auxiliaryData contains:
+            // auxiliaryData contains for each conditional transfer:
             // - Transfer index: 2 bytes (the position of the conditional transfer inside data)
-            // - Salt: The salt of the transfer
+            // - Salt: 4 bytes (the salt of the transfer)
             uint index;
             uint salt;
             assembly {
@@ -459,6 +459,9 @@ library ExchangeBlocks
             assembly {
                 transferData := and(mload(add(data, offset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFF)
             }
+
+            // Check that this is a conditional transfer
+            require((transferData & 0xFF) == 1, "INVALID_AUXILIARYDATA");
 
             // The key of the transfer is the combination of the transfer DA data and the salt
             uint key = (transferData << 32) | salt;
