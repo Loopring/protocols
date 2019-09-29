@@ -180,7 +180,7 @@ export class Exchange {
       return;
     }
     const message = new BitArray();
-    message.addNumber(config.getExchangeId(), 32);
+    message.addNumber(order.exchangeId, 32);
     message.addNumber(order.orderId, 20);
     message.addNumber(order.accountId, 20);
     message.addString(order.dualAuthPubKeyX, 254);
