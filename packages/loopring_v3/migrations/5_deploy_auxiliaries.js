@@ -1,7 +1,7 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or UniversalRegistry.
 
-const DowntimeCostCalculator = artifacts.require(
+var DowntimeCostCalculator = artifacts.require(
   "./impl/DowntimeCostCalculator.sol"
 );
 const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
@@ -64,7 +64,7 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(
           UniswapTokenSeller,
           factoryAddress,
-          ProtocolFeeVault.deployed()
+          protocolFeeValutAddress
         )
       ]);
     });

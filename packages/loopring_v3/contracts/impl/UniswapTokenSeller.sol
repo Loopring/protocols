@@ -32,9 +32,9 @@ import "../thirdparty/UniswapFactoryInterface.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
-    using MathUint          for uint;
+    using MathUint for uint;
 
-    uint256 constant UINT256_MAX = ~uint256(0);
+    uint256 constant MAX_UINT = ~uint(0);
     uint    public constant MAX_SLIPPAGE_BIPS = 100; // 1 percent
     address public uniswapFactoryAddress; // 0xc0a47dFe034B400B47bDaD5FecDa2621de6c4d95 on live
     address public recipient;
@@ -92,7 +92,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
 
             amountB = exchange.ethToTokenTransferInput.value(amountS)(
                 1,  // min_tokens_bought
-                UINT256_MAX,
+                MAX_UINT,
                 _recipient
             );
         } else {
@@ -113,7 +113,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
                 amountB = exchange.tokenToEthTransferInput(
                     amountS,
                     1,  // min_eth_bought
-                    UINT256_MAX,
+                    MAX_UINT,
                     _recipient
                 );
             } else {
@@ -128,7 +128,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
                     amountS,
                     1, //  min_tokens_bought
                     1, //  min_eth_bought
-                    UINT256_MAX,
+                    MAX_UINT,
                     _recipient,
                     tokenB
                 );
@@ -169,7 +169,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         uint allowance = token.allowance(address(this), address(exchange));
         if (allowance < amountS) {
             require(
-                token.approve(address(exchange), 2 ** 256 - 1),
+                token.approve(address(exchange), MAX_UINT),
                 "APPROVAL_FAILURE"
             );
         }
