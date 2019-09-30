@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import hash = require("hash.js");
 
 export class BitArray {
   private data: number[];
@@ -28,8 +29,10 @@ export class BitArray {
   }
 
   public static hashCode(s) {
-    for (var i = 0, h = 0; i < s.length; i++)
-      h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
-    return Math.abs(h);
+    var hashValue = hash
+      .sha256()
+      .update(s)
+      .digest();
+    return new BN(hashValue);
   }
 }
