@@ -21,7 +21,7 @@
   "license": "ISC",
   "dependencies": {
     "ganache-cli": "^6.1.8",
-    "truffle": "4.1.14",
+    "truffle": "5.0.38",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^5.1.5",
     "protocol2-js": "0.2.18"
