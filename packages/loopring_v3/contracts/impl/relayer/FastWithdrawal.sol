@@ -25,6 +25,8 @@ import "../../lib/MathUint.sol";
 import "../../thirdparty/ECDSA.sol";
 
 /// @title An Implementation of IRelayer.
+/// @dev FastWithdrawal needs to extend RelayerData to make sure the data layout matches
+///      with that layout in the Relayer contract.
 /// @author Brecht Devos - <brecht@loopring.org>
 contract FastWithdrawal is RelayerData
 {
