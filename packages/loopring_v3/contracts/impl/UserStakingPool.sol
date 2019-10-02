@@ -37,11 +37,11 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint   balance;        // Total amount of LRC staked or rewarded
         uint64 depositedAt;
         uint64 claimedAt;      // timestamp from which more points will be accumulated
-        uint   claimedReward;  // Total amount of LRC claimed as reward.
+        uint   amountClaimed;  // Total amount of LRC claimed as reward.
     }
 
-    Staking private total;
-    mapping (address => Staking) private stakings;
+    Staking public total;
+    mapping (address => Staking) public stakings;
 
     constructor(address _lrcAddress)
         Claimable()
@@ -162,7 +162,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
             total.balance = total.balance.add(claimedAmount);
-            total.claimedReward = total.claimedReward.add(claimedAmount);
+            total.amountClaimed = total.amountClaimed.add(claimedAmount);
             total.claimedAt = uint64(
                 (totalPoints >= userPoints) ?
                 now.sub(totalPoints.sub(userPoints) / total.balance) : now
@@ -170,7 +170,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
             Staking storage user = stakings[msg.sender];
             user.balance = user.balance.add(claimedAmount);
-            user.claimedReward = user.claimedReward.add(claimedAmount);
+            user.amountClaimed = user.amountClaimed.add(claimedAmount);
             user.claimedAt = uint64(now);
 
             emit LRCRewarded(msg.sender, claimedAmount);
