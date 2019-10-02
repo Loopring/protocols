@@ -50,6 +50,8 @@ After Istanbul:
 
 ## Build
 
+Please use node v10 and node v12.
+
 `npm run build // first time` or `npm run compile` or `npm run watch`.
 
 ### Circuits
