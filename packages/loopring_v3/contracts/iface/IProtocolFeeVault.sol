@@ -40,19 +40,10 @@ contract IProtocolFeeVault
     uint claimedDAOFund;
     uint claimedBurn;
 
-    event DAOFunded (
-        uint    amountDAO,
-        uint    amountBurn
-    );
-
-    event TokenSold (
-        address token,
-        uint    amount
-    );
-
-    event SettingsUpdated (
-        uint time
-    );
+    event LRCClaimed(uint amount);
+    event DAOFunded(uint amountDAO, uint amountBurn);
+    event TokenSold(address token, uint amount);
+    event SettingsUpdated(uint time);
 
     /// @dev Sets depdending contract address. All these addresses can be zero.
     /// @param _userStakingPoolAddress The address of the user staking pool.

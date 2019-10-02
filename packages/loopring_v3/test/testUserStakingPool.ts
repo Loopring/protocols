@@ -3,6 +3,7 @@ import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { expectThrow } from "./expectThrow";
 import BN = require("bn.js");
 const truffleAssert = require("truffle-assertions");
+const abi = require("ethereumjs-abi");
 
 contract("UserStakingPool", (accounts: string[]) => {
   const contracts = new Artifacts(artifacts);

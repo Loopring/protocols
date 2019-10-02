@@ -172,9 +172,9 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             user.balance = user.balance.add(claimedAmount);
             user.claimedReward = user.claimedReward.add(claimedAmount);
             user.claimedAt = uint64(now);
-        }
 
-        emit LRCRewarded(msg.sender, claimedAmount);
+            emit LRCRewarded(msg.sender, claimedAmount);
+        }
     }
 
     function updateStaking(

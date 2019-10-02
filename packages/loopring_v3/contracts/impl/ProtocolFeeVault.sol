@@ -71,9 +71,11 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         external
         nonReentrant
     {
+        require(amount > 0, "ZERO_VALUE");
         require(msg.sender == userStakingPoolAddress, "UNAUTHORIZED");
         lrcAddress.safeTransferAndVerify(userStakingPoolAddress, amount);
         claimedReward = claimedReward.add(amount);
+        emit LRCClaimed(amount);
     }
 
     function fundDAO()
