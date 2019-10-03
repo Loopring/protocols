@@ -37,7 +37,7 @@ contract("UserStakingPool2", (accounts: string[]) => {
     });
   });
 
-  describe("When protocol fee vault is set", () => {
+  describe("When protocol fee vault is set", async () => {
     const alice = accounts[1];
     const bob = accounts[2];
 
