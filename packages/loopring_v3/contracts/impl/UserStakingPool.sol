@@ -74,13 +74,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             uint withdrawalWaitTime,
             uint rewardWaitTime,
             uint balance,
-            uint claimableReward
+            uint pendingReward
         )
     {
         withdrawalWaitTime = getUserWithdrawalWaitTime(user);
         rewardWaitTime = getUserClaimWaitTime(user);
         balance = stakings[user].balance;
-        (, , claimableReward) = getUserClaimableReward(user);
+        (, , pendingReward) = getUserPendingReward(user);
     }
 
     function stake(uint amount)
@@ -98,8 +98,33 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             numAddresses += 1;
         }
 
-        updateStaking(user, amount);
-        updateStaking(total, amount);
+        // update user staking
+        uint balance = user.balance.add(amount);
+
+        user.depositedAt = uint64(
+            user.balance
+                .mul(user.depositedAt)
+                .add(amount.mul(now)) / balance
+        );
+
+        user.claimedAt = uint64(
+            user.balance
+                .mul(user.claimedAt)
+                .add(amount.mul(now)) / balance
+        );
+
+        user.balance = balance;
+
+        // update total staking
+        balance = total.balance.add(amount);
+
+        total.claimedAt = uint64(
+            total.balance
+                .mul(total.claimedAt)
+                .add(amount.mul(now)) / balance
+        );
+
+        total.balance = balance;
 
         emit LRCStaked(msg.sender, amount);
     }
@@ -155,7 +180,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint totalPoints;
         uint userPoints;
 
-        (totalPoints, userPoints, claimedAmount) = getUserClaimableReward(msg.sender);
+        (totalPoints, userPoints, claimedAmount) = getUserPendingReward(msg.sender);
 
         if (claimedAmount > 0) {
             IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
@@ -170,30 +195,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             user.balance = user.balance.add(claimedAmount);
             user.claimedAt = uint64(now);
         }
-        emit LRCRewarded(msg.sender, claimedAmount, userPoints, totalPoints);
-    }
-
-    function updateStaking(
-        Staking storage staking,
-        uint  additionalBalance
-        )
-        private
-    {
-        uint balance = staking.balance.add(additionalBalance);
-
-        staking.depositedAt = uint64(
-            staking.balance
-                .mul(staking.depositedAt)
-                .add(additionalBalance.mul(now)) / balance
-        );
-
-        staking.claimedAt = uint64(
-            staking.balance
-                .mul(staking.claimedAt)
-                .add(additionalBalance.mul(now)) / balance
-        );
-
-        staking.balance = balance;
+        emit LRCRewarded(msg.sender, claimedAmount);
     }
 
     function getUserWithdrawalWaitTime(address user)
@@ -224,13 +226,13 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         }
     }
 
-    function getUserClaimableReward(address user)
+    function getUserPendingReward(address user)
         private
         view
         returns (
             uint totalPoints,
             uint userPoints,
-            uint claimableReward
+            uint pendingReward
         )
     {
         Staking storage staking = stakings[user];
@@ -247,10 +249,10 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         if (protocolFeeVaultAddress != address(0) &&
             totalPoints != 0 &&
             userPoints != 0) {
-            (, , , , , , , claimableReward) = IProtocolFeeVault(
+            (, , , , , , , pendingReward) = IProtocolFeeVault(
                 protocolFeeVaultAddress
             ).getProtocolFeeStats();
-            claimableReward = claimableReward.mul(userPoints) / totalPoints;
+            pendingReward = pendingReward.mul(userPoints) / totalPoints;
         }
     }
 }

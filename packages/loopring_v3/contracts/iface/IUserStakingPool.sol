@@ -36,7 +36,7 @@ contract IUserStakingPool
 
     event LRCStaked       (address indexed user,  uint amount);
     event LRCWithdrawn    (address indexed user,  uint amount);
-    event LRCRewarded     (address indexed user,  uint amount, uint userPoints, uint totalPoints);
+    event LRCRewarded     (address indexed user,  uint amount);
 
     /// @dev Sets a new IProtocolFeeVault address, only callable by the owner.
     /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.
