@@ -5,28 +5,30 @@ import BN = require("bn.js");
 const truffleAssert = require("truffle-assertions");
 const abi = require("ethereumjs-abi");
 
-const assertOnlySmallDifference = (bn1: BN, bn2: BN) => {
-  if (!bn1.eq(bn2)) {
+// Make sure the amount difference is no more than 0.001%;
+const isAmountCloseEnough = (bn1: BN, bn2: BN) => {
+  const result =
+    bn1.lte(bn2) &&
+    bn2
+      .sub(bn1)
+      .mul(new BN(100000))
+      .div(bn2)
+      .lte(new BN(1));
+  if (!result) {
     console.error(bn1.toString(10) + " vs " + bn2.toString(10));
   }
-  assert(bn1.lte(bn2));
-
-  console.error(
-    "======>",
-    bn2
-      .sub(bn1)
-      .mul(new BN(100000))
-      .div(bn2)
-      .toString(10)
-  );
-  assert(
-    bn2
-      .sub(bn1)
-      .mul(new BN(100000))
-      .div(bn2)
-      .lte(new BN(1))
-  );
+  return result;
 };
+
+// Make sure the time difference is no more than 1 percent.
+const isTimeCloseEnough = (bn1: BN, bn2: BN) => {
+  const result = bn1.eq(bn2) || bn1.eq(bn2.sub(new BN(1)));
+  if (!result) {
+    console.error(bn1.toString(10) + " vs " + bn2.toString(10));
+  }
+  return result;
+};
+
 contract("UserStakingPool", (accounts: string[]) => {
   const contracts = new Artifacts(artifacts);
   const MockContract = contracts.MockContract;
@@ -77,10 +79,13 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(alice);
 
         assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
           "withdrawalWaitTime"
         );
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
         assert(balance.eq(ZERO), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
@@ -106,10 +111,13 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(bob);
 
         assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
           "withdrawalWaitTime"
         );
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
         assert(balance.eq(amount), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
@@ -126,14 +134,17 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(bob);
 
         assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY / 2)),
+          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY / 2)),
           "withdrawalWaitTime: " +
             withdrawalWaitTime.toString(10) +
             " vs " +
             new BN(MIN_WITHDRAW_DELAY / 2).toString(10)
         );
         assert(
-          rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY - MIN_WITHDRAW_DELAY / 2)),
+          isTimeCloseEnough(
+            rewardWaitTime,
+            new BN(MIN_CLAIM_DELAY - MIN_WITHDRAW_DELAY / 2)
+          ),
           "rewardWaitTime"
         );
         assert(balance.eq(amount), "balance");
@@ -151,8 +162,11 @@ contract("UserStakingPool", (accounts: string[]) => {
           3: claimableReward
         } = await userStakingPool.getUserStaking(bob);
 
-        assert(withdrawalWaitTime.eq(new BN(10)), "withdrawalWaitTime");
-        assert(rewardWaitTime.eq(new BN(10)), "rewardWaitTime");
+        assert(
+          isTimeCloseEnough(withdrawalWaitTime, new BN(10)),
+          "withdrawalWaitTime"
+        );
+        assert(isTimeCloseEnough(rewardWaitTime, new BN(10)), "rewardWaitTime");
         assert(balance.eq(amount), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
 
@@ -201,10 +215,13 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(bob);
 
         assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
           "withdrawalWaitTime"
         );
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
         assert(balance.eq(ZERO), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
@@ -290,7 +307,10 @@ contract("UserStakingPool", (accounts: string[]) => {
 
         // - Check: LRCWithdrawn event emitted
         truffleAssert.eventEmitted(tx, "LRCWithdrawn", (evt: any) => {
-          return charles === evt.user && remainingAmount.eq(evt.amount);
+          return (
+            charles === evt.user &&
+            isTimeCloseEnough(evt.amount, remainingAmount)
+          );
         });
 
         // - Check: LRCRewarded event NOT emitted
@@ -306,10 +326,13 @@ contract("UserStakingPool", (accounts: string[]) => {
         } = await userStakingPool.getUserStaking(charles);
 
         assert(
-          withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+          isTimeCloseEnough(withdrawalWaitTime, new BN(MIN_WITHDRAW_DELAY)),
           "withdrawalWaitTime"
         );
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
         assert(balance.eq(ZERO), "balance");
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
@@ -378,7 +401,8 @@ contract("UserStakingPool", (accounts: string[]) => {
 
         truffleAssert.eventEmitted(tx, "LRCRewarded", (evt: any) => {
           return (
-            alice === evt.user //&& totalReward.div(new BN(2)).eq(evt.amount)
+            alice === evt.user &&
+            isAmountCloseEnough(evt.amount, totalReward.div(new BN(2)))
           );
         });
 
@@ -389,8 +413,14 @@ contract("UserStakingPool", (accounts: string[]) => {
           3: claimableReward
         } = await userStakingPool.getUserStaking(alice);
 
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
-        assert(balance.eq(amount.add(totalReward.div(new BN(2)))), "balance");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
+        assert(
+          isAmountCloseEnough(balance, amount.add(totalReward.div(new BN(2)))),
+          "balance"
+        );
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
 
@@ -398,7 +428,9 @@ contract("UserStakingPool", (accounts: string[]) => {
         // then Bob can claim all remaining reward after timeout
         const tx = await userStakingPool.claim({ from: bob });
         truffleAssert.eventEmitted(tx, "LRCRewarded", (evt: any) => {
-          return bob === evt.user; // && totalReward.eq(evt.amount);
+          return (
+            bob === evt.user && isAmountCloseEnough(evt.amount, totalReward)
+          );
         });
 
         const {
@@ -408,9 +440,14 @@ contract("UserStakingPool", (accounts: string[]) => {
           3: claimableReward
         } = await userStakingPool.getUserStaking(bob);
 
-        assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
-        assertOnlySmallDifference(balance, amount.add(totalReward));
-        assert(balance.eq(amount.add(totalReward)), "balance");
+        assert(
+          isTimeCloseEnough(rewardWaitTime, new BN(MIN_CLAIM_DELAY)),
+          "rewardWaitTime"
+        );
+        assert(
+          isAmountCloseEnough(balance, amount.add(totalReward)),
+          "balance"
+        );
         assert(claimableReward.eq(ZERO), "claimableReward");
       });
     });

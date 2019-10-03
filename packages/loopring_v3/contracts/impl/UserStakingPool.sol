@@ -235,7 +235,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     {
         Staking storage staking = stakings[user];
 
-        totalPoints = total.balance.mul(now.sub(total.claimedAt));
+        // We add 1 to the time to make totalPoints slightly bigger
+        totalPoints = total.balance.mul(now.sub(total.claimedAt).add(1));
         userPoints = staking.balance.mul(now.sub(staking.claimedAt));
 
         // Because of the math calculation, this is possible.
