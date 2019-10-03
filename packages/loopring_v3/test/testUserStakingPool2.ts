@@ -18,11 +18,14 @@ contract("UserStakingPool2", (accounts: string[]) => {
 
   var MIN_WITHDRAW_DELAY: number;
   var MIN_CLAIM_DELAY: number;
+  const owner = accounts[0];
 
   before(async () => {
     mockLRC = await MockContract.new();
     mockProtocolFeeVault = await MockContract.new();
-    userStakingPool = await UserStakingPool.new(mockLRC.address);
+    userStakingPool = await UserStakingPool.new(mockLRC.address, {
+      from: owner
+    });
 
     MIN_WITHDRAW_DELAY = (await userStakingPool.MIN_WITHDRAW_DELAY()).toNumber();
     MIN_CLAIM_DELAY = (await userStakingPool.MIN_CLAIM_DELAY()).toNumber();
@@ -35,29 +38,69 @@ contract("UserStakingPool2", (accounts: string[]) => {
     await mockProtocolFeeVault.reset();
   });
 
-  describe("When nobody staked anything, user Alice", () => {
+  describe("When protocol fee vault is set", () => {
     const alice = accounts[1];
+    const bob = accounts[2];
 
-    it("can query getTotalStaking and get default result", async () => {
-      const totalStaking = await userStakingPool.getTotalStaking();
-      assert(totalStaking.eq(ZERO), "getTotalStaking");
-    });
+    it("Alice cannot claim before timeout", async () => {
+      await userStakingPool.setProtocolFeeVault(mockProtocolFeeVault.address, {
+        from: owner
+      });
+      const amount = new BN(web3.utils.toWei("100", "ether"));
 
-    it("can query getUserStaking and get default result", async () => {
-      const {
-        0: withdrawalWaitTime,
-        1: rewardWaitTime,
-        2: balance,
-        3: claimableReward
-      } = await userStakingPool.getUserStaking(alice);
+      await userStakingPool.stake(amount, { from: alice });
+      await userStakingPool.stake(amount, { from: bob });
 
-      assert(
-        withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
-        "withdrawalWaitTime"
+      await advanceTimeAndBlockAsync(MIN_CLAIM_DELAY - 1);
+
+      await expectThrow(userStakingPool.claim({ from: alice }), "NEED_TO_WAIT");
+
+      const getProtocolFeeStats = web3.utils
+        .sha3("getProtocolFeeStats()")
+        .slice(0, 10);
+      const reward = new BN(web3.utils.toWei("500", "ether"));
+      const returnValue = abi.rawEncode(
+        ["uint", "uint", "uint", "uint", "uint", "uint", "uint", "uint"],
+        [0, 0, 0, 0, 0, 0, 0, reward]
       );
-      assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
-      assert(balance.eq(ZERO), "balance");
-      assert(claimableReward.eq(ZERO), "claimableReward");
+
+      await mockProtocolFeeVault.givenMethodReturn(
+        getProtocolFeeStats,
+        returnValue
+      );
+
+      await advanceTimeAndBlockAsync(1);
+
+      const tx1 = await userStakingPool.claim({ from: alice });
+
+      truffleAssert.eventEmitted(tx1, "LRCRewarded", (evt: any) => {
+        return alice === evt.user && reward.div(new BN(2)).eq(evt.amount);
+      });
+
+      console.log("tx1: ", tx1);
+
+      const tx2 = await userStakingPool.claim({ from: bob });
+
+      truffleAssert.eventEmitted(tx2, "LRCRewarded", (evt: any) => {
+        return bob === evt.user && reward.eq(evt.amount);
+      });
     });
+
+    // it("can query getUserStaking and get default result", async () => {
+    //   const {
+    //     0: withdrawalWaitTime,
+    //     1: rewardWaitTime,
+    //     2: balance,
+    //     3: claimableReward
+    //   } = await userStakingPool.getUserStaking(alice);
+
+    //   assert(
+    //     withdrawalWaitTime.eq(new BN(MIN_WITHDRAW_DELAY)),
+    //     "withdrawalWaitTime"
+    //   );
+    //   assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+    //   assert(balance.eq(ZERO), "balance");
+    //   assert(claimableReward.eq(ZERO), "claimableReward");
+    // });
   });
 });

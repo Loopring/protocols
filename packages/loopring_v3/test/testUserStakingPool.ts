@@ -63,7 +63,7 @@ contract("UserStakingPool", (accounts: string[]) => {
 
   describe("When no protocol fee vault is set, user Bob can", () => {
     const bob = accounts[2];
-    const amount = new BN("1000" + "000000000000000000", 10);
+    const amount = new BN(web3.utils.toWei("1000", "ether"));
 
     it("can stake 1000 LRC then query getUserStaking", async () => {
       const tx = await userStakingPool.stake(amount, { from: bob });
@@ -201,7 +201,7 @@ contract("UserStakingPool", (accounts: string[]) => {
   });
 
   describe("when no protocol fee vault is set, user Charles", () => {
-    const amount = new BN("1000" + "000000000000000000", 10);
+    const amount = new BN(web3.utils.toWei("1000", "ether"));
     const charles = accounts[3];
 
     it("can stake 1000 LRC", async () => {
