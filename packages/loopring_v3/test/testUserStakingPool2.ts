@@ -41,8 +41,9 @@ contract("UserStakingPool2", (accounts: string[]) => {
   describe("When protocol fee vault is set", () => {
     const alice = accounts[1];
     const bob = accounts[2];
+    const reward = new BN(web3.utils.toWei("500", "ether"));
 
-    it("Alice cannot claim before timeout", async () => {
+    it("Alice and bob stake the same amount but cannot claim before timeout", async () => {
       await userStakingPool.setProtocolFeeVault(mockProtocolFeeVault.address, {
         from: owner
       });
@@ -54,11 +55,12 @@ contract("UserStakingPool2", (accounts: string[]) => {
       await advanceTimeAndBlockAsync(MIN_CLAIM_DELAY - 1);
 
       await expectThrow(userStakingPool.claim({ from: alice }), "NEED_TO_WAIT");
-
+    });
+    it("then Alice can claim 50% reward after timeout", async () => {
       const getProtocolFeeStats = web3.utils
         .sha3("getProtocolFeeStats()")
         .slice(0, 10);
-      const reward = new BN(web3.utils.toWei("500", "ether"));
+
       const returnValue = abi.rawEncode(
         ["uint", "uint", "uint", "uint", "uint", "uint", "uint", "uint"],
         [0, 0, 0, 0, 0, 0, 0, reward]
@@ -76,11 +78,9 @@ contract("UserStakingPool2", (accounts: string[]) => {
       truffleAssert.eventEmitted(tx1, "LRCRewarded", (evt: any) => {
         return alice === evt.user && reward.div(new BN(2)).eq(evt.amount);
       });
-
-      console.log("tx1: ", tx1);
-
+    });
+    it("then Blb can claim all remaining reward after timeout", async () => {
       const tx2 = await userStakingPool.claim({ from: bob });
-
       truffleAssert.eventEmitted(tx2, "LRCRewarded", (evt: any) => {
         return bob === evt.user && reward.eq(evt.amount);
       });
