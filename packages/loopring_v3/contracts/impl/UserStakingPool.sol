@@ -37,7 +37,6 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         uint   balance;        // Total amount of LRC staked or rewarded
         uint64 depositedAt;
         uint64 claimedAt;      // timestamp from which more points will be accumulated
-        uint   amountClaimed;  // Total amount of LRC claimed as reward.
     }
 
     Staking public total;
@@ -162,19 +161,15 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
             total.balance = total.balance.add(claimedAmount);
-            total.amountClaimed = total.amountClaimed.add(claimedAmount);
             total.claimedAt = uint64(
-                (totalPoints >= userPoints) ?
-                now.sub(totalPoints.sub(userPoints) / total.balance) : now
+                now.sub(totalPoints.sub(userPoints) / total.balance)
             );
 
             Staking storage user = stakings[msg.sender];
             user.balance = user.balance.add(claimedAmount);
-            user.amountClaimed = user.amountClaimed.add(claimedAmount);
             user.claimedAt = uint64(now);
-
-            emit LRCRewarded(msg.sender, claimedAmount);
         }
+        emit LRCRewarded(msg.sender, claimedAmount);
     }
 
     function updateStaking(
