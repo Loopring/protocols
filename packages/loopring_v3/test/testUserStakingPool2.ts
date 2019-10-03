@@ -54,5 +54,67 @@ contract("UserStakingPool2", (accounts: string[]) => {
       await expectThrow(userStakingPool.claim({ from: alice }), "NEED_TO_WAIT");
     });
     // mocke ProtocolFeeVault to return 500 LRC as total reward
+
+    it("then Alice can claim 50% of the LRC reward", async () => {
+      const getProtocolFeeStats = web3.utils
+        .sha3("getProtocolFeeStats()")
+        .slice(0, 10);
+
+      await mockProtocolFeeVault.givenMethodReturn(
+        getProtocolFeeStats,
+        abi.rawEncode(
+          ["uint", "uint", "uint", "uint", "uint", "uint", "uint", "uint"],
+          [0, 0, 0, 0, 0, 0, 0, totalReward]
+        )
+      );
+
+      await advanceTimeAndBlockAsync(1);
+
+      const tx = await userStakingPool.claim({ from: alice });
+
+      truffleAssert.eventEmitted(tx, "LRCRewarded", (evt: any) => {
+        console.error(
+          "event alice: ",
+          totalReward.div(new BN(2)).toString(10),
+          evt.amount.toString(10)
+        );
+        return alice === evt.user; // && totalReward.div(new BN(2)).eq(evt.amount);
+      });
+
+      const {
+        0: withdrawalWaitTime,
+        1: rewardWaitTime,
+        2: balance,
+        3: claimableReward
+      } = await userStakingPool.getUserStaking(alice);
+
+      assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+      assert(balance.eq(amount.add(totalReward.div(new BN(2)))), "balance");
+      assert(claimableReward.eq(ZERO), "claimableReward");
+    });
+
+    it("then Bob can claim 100% of the remaining LRC reward", async () => {
+      // then Bob can claim all remaining reward after timeout
+      const tx = await userStakingPool.claim({ from: bob });
+      truffleAssert.eventEmitted(tx, "LRCRewarded", (evt: any) => {
+        console.error(
+          "event bob: ",
+          totalReward.toString(10),
+          evt.amount.toString(10)
+        );
+        return bob === evt.user; // && totalReward.eq(evt.amount);
+      });
+
+      const {
+        0: withdrawalWaitTime,
+        1: rewardWaitTime,
+        2: balance,
+        3: claimableReward
+      } = await userStakingPool.getUserStaking(bob);
+
+      assert(rewardWaitTime.eq(new BN(MIN_CLAIM_DELAY)), "rewardWaitTime");
+      assert(balance.eq(amount.add(totalReward)), "balance");
+      assert(claimableReward.eq(ZERO), "claimableReward");
+    });
   });
 });

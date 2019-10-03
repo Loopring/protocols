@@ -112,6 +112,7 @@
     "lodash": "^4.17.14",
     "loopringV3.js": "file:../loopring_v3.js/",
     "node-bin-setup": "^1.0.6",
+    "scrypt-js": "^2.0.4",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
     "snarkjs": "0.1.20",

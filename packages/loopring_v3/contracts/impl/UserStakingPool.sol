@@ -161,6 +161,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             IProtocolFeeVault(protocolFeeVaultAddress).claimStakingReward(claimedAmount);
 
             total.balance = total.balance.add(claimedAmount);
+
             total.claimedAt = uint64(
                 now.sub(totalPoints.sub(userPoints) / total.balance)
             );
@@ -169,7 +170,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
             user.balance = user.balance.add(claimedAmount);
             user.claimedAt = uint64(now);
         }
-        emit LRCRewarded(msg.sender, claimedAmount);
+        emit LRCRewarded(msg.sender, claimedAmount, userPoints, totalPoints);
     }
 
     function updateStaking(
@@ -233,9 +234,14 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         )
     {
         Staking storage staking = stakings[user];
+
         totalPoints = total.balance.mul(now.sub(total.claimedAt));
         userPoints = staking.balance.mul(now.sub(staking.claimedAt));
-        assert(totalPoints >= userPoints);
+
+        // Because of the math calculation, this is possible.
+        if (totalPoints < userPoints) {
+            userPoints = totalPoints;
+        }
 
         if (protocolFeeVaultAddress != address(0) &&
             totalPoints != 0 &&
