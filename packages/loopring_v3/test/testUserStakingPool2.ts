@@ -31,11 +31,10 @@ contract("UserStakingPool2", (accounts: string[]) => {
     MIN_CLAIM_DELAY = (await userStakingPool.MIN_CLAIM_DELAY()).toNumber();
 
     assert.equal(MIN_WITHDRAW_DELAY, MIN_CLAIM_DELAY, "test assumption failed");
-  });
 
-  beforeEach(async () => {
-    await mockLRC.reset();
-    await mockProtocolFeeVault.reset();
+    await userStakingPool.setProtocolFeeVault(mockProtocolFeeVault.address, {
+      from: owner
+    });
   });
 
   describe("When protocol fee vault is set", () => {
@@ -46,10 +45,6 @@ contract("UserStakingPool2", (accounts: string[]) => {
     console.error("bob", bob);
 
     it("Alice and bob stake the same amount and split reward", async () => {
-      await userStakingPool.setProtocolFeeVault(mockProtocolFeeVault.address, {
-        from: owner
-      });
-
       const amount = new BN(web3.utils.toWei("100", "ether"));
       {
         await userStakingPool.stake(amount, { from: alice });
@@ -65,6 +60,7 @@ contract("UserStakingPool2", (accounts: string[]) => {
       }
 
       // mocke ProtocolFeeVault to return 500 LRC as total reward
+
       var totalReward = new BN(web3.utils.toWei("500", "ether"));
 
       const getProtocolFeeStats = web3.utils

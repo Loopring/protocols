@@ -108,7 +108,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
         external
         nonReentrant
     {
-        require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT2");
+        require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
 
         // automatical claim when possible
         if (protocolFeeVaultAddress != address(0) &&

@@ -30,11 +30,6 @@ contract("UserStakingPool", (accounts: string[]) => {
     assert.equal(MIN_WITHDRAW_DELAY, MIN_CLAIM_DELAY, "test assumption failed");
   });
 
-  beforeEach(async () => {
-    await mockLRC.reset();
-    await mockProtocolFeeVault.reset();
-  });
-
   describe("When nobody staked anything, user Alice", () => {
     const alice = accounts[1];
 
