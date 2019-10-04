@@ -50,7 +50,7 @@ After Istanbul:
 
 ## Build
 
-Please use node v10 and node v12.
+Please use node v10.
 
 `npm run build // first time` or `npm run compile` or `npm run watch`.
 

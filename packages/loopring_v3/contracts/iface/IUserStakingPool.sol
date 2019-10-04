@@ -54,7 +54,7 @@ contract IUserStakingPool
     /// @return withdrawalWaitTime Time in seconds that the user has to wait before any LRC can be withdrawn.
     /// @return rewardWaitTime Time in seconds that the user has to wait before any LRC reward can be claimed.
     /// @return balance The amount of LRC staked or rewarded.
-    /// @return claimableReward The amount of LRC reward claimable.
+    /// @return pendingReward The amount of LRC reward claimable.
     function getUserStaking(address user)
         external
         view
@@ -62,7 +62,7 @@ contract IUserStakingPool
             uint withdrawalWaitTime,
             uint rewardWaitTime,
             uint balance,
-            uint claimableReward
+            uint pendingReward
         );
 
     /// @dev Users call this function stake certain amount of LRC.
