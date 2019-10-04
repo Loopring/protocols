@@ -10,7 +10,7 @@ import { OrderInfo } from "../model/types";
 export class Exchange {
   private currentWalletAccount: WalletAccount;
 
-  public async createOrUpdateAccount(
+  public createOrUpdateAccount(
     wallet: WalletAccount,
     password: string,
     nonce: number,
@@ -19,7 +19,7 @@ export class Exchange {
     try {
       const keyPair = generateKeyPair(wallet.getAddress() + password);
       this.currentWalletAccount = wallet;
-      const transaction = await this.createAccountAndDeposit(
+      const transaction = this.createAccountAndDeposit(
         keyPair.publicKeyX,
         keyPair.publicKeyY,
         "",
@@ -37,7 +37,7 @@ export class Exchange {
     }
   }
 
-  private async createAccountAndDeposit(
+  private createAccountAndDeposit(
     publicX: string,
     publicY: string,
     symbol: string,
@@ -82,7 +82,7 @@ export class Exchange {
     }
   }
 
-  public async deposit(
+  public deposit(
     wallet: WalletAccount,
     symbol: string,
     amount: string,
@@ -135,7 +135,7 @@ export class Exchange {
     }
   }
 
-  public async withdraw(
+  public withdraw(
     wallet: WalletAccount,
     symbol: string,
     amount: string,
@@ -215,7 +215,7 @@ export class Exchange {
     return order;
   }
 
-  public async setupOrder(order: OrderInfo) {
+  public setupOrder(order: OrderInfo) {
     if (!order.tokenS.startsWith("0x")) {
       order.tokenS = config.getTokenBySymbol(order.tokenS).address;
     }
@@ -256,9 +256,9 @@ export class Exchange {
     return this.signOrder(order);
   }
 
-  public async submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
+  public submitOrder(wallet: WalletAccount, orderInfo: OrderInfo) {
     this.currentWalletAccount = wallet;
-    return await this.setupOrder(orderInfo);
+    return this.setupOrder(orderInfo);
   }
 
   public async cancelOrder(orderInfo: OrderInfo) {

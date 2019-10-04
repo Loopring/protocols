@@ -16,13 +16,13 @@ import {
   privateToAddress,
   privateToPublic,
   publicToAddress,
-  sha3
+  keccak256
 } from "ethereumjs-util";
 import { mnemonictoPrivatekey } from "./mnemonic";
 import { generateMnemonic } from "bip39";
 import { trimAll } from "../common/utils";
 import HDKey from "hdkey";
-import EthTransaction from "ethereumjs-tx";
+import { Transaction as EthTransaction } from "ethereumjs-tx";
 import * as MetaMask from "./metaMask";
 import Wallet from "ethereumjs-wallet";
 
@@ -253,7 +253,7 @@ export class PrivateKeyAccount extends WalletAccount {
   }
 
   signMessage(message) {
-    const hash = sha3(message);
+    const hash = keccak256(message);
     const finalHash = hashPersonalMessage(hash);
     return this.sign(finalHash);
   }
