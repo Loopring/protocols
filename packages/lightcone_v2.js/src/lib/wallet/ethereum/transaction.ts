@@ -1,4 +1,4 @@
-import EthTransaction from "ethereumjs-tx";
+import { Transaction as EthTransaction } from "ethereumjs-tx";
 import validator from "./validator";
 import { addHexPrefix, toBuffer, toHex } from "../common/formatter";
 import { getGasPrice, getTransactionCount } from "./utils";
