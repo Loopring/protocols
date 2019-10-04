@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "lerna": "^3.16.0",
-    "wsrun": "^3.6.4",
+    "wsrun": "^5.0.2",
     "husky": "^3.0.5"
   }
 }
