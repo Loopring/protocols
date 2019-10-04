@@ -1,4 +1,4 @@
-import { exchange } from "..";
+import { exchange } from "../sign/exchange";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Contracts from "../lib/wallet/ethereum/contracts/Contracts";
@@ -17,30 +17,24 @@ export class Account {
   /**
    * Approve
    * @param symbol: approve token symbol
-   * @param amount: number amount to approve, e.g. 1.5
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public async approve(
-    symbol: string,
-    amount: number,
-    nonce: number,
-    gasPrice: number
-  ) {
+  public async approve(symbol: string, nonce: number, gasPrice: number) {
     const token = config.getTokenBySymbol(symbol);
     const rawTx = new Transaction({
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
         _spender: config.getExchangeAddress(),
-        _value: amount
+        _value: config.getMaxAmountInWEI()
       }),
       chainId: config.getChainId(),
       nonce: fm.toHex(nonce),
       gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
       gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
     });
-    return this.account.signEthereumTx(rawTx.raw);
+    return await this.account.signEthereumTx(rawTx.raw);
   }
 
   /**
@@ -55,7 +49,7 @@ export class Account {
     gasPrice: number
   ) {
     try {
-      const createOrUpdateAccountResposne = await exchange.createOrUpdateAccount(
+      const createOrUpdateAccountResposne = exchange.createOrUpdateAccount(
         this.account,
         password,
         nonce,
@@ -86,14 +80,14 @@ export class Account {
     gasPrice: number
   ) {
     try {
-      const rawTx = await exchange.deposit(
+      const rawTx = exchange.deposit(
         this.account,
         symbol,
         amount,
         nonce,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      return await this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -113,14 +107,14 @@ export class Account {
     gasPrice: number
   ) {
     try {
-      const rawTx = await exchange.withdraw(
+      const rawTx = exchange.withdraw(
         this.account,
         symbol,
         amount,
         nonce,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      return await this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -143,7 +137,7 @@ export class Account {
    * @param validSince: valid beginning period of this order, SECOND in timestamp
    * @param validUntil: valid ending period of this order, SECOND in timestamp
    */
-  public async submitOrder(
+  public submitOrder(
     owner: string,
     accountId: number,
     tokenS: string,

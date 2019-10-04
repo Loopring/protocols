@@ -1,5 +1,5 @@
 // Hack: Failed to import src files directly.
-import { exchange } from "../src";
+import { exchange } from "../src/sign/exchange";
 import * as eddsa from "../src/lib/sign/eddsa";
 import * as fm from "../src/lib/wallet/common/formatter";
 import { OrderInfo } from "../src/model/types";
