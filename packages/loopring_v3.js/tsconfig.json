@@ -1,20 +1,22 @@
 {
   "compilerOptions": {
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "outDir": "build",
+    "outDir": "dist",
     "sourceMap": true,
-    "inlineSources": true,
+    "noImplicitAny": false, // Enable when it's ready.
+    "strictNullChecks": false, // may not use
+    "noImplicitThis": false, // may not use
+    "resolveJsonModule": true,
     "module": "commonjs",
     "target": "es6",
-    "lib": ["es6"],
-    "allowJs": true
+    "baseUrl": ".",
+    "allowJs": true,
+    "esModuleInterop": true
   },
   "include": [
     "./node_modules/types-bn/index.d.ts",
     "./globals.d.ts",
     "src/**/*",
-    "index.ts"
+    "test/**/*"
   ],
   "exclude": []
 }
