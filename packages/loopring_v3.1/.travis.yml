@@ -1,0 +1,12 @@
+matrix:
+  include:
+    # use the built in venv for linux builds
+    - os: linux
+      language: python
+      python: 3.6
+    - os: osx
+      language: cpp
+install:
+  - ./install
+script:
+  - make
