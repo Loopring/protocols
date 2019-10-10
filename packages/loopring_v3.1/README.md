@@ -1,4 +1,4 @@
-# Loopring Protocol (V3) using zkSNARKs
+# Loopring Protocol (V3.1) using zkSNARKs
 
 ## About
 
