@@ -18,16 +18,21 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/modules/IOrderCancellationModule.sol";
+import "./AbstractModule.sol";
+import "./CanBeDisabled.sol";
 
-import "./helpers/AbstractModule.sol";
+// OrderCancellationManager
+import "../../iface/IExchangeModuleFactory.sol";
+import "./../CircuitManager.sol";
 
 
 /// @title  OrderCancellationModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract OrderCancellationModule is AbstractModule, IOrderCancellationModule
+contract OrderCancellationModule is AbstractModule, CanBeDisabled, IOrderCancellationModule
 {
     constructor(address exchangeAddress, address vkProviderAddress)
         AbstractModule(exchangeAddress, vkProviderAddress)
+        CanBeDisabled(exchangeAddress)
         public
     {
         // Nothing to do
@@ -70,9 +75,25 @@ contract OrderCancellationModule is AbstractModule, IOrderCancellationModule
         uint32 /*blockIdx*/
         )
         internal
+        whenEnabled
     {
         require(!exchange.isShutdown(), "BLOCK_TYPE_NOT_ALLOWED_IN_SHUTDOWN");
     }
-
 }
 
+
+/// @title OrderCancellationManager
+/// @author Brecht Devos - <brecht@loopring.org>
+contract OrderCancellationManager is IExchangeModuleFactory, CircuitManager
+{
+    function createModule(
+        address exchangeAddress
+        )
+        external
+        returns (address)
+    {
+        // Can deploy the module using a proxy (if supported), cloning,...
+        OrderCancellationModule instance = new OrderCancellationModule(exchangeAddress, address(this));
+        return address(instance);
+    }
+}

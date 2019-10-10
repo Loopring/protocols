@@ -15,24 +15,25 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
-import "../modules/DepositModule.sol";
-
-import "../../iface/IExchangeModuleFactory.sol";
-import "./../CircuitManager.sol";
-
-/// @title DepositModuleManager
+/// @title  CircuitData
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DepositModuleManager is IExchangeModuleFactory, CircuitManager
+/// @author Daniel Wang  - <daniel@loopring.org>
+library CircuitData
 {
-    function createModule(
-        address exchangeAddress
-        )
-        external
-        returns (address)
+    struct Circuit
     {
-        // Can deploy the module using a proxy (if supported), cloning,...
-        DepositModule instance = new DepositModule(exchangeAddress, address(this));
-        return address(instance);
+        // True if the circuit expects onchain data availability data as public input, false otherwise.
+        bool   onchainDataAvailability;
+        // The number of requests handled in the circuit
+        uint32 blockSize;
+        // The block/circuit version
+        uint16 version;
+    }
+
+    struct VerificationKey
+    {
+        uint[18] data;
     }
 }

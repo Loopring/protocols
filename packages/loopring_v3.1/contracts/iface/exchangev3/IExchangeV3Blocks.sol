@@ -61,22 +61,19 @@ contract IExchangeV3Blocks
         view
         returns (uint);
 
-    /// @dev Returns the block data for the specified block index.
+    /// @dev Returns the block at the specified block index.
     /// @param  blockIdx The block index
-    /// @return merkleRoot The merkle root
-    /// @return publicDataHash The hash of all public data. Used as public input for the ZKP.
-    /// @return blockState The current state of the block
-    /// @return blockType The type of work done in the block
-    /// @return blockSize The number of requests handled in the block
-    /// @return timestamp The time the block was committed on-chain
-    /// @return blockState The current state of the block
-    /// @return numDepositRequestsCommitted The total number of deposit requests committed
-    /// @return numWithdrawalRequestsCommitted The total number of withdrawal requests committed
-    /// @return blockFeeWithdrawn True if the block fee has been withdrawn, else false
-    /// @return numWithdrawalsDistributed The number of withdrawals that have been done for this block
+    /// @return The requested block
     function getBlock(
         uint blockIdx
         )
+        external
+        view
+        returns (ExchangeData.Block memory);
+
+    /// @dev Returns the last block of the exchange.
+    /// @return The last block
+    function getLastBlock()
         external
         view
         returns (ExchangeData.Block memory);
@@ -130,4 +127,26 @@ contract IExchangeV3Blocks
         uint blockIdx
         )
         external;
+
+    /// @dev Returns the most prioritized exchange module. Only this exchange module can commit
+    ///      new blocks. Blocks always need to be committed for the exchange module
+    ///      with the highest priority.
+    ///
+    ///      In most cases however the priority is the same for all exchange modules and
+    ///      the operator may choose whichever block he can submit.
+    ///
+    ///      When multiple exchange modules have the same priority the specified preferred
+    ///      exchange module is used as the tiebreaker. An operator can pass in
+    ///      the exchange module he wishes to use to commit a new block. If this function
+    ///      returns the same exchange module he can go ahead. If not, the operator will
+    ///      need to commit a block using the returned exchange module instead.
+    ///
+    /// @param preferredExchangeModule The preferred exchange module used a the tiebreaker.
+    /// @return The exchange module with the highest priority which can commit new blocks.
+    function getPrioritizedExchangeModule(
+        address preferredExchangeModule
+        )
+        public
+        view
+        returns (address);
 }

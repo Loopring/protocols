@@ -15,39 +15,32 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
+
+import "../impl/CircuitData.sol";
 
 
 /// @title  IVerificationKeyProvider
 /// @author Brecht Devos - <brecht@loopring.org>
 contract IVerificationKeyProvider
 {
-    /// @dev Returns the verificatin key of the specified block type.
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @dev Returns the verification key of the specified circuit
+    /// @param circuit The circuit
     /// @return The verification key of the specified circuit
     function getVerificationKey(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
-        returns (uint[18] memory);
+        returns (CircuitData.VerificationKey memory);
 
     /// @dev Checks if a circuit can still be used to commit new blocks.
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @param circuit The circuit
     /// @return True if the circuit is enabled, false otherwise
     function isCircuitEnabled(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
         returns (bool);
 }

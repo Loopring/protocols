@@ -20,9 +20,9 @@ pragma experimental ABIEncoderV2;
 import "./IAbstractModule.sol";
 
 
-/// @title  IOnchainRequestModule
+/// @title  IAbstractOnchainRequestModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IOnchainRequestModule is IAbstractModule
+contract IAbstractOnchainRequestModule is IAbstractModule
 {
     uint public constant MAX_AGE_REQUEST_UNTIL_FORCED = 15 minutes;
     uint public constant MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE = 1 days;

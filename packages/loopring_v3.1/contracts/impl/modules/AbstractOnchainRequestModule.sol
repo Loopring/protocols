@@ -17,16 +17,16 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../../../iface/modules/helpers/IOnchainRequestModule.sol";
+import "../../iface/modules/IAbstractOnchainRequestModule.sol";
 import "./AbstractModule.sol";
 
-import "../../../lib/AddressUtil.sol";
-import "../../../lib/MathUint.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/MathUint.sol";
 
 
 /// @title OnchainRequestModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract OnchainRequestModule is AbstractModule, IOnchainRequestModule
+contract AbstractOnchainRequestModule is AbstractModule, IAbstractOnchainRequestModule
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
@@ -36,6 +36,7 @@ contract OnchainRequestModule is AbstractModule, IOnchainRequestModule
 
     struct RequestBlock
     {
+        // The exchange block index (NOT the request block index)
         uint32 blockIdx;
 
         // Number of requests processed in the block (<= blockSize)
@@ -175,32 +176,6 @@ contract OnchainRequestModule is AbstractModule, IOnchainRequestModule
         emit BlockFeeWithdrawn(requestBlockIdx, feeAmount);
     }
 
-    function findRightmostCorrespondingRequestBlockIdx(
-        uint blockIdx
-        )
-        internal
-        view
-        returns (uint)
-    {
-        // Binary search the blockIdx in the request blocks
-        // Instead of a binary search we _could_ start searching from the end of the request blocks,
-        // but that can still end up being a long search. The cost of a binary search is low and predictable.
-        // If there's no request block with the given blockIdx, we find the rightmost element.
-        // https://en.wikipedia.org/wiki/Binary_search_algorithm#Procedure_for_finding_the_rightmost_element
-        uint L = 0;
-        uint R = requestBlocks.length;
-        while (L < R) {
-            uint m = (L + R) / 2;
-            if (requestBlocks[m].blockIdx > blockIdx) {
-                R = m;
-            } else {
-                L = m + 1;
-            }
-        }
-        uint requestBlockIdx = L - 1;
-        return requestBlockIdx;
-    }
-
     function getRequest(
         uint index
         )
@@ -229,4 +204,34 @@ contract OnchainRequestModule is AbstractModule, IOnchainRequestModule
         uint numOpenRequests = requestChain.length - getNumRequestsProcessed();
         return maxOpenRequests - numOpenRequests;
     }
+
+    // Internal functions
+
+    function findRightmostCorrespondingRequestBlockIdx(
+        uint blockIdx
+        )
+        internal
+        view
+        returns (uint)
+    {
+        // Binary search the blockIdx in the request blocks
+        // Instead of a binary search we _could_ start searching from the end of the request blocks,
+        // but that can still end up being a long search. The cost of a binary search is low and predictable.
+        // If there's no request block with the given blockIdx, we find the rightmost element.
+        // https://en.wikipedia.org/wiki/Binary_search_algorithm#Procedure_for_finding_the_rightmost_element
+        uint L = 0;
+        uint R = requestBlocks.length;
+        while (L < R) {
+            uint m = (L + R) / 2;
+            if (requestBlocks[m].blockIdx > blockIdx) {
+                R = m;
+            } else {
+                L = m + 1;
+            }
+        }
+        uint requestBlockIdx = L - 1;
+        return requestBlockIdx;
+    }
+
+
 }

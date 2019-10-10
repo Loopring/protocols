@@ -19,15 +19,21 @@ pragma experimental ABIEncoderV2;
 
 
 import "../../iface/modules/IInternalTransferModule.sol";
-import "./helpers/AbstractModule.sol";
+import "./AbstractModule.sol";
+import "./CanBeDisabled.sol";
+
+// InternalTransferManager
+import "../../iface/IExchangeModuleFactory.sol";
+import "./../CircuitManager.sol";
 
 
 /// @title  InternalTransferModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract InternalTransferModule is AbstractModule, IInternalTransferModule
+contract InternalTransferModule is AbstractModule, CanBeDisabled, IInternalTransferModule
 {
     constructor(address exchangeAddress, address vkProviderAddress)
         AbstractModule(exchangeAddress, vkProviderAddress)
+        CanBeDisabled(exchangeAddress)
         public
     {
         // Nothing to do
@@ -70,9 +76,26 @@ contract InternalTransferModule is AbstractModule, IInternalTransferModule
         uint32 /*blockIdx*/
         )
         internal
+        whenEnabled
     {
         require(!exchange.isShutdown(), "BLOCK_TYPE_NOT_ALLOWED_IN_SHUTDOWN");
     }
 
 }
 
+
+/// @title InternalTransferManager
+/// @author Brecht Devos - <brecht@loopring.org>
+contract InternalTransferManager is IExchangeModuleFactory, CircuitManager
+{
+    function createModule(
+        address exchangeAddress
+        )
+        external
+        returns (address)
+    {
+        // Can deploy the module using a proxy (if supported), cloning,...
+        InternalTransferModule instance = new InternalTransferModule(exchangeAddress, address(this));
+        return address(instance);
+    }
+}

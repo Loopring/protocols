@@ -17,15 +17,15 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./helpers/IWithdrawalModule.sol";
+import "./IAbstractWithdrawalModule.sol";
 
 
 /// @title  IOnchainWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IOnchainWithdrawalModule is IWithdrawalModule
+contract IOnchainWithdrawalModule is IAbstractWithdrawalModule
 {
-    uint public constant requestPriority = 100;
-    uint public constant maxOpenRequests = 1024;
+    uint public constant REQUEST_PRIORITY = 100;
+    uint public constant MAX_OPEN_REQUESTS = 1024;
 
     event WithdrawalRequested(
         uint    indexed withdrawalIdx,

@@ -42,6 +42,7 @@ contract ExchangeV3Accounts is IExchangeV3Accounts, ExchangeV3Core
         ExchangeData.Account memory account
         )
         public
+        nonReentrant
         onlyModule
         returns (uint24)
     {
@@ -52,6 +53,7 @@ contract ExchangeV3Accounts is IExchangeV3Accounts, ExchangeV3Core
         ExchangeData.Account memory account
         )
         public
+        nonReentrant
         onlyModule
         returns (bool)
     {

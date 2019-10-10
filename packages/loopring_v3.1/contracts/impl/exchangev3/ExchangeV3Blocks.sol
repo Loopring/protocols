@@ -70,6 +70,16 @@ contract ExchangeV3Blocks is IExchangeV3Blocks, ExchangeV3Core
         state.revertBlock(blockIdx);
     }
 
+    function getPrioritizedExchangeModule(
+        address preferredExchangeModule
+        )
+        public
+        view
+        returns (address)
+    {
+        state.getPrioritizedExchangeModule(preferredExchangeModule);
+    }
+
     function getBlockHeight()
         external
         view
@@ -94,5 +104,13 @@ contract ExchangeV3Blocks is IExchangeV3Blocks, ExchangeV3Core
         returns (ExchangeData.Block memory)
     {
         return state.blocks[blockIdx];
+    }
+
+    function getLastBlock()
+        external
+        view
+        returns (ExchangeData.Block memory)
+    {
+        return state.blocks[state.blocks.length - 1];
     }
 }

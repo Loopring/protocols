@@ -17,15 +17,15 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./helpers/IOnchainRequestModule.sol";
+import "./IAbstractOnchainRequestModule.sol";
 
 
 /// @title IDepositModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IDepositModule is IOnchainRequestModule
+contract IDepositModule is IAbstractOnchainRequestModule
 {
-    uint public constant requestPriority = 50;
-    uint public constant maxOpenRequests = 1024;
+    uint public constant REQUEST_PRIORITY = 50;
+    uint public constant MAX_OPEN_REQUESTS = 1024;
 
     event DepositRequested(
         uint    indexed depositIdx,
@@ -82,9 +82,9 @@ contract IDepositModule is IOnchainRequestModule
     function createOrUpdateAccount(
         uint  pubKeyX,
         uint  pubKeyY,
-        bytes memory permission
+        bytes calldata permission
         )
-        public
+        external
         returns (
             uint24 accountID,
             bool   isAccountNew,

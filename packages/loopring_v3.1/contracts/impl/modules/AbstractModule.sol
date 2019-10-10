@@ -17,14 +17,14 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../../../iface/IDecompressor.sol";
-import "../../../iface/IExchangeV3.sol";
-import "../../../iface/modules/helpers/IAbstractModule.sol";
-import "../../../iface/IVerificationKeyProvider.sol";
+import "../../iface/IDecompressor.sol";
+import "../../iface/IExchangeV3.sol";
+import "../../iface/modules/IAbstractModule.sol";
+import "../../iface/IVerificationKeyProvider.sol";
 
-import "../../../lib/BytesUtil.sol";
-import "../../../lib/MathUint.sol";
-import "../../../lib/ReentrancyGuard.sol";
+import "../../lib/BytesUtil.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/ReentrancyGuard.sol";
 
 
 /// @title AbstractModule
@@ -64,34 +64,26 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
     }
 
     function getVerificationKey(
-        bool   _onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
-        returns (uint[18] memory)
+        returns (CircuitData.VerificationKey memory)
     {
         return vkProvider.getVerificationKey(
-            _onchainDataAvailability,
-            blockSize,
-            blockVersion
+            circuit
         );
     }
 
     function isCircuitEnabled(
-        bool   _onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
         returns (bool)
     {
         return vkProvider.isCircuitEnabled(
-            _onchainDataAvailability,
-            blockSize,
-            blockVersion
+            circuit
         );
     }
 
@@ -173,11 +165,13 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
         // Check if the block is supported
         require(
             vkProvider.isCircuitEnabled(
-                onchainDataAvailability,
-                blockSize,
-                blockVersion
+                CircuitData.Circuit(
+                    onchainDataAvailability,
+                    blockSize,
+                    blockVersion
+                )
             ),
-            "CANNOT_VERIFY_BLOCK"
+            "CANNOT_COMMIT_BLOCK"
         );
 
         // Extract the exchange ID from the data
@@ -187,8 +181,8 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
         }
         require(exchangeIdInData == exchangeId, "INVALID_EXCHANGE_ID");
 
-        // Get the current block
-        ExchangeData.Block memory prevBlock = exchange.getBlock(exchange.getBlockHeight());
+        // Get the last block
+        ExchangeData.Block memory lastBlock = exchange.getLastBlock();
 
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore;
@@ -197,7 +191,7 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
             merkleRootBefore := mload(add(data, 36))
             merkleRootAfter := mload(add(data, 68))
         }
-        require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
+        require(merkleRootBefore == lastBlock.merkleRoot, "INVALID_MERKLE_ROOT");
         require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
         // Hash all the public data to a single value which is used as the input for the circuit

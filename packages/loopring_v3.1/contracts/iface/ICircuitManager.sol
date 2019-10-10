@@ -15,8 +15,11 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "./IVerificationKeyProvider.sol";
+
+import "../impl/CircuitData.sol";
 
 
 /// @title ICircuitManager
@@ -26,15 +29,11 @@ contract ICircuitManager is IVerificationKeyProvider
     // -- Events --
 
     event CircuitRegistered(
-        bool           onchainDataAvailability,
-        uint32         blockSize,
-        uint16         blockVersion
+        CircuitData.Circuit
     );
 
     event CircuitDisabled(
-        bool           onchainDataAvailability,
-        uint32         blockSize,
-        uint16         blockVersion
+        CircuitData.Circuit
     );
 
     // -- Public functions --
@@ -43,45 +42,30 @@ contract ICircuitManager is IVerificationKeyProvider
     ///      Every block permutation needs its own circuit and thus its own set of
     ///      verification keys. Only a limited number of block sizes per block
     ///      type are supported.
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @param circuit The circuit
     /// @param vk The verification key
     function registerCircuit(
-        bool     onchainDataAvailability,
-        uint32   blockSize,
-        uint16   blockVersion,
-        uint[18] calldata vk
+        CircuitData.Circuit         memory circuit,
+        CircuitData.VerificationKey memory vk
         )
-        external;
+        public;
 
     /// @dev Disables the use of the specified circuit.
     ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
     ///      can still be verified.
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @param circuit The circuit
     function disableCircuit(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external;
+        public;
 
     /// @dev Checks if a circuit with the specified parameters is registered.
-    /// @param onchainDataAvailability True if the block expects onchain
-    ///        data availability data as public input, false otherwise
-    /// @param blockSize The number of requests handled in the block
-    /// @param blockVersion The block version (i.e. which circuit version needs to be used)
+    /// @param circuit The circuit
     /// @return True if the circuit is registered, false otherwise
     function isCircuitRegistered(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
         returns (bool);
 }

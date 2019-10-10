@@ -17,12 +17,12 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./IOnchainRequestModule.sol";
+import "./IAbstractOnchainRequestModule.sol";
 
 
-/// @title  IWithdrawalModule
+/// @title  IAbstractWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IWithdrawalModule is IOnchainRequestModule
+contract IAbstractWithdrawalModule is IAbstractOnchainRequestModule
 {
     uint public constant MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = 2 hours;
     uint public constant MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = 60000;

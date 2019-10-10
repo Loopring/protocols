@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 
@@ -68,17 +69,9 @@ library ExchangeBlocks
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
-        // Check for prioritized requests in all modules
-        uint maxPriority = 0;
-        address maxPriorityModule = msg.sender;
-        for(uint i = 0; i < state.modules.length; i++) {
-            (, , uint priority) = state.modules[i].module.getStatus();
-            if (maxPriority > priority || (maxPriority == priority && msg.sender == maxPriorityModule)) {
-                maxPriority = priority;
-                maxPriorityModule = address(state.modules[i].module);
-            }
-        }
-        require(msg.sender == maxPriorityModule, "OTHER_BLOCK_TYPE_FORCED");
+        // Find if the block that is being committed is of the highest priority
+        address prioritizedModule = getPrioritizedExchangeModule(state, msg.sender);
+        require(msg.sender == prioritizedModule, "OTHER_EXCHANGE_MODULE_PRIORITIZED");
 
         // Create a new block with the updated merkle roots
         ExchangeData.Block memory newBlock = ExchangeData.Block(
@@ -158,10 +151,12 @@ library ExchangeBlocks
         }
 
         // Get the verification key
-        uint[18] memory verificationKey = IExchangeModule(module).getVerificationKey(
-            S.onchainDataAvailability,
-            blockSize,
-            blockVersion
+        CircuitData.VerificationKey memory verificationKey = IExchangeModule(module).getVerificationKey(
+            CircuitData.Circuit(
+                S.onchainDataAvailability,
+                blockSize,
+                blockVersion
+            )
         );
 
         // Verify the proofs
@@ -229,5 +224,27 @@ library ExchangeBlocks
         S.blocks.length = blockIdx;
 
         emit Revert(blockIdx);
+    }
+
+    function getPrioritizedExchangeModule(
+        ExchangeData.State storage state,
+        address preferredExchangeModule
+        )
+        public
+        view
+        returns (address)
+    {
+        // Check for prioritized requests in all modules
+        uint maxPriority = 0;
+        address maxPriorityModule = preferredExchangeModule;
+        for(uint i = 0; i < state.modules.length; i++) {
+            address moduleAddress = address(state.modules[i].module);
+            (, , uint priority) = state.modules[i].module.getStatus();
+            if (maxPriority > priority || (maxPriority == priority && preferredExchangeModule == moduleAddress)) {
+                maxPriority = priority;
+                maxPriorityModule = moduleAddress;
+            }
+        }
+        return maxPriorityModule;
     }
 }

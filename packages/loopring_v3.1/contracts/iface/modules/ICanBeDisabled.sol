@@ -15,24 +15,25 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
-import "../modules/TradeSettlementModule.sol";
+import "../IExchangeV3.sol";
 
-import "../../iface/IExchangeModuleFactory.sol";
-import "./../CircuitManager.sol";
 
-/// @title OrderCancellationanager
+/// @title  ICanBeDisabled
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TradeSettlementManager is IExchangeModuleFactory, CircuitManager
+contract ICanBeDisabled
 {
-    function createModule(
-        address exchangeAddress
-        )
-        external
-        returns (address)
-    {
-        // Can deploy the module using a proxy (if supported), cloning,...
-        TradeSettlementModule instance = new TradeSettlementModule(exchangeAddress, address(this));
-        return address(instance);
-    }
+    IExchangeV3 public exchange;
+    bool public disabled = false;
+
+    /// @dev Disables the contract
+    ///      Can only be called by the exchange owner.
+    function disable()
+        external;
+
+    /// @dev Enables the contract again after is was disabled
+    ///      Can only be called by the exchange owner.
+    function enable()
+        external;
 }

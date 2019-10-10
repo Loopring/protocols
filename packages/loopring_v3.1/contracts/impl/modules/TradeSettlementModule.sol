@@ -19,19 +19,21 @@ pragma experimental ABIEncoderV2;
 
 
 import "../../iface/modules/ITradeSettlementModule.sol";
+import "./AbstractModule.sol";
+import "./CanBeDisabled.sol";
 
-import "./helpers/AbstractModule.sol";
-import "../../lib/MathUint.sol";
+// TradeSettlementManager
+import "../../iface/IExchangeModuleFactory.sol";
+import "./../CircuitManager.sol";
 
 
 /// @title  TradeSettlementModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract TradeSettlementModule is AbstractModule, ITradeSettlementModule
+contract TradeSettlementModule is AbstractModule, CanBeDisabled, ITradeSettlementModule
 {
-    using MathUint          for uint;
-
     constructor(address exchangeAddress, address vkProviderAddress)
         AbstractModule(exchangeAddress, vkProviderAddress)
+        CanBeDisabled(exchangeAddress)
         public
     {
         // Get the protocol fees for this exchange
@@ -79,6 +81,7 @@ contract TradeSettlementModule is AbstractModule, ITradeSettlementModule
         uint32 /*blockIdx*/
         )
         internal
+        whenEnabled
     {
         require(exchange.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
 
@@ -137,3 +140,19 @@ contract TradeSettlementModule is AbstractModule, ITradeSettlementModule
     }
 }
 
+
+/// @title TradeSettlementManager
+/// @author Brecht Devos - <brecht@loopring.org>
+contract TradeSettlementManager is IExchangeModuleFactory, CircuitManager
+{
+    function createModule(
+        address exchangeAddress
+        )
+        external
+        returns (address)
+    {
+        // Can deploy the module using a proxy (if supported), cloning,...
+        TradeSettlementModule instance = new TradeSettlementModule(exchangeAddress, address(this));
+        return address(instance);
+    }
+}

@@ -17,10 +17,8 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-
-
 import "../../iface/modules/IDepositModule.sol";
-import "./helpers/OnchainRequestModule.sol";
+import "./AbstractOnchainRequestModule.sol";
 
 import "../../iface/IAddressWhitelist.sol";
 import "../../iface/IExchangeV3.sol";
@@ -29,10 +27,14 @@ import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
+// DepositModuleManager
+import "../../iface/IExchangeModuleFactory.sol";
+import "./../CircuitManager.sol";
+
 
 /// @title  DepositModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DepositModule is OnchainRequestModule, IDepositModule
+contract DepositModule is AbstractOnchainRequestModule, IDepositModule
 {
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
@@ -50,7 +52,7 @@ contract DepositModule is OnchainRequestModule, IDepositModule
     Deposit[] deposits;
 
     constructor(address exchangeAddress, address vkProviderAddress)
-        OnchainRequestModule(exchangeAddress, vkProviderAddress, requestPriority, maxOpenRequests)
+        AbstractOnchainRequestModule(exchangeAddress, vkProviderAddress, REQUEST_PRIORITY, MAX_OPEN_REQUESTS)
         public
     {
         // Nothing to do
@@ -73,40 +75,21 @@ contract DepositModule is OnchainRequestModule, IDepositModule
     function createOrUpdateAccount(
         uint  pubKeyX,
         uint  pubKeyY,
-        bytes memory permission
+        bytes calldata permission
         )
-        public
+        external
+        nonReentrant
         returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
+            uint24,
+            bool,
+            bool
         )
     {
-        isAccountNew = !exchange.hasAccount(msg.sender);
-        if (isAccountNew) {
-            if (addressWhitelist != address(0)) {
-                require(
-                    IAddressWhitelist(addressWhitelist)
-                        .isAddressWhitelisted(msg.sender, permission),
-                    "ADDRESS_NOT_WHITELISTED"
-                );
-            }
-            accountID = uint24(exchange.getNumAccounts());
-            ExchangeData.Account memory newAccount = ExchangeData.Account(
-                msg.sender,
-                accountID,
-                pubKeyX,
-                pubKeyY
-            );
-            exchange.createAccount(newAccount);
-            isAccountUpdated = false;
-        } else {
-            ExchangeData.Account memory account = exchange.getAccount(msg.sender);
-            account.pubKeyX = pubKeyX;
-            account.pubKeyY = pubKeyY;
-            accountID = account.id;
-            isAccountUpdated = exchange.updateAccount(account);
-        }
+        return createOrUpdateAccountInternal(
+            pubKeyX,
+            pubKeyY,
+            permission
+        );
     }
 
     function updateAccountAndDeposit(
@@ -161,6 +144,7 @@ contract DepositModule is OnchainRequestModule, IDepositModule
         uint depositIdx
         )
         external
+        nonReentrant
     {
         require(exchange.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
         require(depositIdx < requestChain.length, "INVALID_DEPOSIT_IDX");
@@ -202,6 +186,7 @@ contract DepositModule is OnchainRequestModule, IDepositModule
         uint _depositFeeETH
         )
         external
+        nonReentrant
         onlyExchangeOwner
     {
         accountCreationFeeETH = _accountCreationFeeETH;
@@ -220,6 +205,7 @@ contract DepositModule is OnchainRequestModule, IDepositModule
         address _addressWhitelist
         )
         external
+        nonReentrant
         onlyExchangeOwner
         returns (address oldAddressWhitelist)
     {
@@ -293,6 +279,45 @@ contract DepositModule is OnchainRequestModule, IDepositModule
         requestBlocks.push(newDepositBlock);
     }
 
+    function createOrUpdateAccountInternal(
+        uint  pubKeyX,
+        uint  pubKeyY,
+        bytes memory permission
+        )
+        internal
+        returns (
+            uint24 accountID,
+            bool   isAccountNew,
+            bool   isAccountUpdated
+        )
+    {
+        isAccountNew = !exchange.hasAccount(msg.sender);
+        if (isAccountNew) {
+            if (addressWhitelist != address(0)) {
+                require(
+                    IAddressWhitelist(addressWhitelist)
+                        .isAddressWhitelisted(msg.sender, permission),
+                    "ADDRESS_NOT_WHITELISTED"
+                );
+            }
+            accountID = uint24(exchange.getNumAccounts());
+            ExchangeData.Account memory newAccount = ExchangeData.Account(
+                msg.sender,
+                accountID,
+                pubKeyX,
+                pubKeyY
+            );
+            exchange.createAccount(newAccount);
+            isAccountUpdated = false;
+        } else {
+            ExchangeData.Account memory account = exchange.getAccount(msg.sender);
+            account.pubKeyX = pubKeyX;
+            account.pubKeyY = pubKeyY;
+            accountID = account.id;
+            isAccountUpdated = exchange.updateAccount(account);
+        }
+    }
+
     function updateAccountAndDepositInternal(
         uint    pubKeyX,
         uint    pubKeyY,
@@ -307,7 +332,7 @@ contract DepositModule is OnchainRequestModule, IDepositModule
             bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew, isAccountUpdated) = createOrUpdateAccount(
+        (accountID, isAccountNew, isAccountUpdated) = createOrUpdateAccountInternal(
             pubKeyX,
             pubKeyY,
             permission
@@ -429,3 +454,19 @@ contract DepositModule is OnchainRequestModule, IDepositModule
     }
 }
 
+
+/// @title DepositModuleManager
+/// @author Brecht Devos - <brecht@loopring.org>
+contract DepositModuleManager is IExchangeModuleFactory, CircuitManager
+{
+    function createModule(
+        address exchangeAddress
+        )
+        external
+        returns (address)
+    {
+        // Can deploy the module using a proxy (if supported), cloning,...
+        DepositModule instance = new DepositModule(exchangeAddress, address(this));
+        return address(instance);
+    }
+}

@@ -15,110 +15,97 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
-
 import "../iface/ICircuitManager.sol";
+
+import "../impl/CircuitData.sol";
+
 
 /// @title CircuitManager
 /// @author Brecht Devos - <brecht@loopring.org>
-contract CircuitManager is  Claimable, ReentrancyGuard, ICircuitManager
+contract CircuitManager is Claimable, ReentrancyGuard, ICircuitManager
 {
-    struct Circuit
+    struct CircuitState
     {
         bool registered;
         bool enabled;
-        uint[18] verificationKey;
+        CircuitData.VerificationKey verificationKey;
     }
 
-    mapping (bool => mapping (uint32 => mapping (uint16 => Circuit))) public circuits;
+    mapping (bool => mapping (uint32 => mapping (uint16 => CircuitState))) public circuits;
 
     constructor() Claimable() public {}
 
     function getVerificationKey(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
-        returns (uint[18] memory)
+        returns (CircuitData.VerificationKey memory)
     {
-        Circuit storage circuit = circuits[onchainDataAvailability][blockSize][blockVersion];
-        require(circuit.registered == true, "NOT_REGISTERED");
-        return circuit.verificationKey;
+        CircuitState storage circuitState = circuits[circuit.onchainDataAvailability][circuit.blockSize][circuit.version];
+        require(circuitState.registered == true, "NOT_REGISTERED");
+        return circuitState.verificationKey;
     }
 
     function registerCircuit(
-        bool     onchainDataAvailability,
-        uint32   blockSize,
-        uint16   blockVersion,
-        uint[18] calldata vk
+        CircuitData.Circuit         memory circuit,
+        CircuitData.VerificationKey memory verificationKey
         )
-        external
+        public
         nonReentrant
         onlyOwner
     {
-        Circuit storage circuit = circuits[onchainDataAvailability][blockSize][blockVersion];
-        require(circuit.registered == false, "ALREADY_REGISTERED");
+        CircuitState storage circuitState = circuits[circuit.onchainDataAvailability][circuit.blockSize][circuit.version];
+        require(circuitState.registered == false, "ALREADY_REGISTERED");
 
-        for (uint i = 0; i < 18; i++) {
-            circuit.verificationKey[i] = vk[i];
-        }
-        circuit.registered = true;
-        circuit.enabled = true;
+        circuitState.verificationKey = verificationKey;
+        circuitState.registered = true;
+        circuitState.enabled = true;
 
         emit CircuitRegistered(
-            onchainDataAvailability,
-            blockSize,
-            blockVersion
+            circuit
         );
     }
 
     function disableCircuit(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         nonReentrant
         onlyOwner
     {
-        Circuit storage circuit = circuits[onchainDataAvailability][blockSize][blockVersion];
-        require(circuit.registered == true, "NOT_REGISTERED");
-        require(circuit.enabled == true, "ALREADY_DISABLED");
+        CircuitState storage circuitState = circuits[circuit.onchainDataAvailability][circuit.blockSize][circuit.version];
+        require(circuitState.registered == true, "NOT_REGISTERED");
+        require(circuitState.enabled == true, "ALREADY_DISABLED");
 
-        circuit.enabled = false;
+        circuitState.enabled = false;
 
         emit CircuitDisabled(
-            onchainDataAvailability,
-            blockSize,
-            blockVersion
+            circuit
         );
     }
 
     function isCircuitRegistered(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
         returns (bool)
     {
-        return circuits[onchainDataAvailability][blockSize][blockVersion].registered;
+        return circuits[circuit.onchainDataAvailability][circuit.blockSize][circuit.version].registered;
     }
 
     function isCircuitEnabled(
-        bool   onchainDataAvailability,
-        uint32 blockSize,
-        uint16 blockVersion
+        CircuitData.Circuit memory circuit
         )
-        external
+        public
         view
         returns (bool)
     {
-        return circuits[onchainDataAvailability][blockSize][blockVersion].enabled;
+        return circuits[circuit.onchainDataAvailability][circuit.blockSize][circuit.version].enabled;
     }
 }

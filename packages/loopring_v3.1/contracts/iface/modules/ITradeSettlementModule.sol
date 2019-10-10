@@ -17,12 +17,13 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./helpers/IAbstractModule.sol";
+import "./IAbstractModule.sol";
+import "./ICanBeDisabled.sol";
 
 
 /// @title ITradeSettlementModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract ITradeSettlementModule is IAbstractModule
+contract ITradeSettlementModule is IAbstractModule, ICanBeDisabled
 {
     uint public constant MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = 1 days;
     uint public constant TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS = 10 minutes;

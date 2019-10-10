@@ -18,7 +18,7 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/modules/IOnchainWithdrawalModule.sol";
-import "./helpers/WithdrawalModule.sol";
+import "./AbstractWithdrawalModule.sol";
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
@@ -26,17 +26,21 @@ import "../../lib/MathUint.sol";
 import "../../iface/IExchangeV3.sol";
 import "../../impl/libexchange/ExchangeData.sol";
 
+// OnchainWithdrawalManager
+import "../../iface/IExchangeModuleFactory.sol";
+import "./../CircuitManager.sol";
+
 
 /// @title  OnchainWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract OnchainWithdrawalModule is WithdrawalModule, IOnchainWithdrawalModule
+contract OnchainWithdrawalModule is AbstractWithdrawalModule, IOnchainWithdrawalModule
 {
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
     using MathUint          for uint;
 
     constructor(address exchangeAddress, address vkProviderAddress)
-        WithdrawalModule(exchangeAddress, vkProviderAddress, requestPriority, maxOpenRequests)
+        AbstractWithdrawalModule(exchangeAddress, vkProviderAddress, REQUEST_PRIORITY, MAX_OPEN_REQUESTS)
         public
     {
         // Nothing to do
@@ -213,3 +217,19 @@ contract OnchainWithdrawalModule is WithdrawalModule, IOnchainWithdrawalModule
     }
 }
 
+
+/// @title OnchainWithdrawalManager
+/// @author Brecht Devos - <brecht@loopring.org>
+contract OnchainWithdrawalManager is IExchangeModuleFactory, CircuitManager
+{
+    function createModule(
+        address exchangeAddress
+        )
+        external
+        returns (address)
+    {
+        // Can deploy the module using a proxy (if supported), cloning,...
+        OnchainWithdrawalModule instance = new OnchainWithdrawalModule(exchangeAddress, address(this));
+        return address(instance);
+    }
+}

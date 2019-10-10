@@ -17,12 +17,13 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./helpers/IAbstractModule.sol";
+import "./IAbstractModule.sol";
+import "./ICanBeDisabled.sol";
 
 
 /// @title IOrderCancellationModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IOrderCancellationModule is IAbstractModule
+contract IOrderCancellationModule is IAbstractModule, ICanBeDisabled
 {
 
 }

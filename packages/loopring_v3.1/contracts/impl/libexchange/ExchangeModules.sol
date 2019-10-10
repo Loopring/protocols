@@ -51,10 +51,11 @@ library ExchangeModules
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
         require(!state.isShutdown(), "INVALID_MODE");
 
-        // OPTIONAL: We can add a check here if moduleFactoryAddress is approved by Loopring
+        // Create the module instance
         address moduleInstance = IExchangeModuleFactory(moduleFactoryAddress).createModule(address(this));
         require(state.addressToModuleMap[moduleInstance] == 0, "MODULE_ALREADY_REGISTERED");
 
+        // Add the module
         IExchangeModule moduleContract = IExchangeModule(moduleInstance);
         ExchangeData.Module memory module = ExchangeData.Module(
             moduleContract

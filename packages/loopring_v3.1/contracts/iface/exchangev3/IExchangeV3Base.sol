@@ -82,45 +82,55 @@ contract IExchangeV3Base
         external
         returns (address payable oldOperator);
 
+    /// @dev Gets the operator address.
+    /// @return The operator address.
     function getOperator()
         external
         view
         returns (address);
 
+    /// @dev Returns if the exchange accepts user request.
+    /// @return Returns true if the exchange accepts user requests, else false.
     function areUserRequestsEnabled()
         external
         returns (bool);
 
-    /// @dev Returns hether the exchange is in withdrawal mode.
+    /// @dev Returns if the exchange is in withdrawal mode.
     /// @return Returns true if the exchange is in withdrawal mode, else false.
     function isInWithdrawalMode()
         external
         returns (bool);
 
-    /// @dev Returns whether the exchange is shutdown.
+    /// @dev Returns if the exchange is shutdown.
     /// @return Returns true if the exchange is shutdown, else false.
     function isShutdown()
         external
         view
         returns (bool);
 
-    /// @dev Returns whether the exchange is in maintenance.
+    /// @dev Returns if the exchange is in maintenance.
     /// @return Returns true if the exchange is in maintenance, else false.
     function isInMaintenance()
         external
         view
         returns (bool);
 
+    /// @dev Returns the protocol address of this exchange
+    /// @return Returns the protocol address
     function getProtocol()
         external
         view
         returns (ILoopringV3);
 
+    /// @dev Returns the exchange ID
+    /// @return The exchange ID
     function getId()
         external
         view
         returns (uint);
 
+    /// @dev Returns if the exchange requires on-chain data-availability
+    /// @return True if on-chain data-availability is required, else false
     function hasOnchainDataAvailability()
         external
         view

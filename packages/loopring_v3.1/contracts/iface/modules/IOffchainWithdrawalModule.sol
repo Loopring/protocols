@@ -17,17 +17,13 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./helpers/IWithdrawalModule.sol";
+import "./IAbstractWithdrawalModule.sol";
+import "./ICanBeDisabled.sol";
 
 
 /// @title  IOffchainWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IOffchainWithdrawalModule is IWithdrawalModule
+contract IOffchainWithdrawalModule is IAbstractWithdrawalModule, ICanBeDisabled
 {
-    bool public enabled = true;
 
-    /// @dev Disables the module so it cannot be used to submit new blocks.
-    ///      Can only be called by the exchange owner.
-    function disable()
-        external;
 }

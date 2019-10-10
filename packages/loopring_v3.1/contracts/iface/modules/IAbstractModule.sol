@@ -17,9 +17,9 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../../IExchangeModule.sol";
+import "../IExchangeModule.sol";
 
-import "../../../iface/IExchangeV3.sol";
+import "../../iface/IExchangeV3.sol";
 
 
 /// @title  IAbstractModule

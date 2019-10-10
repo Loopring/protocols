@@ -35,10 +35,9 @@ contract IExchangeV3Modules
         address         moduleAddress
     );
 
-    /// @dev Adds a module to the exchange.
-    ///
+    /// @dev Adds a module to the exchange which will be created by the given
+    ///      module factory.
     ///      This method can only be called by the exchange owner.
-    ///
     /// @param moduleFactoryAddress The module factory that creates the module
     ///        instance that will be used by the exchange.
     function addModule(
@@ -46,10 +45,8 @@ contract IExchangeV3Modules
         )
         external;
 
-    /// @dev Removed a module to the exchange.
-    ///
+    /// @dev Removes the specified module from the exchange.
     ///      This method can only be called by the exchange owner.
-    ///
     /// @param moduleAddress The address of the module that will be removed.
     function removeModule(
         address moduleAddress

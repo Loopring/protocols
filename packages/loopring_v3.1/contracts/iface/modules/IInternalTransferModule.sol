@@ -17,12 +17,13 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "./helpers/IAbstractModule.sol";
+import "./IAbstractModule.sol";
+import "./ICanBeDisabled.sol";
 
 
 /// @title IInternalTransferModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IInternalTransferModule is IAbstractModule
+contract IInternalTransferModule is IAbstractModule, ICanBeDisabled
 {
 
 }

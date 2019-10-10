@@ -22,7 +22,7 @@ pragma solidity ^0.5.11;
 contract IExchangeModuleFactory
 {
     /// @dev Creates a module instance that can be used by an exchange
-    /// @param exchangeAddress The address of the exchange where the exchange
+    /// @param exchangeAddress The address of the exchange where the module
     ///        will be used.
     /// @return The address of the module instance
     function createModule(

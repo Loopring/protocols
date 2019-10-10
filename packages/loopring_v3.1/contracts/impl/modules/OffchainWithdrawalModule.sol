@@ -18,15 +18,21 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/modules/IOffchainWithdrawalModule.sol";
-import "./helpers/WithdrawalModule.sol";
+import "./AbstractWithdrawalModule.sol";
+import "./CanBeDisabled.sol";
+
+// OffchainWithdrawalManager
+import "../../iface/IExchangeModuleFactory.sol";
+import "./../CircuitManager.sol";
 
 
 /// @title  OffchainWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract OffchainWithdrawalModule is WithdrawalModule, IOffchainWithdrawalModule
+contract OffchainWithdrawalModule is AbstractWithdrawalModule, CanBeDisabled, IOffchainWithdrawalModule
 {
     constructor(address exchangeAddress, address vkProviderAddress)
-        WithdrawalModule(exchangeAddress, vkProviderAddress, 0, 0)
+        AbstractWithdrawalModule(exchangeAddress, vkProviderAddress, 0, 0)
+        CanBeDisabled(exchangeAddress)
         public
     {
         // Nothing to do
@@ -62,13 +68,6 @@ contract OffchainWithdrawalModule is WithdrawalModule, IOffchainWithdrawalModule
         priority = 0;
     }
 
-    function disable()
-        external
-        onlyExchangeOwner
-    {
-        enabled = false;
-    }
-
     // Internal functions
 
     function processBlock(
@@ -78,8 +77,8 @@ contract OffchainWithdrawalModule is WithdrawalModule, IOffchainWithdrawalModule
         uint32 blockIdx
         )
         internal
+        whenEnabled
     {
-        require(enabled, "MODULE_DISABLED");
         require(!exchange.isShutdown(), "BLOCK_TYPE_NOT_ALLOWED_IN_SHUTDOWN");
 
         // Store the approved withdrawal data onchain
@@ -103,3 +102,19 @@ contract OffchainWithdrawalModule is WithdrawalModule, IOffchainWithdrawalModule
     }
 }
 
+
+/// @title OffchainWithdrawalManager
+/// @author Brecht Devos - <brecht@loopring.org>
+contract OffchainWithdrawalManager is IExchangeModuleFactory, CircuitManager
+{
+    function createModule(
+        address exchangeAddress
+        )
+        external
+        returns (address)
+    {
+        // Can deploy the module using a proxy (if supported), cloning,...
+        OffchainWithdrawalModule instance = new OffchainWithdrawalModule(exchangeAddress, address(this));
+        return address(instance);
+    }
+}

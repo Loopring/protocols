@@ -18,17 +18,17 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 
-import "../../../iface/modules/helpers/IWithdrawalModule.sol";
-import "./OnchainRequestModule.sol";
+import "../../iface/modules/IAbstractWithdrawalModule.sol";
+import "./AbstractOnchainRequestModule.sol";
 
-import "../../../iface/IExchangeV3.sol";
-import "../../../lib/AddressUtil.sol";
-import "../../../lib/MathUint.sol";
+import "../../iface/IExchangeV3.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/MathUint.sol";
 
 
-/// @title WithdrawalModule
+/// @title AbstractWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract WithdrawalModule is OnchainRequestModule, IWithdrawalModule
+contract AbstractWithdrawalModule is AbstractOnchainRequestModule, IAbstractWithdrawalModule
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
@@ -39,7 +39,7 @@ contract WithdrawalModule is OnchainRequestModule, IWithdrawalModule
         uint    requestPriority,
         uint    maxOpenRequests
         )
-        OnchainRequestModule(exchangeAddress, vkProviderAddress, requestPriority, maxOpenRequests)
+        AbstractOnchainRequestModule(exchangeAddress, vkProviderAddress, requestPriority, maxOpenRequests)
         public
     {
         // Nothing to do
