@@ -31,7 +31,6 @@ ABI_PATH="ABI/version30"
 
 for file in $ABI_PATH/*
 do
-    rename_file=$(echo "${file##*_}")
-    mv $file $ABI_PATH/$rename_file
+    mv $file $ABI_PATH/"${file##*_}"
 done
 
