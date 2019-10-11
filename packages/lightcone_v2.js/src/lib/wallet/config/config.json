@@ -808,7 +808,7 @@
       "symbol": "ETH",
       "name": "Ether",
       "digits": 18,
-      "address": "",
+      "address": "0x0000000000000000000000000000000000000000",
       "unit": "ETH",
       "website": "https://ethereum.org",
       "allowance": "1000000000000000000000",
