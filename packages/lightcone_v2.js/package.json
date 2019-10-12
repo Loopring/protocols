@@ -1,6 +1,6 @@
 {
-  "name": "lightcone_v2.js",
-  "version": "0.0.1",
+  "name": "@loopring/lightcone2.js",
+  "version": "0.0.2-SNAPSHOT",
   "description": "Loopring javascript library for Lightcone 2.0",
   "directories": {
     "test": "test"
@@ -21,7 +21,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git@github.com:Loopring/loopr-app-sdk.git"
+    "url": "git@github.com:Loopring/protocols.git"
   },
   "main": "dist/index.js",
   "license": "ISC",
