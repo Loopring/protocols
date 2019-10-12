@@ -1,7 +1,7 @@
 {
-  "name": "@loopring/lightcone",
-  "version": "2.0.2",
-  "description": "Loopring javascript library for Lightcone 2.0",
+  "name": "@loopring/lightcone.js",
+  "version": "2.0.2-SNAPSHOT",
+  "description": "JS library for accessing Lightcone 2.0",
   "directories": {
     "test": "test"
   },
