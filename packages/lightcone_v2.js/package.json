@@ -1,6 +1,6 @@
 {
   "name": "@loopring/lightcone2",
-  "version": "0.0.2-SNAPSHOT",
+  "version": "0.1.3",
   "description": "JavaScript library for accessing Lightcone Relayer 2.0",
   "directories": {
     "test": "test"
@@ -22,6 +22,9 @@
   "repository": {
     "type": "git",
     "url": "git@github.com:Loopring/protocols.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   },
   "main": "dist/index.js",
   "license": "ISC",
