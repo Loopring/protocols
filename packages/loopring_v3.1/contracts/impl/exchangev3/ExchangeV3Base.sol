@@ -193,4 +193,24 @@ contract ExchangeV3Base is IExchangeV3Base, ExchangeV3Core
     {
         return state.exchangeCreationTimestamp;
     }
+
+    function getConstants()
+        external
+        pure
+        returns(ExchangeData.Constants memory)
+    {
+        return ExchangeData.Constants(
+            uint(ExchangeData.SNARK_SCALAR_FIELD()),
+            uint(ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS()),
+            uint(ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS()),
+            uint(ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE()),
+            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE()),
+            uint(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()),
+            uint(ExchangeData.MAX_NUM_TOKENS()),
+            uint(ExchangeData.MAX_NUM_ACCOUNTS()),
+            uint(ExchangeData.MIN_TIME_UNTIL_EXCHANGE_STAKE_IS_WITHDRAWABLE()),
+            uint(ExchangeData.MAX_GAS_USE_MODULE_STATUS_CHECKING()),
+            uint(ExchangeData.MAX_TOKEN_BALANCE())
+        );
+    }
 }

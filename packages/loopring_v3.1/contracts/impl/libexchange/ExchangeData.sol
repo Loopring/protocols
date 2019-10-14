@@ -110,6 +110,21 @@ library ExchangeData
         IExchangeModule module;
     }
 
+    struct Constants
+    {
+        uint SNARK_SCALAR_FIELD;
+        uint MAX_PROOF_GENERATION_TIME_IN_SECONDS;
+        uint MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS;
+        uint MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE;
+        uint MAX_TIME_IN_SHUTDOWN_BASE;
+        uint MAX_TIME_IN_SHUTDOWN_DELTA;
+        uint MAX_NUM_TOKENS;
+        uint MAX_NUM_ACCOUNTS;
+        uint MIN_TIME_UNTIL_EXCHANGE_STAKE_IS_WITHDRAWABLE;
+        uint MAX_GAS_USE_MODULE_STATUS_CHECKING;
+        uint MAX_TOKEN_BALANCE;
+    }
+
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;

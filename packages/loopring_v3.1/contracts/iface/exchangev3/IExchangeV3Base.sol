@@ -18,6 +18,7 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../ILoopringV3.sol";
+import "../../impl/libexchange/ExchangeData.sol";
 
 
 /// @title IExchangeV3Base
@@ -142,4 +143,11 @@ contract IExchangeV3Base
         external
         view
         returns (uint timestamp);
+
+    /// @dev Returns the constants used by the exchange.
+    /// @return constants The values of the constants.
+    function getConstants()
+        external
+        pure
+        returns(ExchangeData.Constants memory);
 }
