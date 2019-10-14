@@ -80,6 +80,7 @@ contract DepositModule is AbstractOnchainRequestModule, Authorizable, IDepositMo
         bytes   calldata permission
         )
         external
+        payable
         nonReentrant
         onlyAuthorizedFor(owner)
         returns (

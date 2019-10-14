@@ -51,7 +51,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         internalTransferModule = _internalTransferModule;
     }
 
-    function createOrUpdateAccount(
+    function createOrUpdateAccountFor(
         address owner,
         uint    pubKeyX,
         uint    pubKeyY,
@@ -67,7 +67,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
             bool
         )
     {
-        return depositModule.createOrUpdateAccount(
+        return depositModule.createOrUpdateAccount.value(msg.value)(
             owner,
             pubKeyX,
             pubKeyY,
@@ -89,7 +89,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
             bool
         )
     {
-        return depositModule.createOrUpdateAccount(
+        return depositModule.createOrUpdateAccount.value(msg.value)(
             msg.sender,
             pubKeyX,
             pubKeyY,
@@ -115,7 +115,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
             bool   isAccountUpdated
         )
     {
-        return depositModule.updateAccountAndDeposit(
+        return depositModule.updateAccountAndDeposit.value(msg.value)(
             owner,
             pubKeyX,
             pubKeyY,
@@ -141,7 +141,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
             bool   isAccountUpdated
         )
     {
-        return depositModule.updateAccountAndDeposit(
+        return depositModule.updateAccountAndDeposit.value(msg.value)(
             msg.sender,
             pubKeyX,
             pubKeyY,
@@ -159,7 +159,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         payable
         refund
     {
-        depositModule.deposit(
+        depositModule.deposit.value(msg.value)(
             msg.sender,
             msg.sender,
             tokenAddress,
@@ -176,7 +176,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         payable
         refund
     {
-        depositModule.deposit(
+        depositModule.deposit.value(msg.value)(
             msg.sender,
             to,
             tokenAddress,
@@ -184,7 +184,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         );
     }
 
-    function deposit(
+    function depositForTo(
         address from,
         address to,
         address tokenAddress,
@@ -195,7 +195,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         onlyAuthorizedFor(from)
         refund
     {
-        depositModule.deposit(
+        depositModule.deposit.value(msg.value)(
             from,
             to,
             tokenAddress,
@@ -203,7 +203,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         );
     }
 
-    function withdraw(
+    function withdrawFor(
         address owner,
         address tokenAddress,
         uint96 amount
@@ -213,7 +213,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         onlyAuthorizedFor(owner)
         refund
     {
-        onchainWithdrawalModule.withdraw(
+        onchainWithdrawalModule.withdraw.value(msg.value)(
             owner,
             tokenAddress,
             amount
@@ -228,7 +228,7 @@ contract MyExchangeV10 is MyExchangeV10Storage, Refundable
         payable
         refund
     {
-        onchainWithdrawalModule.withdraw(
+        onchainWithdrawalModule.withdraw.value(msg.value)(
             msg.sender,
             tokenAddress,
             amount

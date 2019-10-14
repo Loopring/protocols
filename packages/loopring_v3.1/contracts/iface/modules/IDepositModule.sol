@@ -90,6 +90,7 @@ contract IDepositModule is IAbstractOnchainRequestModule, IAuthorizable
         bytes   calldata permission
         )
         external
+        payable
         returns (
             uint24 accountID,
             bool   isAccountNew,
