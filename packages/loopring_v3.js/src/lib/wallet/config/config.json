@@ -8,18 +8,6 @@
   "feeToken": "ETH",
   "maxFeeBips": 20,
   "exchangeAddress": "0x1D307532A97879b866A6fE33bf4A517bD28DE854",
-  "markets": [
-    {
-      "tokenx": "LRC",
-      "tokeny": "ETH",
-      "pricePrecision": 8
-    },
-    {
-      "tokenx": "LRC",
-      "tokeny": "WETH",
-      "pricePrecision": 8
-    }
-  ],
   "txs": [
     {
       "type": "eth_transfer",
@@ -74,6 +62,26 @@
     {
       "type": "withdraw",
       "feeInWEI": 10000000000000000
+    }
+  ],
+  "markets": [
+    {
+      "market": "LRC-ETH",
+      "baseToken": "LRC",
+      "quoteToken": "ETH",
+      "pricePrecision": 6,
+      "amountPrecision": 5,
+      "totalPrecision": 5,
+      "maxLevel": 5
+    },
+    {
+      "market": "LRC-WETH",
+      "baseToken": "LRC",
+      "quoteToken": "WETH",
+      "pricePrecision": 6,
+      "amountPrecision": 5,
+      "totalPrecision": 5,
+      "maxLevel": 5
     }
   ],
   "tokens": [
