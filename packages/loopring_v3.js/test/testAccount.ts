@@ -1,9 +1,10 @@
 import assert = require("assert");
 import ethereum from "../src/lib/wallet/ethereum";
-import { Account } from "../src";
+import { Account, exchange } from "../src";
 import { EdDSA } from "../src/lib/sign/eddsa";
 import * as fm from "../src/lib/wallet/common/formatter";
 import sha256 from "crypto-js/sha256";
+import { WalletAccount } from "../src/lib/wallet/ethereum/walletAccount";
 
 describe("test account sign functions", function() {
   let pkAccount;
@@ -13,6 +14,43 @@ describe("test account sign functions", function() {
     pkAccount = ethereum.account.fromPrivateKey(
       "0x7c71142c72a019568cf848ac7b805d21f2e0fd8bc341e8314580de11c6a397bf"
     );
+    exchange.setCurrentAccount(pkAccount);
+  });
+
+  it("generate key pair", function(done) {
+    const seed = pkAccount.getAddress() + "Abc!12345";
+    let keyPair = EdDSA.generateKeyPair(seed);
+    const expected = {
+      publicKeyX:
+        "15030727036724168751212480282500540869268142725392913493575803542173309367534",
+      publicKeyY:
+        "21709653362655094841217318150615954140561437115749994376567240539798473592233",
+      secretKey: "1268930117"
+    };
+    assert.strictEqual(keyPair.publicKeyX, expected.publicKeyX);
+    assert.strictEqual(keyPair.publicKeyY, expected.publicKeyY);
+    assert.strictEqual(keyPair.secretKey, expected.secretKey);
+    console.log("test generateKeyPair completed!");
+    done();
+  });
+
+  it("verify password", function(done) {
+    const seed = pkAccount.getAddress() + "Abc!12345";
+    let keyPair = EdDSA.generateKeyPair(seed);
+    let success = exchange.verifyPassword(
+      keyPair.publicKeyX,
+      keyPair.publicKeyY,
+      "Abc!12345"
+    );
+    let fail = exchange.verifyPassword(
+      keyPair.publicKeyX,
+      keyPair.publicKeyY,
+      "Abc12345"
+    );
+    assert.strictEqual(success, true);
+    assert.strictEqual(fail, false);
+    console.log("test verify password completed!");
+    done();
   });
 
   it("test sign submit withdrawal", function(done) {

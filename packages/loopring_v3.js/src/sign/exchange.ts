@@ -22,6 +22,28 @@ const assert = require("assert");
 export class Exchange {
   private currentWalletAccount: WalletAccount;
 
+  public setCurrentAccount(account: WalletAccount) {
+    this.currentWalletAccount = account;
+  }
+
+  public generateKeyPair(password: string) {
+    assert(this.currentWalletAccount !== null);
+    return EdDSA.generateKeyPair(
+      this.currentWalletAccount.getAddress() + password
+    );
+  }
+
+  public verifyPassword(
+    publicKeyX: string,
+    publicKeyY: string,
+    password: string
+  ) {
+    const keyPair = this.generateKeyPair(password);
+    return (
+      keyPair.publicKeyX === publicKeyX && keyPair.publicKeyY === publicKeyY
+    );
+  }
+
   public createOrUpdateAccount(
     wallet: WalletAccount,
     password: string,

@@ -51,6 +51,36 @@ export class Account {
   }
 
   /**
+   * generata key pair of account in DEX
+   * @param password: user password
+   */
+  public generataKeyPair(password: string) {
+    try {
+      return exchange.generateKeyPair(password);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /**
+   * verify password of account in DEX
+   * @param publicKeyX: publicKeyX of account's key pair
+   * @param publicKeyY: publicKeyY of account's key pair
+   * @param password: account's password
+   */
+  public verifyPassword(
+    publicKeyX: string,
+    publicKeyY: string,
+    password: string
+  ) {
+    try {
+      return exchange.verifyPassword(publicKeyX, publicKeyY, password);
+    } catch (e) {
+      throw e;
+    }
+  }
+
+  /**
    * create Or Update Account in DEX
    * @param gasPrice: in gwei
    * @param nonce: Ethereum nonce of this address
