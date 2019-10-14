@@ -69,6 +69,22 @@ contract OffchainWithdrawalModule is AbstractWithdrawalModule, CanBeDisabled, IO
 
     // Internal functions
 
+    /// @param data for an internal transfer block:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - For every withdrawal:
+    ///       - Token ID: 1 bytes
+    ///       - Account ID: 2.5 bytes
+    ///       - Amount: 3.5 bytes
+    ///   - Label hash: 32 bytes
+    ///
+    /// With on-chain data-availability the following data is appended:
+    ///   - Operator account ID: 3 bytes
+    ///   - For every withdrawal:
+    ///       - Fee token ID: 1 bytes
+    ///       - Fee amount: 2 bytes
     function processBlock(
         uint32 blockSize,
         uint16 /*blockVersion*/,

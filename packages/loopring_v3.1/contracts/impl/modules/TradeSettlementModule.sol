@@ -73,6 +73,39 @@ contract TradeSettlementModule is AbstractModule, CanBeDisabled, ITradeSettlemen
 
     // Internal functions
 
+    /// @param data for a trade settlement block:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - timestamp used in the block: 4 bytes
+    ///   - protocolTakerFeeBips: 1 bytes
+    ///   - protocolMakerFeeBips: 1 bytes
+    ///   - Label hash: 32 bytes
+    ///
+    /// With on-chain data-availability the following data is appended:
+    ///   - Operator account ID: 3 bytes
+    ///   - For every trade
+    ///       - OrderA.orderID: 2.5 bytes
+    ///       - OrderB.orderID: 2.5 bytes
+    ///       - OrderA.accountID: 2.5 bytes
+    ///       - OrderB.accountID: 2.5 bytes
+    ///       - For both Orders:
+    ///           - TokenS: 1 bytes
+    ///           - FillS: 3 bytes
+    ///           - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
+    ///                        feeOrRebateBips (6 bits)
+    /// The data availability data is further transformed
+    /// to make it more compressible:
+    ///   - To group more similar data together we don't store all data
+    ///     for a trade next to each other but group them together for all trades.
+    ///     For ALL trades, sequentially:
+    ///        - orderA.orderID + orderB.orderID
+    ///        - orderA.accountID + orderB.accountID
+    ///        - orderA.tokenS + orderB.tokenS
+    ///        - orderA.fillS + orderB.fillS
+    ///        - orderA.orderData
+    ///        - orderB.orderData
     function processBlock(
         uint32 /*blockSize*/,
         uint16 /*blockVersion*/,

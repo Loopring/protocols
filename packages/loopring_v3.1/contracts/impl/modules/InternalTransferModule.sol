@@ -163,6 +163,27 @@ contract InternalTransferModule is
 
     // Internal functions
 
+    /// @param data for an internal transfer block:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - Label hash: 32 bytes
+    ///   - Number of conditional transfers (4 bytes)
+    ///   - For every transfer:
+    ///       - From account ID: 2.5 bytes
+    ///       - To account ID: 2.5 bytes
+    ///       - Token ID: 1 bytes
+    ///       - Amount: 3 bytes
+    ///       - Fee token ID: 1 bytes
+    ///       - Fee amount: 2 bytes
+    ///       - Type: (1 bytes) (isConditional ? 1 : 0)
+    /// In the case without on-chain data-availability the data for
+    /// for a non-conditional transfer will be zeroed out to save gas.
+    /// @param auxiliaryData for an internal transfer block:
+    ///   - For each conditional transfer:
+    ///       - Transfer index: 2 bytes (the position of the conditional transfer inside data)
+    ///       - Salt: 4 bytes (the salt of the conditional transfer)
     function processBlock(
         uint32 /*blockSize*/,
         uint16 /*blockVersion*/,
@@ -187,9 +208,6 @@ contract InternalTransferModule is
         // Run over all conditional transfers
         uint numBytesPerTransfer = 13;
         for (uint i = 0; i < auxiliaryData.length; i += 6) {
-            // auxiliaryData contains for each conditional transfer:
-            // - Transfer index: 2 bytes (the position of the conditional transfer inside data)
-            // - Salt: 4 bytes (the salt of the transfer)
             uint index;
             uint salt;
             assembly {

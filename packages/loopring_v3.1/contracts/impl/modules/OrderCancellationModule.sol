@@ -67,6 +67,21 @@ contract OrderCancellationModule is AbstractModule, CanBeDisabled, IOrderCancell
 
     // Internal functions
 
+    /// param `data` for an order cancellation block:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - Label hash: 32 bytes
+    ///
+    /// With on-chain data-availability the following data is appended:
+    ///   - Operator account ID: 3 bytes
+    ///   - For every cancel:
+    ///       - Account ID: 2.5 bytes
+    ///       - Order ID: 2.5 bytes
+    ///       - Token ID: 1 bytes
+    ///       - Fee token ID: 1 bytes
+    ///       - Fee amount: 2 bytes
     function processBlock(
         uint32 /*blockSize*/,
         uint16 /*blockVersion*/,

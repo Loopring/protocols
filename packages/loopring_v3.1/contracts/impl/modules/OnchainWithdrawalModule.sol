@@ -103,6 +103,19 @@ contract OnchainWithdrawalModule is AbstractWithdrawalModule, Authorizable, IOnc
 
     // Internal functions
 
+    /// @param data for an onchain withdrawal block:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - Starting hash: 32 bytes
+    ///   - Ending hash: 32 bytes
+    ///   - Start index (in withdrawal chain): 4 bytes
+    ///   - Number of withdrawals processed: 4 bytes
+    ///   - For every withdrawal:
+    ///       - Token ID: 1 bytes
+    ///       - Account ID: 2,5 bytes
+    ///       - Amount: 3,5 bytes
     function processBlock(
         uint32 blockSize,
         uint16 /*blockVersion*/,

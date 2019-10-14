@@ -228,6 +228,15 @@ contract DepositModule is AbstractOnchainRequestModule, Authorizable, IDepositMo
 
     // Internal functions
 
+    /// @param data for a deposit block:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - Starting hash: 32 bytes
+    ///   - Ending hash: 32 bytes
+    ///   - Start index (in deposit chain): 4 bytes
+    ///   - Number of deposits processed: 4 bytes
     function processBlock(
         uint32 blockSize,
         uint16 /*blockVersion*/,

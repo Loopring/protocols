@@ -87,6 +87,20 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
         );
     }
 
+    /// param data Depends on `data` starting the same for each block
+    ///            inheriting from AbstractModule.
+    /// For all blocks:
+    ///   - Compression type: 1 bytes
+    ///   - Exchange ID: 4 bytes
+    ///   - Old merkle root: 32 bytes
+    ///   - New merkle root: 32 bytes
+    ///   - (start block specfic data)
+    ///
+    /// The data can be sent on-chain compressed. The data will be decompressed respecting the
+    /// Compression type (the first byte in 'data'):
+    ///   - Mode 0: No compression. The data following the mode byte is used as is.
+    ///   - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
+    ///             IDecompressor.decompress() will be called to decompress the following data.
     function commitBlock(
         uint32 blockSize,
         uint16 blockVersion,
