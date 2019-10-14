@@ -18,11 +18,12 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "./IAbstractOnchainRequestModule.sol";
+import "../IAuthorizable.sol";
 
 
 /// @title IDepositModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IDepositModule is IAbstractOnchainRequestModule
+contract IDepositModule is IAbstractOnchainRequestModule, IAuthorizable
 {
     uint public constant REQUEST_PRIORITY = 50;
     uint public constant MAX_OPEN_REQUESTS = 1024;
@@ -54,7 +55,9 @@ contract IDepositModule is IAbstractOnchainRequestModule
     uint public accountUpdateFeeETH;
     uint public depositFeeETH;
 
+    // The address whitelist
     address public addressWhitelist;
+
 
     /// @dev Submits an onchain request to create a new account for msg.sender or
     ///      update its existing account by replacing its trading public key.
@@ -71,6 +74,7 @@ contract IDepositModule is IAbstractOnchainRequestModule
     ///      Calling this method with a different trading public key will effectively
     ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
     ///
+    /// @param  owner   The owner of the account
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
@@ -80,9 +84,10 @@ contract IDepositModule is IAbstractOnchainRequestModule
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
     function createOrUpdateAccount(
-        uint  pubKeyX,
-        uint  pubKeyY,
-        bytes calldata permission
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY,
+        bytes   calldata permission
         )
         external
         returns (
@@ -109,6 +114,7 @@ contract IDepositModule is IAbstractOnchainRequestModule
     ///      Calling this method with a different trading public key will effectively
     ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
     ///
+    /// @param  owner   The owner of the account
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @param  tokenAddress The address of the token, use `0x0` for Ether.
@@ -119,6 +125,7 @@ contract IDepositModule is IAbstractOnchainRequestModule
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
     function updateAccountAndDeposit(
+        address owner,
         uint    pubKeyX,
         uint    pubKeyY,
         address tokenAddress,
@@ -133,28 +140,6 @@ contract IDepositModule is IAbstractOnchainRequestModule
             bool   isAccountUpdated
         );
 
-    /// @dev Deposits Ether or ERC20 tokens to the sender's account.
-    ///
-    ///      The total fee in ETH that the user needs to pay is 'depositFee'.
-    ///      If the user sends too much ETH the surplus is sent back immediately.
-    ///
-    ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
-    ///      and create the deposit to the offchain account.
-    ///
-    ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
-    ///               tokens in total. If that happens, the user may lose token.
-    ///               This token balance upper limit, however, is large enough for most scenarios.
-    ///
-    /// @param tokenAddress The address of the token, use `0x0` for Ether.
-    /// @param amount The amount of tokens to deposit
-    function deposit(
-        address tokenAddress,
-        uint96  amount
-        )
-        external
-        payable;
-
     /// @dev Deposits Ether or ERC20 tokens to a recipient account.
     ///
     ///      The total fee in ETH that the user needs to pay is 'depositFee'.
@@ -164,14 +149,12 @@ contract IDepositModule is IAbstractOnchainRequestModule
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
-    ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
-    ///               tokens in total. If that happens, the user may lose token.
-    ///               This token balance upper limit, however, is large enough for most scenarios.
-    ///
+    /// @param from The address sending the tokens
     /// @param to The address of the recipient
     /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
-    function depositTo(
+    function deposit(
+        address from,
         address to,
         address tokenAddress,
         uint96  amount

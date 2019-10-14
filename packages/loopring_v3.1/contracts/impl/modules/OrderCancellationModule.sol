@@ -32,7 +32,6 @@ contract OrderCancellationModule is AbstractModule, CanBeDisabled, IOrderCancell
 {
     constructor(address exchangeAddress, address vkProviderAddress)
         AbstractModule(exchangeAddress, vkProviderAddress)
-        CanBeDisabled(exchangeAddress)
         public
     {
         // Nothing to do
@@ -72,6 +71,7 @@ contract OrderCancellationModule is AbstractModule, CanBeDisabled, IOrderCancell
         uint32 /*blockSize*/,
         uint16 /*blockVersion*/,
         bytes  memory /*data*/,
+        bytes  memory /*auxiliaryData*/,
         uint32 /*blockIdx*/
         )
         internal

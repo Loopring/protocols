@@ -33,7 +33,6 @@ contract TradeSettlementModule is AbstractModule, CanBeDisabled, ITradeSettlemen
 {
     constructor(address exchangeAddress, address vkProviderAddress)
         AbstractModule(exchangeAddress, vkProviderAddress)
-        CanBeDisabled(exchangeAddress)
         public
     {
         // Get the protocol fees for this exchange
@@ -78,6 +77,7 @@ contract TradeSettlementModule is AbstractModule, CanBeDisabled, ITradeSettlemen
         uint32 /*blockSize*/,
         uint16 /*blockVersion*/,
         bytes  memory data,
+        bytes  memory /*auxiliaryData*/,
         uint32 /*blockIdx*/
         )
         internal

@@ -16,16 +16,16 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/IExchangeV3.sol";
+import "../iface/IExchangeInterfaceV30.sol";
 
 import "../lib/MathUint.sol";
+import "../lib/Refundable.sol";
 
 
-contract AccountContract {
-
+contract AccountContract is Refundable {
     using MathUint          for uint;
 
-    IExchangeV3 exchange;
+    IExchangeInterfaceV30 exchange;
 
     uint[16] private dummyStorageVariables;
 
@@ -34,7 +34,7 @@ contract AccountContract {
         )
         public
     {
-        exchange = IExchangeV3(_exchangeAddress);
+        exchange = IExchangeInterfaceV30(_exchangeAddress);
     }
 
     function updateAccountAndDeposit(
@@ -46,23 +46,20 @@ contract AccountContract {
         )
         external
         payable
+        refund
         returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
+            uint24,
+            bool,
+            bool
         )
     {
-        // Send surplus to msg.sender
-        /*uint balanceBefore = address(this).balance.sub(msg.value);
-        (accountID, isAccountNew, isAccountUpdated) = exchange.updateAccountAndDeposit.value(msg.value)(
+        return exchange.updateAccountAndDeposit.value(msg.value)(
             pubKeyX,
             pubKeyY,
             token,
             amount,
             permission
         );
-        uint balanceAfter = address(this).balance;
-        msg.sender.transfer(balanceAfter.sub(balanceBefore));*/
     }
 
     function withdraw(
@@ -71,12 +68,9 @@ contract AccountContract {
         )
         external
         payable
+        refund
     {
-        // Send surplus to msg.sender
-        /*uint balanceBefore = address(this).balance.sub(msg.value);
         exchange.withdraw.value(msg.value)(token, amount);
-        uint balanceAfter = address(this).balance;
-        msg.sender.transfer(balanceAfter.sub(balanceBefore));*/
     }
 
     function()

@@ -32,7 +32,6 @@ contract OffchainWithdrawalModule is AbstractWithdrawalModule, CanBeDisabled, IO
 {
     constructor(address exchangeAddress, address vkProviderAddress)
         AbstractWithdrawalModule(exchangeAddress, vkProviderAddress, 0, 0)
-        CanBeDisabled(exchangeAddress)
         public
     {
         // Nothing to do
@@ -74,6 +73,7 @@ contract OffchainWithdrawalModule is AbstractWithdrawalModule, CanBeDisabled, IO
         uint32 blockSize,
         uint16 /*blockVersion*/,
         bytes  memory data,
+        bytes  memory /*auxiliaryData*/,
         uint32 blockIdx
         )
         internal

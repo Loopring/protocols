@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/modules/IOnchainWithdrawalModule.sol";
 import "./AbstractWithdrawalModule.sol";
+import "../Authorizable.sol";
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/ERC20SafeTransfer.sol";
@@ -33,7 +34,7 @@ import "./../CircuitManager.sol";
 
 /// @title  OnchainWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract OnchainWithdrawalModule is AbstractWithdrawalModule, IOnchainWithdrawalModule
+contract OnchainWithdrawalModule is AbstractWithdrawalModule, Authorizable, IOnchainWithdrawalModule
 {
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
@@ -58,14 +59,16 @@ contract OnchainWithdrawalModule is AbstractWithdrawalModule, IOnchainWithdrawal
     }
 
     function withdraw(
+        address owner,
         address token,
         uint96 amount
         )
         external
         payable
         nonReentrant
+        onlyAuthorizedFor(owner)
     {
-        uint24 accountID = exchange.getAccountID(msg.sender);
+        uint24 accountID = exchange.getAccountID(owner);
         withdraw(accountID, token, amount);
     }
 
@@ -77,7 +80,7 @@ contract OnchainWithdrawalModule is AbstractWithdrawalModule, IOnchainWithdrawal
         nonReentrant
     {
         // Always request the maximum amount so the complete balance is withdrawn
-        withdraw(0, token, ~uint96(0));
+        withdraw(0, token, ExchangeData.MAX_TOKEN_BALANCE());
     }
 
     function setFees(
@@ -104,6 +107,7 @@ contract OnchainWithdrawalModule is AbstractWithdrawalModule, IOnchainWithdrawal
         uint32 blockSize,
         uint16 /*blockVersion*/,
         bytes  memory data,
+        bytes  memory /*auxiliaryData*/,
         uint32 blockIdx
         )
         internal

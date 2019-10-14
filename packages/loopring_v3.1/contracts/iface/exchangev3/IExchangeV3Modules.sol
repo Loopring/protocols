@@ -67,4 +67,12 @@ contract IExchangeV3Modules
         external
         view
         returns (address);
+
+    /// @dev Returns if the given address is an exchange module on the exchange
+    /// @param exchangeModule The address to be checked
+    /// @return True if the address is currently used as an exchange module, else false
+    function isModule(address exchangeModule)
+        external
+        view
+        returns (bool);
 }

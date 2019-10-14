@@ -62,4 +62,12 @@ contract ExchangeV3Modules is IExchangeV3Modules, ExchangeV3Core
     {
         return address(state.modules[index].module);
     }
+
+    function isModule(address exchangeModule)
+        external
+        view
+        returns (bool)
+    {
+        return state.addressToModuleMap[exchangeModule] > 0;
+    }
 }

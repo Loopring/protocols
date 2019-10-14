@@ -177,7 +177,7 @@ contract IExchangeV3Balances
         pure
         returns (bool);
 
-     /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops.
+    /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops.
     ///      Can only be called by the exchange owner.
     ///
     /// @param tokenAddress The adderss of the token.
@@ -189,4 +189,22 @@ contract IExchangeV3Balances
         )
         external
         returns (uint);
+
+    /// @dev Allows exchange modules to transfer ERC-20 tokens for a user using the allowance
+    ///      the user has set for the exchange.  This way the user only needs to approve a single exchange contract
+    ///      for all exchange/module/agent features, which allows for a more seamless user experience.
+    ///
+    ///      This function can only be called by exchange modules.
+    ///
+    /// @param token The address of the token to transfer (ETH is and cannot be suppported).
+    /// @param from The address of the account that sends the tokens.
+    /// @param to The address to where 'amount' tokens are transferred.
+    /// @param amount The amount of tokens transferred.
+    function onchainTransferFrom(
+        address token,
+        address from,
+        address to,
+        uint    amount
+        )
+        external;
 }

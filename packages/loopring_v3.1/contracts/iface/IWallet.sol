@@ -16,39 +16,21 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../iface/modules/ICanBeDisabled.sol";
 
-
-/// @title CanBeDisabled
-/// @dev The CanBeDisabled contract allows the exchange owner to disable/enable the contract
+/// @title IWallet
 /// @author Brecht Devos - <brecht@loopring.org>
-contract CanBeDisabled is ICanBeDisabled
+contract IWallet
 {
-    modifier whenEnabled()
-    {
-        require(!disabled, "INVALID_MODE");
-        _;
-    }
-
-    modifier whenDisabled()
-    {
-        require(disabled, "INVALID_MODE");
-        _;
-    }
-
-    function disable()
-        external
-        onlyExchangeOwner
-        whenEnabled
-    {
-        disabled = true;
-    }
-
-    function enable()
-        external
-        onlyExchangeOwner
-        whenDisabled
-    {
-        disabled = false;
-    }
+    /// @dev Transfers funds out of the contract to a specified address
+    /// @param to The recipient of the funds
+    /// @param token The token address (0x0 for ETH)
+    /// @param amount The number of tokens transferred to the recipient
+    /// @param data Custom data usable for e.g. additional authentication
+    function transfer(
+        address to,
+        address token,
+        uint    amount,
+        bytes   calldata data
+        )
+        external;
 }

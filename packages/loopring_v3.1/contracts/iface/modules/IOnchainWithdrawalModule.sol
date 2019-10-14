@@ -18,11 +18,12 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "./IAbstractWithdrawalModule.sol";
+import "../IAuthorizable.sol";
 
 
 /// @title  IOnchainWithdrawalModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IOnchainWithdrawalModule is IAbstractWithdrawalModule
+contract IOnchainWithdrawalModule is IAbstractWithdrawalModule, IAuthorizable
 {
     uint public constant REQUEST_PRIORITY = 100;
     uint public constant MAX_OPEN_REQUESTS = 1024;
@@ -44,7 +45,7 @@ contract IOnchainWithdrawalModule is IAbstractWithdrawalModule
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens. To withdraw
     ///      all the balance, use a very large number for `amount`.
     ///
-    ///      Only the owner of the account can request a withdrawal.
+    ///      Only the owner of the account of an authorized agent can request a withdrawal.
     ///
     ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
     ///      If the user sends too much ETH the surplus is sent back immediately.
@@ -53,9 +54,11 @@ contract IOnchainWithdrawalModule is IAbstractWithdrawalModule
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
+    /// @param owner The owner of the account.
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     function withdraw(
+        address owner,
         address tokenAddress,
         uint96 amount
         )

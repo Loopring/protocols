@@ -91,6 +91,7 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
         uint32 blockSize,
         uint16 blockVersion,
         bytes  calldata /*data*/,
+        bytes  calldata auxiliaryData,
         bytes  calldata /*offchainData*/
         )
         external
@@ -149,7 +150,8 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
         commitBlockInternal(
             blockSize,
             blockVersion,
-            decompressed
+            decompressed,
+            auxiliaryData
         );
     }
 
@@ -158,7 +160,8 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
     function commitBlockInternal(
         uint32 blockSize,
         uint16 blockVersion,
-        bytes  memory data
+        bytes  memory data,
+        bytes  memory auxiliaryData
         )
         internal
     {
@@ -210,6 +213,7 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
             blockSize,
             blockVersion,
             data,
+            auxiliaryData,
             uint32(blockIdx)
         );
     }
@@ -219,6 +223,7 @@ contract AbstractModule is ReentrancyGuard, IAbstractModule
         uint32 blockSize,
         uint16 blockVersion,
         bytes  memory data,
+        bytes  memory auxiliaryData,
         uint32 blockIdx
         )
         internal;

@@ -16,39 +16,28 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../iface/modules/ICanBeDisabled.sol";
 
-
-/// @title CanBeDisabled
-/// @dev The CanBeDisabled contract allows the exchange owner to disable/enable the contract
+/// @title IAuthorizer
 /// @author Brecht Devos - <brecht@loopring.org>
-contract CanBeDisabled is ICanBeDisabled
+contract IAuthorizer
 {
-    modifier whenEnabled()
-    {
-        require(!disabled, "INVALID_MODE");
-        _;
-    }
-
-    modifier whenDisabled()
-    {
-        require(disabled, "INVALID_MODE");
-        _;
-    }
-
-    function disable()
+    /// @dev Checks if an address has been authorized.
+    /// @param sender The originating address (msg.sender)
+    /// @return true if the address is authorized, else false
+    function isAuthorized(
+        address sender
+        )
         external
-        onlyExchangeOwner
-        whenEnabled
-    {
-        disabled = true;
-    }
+        returns (bool);
 
-    function enable()
+    /// @dev Checks if an address has been authorized for a specific user.
+    /// @param sender The originating address (msg.sender)
+    /// @param addr The address for which an action will be taken
+    /// @return true If the sender address was authorized for the user, else false
+    function isAuthorizedFor(
+        address sender,
+        address addr
+        )
         external
-        onlyExchangeOwner
-        whenDisabled
-    {
-        disabled = false;
-    }
+        returns (bool);
 }

@@ -15,40 +15,40 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
-import "../../iface/modules/ICanBeDisabled.sol";
+import "../iface/IAuthorizable.sol";
 
 
-/// @title CanBeDisabled
-/// @dev The CanBeDisabled contract allows the exchange owner to disable/enable the contract
+/// @title Authorizable
 /// @author Brecht Devos - <brecht@loopring.org>
-contract CanBeDisabled is ICanBeDisabled
+contract Authorizable is IAuthorizable
 {
-    modifier whenEnabled()
+    modifier onlyAuthorized()
     {
-        require(!disabled, "INVALID_MODE");
+        require(
+            (authorizer != IAuthorizer(address(0)) && authorizer.isAuthorized(msg.sender)),
+            "UNAUTHORIZED"
+        );
         _;
     }
 
-    modifier whenDisabled()
+    modifier onlyAuthorizedFor(address owner)
     {
-        require(disabled, "INVALID_MODE");
+        require(
+            msg.sender == owner ||
+            (authorizer != IAuthorizer(address(0)) && authorizer.isAuthorizedFor(msg.sender, owner)),
+            "UNAUTHORIZED"
+        );
         _;
     }
 
-    function disable()
+    function setAuthorizer(
+        IAuthorizer _authorizer
+        )
         external
         onlyExchangeOwner
-        whenEnabled
     {
-        disabled = true;
-    }
-
-    function enable()
-        external
-        onlyExchangeOwner
-        whenDisabled
-    {
-        disabled = false;
+        authorizer = _authorizer;
     }
 }

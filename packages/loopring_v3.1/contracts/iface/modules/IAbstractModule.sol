@@ -18,15 +18,13 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../IExchangeModule.sol";
-
-import "../../iface/IExchangeV3.sol";
+import "../IExchangeOwnable.sol";
 
 
 /// @title  IAbstractModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IAbstractModule is IExchangeModule
+contract IAbstractModule is IExchangeModule, IExchangeOwnable
 {
-    IExchangeV3 public exchange;
     ILoopringV3 public loopring;
 
     uint32 public exchangeId;
@@ -34,10 +32,22 @@ contract IAbstractModule is IExchangeModule
 
     IVerificationKeyProvider public vkProvider;
 
+    /// @dev Commits a new block to the virtual blockchain without the proof.
+    ///      This function is only callable by the exchange operator.
+    ///
+    /// @param blockSize The number of onchain or offchain requests/settlements
+    ///        that have been processed in this block
+    /// @param blockVersion The circuit version to use for verifying the block
+    /// @param data The data for this block
+    /// @param auxiliaryData Block specific data that is only used to help process the block on-chain.
+    ///                      It is not used as input for the circuits and it is not necessary for data-availability.
+    /// @param offchainData Arbitrary data, mainly for off-chain data-availability, i.e.,
+    ///        the multihash of the IPFS file that contains the block data.
     function commitBlock(
         uint32 blockSize,
         uint16 blockVersion,
         bytes  calldata data,
+        bytes  calldata auxiliaryData,
         bytes  calldata offchainData
         )
         external;

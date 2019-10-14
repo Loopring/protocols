@@ -16,39 +16,19 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../iface/modules/ICanBeDisabled.sol";
+import "../iface/IExchangeInterfaceV30.sol";
+import "./Authorizable.sol";
+
+import "../iface/modules/IDepositModule.sol";
+import "../iface/modules/IOnchainWithdrawalModule.sol";
+import "../iface/modules/IInternalTransferModule.sol";
 
 
-/// @title CanBeDisabled
-/// @dev The CanBeDisabled contract allows the exchange owner to disable/enable the contract
+/// @title MyExchangeV10Storage
 /// @author Brecht Devos - <brecht@loopring.org>
-contract CanBeDisabled is ICanBeDisabled
+contract MyExchangeV10Storage is IExchangeInterfaceV30, Authorizable
 {
-    modifier whenEnabled()
-    {
-        require(!disabled, "INVALID_MODE");
-        _;
-    }
-
-    modifier whenDisabled()
-    {
-        require(disabled, "INVALID_MODE");
-        _;
-    }
-
-    function disable()
-        external
-        onlyExchangeOwner
-        whenEnabled
-    {
-        disabled = true;
-    }
-
-    function enable()
-        external
-        onlyExchangeOwner
-        whenDisabled
-    {
-        disabled = false;
-    }
+    IDepositModule public depositModule;
+    IOnchainWithdrawalModule public onchainWithdrawalModule;
+    IInternalTransferModule public internalTransferModule;
 }

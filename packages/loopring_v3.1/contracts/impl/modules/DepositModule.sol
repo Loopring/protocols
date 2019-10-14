@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/modules/IDepositModule.sol";
 import "./AbstractOnchainRequestModule.sol";
+import "../Authorizable.sol";
 
 import "../../iface/IAddressWhitelist.sol";
 import "../../iface/IExchangeV3.sol";
@@ -34,7 +35,7 @@ import "./../CircuitManager.sol";
 
 /// @title  DepositModule
 /// @author Brecht Devos - <brecht@loopring.org>
-contract DepositModule is AbstractOnchainRequestModule, IDepositModule
+contract DepositModule is AbstractOnchainRequestModule, Authorizable, IDepositModule
 {
     using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
@@ -73,12 +74,14 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
     }
 
     function createOrUpdateAccount(
-        uint  pubKeyX,
-        uint  pubKeyY,
-        bytes calldata permission
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY,
+        bytes   calldata permission
         )
         external
         nonReentrant
+        onlyAuthorizedFor(owner)
         returns (
             uint24,
             bool,
@@ -86,6 +89,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         )
     {
         return createOrUpdateAccountInternal(
+            owner,
             pubKeyX,
             pubKeyY,
             permission
@@ -93,6 +97,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
     }
 
     function updateAccountAndDeposit(
+        address owner,
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
@@ -102,6 +107,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         external
         payable
         nonReentrant
+        onlyAuthorizedFor(owner)
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -109,6 +115,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         )
     {
         return updateAccountAndDepositInternal(
+            owner,
             pubKeyX,
             pubKeyY,
             token,
@@ -118,17 +125,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
     }
 
     function deposit(
-        address token,
-        uint96  amount
-        )
-        external
-        payable
-        nonReentrant
-    {
-        depositTo(msg.sender, token, amount, 0);
-    }
-
-    function depositTo(
+        address from,
         address to,
         address tokenAddress,
         uint96  amount
@@ -136,8 +133,15 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         external
         payable
         nonReentrant
+        onlyAuthorizedFor(from)
     {
-        depositTo(to, tokenAddress, amount, 0);
+        depositInternal(
+            from,
+            to,
+            tokenAddress,
+            amount,
+            0
+        );
     }
 
     function withdrawFromDepositRequest(
@@ -227,6 +231,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         uint32 blockSize,
         uint16 /*blockVersion*/,
         bytes  memory data,
+        bytes  memory /*auxiliaryData*/,
         uint32 blockIdx
         )
         internal
@@ -280,9 +285,10 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
     }
 
     function createOrUpdateAccountInternal(
-        uint  pubKeyX,
-        uint  pubKeyY,
-        bytes memory permission
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY,
+        bytes   memory permission
         )
         internal
         returns (
@@ -291,18 +297,18 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
             bool   isAccountUpdated
         )
     {
-        isAccountNew = !exchange.hasAccount(msg.sender);
+        isAccountNew = !exchange.hasAccount(owner);
         if (isAccountNew) {
             if (addressWhitelist != address(0)) {
                 require(
                     IAddressWhitelist(addressWhitelist)
-                        .isAddressWhitelisted(msg.sender, permission),
+                        .isAddressWhitelisted(owner, permission),
                     "ADDRESS_NOT_WHITELISTED"
                 );
             }
             accountID = uint24(exchange.getNumAccounts());
             ExchangeData.Account memory newAccount = ExchangeData.Account(
-                msg.sender,
+                owner,
                 accountID,
                 pubKeyX,
                 pubKeyY
@@ -310,7 +316,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
             exchange.createAccount(newAccount);
             isAccountUpdated = false;
         } else {
-            ExchangeData.Account memory account = exchange.getAccount(msg.sender);
+            ExchangeData.Account memory account = exchange.getAccount(owner);
             account.pubKeyX = pubKeyX;
             account.pubKeyY = pubKeyY;
             accountID = account.id;
@@ -319,6 +325,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
     }
 
     function updateAccountAndDepositInternal(
+        address owner,
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
@@ -333,6 +340,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         )
     {
         (accountID, isAccountNew, isAccountUpdated) = createOrUpdateAccountInternal(
+            owner,
             pubKeyX,
             pubKeyY,
             permission
@@ -343,10 +351,17 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         } else if (isAccountUpdated) {
             additionalFeeETH = accountUpdateFeeETH;
         }
-        depositTo(msg.sender, token, amount, additionalFeeETH);
+        depositInternal(
+            owner,
+            owner,
+            token,
+            amount,
+            additionalFeeETH
+        );
     }
 
-    function depositTo(
+    function depositInternal(
+        address from,
         address to,
         address tokenAddress,
         uint96  amount,  // can be zero
@@ -354,6 +369,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
         )
         internal
     {
+        require(from != address(0), "ZERO_ADDRESS");
         require(to != address(0), "ZERO_ADDRESS");
         require(exchange.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -378,7 +394,7 @@ contract DepositModule is AbstractOnchainRequestModule, IDepositModule
 
         // Transfer the tokens to this contract
         transferDeposit(
-            msg.sender,
+            from,
             token.id,
             amount,
             feeETH

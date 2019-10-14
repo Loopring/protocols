@@ -123,6 +123,7 @@ library ExchangeData
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
     function MIN_TIME_UNTIL_EXCHANGE_STAKE_IS_WITHDRAWABLE() internal pure returns (uint32) { return 1 days; }
     function MAX_GAS_USE_MODULE_STATUS_CHECKING() internal pure returns (uint32) { return 100000; }
+    function MAX_TOKEN_BALANCE() internal pure returns (uint96) { return 2 ** 96 - 1; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State

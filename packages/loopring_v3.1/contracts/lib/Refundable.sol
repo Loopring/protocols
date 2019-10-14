@@ -16,39 +16,25 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../iface/modules/ICanBeDisabled.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/MathUint.sol";
 
 
-/// @title CanBeDisabled
-/// @dev The CanBeDisabled contract allows the exchange owner to disable/enable the contract
+/// @title Refundable
 /// @author Brecht Devos - <brecht@loopring.org>
-contract CanBeDisabled is ICanBeDisabled
+contract Refundable
 {
-    modifier whenEnabled()
+    using AddressUtil       for address payable;
+    using MathUint          for uint;
+
+    /// @dev Pays back any additional ETH in the contract after executing the function
+    modifier refund()
     {
-        require(!disabled, "INVALID_MODE");
+        // Store the balance before
+        uint _balanceBefore = address(this).balance.sub(msg.value);
         _;
-    }
-
-    modifier whenDisabled()
-    {
-        require(disabled, "INVALID_MODE");
-        _;
-    }
-
-    function disable()
-        external
-        onlyExchangeOwner
-        whenEnabled
-    {
-        disabled = true;
-    }
-
-    function enable()
-        external
-        onlyExchangeOwner
-        whenDisabled
-    {
-        disabled = false;
+        // Send any surplus back to msg.sender
+        uint _balanceAfter = address(this).balance;
+        msg.sender.sendETHAndVerify(_balanceAfter.sub(_balanceBefore), gasleft());
     }
 }

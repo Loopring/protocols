@@ -151,4 +151,22 @@ contract ExchangeV3Balances is IExchangeV3Balances, ExchangeV3Core
     {
         return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
     }
+
+    function onchainTransferFrom(
+        address token,
+        address from,
+        address to,
+        uint    amount
+        )
+        external
+        nonReentrant
+        onlyModule
+    {
+        return state.onchainTransferFrom(
+            token,
+            from,
+            to,
+            amount
+        );
+    }
 }

@@ -168,7 +168,7 @@ contract AbstractWithdrawalModule is AbstractOnchainRequestModule, IAbstractWith
         // Extract the withdrawal data
         uint16 tokenID = uint16((data >> 48) & 0xFF);
         uint24 accountID = uint24((data >> 28) & 0xFFFFF);
-        uint amount = (data & 0xFFFFFFF).decodeFloat();
+        uint amount = (data & 0xFFFFFFF).decodeFloat(28);
 
         // Transfer the tokens
         if (amount > 0) {

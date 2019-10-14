@@ -71,7 +71,14 @@ library ExchangeBalances
             } else {
                 require(msg.value == amount, "INCORRECT_ETH_DEPOSIT");
             }
+            // Keep track how many tokens are deposited in the exchange
             state.tokenBalances[tokenAddress] = state.tokenBalances[tokenAddress].add(amount);
+            // Limit the total token balance to MAX_TOKEN_BALANCE.
+            // This way we can never have overflows when depositing, so users can never lose any funds this way.
+            require(
+                state.tokenBalances[tokenAddress] <= ExchangeData.MAX_TOKEN_BALANCE(),
+                "TOKEN_BALANCE_TOO_HIGH"
+            );
         }
     }
 
@@ -275,6 +282,18 @@ library ExchangeBalances
         if (amount > 0) {
             token.safeTransferAndVerify(recipient, amount);
         }
+    }
+
+    function onchainTransferFrom(
+        ExchangeData.State storage /*S*/,
+        address token,
+        address from,
+        address to,
+        uint    amount
+        )
+        external
+    {
+        token.safeTransferFromAndVerify(from, to, amount);
     }
 
     function getBalancesRoot(

@@ -17,14 +17,13 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../IExchangeV3.sol";
+import "../IExchangeOwnable.sol";
 
 
 /// @title  ICanBeDisabled
 /// @author Brecht Devos - <brecht@loopring.org>
-contract ICanBeDisabled
+contract ICanBeDisabled is IExchangeOwnable
 {
-    IExchangeV3 public exchange;
     bool public disabled = false;
 
     /// @dev Disables the contract
