@@ -1,9 +1,6 @@
 import assert = require("assert");
 import ethereum from "../src/lib/wallet/ethereum";
 import config from "../src/lib/wallet/config";
-import { Account, exchange } from "../src";
-import { DexAccount, KeyPair, OrderRequest } from "../src/model/types";
-import { EdDSA } from "../src/lib/sign/eddsa";
 
 describe("test unlock wallet", function() {
   let pkAccount;

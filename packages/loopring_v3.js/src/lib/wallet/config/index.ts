@@ -167,6 +167,10 @@ function getWallets() {
   return data.wallets;
 }
 
+function getMaxAmountInWEI() {
+  return config.maxAmount;
+}
+
 function getWithdrawFee() {
   return config.fee;
 }
@@ -195,6 +199,7 @@ export default {
   getWalletAddress,
   getExchangeAddress,
   getWallets,
+  getMaxAmountInWEI,
   fromWEI,
   toWEI,
   getWithdrawFee,

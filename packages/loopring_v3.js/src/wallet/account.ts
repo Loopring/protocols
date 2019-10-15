@@ -23,24 +23,41 @@ export class Account {
 
   /**
    * Approve
-   * @param symbol: approve token symbol
-   * @param amount: number amount to approve, e.g. 1.5
+   * @param symbol: approve token symbol to zero
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public approve(
-    symbol: string,
-    amount: number,
-    nonce: number,
-    gasPrice: number
-  ) {
+  public approveZero(symbol: string, nonce: number, gasPrice: number) {
     const token = config.getTokenBySymbol(symbol);
     const rawTx = new Transaction({
       to: token.address,
       value: "0x0",
       data: Contracts.ERC20Token.encodeInputs("approve", {
         _spender: config.getExchangeAddress(),
-        _value: amount
+        _value: "0x0"
+      }),
+      chainId: config.getChainId(),
+      nonce: fm.toHex(nonce),
+      gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
+      gasLimit: fm.toHex(config.getGasLimitByType("approve").gasInWEI)
+    });
+    return this.account.signEthereumTx(rawTx.raw);
+  }
+
+  /**
+   * Approve
+   * @param symbol: approve token symbol to max
+   * @param nonce: Ethereum nonce of this address
+   * @param gasPrice: gas price in gwei
+   */
+  public approveMax(symbol: string, nonce: number, gasPrice: number) {
+    const token = config.getTokenBySymbol(symbol);
+    const rawTx = new Transaction({
+      to: token.address,
+      value: "0x0",
+      data: Contracts.ERC20Token.encodeInputs("approve", {
+        _spender: config.getExchangeAddress(),
+        _value: config.getMaxAmountInWEI()
       }),
       chainId: config.getChainId(),
       nonce: fm.toHex(nonce),
