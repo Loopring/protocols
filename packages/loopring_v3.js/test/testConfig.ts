@@ -14,14 +14,17 @@ describe("config test", function() {
     assert.strictEqual(config.getMaxFeeBips(), 20);
 
     let tokens = config.getTokens();
-    assert.strictEqual(tokens.length, 124);
+    assert.strictEqual(tokens.length, 3);
 
     // ETH
     let eth = config.getTokenBySymbol("ETH");
     assert.strictEqual(eth.symbol, "ETH");
     assert.strictEqual(eth.name, "Ether");
     assert.strictEqual(eth.digits, 18);
-    assert.strictEqual(eth.address, "");
+    assert.strictEqual(
+      eth.address,
+      "0x0000000000000000000000000000000000000000"
+    );
     assert.strictEqual(eth.unit, "ETH");
     assert.strictEqual(eth.website, "https://ethereum.org");
     assert.strictEqual(eth.allowance, "1000000000000000000000");
@@ -62,9 +65,9 @@ describe("config test", function() {
     assert.strictEqual(lrc.minTradeValue, 0.001);
 
     let markets = config.getMarkets();
-    assert.strictEqual(markets.length, 43);
+    assert.strictEqual(markets.length, 2);
     let market = config.getMarketBySymbol("LRC", "ETH");
-    assert.strictEqual(market.pricePrecision, 8);
+    assert.strictEqual(market.pricePrecision, 6);
 
     assert.strictEqual(config.getGasLimitByType("depositTo").gasInWEI, 1000000);
     assert.strictEqual(

@@ -99,20 +99,22 @@ function isSupportedMarket(market) {
   }
   return getMarkets().find(m => {
     return (
-      (m.tokenx === pair[0].toUpperCase() &&
-        m.tokeny === pair[1].toUpperCase()) ||
-      (m.tokenx === pair[1].toUpperCase() && m.tokeny === pair[0].toUpperCase())
+      (m.baseToken === pair[0].toUpperCase() &&
+        m.quoteToken === pair[1].toUpperCase()) ||
+      (m.baseToken === pair[1].toUpperCase() &&
+        m.quoteToken === pair[0].toUpperCase())
     );
   });
 }
 
-function getMarketBySymbol(tokenx, tokeny) {
-  if (tokenx && tokeny) {
+function getMarketBySymbol(baseToken, quoteToken) {
+  if (baseToken && quoteToken) {
     return (
       getMarkets().find(market => {
         return (
-          (market.tokenx === tokenx && market.tokeny === tokeny) ||
-          (market.tokenx === tokeny && market.tokeny === tokenx)
+          (market.baseToken === baseToken &&
+            market.quoteToken === quoteToken) ||
+          (market.baseToken === quoteToken && market.quoteToken === baseToken)
         );
       }) || {
         pricePrecision: 8
@@ -126,11 +128,11 @@ function getMarketBySymbol(tokenx, tokeny) {
 }
 
 function getMarketsByTokenR(token) {
-  return getMarkets().filter(item => item.tokeny === token);
+  return getMarkets().filter(item => item.quoteToken === token);
 }
 
 function getMarketsByTokenL(token) {
-  return getMarkets().filter(item => item.tokenx === token);
+  return getMarkets().filter(item => item.baseToken === token);
 }
 
 function getTokenSupportedMarkets(token) {
