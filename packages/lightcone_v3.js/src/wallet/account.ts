@@ -239,9 +239,9 @@ export class Account {
    * @param accountId: account ID in exchange
    * @param tokenS: symbol or hex address of token sell
    * @param tokenB: symbol or hex address of token buy
-   * @param tradingPubKeyX: trading public key X of account, decimal string
-   * @param tradingPubKeyY: trading public key Y of account, decimal string
-   * @param tradingPrivKey: trading private key of account, decimal string
+   * @param publicKeyX: trading public key X of account, decimal string
+   * @param publicKeyY: trading public key Y of account, decimal string
+   * @param privateKey: trading private key of account, decimal string
    * @param amountS: amount of token sell, in string number
    * @param amountB: amount of token buy, in string number
    * @param orderId: next order ID, needed by order signature
@@ -252,9 +252,9 @@ export class Account {
   public submitOrder(
     owner: string,
     accountId: number,
-    tradingPubKeyX: string,
-    tradingPubKeyY: string,
-    tradingPrivKey: string,
+    publicKeyX: string,
+    publicKeyY: string,
+    privateKey: string,
     tokenS: string,
     tokenB: string,
     amountS: string,
@@ -271,9 +271,9 @@ export class Account {
       order.owner = owner;
       order.account = account;
       order.account.accountId = accountId;
-      order.account.keyPair.publicKeyX = tradingPubKeyX;
-      order.account.keyPair.publicKeyY = tradingPubKeyY;
-      order.account.keyPair.secretKey = tradingPrivKey;
+      order.account.keyPair.publicKeyX = publicKeyX;
+      order.account.keyPair.publicKeyY = publicKeyY;
+      order.account.keyPair.secretKey = privateKey;
 
       order.tokenS = tokenS;
       order.tokenB = tokenB;
