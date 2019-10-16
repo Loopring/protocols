@@ -26,6 +26,11 @@ import "../iface/IAddressWhitelist.sol";
 contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
+    bytes SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
+
+    event AddressWhitelistSigner(
+        address signer
+    );
 
     constructor() Claimable() public {}
 
@@ -46,7 +51,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         }
 
         assembly {
-            t := mload(add(permission, 8)) // first 8 bytes as time in second since epoch
+            t := and(mload(add(permission, 8)), 0xFFFFFFFFFFFFFFFF) // first 8 bytes as time in second since epoch
             r := mload(add(permission, 40))
             s := mload(add(permission, 72))
             v := and(mload(add(permission, 73)), 255)
@@ -59,12 +64,13 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         if (v < 27) {
             v += 27;
         }
-
         if (v != 27 && v != 28) {
             return false;
         }
-
-        bytes32 hash = keccak256(abi.encode("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
-        return owner == ecrecover(hash, v, r, s);
+        bytes32 msgBase = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
+        bytes32 hash = keccak256(abi.encodePacked(SIG_PREFIX, msgBase));
+        address signer = ecrecover(hash, v, r, s);
+        emit AddressWhitelistSigner(signer);
+        return signer == owner;
     }
 }

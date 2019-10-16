@@ -5,13 +5,16 @@ var DowntimeCostCalculator = artifacts.require(
   "./impl/DowntimeCostCalculator.sol"
 );
 const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
-
+const AddressWhiteList = artifacts.require(
+  "./impl/SignatureBasedAddressWhitelist.sol"
+);
 var UniswapTokenSeller = artifacts.require("./impl/UniswapTokenSeller.sol");
 var lrcAddress = "0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD";
 var wethAddress = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 var protocolFeeValutAddress = "0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4";
 var userStakingPoolAddress = "[undeployed]";
 var uniswapTokenSellerAddress = "[undeployed]";
+var addressWhiteListAddress = "[undeployed]";
 
 module.exports = function(deployer, network, accounts) {
   console.log("deploying to network: " + network);
@@ -48,6 +51,13 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           deployer.deploy(ProtocolFeeVault, lrcAddress).then(c => {
             protocolFeeValutAddress = c.address;
+          })
+        ]);
+      })
+      .then(() => {
+        return Promise.all([
+          deployer.deploy(AddressWhiteList).then(c => {
+            addressWhiteListAddress = c.address;
           })
         ]);
       });
@@ -91,6 +101,7 @@ module.exports = function(deployer, network, accounts) {
       console.log("lrcAddress:", lrcAddress);
       console.log("wethAddress:", wethAddress);
       console.log("protocolFeeValutAddress:", protocolFeeValutAddress);
+      console.log("addressWhiteListAddress:", addressWhiteListAddress);
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
       console.log("uniswapTokenSellerAddress:", uniswapTokenSellerAddress);
       console.log("BlockVerifier:", BlockVerifier.address);
