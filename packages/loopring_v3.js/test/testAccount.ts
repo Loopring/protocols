@@ -7,17 +7,19 @@ import sha256 from "crypto-js/sha256";
 
 describe("test account sign functions", function() {
   let pkAccount;
+  let dexAccount;
   this.timeout(1000);
 
   beforeEach(function() {
     pkAccount = ethereum.account.fromPrivateKey(
       "0x7c71142c72a019568cf848ac7b805d21f2e0fd8bc341e8314580de11c6a397bf"
     );
+    dexAccount = new Account(pkAccount);
   });
 
   it("generate key pair", function(done) {
-    const seed = pkAccount.getAddress() + "Abc!12345";
-    let keyPair = exchange.generateKeyPair(seed);
+    const password = "Abc!12345";
+    let keyPair = dexAccount.generateKeyPair(password);
     const expected = {
       publicKeyX:
         "15030727036724168751212480282500540869268142725392913493575803542173309367534",
@@ -33,15 +35,15 @@ describe("test account sign functions", function() {
   });
 
   it("verify password", function(done) {
-    const seedA = pkAccount.getAddress() + "Abc!12345";
-    const seedB = pkAccount.getAddress() + "Abc12345";
-    let keyPair = exchange.generateKeyPair(seedA);
-    let success = exchange.verifyPassword(
+    const seedA = "Abc!12345";
+    const seedB = "Abc12345";
+    let keyPair = dexAccount.generateKeyPair(seedA);
+    let success = dexAccount.verifyPassword(
       keyPair.publicKeyX,
       keyPair.publicKeyY,
       seedA
     );
-    let fail = exchange.verifyPassword(
+    let fail = dexAccount.verifyPassword(
       keyPair.publicKeyX,
       keyPair.publicKeyY,
       seedB

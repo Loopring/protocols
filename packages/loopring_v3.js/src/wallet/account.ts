@@ -13,6 +13,7 @@ import {
   OrderRequest,
   WithdrawalRequest
 } from "../model/types";
+const assert = require("assert");
 
 export class Account {
   public account: WalletAccount;
@@ -68,12 +69,13 @@ export class Account {
   }
 
   /**
-   * generata key pair of account in DEX
-   * @param seed: seed in key pair calculation. Recommend: account's ETH address + account's password
+   * generate key pair of account in DEX
+   * @param password: account specified password
    */
-  public generataKeyPair(seed: string) {
+  public generateKeyPair(password: string) {
     try {
-      return exchange.generateKeyPair(seed);
+      assert(this.account !== null);
+      return exchange.generateKeyPair(this.account.getAddress() + password);
     } catch (e) {
       throw e;
     }
@@ -83,11 +85,20 @@ export class Account {
    * verify password of account in DEX
    * @param publicKeyX: publicKeyX of account's key pair
    * @param publicKeyY: publicKeyY of account's key pair
-   * @param seed: seed in key pair calculation. Recommend: account's ETH address + account's password
+   * @param password: account specified password
    */
-  public verifyPassword(publicKeyX: string, publicKeyY: string, seed: string) {
+  public verifyPassword(
+    publicKeyX: string,
+    publicKeyY: string,
+    password: string
+  ) {
     try {
-      return exchange.verifyPassword(publicKeyX, publicKeyY, seed);
+      assert(this.account !== null);
+      return exchange.verifyPassword(
+        publicKeyX,
+        publicKeyY,
+        this.account.getAddress() + password
+      );
     } catch (e) {
       throw e;
     }
