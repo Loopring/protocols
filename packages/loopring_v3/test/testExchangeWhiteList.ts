@@ -137,5 +137,76 @@ contract("Exchange", (accounts: string[]) => {
         (eventArr[0].args.pubKeyY = keyPair.publicKeyY)
       );
     });
+
+    it("AddressWhitelist owner trans", async () => {
+      await createExchange();
+      await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
+      // fee param
+      const fees = await exchange.getFees();
+      const accountCreationFee = fees._accountCreationFeeETH;
+      const depositFee = fees._depositFeeETH;
+      const totalFee = depositFee.add(accountCreationFee);
+
+      // give ownership to exchange owner
+      await exchangeTestUtil.addressWhiteList.transferOwnership(
+        exchangeTestUtil.exchangeOwner,
+        {
+          from: exchangeTestUtil.testContext.deployer,
+          value: new BN(0)
+        }
+      );
+      await exchangeTestUtil.addressWhiteList.claimOwnership({
+        from: exchangeTestUtil.exchangeOwner,
+        value: new BN(0)
+      });
+
+      // request approved
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner = exchangeTestUtil.testContext.orderOwners[1];
+      const bitstream = new Bitstream();
+      var now = Date.now();
+      bitstream.addNumber(now, 8);
+      // console.log("exchange deployer:", exchangeTestUtil.testContext.deployer);
+      // console.log("msg = [LOOPRING_DEX_ACCOUNT_CREATION +" + owner + " + " + now + "]");
+      const hashMsg =
+        "0x" +
+        abi
+          .soliditySHA3(
+            ["string", "address", "uint"],
+            ["LOOPRING_DEX_ACCOUNT_CREATION", owner, now]
+          )
+          .toString("hex");
+      // console.log("hash value:", hashMsg);
+      const rsv = await web3.eth.sign(hashMsg, exchangeTestUtil.exchangeOwner);
+      bitstream.addHex(rsv);
+
+      // console.log("permission date:", bitstream.getData());
+      const permission = web3.utils.hexToBytes(bitstream.getData());
+      assert(
+        permission.length == 73,
+        "permission.length should be 73(t8+sign65)"
+      );
+      const result = await exchange.createOrUpdateAccount(
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        permission,
+        {
+          from: owner,
+          value: new BN(totalFee)
+        }
+      );
+
+      // make sure account is created.
+      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+        exchange,
+        "AccountCreated",
+        result.receipt.blockNumber
+      );
+      assert(
+        eventArr[0].args.owner == owner,
+        (eventArr[0].args.pubKeyX = keyPair.publicKeyX),
+        (eventArr[0].args.pubKeyY = keyPair.publicKeyY)
+      );
+    });
   });
 });
