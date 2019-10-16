@@ -21,6 +21,7 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
 
   var REWARD_PERCENTAGE: number;
   var DAO_PERDENTAGE: number;
+  var claimReward: BN;
 
   const owner = accounts[0];
   const userStakingPoolAddress = accounts[1];
@@ -37,6 +38,11 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
 
       REWARD_PERCENTAGE = (await protocolFeeVault.REWARD_PERCENTAGE()).toNumber();
       DAO_PERDENTAGE = (await protocolFeeVault.DAO_PERDENTAGE()).toNumber();
+      claimReward = amount
+        .add(amount2)
+        .mul(new BN(REWARD_PERCENTAGE))
+        .div(new BN(100))
+        .div(new BN(2));
     });
 
     describe("updateSettings", () => {
@@ -65,7 +71,7 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       });
     });
 
-    describe("fundDao and check fee stats", () => {
+    describe("fundDao and claimStakingReward and then check fee stats", () => {
       it("fundDao when there is no fee", async () => {
         const feeBalance = ZERO;
         // mock lrc to return 0 either
@@ -142,11 +148,23 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         });
       });
 
+      it("claimStakingReward", async () => {
+        await expectThrow(protocolFeeVault.claimStakingReward(0), "ZERO_VALUE");
+        await expectThrow(
+          protocolFeeVault.claimStakingReward(amount),
+          "UNAUTHORIZED"
+        );
+        await protocolFeeVault.claimStakingReward(claimReward, {
+          from: userStakingPoolAddress
+        });
+      });
+
       it("getProtocolFeeStats check stats", async () => {
         const feeBalance = amount
           .add(amount2)
           .mul(new BN(REWARD_PERCENTAGE))
-          .div(new BN(100));
+          .div(new BN(100))
+          .sub(claimReward);
         // mock lrc to return feeBalance
         const getBalanceOfFee = web3.utils
           .sha3("balanceOf(address)")
@@ -232,19 +250,6 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         await mockTokenSeller.givenMethodReturnBool(sellToken, true);
 
         await protocolFeeVault.sellTokenForLRC(mockToken.address, amount);
-      });
-    });
-
-    describe("claimStakingReward", () => {
-      it("claimStakingReward need called by userStakingPoolAddress", async () => {
-        await expectThrow(protocolFeeVault.claimStakingReward(0), "ZERO_VALUE");
-        await expectThrow(
-          protocolFeeVault.claimStakingReward(amount),
-          "UNAUTHORIZED"
-        );
-        await protocolFeeVault.claimStakingReward(amount, {
-          from: userStakingPoolAddress
-        });
       });
     });
   });
