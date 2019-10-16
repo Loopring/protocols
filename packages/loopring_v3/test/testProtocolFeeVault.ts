@@ -79,17 +79,7 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
 
         const tx = await protocolFeeVault.fundDAO();
         truffleAssert.eventEmitted(tx, "DAOFunded", (evt: any) => {
-          return (
-            (evt.amountDAO == 0 && evt.amountBurn == 0) ||
-            (evt.amountDAO.eq(
-              feeBalance.mul(new BN(DAO_PERDENTAGE)).div(new BN(100))
-            ) &&
-              evt.amountBurn.eq(
-                feeBalance
-                  .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
-                  .div(new BN(100))
-              ))
-          );
+          return evt.amountDAO == 0 && evt.amountBurn == 0;
         });
       });
 
@@ -111,15 +101,14 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         const tx = await protocolFeeVault.fundDAO();
         truffleAssert.eventEmitted(tx, "DAOFunded", (evt: any) => {
           return (
-            (evt.amountDAO == 0 && evt.amountBurn == 0) ||
-            (evt.amountDAO.eq(
+            evt.amountDAO.eq(
               feeBalance.mul(new BN(DAO_PERDENTAGE)).div(new BN(100))
             ) &&
-              evt.amountBurn.eq(
-                feeBalance
-                  .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
-                  .div(new BN(100))
-              ))
+            evt.amountBurn.eq(
+              feeBalance
+                .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
+                .div(new BN(100))
+            )
           );
         });
       });
@@ -141,15 +130,14 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         const tx = await protocolFeeVault.fundDAO();
         truffleAssert.eventEmitted(tx, "DAOFunded", (evt: any) => {
           return (
-            (evt.amountDAO == 0 && evt.amountBurn == 0) ||
-            (evt.amountDAO.eq(
+            evt.amountDAO.eq(
               amount2.mul(new BN(DAO_PERDENTAGE)).div(new BN(100))
             ) &&
-              evt.amountBurn.eq(
-                amount2
-                  .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
-                  .div(new BN(100))
-              ))
+            evt.amountBurn.eq(
+              amount2
+                .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
+                .div(new BN(100))
+            )
           );
         });
       });
