@@ -227,11 +227,11 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
 
         // mock tokenSeller sellToken return true
         const sellToken = web3.utils
-          .sha3("sellToken(addres, address)")
+          .sha3("sellToken(address,address)")
           .slice(0, 10);
         await mockTokenSeller.givenMethodReturnBool(sellToken, true);
 
-        // await protocolFeeVault.sellTokenForLRC(mockToken.address, amount);
+        await protocolFeeVault.sellTokenForLRC(mockToken.address, amount);
       });
     });
 
