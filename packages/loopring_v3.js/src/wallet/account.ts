@@ -22,7 +22,7 @@ export class Account {
   }
 
   /**
-   * Approve
+   * Approve Zero
    * @param symbol: approve token symbol to zero
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
@@ -45,7 +45,7 @@ export class Account {
   }
 
   /**
-   * Approve
+   * Approve Max
    * @param symbol: approve token symbol to max
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
@@ -69,11 +69,11 @@ export class Account {
 
   /**
    * generata key pair of account in DEX
-   * @param password: user password
+   * @param seed: seed in key pair calculation. Recommend: account's ETH address + account's password
    */
-  public generataKeyPair(password: string) {
+  public generataKeyPair(seed: string) {
     try {
-      return exchange.generateKeyPair(password);
+      return exchange.generateKeyPair(seed);
     } catch (e) {
       throw e;
     }
@@ -83,15 +83,11 @@ export class Account {
    * verify password of account in DEX
    * @param publicKeyX: publicKeyX of account's key pair
    * @param publicKeyY: publicKeyY of account's key pair
-   * @param password: account's password
+   * @param seed: seed in key pair calculation. Recommend: account's ETH address + account's password
    */
-  public verifyPassword(
-    publicKeyX: string,
-    publicKeyY: string,
-    password: string
-  ) {
+  public verifyPassword(publicKeyX: string, publicKeyY: string, seed: string) {
     try {
-      return exchange.verifyPassword(publicKeyX, publicKeyY, password);
+      return exchange.verifyPassword(publicKeyX, publicKeyY, seed);
     } catch (e) {
       throw e;
     }
@@ -332,15 +328,15 @@ export class Account {
   /**
    * Get Api Key signature
    * @param accountId: account ID in exchange
-   * @param tradingPubKeyX: trading public key X of account, decimal string
-   * @param tradingPubKeyY: trading public key Y of account, decimal string
-   * @param tradingPrivKey: trading private key of account, decimal string
+   * @param publicKeyX: trading public key X of account, decimal string
+   * @param publicKeyY: trading public key Y of account, decimal string
+   * @param privateKey: trading private key of account, decimal string
    */
   public getApiKey(
     accountId: number,
-    tradingPubKeyX: string,
-    tradingPubKeyY: string,
-    tradingPrivKey: string
+    publicKeyX: string,
+    publicKeyY: string,
+    privateKey: string
   ) {
     try {
       const request = new GetAPIKeyRequest();
@@ -348,9 +344,9 @@ export class Account {
       account.keyPair = new KeyPair();
       request.account = account;
       request.account.accountId = accountId;
-      request.account.keyPair.publicKeyX = tradingPubKeyX;
-      request.account.keyPair.publicKeyY = tradingPubKeyY;
-      request.account.keyPair.secretKey = tradingPrivKey;
+      request.account.keyPair.publicKeyX = publicKeyX;
+      request.account.keyPair.publicKeyY = publicKeyY;
+      request.account.keyPair.secretKey = privateKey;
       return exchange.signGetApiKey(request);
     } catch (e) {
       throw e;

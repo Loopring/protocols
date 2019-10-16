@@ -22,23 +22,12 @@ const assert = require("assert");
 export class Exchange {
   private currentWalletAccount: WalletAccount;
 
-  public setCurrentAccount(account: WalletAccount) {
-    this.currentWalletAccount = account;
+  public generateKeyPair(seed: string) {
+    return EdDSA.generateKeyPair(seed);
   }
 
-  public generateKeyPair(password: string) {
-    assert(this.currentWalletAccount !== null);
-    return EdDSA.generateKeyPair(
-      this.currentWalletAccount.getAddress() + password
-    );
-  }
-
-  public verifyPassword(
-    publicKeyX: string,
-    publicKeyY: string,
-    password: string
-  ) {
-    const keyPair = this.generateKeyPair(password);
+  public verifyPassword(publicKeyX: string, publicKeyY: string, seed: string) {
+    const keyPair = this.generateKeyPair(seed);
     return (
       keyPair.publicKeyX === publicKeyX && keyPair.publicKeyY === publicKeyY
     );
@@ -459,10 +448,11 @@ export class Exchange {
     if (request.signature !== undefined) {
       return;
     }
-
     let account = request.account;
     let sign = new SignAPIKeyRequest();
     sign.accountId = account.accountId;
+    sign.publicKeyX = account.keyPair.publicKeyX;
+    sign.publicKeyY = account.keyPair.publicKeyY;
     const hash = fm.addHexPrefix(sha256(JSON.stringify(sign)).toString());
 
     // Create signature

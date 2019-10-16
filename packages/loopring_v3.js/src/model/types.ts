@@ -94,6 +94,8 @@ export class GetAPIKeyRequest {
 
 export class SignAPIKeyRequest {
   accountId: number;
+  publicKeyX: string;
+  publicKeyY: string;
 }
 
 export class FlexCancelRequest {

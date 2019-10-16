@@ -13,12 +13,11 @@ describe("test account sign functions", function() {
     pkAccount = ethereum.account.fromPrivateKey(
       "0x7c71142c72a019568cf848ac7b805d21f2e0fd8bc341e8314580de11c6a397bf"
     );
-    exchange.setCurrentAccount(pkAccount);
   });
 
   it("generate key pair", function(done) {
     const seed = pkAccount.getAddress() + "Abc!12345";
-    let keyPair = EdDSA.generateKeyPair(seed);
+    let keyPair = exchange.generateKeyPair(seed);
     const expected = {
       publicKeyX:
         "15030727036724168751212480282500540869268142725392913493575803542173309367534",
@@ -34,17 +33,18 @@ describe("test account sign functions", function() {
   });
 
   it("verify password", function(done) {
-    const seed = pkAccount.getAddress() + "Abc!12345";
-    let keyPair = EdDSA.generateKeyPair(seed);
+    const seedA = pkAccount.getAddress() + "Abc!12345";
+    const seedB = pkAccount.getAddress() + "Abc12345";
+    let keyPair = exchange.generateKeyPair(seedA);
     let success = exchange.verifyPassword(
       keyPair.publicKeyX,
       keyPair.publicKeyY,
-      "Abc!12345"
+      seedA
     );
     let fail = exchange.verifyPassword(
       keyPair.publicKeyX,
       keyPair.publicKeyY,
-      "Abc12345"
+      seedB
     );
     assert.strictEqual(success, true);
     assert.strictEqual(fail, false);
@@ -176,11 +176,11 @@ describe("test account sign functions", function() {
     const keyPair = EdDSA.generateKeyPair("random");
     const expected = {
       Rx:
-        "4907531144030082714673166788853625691094645218263800925571852359778817407478",
+        "2655426783745496426461062352275031268947887894645169404164701063008690094712",
       Ry:
-        "982596782634396073565790328328781534320554306331087434157994413941137814392",
+        "3360479773020938207015943853167781022045236128593731508073173595525147044600",
       s:
-        "2683292836712626470273132449382532439414473128760965656693941100220771190110"
+        "319483864533966541817375241586044545603372772907055224896960192193568254519"
     };
 
     let signed = null;
