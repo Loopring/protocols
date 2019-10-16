@@ -95,12 +95,8 @@ contract("Exchange", (accounts: string[]) => {
         const bitstream = new Bitstream();
         var now = Date.now();
         bitstream.addNumber(now, 8);
-        console.log(
-          "exchange deployer = " + exchangeTestUtil.testContext.deployer + "."
-        );
-        console.log(
-          "msg = LOOPRING_DEX_ACCOUNT_CREATION +" + owner2 + " + " + now + "."
-        );
+        // console.log("exchange deployer:", exchangeTestUtil.testContext.deployer);
+        // console.log("msg = [LOOPRING_DEX_ACCOUNT_CREATION +" + owner2 + " + " + now + "]");
         const hashMsg =
           "0x" +
           abi
@@ -109,15 +105,14 @@ contract("Exchange", (accounts: string[]) => {
               ["LOOPRING_DEX_ACCOUNT_CREATION", owner2, now]
             )
             .toString("hex");
-        console.log("hash value = " + hashMsg + ".");
+        // console.log("hash value:", hashMsg);
         const rsv = await web3.eth.sign(
           hashMsg,
           exchangeTestUtil.testContext.deployer
         );
-        console.log("signed rsv data =  +" + rsv + ".");
         bitstream.addHex(rsv);
 
-        console.log("permission date = " + bitstream.getData() + ".");
+        // console.log("permission date:", bitstream.getData());
         const permission = web3.utils.hexToBytes(bitstream.getData());
         assert(
           permission.length == 73,
@@ -132,7 +127,6 @@ contract("Exchange", (accounts: string[]) => {
             value: new BN(totalFee)
           }
         );
-        console.log(result.tx);
 
         // make sure account is created.
         const eventArr: any = await exchangeTestUtil.getEventsFromContract(
@@ -140,7 +134,6 @@ contract("Exchange", (accounts: string[]) => {
           "AccountCreated",
           result.receipt.blockNumber
         );
-        console.log(eventArr[0].args);
         assert(
           eventArr[0].args.owner == owner2,
           (eventArr[0].args.pubKeyX = keyPair.publicKeyX),
