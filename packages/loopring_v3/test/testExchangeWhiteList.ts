@@ -56,90 +56,86 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
-  describe("Admin", function() {
-    this.timeout(0);
+  describe("AddressWhitelist functionality test", () => {
+    it("should be able to set the AddressWhitelist", async () => {
+      await createExchange();
+      await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
+    });
 
-    describe("Exchange owner", () => {
-      it("should be able to set the AddressWhitelist", async () => {
-        await createExchange();
-        await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
-      });
+    it("AddressWhitelist works", async () => {
+      await createExchange();
+      await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
+      // fee param
+      const fees = await exchange.getFees();
+      const accountCreationFee = fees._accountCreationFeeETH;
+      const depositFee = fees._depositFeeETH;
+      const totalFee = depositFee.add(accountCreationFee);
 
-      it("AddressWhitelist works", async () => {
-        await createExchange();
-        await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
-        // fee param
-        const fees = await exchange.getFees();
-        const accountCreationFee = fees._accountCreationFeeETH;
-        const depositFee = fees._depositFeeETH;
-        const totalFee = depositFee.add(accountCreationFee);
-
-        // request dis-approved
-        const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-        const owner1 = exchangeTestUtil.testContext.orderOwners[0];
-        await expectThrow(
-          exchange.createOrUpdateAccount(
-            keyPair.publicKeyX,
-            keyPair.publicKeyY,
-            Constants.emptyBytes,
-            {
-              from: owner1,
-              value: new BN(totalFee)
-            }
-          ),
-          "ADDRESS_NOT_WHITELISTED"
-        );
-
-        // request approved
-        const owner2 = exchangeTestUtil.testContext.orderOwners[1];
-        const bitstream = new Bitstream();
-        var now = Date.now();
-        bitstream.addNumber(now, 8);
-        // console.log("exchange deployer:", exchangeTestUtil.testContext.deployer);
-        // console.log("msg = [LOOPRING_DEX_ACCOUNT_CREATION +" + owner2 + " + " + now + "]");
-        const hashMsg =
-          "0x" +
-          abi
-            .soliditySHA3(
-              ["string", "address", "uint"],
-              ["LOOPRING_DEX_ACCOUNT_CREATION", owner2, now]
-            )
-            .toString("hex");
-        // console.log("hash value:", hashMsg);
-        const rsv = await web3.eth.sign(
-          hashMsg,
-          exchangeTestUtil.testContext.deployer
-        );
-        bitstream.addHex(rsv);
-
-        // console.log("permission date:", bitstream.getData());
-        const permission = web3.utils.hexToBytes(bitstream.getData());
-        assert(
-          permission.length == 73,
-          "permission.length should be 73(t8+sign65)"
-        );
-        const result = await exchange.createOrUpdateAccount(
+      // request dis-approved
+      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+      const owner1 = exchangeTestUtil.testContext.orderOwners[0];
+      await expectThrow(
+        exchange.createOrUpdateAccount(
           keyPair.publicKeyX,
           keyPair.publicKeyY,
-          permission,
+          Constants.emptyBytes,
           {
-            from: owner2,
+            from: owner1,
             value: new BN(totalFee)
           }
-        );
+        ),
+        "ADDRESS_NOT_WHITELISTED"
+      );
 
-        // make sure account is created.
-        const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-          exchange,
-          "AccountCreated",
-          result.receipt.blockNumber
-        );
-        assert(
-          eventArr[0].args.owner == owner2,
-          (eventArr[0].args.pubKeyX = keyPair.publicKeyX),
-          (eventArr[0].args.pubKeyY = keyPair.publicKeyY)
-        );
-      });
+      // request approved
+      const owner2 = exchangeTestUtil.testContext.orderOwners[1];
+      const bitstream = new Bitstream();
+      var now = Date.now();
+      bitstream.addNumber(now, 8);
+      // console.log("exchange deployer:", exchangeTestUtil.testContext.deployer);
+      // console.log("msg = [LOOPRING_DEX_ACCOUNT_CREATION +" + owner2 + " + " + now + "]");
+      const hashMsg =
+        "0x" +
+        abi
+          .soliditySHA3(
+            ["string", "address", "uint"],
+            ["LOOPRING_DEX_ACCOUNT_CREATION", owner2, now]
+          )
+          .toString("hex");
+      // console.log("hash value:", hashMsg);
+      const rsv = await web3.eth.sign(
+        hashMsg,
+        exchangeTestUtil.testContext.deployer
+      );
+      bitstream.addHex(rsv);
+
+      // console.log("permission date:", bitstream.getData());
+      const permission = web3.utils.hexToBytes(bitstream.getData());
+      assert(
+        permission.length == 73,
+        "permission.length should be 73(t8+sign65)"
+      );
+      const result = await exchange.createOrUpdateAccount(
+        keyPair.publicKeyX,
+        keyPair.publicKeyY,
+        permission,
+        {
+          from: owner2,
+          value: new BN(totalFee)
+        }
+      );
+
+      // make sure account is created.
+      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+        exchange,
+        "AccountCreated",
+        result.receipt.blockNumber
+      );
+      assert(
+        eventArr[0].args.owner == owner2,
+        (eventArr[0].args.pubKeyX = keyPair.publicKeyX),
+        (eventArr[0].args.pubKeyY = keyPair.publicKeyY)
+      );
     });
   });
 });
