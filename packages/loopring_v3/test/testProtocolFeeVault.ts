@@ -1,26 +1,9 @@
 import { Artifacts } from "../util/Artifacts";
-import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { expectThrow } from "./expectThrow";
 import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 const truffleAssert = require("truffle-assertions");
 const abi = require("ethereumjs-abi");
-
-// Make sure the amount difference is no more than 0.001%;
-const isAmountCloseEnough = (bn1: BN, bn2: BN) => {
-  const result =
-    // bn1.lte(bn2) &&
-    bn2
-      .sub(bn1)
-      .abs()
-      .mul(new BN(100000))
-      .div(bn2)
-      .lte(new BN(1));
-  if (!result) {
-    console.error(bn1.toString(10) + " vs " + bn2.toString(10));
-  }
-  return result;
-};
 
 contract("ProtocolFeeVault", (accounts: string[]) => {
   const contracts = new Artifacts(artifacts);
@@ -98,12 +81,10 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         truffleAssert.eventEmitted(tx, "DAOFunded", (evt: any) => {
           return (
             (evt.amountDAO == 0 && evt.amountBurn == 0) ||
-            (isAmountCloseEnough(
-              evt.amountDAO,
+            (evt.amountDAO.eq(
               feeBalance.mul(new BN(DAO_PERDENTAGE)).div(new BN(100))
             ) &&
-              isAmountCloseEnough(
-                evt.amountBurn,
+              evt.amountBurn.eq(
                 feeBalance
                   .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
                   .div(new BN(100))
@@ -131,12 +112,10 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         truffleAssert.eventEmitted(tx, "DAOFunded", (evt: any) => {
           return (
             (evt.amountDAO == 0 && evt.amountBurn == 0) ||
-            (isAmountCloseEnough(
-              evt.amountDAO,
+            (evt.amountDAO.eq(
               feeBalance.mul(new BN(DAO_PERDENTAGE)).div(new BN(100))
             ) &&
-              isAmountCloseEnough(
-                evt.amountBurn,
+              evt.amountBurn.eq(
                 feeBalance
                   .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
                   .div(new BN(100))
@@ -163,12 +142,10 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         truffleAssert.eventEmitted(tx, "DAOFunded", (evt: any) => {
           return (
             (evt.amountDAO == 0 && evt.amountBurn == 0) ||
-            (isAmountCloseEnough(
-              evt.amountDAO,
+            (evt.amountDAO.eq(
               amount2.mul(new BN(DAO_PERDENTAGE)).div(new BN(100))
             ) &&
-              isAmountCloseEnough(
-                evt.amountBurn,
+              evt.amountBurn.eq(
                 amount2
                   .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
                   .div(new BN(100))
@@ -202,33 +179,30 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         } = await protocolFeeVault.getProtocolFeeStats();
 
         assert(
-          isAmountCloseEnough(accumulatedFees, amount.add(amount2)) &&
-            isAmountCloseEnough(
-              accumulatedBurn,
+          accumulatedFees.eq(amount.add(amount2)) &&
+            accumulatedBurn.eq(
               amount
                 .add(amount2)
                 .mul(new BN(100 - REWARD_PERCENTAGE - DAO_PERDENTAGE))
                 .div(new BN(100))
             ) &&
-            isAmountCloseEnough(
-              accumulatedDAOFund,
+            accumulatedDAOFund.eq(
               amount
                 .add(amount2)
                 .mul(new BN(DAO_PERDENTAGE))
                 .div(new BN(100))
             ) &&
-            isAmountCloseEnough(
-              accumulatedReward,
+            accumulatedReward.eq(
               amount
                 .add(amount2)
                 .mul(new BN(REWARD_PERCENTAGE))
                 .div(new BN(100))
             ) &&
-            isAmountCloseEnough(remainingFees, feeBalance) &&
-            (remainingBurn == 0 || isAmountCloseEnough(ZERO, remainingBurn)) &&
-            (remainingDAOFund == 0 || remainingDAOFund(ZERO, remainingBurn)) &&
-            isAmountCloseEnough(remainingReward, feeBalance),
-          "accumulatedFees"
+            remainingFees.eq(feeBalance) &&
+            remainingBurn == 0 &&
+            remainingDAOFund == 0 &&
+            remainingReward.eq(feeBalance),
+          "protocol fee stats error"
         );
       });
     });
