@@ -28,10 +28,6 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
     uint public constant PERMISSION_TIMEOUT = 24 hours;
     bytes SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
 
-    event AddressWhitelistSigner(
-        address signer
-    );
-
     constructor() Claimable() public {}
 
     function isAddressWhitelisted(
@@ -69,8 +65,6 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         }
         bytes32 msgBase = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
         bytes32 hash = keccak256(abi.encodePacked(SIG_PREFIX, msgBase));
-        address signer = ecrecover(hash, v, r, s);
-        emit AddressWhitelistSigner(signer);
-        return signer == owner;
+        return owner == ecrecover(hash, v, r, s);
     }
 }
