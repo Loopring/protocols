@@ -111,7 +111,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param password: user password
    */
-  public createOrUpdateAccount(
+  public async createOrUpdateAccount(
     password: string,
     nonce: number,
     gasPrice: number
@@ -124,7 +124,7 @@ export class Account {
         gasPrice
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
-      const signedEthereumTx = this.account.signEthereumTx(rawTx.raw);
+      const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
       return {
         signedTx: signedEthereumTx,
         keyPair: createOrUpdateAccountResposne["keyPair"]
@@ -141,7 +141,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public depositTo(
+  public async depositTo(
     symbol: string,
     amount: string,
     nonce: number,
@@ -155,7 +155,7 @@ export class Account {
         nonce,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      return await this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -168,7 +168,7 @@ export class Account {
    * @param nonce: Ethereum nonce of this address
    * @param gasPrice: gas price in gwei
    */
-  public onchainWithdrawal(
+  public async onchainWithdrawal(
     symbol: string,
     amount: string,
     nonce: number,
@@ -182,7 +182,7 @@ export class Account {
         nonce,
         gasPrice
       );
-      return this.account.signEthereumTx(rawTx.raw);
+      return await this.account.signEthereumTx(rawTx.raw);
     } catch (e) {
       throw e;
     }
@@ -191,9 +191,9 @@ export class Account {
   /**
    * Off-chain Withdrawal from Dex
    * @param accountId: account ID in exchange
-   * @param tradingPubKeyX: trading public key X of account, decimal string
-   * @param tradingPubKeyY: trading public key Y of account, decimal string
-   * @param tradingPrivKey: trading private key of account, decimal string
+   * @param publicKeyX: trading public key X of account, decimal string
+   * @param publicKeyY: trading public key Y of account, decimal string
+   * @param privateKey: trading private key of account, decimal string
    * @param nonce: DEX nonce of account
    * @param token: token symbol or address to withdraw
    * @param amount: amount to withdraw, in decimal string. e.g. '15'
@@ -203,9 +203,9 @@ export class Account {
    */
   public offchainWithdrawal(
     accountId: number,
-    tradingPubKeyX: string,
-    tradingPubKeyY: string,
-    tradingPrivKey: string,
+    publicKeyX: string,
+    publicKeyY: string,
+    privateKey: string,
     nonce: number,
     token: string,
     amount: string,
@@ -219,9 +219,9 @@ export class Account {
       account.keyPair = new KeyPair();
       withdraw.account = account;
       withdraw.account.accountId = accountId;
-      withdraw.account.keyPair.publicKeyX = tradingPubKeyX;
-      withdraw.account.keyPair.publicKeyY = tradingPubKeyY;
-      withdraw.account.keyPair.secretKey = tradingPrivKey;
+      withdraw.account.keyPair.publicKeyX = publicKeyX;
+      withdraw.account.keyPair.publicKeyY = publicKeyY;
+      withdraw.account.keyPair.secretKey = privateKey;
       withdraw.account.nonce = nonce;
       withdraw.token = token;
       withdraw.amount = amount;
@@ -294,9 +294,9 @@ export class Account {
   /**
    * Cancel order in Dex
    * @param accountId: account ID in exchange
-   * @param tradingPubKeyX: trading public key X of account, decimal string
-   * @param tradingPubKeyY: trading public key Y of account, decimal string
-   * @param tradingPrivKey: trading private key of account, decimal string
+   * @param publicKeyX: trading public key X of account, decimal string
+   * @param publicKeyY: trading public key Y of account, decimal string
+   * @param privateKey: trading private key of account, decimal string
    * @param nonce: DEX nonce of account
    * @param orderToken: token symbol or address of cancel
    * @param orderId: specified order id to cancel
@@ -306,9 +306,9 @@ export class Account {
    */
   public submitCancel(
     accountId: number,
-    tradingPubKeyX: string,
-    tradingPubKeyY: string,
-    tradingPrivKey: string,
+    publicKeyX: string,
+    publicKeyY: string,
+    privateKey: string,
     nonce: number,
     orderToken: string,
     orderId: number,
@@ -322,9 +322,9 @@ export class Account {
       account.keyPair = new KeyPair();
       cancel.account = account;
       cancel.account.accountId = accountId;
-      cancel.account.keyPair.publicKeyX = tradingPubKeyX;
-      cancel.account.keyPair.publicKeyY = tradingPubKeyY;
-      cancel.account.keyPair.secretKey = tradingPrivKey;
+      cancel.account.keyPair.publicKeyX = publicKeyX;
+      cancel.account.keyPair.publicKeyY = publicKeyY;
+      cancel.account.keyPair.secretKey = privateKey;
       cancel.account.nonce = nonce;
       cancel.orderToken = orderToken;
       cancel.orderId = orderId;
@@ -368,17 +368,17 @@ export class Account {
   /**
    * Get Api Key signature
    * @param accountId: account ID in exchange
-   * @param tradingPubKeyX: trading public key X of account, decimal string
-   * @param tradingPubKeyY: trading public key Y of account, decimal string
-   * @param tradingPrivKey: trading private key of account, decimal string
+   * @param publicKeyX: trading public key X of account, decimal string
+   * @param publicKeyY: trading public key Y of account, decimal string
+   * @param privateKey: trading private key of account, decimal string
    * @param orderHash: [OPTIONAL] specified order hash to cancel
    * @param clientOrderId: [OPTIONAL] specified client order ID to cancel
    */
   public submitFlexCancel(
     accountId: number,
-    tradingPubKeyX: string,
-    tradingPubKeyY: string,
-    tradingPrivKey: string,
+    publicKeyX: string,
+    publicKeyY: string,
+    privateKey: string,
     orderHash?: string,
     clientOrderId?: string
   ) {
@@ -388,9 +388,9 @@ export class Account {
       account.keyPair = new KeyPair();
       request.account = account;
       request.account.accountId = accountId;
-      request.account.keyPair.publicKeyX = tradingPubKeyX;
-      request.account.keyPair.publicKeyY = tradingPubKeyY;
-      request.account.keyPair.secretKey = tradingPrivKey;
+      request.account.keyPair.publicKeyX = publicKeyX;
+      request.account.keyPair.publicKeyY = publicKeyY;
+      request.account.keyPair.secretKey = privateKey;
       request.orderHash = orderHash;
       request.clientOrderId = clientOrderId;
       return exchange.submitFlexCancel(request);

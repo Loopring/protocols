@@ -64,12 +64,13 @@ function getTokens() {
   return config.tokens;
 }
 
-function fromWEI(symbol, valueInWEI) {
+function fromWEI(symbol, valueInWEI, precision = 4) {
   const token = getTokenBySymbol(symbol);
   if (!token) {
     return 0;
   }
-  return fm.toBig(valueInWEI).div("1e" + token.digits);
+  const value = fm.toBig(valueInWEI).div("1e" + token.digits);
+  return value.toNumber().toFixed(precision);
 }
 
 function toWEI(symbol, value) {
@@ -77,7 +78,8 @@ function toWEI(symbol, value) {
   if (!token) {
     return 0;
   }
-  return fm.toBig(value).times("1e" + token.digits);
+  const valueInBN = fm.toBig(value).times("1e" + token.digits);
+  return valueInBN.toString(10);
 }
 
 function getMarketByPair(pair) {
@@ -173,14 +175,6 @@ function getMaxAmountInWEI() {
   return config.maxAmount;
 }
 
-function getWithdrawFee() {
-  return config.fee;
-}
-
-function getWithdrawFeeToken() {
-  return config.feeToken;
-}
-
 export default {
   getTokenBySymbol,
   getTokenByAddress,
@@ -200,10 +194,8 @@ export default {
   getMarkets,
   getWalletAddress,
   getExchangeAddress,
-  getWallets,
   getMaxAmountInWEI,
+  getWallets,
   fromWEI,
-  toWEI,
-  getWithdrawFee,
-  getWithdrawFeeToken
+  toWEI
 };

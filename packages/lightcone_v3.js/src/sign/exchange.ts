@@ -188,9 +188,7 @@ export class Exchange {
           chainId: config.getChainId(),
           nonce: fm.toHex(nonce),
           gasPrice: fm.toHex(fm.fromGWEI(gasPrice)),
-          gasLimit: fm.toHex(
-            config.getGasLimitByType("onchainWithdrawal").gasInWEI
-          )
+          gasLimit: fm.toHex(config.getGasLimitByType("withdrawFrom").gasInWEI)
         });
       }
     } catch (err) {

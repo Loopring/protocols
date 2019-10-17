@@ -39,7 +39,7 @@ describe("config test", function() {
     assert.strictEqual(weth.digits, 18);
     assert.strictEqual(
       weth.address,
-      "0x27Fe4A57c8D3f1BBA8CfD51DFEa3cA4188092E55"
+      "0x97241525fe425C90eBe5A41127816dcFA5954b06"
     );
     assert.strictEqual(weth.unit, "WETH");
     assert.strictEqual(weth.website, "https://weth.io");
@@ -55,7 +55,7 @@ describe("config test", function() {
     assert.strictEqual(lrc.digits, 18);
     assert.strictEqual(
       lrc.address,
-      "0x9032DBF5669341C3D95BC02b4bdE90e4e051dB35"
+      "0xCa66Ffaf17e4B600563f6af032456AA7B05a6975"
     );
     assert.strictEqual(lrc.unit, "LRC");
     assert.strictEqual(lrc.website, "https://loopring.org");
