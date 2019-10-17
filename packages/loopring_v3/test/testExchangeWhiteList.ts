@@ -56,13 +56,73 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
-  describe("AddressWhitelist functionality test", () => {
-    it("should be able to set the AddressWhitelist", async () => {
+  describe("AddressWhitelist functionality unit test", () => {
+    let whitelistContract: any;
+
+    before(async () => {
+      exchangeTestUtil = new ExchangeTestUtil();
+      await exchangeTestUtil.initialize(accounts);
+
+      const AddressWhiteList = artifacts.require(
+        "./impl/SignatureBasedAddressWhitelist.sol"
+      );
+      whitelistContract = await AddressWhiteList.new();
+      assert(whitelistContract.address != 0, "whitelistContract.address == 0.");
+    });
+
+    it("wrong permission shouldn't pass", async () => {
+      const realOwner = exchangeTestUtil.testContext.orderOwners[0];
+      const ret = await whitelistContract.isAddressWhitelisted(realOwner, []);
+      assert(!ret, "Wrong permission should not pass check.");
+    });
+
+    it("check isAddressWhitelisted with real sign", async () => {
+      const deployer = exchangeTestUtil.testContext.deployer;
+      const realAccount = exchangeTestUtil.testContext.orderOwners[0];
+      const fakeAccount = exchangeTestUtil.testContext.orderOwners[1];
+
+      const bitstream = new Bitstream();
+      var now = Date.now();
+      bitstream.addNumber(now, 8);
+      const hashMsg =
+        "0x" +
+        abi
+          .soliditySHA3(
+            ["string", "address", "uint"],
+            ["LOOPRING_DEX_ACCOUNT_CREATION", realAccount, now]
+          )
+          .toString("hex");
+      const rsv = await web3.eth.sign(hashMsg, deployer);
+      bitstream.addHex(rsv);
+
+      // console.log("permission date:", bitstream.getData());
+      const permission = web3.utils.hexToBytes(bitstream.getData());
+      assert(
+        permission.length == 73,
+        "permission.length should be 73(t8+sign65)"
+      );
+
+      var ret = await whitelistContract.isAddressWhitelisted(
+        realAccount,
+        permission
+      );
+      assert(ret, "isAddressWhitelisted(realOwner, permission) failed.");
+
+      ret = await whitelistContract.isAddressWhitelisted(
+        fakeAccount,
+        permission
+      );
+      assert(!ret, "isAddressWhitelisted(fakeOwner, permission) passed.");
+    });
+  });
+
+  describe("AddressWhitelist integration test", () => {
+    it.skip("should be able to set the AddressWhitelist", async () => {
       await createExchange();
       await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
     });
 
-    it("AddressWhitelist works", async () => {
+    it.skip("AddressWhitelist works", async () => {
       await createExchange();
       await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
       // fee param
@@ -138,7 +198,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it("AddressWhitelist owner trans", async () => {
+    it.skip("AddressWhitelist owner trans", async () => {
       await createExchange();
       await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
       // fee param

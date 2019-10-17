@@ -35,6 +35,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         bytes   memory permission
         )
         public
+        view
         returns (bool)
     {
         uint    t;
