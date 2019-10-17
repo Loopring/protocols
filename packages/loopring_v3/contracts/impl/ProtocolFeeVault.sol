@@ -88,9 +88,13 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
         address recipient = daoAddress == address(0) ? owner : daoAddress;
 
-        lrcAddress.safeTransferAndVerify(recipient, amountDAO);
+        if (amountDAO > 0) {
+            lrcAddress.safeTransferAndVerify(recipient, amountDAO);
+        }
 
-        require(BurnableERC20(lrcAddress).burn(amountBurn), "BURN_FAILURE");
+        if (amountBurn > 0) {
+            require(BurnableERC20(lrcAddress).burn(amountBurn), "BURN_FAILURE");
+        }
 
         claimedBurn = claimedBurn.add(amountBurn);
         claimedDAOFund = claimedDAOFund.add(amountDAO);
