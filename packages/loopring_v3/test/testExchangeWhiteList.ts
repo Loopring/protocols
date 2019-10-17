@@ -6,51 +6,7 @@ const abi = require("ethereumjs-abi");
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
-  let exchange: any;
-  let exchangeId: any;
   let newAddressWhitelist: any;
-
-  const setAddressWhitelistChecked = async (newAddressWhitelist: any) => {
-    /*
-        event AddressWhitelistChanged(
-            uint    indexed exchangeId,
-            address         oldAddressWhitelist,
-            address         newAddressWhitelist
-        );
-    */
-    const result = await exchange.setAddressWhitelist(
-      newAddressWhitelist.address,
-      { from: exchangeTestUtil.exchangeOwner }
-    );
-    var eventFromBlock = result.receipt.blockNumber;
-    var events = await exchangeTestUtil.getEventsFromContract(
-      exchange,
-      "AddressWhitelistChanged",
-      eventFromBlock
-    );
-    assert.equal(
-      events.length,
-      1,
-      "A single AddressWhitelistChanged event needs to be emitted"
-    );
-    const newAddressFromEvent = events[0].args.newAddressWhitelist;
-    assert(
-      newAddressFromEvent == newAddressWhitelist.address,
-      "newAddressWhitelist should be " +
-        newAddressWhitelist.address +
-        " but get[" +
-        newAddressFromEvent +
-        "]"
-    );
-  };
-
-  const createExchange = async (bSetupTestState: boolean = true) => {
-    exchangeId = await exchangeTestUtil.createExchange(
-      exchangeTestUtil.testContext.stateOwners[0],
-      bSetupTestState
-    );
-    exchange = exchangeTestUtil.exchange;
-  };
 
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
@@ -59,37 +15,43 @@ contract("Exchange", (accounts: string[]) => {
     assert(newAddressWhitelist.address != 0, "whitelistContract.address == 0.");
   });
 
-  describe("AddressWhitelist functionality unit test", () => {
-    it("wrong permission shouldn't pass", async () => {
-      const realOwner = exchangeTestUtil.testContext.orderOwners[0];
-      const ret = await newAddressWhitelist.isAddressWhitelisted(realOwner, []);
-      assert(!ret, "Wrong permission should not pass check.");
-    });
+  const generatePermissionBytes = async (
+    now: any,
+    address: any,
+    signer: any
+  ) => {
+    const bitstream = new Bitstream();
+    bitstream.addNumber(now, 8);
+    const hashMsg =
+      "0x" +
+      abi
+        .soliditySHA3(
+          ["string", "address", "uint"],
+          ["LOOPRING_DEX_ACCOUNT_CREATION", address, now]
+        )
+        .toString("hex");
+    const rsv = await web3.eth.sign(hashMsg, signer);
+    bitstream.addHex(rsv);
 
-    it("check isAddressWhitelisted with real sign", async () => {
+    // console.log("permission date:", bitstream.getData());
+    const permission = web3.utils.hexToBytes(bitstream.getData());
+    assert(
+      permission.length == 73,
+      "permission.length should be 73(t8+sign65)"
+    );
+    return permission;
+  };
+
+  describe("AddressWhitelist functionality unit test", () => {
+    it("check isAddressWhitelisted basic logic", async () => {
       const deployer = exchangeTestUtil.testContext.deployer;
       const realAccount = exchangeTestUtil.testContext.orderOwners[0];
       const fakeAccount = exchangeTestUtil.testContext.orderOwners[1];
-
-      const bitstream = new Bitstream();
-      var now = Date.now();
-      bitstream.addNumber(now, 8);
-      const hashMsg =
-        "0x" +
-        abi
-          .soliditySHA3(
-            ["string", "address", "uint"],
-            ["LOOPRING_DEX_ACCOUNT_CREATION", realAccount, now]
-          )
-          .toString("hex");
-      const rsv = await web3.eth.sign(hashMsg, deployer);
-      bitstream.addHex(rsv);
-
-      // console.log("permission date:", bitstream.getData());
-      const permission = web3.utils.hexToBytes(bitstream.getData());
-      assert(
-        permission.length == 73,
-        "permission.length should be 73(t8+sign65)"
+      const now = Math.floor(Date.now() / 1000);
+      const permission = await generatePermissionBytes(
+        now,
+        realAccount,
+        deployer
       );
 
       var ret = await newAddressWhitelist.isAddressWhitelisted(
@@ -102,161 +64,36 @@ contract("Exchange", (accounts: string[]) => {
         fakeAccount,
         permission
       );
-      assert(!ret, "isAddressWhitelisted(fakeOwner, permission) passed.");
-    });
-  });
-
-  describe("AddressWhitelist integration test", () => {
-    it.skip("should be able to set the AddressWhitelist", async () => {
-      await createExchange();
-      await setAddressWhitelistChecked(newAddressWhitelist);
+      assert(!ret, "fakeAccount's request should not pass.");
     });
 
-    it.skip("AddressWhitelist works", async () => {
-      await createExchange();
-      await setAddressWhitelistChecked(newAddressWhitelist);
-      // fee param
-      const fees = await exchange.getFees();
-      const accountCreationFee = fees._accountCreationFeeETH;
-      const depositFee = fees._depositFeeETH;
-      const totalFee = depositFee.add(accountCreationFee);
+    it("check isAddressWhitelisted fail conditions", async () => {
+      const deployer = exchangeTestUtil.testContext.deployer;
+      const realAccount = exchangeTestUtil.testContext.orderOwners[0];
 
-      // request dis-approved
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const owner1 = exchangeTestUtil.testContext.orderOwners[0];
-      await expectThrow(
-        exchange.createOrUpdateAccount(
-          keyPair.publicKeyX,
-          keyPair.publicKeyY,
-          Constants.emptyBytes,
-          {
-            from: owner1,
-            value: new BN(totalFee)
-          }
-        ),
-        "ADDRESS_NOT_WHITELISTED"
+      var date = new Date();
+      var past = Math.floor(date.setDate(date.getHours() - 25) / 1000);
+      var permission = await generatePermissionBytes(
+        past,
+        realAccount,
+        deployer
       );
 
-      // request approved
-      const owner2 = exchangeTestUtil.testContext.orderOwners[1];
-      const bitstream = new Bitstream();
-      var now = Date.now();
-      bitstream.addNumber(now, 8);
-      // console.log("exchange deployer:", exchangeTestUtil.testContext.deployer);
-      // console.log("msg = [LOOPRING_DEX_ACCOUNT_CREATION +" + owner2 + " + " + now + "]");
-      const hashMsg =
-        "0x" +
-        abi
-          .soliditySHA3(
-            ["string", "address", "uint"],
-            ["LOOPRING_DEX_ACCOUNT_CREATION", owner2, now]
-          )
-          .toString("hex");
-      // console.log("hash value:", hashMsg);
-      const rsv = await web3.eth.sign(
-        hashMsg,
-        exchangeTestUtil.testContext.deployer
-      );
-      bitstream.addHex(rsv);
+      var ret = await newAddressWhitelist.isAddressWhitelisted(realAccount, []);
+      assert(!ret, "Wrong permission should not pass check.");
 
-      // console.log("permission date:", bitstream.getData());
-      const permission = web3.utils.hexToBytes(bitstream.getData());
-      assert(
-        permission.length == 73,
-        "permission.length should be 73(t8+sign65)"
+      ret = await newAddressWhitelist.isAddressWhitelisted(
+        realAccount,
+        permission
       );
-      const result = await exchange.createOrUpdateAccount(
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
-        permission,
-        {
-          from: owner2,
-          value: new BN(totalFee)
-        }
-      );
+      assert(!ret, "Requests happened 1 day ago should not pass.");
 
-      // make sure account is created.
-      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-        exchange,
-        "AccountCreated",
-        result.receipt.blockNumber
+      permission[72] = 2;
+      ret = await newAddressWhitelist.isAddressWhitelisted(
+        realAccount,
+        permission
       );
-      assert(
-        eventArr[0].args.owner == owner2,
-        (eventArr[0].args.pubKeyX = keyPair.publicKeyX),
-        (eventArr[0].args.pubKeyY = keyPair.publicKeyY)
-      );
-    });
-
-    it.skip("AddressWhitelist owner trans", async () => {
-      await createExchange();
-      await setAddressWhitelistChecked(newAddressWhitelist);
-      // fee param
-      const fees = await exchange.getFees();
-      const accountCreationFee = fees._accountCreationFeeETH;
-      const depositFee = fees._depositFeeETH;
-      const totalFee = depositFee.add(accountCreationFee);
-
-      // give ownership to exchange owner
-      await newAddressWhitelist.transferOwnership(
-        exchangeTestUtil.exchangeOwner,
-        {
-          from: exchangeTestUtil.testContext.deployer,
-          value: new BN(0)
-        }
-      );
-      await newAddressWhitelist.claimOwnership({
-        from: exchangeTestUtil.exchangeOwner,
-        value: new BN(0)
-      });
-
-      // request approved
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const owner = exchangeTestUtil.testContext.orderOwners[1];
-      const bitstream = new Bitstream();
-      var now = Date.now();
-      bitstream.addNumber(now, 8);
-      // console.log("exchange deployer:", exchangeTestUtil.testContext.deployer);
-      // console.log("msg = [LOOPRING_DEX_ACCOUNT_CREATION +" + owner + " + " + now + "]");
-      const hashMsg =
-        "0x" +
-        abi
-          .soliditySHA3(
-            ["string", "address", "uint"],
-            ["LOOPRING_DEX_ACCOUNT_CREATION", owner, now]
-          )
-          .toString("hex");
-      // console.log("hash value:", hashMsg);
-      const rsv = await web3.eth.sign(hashMsg, exchangeTestUtil.exchangeOwner);
-      bitstream.addHex(rsv);
-
-      // console.log("permission date:", bitstream.getData());
-      const permission = web3.utils.hexToBytes(bitstream.getData());
-      assert(
-        permission.length == 73,
-        "permission.length should be 73(t8+sign65)"
-      );
-      const result = await exchange.createOrUpdateAccount(
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
-        permission,
-        {
-          from: owner,
-          value: new BN(totalFee)
-        }
-      );
-
-      // make sure account is created.
-      const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-        exchange,
-        "AccountCreated",
-        result.receipt.blockNumber
-      );
-      assert(
-        eventArr[0].args.owner == owner,
-        (eventArr[0].args.pubKeyX = keyPair.publicKeyX),
-        (eventArr[0].args.pubKeyY = keyPair.publicKeyY)
-      );
+      assert(!ret, "v is not in [0, 1] should not pass.");
     });
   });
 });
