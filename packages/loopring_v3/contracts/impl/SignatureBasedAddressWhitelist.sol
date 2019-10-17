@@ -58,6 +58,10 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
             return false;
         }
 
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return false;
+        }
+
         if (v < 27) {
             v += 27;
         }
