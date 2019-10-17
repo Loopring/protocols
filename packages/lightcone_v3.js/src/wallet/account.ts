@@ -13,6 +13,7 @@ import {
   OrderRequest,
   WithdrawalRequest
 } from "../model/types";
+
 const assert = require("assert");
 
 export class Account {

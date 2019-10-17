@@ -1,6 +1,5 @@
 import { EdDSA } from "../lib/sign/eddsa";
 import { ethereum } from "../lib/wallet";
-import { performance } from "perf_hooks";
 import * as fm from "../lib/wallet/common/formatter";
 import config from "../lib/wallet/config";
 import Transaction from "../lib/wallet/ethereum/transaction";
@@ -268,7 +267,6 @@ export class Exchange {
     const hasher = Poseidon.createHash(14, 6, 53);
 
     // Calculate hash
-    const startHash = performance.now();
     const inputs = [
       config.getExchangeId(),
       order.orderId,
@@ -285,24 +283,16 @@ export class Exchange {
       order.label
     ];
     order.hash = hasher(inputs).toString(10);
-    const endHash = performance.now();
-    console.log("Hash order time: " + (endHash - startHash));
 
     // Create signature
-    const startSign = performance.now();
     order.signature = EdDSA.sign(account.keyPair.secretKey, order.hash);
-    const endSign = performance.now();
-    console.log("Sign order time: " + (endSign - startSign));
 
     // Verify signature
-    const startVerify = performance.now();
     const success = EdDSA.verify(order.hash, order.signature, [
       account.keyPair.publicKeyX,
       account.keyPair.publicKeyY
     ]);
     assert(success, "Failed to verify signature");
-    const endVerify = performance.now();
-    console.log("Verify order signature time: " + (endVerify - startVerify));
     return order;
   }
 

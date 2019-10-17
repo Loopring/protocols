@@ -1,4 +1,4 @@
-import { bn128, bigInt } from "snarkjs";
+import { bigInt, bn128 } from "snarkjs";
 
 exports.addPoint = addPoint;
 exports.mulPointEscalar = mulPointEscalar;

@@ -1,6 +1,6 @@
 import assert = require("assert");
 import ethereum from "../src/lib/wallet/ethereum";
-import { Account, exchange } from "../src";
+import { Account } from "../src";
 import { EdDSA } from "../src/lib/sign/eddsa";
 import * as fm from "../src/lib/wallet/common/formatter";
 import sha256 from "crypto-js/sha256";
