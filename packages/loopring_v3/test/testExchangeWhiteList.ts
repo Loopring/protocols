@@ -8,6 +8,7 @@ contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let exchangeId: any;
+  let newAddressWhitelist: any;
 
   const setAddressWhitelistChecked = async (newAddressWhitelist: any) => {
     /*
@@ -54,25 +55,14 @@ contract("Exchange", (accounts: string[]) => {
   before(async () => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
+    newAddressWhitelist = await exchangeTestUtil.contracts.AddressWhitelist.new();
+    assert(newAddressWhitelist.address != 0, "whitelistContract.address == 0.");
   });
 
   describe("AddressWhitelist functionality unit test", () => {
-    let whitelistContract: any;
-
-    before(async () => {
-      exchangeTestUtil = new ExchangeTestUtil();
-      await exchangeTestUtil.initialize(accounts);
-
-      const AddressWhiteList = artifacts.require(
-        "./impl/SignatureBasedAddressWhitelist.sol"
-      );
-      whitelistContract = await AddressWhiteList.new();
-      assert(whitelistContract.address != 0, "whitelistContract.address == 0.");
-    });
-
     it("wrong permission shouldn't pass", async () => {
       const realOwner = exchangeTestUtil.testContext.orderOwners[0];
-      const ret = await whitelistContract.isAddressWhitelisted(realOwner, []);
+      const ret = await newAddressWhitelist.isAddressWhitelisted(realOwner, []);
       assert(!ret, "Wrong permission should not pass check.");
     });
 
@@ -102,13 +92,13 @@ contract("Exchange", (accounts: string[]) => {
         "permission.length should be 73(t8+sign65)"
       );
 
-      var ret = await whitelistContract.isAddressWhitelisted(
+      var ret = await newAddressWhitelist.isAddressWhitelisted(
         realAccount,
         permission
       );
       assert(ret, "isAddressWhitelisted(realOwner, permission) failed.");
 
-      ret = await whitelistContract.isAddressWhitelisted(
+      ret = await newAddressWhitelist.isAddressWhitelisted(
         fakeAccount,
         permission
       );
@@ -119,12 +109,12 @@ contract("Exchange", (accounts: string[]) => {
   describe("AddressWhitelist integration test", () => {
     it.skip("should be able to set the AddressWhitelist", async () => {
       await createExchange();
-      await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
+      await setAddressWhitelistChecked(newAddressWhitelist);
     });
 
     it.skip("AddressWhitelist works", async () => {
       await createExchange();
-      await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
+      await setAddressWhitelistChecked(newAddressWhitelist);
       // fee param
       const fees = await exchange.getFees();
       const accountCreationFee = fees._accountCreationFeeETH;
@@ -200,7 +190,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it.skip("AddressWhitelist owner trans", async () => {
       await createExchange();
-      await setAddressWhitelistChecked(exchangeTestUtil.addressWhiteList);
+      await setAddressWhitelistChecked(newAddressWhitelist);
       // fee param
       const fees = await exchange.getFees();
       const accountCreationFee = fees._accountCreationFeeETH;
@@ -208,14 +198,14 @@ contract("Exchange", (accounts: string[]) => {
       const totalFee = depositFee.add(accountCreationFee);
 
       // give ownership to exchange owner
-      await exchangeTestUtil.addressWhiteList.transferOwnership(
+      await newAddressWhitelist.transferOwnership(
         exchangeTestUtil.exchangeOwner,
         {
           from: exchangeTestUtil.testContext.deployer,
           value: new BN(0)
         }
       );
-      await exchangeTestUtil.addressWhiteList.claimOwnership({
+      await newAddressWhitelist.claimOwnership({
         from: exchangeTestUtil.exchangeOwner,
         value: new BN(0)
       });

@@ -100,8 +100,6 @@ export class ExchangeTestUtil {
   public operator: any;
   public activeOperator: number;
 
-  public addressWhiteList: any;
-
   public userStakingPool: any;
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
@@ -4312,17 +4310,11 @@ export class ExchangeTestUtil {
       this.contracts.WETHToken.deployed()
     ]);
 
-    const [
-      addressWhiteList,
-      userStakingPool,
-      protocolFeeVaultContract
-    ] = await Promise.all([
-      this.contracts.AddressWhitelist.deployed(),
+    const [userStakingPool, protocolFeeVaultContract] = await Promise.all([
       this.contracts.UserStakingPool.deployed(),
       this.contracts.ProtocolFeeVault.deployed()
     ]);
 
-    this.addressWhiteList = addressWhiteList;
     this.userStakingPool = userStakingPool;
     this.protocolFeeVaultContract = protocolFeeVaultContract;
 
