@@ -10,7 +10,10 @@ contract("Exchange", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     newAddressWhitelist = await exchangeTestUtil.contracts.AddressWhitelist.new();
-    assert(newAddressWhitelist.address != 0, "whitelistContract.address == 0.");
+    assert(
+      newAddressWhitelist.address != 0,
+      "newAddressWhitelist.address == 0."
+    );
   });
 
   const generatePermissionBytes = async (
@@ -31,7 +34,7 @@ contract("Exchange", (accounts: string[]) => {
     const rsv = await web3.eth.sign(hashMsg, signer);
     bitstream.addHex(rsv);
 
-    // console.log("permission date:", bitstream.getData());
+    // console.log("permission data:", bitstream.getData());
     const permission = web3.utils.hexToBytes(bitstream.getData());
     assert(
       permission.length == 73,
