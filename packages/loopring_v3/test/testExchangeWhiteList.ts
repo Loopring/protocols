@@ -1,6 +1,4 @@
-import BN = require("bn.js");
-import { expectThrow } from "./expectThrow";
-import { Constants, Bitstream } from "loopringV3.js";
+import { Bitstream } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 const abi = require("ethereumjs-abi");
 
