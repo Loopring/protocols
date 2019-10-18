@@ -16,6 +16,10 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
 
   const owner = accounts[0];
 
+  const protocolVersionStr = "1";
+  const protocol2VersionStr = "2";
+  const implVersionStr = "123";
+
   describe("UniversalRegistry related test", () => {
     before(async () => {
       mockLRC = await MockContract.new();
@@ -49,40 +53,36 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       const version = web3.utils.sha3("version()").slice(0, 10);
       await mockProtocol.givenMethodReturn(
         version,
-        abi.rawEncode(["string"], ["1"])
+        abi.rawEncode(["string"], [protocolVersionStr])
       );
 
       // mock implementation version
       const implVersion = web3.utils.sha3("version()").slice(0, 10);
       await mockImplementation.givenMethodReturn(
         implVersion,
-        abi.rawEncode(["string"], ["123"])
+        abi.rawEncode(["string"], [implVersionStr])
       );
 
       // mock mockProtocol2 universalRegistry(), owner(), lrcAddress(), version()
       // to test change protocol
-      const registry2 = web3.utils.sha3("universalRegistry()").slice(0, 10);
       await mockProtocol2.givenMethodReturn(
         registry,
         abi.rawEncode(["address"], [universalRegistry.address])
       );
 
-      const mockOwner2 = web3.utils.sha3("owner()").slice(0, 10);
       await mockProtocol2.givenMethodReturn(
         mockOwner,
         abi.rawEncode(["address"], [owner])
       );
 
-      const lrcAddress2 = web3.utils.sha3("lrcAddress()").slice(0, 10);
       await mockProtocol2.givenMethodReturn(
         lrcAddress,
         abi.rawEncode(["address"], [mockLRC.address])
       );
 
-      const version2 = web3.utils.sha3("version()").slice(0, 10);
       await mockProtocol2.givenMethodReturn(
         version,
-        abi.rawEncode(["string"], ["2"])
+        abi.rawEncode(["string"], [protocol2VersionStr])
       );
     });
 
@@ -159,6 +159,25 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         await expectThrow(
           universalRegistry.setDefaultProtocol(mockProtocol.address),
           "PROTOCOL_DISABLED"
+        );
+      });
+    });
+
+    describe("defaultProtocol", () => {
+      it("check defaultProtocol", async () => {
+        const {
+          0: protocol,
+          1: manager,
+          2: defaultImpl,
+          3: protocolVersion,
+          4: defaultImplVersion
+        } = await universalRegistry.defaultProtocol();
+
+        assert(
+          protocol == mockProtocol2.address &&
+            protocolVersion == protocol2VersionStr &&
+            defaultImplVersion == implVersionStr,
+          "defaultProtocol error"
         );
       });
     });
