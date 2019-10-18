@@ -63,7 +63,9 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         }
 
         bytes32 hash = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, time));
-        hash = ECDSA.toEthSignedMessageHash(hash);
-        return owner == ECDSA.recover(hash, permission.subBytes(8));
+        return owner == ECDSA.recover(
+            ECDSA.toEthSignedMessageHash(hash),
+            permission.subBytes(8)
+        );
     }
 }

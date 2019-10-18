@@ -22,7 +22,6 @@ contract("Exchange", (accounts: string[]) => {
     signer: any
   ) => {
     const bitstream = new Bitstream();
-
     bitstream.addNumber(now, 8);
     const hashMsg =
       "0x" +
