@@ -31,6 +31,12 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 
     constructor() Claimable() public {}
 
+    /// @dev Checks if an address has been whitelisted.
+    /// @param addr The address to check against the whitelist.
+    /// @param permission The permission contains a timestamp and the owner's signature
+    ///                   for the target address. For details, please checkout the
+    ///                   implementation.
+    /// @return true if the address is whitelisted
     function isAddressWhitelisted(
         address addr,
         bytes   memory permission
