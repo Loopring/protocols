@@ -19,6 +19,8 @@ const assert = require("assert");
 export class Account {
   public account: WalletAccount;
 
+  private readonly emptyBytes: any = [];
+
   public constructor(account) {
     this.account = account;
   }
@@ -109,19 +111,23 @@ export class Account {
    * create Or Update Account in DEX
    * @param gasPrice: in gwei
    * @param nonce: Ethereum nonce of this address
+   * @param permission: user permission
    * @param password: user password
    */
   public async createOrUpdateAccount(
     password: string,
     nonce: number,
-    gasPrice: number
+    gasPrice: number,
+    permission?: any[]
   ) {
     try {
+      permission = permission !== undefined ? permission : this.emptyBytes;
       const createOrUpdateAccountResposne = exchange.createOrUpdateAccount(
         this.account,
         password,
         nonce,
-        gasPrice
+        gasPrice,
+        permission
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
       const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);
