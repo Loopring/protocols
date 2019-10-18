@@ -26,7 +26,7 @@ import "../iface/IAddressWhitelist.sol";
 contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
-    bytes SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
+    bytes constant SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
 
     constructor() Claimable() public {}
 
@@ -35,7 +35,6 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         bytes   memory permission
         )
         public
-        view
         returns (bool)
     {
         uint    t;
