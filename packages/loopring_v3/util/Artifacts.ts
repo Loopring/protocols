@@ -23,6 +23,7 @@ export class Artifacts {
   public UserStakingPool: any;
   public ProtocolFeeVault: any;
   public UniswapTokenSeller: any;
+  public AddressWhitelist: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -49,6 +50,9 @@ export class Artifacts {
     this.TransferContract = artifacts.require("test/TransferContract");
     this.PoseidonContract = artifacts.require("test/PoseidonContract");
     this.UserStakingPool = artifacts.require("impl/UserStakingPool");
+    this.AddressWhitelist = artifacts.require(
+      "./impl/SignatureBasedAddressWhitelist.sol"
+    );
     this.ProtocolFeeVault = artifacts.require("impl/ProtocolFeeVault");
     this.UniswapTokenSeller = artifacts.require("impl/UniswapTokenSeller");
   }

@@ -46,7 +46,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         }
 
         assembly {
-            t := mload(add(permission, 8)) // first 8 bytes as time in second since epoch
+            t := and(mload(add(permission, 8)), 0xFFFFFFFFFFFFFFFF) // first 8 bytes as time in second since epoch
             r := mload(add(permission, 40))
             s := mload(add(permission, 72))
             v := and(mload(add(permission, 73)), 255)
@@ -56,15 +56,18 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
             return false;
         }
 
-        if (v < 27) {
-            v += 27;
-        }
-
-        if (v != 27 && v != 28) {
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
             return false;
         }
 
-        bytes32 hash = keccak256(abi.encode("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
+        if (v < 27) {
+            v += 27;
+        }
+        if (v != 27 && v != 28) {
+            return false;
+        }
+        bytes32 msgBase = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
+        bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgBase));
         return owner == ecrecover(hash, v, r, s);
     }
 }
