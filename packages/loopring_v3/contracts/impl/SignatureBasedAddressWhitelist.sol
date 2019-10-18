@@ -51,10 +51,10 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 
         uint time;
         assembly {
-            // the last 8 bytes as time in second since epoch
-            time := and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF)
             // the first 65 bytes is the signature
-            mstore(mload(permission), 65)
+            mstore(permission, 65)
+             // the last 8 bytes as time in second since epoch
+            time := and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF)
         }
 
         if (time < now - PERMISSION_TIMEOUT) {
