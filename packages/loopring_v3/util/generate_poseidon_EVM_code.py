@@ -8,9 +8,9 @@ from ethsnarks.field import SNARK_SCALAR_FIELD
 
 def sigma_EVM_asm(o, t):
     nt = "n" + t
-    o = o + "let " + nt + " := mulmod(" + t + ", " + t + ", q)\n"
-    o = o + "let " + nt + " := mulmod(" + nt + ", " + nt + ", q)\n"
-    o = o + "let " + nt + " := mulmod(" + t + ", " + nt + ", q)\n"
+    o = o + nt + " := mulmod(" + t + ", " + t + ", q)\n"
+    o = o + nt + " := mulmod(" + nt + ", " + nt + ", q)\n"
+    o = o + nt + " := mulmod(" + t + ", " + nt + ", q)\n"
     return o
 
 def poseidon_EVM_asm(params):
@@ -27,15 +27,15 @@ def poseidon_EVM_asm(params):
         for j in range(params.t):
             mulmod = "mulmod(t" + str(j) + ", " + str(params.constants_M[i][j]) + ", q)"
             if j == 0:
-                o = o + "let nt" + str(i) + " := " + mulmod + "\n"
+                o = o + "nt" + str(i) + " := " + mulmod + "\n"
             else:
-                o = o + "let nt" + str(i) + " := addmod(nt" + str(i) + ", " + mulmod + ", q)\n"
+                o = o + "nt" + str(i) + " := addmod(nt" + str(i) + ", " + mulmod + ", q)\n"
     o = o + "}\n"
     o = o + "\n"
 
     o = o + "function ark(" + ts + ", q, c) -> " + nts + " {\n"
     for t in range(params.t):
-        o = o + "let nt" + str(t) + " := addmod(t" + str(t) + ", c, q)\n"
+        o = o + "nt" + str(t) + " := addmod(t" + str(t) + ", c, q)\n"
     o = o + "}\n"
     o = o + "\n"
 
@@ -54,14 +54,14 @@ def poseidon_EVM_asm(params):
     for i in range(params.nRoundsF + params.nRoundsP):
         o = o + "// round " + str(i) + "\n"
         # ark
-        o = o + "let (" + ts + ") := ark(" + ts + ", q, " + str(params.constants_C[i]) + ")\n"
+        o = o + ts + " := ark(" + ts + ", q, " + str(params.constants_C[i]) + ")\n"
         # sbox
         if (i < params.nRoundsF/2) or (i >= params.nRoundsF/2 + params.nRoundsP):
-            o = o + "let (" + ts + ") := sbox_full(" + ts + ", q)\n"
+            o = o + ts + " := sbox_full(" + ts + ", q)\n"
         else:
-            o = o + "let t0 := sbox_partial(t0, q)\n"
+            o = o + "t0 := sbox_partial(t0, q)\n"
         # mix
-        o = o + "let (" + ts + ") := mix(" + ts + ", q)\n"
+        o = o + ts + " := mix(" + ts + ", q)\n"
 
     return o
 

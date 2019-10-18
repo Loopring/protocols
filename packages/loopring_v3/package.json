@@ -39,7 +39,7 @@
     "migrate-ropsten": "npm run transpile && truffle migrate --network ropsten   | tee -a ropsten.deployed",
     "migrate-rinkeby": "npm run transpile && truffle migrate --network rinkeby   | tee -a rinkeby.deployed",
     "migrate-dev": "npm run transpile && truffle migrate --network development   | tee -a development.deployed",
-    "coverage": "truffle run coverage",
+    "coverage": "npm run transpile && node --max-old-space-size=4096 `which truffle` run coverage",
     "truffle": "truffle",
     "solium": "solium -d contracts/",
     "clean": "rm -rf build blocks keys transpiled",

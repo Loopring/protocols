@@ -1,3 +1,3 @@
 module.exports = {
-  skipFiles: ["contracts/lib/Poseidon.sol"]
+  skipFiles: ["lib/Poseidon.sol"]
 };
