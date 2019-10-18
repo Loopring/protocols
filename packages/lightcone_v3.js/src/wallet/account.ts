@@ -19,7 +19,7 @@ const assert = require("assert");
 export class Account {
   public account: WalletAccount;
 
-  private readonly emptyBytes: any = [];
+  private readonly emptyString: string = "";
 
   public constructor(account) {
     this.account = account;
@@ -118,16 +118,16 @@ export class Account {
     password: string,
     nonce: number,
     gasPrice: number,
-    permission?: any[]
+    permission?: string
   ) {
     try {
-      permission = permission !== undefined ? permission : this.emptyBytes;
+      permission = permission !== undefined ? permission : this.emptyString;
       const createOrUpdateAccountResposne = exchange.createOrUpdateAccount(
         this.account,
         password,
         nonce,
         gasPrice,
-        permission
+        fm.toBuffer(permission)
       );
       const rawTx = createOrUpdateAccountResposne["rawTx"];
       const signedEthereumTx = await this.account.signEthereumTx(rawTx.raw);

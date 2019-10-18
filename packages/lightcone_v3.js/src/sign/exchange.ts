@@ -37,7 +37,7 @@ export class Exchange {
     password: string,
     nonce: number,
     gasPrice: number,
-    permission: any[]
+    permission: Buffer
   ) {
     try {
       const keyPair = EdDSA.generateKeyPair(wallet.getAddress() + password);
@@ -66,7 +66,7 @@ export class Exchange {
     publicY: string,
     symbol: string,
     amount: string,
-    permission: any[],
+    permission: Buffer,
     nonce: number,
     gasPrice: number
   ) {

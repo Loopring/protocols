@@ -18,7 +18,7 @@ describe("test account sign functions", function() {
   });
 
   it("create account", async function() {
-    let rawTx = await dexAccount.createOrUpdateAccount("Abc!12345", 10, 10, []);
+    let rawTx = await dexAccount.createOrUpdateAccount("Abc!12345", 10, 10, "");
     const expected = {
       address: "0xE20cF871f1646d8651ee9dC95AAB1d93160b3467",
       publicKeyX:
