@@ -54,14 +54,14 @@ def poseidon_EVM_asm(params):
     for i in range(params.nRoundsF + params.nRoundsP):
         o = o + "// round " + str(i) + "\n"
         # ark
-        o = o + ts + " := ark(" + ts + ", q, " + str(params.constants_C[i]) + ")\n"
+        o = o + "let (" + ts + ") := ark(" + ts + ", q, " + str(params.constants_C[i]) + ")\n"
         # sbox
         if (i < params.nRoundsF/2) or (i >= params.nRoundsF/2 + params.nRoundsP):
-            o = o + ts + " := sbox_full(" + ts + ", q)\n"
+            o = o + "let (" + ts + ") := sbox_full(" + ts + ", q)\n"
         else:
             o = o + "t0 := sbox_partial(t0, q)\n"
         # mix
-        o = o + ts + " := mix(" + ts + ", q)\n"
+        o = o + "let (" + ts + ") := mix(" + ts + ", q)\n"
 
     return o
 
