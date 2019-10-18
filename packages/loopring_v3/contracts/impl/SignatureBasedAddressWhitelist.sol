@@ -18,6 +18,8 @@ pragma solidity ^0.5.11;
 
 import "../lib/Claimable.sol";
 
+import "../thirdparty/ECDSA.sol";
+
 import "../iface/IAddressWhitelist.sol";
 
 
@@ -47,10 +49,11 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         }
 
         assembly {
-            t := and(mload(add(permission, 8)), 0xFFFFFFFFFFFFFFFF) // first 8 bytes as time in second since epoch
-            r := mload(add(permission, 40))
-            s := mload(add(permission, 72))
-            v := and(mload(add(permission, 73)), 255)
+            r := mload(add(permission, 32))
+            s := mload(add(permission, 64))
+            v := and(mload(add(permission, 65)), 255)
+            t := and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF) // first 8 bytes as time in second since epoch
+            mstore(permission, 65) // change the array size to 65
         }
 
         if (t < now - PERMISSION_TIMEOUT) {
@@ -67,8 +70,8 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         if (v != 27 && v != 28) {
             return false;
         }
-        bytes32 msgBase = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
-        bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgBase));
-        return owner == ecrecover(hash, v, r, s);
+        bytes32 hash = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
+        return owner == ECDSA.recover(ECDSA.toEthSignedMessageHash(hash), permission);
+          // ecrecover(ECDSA.toEthSignedMessageHash(hash), v, r, s);
     }
 }
