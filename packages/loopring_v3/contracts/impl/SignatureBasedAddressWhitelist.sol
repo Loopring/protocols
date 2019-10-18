@@ -52,7 +52,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         uint t;
         assembly {
             // the first 65 bytes is the signature
-            mstore(permission, 65)
+            mstore(permission, 65) // change the array size to 65
              // the last 8 bytes as time in second since epoch
             t := and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF)
         }
