@@ -3,6 +3,8 @@ build/
 transpiled/
 ABI/
 ethsnarks/
+coverage/
+coverage.json
 ABI/
 keys/
 blocks/
