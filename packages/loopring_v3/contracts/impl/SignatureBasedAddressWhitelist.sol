@@ -51,21 +51,18 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 
         uint time;
         assembly {
-            // first 8 bytes as time in second since epoch
-            time := and(mload(add(permission, 8)), 0xFFFFFFFFFFFFFFFF)
+            // the last 8 bytes as time in second since epoch
+            time := and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF)
+            // the first 65 bytes is the signature
+            mstore(mload(permission), 65)
         }
 
         if (time < now - PERMISSION_TIMEOUT) {
             return false;
         }
 
-        bytes memory sig = new bytes(65);
-        for (uint i = 0; i < 65; i++) {
-            sig[i] = permission[i + 8];
-        }
-
         bytes32 hash = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, time));
         hash = ECDSA.toEthSignedMessageHash(hash);
-        return owner == ECDSA.recover(hash, sig);
+        return owner == ECDSA.recover(hash, permission);
     }
 }

@@ -37,7 +37,6 @@ contract("Exchange", (accounts: string[]) => {
     signer: any
   ) => {
     const bitstream = new Bitstream();
-    bitstream.addNumber(now, 8);
     const hashMsg =
       "0x" +
       abi
@@ -49,12 +48,13 @@ contract("Exchange", (accounts: string[]) => {
     // console.log('hashMsg :', hashMsg);
     const rsv = await web3.eth.sign(hashMsg, signer);
     bitstream.addHex(rsv);
+    bitstream.addNumber(now, 8);
 
     // console.log("permission data:", bitstream.getData());
     const permission = web3.utils.hexToBytes(bitstream.getData());
     assert(
       permission.length == 73,
-      "permission.length should be 73(t8+sign65)"
+      "permission.length should be 73(sign65+t8)"
     );
     return permission;
   };
