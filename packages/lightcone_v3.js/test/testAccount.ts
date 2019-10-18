@@ -17,6 +17,22 @@ describe("test account sign functions", function() {
     dexAccount = new Account(pkAccount);
   });
 
+  it("create account", async function() {
+    let rawTx = await dexAccount.createOrUpdateAccount("Abc!12345", 10, 10, "");
+    const expected = {
+      address: "0xE20cF871f1646d8651ee9dC95AAB1d93160b3467",
+      publicKeyX:
+        "15030727036724168751212480282500540869268142725392913493575803542173309367534",
+      publicKeyY:
+        "21709653362655094841217318150615954140561437115749994376567240539798473592233",
+      secretKey: "1268930117"
+    };
+    assert.strictEqual(pkAccount.getAddress(), expected.address);
+    assert.strictEqual(rawTx.keyPair.publicKeyX, expected.publicKeyX);
+    assert.strictEqual(rawTx.keyPair.publicKeyY, expected.publicKeyY);
+    assert.strictEqual(rawTx.keyPair.secretKey, expected.secretKey);
+  });
+
   it("generate key pair", function(done) {
     const password = "Abc!12345";
     let keyPair = dexAccount.generateKeyPair(password);
