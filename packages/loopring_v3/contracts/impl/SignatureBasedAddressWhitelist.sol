@@ -20,8 +20,6 @@ import "../lib/Claimable.sol";
 
 import "../iface/IAddressWhitelist.sol";
 
-import "../thirdparty/ECDSA.sol";
-
 
 /// @title An Implementation of IAddressWhitelist.
 /// @author Daniel Wang  - <daniel@loopring.org>
@@ -31,12 +29,6 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 
     constructor() Claimable() public {}
 
-    /// @dev Checks if an address has been whitelisted.
-    /// @param addr The address to check against the whitelist.
-    /// @param permission The permission contains a timestamp and the owner's signature
-    ///                   for the target address. For details, please checkout the
-    ///                   implementation.
-    /// @return true if the address is whitelisted
     function isAddressWhitelisted(
         address addr,
         bytes   memory permission
@@ -45,25 +37,38 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         view
         returns (bool)
     {
+        uint    t;
+        bytes32 r;
+        bytes32 s;
+        uint8   v;
+
         if (permission.length != 73) {
             return false;
         }
 
-        uint64 t;
         assembly {
-            // the last 8 bytes as time in second since epoch
-            t :=  and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF)
-
-            // the first 65 bytes is the signature
-            mstore(permission, 65) // change the array size to 65
+            t := and(mload(add(permission, 8)), 0xFFFFFFFFFFFFFFFF) // first 8 bytes as time in second since epoch
+            r := mload(add(permission, 40))
+            s := mload(add(permission, 72))
+            v := and(mload(add(permission, 73)), 255)
         }
 
         if (t < now - PERMISSION_TIMEOUT) {
             return false;
         }
 
-        bytes32 hash = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
-        hash = ECDSA.toEthSignedMessageHash(hash);
-        return owner == ECDSA.recover(hash, permission);
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return false;
+        }
+
+        if (v < 27) {
+            v += 27;
+        }
+        if (v != 27 && v != 28) {
+            return false;
+        }
+        bytes32 msgBase = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
+        bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgBase));
+        return owner == ecrecover(hash, v, r, s);
     }
 }
