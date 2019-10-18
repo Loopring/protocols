@@ -36,6 +36,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
         bytes   memory permission
         )
         public
+        view
         returns (bool)
     {
         if (permission.length != 73) {

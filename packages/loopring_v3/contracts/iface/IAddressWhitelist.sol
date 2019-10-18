@@ -30,5 +30,6 @@ contract IAddressWhitelist
         bytes   memory permission
         )
         public
+        view
         returns (bool);
 }
