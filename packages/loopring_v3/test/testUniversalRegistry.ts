@@ -1,5 +1,7 @@
 import { Artifacts } from "../util/Artifacts";
 import { expectThrow } from "./expectThrow";
+import BN = require("bn.js");
+import { ForgeMode } from "loopringV3.js";
 const truffleAssert = require("truffle-assertions");
 const abi = require("ethereumjs-abi");
 
@@ -12,13 +14,19 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
   var mockProtocol: any;
   var mockProtocol2: any;
   var mockImplementation: any;
+  var mockImplementation2: any;
+  var mockExchange: any;
   var universalRegistry: any;
 
+  const costLRC = new BN(web3.utils.toWei("100", "ether"));
+
   const owner = accounts[0];
+  const exchangeCloneAddress = accounts[1];
 
   const protocolVersionStr = "1";
   const protocol2VersionStr = "2";
   const implVersionStr = "123";
+  const impl2VersionStr = "456";
 
   describe("UniversalRegistry related test", () => {
     before(async () => {
@@ -26,10 +34,33 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       mockProtocol = await MockContract.new();
       mockProtocol2 = await MockContract.new();
       mockImplementation = await MockContract.new();
+      mockImplementation2 = await MockContract.new();
+      mockExchange = await MockContract.new();
 
       universalRegistry = await UniversalRegistry.new(mockLRC.address, {
         from: owner
       });
+
+      // mock mockLRC burnFrom return true
+      const burnFrom = web3.utils
+        .sha3("burnFrom(address,uint256)")
+        .slice(0, 10);
+      await mockLRC.givenMethodReturnBool(burnFrom, true);
+
+      // mock mockProtocol2 exchangeCreationCostLRC return costLRC
+      const exchangeCreationCostLRC = web3.utils
+        .sha3("exchangeCreationCostLRC()")
+        .slice(0, 10);
+      await mockProtocol2.givenMethodReturn(
+        exchangeCreationCostLRC,
+        abi.rawEncode(["uint"], [costLRC])
+      );
+
+      // mock mockProtocol initializeExchange return true
+      const initializeExchange = web3.utils
+        .sha3("initializeExchange(address,uint256,address,address,bool)")
+        .slice(0, 10);
+      await mockProtocol.givenMethodReturnBool(initializeExchange, true);
 
       // mock mockProtocol universalRegistry(), owner(), lrcAddress(), version()
       const registry = web3.utils.sha3("universalRegistry()").slice(0, 10);
@@ -61,6 +92,11 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       await mockImplementation.givenMethodReturn(
         implVersion,
         abi.rawEncode(["string"], [implVersionStr])
+      );
+
+      await mockImplementation2.givenMethodReturn(
+        implVersion,
+        abi.rawEncode(["string"], [impl2VersionStr])
       );
 
       // mock mockProtocol2 universalRegistry(), owner(), lrcAddress(), version()
@@ -176,8 +212,27 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
         assert(
           protocol == mockProtocol2.address &&
             protocolVersion == protocol2VersionStr &&
+            defaultImpl == mockImplementation.address &&
             defaultImplVersion == implVersionStr,
           "defaultProtocol error"
+        );
+      });
+    });
+
+    describe("forgeExchange", () => {
+      const mode = ForgeMode.NATIVE;
+      it("mock mockImplementation clone", async () => {
+        const clone = web3.utils.sha3("clone()").slice(0, 10);
+        await mockImplementation.givenMethodReturn(
+          clone,
+          abi.rawEncode(["address"], [exchangeCloneAddress])
+        );
+
+        await universalRegistry.forgeExchange(
+          mode,
+          true,
+          mockProtocol2.address,
+          mockImplementation.address
         );
       });
     });
