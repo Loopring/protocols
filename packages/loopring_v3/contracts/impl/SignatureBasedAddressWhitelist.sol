@@ -17,7 +17,6 @@
 pragma solidity ^0.5.11;
 
 import "../lib/Claimable.sol";
-import "../lib/BytesUtil.sol";
 
 import "../iface/IAddressWhitelist.sol";
 
@@ -28,8 +27,6 @@ import "../thirdparty/ECDSA.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
-    using BytesUtil for bytes;
-
     uint public constant PERMISSION_TIMEOUT = 24 hours;
 
     constructor() Claimable() public {}
@@ -52,20 +49,21 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
             return false;
         }
 
-        uint time;
+        uint64 t;
         assembly {
-            // first 8 bytes as time in second since epoch
-            time := and(mload(add(permission, 8)), 0xFFFFFFFFFFFFFFFF)
+            // the last 8 bytes as time in second since epoch
+            t :=  and(mload(add(permission, 73)), 0xFFFFFFFFFFFFFFFF)
+
+            // the first 65 bytes is the signature
+            mstore(permission, 65) // change the array size to 65
         }
 
-        if (time < now - PERMISSION_TIMEOUT) {
+        if (t < now - PERMISSION_TIMEOUT) {
             return false;
         }
 
-        bytes32 hash = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, time));
-        return owner == ECDSA.recover(
-            ECDSA.toEthSignedMessageHash(hash),
-            permission.subBytes(8)
-        );
+        bytes32 hash = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
+        hash = ECDSA.toEthSignedMessageHash(hash);
+        return owner == ECDSA.recover(hash, permission);
     }
 }

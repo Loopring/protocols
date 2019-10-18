@@ -22,7 +22,7 @@ contract("Exchange", (accounts: string[]) => {
     signer: any
   ) => {
     const bitstream = new Bitstream();
-    bitstream.addNumber(now, 8);
+
     const hashMsg =
       "0x" +
       abi
@@ -33,6 +33,7 @@ contract("Exchange", (accounts: string[]) => {
         .toString("hex");
     const rsv = await web3.eth.sign(hashMsg, signer);
     bitstream.addHex(rsv);
+    bitstream.addNumber(now, 8);
 
     // console.log("permission data:", bitstream.getData());
     const permission = web3.utils.hexToBytes(bitstream.getData());
