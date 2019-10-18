@@ -41,8 +41,9 @@ export class WithdrawalRequest {
 
 export class OrderRequest {
   owner: string;
-  account: DexAccount;
+  accountId: number;
   exchangeId: number;
+  keyPair: KeyPair;
 
   tokenS: string;
   tokenB: string;
@@ -68,7 +69,9 @@ export class OrderRequest {
   rebateBips?: number;
 
   hash?: string;
-  signature?: Signature;
+  signatureRx?: string;
+  signatureRy?: string;
+  signatureS?: string;
 
   [key: string]: any;
 }

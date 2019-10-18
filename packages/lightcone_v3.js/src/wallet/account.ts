@@ -19,8 +19,6 @@ const assert = require("assert");
 export class Account {
   public account: WalletAccount;
 
-  private readonly emptyString: string = "";
-
   public constructor(account) {
     this.account = account;
   }
@@ -121,7 +119,7 @@ export class Account {
     permission?: string
   ) {
     try {
-      permission = permission !== undefined ? permission : this.emptyString;
+      permission = permission !== undefined ? permission : "";
       const createOrUpdateAccountResposne = exchange.createOrUpdateAccount(
         this.account,
         password,
@@ -273,14 +271,12 @@ export class Account {
   ) {
     try {
       const order = new OrderRequest();
-      const account = new DexAccount();
-      account.keyPair = new KeyPair();
       order.owner = owner;
-      order.account = account;
-      order.account.accountId = accountId;
-      order.account.keyPair.publicKeyX = publicKeyX;
-      order.account.keyPair.publicKeyY = publicKeyY;
-      order.account.keyPair.secretKey = privateKey;
+      order.accountId = accountId;
+      order.keyPair = new KeyPair();
+      order.keyPair.publicKeyX = publicKeyX;
+      order.keyPair.publicKeyY = publicKeyY;
+      order.keyPair.secretKey = privateKey;
 
       order.tokenS = tokenS;
       order.tokenB = tokenB;

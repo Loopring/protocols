@@ -7,7 +7,7 @@
   "fee": "0.01",
   "feeToken": "ETH",
   "maxFeeBips": 20,
-  "exchangeAddress": "0x034Cd568d025C28edB51BF3ec24CeAe55be345a0",
+  "exchangeAddress": "0x35990C74eB567B3bbEfD2Aa480467b1031b23eD9",
   "maxAmount": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
   "txs": [
     {

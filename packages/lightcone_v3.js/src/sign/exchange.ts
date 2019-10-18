@@ -265,14 +265,13 @@ export class Exchange {
     if (order.signature !== undefined) {
       return;
     }
-    const account = order.account;
     const hasher = Poseidon.createHash(14, 6, 53);
 
     // Calculate hash
     const inputs = [
       config.getExchangeId(),
       order.orderId,
-      account.accountId,
+      order.accountId,
       order.tokenSId,
       order.tokenBId,
       order.amountSInBN,
@@ -287,12 +286,16 @@ export class Exchange {
     order.hash = hasher(inputs).toString(10);
 
     // Create signature
-    order.signature = EdDSA.sign(account.keyPair.secretKey, order.hash);
+    const signature = EdDSA.sign(order.keyPair.secretKey, order.hash);
+    order.signature = signature;
+    order.signatureRx = signature.Rx;
+    order.signatureRy = signature.Ry;
+    order.signatureS = signature.s;
 
     // Verify signature
     const success = EdDSA.verify(order.hash, order.signature, [
-      account.keyPair.publicKeyX,
-      account.keyPair.publicKeyY
+      order.keyPair.publicKeyX,
+      order.keyPair.publicKeyY
     ]);
     assert(success, "Failed to verify signature");
     return order;
