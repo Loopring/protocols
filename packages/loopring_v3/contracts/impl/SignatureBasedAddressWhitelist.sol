@@ -26,7 +26,6 @@ import "../iface/IAddressWhitelist.sol";
 contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     uint public constant PERMISSION_TIMEOUT = 24 hours;
-    bytes constant SIG_PREFIX = "\x19Ethereum Signed Message:\n32";
 
     constructor() Claimable() public {}
 
@@ -68,7 +67,7 @@ contract SignatureBasedAddressWhitelist is Claimable, IAddressWhitelist
             return false;
         }
         bytes32 msgBase = keccak256(abi.encodePacked("LOOPRING_DEX_ACCOUNT_CREATION", addr, t));
-        bytes32 hash = keccak256(abi.encodePacked(SIG_PREFIX, msgBase));
+        bytes32 hash = keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", msgBase));
         return owner == ecrecover(hash, v, r, s);
     }
 }
