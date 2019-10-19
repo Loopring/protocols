@@ -13,6 +13,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
   var mockLRC: any;
   var mockProtocol: any;
   var mockProtocol2: any;
+  var mockProtocol3: any;
   var mockImplementation: any;
   var universalRegistry: any;
   var exchangeAddress: any;
@@ -21,6 +22,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
 
   const owner = accounts[0];
   const exchangeCloneAddress = accounts[1];
+  const testExchangeAddress = accounts[2];
 
   const protocolVersionStr = "1";
   const protocol2VersionStr = "2";
@@ -31,6 +33,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
       mockLRC = await MockContract.new();
       mockProtocol = await MockContract.new();
       mockProtocol2 = await MockContract.new();
+      mockProtocol3 = await MockContract.new();
       mockImplementation = await MockContract.new();
 
       universalRegistry = await UniversalRegistry.new(mockLRC.address, {
@@ -160,7 +163,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
         );
       });
 
-      it("disable protocol", async () => {
+      it("disable mockProtocol", async () => {
         universalRegistry.disableProtocol(mockProtocol.address);
       });
 
@@ -178,7 +181,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
         );
       });
 
-      it("setDefaultProtocol to protocol2", async () => {
+      it("setDefaultProtocol to mockProtocol2", async () => {
         universalRegistry.setDefaultProtocol(mockProtocol2.address);
       });
 
@@ -286,7 +289,21 @@ contract("UniversalRegistry", (accounts: string[]) => {
         );
       });
 
-      it("check mockProtocol is disabled", async () => {
+      it("check mockProtocol registered true", async () => {
+        const enabled = await universalRegistry.isProtocolRegistered(
+          mockProtocol.address
+        );
+        assert(enabled == true, "isProtocolRegistered error");
+      });
+
+      it("check mockProtocol3 registered false", async () => {
+        const enabled = await universalRegistry.isProtocolRegistered(
+          mockProtocol3.address
+        );
+        assert(enabled == false, "isProtocolRegistered error");
+      });
+
+      it("check mockProtocol not enabled", async () => {
         const enabled = await universalRegistry.isProtocolEnabled(
           mockProtocol.address
         );
@@ -300,19 +317,41 @@ contract("UniversalRegistry", (accounts: string[]) => {
         assert(enabled == true, "isProtocolEnabled error");
       });
 
-      it("check isExchangeRegistered", async () => {
+      it("check mockProtocol3 not enabled", async () => {
+        const enabled = await universalRegistry.isProtocolEnabled(
+          mockProtocol3.address
+        );
+        assert(enabled == false, "isProtocolEnabled error");
+      });
+
+      it("check exchangeAddress registered", async () => {
         const registered = await universalRegistry.isExchangeRegistered(
           exchangeAddress
         );
         assert(registered == true, "isExchangeRegistered error");
       });
 
-      it("check isProtocolAndImplementationEnabled", async () => {
+      it("check testExchangeAddress not registered", async () => {
+        const registered = await universalRegistry.isExchangeRegistered(
+          testExchangeAddress
+        );
+        assert(registered == false, "isExchangeRegistered error");
+      });
+
+      it("check mockProtocol2 and mockImplementation enabled", async () => {
         const enabled = await universalRegistry.isProtocolAndImplementationEnabled(
           mockProtocol2.address,
           mockImplementation.address
         );
         assert(enabled == true, "isProtocolAndImplementationEnabled error");
+      });
+
+      it("check mockProtocol3 and mockImplementation not enabled", async () => {
+        const enabled = await universalRegistry.isProtocolAndImplementationEnabled(
+          mockProtocol3.address,
+          mockImplementation.address
+        );
+        assert(enabled == false, "isProtocolAndImplementationEnabled error");
       });
 
       it("check getExchangeProtocol", async () => {
@@ -321,6 +360,12 @@ contract("UniversalRegistry", (accounts: string[]) => {
           1: manager
         } = await universalRegistry.getExchangeProtocol(exchangeAddress);
         assert(protocol == mockProtocol2.address, "getExchangeProtocol error");
+      });
+    });
+
+    describe("enableProtocol", () => {
+      it("enable mockProtocol at end", async () => {
+        universalRegistry.enableProtocol(mockProtocol.address);
       });
     });
   });
