@@ -5,7 +5,7 @@ import { ForgeMode } from "loopringV3.js";
 const truffleAssert = require("truffle-assertions");
 const abi = require("ethereumjs-abi");
 
-contract("ProtocolFeeVault", (accounts: string[]) => {
+contract("UniversalRegistry", (accounts: string[]) => {
   const contracts = new Artifacts(artifacts);
   const MockContract = contracts.MockContract;
   const UniversalRegistry = contracts.UniversalRegistry;
@@ -17,6 +17,7 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
   var mockImplementation2: any;
   var mockExchange: any;
   var universalRegistry: any;
+  var exchangeAddress: any;
 
   const costLRC = new BN(web3.utils.toWei("100", "ether"));
 
@@ -199,7 +200,29 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
       });
     });
 
-    describe("defaultProtocol", () => {
+    describe("forgeExchange", () => {
+      const mode = ForgeMode.NATIVE;
+      it("mock mockImplementation clone", async () => {
+        const clone = web3.utils.sha3("clone()").slice(0, 10);
+        await mockImplementation.givenMethodReturn(
+          clone,
+          abi.rawEncode(["address"], [exchangeCloneAddress])
+        );
+
+        const tx = await universalRegistry.forgeExchange(
+          mode,
+          true,
+          mockProtocol2.address,
+          mockImplementation.address
+        );
+        truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
+          exchangeAddress = evt.exchangeAddress;
+          return true;
+        });
+      });
+    });
+
+    describe("check UniversalRegistry status", () => {
       it("check defaultProtocol", async () => {
         const {
           0: protocol,
@@ -217,23 +240,42 @@ contract("ProtocolFeeVault", (accounts: string[]) => {
           "defaultProtocol error"
         );
       });
-    });
 
-    describe("forgeExchange", () => {
-      const mode = ForgeMode.NATIVE;
-      it("mock mockImplementation clone", async () => {
-        const clone = web3.utils.sha3("clone()").slice(0, 10);
-        await mockImplementation.givenMethodReturn(
-          clone,
-          abi.rawEncode(["address"], [exchangeCloneAddress])
+      it("check mockProtocol is disabled", async () => {
+        const enabled = await universalRegistry.isProtocolEnabled(
+          mockProtocol.address
         );
+        assert(enabled == false, "isProtocolEnabled error");
+      });
 
-        await universalRegistry.forgeExchange(
-          mode,
-          true,
+      it("check mockProtocol2 is enabled", async () => {
+        const enabled = await universalRegistry.isProtocolEnabled(
+          mockProtocol2.address
+        );
+        assert(enabled == true, "isProtocolEnabled error");
+      });
+
+      it("check isExchangeRegistered", async () => {
+        const registered = await universalRegistry.isExchangeRegistered(
+          exchangeAddress
+        );
+        assert(registered == true, "isExchangeRegistered error");
+      });
+
+      it("check isProtocolAndImplementationEnabled", async () => {
+        const enabled = await universalRegistry.isProtocolAndImplementationEnabled(
           mockProtocol2.address,
           mockImplementation.address
         );
+        assert(enabled == true, "isProtocolAndImplementationEnabled error");
+      });
+
+      it("check getExchangeProtocol", async () => {
+        const {
+          0: protocol,
+          1: manager
+        } = await universalRegistry.getExchangeProtocol(exchangeAddress);
+        assert(protocol == mockProtocol2.address, "getExchangeProtocol error");
       });
     });
   });
