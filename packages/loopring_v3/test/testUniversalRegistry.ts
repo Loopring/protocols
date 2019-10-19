@@ -25,7 +25,6 @@ contract("UniversalRegistry", (accounts: string[]) => {
   const protocolVersionStr = "1";
   const protocol2VersionStr = "2";
   const implVersionStr = "123";
-  const impl2VersionStr = "456";
 
   describe("UniversalRegistry related test", () => {
     before(async () => {
@@ -137,7 +136,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
       it("can not set not registed protocol as DefaultProtocol", async () => {
         await expectThrow(
           universalRegistry.setDefaultProtocol(mockProtocol2.address),
-          "NOT_REREGISTERED"
+          "NOT_REGISTERED"
         );
       });
       it("can not set same protocol as DefaultProtocol", async () => {
@@ -150,7 +149,7 @@ contract("UniversalRegistry", (accounts: string[]) => {
       it("can not enable not registed protocol", async () => {
         await expectThrow(
           universalRegistry.enableProtocol(mockProtocol2.address),
-          "NOT_REREGISTERED"
+          "NOT_REGISTERED"
         );
       });
 

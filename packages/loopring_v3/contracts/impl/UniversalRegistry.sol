@@ -98,7 +98,7 @@ contract UniversalRegistry is IUniversalRegistry {
         onlyOwner
     {
         require(protocol != defaultProtocolAddress, "SAME_PROTOCOL");
-        require(protocolMap[protocol].registered, "NOT_REREGISTERED");
+        require(protocolMap[protocol].registered, "NOT_REGISTERED");
         require(protocolMap[protocol].enabled, "PROTOCOL_DISABLED");
         address oldDefault = defaultProtocolAddress;
         defaultProtocolAddress = protocol;
@@ -112,7 +112,7 @@ contract UniversalRegistry is IUniversalRegistry {
         nonReentrant
         onlyOwner
     {
-        require(protocolMap[protocol].registered, "NOT_REREGISTERED");
+        require(protocolMap[protocol].registered, "NOT_REGISTERED");
         require(!protocolMap[protocol].enabled, "ALREADY_ENABLED");
 
         protocolMap[protocol].enabled = true;
