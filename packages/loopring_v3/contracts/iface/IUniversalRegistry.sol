@@ -89,7 +89,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         returns (address implManager);
 
     /// @dev Sets the default protocol.
-    /// @param protocol The new defualt protocol.
+    /// @param protocol The new default protocol.
     function setDefaultProtocol(
         address protocol
         )
@@ -174,7 +174,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         view
         returns (bool registered);
 
-    /// @dev Checks if the given protocol and mplementation are both registered and enabled.
+    /// @dev Checks if the given protocol and implementation are both registered and enabled.
     /// @param protocol The address of the protocol.
     /// @param implementation The address of the implementation.
     /// @return enabled True if both the protocol and the implementation are registered and enabled.

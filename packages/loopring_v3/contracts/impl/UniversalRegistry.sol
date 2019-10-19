@@ -66,7 +66,7 @@ contract UniversalRegistry is IUniversalRegistry {
         onlyOwner
         returns (address manager)
     {
-        require(!protocolMap[protocol].registered, "MANAGER_REGISTERED");
+        require(!protocolMap[protocol].registered, "PROTOCOL_REGISTERED");
 
         ILoopring loopring = ILoopring(protocol);
         require(loopring.universalRegistry() == address(this), "REGISTRY_MISMATCH");
@@ -98,6 +98,7 @@ contract UniversalRegistry is IUniversalRegistry {
         onlyOwner
     {
         require(protocol != defaultProtocolAddress, "SAME_PROTOCOL");
+        require(protocolMap[protocol].registered, "NOT_REGISTERED");
         require(protocolMap[protocol].enabled, "PROTOCOL_DISABLED");
         address oldDefault = defaultProtocolAddress;
         defaultProtocolAddress = protocol;
@@ -111,7 +112,7 @@ contract UniversalRegistry is IUniversalRegistry {
         nonReentrant
         onlyOwner
     {
-        require(protocolMap[protocol].registered, "NOT_REREGISTERED");
+        require(protocolMap[protocol].registered, "NOT_REGISTERED");
         require(!protocolMap[protocol].enabled, "ALREADY_ENABLED");
 
         protocolMap[protocol].enabled = true;
