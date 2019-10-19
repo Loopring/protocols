@@ -14,8 +14,6 @@ contract("UniversalRegistry", (accounts: string[]) => {
   var mockProtocol: any;
   var mockProtocol2: any;
   var mockImplementation: any;
-  var mockImplementation2: any;
-  var mockExchange: any;
   var universalRegistry: any;
   var exchangeAddress: any;
 
@@ -35,8 +33,6 @@ contract("UniversalRegistry", (accounts: string[]) => {
       mockProtocol = await MockContract.new();
       mockProtocol2 = await MockContract.new();
       mockImplementation = await MockContract.new();
-      mockImplementation2 = await MockContract.new();
-      mockExchange = await MockContract.new();
 
       universalRegistry = await UniversalRegistry.new(mockLRC.address, {
         from: owner
@@ -88,18 +84,6 @@ contract("UniversalRegistry", (accounts: string[]) => {
         abi.rawEncode(["string"], [protocolVersionStr])
       );
 
-      // mock implementation version
-      const implVersion = web3.utils.sha3("version()").slice(0, 10);
-      await mockImplementation.givenMethodReturn(
-        implVersion,
-        abi.rawEncode(["string"], [implVersionStr])
-      );
-
-      await mockImplementation2.givenMethodReturn(
-        implVersion,
-        abi.rawEncode(["string"], [impl2VersionStr])
-      );
-
       // mock mockProtocol2 universalRegistry(), owner(), lrcAddress(), version()
       // to test change protocol
       await mockProtocol2.givenMethodReturn(
@@ -120,6 +104,13 @@ contract("UniversalRegistry", (accounts: string[]) => {
       await mockProtocol2.givenMethodReturn(
         version,
         abi.rawEncode(["string"], [protocol2VersionStr])
+      );
+
+      // mock implementation version
+      const implVersion = web3.utils.sha3("version()").slice(0, 10);
+      await mockImplementation.givenMethodReturn(
+        implVersion,
+        abi.rawEncode(["string"], [implVersionStr])
       );
     });
 
@@ -201,24 +192,79 @@ contract("UniversalRegistry", (accounts: string[]) => {
     });
 
     describe("forgeExchange", () => {
-      const mode = ForgeMode.NATIVE;
-      it("mock mockImplementation clone", async () => {
-        const clone = web3.utils.sha3("clone()").slice(0, 10);
-        await mockImplementation.givenMethodReturn(
-          clone,
-          abi.rawEncode(["address"], [exchangeCloneAddress])
-        );
-
+      it("forgeExchange in AUTO_UPGRADABLE mode", async () => {
+        const auto_mode = ForgeMode.AUTO_UPGRADABLE;
         const tx = await universalRegistry.forgeExchange(
-          mode,
+          auto_mode,
           true,
           mockProtocol2.address,
           mockImplementation.address
         );
         truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
           exchangeAddress = evt.exchangeAddress;
-          return true;
+          return evt.forgeMode == auto_mode;
         });
+      });
+
+      it("forgeExchange in MANUAL_UPGRADABLE mode", async () => {
+        const manual_mode = ForgeMode.MANUAL_UPGRADABLE;
+        const tx = await universalRegistry.forgeExchange(
+          manual_mode,
+          true,
+          mockProtocol2.address,
+          mockImplementation.address
+        );
+        truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
+          exchangeAddress = evt.exchangeAddress;
+          return evt.forgeMode == manual_mode;
+        });
+      });
+
+      it("forgeExchange in PROXIED mode", async () => {
+        const proxied_mode = ForgeMode.PROXIED;
+        const tx = await universalRegistry.forgeExchange(
+          proxied_mode,
+          true,
+          mockProtocol2.address,
+          mockImplementation.address
+        );
+        truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
+          exchangeAddress = evt.exchangeAddress;
+          return evt.forgeMode == proxied_mode;
+        });
+      });
+
+      it("forgeExchange in NATIVE mode", async () => {
+        const native_mode = ForgeMode.NATIVE;
+        // mock clone()
+        const clone = web3.utils.sha3("clone()").slice(0, 10);
+        await mockImplementation.givenMethodReturn(
+          clone,
+          abi.rawEncode(["address"], [exchangeCloneAddress])
+        );
+        const tx = await universalRegistry.forgeExchange(
+          native_mode,
+          true,
+          mockProtocol2.address,
+          mockImplementation.address
+        );
+        truffleAssert.eventEmitted(tx, "ExchangeForged", (evt: any) => {
+          exchangeAddress = evt.exchangeAddress;
+          return evt.forgeMode == native_mode;
+        });
+      });
+
+      it("forgeExchange can not in other mode", async () => {
+        const mode = 10;
+        await expectThrow(
+          universalRegistry.forgeExchange(
+            mode,
+            true,
+            mockProtocol2.address,
+            mockImplementation.address
+          ),
+          "VM Exception while processing transaction"
+        );
       });
     });
 
