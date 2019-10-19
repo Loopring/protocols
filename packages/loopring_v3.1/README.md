@@ -1,5 +1,7 @@
 # Loopring Protocol (V3.1) using zkSNARKs
 
+[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](http://commitizen.github.io/cz-cli/)
+
 ## About
 
 This is a beta version of Loopring's order-based DEX protocol (version 3.0). The code base is still being audited and is not yet production ready.
