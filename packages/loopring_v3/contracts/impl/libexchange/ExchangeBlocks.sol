@@ -174,9 +174,10 @@ library ExchangeBlocks
         }
 
         // Only emit BlockFinalized event for the last verified block.
-        idx--;
-        emit BlockFinalized(idx);
-        S.numBlocksFinalized = idx;
+        if (idx > S.numBlocksFinalized) {
+            emit BlockFinalized(idx - 1);
+            S.numBlocksFinalized = idx;
+        }
     }
 
     function revertBlock(
