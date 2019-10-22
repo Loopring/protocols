@@ -180,7 +180,7 @@ library ExchangeData
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
-    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 1 days; }
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 14 days; }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 6 hours; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 6 hours; }
     function MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 150000; }
