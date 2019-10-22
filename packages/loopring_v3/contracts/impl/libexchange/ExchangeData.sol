@@ -237,5 +237,6 @@ library ExchangeData
 
         // Time when the exchange was shutdown
         uint shutdownStartTime;
+        uint shutdownStartBlock;
     }
 }
