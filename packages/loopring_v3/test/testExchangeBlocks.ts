@@ -307,99 +307,6 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
-        it("should be able to commit settlement blocks with previous protocol fees", async () => {
-          await createExchange(false);
-          const blockVersion = blockVersionGenerator++;
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT,
-            true,
-            2,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
-          );
-          const timestamp = (await web3.eth.getBlock(
-            await web3.eth.getBlockNumber()
-          )).timestamp;
-          // Invalid taker protocol fee
-          {
-            const bs = new Bitstream();
-            bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-            bs.addNumber(timestamp, 4);
-            bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
-            bs.addNumber(protocolFees.makerFeeBips, 1);
-            await expectThrow(
-              exchange.commitBlock(
-                BlockType.RING_SETTLEMENT,
-                2,
-                blockVersion,
-                web3.utils.hexToBytes(bs.getData()),
-                Constants.emptyBytes,
-                { from: exchangeTestUtil.exchangeOperator }
-              ),
-              "INVALID_PROTOCOL_FEES"
-            );
-          }
-
-          const addTime =
-            exchangeTestUtil.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED + 100;
-          await exchangeTestUtil.advanceBlockTimestamp(addTime);
-          await exchangeTestUtil.loopringV3.updateProtocolFeeSettings(
-            25,
-            75,
-            10,
-            50,
-            new BN(web3.utils.toWei("25000000", "ether")),
-            new BN(web3.utils.toWei("10000000", "ether")),
-            { from: exchangeTestUtil.testContext.deployer }
-          );
-          // update protocol fee after MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
-          {
-            const bs = new Bitstream();
-            bs.addNumber(0, 1);
-            bs.addNumber(exchangeId, 4);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-            bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-            bs.addNumber(timestamp + addTime, 4);
-            bs.addNumber(protocolFees.takerFeeBips, 1);
-            bs.addNumber(protocolFees.makerFeeBips, 1);
-            await exchange.commitBlock(
-              BlockType.RING_SETTLEMENT,
-              2,
-              blockVersion,
-              web3.utils.hexToBytes(bs.getData()),
-              Constants.emptyBytes,
-              { from: exchangeTestUtil.exchangeOperator }
-            );
-
-            // Get the ProtocolFeesUpdated event
-            const eventArr: any = await exchangeTestUtil.getEventsFromContract(
-              exchange,
-              "ProtocolFeesUpdated",
-              web3.eth.blockNumber
-            );
-            const items = eventArr.map((eventObj: any) => {
-              return [
-                eventObj.args.takerFeeBips,
-                eventObj.args.makerFeeBips,
-                eventObj.args.previousTakerFeeBips,
-                eventObj.args.previousMakerFeeBips
-              ];
-            });
-            assert.equal(
-              items.length,
-              1,
-              "A single ProtocolFeesUpdated event should have been emitted"
-            );
-          }
-        });
-
         it("should not be able to commit deposit/on-chain withdrawal blocks with invalid data", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
@@ -826,82 +733,6 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it.skip("should not be able to verify a block too early", async () => {
-          await createExchange();
-          const blockVersion = blockVersionGenerator++;
-
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT,
-            true,
-            2,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          const protocolFees = await loopring.getProtocolFeeValues(
-            exchangeTestUtil.exchangeId,
-            exchangeTestUtil.onchainDataAvailability
-          );
-          // Commit some fake blocks
-          var merkleRootBefore = exchangeTestUtil.GENESIS_MERKLE_ROOT;
-          var merkleRootAfter = exchangeTestUtil.GENESIS_MERKLE_ROOT.add(
-            new BN(1)
-          );
-          for (
-            var i = 0;
-            i <
-            exchangeTestUtil.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS + 1;
-            i++
-          ) {
-            {
-              let timestamp = (await web3.eth.getBlock(
-                await web3.eth.getBlockNumber()
-              )).timestamp;
-              const bs = new Bitstream();
-              bs.addNumber(0, 1);
-              bs.addNumber(exchangeId, 4);
-              bs.addBN(merkleRootBefore, 32);
-              bs.addBN(merkleRootAfter, 32);
-              bs.addNumber(timestamp, 4);
-              bs.addNumber(protocolFees.takerFeeBips, 1);
-              bs.addNumber(protocolFees.makerFeeBips, 1);
-              await exchange.commitBlock(
-                BlockType.RING_SETTLEMENT,
-                2,
-                blockVersion,
-                web3.utils.hexToBytes(bs.getData()),
-                Constants.emptyBytes,
-                { from: exchangeTestUtil.exchangeOperator }
-              );
-            }
-            merkleRootBefore = merkleRootAfter;
-            merkleRootAfter = merkleRootAfter.add(new BN(1));
-          }
-          console.log(
-            "exchangeTestUtil.pendingBlocks[exchangeId].len = ",
-            exchangeTestUtil.pendingBlocks[exchangeId].length
-          );
-          // Store all pending blocks
-          const blocks: Block[] = [];
-          blocks.push(
-            exchangeTestUtil.pendingBlocks[exchangeId][
-              exchangeTestUtil.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
-            ]
-          );
-          const fakeProof = [0, 0, 0, 0, 0, 0, 0, 0];
-          // Try to verify the last blocks
-          await expectThrow(
-            exchangeTestUtil.exchange.verifyBlocks(
-              [
-                exchangeTestUtil.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS +
-                  1
-              ],
-              fakeProof,
-              { from: exchangeTestUtil.exchangeOperator }
-            ),
-            "PROOF_TOO_EARLY"
-          );
-        });
-
         it("should not be able to verify a block too late", async () => {
           await createExchange();
           // Commit some blocks
@@ -912,7 +743,7 @@ contract("Exchange", (accounts: string[]) => {
             blocks.push(block);
           }
           // Wait
-          await exchangeTestUtil.advanceBlockTimestamp(
+          exchangeTestUtil.advanceBlockTimestamp(
             exchangeTestUtil.MAX_PROOF_GENERATION_TIME_IN_SECONDS + 1
           );
           // Try to verify the blocks
@@ -1308,7 +1139,7 @@ contract("Exchange", (accounts: string[]) => {
             blockFee = blockFee.add(withdrawal.withdrawalFee);
           }
 
-          // Wait a bit until the operator gets 0 block fee
+          // Wait a bit until the operator only gets half the block fee
           const addedTime =
             exchangeTestUtil.FEE_BLOCK_FINE_START_TIME +
             exchangeTestUtil.FEE_BLOCK_FINE_MAX_DURATION * 2;
@@ -1319,7 +1150,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.commitDeposits(exchangeId);
           await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
-          // Withdraw the blockFee (0 block fee)
+          // Withdraw the blockFee (half the complete block fee)
           const blockIdx =
             (await exchangeTestUtil.getNumBlocksOnchain()) - 1 - 1;
           await exchangeTestUtil.withdrawBlockFeeChecked(
