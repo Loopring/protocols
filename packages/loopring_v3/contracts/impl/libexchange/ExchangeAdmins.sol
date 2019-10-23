@@ -198,7 +198,7 @@ library ExchangeAdmins
         // automatically distributing the withdrawals (the fine is paid from the stake)
         require(
                 now > lastBlock.timestamp +
-                      ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_IN_SHUTDOWN_MODE(),
+                      ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE(),
             "TOO_EARLY"
         );
 

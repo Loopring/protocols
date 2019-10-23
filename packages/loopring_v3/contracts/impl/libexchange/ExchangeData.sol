@@ -181,7 +181,7 @@ library ExchangeData
     function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 20 - 1; }
     function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() internal pure returns (uint32) { return 14 days; }
-    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_IN_SHUTDOWN_MODE() internal pure returns (uint32) {
+    function MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE() internal pure returns (uint32) {
         return MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS() * 10;
     }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 6 hours; }
