@@ -60,7 +60,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Blocks", function() {
     this.timeout(0);
 
-    describe("Operator", () => {
+    describe("Operator 3", () => {
       describe("commitBlock", () => {
         it("should not be able to commit unsupported blocks", async () => {
           await createExchange(false);
