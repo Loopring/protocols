@@ -196,10 +196,9 @@ library ExchangeAdmins
         // Another requirement is that the last block needs to be committed
         // longer than MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS so the exchange can still be fined for not
         // automatically distributing the withdrawals (the fine is paid from the stake)
-        uint shutdownBlocksCount = S.blocks.length - S.shutdownStartBlock - 1;
         require(
                 now > lastBlock.timestamp +
-                      shutdownBlocksCount.mul(ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()),
+                      ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_IN_SHUTDOWN_MODE(),
             "TOO_EARLY"
         );
 
