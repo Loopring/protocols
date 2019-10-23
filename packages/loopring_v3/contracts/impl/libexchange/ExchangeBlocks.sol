@@ -170,14 +170,10 @@ library ExchangeBlocks
         uint idx = S.numBlocksFinalized;
         while (idx < S.blocks.length &&
             S.blocks[idx].state == ExchangeData.BlockState.VERIFIED) {
+            emit BlockFinalized(idx);
             idx++;
         }
-
-        // Only emit BlockFinalized event for the last verified block.
-        if (idx > S.numBlocksFinalized) {
-            emit BlockFinalized(idx - 1);
-            S.numBlocksFinalized = idx;
-        }
+        S.numBlocksFinalized = idx;
     }
 
     function revertBlock(
