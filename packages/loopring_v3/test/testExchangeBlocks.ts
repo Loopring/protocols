@@ -307,7 +307,7 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
-        it.only("should be able to commit settlement blocks with previous protocol fees", async () => {
+        it("should be able to commit settlement blocks with previous protocol fees", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -826,7 +826,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it("should not be able to verify a block too early", async () => {
+        it.skip("should not be able to verify a block too early", async () => {
           await createExchange();
           const blockVersion = blockVersionGenerator++;
 
