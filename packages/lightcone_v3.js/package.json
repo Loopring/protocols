@@ -1,0 +1,77 @@
+{
+  "name": "lightcone_v3.js",
+  "version": "0.0.1",
+  "description": "Loopring javascript library for Lightcone 2.0",
+  "directories": {
+    "test": "test"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged"
+    }
+  },
+  "scripts": {
+    "dev": "rimraf dist && tsc",
+    "lint": "prettier --write \"src/**/*.ts\"",
+    "test": "mocha -r ts-node/register --project tsconfig.json test/*.ts"
+  },
+  "keywords": [
+    "ethereum",
+    "zksnark"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:Loopring/loopr-app-sdk.git"
+  },
+  "main": "dist/index.js",
+  "license": "ISC",
+  "dependencies": {
+    "@types/ethereumjs-abi": "^0.6.3",
+    "async-validator": "1.8.2",
+    "axios": "^0.19.0",
+    "bignumber.js": "^9.0.0",
+    "bip39": "2.5.0",
+    "blake-hash": "^1.1.0",
+    "bn.js": "^4.11.8",
+    "ethereumjs-abi": "0.6.7",
+    "ethereumjs-tx": "1.3.3",
+    "ethereumjs-util": "5.2.0",
+    "ethereumjs-wallet": "0.6.0",
+    "google-protobuf": "^3.9.0-rc.1",
+    "hdkey": "0.7.1",
+    "isomorphic-fetch": "2.2.1",
+    "nodeunit": "^0.11.3",
+    "snarkjs": "0.1.11",
+    "socket.io-client": "2.0.4",
+    "crypto-js": "latest"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.1.7",
+    "@types/google-protobuf": "^3.2.7",
+    "@types/mocha": "^5.2.7",
+    "@types/pluralize": "0.0.29",
+    "@typescript-eslint/eslint-plugin": "^1.12.0",
+    "@typescript-eslint/parser": "^1.12.0",
+    "blake2b": "^2.1.3",
+    "browserify": "^16.2.2",
+    "eslint": "^5.16.0",
+    "eslint-config-google": "^0.13.0",
+    "eslint-config-prettier": "^6.0.0",
+    "eslint-plugin-prettier": "^3.1.0",
+    "ethlint": "^1.2.4",
+    "husky": "^3.0.0",
+    "mocha": "^5.2.0",
+    "prettier": "^1.18.2",
+    "pretty-quick": "^1.11.1",
+    "protobufjs": "^6.8.8",
+    "rimraf": "^2.6.2",
+    "shelljs": "^0.8.3",
+    "ts-node": "^7.0.1",
+    "tslint": "^5.12.0",
+    "tslint-microsoft-contrib": "^6.2.0",
+    "types-bn": "0.0.1",
+    "typescript": "^3.2.2",
+    "webpack": "^3.12.0",
+    "webpack-cli": "^3.1.0"
+  }
+}
