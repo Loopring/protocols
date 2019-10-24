@@ -10,7 +10,7 @@ describe("config test", function() {
   before(async () => {});
 
   it("config value", function(done) {
-    assert.strictEqual(config.getChainId(), 1);
+    assert.strictEqual(config.getChainId(), 4);
     assert.strictEqual(config.getMaxFeeBips(), 20);
 
     let tokens = config.getTokens();
@@ -31,38 +31,6 @@ describe("config test", function() {
     assert.strictEqual(eth.allowanceWarn, "500000000000000000000");
     assert.strictEqual(eth.precision, 6);
     assert.strictEqual(eth.minTradeValue, 0.001);
-
-    // WETH
-    let weth = config.getTokenBySymbol("WETH");
-    assert.strictEqual(weth.symbol, "WETH");
-    assert.strictEqual(weth.name, "Wrapped Ether");
-    assert.strictEqual(weth.digits, 18);
-    assert.strictEqual(
-      weth.address,
-      "0x97241525fe425C90eBe5A41127816dcFA5954b06"
-    );
-    assert.strictEqual(weth.unit, "WETH");
-    assert.strictEqual(weth.website, "https://weth.io");
-    assert.strictEqual(weth.allowance, "1000000000000000000000");
-    assert.strictEqual(weth.allowanceWarn, "100000000000000000000");
-    assert.strictEqual(weth.precision, 6);
-    assert.strictEqual(weth.minTradeValue, 0.001);
-
-    // LRC
-    let lrc = config.getTokenBySymbol("LRC");
-    assert.strictEqual(lrc.symbol, "LRC");
-    assert.strictEqual(lrc.name, "Loopring");
-    assert.strictEqual(lrc.digits, 18);
-    assert.strictEqual(
-      lrc.address,
-      "0xCa66Ffaf17e4B600563f6af032456AA7B05a6975"
-    );
-    assert.strictEqual(lrc.unit, "LRC");
-    assert.strictEqual(lrc.website, "https://loopring.org");
-    assert.strictEqual(lrc.allowance, "1000000000000000000000");
-    assert.strictEqual(lrc.allowanceWarn, "50000000000000000000");
-    assert.strictEqual(lrc.precision, 6);
-    assert.strictEqual(lrc.minTradeValue, 0.001);
 
     let markets = config.getMarkets();
     assert.strictEqual(markets.length, 2);
