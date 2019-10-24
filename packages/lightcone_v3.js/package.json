@@ -42,7 +42,7 @@
     "isomorphic-fetch": "2.2.1",
     "nodeunit": "^0.11.3",
     "snarkjs": "0.1.11",
-    "socket.io-client": "2.0.4",
+    "socket.io-client": "2.3.0",
     "crypto-js": "latest"
   },
   "devDependencies": {
