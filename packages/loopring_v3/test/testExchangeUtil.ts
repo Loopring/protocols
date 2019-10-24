@@ -386,7 +386,9 @@ export class ExchangeTestUtil {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
       order.validUntil =
-        (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
+        (await web3.eth.getBlock(blockNumber)).timestamp +
+        this.MAX_AGE_REQUEST_UNTIL_FORCED * 2 +
+        100;
     }
 
     order.exchangeID =
