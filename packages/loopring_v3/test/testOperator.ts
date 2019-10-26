@@ -3,7 +3,7 @@ import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { Block, Deposit } from "./types";
 
-contract("Operator", (accounts: string[]) => {
+contract("Operator 1", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
   let exchangeId = 0;
@@ -79,7 +79,7 @@ contract("Operator", (accounts: string[]) => {
     return subOperators[exchangeTestUtil.getRandomInt(subOperators.length)];
   };
 
-  describe("Operator", function() {
+  describe("Operator 2", function() {
     this.timeout(0);
 
     it("Commit and Verify", async () => {

@@ -128,6 +128,7 @@ export class ExchangeTestUtil {
   public MAX_NUM_TOKENS: number;
   public MAX_NUM_ACCOUNTS: number;
   public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS: number;
+  public MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE: number;
   public FEE_BLOCK_FINE_START_TIME: number;
   public FEE_BLOCK_FINE_MAX_DURATION: number;
   public MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS: number;
@@ -259,11 +260,12 @@ export class ExchangeTestUtil {
     this.MAX_NUM_TOKENS = constants[11].toNumber();
     this.MAX_NUM_ACCOUNTS = constants[12].toNumber();
     this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS = constants[13].toNumber();
-    this.FEE_BLOCK_FINE_START_TIME = constants[14].toNumber();
-    this.FEE_BLOCK_FINE_MAX_DURATION = constants[15].toNumber();
-    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = constants[16].toNumber();
-    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = constants[17].toNumber();
-    this.GAS_LIMIT_SEND_TOKENS = constants[18].toNumber();
+    this.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE = constants[14].toNumber();
+    this.FEE_BLOCK_FINE_START_TIME = constants[15].toNumber();
+    this.FEE_BLOCK_FINE_MAX_DURATION = constants[16].toNumber();
+    this.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS = constants[17].toNumber();
+    this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = constants[18].toNumber();
+    this.GAS_LIMIT_SEND_TOKENS = constants[19].toNumber();
   }
 
   public async setupTestState(exchangeID: number) {
@@ -384,7 +386,9 @@ export class ExchangeTestUtil {
       // Set the order validUntil time to a bit after the current timestamp;
       const blockNumber = await web3.eth.getBlockNumber();
       order.validUntil =
-        (await web3.eth.getBlock(blockNumber)).timestamp + 25000;
+        (await web3.eth.getBlock(blockNumber)).timestamp +
+        this.MAX_AGE_REQUEST_UNTIL_FORCED * 2 +
+        100;
     }
 
     order.exchangeID =

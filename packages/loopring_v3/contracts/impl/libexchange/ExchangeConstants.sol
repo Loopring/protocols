@@ -39,6 +39,7 @@ library ExchangeConstants
     ///         MAX_NUM_TOKENS
     ///         MAX_NUM_ACCOUNTS
     ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS
+    ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE
     ///         FEE_BLOCK_FINE_START_TIME
     ///         FEE_BLOCK_FINE_MAX_DURATION
     ///         MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS
@@ -47,7 +48,7 @@ library ExchangeConstants
     function getConstants()
         external
         pure
-        returns(uint[19] memory)
+        returns(uint[20] memory)
     {
         return [
             uint(ExchangeData.SNARK_SCALAR_FIELD()),
@@ -64,6 +65,7 @@ library ExchangeConstants
             uint(ExchangeData.MAX_NUM_TOKENS()),
             uint(ExchangeData.MAX_NUM_ACCOUNTS()),
             uint(ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS()),
+            uint(ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE()),
             uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
             uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
             uint(ExchangeData.MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS()),

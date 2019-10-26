@@ -200,9 +200,9 @@ contract("Exchange", (accounts: string[]) => {
         "TOO_EARLY"
       );
 
-      // Wait a bit until MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS seconds have passed
+      // Wait a bit until MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE seconds have passed
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS + 1
+        exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE + 1
       );
 
       // Withdraw the exchange stake
