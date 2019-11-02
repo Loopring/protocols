@@ -50,6 +50,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         address _daoAddress
         )
         external
+        nonReentrant
         onlyOwner
     {
         require(

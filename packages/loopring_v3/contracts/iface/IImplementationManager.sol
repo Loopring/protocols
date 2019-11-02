@@ -66,7 +66,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     function register(
         address implementation
         )
-        public;
+        external;
 
     /// @dev Sets the default implemenation.
     /// @param implementation The new default implementation.
@@ -93,7 +93,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     /// @return protocolVersion The protocol's version.
     /// @return defaultImplVersion The default implementation's version.
     function version()
-        external
+        public
         view
         returns (
             string  memory protocolVersion,

@@ -45,7 +45,7 @@ contract IUserStakingPool
 
     /// @dev Returns the total number of LRC staked.
     function getTotalStaking()
-        external
+        public
         view
         returns (uint);
 
@@ -56,7 +56,7 @@ contract IUserStakingPool
     /// @return balance The amount of LRC staked or rewarded.
     /// @return pendingReward The amount of LRC reward claimable.
     function getUserStaking(address user)
-        external
+        public
         view
         returns (
             uint withdrawalWaitTime,

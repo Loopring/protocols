@@ -48,7 +48,7 @@ contract ImplementationManager is IImplementationManager
         protocol = _protocol;
         defaultImpl = _implementation;
 
-        register(_implementation);
+        registerInternal(_implementation);
     }
 
     /// === Functions ===
@@ -56,20 +56,11 @@ contract ImplementationManager is IImplementationManager
     function register(
         address implementation
         )
-        public
+        external
+        nonReentrant
+        onlyOwner
     {
-        require(implementation != address(0), "INVALID_IMPLEMENTATION");
-
-        string memory _version = IExchange(implementation).version();
-        require(bytes(_version).length >= 3, "INVALID_VERSION");
-        require(versionMap[_version] == address(0), "VERSION_USED");
-        require(!statusMap[implementation].registered, "ALREADY_REGISTERED");
-
-        implementations.push(implementation);
-        statusMap[implementation] = Status(true, true);
-        versionMap[_version] = implementation;
-
-        emit Registered(implementation, _version);
+        registerInternal(implementation);
     }
 
     function setDefault(
@@ -77,6 +68,7 @@ contract ImplementationManager is IImplementationManager
         )
         external
         nonReentrant
+        onlyOwner
     {
         require(implementation != defaultImpl, "SAME_IMPLEMENTATION");
         require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
@@ -95,6 +87,7 @@ contract ImplementationManager is IImplementationManager
         )
         external
         nonReentrant
+        onlyOwner
     {
         Status storage status = statusMap[implementation];
         require(status.registered && !status.enabled, "INVALID_IMPLEMENTATION");
@@ -108,6 +101,7 @@ contract ImplementationManager is IImplementationManager
         )
         external
         nonReentrant
+        onlyOwner
     {
         require(implementation != defaultImpl, "FORBIDDEN");
         require(isEnabled(implementation), "INVALID_IMPLEMENTATION");
@@ -117,7 +111,7 @@ contract ImplementationManager is IImplementationManager
     }
 
     function version()
-        external
+        public
         view
         returns (
             string  memory protocolVersion,
@@ -154,5 +148,24 @@ contract ImplementationManager is IImplementationManager
         returns (bool)
     {
         return statusMap[implementation].enabled;
+    }
+
+    function registerInternal(
+        address implementation
+        )
+        internal
+    {
+        require(implementation != address(0), "INVALID_IMPLEMENTATION");
+
+        string memory _version = IExchange(implementation).version();
+        require(bytes(_version).length >= 3, "INVALID_VERSION");
+        require(versionMap[_version] == address(0), "VERSION_USED");
+        require(!statusMap[implementation].registered, "ALREADY_REGISTERED");
+
+        implementations.push(implementation);
+        statusMap[implementation] = Status(true, true);
+        versionMap[_version] = implementation;
+
+        emit Registered(implementation, _version);
     }
 }

@@ -135,7 +135,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @return defaultImpl The default protocol's default implementation address.
     /// @return defaultImplVersion The version of the default implementation.
     function defaultProtocol()
-        external
+        public
         view
         returns (
             address protocol,
@@ -194,7 +194,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
     function getExchangeProtocol(
         address exchangeAddress
         )
-        external
+        public
         view
         returns (
             address protocol,
