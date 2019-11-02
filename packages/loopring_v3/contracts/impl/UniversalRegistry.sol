@@ -63,6 +63,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address implementation
         )
         external
+        nonReentrant
         onlyOwner
         returns (address manager)
     {
@@ -95,6 +96,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address protocol
         )
         external
+        nonReentrant
         onlyOwner
     {
         require(protocol != defaultProtocolAddress, "SAME_PROTOCOL");
@@ -188,7 +190,7 @@ contract UniversalRegistry is IUniversalRegistry {
     }
 
     function defaultProtocol()
-        external
+        public
         view
         returns (
             address protocol,
@@ -257,7 +259,7 @@ contract UniversalRegistry is IUniversalRegistry {
     function getExchangeProtocol(
         address exchangeAddress
         )
-        external
+        public
         view
         returns (
             address protocol,

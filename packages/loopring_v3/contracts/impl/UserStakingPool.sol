@@ -52,6 +52,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function setProtocolFeeVault(address _protocolFeeVaultAddress)
         external
+        nonReentrant
         onlyOwner
     {
         // Allow zero-address
@@ -60,7 +61,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     }
 
     function getTotalStaking()
-        external
+        public
         view
         returns (uint)
     {
@@ -68,7 +69,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     }
 
     function getUserStaking(address user)
-        external
+        public
         view
         returns (
             uint withdrawalWaitTime,
