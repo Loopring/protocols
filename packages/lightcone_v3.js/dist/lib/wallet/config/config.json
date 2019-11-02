@@ -1,0 +1,129 @@
+{
+  "defaultGasPrice": 21,
+  "defaultGasLimit": "0x7a120",
+  "chainId": 1,
+  "exchangeId": 1,
+  "label": 211,
+  "fee": "0.01",
+  "feeToken": "ETH",
+  "maxFeeBips": 20,
+  "exchangeAddress": "0x35990C74eB567B3bbEfD2Aa480467b1031b23eD9",
+  "maxAmount": "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
+  "txs": [
+    {
+      "type": "eth_transfer",
+      "gasInWEI": 21000
+    },
+    {
+      "type": "token_transfer",
+      "gasInWEI": 100000
+    },
+    {
+      "type": "approve",
+      "gasInWEI": 100000
+    },
+    {
+      "type": "withdraw",
+      "gasInWEI": 100000
+    },
+    {
+      "type": "deposit",
+      "gasInWEI": 100000
+    },
+    {
+      "type": "cancelOrder",
+      "gasInWEI": 150000
+    },
+    {
+      "type": "create",
+      "gasInWEI": 1000000
+    },
+    {
+      "type": "depositTo",
+      "gasInWEI": 1000000
+    },
+    {
+      "type": "withdrawFrom",
+      "gasInWEI": 1000000
+    }
+  ],
+  "fees": [
+    {
+      "type": "create",
+      "feeInWEI": 11000000000000000
+    },
+    {
+      "type": "update",
+      "feeInWEI": 10000000000000000
+    },
+    {
+      "type": "deposit",
+      "feeInWEI": 10000000000000000
+    },
+    {
+      "type": "withdraw",
+      "feeInWEI": 10000000000000000
+    }
+  ],
+  "markets": [
+    {
+      "market": "LRC-ETH",
+      "baseToken": "LRC",
+      "quoteToken": "ETH",
+      "pricePrecision": 6,
+      "amountPrecision": 5,
+      "totalPrecision": 5,
+      "maxLevel": 5
+    },
+    {
+      "market": "LRC-WETH",
+      "baseToken": "LRC",
+      "quoteToken": "WETH",
+      "pricePrecision": 6,
+      "amountPrecision": 5,
+      "totalPrecision": 5,
+      "maxLevel": 5
+    }
+  ],
+  "tokens": [
+    {
+      "id": 0,
+      "symbol": "ETH",
+      "name": "Ether",
+      "digits": 18,
+      "address": "0x0000000000000000000000000000000000000000",
+      "unit": "ETH",
+      "website": "https://ethereum.org",
+      "allowance": "1000000000000000000000",
+      "allowanceWarn": "500000000000000000000",
+      "precision": 6,
+      "minTradeValue": 0.001
+    },
+    {
+      "id": 1,
+      "symbol": "WETH",
+      "name": "Wrapped Ether",
+      "digits": 18,
+      "address": "0x97241525fe425C90eBe5A41127816dcFA5954b06",
+      "unit": "WETH",
+      "website": "https://weth.io",
+      "allowance": "1000000000000000000000",
+      "allowanceWarn": "100000000000000000000",
+      "precision": 6,
+      "minTradeValue": 0.001
+    },
+    {
+      "id": 2,
+      "symbol": "LRC",
+      "name": "Loopring",
+      "digits": 18,
+      "address": "0xCa66Ffaf17e4B600563f6af032456AA7B05a6975",
+      "unit": "LRC",
+      "website": "https://loopring.org",
+      "allowance": "1000000000000000000000",
+      "allowanceWarn": "50000000000000000000",
+      "precision": 6,
+      "minTradeValue": 0.001
+    }
+  ]
+}

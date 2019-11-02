@@ -171,6 +171,7 @@ contract IExchangeV3 is IExchange
     ///         MAX_NUM_TOKENS
     ///         MAX_NUM_ACCOUNTS
     ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS
+    ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE
     ///         FEE_BLOCK_FINE_START_TIME
     ///         FEE_BLOCK_FINE_MAX_DURATION
     ///         MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS
@@ -179,7 +180,7 @@ contract IExchangeV3 is IExchange
     function getConstants()
         external
         pure
-        returns(uint[19] memory);
+        returns(uint[20] memory);
 
     // -- Mode --
     /// @dev Returns hether the exchange is in withdrawal mode.

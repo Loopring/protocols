@@ -804,7 +804,7 @@ export class ExchangeV3 {
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    const committedTimestamp = ethereumBlock.timestamp;
+    const committedTimestamp = Number(ethereumBlock.timestamp);
 
     let merkleRoot = "0";
     let blockType = 0;
@@ -939,7 +939,7 @@ export class ExchangeV3 {
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    const timestamp = ethereumBlock.timestamp;
+    const timestamp = Number(ethereumBlock.timestamp);
 
     const deposit: Deposit = {
       exchangeId: this.state.exchangeId,
@@ -967,7 +967,7 @@ export class ExchangeV3 {
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    const timestamp = ethereumBlock.timestamp;
+    const timestamp = Number(ethereumBlock.timestamp);
 
     const onchainWithdrawal: OnchainWithdrawal = {
       exchangeId: this.state.exchangeId,
@@ -1014,7 +1014,7 @@ export class ExchangeV3 {
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    block.verifiedTimestamp = ethereumBlock.timestamp;
+    block.verifiedTimestamp = Number(ethereumBlock.timestamp);
   }
 
   private async processBlockFinalized(event: any) {
@@ -1032,7 +1032,7 @@ export class ExchangeV3 {
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    block.finalizedTimestamp = ethereumBlock.timestamp;
+    block.finalizedTimestamp = Number(ethereumBlock.timestamp);
     this.numBlocksFinalized++;
   }
 
