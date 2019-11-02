@@ -28,7 +28,6 @@
   "dependencies": {
     "@types/ethereumjs-abi": "^0.6.3",
     "async-validator": "1.8.2",
-    "axios": "^0.19.0",
     "bignumber.js": "^9.0.0",
     "bip39": "2.5.0",
     "blake-hash": "^1.1.0",
@@ -37,17 +36,13 @@
     "ethereumjs-tx": "1.3.3",
     "ethereumjs-util": "5.2.0",
     "ethereumjs-wallet": "0.6.0",
-    "google-protobuf": "^3.9.0-rc.1",
     "hdkey": "0.7.1",
     "isomorphic-fetch": "2.2.1",
-    "nodeunit": "^0.11.3",
     "snarkjs": "0.1.11",
-    "socket.io-client": "2.0.4",
     "crypto-js": "latest"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
-    "@types/google-protobuf": "^3.2.7",
     "@types/mocha": "^5.2.7",
     "@types/pluralize": "0.0.29",
     "@typescript-eslint/eslint-plugin": "^1.12.0",
@@ -63,7 +58,6 @@
     "mocha": "^5.2.0",
     "prettier": "^1.18.2",
     "pretty-quick": "^1.11.1",
-    "protobufjs": "^6.8.8",
     "rimraf": "^2.6.2",
     "shelljs": "^0.8.3",
     "ts-node": "^7.0.1",
@@ -72,6 +66,7 @@
     "types-bn": "0.0.1",
     "typescript": "^3.2.2",
     "webpack": "^3.12.0",
-    "webpack-cli": "^3.1.0"
+    "webpack-cli": "^3.1.0",
+    "nodeunit": "^0.11.3"
   }
 }
