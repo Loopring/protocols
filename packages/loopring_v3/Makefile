@@ -44,4 +44,4 @@ cmake-openmp-performance:
 	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release -DMULTICORE=1 -DPERFORMANCE=1 ..
 
 git-submodules:
-	git submodule update --init --recursive
+	git submodule update --init --recursive --remote
