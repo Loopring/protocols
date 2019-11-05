@@ -99,6 +99,9 @@ library ExchangeWithdrawals
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableWithdrawalSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
+        // Check the user has enough LRC balance to withdraw non-LRC token.
+        require(userHasEnoughLRCForWithdrawal(S, token), "LOW_LRC_BALANCE");
+
         uint16 tokenID = S.getTokenID(token);
 
         // Check ETH value sent, can be larger than the expected withdraw fee
@@ -527,5 +530,20 @@ library ExchangeWithdrawals
                 uint96(amount)
             );
         }
+    }
+
+    function userHasEnoughLRCForWithdrawal(
+        ExchangeData.State storage S,
+        address token
+        )
+        private
+        view
+        returns(bool)
+    {
+        // We do not need user to hold any LRC to withdraw LRC
+        if (token == S.lrcAddress) return true;
+
+        uint minimumBalance = S.loopring.minLRCBalanceForUserToWithdraw();
+        return minimumBalance == 0 || ERC20(S.lrcAddress).balanceOf(msg.sender) >= minimumBalance;
     }
 }

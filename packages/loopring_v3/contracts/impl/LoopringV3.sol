@@ -59,7 +59,7 @@ contract LoopringV3 is ILoopringV3
             _protocolFeeVault,
             _blockVerifierAddress,
             _downtimeCostCalculator,
-            0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0, 0, 0, 0
         );
     }
 
@@ -122,7 +122,8 @@ contract LoopringV3 is ILoopringV3
         uint    _minExchangeStakeWithDataAvailability,
         uint    _minExchangeStakeWithoutDataAvailability,
         uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _withdrawalFineLRC,
+        uint    _minLRCBalanceForUserToWithdraw
         )
         external
         onlyOwner
@@ -138,7 +139,8 @@ contract LoopringV3 is ILoopringV3
             _minExchangeStakeWithDataAvailability,
             _minExchangeStakeWithoutDataAvailability,
             _revertFineLRC,
-            _withdrawalFineLRC
+            _withdrawalFineLRC,
+            _minLRCBalanceForUserToWithdraw
         );
     }
 
@@ -370,7 +372,8 @@ contract LoopringV3 is ILoopringV3
         uint    _minExchangeStakeWithDataAvailability,
         uint    _minExchangeStakeWithoutDataAvailability,
         uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _withdrawalFineLRC,
+        uint    _minLRCBalanceForUserToWithdraw
         )
         private
     {
@@ -389,6 +392,7 @@ contract LoopringV3 is ILoopringV3
         minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
         revertFineLRC = _revertFineLRC;
         withdrawalFineLRC = _withdrawalFineLRC;
+        minLRCBalanceForUserToWithdraw = _minLRCBalanceForUserToWithdraw;
 
         emit SettingsUpdated(now);
     }
