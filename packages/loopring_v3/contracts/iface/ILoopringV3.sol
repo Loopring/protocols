@@ -71,13 +71,13 @@ contract ILoopringV3 is ILoopring
     uint    public totalStake;
     address public blockVerifierAddress;
     address public downtimeCostCalculator;
+    uint    public maxWithdrawalFee;
     uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
     uint    public minExchangeStakeWithDataAvailability;
     uint    public minExchangeStakeWithoutDataAvailability;
     uint    public revertFineLRC;
-    uint    public maxWithdrawalFee;
     uint    public minLRCBalanceForUserToWithdraw;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;

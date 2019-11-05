@@ -188,6 +188,7 @@ export class ExchangeTestUtil {
       new BN(web3.utils.toWei("1000000", "ether")),
       new BN(web3.utils.toWei("50000", "ether")),
       new BN(web3.utils.toWei("10", "ether")),
+      new BN(web3.utils.toWei("0", "ether")),
       { from: this.testContext.deployer }
     );
 
