@@ -420,7 +420,10 @@ export class Simulator {
     }
 
     fillA.S = roundToFloatValue(fillA.S, Constants.Float24Encoding);
-    fillB.S = roundToFloatValue(fillB.S, Constants.Float24Encoding);
+    fillB.S = roundToFloatValue(
+      fillA.S.mul(ring.orderB.amountS).div(ring.orderB.amountB),
+      Constants.Float24Encoding
+    );
 
     // Validate
     this.validateOrder(

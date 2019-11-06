@@ -621,10 +621,11 @@ class State(object):
 
         # Saved in ring for tests
         ring.fFillS_A = toFloat(fillA.S, Float24Encoding)
-        ring.fFillS_B = toFloat(fillB.S, Float24Encoding)
+        roundFillS_A = fromFloat(ring.fFillS_A, Float24Encoding)
+        ring.fFillS_B = toFloat(roundFillS_A * int(ring.orderB.amountS) // int(ring.orderB.amountB), Float24Encoding)
 
-        fillA.S = roundToFloatValue(fillA.S, Float24Encoding)
-        fillB.S = roundToFloatValue(fillB.S, Float24Encoding)
+        fillA.S = fromFloat(ring.fFillS_A, Float24Encoding)
+        fillB.S = fromFloat(ring.fFillS_B, Float24Encoding)
         fillA.B = fillB.S
         fillB.B = fillA.S
 
