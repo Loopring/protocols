@@ -1217,7 +1217,7 @@ export class ExchangeTestUtil {
       ["-validate", filename],
       { stdio: doDebugLogging() ? "inherit" : "ignore" }
     );
-    assert(result.status === 0, "validate_block failed: " + filename);
+    assert(result.status === 0, "invalid block: " + filename);
   }
 
   public async commitBlock(

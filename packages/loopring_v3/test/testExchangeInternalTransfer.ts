@@ -1,4 +1,5 @@
 import BN = require("bn.js");
+import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("Exchange", (accounts: string[]) => {
@@ -271,13 +272,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
 
       // Commit the transfers
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      } catch {
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitInternalTransfers(exchangeID),
+        "invalid block"
+      );
     });
 
     it("insufficient balance (token, token != feeToken)", async () => {
@@ -304,13 +302,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
 
       // Commit the transfers
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      } catch {
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitInternalTransfers(exchangeID),
+        "invalid block"
+      );
     });
 
     it("insufficient balance (feeToken, token != feeToken)", async () => {
@@ -337,13 +332,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeID);
 
       // Commit the transfers
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      } catch {
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitInternalTransfers(exchangeID),
+        "invalid block"
+      );
     });
   }); // end of describe()
 }); // end of contract()

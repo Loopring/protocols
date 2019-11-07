@@ -1,5 +1,6 @@
 import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
+import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
 
@@ -65,9 +66,12 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.cancelOrder(ring.orderB, feeToken, feeAmount);
       await exchangeTestUtil.commitCancels(exchangeId);
 
-      await exchangeTestUtil.commitRings(exchangeId);
-
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeId),
+        "invalid block"
+      );
     });
 
     it("Cancel (orderToken == feeToken)", async () => {
@@ -107,9 +111,12 @@ contract("Exchange", (accounts: string[]) => {
       );
       await exchangeTestUtil.commitCancels(exchangeId);
 
-      await exchangeTestUtil.commitRings(exchangeId);
-
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeId),
+        "invalid block"
+      );
     });
 
     it("Cancel (owner == operator)", async () => {
@@ -151,9 +158,12 @@ contract("Exchange", (accounts: string[]) => {
       );
       await exchangeTestUtil.commitCancels(exchangeId);
 
-      await exchangeTestUtil.commitRings(exchangeId);
-
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeId),
+        "invalid block"
+      );
     });
 
     it("Reuse trade history slot that was cancelled", async () => {
@@ -269,9 +279,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitCancels(exchangeId);
 
       await exchangeTestUtil.sendRing(exchangeId, ringB);
-      await exchangeTestUtil.commitRings(exchangeId);
 
       await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeId),
+        "invalid block"
+      );
     });
 
     it("Cancel all orders from an account by changing the account's public key", async () => {
@@ -315,14 +329,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.commitDeposits(exchangeId);
 
       // Try to use the ring
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitRings(this.exchangeID);
-      } catch {
-        exchangeTestUtil.cancelPendingRings(this.exchangeID);
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeId),
+        "invalid block"
+      );
     });
   });
 });
