@@ -1320,7 +1320,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it.only("should not be able to increase a balance to > MAX_AMOUNT", async () => {
+    it("should not be able to increase a balance to > MAX_AMOUNT", async () => {
       const ring: RingInfo = {
         orderA: {
           tokenS: "GTO",
