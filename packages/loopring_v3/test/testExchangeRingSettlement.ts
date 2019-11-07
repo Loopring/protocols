@@ -1,5 +1,6 @@
 import BN = require("bn.js");
 import { Constants, Signature } from "loopringV3.js";
+import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, RingInfo } from "./types";
 
@@ -805,9 +806,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("No funds available", async () => {
@@ -835,9 +837,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("Insufficient funds available (buy order)", async () => {
@@ -998,9 +1001,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("allOrNone (Sell, unsuccessful)", async () => {
@@ -1030,9 +1034,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("Self-trading", async () => {
@@ -1103,21 +1108,21 @@ contract("Exchange", (accounts: string[]) => {
       await verify();
     });
 
-    it("fillAmountB rounding error > 1%", async () => {
+    it("fillAmountB rounding error > 0.1%", async () => {
       const ring: RingInfo = {
         orderA: {
           tokenS: "INDA",
           tokenB: "INDB",
-          amountS: new BN(20),
-          amountB: new BN(200),
+          amountS: new BN(200),
+          amountB: new BN(2000),
           buy: true
         },
         orderB: {
           tokenS: "INDB",
           tokenB: "INDA",
-          amountS: new BN(200),
-          amountB: new BN(20),
-          balanceS: new BN(199),
+          amountS: new BN(2000),
+          amountB: new BN(200),
+          balanceS: new BN(1999),
           buy: false
         },
         expected: {
@@ -1130,9 +1135,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("fillAmountB is 0 because of rounding error", async () => {
@@ -1160,9 +1166,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("operator == order owner", async () => {
@@ -1254,14 +1261,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitRings(exchangeID);
-      } catch {
-        exchangeTestUtil.cancelPendingRings(exchangeID);
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("tokenS == tokenB", async () => {
@@ -1284,14 +1287,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitRings(exchangeID);
-      } catch {
-        exchangeTestUtil.cancelPendingRings(exchangeID);
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("Wrong order signature", async () => {
@@ -1315,14 +1314,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitRings(exchangeID);
-      } catch {
-        exchangeTestUtil.cancelPendingRings(exchangeID);
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("should not be able to increase a balance to > MAX_AMOUNT", async () => {
@@ -1357,14 +1352,10 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      let receivedThrow = false;
-      try {
-        await exchangeTestUtil.commitRings(exchangeID);
-      } catch {
-        exchangeTestUtil.cancelPendingRings(exchangeID);
-        receivedThrow = true;
-      }
-      assert(receivedThrow, "did not receive expected invalid block error");
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("validUntil < now", async () => {
@@ -1392,9 +1383,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("validSince > now", async () => {
@@ -1422,9 +1414,10 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
-      await verify();
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("Multiple rings", async () => {
@@ -1588,14 +1581,18 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
-
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
-
       await verify();
+
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
 
     it("Trimmed OrderID (order.orderID > tradeHistory.orderID)", async () => {
@@ -1700,14 +1697,18 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA);
-      await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
-
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
-
       await verify();
+
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
+      await exchangeTestUtil.commitDeposits(exchangeID);
+      await expectThrow(
+        exchangeTestUtil.commitRings(exchangeID),
+        "invalid block"
+      );
     });
   });
 });
