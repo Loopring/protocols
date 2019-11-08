@@ -52,6 +52,7 @@ After Istanbul:
 
 Please use node v10.
 
+`npm install --no-optional` then
 `npm run build // first time` or `npm run compile` or `npm run watch`.
 
 ### Circuits
