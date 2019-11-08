@@ -36,7 +36,7 @@ contract LTIP {
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @dev LRCBalanceBasedAddressWhitelist will treat an address as being whitelisted
 ///      if and only if its LRC balance plus its outstanding balance in the
-///      Long-Term-Incentive-Plan is greater than an adjustable threshold.
+///      Long-Term-Incentive-Plan is no smaller than an adjustable threshold.
 contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     using MathUint for uint;
