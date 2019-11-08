@@ -23,22 +23,24 @@ import "../lib/MathUint.sol";
 import "../iface/IAddressWhitelist.sol";
 
 
-/// @title An Implementation of IAddressWhitelist.
-/// @author Daniel Wang  - <daniel@loopring.org>
-
 // See https://etherscan.io/address/0xc8fcc48d1454a83589169294470549a2e1713dec#code
 contract LTIP {
     struct Record {
         uint lrcAmount;
         uint timestamp;
     }
-
     mapping (address => Record) public records;
 }
 
+/// @title An Implementation of IAddressWhitelist.
+/// @author Daniel Wang  - <daniel@loopring.org>
+/// @dev LRCBalanceBasedAddressWhitelist will treat an address as being whitelisted
+///      if and only if its LRC balance plus its outstanding balance in the
+///      Long-Term-Incentive-Plan is greater than an adjustable threshold.
 contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     using MathUint for uint;
+
     address public constant LTIPAddr = 0xC8Fcc48D1454a83589169294470549A2e1713DeC;
     address public constant LRCToken = 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD;
 
@@ -91,5 +93,4 @@ contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
 
         return false;
     }
-
 }
