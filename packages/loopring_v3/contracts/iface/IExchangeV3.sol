@@ -18,6 +18,7 @@ pragma solidity ^0.5.11;
 
 import "../iface/IExchange.sol";
 
+import "../lib/OwnableWithDelegates.sol";
 
 /// @title IExchangeV3
 /// @dev Note that Claimable and RentrancyGuard are inherited here to
@@ -29,7 +30,7 @@ import "../iface/IExchange.sol";
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchangeV3 is IExchange
+contract IExchangeV3 is IExchange, OwnableWithDelegates
 {
     // -- Events --
     // We need to make sure all events defined in exchange/*.sol

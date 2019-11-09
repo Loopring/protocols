@@ -237,7 +237,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("registerToken")
         returns (uint16)
     {
         return state.registerToken(tokenAddress);
@@ -268,7 +268,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("disableTokenDeposit")
     {
         state.disableTokenDeposit(tokenAddress);
     }
@@ -278,7 +278,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("enableTokenDeposit")
     {
         state.enableTokenDeposit(tokenAddress);
     }
@@ -297,7 +297,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("withdrawExchangeStake")
         returns (uint)
     {
         return state.withdrawExchangeStake(recipient);
@@ -309,7 +309,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("withdrawTokenNotOwnedByUsers")
         returns(uint)
     {
         return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
@@ -321,7 +321,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("withdrawProtocolFeeStake")
     {
         state.loopring.withdrawProtocolFeeStake(state.id, recipient, amount);
     }
@@ -714,7 +714,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("setOperator")
         returns (address payable)
     {
         return state.setOperator(_operator);
@@ -725,7 +725,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("setAddressWhitelist")
         returns (address)
     {
         return state.setAddressWhitelist(_addressWhitelist);
@@ -739,7 +739,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("setFees")
     {
         state.setFees(
             _accountCreationFeeETH,
@@ -770,7 +770,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("startOrContinueMaintenanceMode")
     {
         state.startOrContinueMaintenanceMode(durationMinutes);
     }
@@ -778,7 +778,7 @@ contract ExchangeV3 is IExchangeV3
     function stopMaintenanceMode()
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("stopMaintenanceMode")
     {
         state.stopMaintenanceMode();
     }
@@ -820,7 +820,7 @@ contract ExchangeV3 is IExchangeV3
     function shutdown()
         external
         nonReentrant
-        onlyOwner
+        onlyOwnerOrDelegate("shutdown")
         returns (bool success)
     {
         require(!state.isInWithdrawalMode(), "INVALID_MODE");
