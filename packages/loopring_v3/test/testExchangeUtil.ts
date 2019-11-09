@@ -1597,10 +1597,14 @@ export class ExchangeTestUtil {
       if (batch.length === 0) {
         batch.push(blocks[i]);
       } else {
+        // Make sure the batch only contains blocks that use the same
+        // verification key. Also make sure the batch is small enough
+        // to stay within the Ethereum block gas limit.
         if (
           batch[0].blockType === blocks[i].blockType &&
           batch[0].blockSize === blocks[i].blockSize &&
-          batch[0].blockVersion === blocks[i].blockVersion
+          batch[0].blockVersion === blocks[i].blockVersion &&
+          batch.length < 16
         ) {
           batch.push(blocks[i]);
         } else {

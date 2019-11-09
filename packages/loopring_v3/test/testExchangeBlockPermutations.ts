@@ -9,8 +9,8 @@ contract("Exchange", (accounts: string[]) => {
 
   const createRandomRing = () => {
     // Make sure the ring is valid
-    const fillA = exchangeTestUtil.getRandomAmount();
-    const fillB = exchangeTestUtil.getRandomAmount();
+    const fillA = new BN(1).add(exchangeTestUtil.getRandomAmount());
+    const fillB = new BN(1).add(exchangeTestUtil.getRandomAmount());
     const ring: RingInfo = {
       orderA: {
         tokenS: "WETH",
