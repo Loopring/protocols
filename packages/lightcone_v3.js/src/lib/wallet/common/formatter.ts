@@ -23,6 +23,16 @@ export function toBuffer(mixed) {
 
 /**
  *
+ * @param num number|string (hex string must be with '0x' prefix)
+ * @param places number of zeros to pad
+ * @returns {Buffer}
+ */
+export function zeroPad(num, places) {
+  return toBuffer(String(num).padStart(places, '0'));
+}
+
+/**
+ *
  * @param mixed number | BigNumber |  BN  | Buffer | string
  * @returns {string}
  */
