@@ -16,23 +16,19 @@
 */
 pragma solidity ^0.5.11;
 
-
 import "./Ownable.sol";
 
-/// @title Ownable
-/// @author Brecht Devos - <brecht@loopring.org>
-/// @dev The Ownable contract has an owner address, and provides basic
-///      authorization control functions, this simplifies the implementation of
-///      "user permissions".
+
+/// @title OwnableWithDelegates
+/// @author Daniel Wang - <daniel@loopring.org>
+/// @dev The OwnableWithDelegates contract has an owner address and an optional
+///      deletate for any roles.
 contract OwnableWithDelegates is Ownable
 {
-
     mapping (string => address) public delegates;
 
     event DelegateUpdated(string role, address delegate);
 
-    /// @dev The OwnableWithDelegates constructor sets the original `owner` of the contract
-    ///      to the sender.
     constructor() Ownable() public {}
 
     /// @dev Throws if called by any account other than the owner or the delegate.
