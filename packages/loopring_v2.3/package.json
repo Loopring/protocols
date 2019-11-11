@@ -28,7 +28,7 @@
   "license": "ISC",
   "devDependencies": {
     "@types/bignumber.js": "^5.0.0",
-    "@types/bluebird": "3.5.28",
+    "@types/bluebird": "3.5.29",
     "@types/lodash": "^4.14.136",
     "@types/node": "12.12.6",
     "@types/request-promise-native": "^1.0.14",
