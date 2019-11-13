@@ -36,7 +36,8 @@ contract LTIP {
 /// @author Daniel Wang  - <daniel@loopring.org>
 /// @dev LRCBalanceBasedAddressWhitelist will treat an address as being whitelisted
 ///      if and only if its LRC balance plus its outstanding balance in the
-///      Long-Term-Incentive-Plan is no smaller than an adjustable threshold.
+///      Long-Term-Incentive-Plan is no smaller than an adjustable threshold AND
+///      its Ether balance is no smaller than an adjustable threshold.
 contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
 {
     using MathUint for uint;
@@ -45,19 +46,22 @@ contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
     address public constant LRCToken = 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD;
 
     uint public minLRCRequired = 0;
+    uint public minETHRequired = 0;
 
     constructor() Claimable() public {}
 
-    event MinLRCRequiredUpdated(uint value);
+    event SettingsUpdated(uint minLRCRequired, uint minETHRequired);
 
-    function setMinLRCRequired(
-        uint _minLRCRequired
+    function updateSettings(
+        uint _minLRCRequired,
+        uint _minETHRequired
         )
         external
         onlyOwner
     {
         minLRCRequired = _minLRCRequired;
-        emit MinLRCRequiredUpdated(minLRCRequired);
+        minETHRequired = _minETHRequired;
+        emit SettingsUpdated(minLRCRequired, minETHRequired);
     }
 
     function isAddressWhitelisted(
@@ -68,7 +72,7 @@ contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
         view
         returns (bool)
     {
-        return hasEnoughLRC(addr);
+        return addr.balance >= minETHRequired && hasEnoughLRC(addr);
     }
 
     function hasEnoughLRC(address addr)
