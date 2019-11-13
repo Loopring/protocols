@@ -1,7 +1,7 @@
 {
-  "name": "loopring_v3",
-  "version": "3.0.0",
-  "description": "Loopring DEX protocol version 3.0",
+  "name": "tokenbank_v1",
+  "version": "1.0.0",
+  "description": "TokenBank's Smart Wallet Contracts",
   "main": "index.js",
   "directories": {
     "test": "test"
@@ -32,7 +32,6 @@
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile",
     "sync-circuits": "cd ../../../protocol3-circuits/ && git fetch --all && git checkout master -q && cd - ",
-    "build": "npm run sync-circuits && ./install && make && npm run compile",
     "genabi": "./genAbi.sh",
     "ganache": "./ganache.sh",
     "migrate": "npm run transpile && truffle migrate --network live | tee -a mainnet.deployed",
