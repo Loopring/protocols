@@ -77,7 +77,7 @@ contract UniversalRegistry is IUniversalRegistry {
         IImplementationManager m = new ImplementationManager(owner, protocol, implementation);
         manager = address(m);
 
-        string memory version = ILoopring(protocol).version();
+        string memory version = loopring.version();
         require(versionMap[version] == address(0), "VERSION_REGISTERED");
         require(!protocolMap[protocol].registered, "PROTOCOL_REGISTERED");
 
