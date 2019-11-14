@@ -39,11 +39,11 @@ contract BaseModule is Module
         Wallet(wallet).removeModule(module);
     }
 
-    function bindGetter(address wallet, bytes4 func, address module)
+    function bindGetter(address wallet, bytes4 method, address module)
         external
         onlyWalletOwner(wallet)
     {
-        Wallet(wallet).bindGetter(func, module);
+        Wallet(wallet).bindGetter(method, module);
     }
 
     function transact(
