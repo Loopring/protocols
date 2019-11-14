@@ -34,7 +34,7 @@ contract Authorizable is Claimable
     );
 
     // The list of all authorized addresses
-    address[] authorizedAddresses;
+    address[] public authorizedAddresses;
 
     mapping (address => uint) private positionMap;
 

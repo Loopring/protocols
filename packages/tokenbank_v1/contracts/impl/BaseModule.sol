@@ -72,6 +72,7 @@ contract BaseModule is Module
         internal
         returns (bytes memory result)
     {
+        // Optimize for gas usage when data is large?
         return Wallet(wallet).transact(to, value, data);
     }
 }
