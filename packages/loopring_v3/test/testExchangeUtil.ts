@@ -300,7 +300,7 @@ export class ExchangeTestUtil {
         validSince: 0,
         validUntil: 2 ** 32 - 1,
         maxFeeBips: 0,
-        buy: true,
+        buy: false,
         label: 1,
 
         feeBips: 0,
@@ -319,7 +319,7 @@ export class ExchangeTestUtil {
         validSince: 0,
         validUntil: 2 ** 32 - 1,
         maxFeeBips: 0,
-        buy: true,
+        buy: false,
         label: 2,
 
         feeBips: 0,
