@@ -29,7 +29,7 @@ contract BaseWallet is Wallet, NamedAddressSet
 {
     string private constant MODULE = "__MODULE__";
 
-    mapping (bytes4  => address) internal methods;
+    mapping (bytes4  => address) internal getters;
 
     event Received(
         address indexed sender,
@@ -101,20 +101,20 @@ contract BaseWallet is Wallet, NamedAddressSet
         return getAddressesInSet(MODULE);
     }
 
-    function bindMethod(bytes4 _method, address _module)
+    function bindGetter(bytes4 _method, address _module)
         external
         onlyModule
     {
-        methods[_method] = _module;
-        emit MethodBinded(_method, _module);
+        getters[_method] = _module;
+        emit GetterBinded(_method, _module);
     }
 
-    function getMethodModule(bytes4 _method)
+    function getterModule(bytes4 _method)
         public
         view
         returns (address)
     {
-        return methods[_method];
+        return getters[_method];
     }
 
     function transact(
@@ -140,7 +140,7 @@ contract BaseWallet is Wallet, NamedAddressSet
 
     function() external payable
     {
-        address module = msg.data.length == 0 ? address(0) : methods[msg.sig];
+        address module = msg.data.length == 0 ? address(0) : getters[msg.sig];
 
         if(module == address(0)) {
             if (msg.value > 0) {
