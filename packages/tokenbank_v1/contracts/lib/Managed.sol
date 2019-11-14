@@ -49,10 +49,10 @@ contract Managed is NamedAddressSet
 
     function removeManager(address manager)
         public
-      onlyManager
+        onlyManager
     {
-      require(allowToBecomeEmpty || numAddressesInSet(MANAGER) > 1, "EMPTY_LIST_PROHIBITED");
-      require(allowSelfRemoval || msg.sender != manager, "SELF_REMOVAL_PROHIBITED");
-      removeAddressFromSet(MANAGER, manager);
+        require(allowToBecomeEmpty || numAddressesInSet(MANAGER) > 1, "EMPTY_LIST_PROHIBITED");
+        require(allowSelfRemoval || msg.sender != manager, "SELF_REMOVAL_PROHIBITED");
+        removeAddressFromSet(MANAGER, manager);
     }
 }

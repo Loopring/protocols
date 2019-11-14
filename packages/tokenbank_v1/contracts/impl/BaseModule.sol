@@ -36,8 +36,8 @@ contract BaseModule is Module
     }
 
     function init(address wallet)
-      external
-      onlyWallet(wallet)
+        external
+        onlyWallet(wallet)
     {
         emit Initialized(wallet);
     }
