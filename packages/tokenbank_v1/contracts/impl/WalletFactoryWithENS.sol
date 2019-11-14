@@ -26,7 +26,7 @@ import "./WalletFactory.sol";
 // https://github.com/argentlabs/argent-contracts
 
 
-contract ENSWalletFactory is WalletFactory, Module
+contract WalletFactoryWithENS is WalletFactory, Module
 {
     string private constant MANAGER = "__MANAGER__";
     address public walletImplementation;
