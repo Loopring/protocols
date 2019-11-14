@@ -17,7 +17,6 @@
 pragma solidity ^0.5.11;
 
 import "../DummyToken.sol";
-import "../../iface/IExchangeV3.sol";
 
 /// @author Brecht Devos - <brecht@loopring.org>
 contract TEST is DummyToken {
