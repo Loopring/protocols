@@ -1,5 +1,3 @@
-
-
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).

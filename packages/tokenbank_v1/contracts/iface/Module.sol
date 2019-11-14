@@ -1,5 +1,3 @@
-
-
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -19,6 +17,9 @@
 pragma solidity ^0.5.11;
 
 import "../lib/Ownable.sol";
+
+// The concept/design of this class is inspired by Argent's contract codebase:
+// https://github.com/argentlabs/argent-contracts
 
 
 contract Module

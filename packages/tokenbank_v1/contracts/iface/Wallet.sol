@@ -1,5 +1,3 @@
-
-
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -17,6 +15,9 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+
+// The concept/design of this class is inspired by Argent's contract codebase:
+// https://github.com/argentlabs/argent-contracts
 
 
 contract Wallet
