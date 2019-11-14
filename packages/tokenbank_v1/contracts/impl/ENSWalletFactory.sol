@@ -79,10 +79,6 @@ contract ENSWalletFactory is WalletFactory, Module
         )
         internal
     {
-        // claim reverse
-        // bytes memory data = abi.encodeWithSignature("claimWithResolver(address,address)", ensManager, ensResolver);
-        // Wallet(_wallet).transact(address(getENSReverseRegistrar()), 0, data);
-        // // register with ENS manager
-        // IENSManager(ensManager).register(_label, _wallet);
+        // TODO
     }
 }
