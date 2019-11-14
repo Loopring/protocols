@@ -25,6 +25,9 @@ contract Managed is NamedAddressSet
     bool   internal allowToBecomeEmpty = false;
     bool   internal allowSelfRemoval   = false;
 
+    event ManagerAdded  (address indexed manager);
+    event ManagerRemoved(address indexed manager);
+
     modifier onlyManager
     {
         require(isManager(msg.sender), "NOT_A_MANAGER");
@@ -43,6 +46,7 @@ contract Managed is NamedAddressSet
         onlyManager
     {
         addAddressToSet(MANAGER, manager);
+        emit ManagerAdded(manager);
     }
 
     function removeManager(address manager)
@@ -52,6 +56,7 @@ contract Managed is NamedAddressSet
         require(allowToBecomeEmpty || numAddressesInSet(MANAGER) > 1, "EMPTY_LIST_PROHIBITED");
         require(allowSelfRemoval || msg.sender != manager, "SELF_REMOVAL_PROHIBITED");
         removeAddressFromSet(MANAGER, manager);
+        emit ManagerRemoved(manager);
     }
 
     function isManager(address addr)

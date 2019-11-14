@@ -38,14 +38,17 @@ contract WalletFactory is Claimable, NamedAddressSet, Module
         address indexed owner
     );
 
+    event ManagerAdded  (address indexed manager);
+    event ManagerRemoved(address indexed manager);
+
     constructor(
         address _walletImplementation
         )
         public
         Claimable()
     {
-        addAddressToSet(MANAGER, msg.sender);
         walletImplementation = _walletImplementation;
+        addManager(owner);
     }
 
     modifier onlyManager
@@ -67,6 +70,7 @@ contract WalletFactory is Claimable, NamedAddressSet, Module
         onlyOwner
     {
         addAddressToSet(MANAGER, manager);
+        emit ManagerAdded(manager);
     }
 
     function removeManager(address manager)
@@ -74,6 +78,7 @@ contract WalletFactory is Claimable, NamedAddressSet, Module
         onlyOwner
     {
         removeAddressFromSet(MANAGER, manager);
+        emit ManagerRemoved(manager);
     }
 
     function createWallet(
