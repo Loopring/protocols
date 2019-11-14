@@ -49,14 +49,14 @@ contract WalletFactoryWithENS is WalletFactory, Module
     function createWallet(
         address   _owner,
         address[] calldata _modules,
-        string    calldata subdomain
+        string    calldata _subdomain
         )
         external
         payable
         onlyManager
         returns (address walletAddress)
     {
-        if (bytes(subdomain).length > 0) {
+        if (bytes(_subdomain).length > 0) {
             address[] memory extendedModules = new address[](_modules.length + 1);
             extendedModules[0] = address(this);
             for(uint i = 0; i < _modules.length; i++) {
@@ -65,7 +65,7 @@ contract WalletFactoryWithENS is WalletFactory, Module
             walletAddress = createWalletInternal(_owner, extendedModules);
 
             Wallet wallet = Wallet(walletAddress);
-            registerSubdomain(wallet, subdomain);
+            registerSubdomain(wallet, _subdomain);
 
             wallet.removeModule(address(this));
         } else {
