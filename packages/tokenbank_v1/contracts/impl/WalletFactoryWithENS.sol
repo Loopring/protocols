@@ -16,18 +16,17 @@
 */
 pragma solidity ^0.5.11;
 
+import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
-import "../lib/Claimable.sol";
-import "../lib/NamedAddressSet.sol";
-import "../lib/SimpleProxy.sol";
+import "./WalletFactory.sol";
 
 
 // The concept/design of this class is inspired by Argent's contract codebase:
 // https://github.com/argentlabs/argent-contracts
 
 
-contract WalletFactory is Claimable, NamedAddressSet
+contract WalletFactoryWithENS is WalletFactory, Module
 {
     string private constant MANAGER = "__MANAGER__";
     address public walletImplementation;
@@ -44,67 +43,42 @@ contract WalletFactory is Claimable, NamedAddressSet
         address _walletImplementation
         )
         public
-        Claimable()
-    {
-        walletImplementation = _walletImplementation;
-        addManager(owner);
-    }
+        WalletFactory(_walletImplementation) {}
 
-    modifier onlyManager
-    {
-        require(isManager(msg.sender), "NOT_A_MANAGER");
-        _;
-    }
-
-    function isManager(address addr)
-        public
-        view
-        returns (bool)
-    {
-        return isAddressInSet(MANAGER, addr);
-    }
-
-    function addManager(address manager)
-        public
-        onlyOwner
-    {
-        addAddressToSet(MANAGER, manager);
-        emit ManagerAdded(manager);
-    }
-
-    function removeManager(address manager)
-        public
-        onlyOwner
-    {
-        removeAddressFromSet(MANAGER, manager);
-        emit ManagerRemoved(manager);
-    }
 
     function createWallet(
         address   _owner,
-        address[] calldata _modules
+        address[] calldata _modules,
+        string    calldata _subdomain
         )
         external
         payable
         onlyManager
         returns (address walletAddress)
     {
-        return createWalletInternal(_owner, _modules);
+        if (bytes(_subdomain).length > 0) {
+            address[] memory extendedModules = new address[](_modules.length + 1);
+            extendedModules[0] = address(this);
+            for(uint i = 0; i < _modules.length; i++) {
+                extendedModules[i + 1] = _modules[i];
+            }
+            walletAddress = createWalletInternal(_owner, extendedModules);
+
+            Wallet wallet = Wallet(walletAddress);
+            registerSubdomain(wallet, _subdomain);
+
+            wallet.removeModule(address(this));
+        } else {
+            walletAddress = createWalletInternal(_owner, _modules);
+        }
     }
 
-
-    function createWalletInternal(
-        address   _owner,
-        address[] memory _modules
+    function registerSubdomain(
+        Wallet _wallet,
+        string  memory _subdomain
         )
         internal
-        returns (address walletAddress)
     {
-        SimpleProxy proxy = new SimpleProxy(walletImplementation);
-        walletAddress = address(proxy);
-        Wallet wallet = Wallet(walletAddress);
-
-        wallet.init(_owner, _modules);
-        emit WalletCreated(walletAddress, _owner);
+        // TODO
     }
 }
