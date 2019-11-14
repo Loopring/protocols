@@ -21,6 +21,7 @@ pragma solidity ^0.5.11;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract NamedAddressSet
 {
+    // TODO(daniel): implement this contract.
     function addAddressToSet(string memory name, address addr) internal;
     function removeAddressFromSet(string memory name, address addr) internal;
     function isAddressInSet(string memory name, address addr) internal view returns (bool);
