@@ -26,7 +26,7 @@ contract Wallet
 
     event ModuleAdded   (address indexed module);
     event ModuleRemoved (address indexed module);
-    event MethodBinded  (bytes4  indexed method, address indexed module);
+    event GetterBinded  (bytes4  indexed method, address indexed module);
 
     event Initialized(address indexed owner);
 
@@ -43,8 +43,8 @@ contract Wallet
     function removeModule(address _module) external;
     function getModules() public view returns (address[] memory);
 
-    function bindMethod(bytes4 _method, address _module) external;
-    function getMethodModule(bytes4 _method) public view returns (address);
+    function bindGetter(bytes4 _method, address _module) external;
+    function getterModule(bytes4 _method) public view returns (address);
 
     function transact(
         address _to,

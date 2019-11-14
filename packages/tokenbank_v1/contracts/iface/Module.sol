@@ -31,5 +31,5 @@ contract Module
     // The following methods should be only callable by wallet's owners.
     function addModule    (address wallet, address module) external;
     function removeModule (address wallet, address module) external;
-    function bindMethod   (address wallet, bytes4  method, address module) external;
+    function bindGetter   (address wallet, bytes4  method, address module) external;
 }
