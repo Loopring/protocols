@@ -83,10 +83,10 @@ contract WalletFactory is Claimable, NamedAddressSet, Module
         external
         payable
         onlyManager
-        returns (address payable walletAddress)
+        returns (address walletAddress)
     {
         SimpleProxy proxy = new SimpleProxy(walletImplementation);
-        walletAddress = address(uint160(address(proxy)));
+        walletAddress = address(proxy);
         Wallet wallet = Wallet(walletAddress);
 
         wallet.init(_owner, _modules);
