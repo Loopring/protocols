@@ -27,6 +27,8 @@ contract Wallet
     event ModuleRemoved (address indexed module);
     event MethodBinded  (bytes4  indexed method, address indexed module);
 
+    event Initialized(address indexed owner);
+
     event Transacted(
         address indexed module,
         address indexed to,

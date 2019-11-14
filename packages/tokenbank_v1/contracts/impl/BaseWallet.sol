@@ -60,6 +60,8 @@ contract BaseWallet is Wallet, NamedAddressSet
         require(_modules.length > 0, "EMPTY_MODULES");
 
         owner = _owner;
+        emit Initialized(owner);
+
         for(uint i = 0; i < _modules.length; i++) {
             address module = _modules[i];
             require(module != address(0), "NULL_MODULE");
@@ -67,6 +69,8 @@ contract BaseWallet is Wallet, NamedAddressSet
             Module(module).init(address(this));
             emit ModuleAdded(module);
         }
+
+
     }
 
     function addModule(address _module)
