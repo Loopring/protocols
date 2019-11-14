@@ -27,7 +27,7 @@ contract Managed is NamedAddressSet
 
     modifier onlyManager
     {
-        require(isAddressInSet(MANAGER, msg.sender), "NOT_A_MANAGER");
+        require(isManager(msg.sender), "NOT_A_MANAGER");
         _;
     }
 
@@ -52,5 +52,13 @@ contract Managed is NamedAddressSet
         require(allowToBecomeEmpty || numAddressesInSet(MANAGER) > 1, "EMPTY_LIST_PROHIBITED");
         require(allowSelfRemoval || msg.sender != manager, "SELF_REMOVAL_PROHIBITED");
         removeAddressFromSet(MANAGER, manager);
+    }
+
+    function isManager(address addr)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(MANAGER, addr);
     }
 }

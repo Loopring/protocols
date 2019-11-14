@@ -25,25 +25,6 @@ import "../iface/Module.sol";
 
 contract BaseModule is Module
 {
-    modifier onlyWallet(address wallet)
-    {
-        require(msg.sender == wallet, "NOT_FROM_WALLET");
-        _;
-    }
-
-    modifier onlyWalletOwner(address wallet)
-    {
-        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
-        _;
-    }
-
-    function init(address wallet)
-        external
-        onlyWallet(wallet)
-    {
-        emit Initialized(wallet);
-    }
-
     function addModule(address wallet, address module)
         external
         onlyWalletOwner(wallet)

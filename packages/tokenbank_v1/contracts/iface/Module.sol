@@ -18,6 +18,8 @@ pragma solidity ^0.5.11;
 
 import "../lib/Ownable.sol";
 
+import "./Wallet.sol";
+
 // The concept/design of this class is inspired by Argent's contract codebase:
 // https://github.com/argentlabs/argent-contracts
 
@@ -26,10 +28,22 @@ contract Module
 {
     event Initialized(address indexed wallet);
 
-    function init(address wallet) external;
+    modifier onlyWallet(address wallet)
+    {
+        require(msg.sender == wallet, "NOT_FROM_WALLET");
+        _;
+    }
 
-    // The following methods should be only callable by wallet's owners.
-    function addModule    (address wallet, address module) external;
-    function removeModule (address wallet, address module) external;
-    function bindMethod   (address wallet, bytes4  method, address module) external;
+    modifier onlyWalletOwner(address wallet)
+    {
+        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+        _;
+    }
+
+    function init(address wallet)
+        external
+        onlyWallet(wallet)
+    {
+        emit Initialized(wallet);
+    }
 }
