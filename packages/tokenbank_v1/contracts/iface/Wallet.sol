@@ -21,10 +21,11 @@ pragma solidity ^0.5.11;
 
 contract Wallet
 {
-    address   public owner;
-    address[] public modules;
-    mapping (address => uint)    public moduleIdx;
-    mapping (bytes4  => address) public functions;
+    address public owner;
+
+    event ModuleAdded   (address indexed module);
+    event ModuleRemoved (address indexed module);
+    event MethodBinded  (bytes4  indexed method, address indexed module);
 
     event Transacted(
         address indexed module,
@@ -33,19 +34,20 @@ contract Wallet
         bytes           data
     );
 
-    function initialize(address _owner, address[] calldata _modules ) external;
+    function init(address _owner, address[] calldata _modules) external;
 
     function addModule(address _module) external;
-    function delModule(address _module) external;
+    function removeModule(address _module) external;
+    function getModules() public view returns (address[] memory);
 
-    function addFunction(bytes4 method, address module) external;
-    function delFunction(bytes4 method) external;
+    function bindMethod(bytes4 _method, address _module) external;
+    function getMethodModule(bytes4 _method) public view returns (address);
 
     function transact(
-        address to,
-        uint    value,
-        bytes   calldata data
+        address _to,
+        uint    _value,
+        bytes   calldata _data
         )
         external
-        returns (bytes memory result);
+        returns (bytes memory);
 }

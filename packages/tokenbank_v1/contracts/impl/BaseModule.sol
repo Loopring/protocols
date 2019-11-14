@@ -23,22 +23,23 @@ import "../iface/Module.sol";
 
 contract BaseModule is Module
 {
-    modifier onlyWallet(address _wallet)
+    modifier onlyWallet(address wallet)
     {
-        require(msg.sender == _wallet, "NOT_FROM_SAME_WALLET");
+        require(msg.sender == wallet, "NOT_FROM_WALLET");
         _;
     }
 
-    modifier onlyWalletOwner(address _wallet)
+    modifier onlyWalletOwner(address wallet)
     {
-        require(msg.sender == Wallet(_wallet).owner(), "NOT_FROM_WALLET_OWNER");
+        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
 
-    function initialize(address wallet)
+    function init(address wallet)
       external
       onlyWallet(wallet)
     {
+        emit Initialized(wallet);
     }
 
     function addModule(address wallet, address module)
@@ -48,25 +49,18 @@ contract BaseModule is Module
         Wallet(wallet).addModule(module);
     }
 
-    function delModule(address wallet, address module)
+    function removeModule(address wallet, address module)
         external
         onlyWalletOwner(wallet)
     {
-        Wallet(wallet).delModule(module);
+        Wallet(wallet).removeModule(module);
     }
 
-    function addFunction(address wallet, bytes4 func, address module)
+    function bindMethod(address wallet, bytes4 func, address module)
         external
         onlyWalletOwner(wallet)
     {
-        Wallet(wallet).addFunction(func, module);
-    }
-
-    function delFunction(address wallet, bytes4 func)
-        external
-        onlyWalletOwner(wallet)
-    {
-        Wallet(wallet).delFunction(func);
+        Wallet(wallet).bindMethod(func, module);
     }
 
     function transact(

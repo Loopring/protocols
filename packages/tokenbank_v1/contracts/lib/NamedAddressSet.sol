@@ -1,5 +1,3 @@
-
-
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -18,17 +16,14 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Ownable.sol";
 
-
-contract Module
+/// @title Managed
+/// @author Daniel Wang - <daniel@loopring.org>
+contract NamedAddressSet
 {
-    event Initialized(address indexed wallet);
-
-    function init(address wallet) external;
-
-    // The following methods should be only callable by wallet's owners.
-    function addModule    (address wallet, address module) external;
-    function removeModule (address wallet, address module) external;
-    function bindMethod   (address wallet, bytes4  method, address module) external;
+    function addAddressToSet(string memory name, address addr) internal;
+    function removeAddressFromSet(string memory name, address addr) internal;
+    function isAddressInSet(string memory name, address addr) internal view returns (bool);
+    function numAddressesInSet(string memory name) internal view returns (uint);
+    function getAddressesInSet(string memory name) internal view returns (address[] storage);
 }

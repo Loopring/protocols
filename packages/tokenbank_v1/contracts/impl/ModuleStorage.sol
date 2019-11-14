@@ -18,17 +18,14 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Ownable.sol";
+import "../lib/Managed.sol";
 
 
-contract Module
+contract ModuleStorage is Managed
 {
-    event Initialized(address indexed wallet);
-
-    function init(address wallet) external;
-
-    // The following methods should be only callable by wallet's owners.
-    function addModule    (address wallet, address module) external;
-    function removeModule (address wallet, address module) external;
-    function bindMethod   (address wallet, bytes4  method, address module) external;
+    constructor(address manager) public
+    {
+        address _manager = manager == address(0) ? msg.sender : manager;
+        initManager(_manager);
+    }
 }
