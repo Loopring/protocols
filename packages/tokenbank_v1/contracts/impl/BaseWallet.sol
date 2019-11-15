@@ -70,8 +70,6 @@ contract BaseWallet is Wallet, NamedAddressSet
             Module(module).init(address(this));
             emit ModuleAdded(module);
         }
-
-
     }
 
     function addModule(address _module)
@@ -99,6 +97,14 @@ contract BaseWallet is Wallet, NamedAddressSet
         returns (address[] memory)
     {
         return getAddressesInSet(MODULE);
+    }
+
+    function hasModule(address _module)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(MODULE, _module);
     }
 
     function bindGetter(bytes4 _method, address _module)
