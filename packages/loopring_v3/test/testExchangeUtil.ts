@@ -76,7 +76,7 @@ export class ExchangeTestUtil {
 
   public explorer: Explorer;
 
-  public ringSettlementBlockSizes = [1, 2, 4];
+  public ringSettlementBlockSizes = [1, 2, 4, 8];
   public depositBlockSizes = [4, 8];
   public onchainWithdrawalBlockSizes = [4, 8];
   public offchainWithdrawalBlockSizes = [4, 8];
@@ -137,6 +137,7 @@ export class ExchangeTestUtil {
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
+  public dummyAccountOrderId: number;
 
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
@@ -169,7 +170,6 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
-
     this.explorer = new Explorer();
     await this.explorer.initialize(web3, this.universalRegistry.address);
 
@@ -272,15 +272,26 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(
       exchangeID,
-      this.testContext.deployer,
+      this.testContext.dummyAccount,
       keyPair.secretKey,
       keyPair.publicKeyX,
       keyPair.publicKeyY,
       Constants.zeroAddress,
-      new BN(1)
+      new BN(100)
+    );
+    // give dummy account few LRC
+    await this.deposit(
+      exchangeID,
+      this.testContext.dummyAccount,
+      keyPair.secretKey,
+      keyPair.publicKeyX,
+      keyPair.publicKeyY,
+      "LRC",
+      new BN(100)
     );
     this.dummyAccountId = depositInfo.accountID;
     this.dummyAccountKeyPair = keyPair;
+    this.dummyAccountOrderId = 0;
 
     this.operators[exchangeID] = await this.createOperator(
       exchangeID,
@@ -766,7 +777,6 @@ export class ExchangeTestUtil {
       caller,
       Constants.zeroAddress
     );
-
     const tx = await contract.updateAccountAndDeposit(
       new BN(publicKeyX),
       new BN(publicKeyY),
@@ -2346,16 +2356,18 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
+          const orderAID = this.dummyAccountOrderId++;
+          const orderBID = this.dummyAccountOrderId++;
           const dummyRing: RingInfo = {
             orderA: {
               exchangeID,
-              orderID: 0,
+              orderID: orderAID,
               accountID: this.dummyAccountId,
               tokenIdS: 0,
-              tokenIdB: 1,
+              tokenIdB: 2,
               allOrNone: false,
               validSince: 0,
-              validUntil: 0,
+              validUntil: 0xffffffff,
               maxFeeBips: 0,
               buy: true,
               label: 1,
@@ -2368,13 +2380,13 @@ export class ExchangeTestUtil {
             },
             orderB: {
               exchangeID,
-              orderID: 0,
+              orderID: orderBID,
               accountID: this.dummyAccountId,
-              tokenIdS: 1,
+              tokenIdS: 2,
               tokenIdB: 0,
               allOrNone: false,
               validSince: 0,
-              validUntil: 0,
+              validUntil: 0xffffffff,
               maxFeeBips: 0,
               buy: true,
               label: 2,
@@ -4407,7 +4419,8 @@ export class ExchangeTestUtil {
     const deployer = accounts[0];
     const stateOwners = accounts.slice(1, 5);
     const operators = accounts.slice(5, 10);
-    const orderOwners = accounts.slice(10, 20);
+    const orderOwners = accounts.slice(10, 19);
+    const dummyAccount = accounts.slice(19, 20)[0];
     const wallets = accounts.slice(20, 30);
     const ringMatchers = accounts.slice(30, 40);
     const feeRecipients = accounts.slice(40, 50);
@@ -4417,6 +4430,7 @@ export class ExchangeTestUtil {
       stateOwners,
       operators,
       orderOwners,
+      dummyAccount,
       wallets,
       ringMatchers,
       feeRecipients,

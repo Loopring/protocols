@@ -3,6 +3,7 @@ export class ExchangeTestContext {
   public stateOwners: string[];
   public operators: string[];
   public orderOwners: string[];
+  public dummyAccount: string;
   public wallets: string[];
   public ringMatchers: string[];
   public feeRecipients: string[];
@@ -18,6 +19,7 @@ export class ExchangeTestContext {
     stateOwners: string[],
     operators: string[],
     orderOwners: string[],
+    dummyAccount: string,
     wallets: string[],
     ringMatchers: string[],
     feeRecipients: string[],
@@ -30,6 +32,7 @@ export class ExchangeTestContext {
     this.deployer = deployer;
     (this.stateOwners = stateOwners), (this.operators = operators);
     this.orderOwners = orderOwners;
+    this.dummyAccount = dummyAccount;
     this.wallets = wallets;
     this.ringMatchers = ringMatchers;
     this.feeRecipients = feeRecipients;
