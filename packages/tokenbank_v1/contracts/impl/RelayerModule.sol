@@ -36,33 +36,26 @@ contract RelayerModule is BaseModule
     );
 
 
-    /// @dev Checks if the relayed transaction is unique.
+    /// @dev Checks if the relayed transaction is unique and save to history.
     /// @param wallet The target wallet.
+    /// @param nonce The nonce
     /// @param signHash The signed hash of the transaction
-    function saveExecutedHash(
+    function saveExecuted(
         address wallet,
+        uint    nonce,
         bytes32 signHash
         )
         internal
     {
-        require(!wallets[wallet].executedHash[signHash], "DUPLICIATE_SIGN_HASH");
-        wallets[wallet].executedHash[signHash] = true;
-    }
-
-    /// @dev Checks that a nonce has the correct format and is valid.
-    /// It must be constructed as nonce = {block number}{timestamp} where each component is 16 bytes.
-    /// @param wallet The target wallet.
-    /// @param nonce The nonce
-    function updateNonce(
-        address wallet,
-        uint    nonce
-        )
-        internal
-    {
-        require(nonce <= wallets[wallet].nonce, "NONCE_TOO_SMALL");
-        uint nonceBlock = (nonce & 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >> 128;
-        require(nonceBlock <= block.number + BLOCK_BOUND, "NONCE_TOO_LARGE");
-        wallets[wallet].nonce = nonce;
+        if (nonce == 0) {
+            require(!wallets[wallet].executedHash[signHash], "DUPLICIATE_SIGN_HASH");
+            wallets[wallet].executedHash[signHash] = true;
+        } else {
+            require(nonce <= wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            uint nonceBlock = (nonce & 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >> 128;
+            require(nonceBlock <= block.number + BLOCK_BOUND, "NONCE_TOO_LARGE");
+            wallets[wallet].nonce = nonce;
+        }
     }
 
     function lastNonce(address wallet)
