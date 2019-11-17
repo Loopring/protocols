@@ -29,7 +29,7 @@ import "../lib/NamedAddressSet.sol";
 contract BaseWallet is Wallet, NamedAddressSet
 {
     string private constant MODULE = "__MODULE__";
-    bytes4 private constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
+    string private constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     mapping (bytes4  => address) internal getters;
 
@@ -125,56 +125,72 @@ contract BaseWallet is Wallet, NamedAddressSet
         return getters[_method];
     }
 
-    function tokenBalance(address _token)
+    function tokenBalance(address token)
         public
         view
         returns (uint)
     {
-        if (_token == address(0)) {
+        if (token == address(0)) {
             return address(this).balance;
         } else {
-            return ERC20(_token).balanceOf(address(this));
+            return ERC20(token).balanceOf(address(this));
         }
     }
 
     function transferToken(
-        address _to,
-        uint    _value,
-        address _token
+        address to,
+        uint    value,
+        address token
         )
         external
         onlyModule
         returns (bool)
     {
-        if (_token == address(0)) {
-            return address(uint160(_to)).send(_value);
+        bytes memory result;
+        if (token == address(0)) {
+            result = transactInternal(to, value, "");
         } else {
-            return ERC20(_token).transfer(_to, _value);
+            bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER, to, value);
+            result = transactInternal(token, 0, data);
         }
+        // QUESTION? how to read the result as a bool?
+        return false;
     }
 
     function transact(
-        address _to,
-        uint    _value,
-        bytes   calldata _data
+        address to,
+        uint    value,
+        bytes   calldata data
         )
         external
         onlyModule
-        returns (bytes memory _result)
+        returns (bytes memory result)
+    {
+        return transactInternal(to, value, data);
+    }
+
+    function transactInternal(
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        private
+        returns (bytes memory result)
     {
         bool success;
-        // solium-disable-next-line security/no-call-value
-        (success, _result) = _to.call.value(_value)(_data);
-        if(!success) {
+        (success, result) = to.call.value(value)(data);
+        if (!success) {
             assembly {
                 returndatacopy(0, 0, returndatasize)
                 revert(0, returndatasize)
             }
         }
-        emit Transacted(msg.sender, _to, _value, _data);
+        emit Transacted(msg.sender, to, value, data);
     }
 
-    function() external payable
+    function()
+        external
+        payable
     {
         address module = msg.data.length == 0 ? address(0) : getters[msg.sig];
 

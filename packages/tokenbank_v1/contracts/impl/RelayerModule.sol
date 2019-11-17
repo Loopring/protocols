@@ -17,11 +17,15 @@
 pragma solidity ^0.5.11;
 
 import "./BaseModule.sol";
+
 import "../iface/Wallet.sol";
+
+import "../lib/MathUint.sol";
 
 
 contract RelayerModule is BaseModule
 {
+    using MathUint for uint;
     uint constant public BLOCK_BOUND = 10000;
 
     struct WalletState {
@@ -84,10 +88,8 @@ contract RelayerModule is BaseModule
         if (gasPrice > 0) {
             uint gasSpent = startGas - gasleft();
             require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
-
-            uint fee = gasSpent * gasPrice;
             require(
-                Wallet(wallet).transferToken(msg.sender, fee, gasToken),
+                Wallet(wallet).transferToken(msg.sender, gasSpent.mul(gasPrice), gasToken),
                 "OUT_OF_GAS"
             );
         }
@@ -104,7 +106,7 @@ contract RelayerModule is BaseModule
     }
 
     function extractWalletAddress(bytes memory data)
-        public
+        internal
         pure
         returns (address wallet)
     {
@@ -127,7 +129,7 @@ contract RelayerModule is BaseModule
         address gasToken,
         bytes   memory extraHash
         )
-        public
+        internal
         pure
         returns (bytes32)
     {
@@ -149,8 +151,6 @@ contract RelayerModule is BaseModule
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
-
-
     /// @dev   Recovers the signer at a given index from a list of concatenated signatures.
     /// @param signHash The signed hash
     /// @param signatures The concatenated signatures.
@@ -160,7 +160,7 @@ contract RelayerModule is BaseModule
         bytes memory signatures,
         uint         index
         )
-        public
+        internal
         pure
         returns (address)
     {
@@ -180,7 +180,7 @@ contract RelayerModule is BaseModule
     }
 
     function extractMethod(bytes memory data)
-        public
+        internal
         pure
         returns (bytes4 method)
     {
