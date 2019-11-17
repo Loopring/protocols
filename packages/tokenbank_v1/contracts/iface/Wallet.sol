@@ -44,8 +44,8 @@ contract Wallet
     function getModules() public view returns (address[] memory);
     function hasModule(address _module) public view returns (bool);
 
-    function bindReadonlyMethods(bytes4 _method, address _module) external;
-    function getterModule(bytes4 _method) public view returns (address);
+    function bindStaticMethod(bytes4 _method, address _module) external;
+    function staticMethodModule(bytes4 _method) public view returns (address);
 
     function transact(
         address _to,
