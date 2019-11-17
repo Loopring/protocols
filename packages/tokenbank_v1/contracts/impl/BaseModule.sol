@@ -19,14 +19,17 @@ pragma solidity ^0.5.11;
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
 
+import "../lib/ReentrancyGuard.sol";
+
 // The concept/design of this class is inspired by Argent's contract codebase:
 // https://github.com/argentlabs/argent-contracts
 
 
-contract BaseModule is Module
+contract BaseModule is Module, ReentrancyGuard
 {
     function addModule(address wallet, address module)
         external
+        nonReentrant
         onlyWalletOwner(wallet)
     {
         Wallet(wallet).addModule(module);
@@ -34,6 +37,7 @@ contract BaseModule is Module
 
     function removeModule(address wallet, address module)
         external
+        nonReentrant
         onlyWalletOwner(wallet)
     {
         Wallet(wallet).removeModule(module);
@@ -41,6 +45,7 @@ contract BaseModule is Module
 
     function bindStaticMethod(address wallet, bytes4 method, address module)
         external
+        nonReentrant
         onlyWalletOwner(wallet)
     {
         Wallet(wallet).bindStaticMethod(method, module);

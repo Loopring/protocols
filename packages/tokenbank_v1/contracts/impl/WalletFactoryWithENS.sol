@@ -45,7 +45,6 @@ contract WalletFactoryWithENS is WalletFactory, Module
         public
         WalletFactory(_walletImplementation) {}
 
-
     function createWallet(
         address   _owner,
         address[] calldata _modules,
@@ -54,6 +53,7 @@ contract WalletFactoryWithENS is WalletFactory, Module
         external
         payable
         onlyManager
+        nonReentrant
         returns (address walletAddress)
     {
         if (bytes(_subdomain).length > 0) {

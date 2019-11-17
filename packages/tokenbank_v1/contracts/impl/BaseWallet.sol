@@ -21,12 +21,13 @@ import "../iface/Module.sol";
 
 import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
+import "../lib/ReentrancyGuard.sol";
 
 // The concept/design of this class is inspired by Argent's contract codebase:
 // https://github.com/argentlabs/argent-contracts
 
 
-contract BaseWallet is Wallet, NamedAddressSet
+contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 {
     string private constant MODULE = "__MODULE__";
     string private constant ERC20_TRANSFER = "transfer(address,uint256)";
@@ -56,7 +57,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         address[] calldata _modules
         )
         external
-        // nonReentry
+        nonReentrant
     {
         require(owner == address(0) && numAddressesInSet(MODULE) == 0, "INITIALIZED_ALREADY");
         require(_owner != address(0), "ZERO_ADDRESS");
@@ -77,6 +78,7 @@ contract BaseWallet is Wallet, NamedAddressSet
     function addModule(address _module)
         external
         onlyModule
+        nonReentrant
     {
         require(_module != address(0), "NULL_MODULE");
         addAddressToSet(MODULE, _module);
@@ -87,6 +89,7 @@ contract BaseWallet is Wallet, NamedAddressSet
     function removeModule(address _module)
         external
         onlyModule
+        nonReentrant
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
         removeAddressFromSet(MODULE, _module);
@@ -112,6 +115,7 @@ contract BaseWallet is Wallet, NamedAddressSet
     function bindStaticMethod(bytes4 _method, address _module)
         external
         onlyModule
+        nonReentrant
     {
         getters[_method] = _module;
         emit GetterBinded(_method, _module);
@@ -144,6 +148,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         )
         external
         onlyModule
+        nonReentrant
         returns (bool success)
     {
         bytes memory result;
@@ -171,6 +176,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         )
         external
         onlyModule
+        nonReentrant
         returns (bytes memory result)
     {
         return transactInternal(to, value, data);

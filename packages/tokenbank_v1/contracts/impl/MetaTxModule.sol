@@ -60,6 +60,7 @@ contract MetaTxModule is BaseModule
         bytes   calldata signatures
         )
         external
+        nonReentrant
     {
         uint startGas = gasleft();
         require(startGas >= gasLimit);

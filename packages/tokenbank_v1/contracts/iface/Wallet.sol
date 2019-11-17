@@ -16,10 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
-
-
+/// @dev Interface for smart wallets.
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract Wallet
 {
     address public owner;
@@ -41,6 +41,7 @@ contract Wallet
 
     function addModule(address _module) external;
     function removeModule(address _module) external;
+
     function getModules() public view returns (address[] memory);
     function hasModule(address _module) public view returns (bool);
 
@@ -53,17 +54,17 @@ contract Wallet
         returns (uint);
 
     function transferToken(
-        address _to,
-        uint    _value,
-        address _token
+        address to,
+        uint    value,
+        address token
         )
         external
         returns (bool);
 
     function transact(
-        address _to,
-        uint    _value,
-        bytes   calldata _data
+        address to,
+        uint    value,
+        bytes   calldata data
         )
         external
         returns (bytes memory);

@@ -20,10 +20,13 @@ import "../lib/Ownable.sol";
 
 import "./Wallet.sol";
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
 
-
+/// @dev Base contract for all smart wallet modules.
+///      Each module must implement the `init` method. It will be called when
+///      the module is added to the given wallet.
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract Module
 {
     event Initialized(address indexed wallet);
@@ -40,6 +43,8 @@ contract Module
         _;
     }
 
+    /// @dev Initializes the module for the given wallet address.
+    ///      This function must throw in case of error.
     function init(address wallet)
         external
         onlyWallet(wallet)

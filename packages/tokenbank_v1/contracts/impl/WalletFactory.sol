@@ -20,6 +20,7 @@ import "../iface/Wallet.sol";
 
 import "../lib/Claimable.sol";
 import "../lib/NamedAddressSet.sol";
+import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 
 
@@ -27,7 +28,7 @@ import "../lib/SimpleProxy.sol";
 // https://github.com/argentlabs/argent-contracts
 
 
-contract WalletFactory is Claimable, NamedAddressSet
+contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
 {
     string private constant MANAGER = "__MANAGER__";
     address public walletImplementation;
@@ -87,11 +88,11 @@ contract WalletFactory is Claimable, NamedAddressSet
         external
         payable
         onlyManager
+        nonReentrant
         returns (address walletAddress)
     {
         return createWalletInternal(_owner, _modules);
     }
-
 
     function createWalletInternal(
         address   _owner,
