@@ -137,6 +137,7 @@ export class ExchangeTestUtil {
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
+  public dummyRing: RingInfo;
 
   public tokenAddressToIDMap = new Map<string, number>();
   public tokenIDToAddressMap = new Map<number, string>();
@@ -272,7 +273,7 @@ export class ExchangeTestUtil {
     const keyPair = this.getKeyPairEDDSA();
     const depositInfo = await this.deposit(
       exchangeID,
-      this.testContext.deployer,
+      this.testContext.ringMatchers[0],
       keyPair.secretKey,
       keyPair.publicKeyX,
       keyPair.publicKeyY,
@@ -285,6 +286,60 @@ export class ExchangeTestUtil {
     this.operators[exchangeID] = await this.createOperator(
       exchangeID,
       this.testContext.operators[0]
+    );
+
+    // Create a ring that can be reused 2**96 times if filled wit 1 wei/1 wei
+    this.dummyRing = {
+      orderA: {
+        exchangeID,
+        orderID: 0,
+        accountID: this.dummyAccountId,
+        tokenIdS: this.getTokenIdFromNameOrAddress("ETH"),
+        tokenIdB: this.getTokenIdFromNameOrAddress("LRC"),
+        allOrNone: false,
+        validSince: 0,
+        validUntil: 2 ** 32 - 1,
+        maxFeeBips: 0,
+        buy: false,
+        label: 1,
+
+        feeBips: 0,
+        rebateBips: 0,
+
+        amountS: Constants.MAX_AMOUNT,
+        amountB: Constants.MAX_AMOUNT
+      },
+      orderB: {
+        exchangeID,
+        orderID: 0,
+        accountID: this.dummyAccountId,
+        tokenIdS: this.getTokenIdFromNameOrAddress("LRC"),
+        tokenIdB: this.getTokenIdFromNameOrAddress("ETH"),
+        allOrNone: false,
+        validSince: 0,
+        validUntil: 2 ** 32 - 1,
+        maxFeeBips: 0,
+        buy: false,
+        label: 2,
+
+        feeBips: 0,
+        rebateBips: 0,
+
+        amountS: Constants.MAX_AMOUNT,
+        amountB: Constants.MAX_AMOUNT
+      },
+      tokenID: 0,
+      fee: new BN(0)
+    };
+    this.signOrder(this.dummyRing.orderA);
+    this.signOrder(this.dummyRing.orderB);
+
+    // Deposit 1 wei ETH and 1 wei LRC to the dummy account so the ring can be filled with 1 wei
+    await this.depositTo(this.dummyAccountId, Constants.zeroAddress, new BN(1));
+    await this.depositTo(
+      this.dummyAccountId,
+      this.getTokenAddress("LRC"),
+      new BN(1)
     );
   }
 
@@ -2346,51 +2401,7 @@ export class ExchangeTestUtil {
         if (b < pendingRings.length) {
           rings.push(pendingRings[b]);
         } else {
-          const dummyRing: RingInfo = {
-            orderA: {
-              exchangeID,
-              orderID: 0,
-              accountID: this.dummyAccountId,
-              tokenIdS: 0,
-              tokenIdB: 1,
-              allOrNone: false,
-              validSince: 0,
-              validUntil: 0,
-              maxFeeBips: 0,
-              buy: true,
-              label: 1,
-
-              feeBips: 0,
-              rebateBips: 0,
-
-              amountS: new BN(1),
-              amountB: new BN(1)
-            },
-            orderB: {
-              exchangeID,
-              orderID: 0,
-              accountID: this.dummyAccountId,
-              tokenIdS: 1,
-              tokenIdB: 0,
-              allOrNone: false,
-              validSince: 0,
-              validUntil: 0,
-              maxFeeBips: 0,
-              buy: true,
-              label: 2,
-
-              feeBips: 0,
-              rebateBips: 0,
-
-              amountS: new BN(1),
-              amountB: new BN(1)
-            },
-            tokenID: 0,
-            fee: new BN(0)
-          };
-          this.signOrder(dummyRing.orderA);
-          this.signOrder(dummyRing.orderB);
-          rings.push(dummyRing);
+          rings.push(this.dummyRing);
         }
       }
       assert(rings.length === blockSize);

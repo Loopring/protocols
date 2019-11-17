@@ -147,6 +147,25 @@ contract("Exchange", (accounts: string[]) => {
       }
     });
 
+    it("Ring Settlement (dummy rings)", async () => {
+      const bDataAvailabilities = [true];
+      for (const bDataAvailability of bDataAvailabilities) {
+        await createExchange(bDataAvailability);
+        await exchangeTestUtil.commitDeposits(exchangeId);
+        const blockSizes = exchangeTestUtil.ringSettlementBlockSizes;
+        for (const blockSize of blockSizes) {
+          for (let i = 0; i < blockSize; i++) {
+            await exchangeTestUtil.sendRing(
+              exchangeId,
+              exchangeTestUtil.dummyRing
+            );
+          }
+          await exchangeTestUtil.commitRings(exchangeId);
+        }
+        await verify();
+      }
+    });
+
     it("Deposit", async () => {
       await createExchange(false);
       const blockSizes = exchangeTestUtil.depositBlockSizes;
