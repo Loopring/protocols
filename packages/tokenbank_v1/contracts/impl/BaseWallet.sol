@@ -154,10 +154,10 @@ contract BaseWallet is Wallet, NamedAddressSet
             }
             return;
         }
-
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
+
         assembly {
-            let ptr := 0
+            let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize())
             let result := staticcall(gas, module, ptr, calldatasize(), 0, 0)
             returndatacopy(ptr, 0, returndatasize())
