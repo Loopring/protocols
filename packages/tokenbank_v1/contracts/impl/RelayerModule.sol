@@ -77,10 +77,20 @@ contract RelayerModule is BaseModule
             validateSignatures(wallet, data, signHash, signatures),
             "INVALID_SIGNATURES"
         );
+
         saveExecuted(wallet, nonce, signHash);
         (bool success,) = address(this).call(data);
 
-        // uint gas = startGas - gasleft();
+        if (gasPrice > 0) {
+            uint gasSpent = startGas - gasleft();
+            require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
+
+            uint fee = gasSpent * gasPrice;
+            require(
+                Wallet(wallet).transferToken(msg.sender, fee, gasToken),
+                "OUT_OF_GAS"
+            );
+        }
 
         emit ExecutedSigned(wallet, nonce, signHash, success);
     }

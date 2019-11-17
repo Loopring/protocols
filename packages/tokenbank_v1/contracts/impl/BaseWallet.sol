@@ -19,6 +19,7 @@ pragma solidity ^0.5.11;
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
 
+import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
 
 // The concept/design of this class is inspired by Argent's contract codebase:
@@ -28,6 +29,7 @@ import "../lib/NamedAddressSet.sol";
 contract BaseWallet is Wallet, NamedAddressSet
 {
     string private constant MODULE = "__MODULE__";
+    bytes4 private constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
 
     mapping (bytes4  => address) internal getters;
 
@@ -121,6 +123,34 @@ contract BaseWallet is Wallet, NamedAddressSet
         returns (address)
     {
         return getters[_method];
+    }
+
+    function tokenBalance(address _token)
+        public
+        view
+        returns (uint)
+    {
+        if (_token == address(0)) {
+            return address(this).balance;
+        } else {
+            return ERC20(_token).balanceOf(address(this));
+        }
+    }
+
+    function transferToken(
+        address _to,
+        uint    _value,
+        address _token
+        )
+        external
+        onlyModule
+        returns (bool)
+    {
+        if (_token == address(0)) {
+            return address(uint160(_to)).send(_value);
+        } else {
+            return ERC20(_token).transfer(_to, _value);
+        }
     }
 
     function transact(

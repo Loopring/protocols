@@ -47,6 +47,19 @@ contract Wallet
     function bindStaticMethod(bytes4 _method, address _module) external;
     function staticMethodModule(bytes4 _method) public view returns (address);
 
+    function tokenBalance(address _token)
+        public
+        view
+        returns (uint);
+
+    function transferToken(
+        address _to,
+        uint    _value,
+        address _token
+        )
+        external
+        returns (bool);
+
     function transact(
         address _to,
         uint    _value,
