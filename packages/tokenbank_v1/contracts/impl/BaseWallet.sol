@@ -148,7 +148,7 @@ contract BaseWallet is Wallet, NamedAddressSet
     {
         address module = msg.data.length == 0 ? address(0) : getters[msg.sig];
 
-        if(module == address(0)) {
+        if (module == address(0)) {
             if (msg.value > 0) {
                 emit Received(msg.sender, msg.value, msg.data);
             }
@@ -157,12 +157,14 @@ contract BaseWallet is Wallet, NamedAddressSet
 
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
         assembly {
-            calldatacopy(0, 0, calldatasize())
-            let result := staticcall(gas, module, 0, calldatasize(), 0, 0)
-            returndatacopy(0, 0, returndatasize())
+            let ptr := 0
+            calldatacopy(ptr, 0, calldatasize())
+            let result := staticcall(gas, module, ptr, calldatasize(), 0, 0)
+            returndatacopy(ptr, 0, returndatasize())
+
             switch result
-            case 0 {revert(0, returndatasize())}
-            default {return (0, returndatasize())}
+            case 0 { revert(ptr, returndatasize()) }
+            default { return(ptr, returndatasize()) }
         }
     }
 }

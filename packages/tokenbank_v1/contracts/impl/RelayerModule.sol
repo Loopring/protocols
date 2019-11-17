@@ -35,7 +35,6 @@ contract RelayerModule is BaseModule
         bool    success
     );
 
-
     /// @dev Checks if the relayed transaction is unique and save to history.
     /// @param wallet The target wallet.
     /// @param nonce The nonce
@@ -65,6 +64,56 @@ contract RelayerModule is BaseModule
     {
         return wallets[wallet].nonce;
     }
+
+    function getSignHash(
+        address from,
+        address to,
+        uint256 value,
+        bytes   memory data,
+        uint256 nonce,
+        uint256 gasPrice,
+        uint256 gasLimit,
+        address gasToken,
+        bytes   memory extraHash
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        bytes32 hash = keccak256(abi.encodePacked(
+            byte(0x19),
+            byte(0),
+            from,
+            to,
+            value,
+            keccak256(data),
+            nonce,
+            gasPrice,
+            gasLimit,
+            gasToken,
+            extraHash
+            )
+        );
+        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+    }
+
+    function requiredSignatures(
+        address      wallet,
+        bytes memory data
+        )
+        internal
+        view
+        returns (uint);
+
+    function validateSignatures(
+        address      wallet,
+        bytes memory data,
+        bytes32      signHash,
+        bytes memory signatures
+        )
+        internal
+        view
+        returns (bool);
 
    //  function executeSigned(
    //      address from,
@@ -121,16 +170,7 @@ contract RelayerModule is BaseModule
    //      }
    //  }
 
-   //  function requiredSignatures(
-   //      address wallet,
-   //      bytes memory data
-   //      )
-   //      returns (uint)
-   //      internal
-   //      view
-   //  {
-   //      return 0;
-   //  }
+
 
 
    //  function validateSignatures(
