@@ -144,7 +144,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         )
         external
         onlyModule
-        returns (bool)
+        returns (bool success)
     {
         bytes memory result;
         if (token == address(0)) {
@@ -153,8 +153,15 @@ contract BaseWallet is Wallet, NamedAddressSet
             bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER, to, value);
             result = transactInternal(token, 0, data);
         }
-        // QUESTION? how to read the result as a bool?
-        return false;
+
+        // TODO(daniel): This need to be tested
+        if (result.length == 0) {
+            return true;
+        }
+
+        if (result.length == 32) {
+            assembly { success := mload(add(result, 32)) }
+        }
     }
 
     function transact(
