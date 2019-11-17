@@ -23,34 +23,34 @@ import "../iface/Wallet.sol";
 import "../lib/MathUint.sol";
 
 
-contract RelayerModule is BaseModule
+contract MetaTxModule is BaseModule
 {
     using MathUint for uint;
     uint constant public BLOCK_BOUND = 10000;
 
     struct WalletState {
         uint nonce;
-        mapping (bytes32 => bool) executedHash;
+        mapping (bytes32 => bool) execuitedMetaTxHash;
     }
     mapping (address => WalletState) public wallets;
 
-    event ExecutedSigned(
+    event ExecutedMetaTx(
         address indexed wallet,
         uint    nonce,
-        bytes32 signHash,
+        bytes32 metaTxHash,
         bool    success
     );
 
     function validateSignatures(
         address wallet,
         bytes   memory data,
-        bytes32 signHash,
+        bytes32 metaTxHash,
         bytes   memory signatures)
         internal
         view
         returns (bool);
 
-    function executeSigned(
+    function executeMetaTx(
         bytes   calldata data,
         uint    nonce,
         uint    gasPrice,
@@ -65,7 +65,7 @@ contract RelayerModule is BaseModule
         require(startGas >= gasLimit);
 
         address wallet = extractWalletAddress(data);
-        bytes32 signHash = getSignHash(
+        bytes32 metaTxHash = getMetaTxHash(
             wallet, // from
             address(this),  // to
             0, // value
@@ -78,11 +78,11 @@ contract RelayerModule is BaseModule
         );
 
         require(
-            validateSignatures(wallet, data, signHash, signatures),
+            validateSignatures(wallet, data, metaTxHash, signatures),
             "INVALID_SIGNATURES"
         );
 
-        saveExecuted(wallet, nonce, signHash);
+        saveExecutedMetaTx(wallet, nonce, metaTxHash);
         (bool success,) = address(this).call(data);
 
         if (gasPrice > 0) {
@@ -94,7 +94,7 @@ contract RelayerModule is BaseModule
             );
         }
 
-        emit ExecutedSigned(wallet, nonce, signHash, success);
+        emit ExecutedMetaTx(wallet, nonce, metaTxHash, success);
     }
 
     function lastNonce(address wallet)
@@ -118,7 +118,7 @@ contract RelayerModule is BaseModule
         }
     }
 
-    function getSignHash(
+    function getMetaTxHash(
         address from,
         address to,
         uint256 value,
@@ -152,11 +152,11 @@ contract RelayerModule is BaseModule
     }
 
     /// @dev   Recovers the signer at a given index from a list of concatenated signatures.
-    /// @param signHash The signed hash
+    /// @param metaTxHash The signed hash
     /// @param signatures The concatenated signatures.
     /// @param index The index of the signature to recover.
    function recoverSigner(
-        bytes32      signHash,
+        bytes32      metaTxHash,
         bytes memory signatures,
         uint         index
         )
@@ -176,7 +176,7 @@ contract RelayerModule is BaseModule
             v := and(mload(add(signatures, add(0x41, mul(0x41, index)))), 0xff)
         }
         require(v == 27 || v == 28);
-        return ecrecover(signHash, v, r, s);
+        return ecrecover(metaTxHash, v, r, s);
     }
 
     function extractMethod(bytes memory data)
@@ -193,21 +193,21 @@ contract RelayerModule is BaseModule
 
     // ===== Private methods =====
 
-    /// @dev Save the relayed transaction to history.
+    /// @dev Save the meta-transaction to history.
     ///      This method must throw if the transaction is not unique or the nonce is invalid.
     /// @param wallet The target wallet.
     /// @param nonce The nonce
-    /// @param signHash The signed hash of the transaction
-    function saveExecuted(
+    /// @param metaTxHash The signed hash of the transaction
+    function saveExecutedMetaTx(
         address wallet,
         uint    nonce,
-        bytes32 signHash
+        bytes32 metaTxHash
         )
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].executedHash[signHash], "DUPLICIATE_SIGN_HASH");
-            wallets[wallet].executedHash[signHash] = true;
+            require(!wallets[wallet].execuitedMetaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
+            wallets[wallet].execuitedMetaTxHash[metaTxHash] = true;
         } else {
             require(nonce <= wallets[wallet].nonce, "NONCE_TOO_SMALL");
             uint nonceBlock = (nonce & 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >> 128;
