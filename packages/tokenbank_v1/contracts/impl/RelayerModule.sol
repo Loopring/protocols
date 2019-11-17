@@ -23,6 +23,7 @@ import "../iface/Wallet.sol";
 contract RelayerModule is BaseModule
 {
     uint constant public BLOCK_BOUND = 10000;
+
     struct WalletState {
         uint nonce;
         mapping (bytes32 => bool) executedHash;
@@ -30,39 +31,79 @@ contract RelayerModule is BaseModule
     mapping (address => WalletState) public wallets;
 
     event ExecutedSigned(
+        address indexed wallet,
         uint    nonce,
         bytes32 signHash,
         bool    success
     );
 
-    /// @dev Checks if the relayed transaction is unique and save to history.
-    /// @param wallet The target wallet.
-    /// @param nonce The nonce
-    /// @param signHash The signed hash of the transaction
-    function saveExecuted(
+    function validateSignatures(
         address wallet,
-        uint    nonce,
-        bytes32 signHash
-        )
+        bytes   memory data,
+        bytes32 signHash,
+        bytes   memory signatures)
         internal
+        view
+        returns (bool);
+
+    function executeSigned(
+        bytes   calldata data,
+        uint    nonce,
+        uint    gasPrice,
+        uint    gasLimit,
+        address gasToken,
+        bytes   calldata extraHash,
+        bytes   calldata signatures
+        )
+        external
     {
-        if (nonce == 0) {
-            require(!wallets[wallet].executedHash[signHash], "DUPLICIATE_SIGN_HASH");
-            wallets[wallet].executedHash[signHash] = true;
-        } else {
-            require(nonce <= wallets[wallet].nonce, "NONCE_TOO_SMALL");
-            uint nonceBlock = (nonce & 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >> 128;
-            require(nonceBlock <= block.number + BLOCK_BOUND, "NONCE_TOO_LARGE");
-            wallets[wallet].nonce = nonce;
-        }
+        uint startGas = gasleft();
+        require(startGas >= gasLimit);
+
+        address wallet = extractWalletAddress(data);
+        bytes32 signHash = getSignHash(
+            wallet, // from
+            address(this),  // to
+            0, // value
+            data,
+            nonce,
+            gasPrice,
+            gasLimit,
+            gasToken,
+            extraHash
+        );
+
+        require(
+            validateSignatures(wallet, data, signHash, signatures),
+            "INVALID_SIGNATURES"
+        );
+        saveExecuted(wallet, nonce, signHash);
+        (bool success,) = address(this).call(data);
+
+        // uint gas = startGas - gasleft();
+
+        emit ExecutedSigned(wallet, nonce, signHash, success);
     }
 
     function lastNonce(address wallet)
-        internal
+        public
         view
         returns (uint)
     {
         return wallets[wallet].nonce;
+    }
+
+    function extractWalletAddress(bytes memory data)
+        public
+        pure
+        returns (address wallet)
+    {
+        require(data.length >= 36, "INVALID_DATA");
+        // solium-disable-next-line security/no-inline-assembly
+        assembly {
+            // data layout: {length:32}{sig:4}{_wallet:32}{...}
+            wallet := mload(add(data, 36))
+        }
     }
 
     function getSignHash(
@@ -76,7 +117,7 @@ contract RelayerModule is BaseModule
         address gasToken,
         bytes   memory extraHash
         )
-        internal
+        public
         pure
         returns (bytes32)
     {
@@ -94,96 +135,10 @@ contract RelayerModule is BaseModule
             extraHash
             )
         );
+
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
-    function requiredSignatures(
-        address      wallet,
-        bytes memory data
-        )
-        internal
-        view
-        returns (uint);
-
-    function validateSignatures(
-        address      wallet,
-        bytes memory data,
-        bytes32      signHash,
-        bytes memory signatures
-        )
-        internal
-        view
-        returns (bool);
-
-   //  function executeSigned(
-   //      address from,
-   //      address to,
-   //      uint256 value,
-   //      bytes   data,
-   //      uint    nonce,
-   //      uint    gasPrice,
-   //      uint    gasLimit,
-   //      address gasToken,
-   //      bytes   extraHash,
-   //      bytes   messageSignatures
-   //      )
-   //      external
-   //  {
-   //      uint startGas = gasleft();
-   //      require(startGas >= gasLimit);
-   //      // require(_nonce == 0 || );
-
-   //      bytes32 signHash = keccak256(
-   //          "\x19Ethereum Signed Message:\n32",
-   //          keccak256(
-   //              byte(0x19),
-   //              byte(0),
-   //              from,
-   //              to,
-   //              value,
-   //              keccak256(data),
-   //              nonce,
-   //              gasPrice,
-   //              gasLimit,
-   //              gasToken,
-   //              extraHash
-   //              )
-   //          );
-
-
-   //      address signer = recoverSigner(
-   //          signHash,
-   //          messageSignatures,
-   //          0
-   //      );
-
-   //      // approveAndCall()
-
-   //      if (gasPrice > 0) {
-   //          uint256 gas = 21000 + (startGas - gasleft());
-   //          gas  *= _gasPrice;
-   //          if (gasToken == address(0)) {
-   //              address(msg.sender).transfer(gas);
-   //          } else {
-   //              ERC20Token(gasToken).transfer(msg.sender, gas);
-   //          }
-   //      }
-   //  }
-
-
-
-
-   //  function validateSignatures(
-   //      wallet wallet,
-   //      bytes memory data,
-   //      bytes32 signHash,
-   //      bytes memory signatures)
-   //      internal
-   //      view
-   //      returns (bool)
-   //  {
-   //      return true;
-   //  }
 
 
     /// @dev   Recovers the signer at a given index from a list of concatenated signatures.
@@ -195,7 +150,7 @@ contract RelayerModule is BaseModule
         bytes memory signatures,
         uint         index
         )
-        internal
+        public
         pure
         returns (address)
     {
@@ -214,19 +169,40 @@ contract RelayerModule is BaseModule
         return ecrecover(signHash, v, r, s);
     }
 
-   //  function approveAndCall(
-   //      bytes32 signHash,
-   //      address token,
-   //      address to,
-   //      uint256 value,
-   //      bytes   data
-   //  )
-   //      internal
-   //  {
-   //      ERC20Token(token).approve(to, value);
-   //      bool result = to.call(data)
-   //      emit ExecutedSigned(signHash, result);
+    function extractMethod(bytes memory data)
+        public
+        pure
+        returns (bytes4 method)
+    {
+        require(data.length >= 4, "INVALID_DATA");
+        assembly {
+            // data layout: {length:32}{sig:4}{_wallet:32}{...}
+            method := mload(add(data, 32))
+        }
+    }
 
-   //  }
+    // ===== Private methods =====
 
+    /// @dev Save the relayed transaction to history.
+    ///      This method must throw if the transaction is not unique or the nonce is invalid.
+    /// @param wallet The target wallet.
+    /// @param nonce The nonce
+    /// @param signHash The signed hash of the transaction
+    function saveExecuted(
+        address wallet,
+        uint    nonce,
+        bytes32 signHash
+        )
+        private
+    {
+        if (nonce == 0) {
+            require(!wallets[wallet].executedHash[signHash], "DUPLICIATE_SIGN_HASH");
+            wallets[wallet].executedHash[signHash] = true;
+        } else {
+            require(nonce <= wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            uint nonceBlock = (nonce & 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >> 128;
+            require(nonceBlock <= block.number + BLOCK_BOUND, "NONCE_TOO_LARGE");
+            wallets[wallet].nonce = nonce;
+        }
+    }
 }
