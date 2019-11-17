@@ -23,6 +23,15 @@ import "../iface/Wallet.sol";
 import "../lib/MathUint.sol";
 
 
+/// @title MetaTxModule
+/// @dev Base contract for all smart wallet modules.
+///      Each module must implement the `init` method. It will be called when
+///      the module is added to the given wallet.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract MetaTxModule is BaseModule
 {
     using MathUint for uint;

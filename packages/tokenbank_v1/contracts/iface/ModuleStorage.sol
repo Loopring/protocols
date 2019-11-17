@@ -18,9 +18,12 @@ pragma solidity ^0.5.11;
 
 import "../lib/Managed.sol";
 
-/// @dev Base contract for Module storages.
-///      Modules share states by accessing the same storage instance for better
-///      decoupling.
+
+/// @title ModuleStorage
+/// @dev Modules share states by accessing the same storage instance.
+///      Using ModuleStorage will achieve better module decoupling.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts

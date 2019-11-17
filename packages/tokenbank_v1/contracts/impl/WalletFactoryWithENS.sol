@@ -22,10 +22,15 @@ import "../iface/Wallet.sol";
 import "./WalletFactory.sol";
 
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
-
-
+/// @title WalletFactoryWithENS
+/// @dev Base contract for all smart wallet modules.
+///      Each module must implement the `init` method. It will be called when
+///      the module is added to the given wallet.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract WalletFactoryWithENS is WalletFactory, Module
 {
     string private constant MANAGER = "__MANAGER__";

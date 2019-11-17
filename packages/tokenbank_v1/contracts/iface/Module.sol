@@ -17,18 +17,21 @@
 pragma solidity ^0.5.11;
 
 import "../lib/Ownable.sol";
-
 import "./Wallet.sol";
 
 
+/// @title Module
 /// @dev Base contract for all smart wallet modules.
 ///      Each module must implement the `init` method. It will be called when
 ///      the module is added to the given wallet.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract Module
 {
+    // Emitted whtn the module is successfully initialized for a wallet.
     event Initialized(address indexed wallet);
 
     modifier onlyWallet(address wallet)
@@ -49,6 +52,8 @@ contract Module
         external
         onlyWallet(wallet)
     {
+        require(wallet != address(0), "ZERO_ADDRESS");
+        // This default implementation only emits an event.
         emit Initialized(wallet);
     }
 }
