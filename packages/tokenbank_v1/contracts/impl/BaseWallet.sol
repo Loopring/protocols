@@ -107,7 +107,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         return isAddressInSet(MODULE, _module);
     }
 
-    function bindGetter(bytes4 _method, address _module)
+    function bindReadonlyMethods(bytes4 _method, address _module)
         external
         onlyModule
     {
