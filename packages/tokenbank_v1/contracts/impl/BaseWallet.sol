@@ -19,6 +19,7 @@ pragma solidity ^0.5.11;
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
 
+import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
 
 // The concept/design of this class is inspired by Argent's contract codebase:
@@ -28,6 +29,7 @@ import "../lib/NamedAddressSet.sol";
 contract BaseWallet is Wallet, NamedAddressSet
 {
     string private constant MODULE = "__MODULE__";
+    string private constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     mapping (bytes4  => address) internal getters;
 
@@ -70,8 +72,6 @@ contract BaseWallet is Wallet, NamedAddressSet
             Module(module).init(address(this));
             emit ModuleAdded(module);
         }
-
-
     }
 
     function addModule(address _module)
@@ -101,7 +101,15 @@ contract BaseWallet is Wallet, NamedAddressSet
         return getAddressesInSet(MODULE);
     }
 
-    function bindGetter(bytes4 _method, address _module)
+    function hasModule(address _module)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(MODULE, _module);
+    }
+
+    function bindStaticMethod(bytes4 _method, address _module)
         external
         onlyModule
     {
@@ -109,7 +117,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         emit GetterBinded(_method, _module);
     }
 
-    function getterModule(bytes4 _method)
+    function staticMethodModule(bytes4 _method)
         public
         view
         returns (address)
@@ -117,46 +125,92 @@ contract BaseWallet is Wallet, NamedAddressSet
         return getters[_method];
     }
 
-    function transact(
-        address _to,
-        uint    _value,
-        bytes   calldata _data
+    function tokenBalance(address token)
+        public
+        view
+        returns (uint)
+    {
+        if (token == address(0)) {
+            return address(this).balance;
+        } else {
+            return ERC20(token).balanceOf(address(this));
+        }
+    }
+
+    function transferToken(
+        address to,
+        uint    value,
+        address token
         )
         external
         onlyModule
-        returns (bytes memory _result)
+        returns (bool)
+    {
+        bytes memory result;
+        if (token == address(0)) {
+            result = transactInternal(to, value, "");
+        } else {
+            bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER, to, value);
+            result = transactInternal(token, 0, data);
+        }
+        // QUESTION? how to read the result as a bool?
+        return false;
+    }
+
+    function transact(
+        address to,
+        uint    value,
+        bytes   calldata data
+        )
+        external
+        onlyModule
+        returns (bytes memory result)
+    {
+        return transactInternal(to, value, data);
+    }
+
+    function transactInternal(
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        private
+        returns (bytes memory result)
     {
         bool success;
-        // solium-disable-next-line security/no-call-value
-        (success, _result) = _to.call.value(_value)(_data);
-        if(!success) {
+        (success, result) = to.call.value(value)(data);
+        if (!success) {
             assembly {
                 returndatacopy(0, 0, returndatasize)
                 revert(0, returndatasize)
             }
         }
-        emit Transacted(msg.sender, _to, _value, _data);
+        emit Transacted(msg.sender, to, value, data);
     }
 
-    function() external payable
+    function()
+        external
+        payable
     {
         address module = msg.data.length == 0 ? address(0) : getters[msg.sig];
 
-        if(module == address(0)) {
+        if (module == address(0)) {
             if (msg.value > 0) {
                 emit Received(msg.sender, msg.value, msg.data);
             }
             return;
         }
-
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
+
         assembly {
-            calldatacopy(0, 0, calldatasize())
-            let result := staticcall(gas, module, 0, calldatasize(), 0, 0)
-            returndatacopy(0, 0, returndatasize())
+            let ptr := mload(0x40)
+            calldatacopy(ptr, 0, calldatasize())
+            let result := staticcall(gas, module, ptr, calldatasize(), 0, 0)
+            returndatacopy(ptr, 0, returndatasize())
+
             switch result
-            case 0 {revert(0, returndatasize())}
-            default {return (0, returndatasize())}
+            case 0 { revert(ptr, returndatasize()) }
+            default { return(ptr, returndatasize()) }
         }
     }
 }

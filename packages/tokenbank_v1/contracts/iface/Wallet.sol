@@ -42,9 +42,23 @@ contract Wallet
     function addModule(address _module) external;
     function removeModule(address _module) external;
     function getModules() public view returns (address[] memory);
+    function hasModule(address _module) public view returns (bool);
 
-    function bindGetter(bytes4 _method, address _module) external;
-    function getterModule(bytes4 _method) public view returns (address);
+    function bindStaticMethod(bytes4 _method, address _module) external;
+    function staticMethodModule(bytes4 _method) public view returns (address);
+
+    function tokenBalance(address _token)
+        public
+        view
+        returns (uint);
+
+    function transferToken(
+        address _to,
+        uint    _value,
+        address _token
+        )
+        external
+        returns (bool);
 
     function transact(
         address _to,
