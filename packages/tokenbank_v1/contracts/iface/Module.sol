@@ -17,6 +17,7 @@
 pragma solidity ^0.5.11;
 
 import "../lib/Ownable.sol";
+
 import "./Wallet.sol";
 
 
@@ -40,9 +41,15 @@ contract Module
         _;
     }
 
-    modifier onlyWalletOwner(address wallet)
-    {
-        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+    modifier onlyWalletOwner(address wallet) {
+        require(
+          msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+          "NOT_FROM_WALLET_OWNER");
+        _;
+    }
+
+    modifier onlyStricklyWalletOwner(address wallet) {
+        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_STRICTLY_WALLET_OWNER");
         _;
     }
 

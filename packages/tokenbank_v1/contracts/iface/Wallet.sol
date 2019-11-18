@@ -48,6 +48,9 @@ contract Wallet
     /// @dev Initializes this wallet by assigning an original order and a
     ///      list of initial modules. For each module, its `init` method
     ///      will be called with `address(this)` as the parameter.
+    ///
+    ///      Note that calling this method more than once will throw.
+    ///
     /// @param _owner The owner of this wallet, must not be address(0).
     /// @param _modules The list of modules to add to this wallet, this list
     ///                 must contain at least one module.
@@ -77,7 +80,7 @@ contract Wallet
     /// @dev Binds a static (readonly) method from the given module to this
     ///      wallet so the method can be invoked using this wallet's default
     ///      function.
-    ///      Note that this method must NOT throw when the given module has
+    ///      Note that this method must throw when the given module has
     ///      not been added to this wallet.
     /// @param _method The method's 4-byte selector.
     /// @param _module The module's address.
@@ -108,6 +111,8 @@ contract Wallet
     ///
     ///      Also note that this method can be implemented using the `transact`
     ///      method as well. It is added for convenience.
+    ///
+    ///      Warning: caller must check this method's the return result!!!
     ///
     /// @param to The desitination address.
     /// @param value The amount to transfer.

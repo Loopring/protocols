@@ -25,9 +25,7 @@ import "../lib/ReentrancyGuard.sol";
 
 
 /// @title BaseWallet
-/// @dev Base contract for all smart wallet modules.
-///      Each module must implement the `init` method. It will be called when
-///      the module is added to the given wallet.
+/// @dev This contract provides basic implementation for a Wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
@@ -38,8 +36,9 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     string private constant MODULE = "__MODULE__";
     string private constant ERC20_TRANSFER = "transfer(address,uint256)";
 
-    mapping (bytes4  => address) internal getters;
+    mapping (bytes4  => address) internal methodToModule;
 
+    /// @dev Emitted when the wallet received Ether.
     event Received(
         address indexed sender,
         uint    value,
@@ -70,6 +69,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         require(_modules.length > 0, "EMPTY_MODULES");
 
         owner = _owner;
+
         emit Initialized(owner);
 
         for(uint i = 0; i < _modules.length; i++) {
@@ -123,7 +123,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        getters[_method] = _module;
+        require(methodToModule[_method] != address(0), "BAD_MODULE");
+        methodToModule[_method] = _module;
         emit StaticMethodBound(_method, _module);
     }
 
@@ -132,7 +133,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (address)
     {
-        return getters[_method];
+        return methodToModule[_method];
     }
 
     function tokenBalance(address token)
@@ -166,7 +167,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
             result = transactInternal(token, 0, data);
         }
 
-        // TODO(daniel): This need to be tested
+        // TODO(daniel): Not sure if this will work, this need to be tested!!!
         if (result.length == 0) {
             return true;
         }
@@ -208,18 +209,18 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         emit Transacted(msg.sender, to, value, data);
     }
 
+    /// @dev This default function can receive Ether or perform queris to modules
+    ///      using staticly bound methods.
     function()
         external
         payable
     {
-        address module = msg.data.length == 0 ? address(0) : getters[msg.sig];
-
-        if (module == address(0)) {
-            if (msg.value > 0) {
-                emit Received(msg.sender, msg.value, msg.data);
-            }
+        if (msg.value > 0) {
+            emit Received(msg.sender, msg.value, msg.data);
             return;
         }
+
+        address module = msg.data.length == 0 ? address(0) : methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
         assembly {

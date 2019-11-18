@@ -23,9 +23,8 @@ import "../lib/ReentrancyGuard.sol";
 
 
 /// @title BaseModule
-/// @dev Base contract for all smart wallet modules.
-///      Each module must implement the `init` method. It will be called when
-///      the module is added to the given wallet.
+/// @dev This contract implements some common functions that are likely
+///      be useful for all modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
@@ -33,30 +32,40 @@ import "../lib/ReentrancyGuard.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BaseModule is Module, ReentrancyGuard
 {
-    function addModule(address wallet, address module)
+    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
+    function addModule(
+        address wallet,
+        address module
+        )
         external
         nonReentrant
-        onlyWalletOwner(wallet)
+        onlyStricklyWalletOwner(wallet)
     {
         Wallet(wallet).addModule(module);
     }
 
-    function removeModule(address wallet, address module)
+    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
+    function removeModule(
+        address wallet,
+        address module
+        )
         external
         nonReentrant
-        onlyWalletOwner(wallet)
+        onlyStricklyWalletOwner(wallet)
     {
         Wallet(wallet).removeModule(module);
     }
 
+    /// @dev Bind a static method to the  wallet. Callable only by the wallet owner.
     function bindStaticMethod(address wallet, bytes4 method, address module)
         external
         nonReentrant
-        onlyWalletOwner(wallet)
+        onlyStricklyWalletOwner(wallet)
     {
         Wallet(wallet).bindStaticMethod(method, module);
     }
 
+    /// @dev Internal method to transact on the given wallet.
     function transact(
         address wallet,
         address to,
