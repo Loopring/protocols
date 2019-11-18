@@ -27,6 +27,19 @@ import "../lib/ERC1271.sol";
 /// @dev This is the base module for supporting ERC1271.
 contract ERC1271Module is BaseModule, ERC1271
 {
+    bytes4 constant internal SELECTOR_IS_VALID_SIGNATURE =
+        bytes4(keccak256("isValidSignature(bytes,bytes)"));
+
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory)
+    {
+        bytes4[] memory methods = new bytes4[](1);
+        methods[0] = SELECTOR_IS_VALID_SIGNATURE;
+        return methods;
+    }
+
     /// @dev This method is expected to be called from a wallet's default function.
     function isValidSignature(
         bytes memory _data,
@@ -45,10 +58,10 @@ contract ERC1271Module is BaseModule, ERC1271
         bytes memory _signature
         )
         public
-        view
+        pure
         returns (bytes4)
     {
-        if (_signature != 65) {
+        if (_signature.length != 65) {
             return bytes4(0);
         }
 

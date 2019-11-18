@@ -32,8 +32,8 @@ import "./Wallet.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract Module
 {
-    // Emitted whtn the module is successfully initialized for a wallet.
-    event Initialized(address indexed wallet);
+    event Initialized (address indexed wallet);
+    event Terminated  (address indexed wallet);
 
     modifier onlyWallet(address wallet)
     {
@@ -53,13 +53,13 @@ contract Module
         _;
     }
 
-    /// @dev Initializes the module for the given wallet address.
-    ///      This function must throw in case of error.
-    function init(address wallet)
-        external
-        onlyWallet(wallet)
-    {
-        // This default implementation only emits an event.
-        emit Initialized(wallet);
-    }
+    /// @dev Initializes the module for the given wallet address when the module is added to
+    ///      the given wallet. This function must throw in case of error.
+    ///      Warning: this method can ONLY be called by a wallet.
+    function initialize(address wallet) external;
+
+    /// @dev Terminate the module for the given wallet address when the module is removed from
+    ///      the given wallet. This function must throw in case of error.
+    ///      Warning: this method can ONLY be called by a wallet.
+    function terminate(address walelt) external;
 }

@@ -38,7 +38,7 @@ contract MetaTxModule is BaseModule
 
     struct WalletState {
         uint nonce;
-        mapping (bytes32 => bool) execuitedMetaTxHash;
+        mapping (bytes32 => bool) executedMetaTxHash;
     }
     mapping (address => WalletState) public wallets;
 
@@ -243,12 +243,11 @@ contract MetaTxModule is BaseModule
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].execuitedMetaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
-            wallets[wallet].execuitedMetaTxHash[metaTxHash] = true;
+            require(!wallets[wallet].executedMetaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
+            wallets[wallet].executedMetaTxHash[metaTxHash] = true;
         } else {
-            require(nonce <= wallets[wallet].nonce, "NONCE_TOO_SMALL");
-            uint nonceBlock = (nonce & 0xffffffffffffffffffffffffffffffff00000000000000000000000000000000) >> 128;
-            require(nonceBlock <= block.number + BLOCK_BOUND, "NONCE_TOO_LARGE");
+            require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
         }
     }

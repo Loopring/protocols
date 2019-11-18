@@ -41,6 +41,7 @@ contract BaseModule is Module, ReentrancyGuard
         nonReentrant
         onlyStricklyWalletOwner(wallet)
     {
+        require(module != address(0), "SAME_MODULE");
         Wallet(wallet).addModule(module);
     }
 
@@ -53,16 +54,8 @@ contract BaseModule is Module, ReentrancyGuard
         nonReentrant
         onlyStricklyWalletOwner(wallet)
     {
+        require(module != address(0), "SAME_MODULE");
         Wallet(wallet).removeModule(module);
-    }
-
-    /// @dev Bind a static method to the  wallet. Callable only by the wallet owner.
-    function bindStaticMethod(address wallet, bytes4 method, address module)
-        external
-        nonReentrant
-        onlyStricklyWalletOwner(wallet)
-    {
-        Wallet(wallet).bindStaticMethod(method, module);
     }
 
     /// @dev Internal method to transact on the given wallet.
@@ -75,7 +68,59 @@ contract BaseModule is Module, ReentrancyGuard
         internal
         returns (bytes memory result)
     {
-        // Optimize for gas usage when data is large?
         return Wallet(wallet).transact(to, value, data);
+    }
+
+    /// @dev Initializes the module for the given wallet address.
+    ///      This function must throw in case of error.
+    function initialize(address wallet)
+        external
+        onlyWallet(wallet)
+    {
+        bindStaticMethods(wallet);
+        emit Initialized(wallet);
+    }
+
+    /// @dev Initializes the module for the given wallet address.
+    ///      This function must throw in case of error.
+    function terminate(address wallet)
+        external
+        onlyWallet(wallet)
+    {
+        unbindStaticMethods(wallet);
+        emit Terminated(wallet);
+    }
+
+    ///.@dev Gets the list of static methods for binding to wallets.
+    /// @return methods A list of static method selectors for binding to the wallet
+    ///         when this module is initialized for the wallet.
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        return new bytes4[](0);
+    }
+
+    /// @dev Binds all static methods to the given wallet.
+    function bindStaticMethods(address wallet)
+        internal
+    {
+        Wallet w = Wallet(wallet);
+        bytes4[] memory methods = staticMethods();
+        for (uint i = 0; i < methods.length; i++) {
+            w.bindStaticMethod(methods[i], address(this));
+        }
+    }
+
+    /// @dev Unbinds all static methods from the given wallet.
+    function unbindStaticMethods(address wallet)
+        internal
+    {
+        Wallet w = Wallet(wallet);
+        bytes4[] memory methods = staticMethods();
+        for (uint i = 0; i < methods.length; i++) {
+            w.bindStaticMethod(methods[i], address(0));
+        }
     }
 }

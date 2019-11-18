@@ -83,7 +83,7 @@ contract Wallet
     ///      Note that this method must throw when the given module has
     ///      not been added to this wallet.
     /// @param _method The method's 4-byte selector.
-    /// @param _module The module's address.
+    /// @param _module The module's address. Use address(0) to unbind the method.
     function bindStaticMethod(bytes4 _method, address _module) external;
 
     /// @dev Returns the module the given method has been bound to.

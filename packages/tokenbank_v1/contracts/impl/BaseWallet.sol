@@ -58,7 +58,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     }
 
     function init(
-        address            _owner,
+        address   _owner,
         address[] calldata _modules
         )
         external
@@ -73,11 +73,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         emit Initialized(owner);
 
         for(uint i = 0; i < _modules.length; i++) {
-            address module = _modules[i];
-            require(module != address(0), "NULL_MODULE");
-            addAddressToSet(MODULE, module);
-            Module(module).init(address(this));
-            emit ModuleAdded(module);
+            addModuleInternal(_modules[i]);
         }
     }
 
@@ -86,9 +82,15 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
+        addModuleInternal(_module);
+    }
+
+    function addModuleInternal(address _module)
+        internal
+    {
         require(_module != address(0), "NULL_MODULE");
         addAddressToSet(MODULE, _module);
-        Module(_module).init(address(this));
+        Module(_module).initialize(address(this));
         emit ModuleAdded(_module);
     }
 
@@ -99,6 +101,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
         removeAddressFromSet(MODULE, _module);
+        Module(_module).terminate(address(this));
         emit ModuleRemoved(_module);
     }
 
@@ -123,7 +126,12 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        require(methodToModule[_method] != address(0), "BAD_MODULE");
+        require(_method != bytes4(0), "BAID_METHOD");
+        require(
+            _module == address(0) || methodToModule[_method] == address(0),
+            "BAD_MODULE"
+        );
+
         methodToModule[_method] = _module;
         emit StaticMethodBound(_method, _module);
     }
