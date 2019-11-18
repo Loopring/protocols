@@ -57,7 +57,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         _;
     }
 
-    function init(
+    function setup(
         address   _owner,
         address[] calldata _modules
         )
@@ -70,7 +70,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
         owner = _owner;
 
-        emit Initialized(owner);
+        emit WalletSetup(owner);
 
         for(uint i = 0; i < _modules.length; i++) {
             addModuleInternal(_modules[i]);
@@ -100,12 +100,12 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         nonReentrant
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
-        removeAddressFromSet(MODULE, _module);
         Module(_module).terminate(address(this));
+        removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
 
-    function getModules()
+    function modules()
         public
         view
         returns (address[] memory)

@@ -88,7 +88,7 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         returns (address _wallet)
     {
         _wallet = address(new SimpleProxy(walletImplementation));
-        Wallet(_wallet).init(_owner, _modules);
+        Wallet(_wallet).setup(_owner, _modules);
     }
 
     /// @dev Checks if an address is a manger.

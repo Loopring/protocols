@@ -36,7 +36,7 @@ contract Wallet
     event ModuleRemoved (address indexed module);
     event StaticMethodBound  (bytes4  indexed method, address indexed module);
 
-    event Initialized(address indexed owner);
+    event WalletSetup(address indexed owner);
 
     event Transacted(
         address indexed module,
@@ -54,7 +54,7 @@ contract Wallet
     /// @param _owner The owner of this wallet, must not be address(0).
     /// @param _modules The list of modules to add to this wallet, this list
     ///                 must contain at least one module.
-    function init(address _owner, address[] calldata _modules) external;
+    function setup(address _owner, address[] calldata _modules) external;
 
     /// @dev Adds a new module. The `init` method of the module
     ///      will be called with `address(this)` as the parameter.
@@ -70,7 +70,7 @@ contract Wallet
     /// @dev Returns the list of modules added to this wallet in the order
     ///      they were added.
     /// @return _modules The list of modules added to this wallet.
-    function getModules() public view returns (address[] memory _modules);
+    function modules() public view returns (address[] memory _modules);
 
     /// @dev Checks if a module has been added to this wallet.
     /// @param _module The module to check.

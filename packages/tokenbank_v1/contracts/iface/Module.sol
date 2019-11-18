@@ -53,13 +53,13 @@ contract Module
         _;
     }
 
-    /// @dev Initializes the module for the given wallet address when the module is added to
-    ///      the given wallet. This function must throw in case of error.
+    /// @dev Initializes the module for the given wallet when the module is added.
+    ///      This function must throw in case of error.
     ///      Warning: this method can ONLY be called by a wallet.
     function initialize(address wallet) external;
 
-    /// @dev Terminate the module for the given wallet address when the module is removed from
-    ///      the given wallet. This function must throw in case of error.
+    /// @dev Terminate the module for the given wallet when the module is removed.
+    ///      This function must throw in case of error.
     ///      Warning: this method can ONLY be called by a wallet.
     function terminate(address walelt) external;
 }

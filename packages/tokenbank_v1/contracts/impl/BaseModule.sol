@@ -33,6 +33,7 @@ import "../lib/ReentrancyGuard.sol";
 contract BaseModule is Module, ReentrancyGuard
 {
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
+    ///      Note that the current module must have been added to the wallet.
     function addModule(
         address wallet,
         address module
@@ -41,11 +42,11 @@ contract BaseModule is Module, ReentrancyGuard
         nonReentrant
         onlyStricklyWalletOwner(wallet)
     {
-        require(module != address(0), "SAME_MODULE");
         Wallet(wallet).addModule(module);
     }
 
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
+    ///      Note that the current module must have been added to the wallet.
     function removeModule(
         address wallet,
         address module
@@ -54,9 +55,45 @@ contract BaseModule is Module, ReentrancyGuard
         nonReentrant
         onlyStricklyWalletOwner(wallet)
     {
-        require(module != address(0), "SAME_MODULE");
         Wallet(wallet).removeModule(module);
     }
+
+    /// @dev Initializes the module for the given wallet address.
+    ///      This function must throw in case of error.
+    ///      Note that the current module must have been added to the wallet.
+    function initialize(address wallet)
+        external
+        onlyWallet(wallet)
+    {
+        bindStaticMethods(wallet);
+        emit Initialized(wallet);
+    }
+
+    /// @dev Initializes the module for the given wallet address.
+    ///      This function must throw in case of error.
+    ///      Note that the current module must NOT have been removed from the wallet.
+    function terminate(address wallet)
+        external
+        onlyWallet(wallet)
+    {
+        unbindStaticMethods(wallet);
+        emit Terminated(wallet);
+    }
+
+    ///.@dev Gets the list of static methods for binding to wallets.
+    ///      Sub-contracts should override this method to provide readonly methods for
+    ///      wallet binding.
+    /// @return methods A list of static method selectors for binding to the wallet
+    ///         when this module is initialized for the wallet.
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        return new bytes4[](0);
+    }
+
+    // ===== internal & private methods =====
 
     /// @dev Internal method to transact on the given wallet.
     function transact(
@@ -69,37 +106,6 @@ contract BaseModule is Module, ReentrancyGuard
         returns (bytes memory result)
     {
         return Wallet(wallet).transact(to, value, data);
-    }
-
-    /// @dev Initializes the module for the given wallet address.
-    ///      This function must throw in case of error.
-    function initialize(address wallet)
-        external
-        onlyWallet(wallet)
-    {
-        bindStaticMethods(wallet);
-        emit Initialized(wallet);
-    }
-
-    /// @dev Initializes the module for the given wallet address.
-    ///      This function must throw in case of error.
-    function terminate(address wallet)
-        external
-        onlyWallet(wallet)
-    {
-        unbindStaticMethods(wallet);
-        emit Terminated(wallet);
-    }
-
-    ///.@dev Gets the list of static methods for binding to wallets.
-    /// @return methods A list of static method selectors for binding to the wallet
-    ///         when this module is initialized for the wallet.
-    function staticMethods()
-        public
-        pure
-        returns (bytes4[] memory methods)
-    {
-        return new bytes4[](0);
     }
 
     /// @dev Binds all static methods to the given wallet.
