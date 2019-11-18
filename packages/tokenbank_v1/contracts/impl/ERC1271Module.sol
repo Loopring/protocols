@@ -41,7 +41,8 @@ contract ERC1271Module is BaseModule, ERC1271
         return methods;
     }
 
-    /// @dev This method is expected to be called from a wallet's default function.
+    /// @dev This is a static method bound to wallet.
+    ///      It checks if the current wallet owner is the data signer.
     function isValidSignature(
         bytes memory _data,
         bytes memory _signature
@@ -63,7 +64,7 @@ contract ERC1271Module is BaseModule, ERC1271
         pure
         returns (bytes4)
     {
-        if (_signature.length != 65) {
+        if (_address == address(0) || _signature.length != 65) {
             return bytes4(0);
         }
 
