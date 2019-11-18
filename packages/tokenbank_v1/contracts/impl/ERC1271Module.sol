@@ -16,14 +16,15 @@
 */
 pragma solidity ^0.5.11;
 
-import "./BaseModule.sol";
-
-import "../iface/Wallet.sol";
-
 import "../thirdparty/ERC1271.sol";
 
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
+
+import "../iface/Wallet.sol";
+
+import "./BaseModule.sol";
+
 
 /// @title ERC1271Module
 /// @dev This is the base module for supporting ERC1271.

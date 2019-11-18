@@ -16,12 +16,12 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/Wallet.sol";
-
 import "../lib/Claimable.sol";
 import "../lib/NamedAddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
+
+import "../iface/Wallet.sol";
 
 
 /// @title WalletFactory

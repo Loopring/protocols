@@ -16,10 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
+import "../lib/ReentrancyGuard.sol";
+
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
-
-import "../lib/ReentrancyGuard.sol";
 
 
 /// @title BaseModule

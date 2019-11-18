@@ -16,11 +16,11 @@
 */
 pragma solidity ^0.5.11;
 
-import "./BaseModule.sol";
+import "../lib/MathUint.sol";
 
 import "../iface/Wallet.sol";
 
-import "../lib/MathUint.sol";
+import "./BaseModule.sol";
 
 
 /// @title MetaTxModule
