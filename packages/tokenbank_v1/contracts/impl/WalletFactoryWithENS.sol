@@ -79,8 +79,6 @@ contract WalletFactoryWithENS is WalletFactory, Module
         } else {
             _wallet = createWalletInternal(_owner, _modules);
         }
-
-        emit WalletCreated(_wallet, _owner, _subdomain);
     }
 
     function registerSubdomain(
