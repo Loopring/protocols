@@ -28,7 +28,7 @@ import "./WalletFactory.sol";
 
 
 /// @title BaseBankRegistry
-/// @dev Basic implemementation of a BankRegistry.
+/// @dev Basic implementation of a BankRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
