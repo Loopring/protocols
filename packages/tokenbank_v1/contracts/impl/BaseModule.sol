@@ -19,33 +19,53 @@ pragma solidity ^0.5.11;
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
+import "../lib/ReentrancyGuard.sol";
 
 
-contract BaseModule is Module
+/// @title BaseModule
+/// @dev This contract implements some common functions that are likely
+///      be useful for all modules.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
+contract BaseModule is Module, ReentrancyGuard
 {
-    function addModule(address wallet, address module)
+    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
+    function addModule(
+        address wallet,
+        address module
+        )
         external
-        onlyWalletOwner(wallet)
+        nonReentrant
+        onlyStricklyWalletOwner(wallet)
     {
         Wallet(wallet).addModule(module);
     }
 
-    function removeModule(address wallet, address module)
+    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
+    function removeModule(
+        address wallet,
+        address module
+        )
         external
-        onlyWalletOwner(wallet)
+        nonReentrant
+        onlyStricklyWalletOwner(wallet)
     {
         Wallet(wallet).removeModule(module);
     }
 
+    /// @dev Bind a static method to the  wallet. Callable only by the wallet owner.
     function bindStaticMethod(address wallet, bytes4 method, address module)
         external
-        onlyWalletOwner(wallet)
+        nonReentrant
+        onlyStricklyWalletOwner(wallet)
     {
         Wallet(wallet).bindStaticMethod(method, module);
     }
 
+    /// @dev Internal method to transact on the given wallet.
     function transact(
         address wallet,
         address to,

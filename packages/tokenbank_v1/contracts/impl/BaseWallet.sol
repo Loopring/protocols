@@ -21,18 +21,24 @@ import "../iface/Module.sol";
 
 import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
-
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
+import "../lib/ReentrancyGuard.sol";
 
 
-contract BaseWallet is Wallet, NamedAddressSet
+/// @title BaseWallet
+/// @dev This contract provides basic implementation for a Wallet.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
+contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 {
     string private constant MODULE = "__MODULE__";
     string private constant ERC20_TRANSFER = "transfer(address,uint256)";
 
-    mapping (bytes4  => address) internal getters;
+    mapping (bytes4  => address) internal methodToModule;
 
+    /// @dev Emitted when the wallet received Ether.
     event Received(
         address indexed sender,
         uint    value,
@@ -56,13 +62,14 @@ contract BaseWallet is Wallet, NamedAddressSet
         address[] calldata _modules
         )
         external
-        // nonReentry
+        nonReentrant
     {
         require(owner == address(0) && numAddressesInSet(MODULE) == 0, "INITIALIZED_ALREADY");
         require(_owner != address(0), "ZERO_ADDRESS");
         require(_modules.length > 0, "EMPTY_MODULES");
 
         owner = _owner;
+
         emit Initialized(owner);
 
         for(uint i = 0; i < _modules.length; i++) {
@@ -77,6 +84,7 @@ contract BaseWallet is Wallet, NamedAddressSet
     function addModule(address _module)
         external
         onlyModule
+        nonReentrant
     {
         require(_module != address(0), "NULL_MODULE");
         addAddressToSet(MODULE, _module);
@@ -87,6 +95,7 @@ contract BaseWallet is Wallet, NamedAddressSet
     function removeModule(address _module)
         external
         onlyModule
+        nonReentrant
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
         removeAddressFromSet(MODULE, _module);
@@ -98,7 +107,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         view
         returns (address[] memory)
     {
-        return getAddressesInSet(MODULE);
+        return addressesInSet(MODULE);
     }
 
     function hasModule(address _module)
@@ -112,9 +121,11 @@ contract BaseWallet is Wallet, NamedAddressSet
     function bindStaticMethod(bytes4 _method, address _module)
         external
         onlyModule
+        nonReentrant
     {
-        getters[_method] = _module;
-        emit GetterBinded(_method, _module);
+        require(methodToModule[_method] != address(0), "BAD_MODULE");
+        methodToModule[_method] = _module;
+        emit StaticMethodBound(_method, _module);
     }
 
     function staticMethodModule(bytes4 _method)
@@ -122,7 +133,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         view
         returns (address)
     {
-        return getters[_method];
+        return methodToModule[_method];
     }
 
     function tokenBalance(address token)
@@ -144,8 +155,10 @@ contract BaseWallet is Wallet, NamedAddressSet
         )
         external
         onlyModule
+        nonReentrant
         returns (bool success)
     {
+        require(to != address(this), "SAME_ADDRESS");
         bytes memory result;
         if (token == address(0)) {
             result = transactInternal(to, value, "");
@@ -154,7 +167,7 @@ contract BaseWallet is Wallet, NamedAddressSet
             result = transactInternal(token, 0, data);
         }
 
-        // TODO(daniel): This need to be tested
+        // TODO(daniel): Not sure if this will work, this need to be tested!!!
         if (result.length == 0) {
             return true;
         }
@@ -171,6 +184,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         )
         external
         onlyModule
+        nonReentrant
         returns (bytes memory result)
     {
         return transactInternal(to, value, data);
@@ -185,6 +199,7 @@ contract BaseWallet is Wallet, NamedAddressSet
         returns (bytes memory result)
     {
         bool success;
+        // solium-disable-next-line security/no-call-value
         (success, result) = to.call.value(value)(data);
         if (!success) {
             assembly {
@@ -195,18 +210,22 @@ contract BaseWallet is Wallet, NamedAddressSet
         emit Transacted(msg.sender, to, value, data);
     }
 
+    /// @dev This default function can receive Ether or perform queris to modules
+    ///      using staticly bound methods.
     function()
         external
         payable
     {
-        address module = msg.data.length == 0 ? address(0) : getters[msg.sig];
-
-        if (module == address(0)) {
-            if (msg.value > 0) {
-                emit Received(msg.sender, msg.value, msg.data);
-            }
+        if (msg.value > 0) {
+            emit Received(msg.sender, msg.value, msg.data);
             return;
         }
+
+        if (msg.data.length == 0) {
+            return;
+        }
+
+        address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
         assembly {

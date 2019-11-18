@@ -20,14 +20,19 @@ import "../iface/Wallet.sol";
 
 import "../lib/Claimable.sol";
 import "../lib/NamedAddressSet.sol";
+import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
-
-
-contract WalletFactory is Claimable, NamedAddressSet
+/// @title WalletFactory
+/// @dev A factory contract to create a new wallet by deploying a proxy
+///      in front of a real wallet.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
+contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
 {
     string private constant MANAGER = "__MANAGER__";
     address public walletImplementation;
@@ -56,6 +61,39 @@ contract WalletFactory is Claimable, NamedAddressSet
         _;
     }
 
+    /// @dev Create a new wallet by deploying a proxy.
+    /// @param _owner The wallet's owner.
+    /// @param _modules The wallet's modules.
+    /// @return _wallet The newly created wallet's address.
+    function createWallet(
+        address   _owner,
+        address[] calldata _modules
+        )
+        external
+        payable
+        onlyManager
+        nonReentrant
+        returns (address _wallet)
+    {
+        _wallet = createWalletInternal(_owner, _modules);
+        emit WalletCreated(_wallet, _owner);
+    }
+
+    // TODO(daniel): use CREATE2?
+    function createWalletInternal(
+        address   _owner,
+        address[] memory _modules
+        )
+        internal
+        returns (address _wallet)
+    {
+        _wallet = address(new SimpleProxy(walletImplementation));
+        Wallet(_wallet).init(_owner, _modules);
+    }
+
+    /// @dev Checks if an address is a manger.
+    /// @param addr The address to check.
+    /// @return True if the address is a manager, False otherwise.
     function isManager(address addr)
         public
         view
@@ -64,6 +102,18 @@ contract WalletFactory is Claimable, NamedAddressSet
         return isAddressInSet(MANAGER, addr);
     }
 
+    /// @dev Gets the managers.
+    /// @return The list of managers.
+    function managers()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(MANAGER);
+    }
+
+    /// @dev Adds a new manager.
+    /// @param manager The new address to add.
     function addManager(address manager)
         public
         onlyOwner
@@ -72,39 +122,13 @@ contract WalletFactory is Claimable, NamedAddressSet
         emit ManagerAdded(manager);
     }
 
+    /// @dev Removes a manager.
+    /// @param manager The manager to remove.
     function removeManager(address manager)
         public
         onlyOwner
     {
         removeAddressFromSet(MANAGER, manager);
         emit ManagerRemoved(manager);
-    }
-
-    function createWallet(
-        address   _owner,
-        address[] calldata _modules
-        )
-        external
-        payable
-        onlyManager
-        returns (address walletAddress)
-    {
-        return createWalletInternal(_owner, _modules);
-    }
-
-
-    function createWalletInternal(
-        address   _owner,
-        address[] memory _modules
-        )
-        internal
-        returns (address walletAddress)
-    {
-        SimpleProxy proxy = new SimpleProxy(walletImplementation);
-        walletAddress = address(proxy);
-        Wallet wallet = Wallet(walletAddress);
-
-        wallet.init(_owner, _modules);
-        emit WalletCreated(walletAddress, _owner);
     }
 }

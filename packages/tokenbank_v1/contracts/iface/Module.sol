@@ -20,12 +20,19 @@ import "../lib/Ownable.sol";
 
 import "./Wallet.sol";
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
 
-
+/// @title Module
+/// @dev Base contract for all smart wallet modules.
+///      Each module must implement the `init` method. It will be called when
+///      the module is added to the given wallet.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract Module
 {
+    // Emitted whtn the module is successfully initialized for a wallet.
     event Initialized(address indexed wallet);
 
     modifier onlyWallet(address wallet)
@@ -34,16 +41,26 @@ contract Module
         _;
     }
 
-    modifier onlyWalletOwner(address wallet)
-    {
-        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+    modifier onlyWalletOwner(address wallet) {
+        require(
+            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            "NOT_FROM_WALLET_OWNER");
         _;
     }
 
+    modifier onlyStricklyWalletOwner(address wallet) {
+        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_STRICTLY_WALLET_OWNER");
+        _;
+    }
+
+    /// @dev Initializes the module for the given wallet address.
+    ///      This function must throw in case of error.
     function init(address wallet)
         external
         onlyWallet(wallet)
     {
+        require(wallet != address(0), "ZERO_ADDRESS");
+        // This default implementation only emits an event.
         emit Initialized(wallet);
     }
 }

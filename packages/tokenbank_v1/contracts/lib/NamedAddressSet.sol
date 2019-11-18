@@ -26,5 +26,5 @@ contract NamedAddressSet
     function removeAddressFromSet(string memory name, address addr) internal;
     function isAddressInSet(string memory name, address addr) internal view returns (bool);
     function numAddressesInSet(string memory name) internal view returns (uint);
-    function getAddressesInSet(string memory name) internal view returns (address[] storage);
+    function addressesInSet(string memory name) internal view returns (address[] storage);
 }

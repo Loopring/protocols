@@ -22,10 +22,14 @@ import "../iface/Wallet.sol";
 import "./WalletFactory.sol";
 
 
-// The concept/design of this class is inspired by Argent's contract codebase:
-// https://github.com/argentlabs/argent-contracts
-
-
+/// @title WalletFactoryWithENS
+/// @dev Factory to create new wallets and also register a ENS subdomain for
+///      newly created wallets.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract WalletFactoryWithENS is WalletFactory, Module
 {
     string private constant MANAGER = "__MANAGER__";
@@ -33,19 +37,23 @@ contract WalletFactoryWithENS is WalletFactory, Module
 
     event WalletCreated(
         address indexed wallet,
-        address indexed owner
+        address indexed owner,
+        string  indexed subdomain
     );
 
     event ManagerAdded  (address indexed manager);
     event ManagerRemoved(address indexed manager);
 
-    constructor(
-        address _walletImplementation
-        )
+    constructor(address _walletImplementation)
         public
-        WalletFactory(_walletImplementation) {}
+        WalletFactory(_walletImplementation)
+    {}
 
-
+    /// @dev Create a new wallet by deploying a proxy.
+    /// @param _owner The wallet's owner.
+    /// @param _modules The wallet's modules.
+    /// @param _subdomain The ENS subdomain to register, use "" to skip.
+    /// @return _wallet The newly created wallet's address.
     function createWallet(
         address   _owner,
         address[] calldata _modules,
@@ -54,7 +62,8 @@ contract WalletFactoryWithENS is WalletFactory, Module
         external
         payable
         onlyManager
-        returns (address walletAddress)
+        nonReentrant
+        returns (address _wallet)
     {
         if (bytes(_subdomain).length > 0) {
             address[] memory extendedModules = new address[](_modules.length + 1);
@@ -62,22 +71,23 @@ contract WalletFactoryWithENS is WalletFactory, Module
             for(uint i = 0; i < _modules.length; i++) {
                 extendedModules[i + 1] = _modules[i];
             }
-            walletAddress = createWalletInternal(_owner, extendedModules);
+            _wallet = createWalletInternal(_owner, extendedModules);
 
-            Wallet wallet = Wallet(walletAddress);
-            registerSubdomain(wallet, _subdomain);
-
-            wallet.removeModule(address(this));
+            Wallet w = Wallet(_wallet);
+            registerSubdomain(w, _subdomain);
+            w.removeModule(address(this));
         } else {
-            walletAddress = createWalletInternal(_owner, _modules);
+            _wallet = createWalletInternal(_owner, _modules);
         }
+
+        emit WalletCreated(_wallet, _owner, _subdomain);
     }
 
     function registerSubdomain(
         Wallet _wallet,
         string  memory _subdomain
         )
-        internal
+        private
     {
         // TODO
     }
