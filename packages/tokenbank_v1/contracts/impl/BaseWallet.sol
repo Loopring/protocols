@@ -199,6 +199,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         returns (bytes memory result)
     {
         bool success;
+        // solium-disable-next-line security/no-call-value
         (success, result) = to.call.value(value)(data);
         if (!success) {
             assembly {
@@ -220,7 +221,11 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
             return;
         }
 
-        address module = msg.data.length == 0 ? address(0) : methodToModule[msg.sig];
+        if (msg.data.length == 0) {
+            return;
+        }
+
+        address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
         assembly {

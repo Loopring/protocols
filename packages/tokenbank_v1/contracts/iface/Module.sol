@@ -43,8 +43,8 @@ contract Module
 
     modifier onlyWalletOwner(address wallet) {
         require(
-          msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
-          "NOT_FROM_WALLET_OWNER");
+            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            "NOT_FROM_WALLET_OWNER");
         _;
     }
 

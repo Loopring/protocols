@@ -24,9 +24,7 @@ import "../lib/MathUint.sol";
 
 
 /// @title MetaTxModule
-/// @dev Base contract for all smart wallet modules.
-///      Each module must implement the `init` method. It will be called when
-///      the module is added to the given wallet.
+/// @dev This is the base module for supporting meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
@@ -35,7 +33,8 @@ import "../lib/MathUint.sol";
 contract MetaTxModule is BaseModule
 {
     using MathUint for uint;
-    uint constant public BLOCK_BOUND = 10000;
+    uint constant public BLOCK_BOUND = 100;
+    uint constant public GAS_OVERHEAD = 30000;
 
     struct WalletState {
         uint nonce;
@@ -50,6 +49,14 @@ contract MetaTxModule is BaseModule
         bool    success
     );
 
+    /// @dev Validates signatures validation.
+    ///      Sub-contract must implement this function for cutomized validation
+    ///      of meta transaction signatures.
+    /// @param wallet The wallet address.
+    /// @param data The raw transaction to be performed on arbitrary contract.
+    /// @param metaTxHash The hash that the signatures are signed against.
+    /// @param signatures The signatures to be validated by the module.
+    /// @return True if signature validation passes; False otherwise.
     function validateSignatures(
         address wallet,
         bytes   memory data,
@@ -59,23 +66,37 @@ contract MetaTxModule is BaseModule
         view
         returns (bool);
 
+    /// @dev Execute a signed meta transaction.
+    ///      This method can be called by any relayer without restriction. The relayer
+    ///      will pay for transaction gas in Ether and charge the wallet Ether or other
+    ///      ERC20 tokens as fee. If gasPrice is set to 0, then the relayer won't charge
+    ///      the wallet any fee.
+    /// @param data The raw transaction to be performed on arbitrary contract.
+    /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
+    ///              make sure the transaction's metaTxHash is unique; otherwise, the module
+    ///              requires the nonce is greater than the last nonce used by the same
+    ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
+    /// @param gasPrice The amount of `gasToken` to pay per gas. 0 is a valid value.
+    /// @param gasLimit The max amount of gas that can be used by this meta transaction,
+    ///                excluding an extra `GAS_OVERHEAD` for paying the relayer fees.
+    /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
+    /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
         uint    nonce,
         uint    gasPrice,
         uint    gasLimit,
         address gasToken,
-        bytes   calldata extraHash,
         bytes   calldata signatures
         )
         external
         nonReentrant
     {
         uint startGas = gasleft();
-        require(startGas >= gasLimit);
+        require(startGas >= gasLimit, "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
-        bytes32 metaTxHash = getMetaTxHash(
+        bytes32 metaTxHash = getSignHash(
             wallet, // from
             address(this),  // to
             0, // value
@@ -84,7 +105,7 @@ contract MetaTxModule is BaseModule
             gasPrice,
             gasLimit,
             gasToken,
-            extraHash
+            "" // extraHash
         );
 
         require(
@@ -98,8 +119,10 @@ contract MetaTxModule is BaseModule
         if (gasPrice > 0) {
             uint gasSpent = startGas - gasleft();
             require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
+
+            gasSpent = gasSpent.mul(gasPrice).add(GAS_OVERHEAD);
             require(
-                Wallet(wallet).transferToken(msg.sender, gasSpent.mul(gasPrice), gasToken),
+                Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
                 "OUT_OF_GAS"
             );
         }
@@ -107,6 +130,9 @@ contract MetaTxModule is BaseModule
         emit ExecutedMetaTx(wallet, nonce, metaTxHash, success);
     }
 
+    /// @dev Returns the last nonce used by a wallet.
+    /// @param wallet The wallet's address.
+    /// @return Last nonce used.
     function lastNonce(address wallet)
         public
         view
@@ -128,7 +154,9 @@ contract MetaTxModule is BaseModule
         }
     }
 
-    function getMetaTxHash(
+    /// @dev calculate the hash that all signatures will sign against.
+    ///      See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1077.md
+    function getSignHash(
         address from,
         address to,
         uint256 value,
@@ -143,20 +171,21 @@ contract MetaTxModule is BaseModule
         pure
         returns (bytes32)
     {
-        bytes32 hash = keccak256(abi.encodePacked(
-            byte(0x19),
-            byte(0),
-            from,
-            to,
-            value,
-            keccak256(data),
-            nonce,
-            gasPrice,
-            gasLimit,
-            gasToken,
-            extraHash
-            )
-        );
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                byte(0x19),
+                byte(0),
+                from,
+                to,
+                value,
+                keccak256(data),
+                nonce,
+                gasPrice,
+                gasLimit,
+                gasToken,
+                extraHash
+                )
+            );
 
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
@@ -165,7 +194,7 @@ contract MetaTxModule is BaseModule
     /// @param metaTxHash The signed hash
     /// @param signatures The concatenated signatures.
     /// @param index The index of the signature to recover.
-   function recoverSigner(
+    function recoverSigner(
         bytes32      metaTxHash,
         bytes memory signatures,
         uint         index
@@ -185,7 +214,7 @@ contract MetaTxModule is BaseModule
             s := mload(add(signatures, add(0x40, mul(0x41, index))))
             v := and(mload(add(signatures, add(0x41, mul(0x41, index)))), 0xff)
         }
-        require(v == 27 || v == 28);
+        require(v == 27 || v == 28, "");
         return ecrecover(metaTxHash, v, r, s);
     }
 
@@ -200,8 +229,6 @@ contract MetaTxModule is BaseModule
             method := mload(add(data, 32))
         }
     }
-
-    // ===== Private methods =====
 
     /// @dev Save the meta-transaction to history.
     ///      This method must throw if the transaction is not unique or the nonce is invalid.

@@ -48,7 +48,9 @@ contract WalletFactoryWithENS is WalletFactory, Module
         address _walletImplementation
         )
         public
-        WalletFactory(_walletImplementation) {}
+        WalletFactory(_walletImplementation)
+    {
+    }
 
     function createWallet(
         address   _owner,
