@@ -73,22 +73,30 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         payable
         onlyManager
         nonReentrant
-        returns (address _wallet)
+        returns (address)
     {
-        _wallet = createWalletInternal(_owner, _modules);
-        emit WalletCreated(_wallet, _owner);
+        return createWalletInternal(_owner, _modules);
     }
 
-    // TODO(daniel): use CREATE2?
     function createWalletInternal(
         address   _owner,
         address[] memory _modules
         )
         internal
-        returns (address _wallet)
+        returns (address payable _wallet)
     {
-        _wallet = address(new SimpleProxy(walletImplementation));
+        bytes32 salt = keccak256(abi.encodePacked("WALLET_CREATION", _owner));
+        bytes memory code = type(SimpleProxy).creationCode;
+        assembly {
+            _wallet := create2(0, add(code, 0x20), mload(code), salt)
+            if iszero(extcodesize(_wallet)) {
+                revert(0, 0)
+            }
+        }
+        SimpleProxy(_wallet).setImplementation(walletImplementation);
         Wallet(_wallet).setup(_owner, _modules);
+
+        emit WalletCreated(_wallet, _owner);
     }
 
     /// @dev Checks if an address is a manger.
