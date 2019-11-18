@@ -118,7 +118,7 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         public
         onlyOwner
     {
-        addAddressToSet(MANAGER, manager);
+        addAddressToSet(MANAGER, manager, true);
         emit ManagerAdded(manager);
     }
 

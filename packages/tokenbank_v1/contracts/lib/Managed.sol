@@ -38,14 +38,14 @@ contract Managed is NamedAddressSet
         public
     {
         require(numAddressesInSet(MANAGER) == 0, "INITIALIZED_ALREADY");
-        addAddressToSet(MANAGER, manager);
+        addAddressToSet(MANAGER, manager, true);
     }
 
     function addManager(address manager)
         public
         onlyManager
     {
-        addAddressToSet(MANAGER, manager);
+        addAddressToSet(MANAGER, manager, true);
         emit ManagerAdded(manager);
     }
 

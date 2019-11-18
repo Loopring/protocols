@@ -30,7 +30,7 @@ import "./Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract Module
+interface Module
 {
     event Initialized (address indexed wallet);
     event Terminated  (address indexed wallet);
