@@ -33,13 +33,12 @@ contract BankRegistry is Claimable
     event ModuleRegistered  (address indexed module);
     event ModuleDeregistered(address indexed module);
 
-
     function registerWallet(address wallet) external;
-    function isWallet(address addr) external view returns (bool);
-    function numOfWallets() external view returns (uint);
+    function isWallet(address addr) public view returns (bool);
+    function numOfWallets() public view returns (uint);
 
     function registerModule(address module) external;
     function deregisterModule(address module) external;
-    function isModuleRegistered(address module) external view returns (bool);
-    function numOfModules() external view returns(uint);
+    function isModuleRegistered(address module) public view returns (bool);
+    function numOfModules() public view returns(uint);
 }

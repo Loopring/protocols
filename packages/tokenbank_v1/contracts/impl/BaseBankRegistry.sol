@@ -66,7 +66,7 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
     }
 
     function isWallet(address addr)
-        external
+        public
         view
         returns (bool)
     {
@@ -74,7 +74,7 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
     }
 
     function numOfWallets()
-        external
+        public
         view
         returns (uint)
     {
@@ -98,7 +98,7 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
     }
 
     function isModuleRegistered(address module)
-        external
+        public
         view
         returns (bool)
     {
@@ -106,7 +106,7 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
     }
 
     function numOfModules()
-        external
+        public
         view
         returns (uint)
     {
