@@ -50,7 +50,8 @@ contract ERC1271Module is BaseModule, ERC1271
         view
         returns (bytes4)
     {
-        return isValidSignatureFrom(address(this), _data, _signature);
+        address walletOwner = Wallet(address(this)).owner();
+        return isValidSignatureFrom(walletOwner, _data, _signature);
     }
 
     function isValidSignatureFrom(

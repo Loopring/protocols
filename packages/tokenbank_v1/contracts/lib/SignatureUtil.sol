@@ -17,10 +17,8 @@
 pragma solidity ^0.5.11;
 
 
-/// @title Claimable
-/// @author Brecht Devos - <brecht@loopring.org>
-/// @dev Extension for the Ownable contract, where the ownership needs
-///      to be claimed. This allows the new owner to accept the transfer.
+/// @title SignatureUtil
+/// @author Daniel Wang - <daniel@loopring.org>
 library SignatureUtil
 {
     function recoverSigner(
@@ -32,9 +30,9 @@ library SignatureUtil
         pure
         returns (address)
     {
-        uint8 v;
         bytes32 r;
         bytes32 s;
+        uint8 v;
         // we jump 32 (0x20) as the first slot of bytes contains the length
         // we jump 65 (0x41) per signature
         // for v we load 32 bytes ending with v (the first 31 come from s) then apply a mask
@@ -42,6 +40,10 @@ library SignatureUtil
             r := mload(add(signatures, add(0x20, mul(0x41, index))))
             s := mload(add(signatures, add(0x40, mul(0x41, index))))
             v := and(mload(add(signatures, add(0x41, mul(0x41, index)))), 0xff)
+        }
+        // See https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/contracts/cryptography/ECDSA.sol
+        if (uint256(s) > 0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF5D576E7357A4501DDFE92F46681B20A0) {
+            return address(0);
         }
         if (v == 27 || v == 28) {
           return ecrecover(signHash, v, r, s);
