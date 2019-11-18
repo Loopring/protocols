@@ -16,22 +16,16 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
-import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
-import "../iface/Wallet.sol";
-import "../iface/Module.sol";
-
-import "./WalletFactory.sol";
 
 
 /// @title BaseBankRegistry
 /// @dev Basic implementation of a BankRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
+contract BaseBankRegistry is BankRegistry, NamedAddressSet
 {
     string private constant MODULE = "__MODULE__";
     string private constant WALLET = "__WALLET__";
