@@ -90,7 +90,6 @@ contract BaseModule is Module, ReentrancyGuard
         pure
         returns (bytes4[] memory methods)
     {
-        return new bytes4[](0);
     }
 
     // ===== internal & private methods =====

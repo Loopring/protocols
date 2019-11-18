@@ -32,9 +32,9 @@ contract Wallet
 {
     address public owner;
 
-    event ModuleAdded   (address indexed module);
-    event ModuleRemoved (address indexed module);
-    event StaticMethodBound  (bytes4  indexed method, address indexed module);
+    event ModuleAdded           (address indexed module);
+    event ModuleRemoved         (address indexed module);
+    event StaticMethodBound     (bytes4  indexed method, address indexed module);
 
     event WalletSetup(address indexed owner);
 
@@ -45,7 +45,7 @@ contract Wallet
         bytes           data
     );
 
-    /// @dev Initializes this wallet by assigning an original order and a
+    /// @dev Set up this wallet by assigning an original order and a
     ///      list of initial modules. For each module, its `init` method
     ///      will be called with `address(this)` as the parameter.
     ///
