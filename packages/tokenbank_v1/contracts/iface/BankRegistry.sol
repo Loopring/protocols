@@ -19,9 +19,9 @@ pragma solidity ^0.5.11;
 import "../lib/Claimable.sol";
 
 
-/// @title Registry
-/// @dev Modules share states by accessing the same storage instance.
-///      Using ModuleStorage will achieve better module decoupling.
+/// @title BankRegistry
+/// @dev A registry for wallets, modules, and probably other managed contracts
+///      in the future.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
