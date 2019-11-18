@@ -56,7 +56,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     modifier onlyModule
     {
-        require(isAddressInSet(MODULE, msg.sender), "NOT_A_MODULE");
+        require(isAddressInSet(MODULE, msg.sender), "MODULE_UNAUTHORIZED");
+        require(bankRegistry.isModuleRegistered(msg.sender), "INVALID_MODULE");
         _;
     }
 
@@ -244,6 +245,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
+        require(bankRegistry.isModuleRegistered(module), "INVALID_MODULE");
 
         assembly {
             let ptr := mload(0x40)
