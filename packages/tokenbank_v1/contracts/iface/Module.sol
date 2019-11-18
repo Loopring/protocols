@@ -59,7 +59,6 @@ contract Module
         external
         onlyWallet(wallet)
     {
-        require(wallet != address(0), "ZERO_ADDRESS");
         // This default implementation only emits an event.
         emit Initialized(wallet);
     }
