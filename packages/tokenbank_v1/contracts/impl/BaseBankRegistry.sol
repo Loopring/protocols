@@ -38,13 +38,7 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
 
     address private factory;
 
-    constructor(address _factory)
-        public
-        Claimable()
-    {
-        require(_factory != address(0), "ZERO_ADDRESS");
-        factory = _factory;
-    }
+    event WalletFactoryUpdated(address factory);
 
     modifier onlyFactory()
     {
@@ -52,9 +46,20 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
         _;
     }
 
+    constructor() public Claimable() {}
+
+    function setWalletFacgtory(address _factory)
+        external
+        onlyOwner
+    {
+        require(_factory != address(0), "ZERO_ADDRESS");
+        factory = _factory;
+        emit WalletFactoryUpdated(factory);
+    }
+
     function registerWallet(address wallet)
-      external
-      onlyFactory
+        external
+        onlyFactory
     {
         addAddressToSet(WALLET, wallet, false);
         emit WalletRegistered(wallet);
