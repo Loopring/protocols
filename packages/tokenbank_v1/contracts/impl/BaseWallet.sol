@@ -107,7 +107,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (address[] memory)
     {
-        return getAddressesInSet(MODULE);
+        return addressesInSet(MODULE);
     }
 
     function hasModule(address _module)

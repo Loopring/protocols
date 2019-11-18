@@ -25,9 +25,8 @@ import "../lib/SimpleProxy.sol";
 
 
 /// @title WalletFactory
-/// @dev Base contract for all smart wallet modules.
-///      Each module must implement the `init` method. It will be called when
-///      the module is added to the given wallet.
+/// @dev A factory contract to create a new wallet by deploying a proxy
+///      in front of a real wallet.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
@@ -62,30 +61,10 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         _;
     }
 
-    function isManager(address addr)
-        public
-        view
-        returns (bool)
-    {
-        return isAddressInSet(MANAGER, addr);
-    }
-
-    function addManager(address manager)
-        public
-        onlyOwner
-    {
-        addAddressToSet(MANAGER, manager);
-        emit ManagerAdded(manager);
-    }
-
-    function removeManager(address manager)
-        public
-        onlyOwner
-    {
-        removeAddressFromSet(MANAGER, manager);
-        emit ManagerRemoved(manager);
-    }
-
+    /// @dev Create a new wallet by deploying a proxy.
+    /// @param _owner The wallet's owner.
+    /// @param _modules The wallet's modules.
+    /// @return _wallet The newly created wallet's address.
     function createWallet(
         address   _owner,
         address[] calldata _modules
@@ -94,23 +73,62 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         payable
         onlyManager
         nonReentrant
-        returns (address walletAddress)
+        returns (address _wallet)
     {
-        return createWalletInternal(_owner, _modules);
+        _wallet = createWalletInternal(_owner, _modules);
+        emit WalletCreated(_wallet, _owner);
     }
 
+    // TODO(daniel): use CREATE2?
     function createWalletInternal(
         address   _owner,
         address[] memory _modules
         )
         internal
-        returns (address walletAddress)
+        returns (address _wallet)
     {
-        SimpleProxy proxy = new SimpleProxy(walletImplementation);
-        walletAddress = address(proxy);
-        Wallet wallet = Wallet(walletAddress);
+        _wallet = address(new SimpleProxy(walletImplementation));
+        Wallet(_wallet).init(_owner, _modules);
+    }
 
-        wallet.init(_owner, _modules);
-        emit WalletCreated(walletAddress, _owner);
+    /// @dev Checks if an address is a manger.
+    /// @param addr The address to check.
+    /// @return True if the address is a manager, False otherwise.
+    function isManager(address addr)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(MANAGER, addr);
+    }
+
+    /// @dev Gets the managers.
+    /// @return The list of managers.
+    function managers()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(MANAGER);
+    }
+
+    /// @dev Adds a new manager.
+    /// @param manager The new address to add.
+    function addManager(address manager)
+        public
+        onlyOwner
+    {
+        addAddressToSet(MANAGER, manager);
+        emit ManagerAdded(manager);
+    }
+
+    /// @dev Removes a manager.
+    /// @param manager The manager to remove.
+    function removeManager(address manager)
+        public
+        onlyOwner
+    {
+        removeAddressFromSet(MANAGER, manager);
+        emit ManagerRemoved(manager);
     }
 }
