@@ -51,13 +51,24 @@ contract ERC1271Module is BaseModule, ERC1271
         )
         public
         view
-        returns (bytes4)
+        returns (bytes4);
+
+    function isSignedByWalletOwner(
+        bytes memory _data,
+        bytes memory _signature
+        )
+        internal
+        view
+        returns (bool)
     {
-        address walletOwner = Wallet(address(this)).owner();
-        return isValidSignatureFrom(walletOwner, _data, _signature) ? MAGICVALUE : bytes4(0);
+        return isSignedBy(
+            Wallet(address(this)).owner(),
+            _data,
+            _signature
+        );
     }
 
-    function isValidSignatureFrom(
+    function isSignedBy(
         address      _address,
         bytes memory _data,
         bytes memory _signature
