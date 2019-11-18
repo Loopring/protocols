@@ -46,9 +46,9 @@ library SignatureUtil
             return address(0);
         }
         if (v == 27 || v == 28) {
-          return ecrecover(signHash, v, r, s);
+            return ecrecover(signHash, v, r, s);
         } else {
-          return address(0);
+            return address(0);
         }
     }
 }

@@ -20,16 +20,16 @@ import "./BaseModule.sol";
 
 import "../iface/Wallet.sol";
 
+import "../thirdparty/ERC1271.sol";
+
 import "../lib/MathUint.sol";
-import "../lib/ERC1271.sol";
 import "../lib/SignatureUtil.sol";
 
 /// @title ERC1271Module
 /// @dev This is the base module for supporting ERC1271.
 contract ERC1271Module is BaseModule, ERC1271
 {
-    bytes4 constant internal SELECTOR_IS_VALID_SIGNATURE =
-        bytes4(keccak256("isValidSignature(bytes,bytes)"));
+    bytes4 constant internal SELECTOR_IS_VALID_SIGNATURE = bytes4(keccak256("isValidSignature(bytes,bytes)"));
 
     function staticMethods()
         public
@@ -68,9 +68,10 @@ contract ERC1271Module is BaseModule, ERC1271
             return bytes4(0);
         }
 
-        bytes32 signHash = keccak256(abi.encodePacked(
-            "\x19Ethereum Signed Message:\n32",
-            keccak256(_data)
+        bytes32 signHash = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                keccak256(_data)
             )
         );
 
