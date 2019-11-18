@@ -102,7 +102,7 @@ contract BaseModule is Module, ReentrancyGuard
         bytes   memory data
         )
         internal
-        returns (bytes memory result)
+        returns (bytes memory)
     {
         return Wallet(wallet).transact(to, value, data);
     }
