@@ -22,6 +22,7 @@ import "../iface/Wallet.sol";
 
 import "../lib/MathUint.sol";
 import "../lib/ERC1271.sol";
+import "../lib/SignatureUtil.sol";
 
 /// @title ERC1271Module
 /// @dev This is the base module for supporting ERC1271.
@@ -71,35 +72,10 @@ contract ERC1271Module is BaseModule, ERC1271
             )
         );
 
-        if (recoverSigner(signHash, _signature, 0) != _address) {
+        if (SignatureUtil.recoverSigner(signHash, _signature, 0) != _address) {
             return bytes4(0);
         }
 
         return MAGICVALUE;
-    }
-
-    // extract this
-    function recoverSigner(
-        bytes32      signHash,
-        bytes memory signatures,
-        uint         index
-        )
-        internal
-        pure
-        returns (address)
-    {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-        // we jump 32 (0x20) as the first slot of bytes contains the length
-        // we jump 65 (0x41) per signature
-        // for v we load 32 bytes ending with v (the first 31 come from s) then apply a mask
-        assembly {
-            r := mload(add(signatures, add(0x20, mul(0x41, index))))
-            s := mload(add(signatures, add(0x40, mul(0x41, index))))
-            v := and(mload(add(signatures, add(0x41, mul(0x41, index)))), 0xff)
-        }
-        require(v == 27 || v == 28, "");
-        return ecrecover(signHash, v, r, s);
     }
 }

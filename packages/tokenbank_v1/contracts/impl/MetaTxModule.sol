@@ -190,34 +190,6 @@ contract MetaTxModule is BaseModule
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
-    /// @dev   Recovers the signer at a given index from a list of concatenated signatures.
-    /// @param metaTxHash The signed hash
-    /// @param signatures The concatenated signatures.
-    /// @param index The index of the signature to recover.
-    function recoverSigner(
-        bytes32      metaTxHash,
-        bytes memory signatures,
-        uint         index
-        )
-        internal
-        pure
-        returns (address)
-    {
-        uint8 v;
-        bytes32 r;
-        bytes32 s;
-        // we jump 32 (0x20) as the first slot of bytes contains the length
-        // we jump 65 (0x41) per signature
-        // for v we load 32 bytes ending with v (the first 31 come from s) then apply a mask
-        assembly {
-            r := mload(add(signatures, add(0x20, mul(0x41, index))))
-            s := mload(add(signatures, add(0x40, mul(0x41, index))))
-            v := and(mload(add(signatures, add(0x41, mul(0x41, index)))), 0xff)
-        }
-        require(v == 27 || v == 28, "");
-        return ecrecover(metaTxHash, v, r, s);
-    }
-
     function extractMethod(bytes memory data)
         internal
         pure
