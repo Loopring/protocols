@@ -29,6 +29,8 @@ import "../lib/SignatureUtil.sol";
 /// @dev This is the base module for supporting ERC1271.
 contract ERC1271Module is BaseModule, ERC1271
 {
+    using SignatureUtil for bytes32;
+
     bytes4 constant internal SELECTOR_IS_VALID_SIGNATURE = bytes4(keccak256("isValidSignature(bytes,bytes)"));
 
     function staticMethods()
@@ -52,7 +54,7 @@ contract ERC1271Module is BaseModule, ERC1271
         returns (bytes4)
     {
         address walletOwner = Wallet(address(this)).owner();
-        return isValidSignatureFrom(walletOwner, _data, _signature);
+        return isValidSignatureFrom(walletOwner, _data, _signature) ? MAGICVALUE : bytes4(0);
     }
 
     function isValidSignatureFrom(
@@ -60,25 +62,18 @@ contract ERC1271Module is BaseModule, ERC1271
         bytes memory _data,
         bytes memory _signature
         )
-        public
+        internal
         pure
-        returns (bytes4)
+        returns (bool)
     {
         if (_address == address(0) || _signature.length != 65) {
-            return bytes4(0);
+            return false;
         }
 
         bytes32 signHash = keccak256(
-            abi.encodePacked(
-                "\x19Ethereum Signed Message:\n32",
-                keccak256(_data)
-            )
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(_data))
         );
 
-        if (SignatureUtil.recoverSigner(signHash, _signature, 0) != _address) {
-            return bytes4(0);
-        }
-
-        return MAGICVALUE;
+        return signHash.recoverSigner(_signature, 0) != _address;
     }
 }
