@@ -110,6 +110,6 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet, ReentrancyGuard
         view
         returns (uint)
     {
-      return numAddressesInSet(MODULE);
+        return numAddressesInSet(MODULE);
     }
 }
