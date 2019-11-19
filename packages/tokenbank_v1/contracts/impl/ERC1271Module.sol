@@ -32,15 +32,13 @@ contract ERC1271Module is BaseModule, ERC1271
 {
     using SignatureUtil for bytes32;
 
-    bytes4 constant internal SELECTOR_IS_VALID_SIGNATURE = bytes4(keccak256("isValidSignature(bytes,bytes)"));
-
     function staticMethods()
         public
         pure
         returns (bytes4[] memory)
     {
         bytes4[] memory methods = new bytes4[](1);
-        methods[0] = SELECTOR_IS_VALID_SIGNATURE;
+        methods[0] = this.isValidSignature.selector;
         return methods;
     }
 
