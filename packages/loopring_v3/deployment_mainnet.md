@@ -1,0 +1,27 @@
+## Deployment infos for Loopring 3.0-beta4:
+* release url: https://github.com/Loopring/protocols/releases/tag/3.0-beta4    
+* depoyer: 0x5593b2B8Dc63d0ed68aa8f885707b2Dc5787E391  
+* Migrations: 0x8E6af901Ac1141b847aE9aDF2C54e650CB778529  
+### contracts:  
+* lrcAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD  
+* wethAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2  
+* protocolFeeValutAddress: 0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4  
+* UniversalRegistry: 0xe89f633bb7C551F8f05faC793DDC8c0381b1F535  
+* BlockVerifier: 0xC8aDbCFb1AD0D6149b433cd419e2F06594741251  
+* DowntimeCostCalculator: 0x4E0336E66aC7bFF55e7829c2cA0F53B4c04E8035  
+* LoopringV3: 0x78229Ce6c941166fcEE7CEE4e93449bdeb814224  
+* ExchangeV3: 0x1AEE681712e0F60AD71782C200BaBC5EC113Ba74  
+### contract libs:  
+* Cloneable: 0x148469eDeaA10Bc3715b0a0d5700282ae60a53e9  
+* BatchVerifier: 0xA7b72D9E186c9671913BE6015eFD312a12285ede  
+* ExchangeConstants:  0x8aAa62F16d90512CFd841FDB9C019E6C0b081d0f  
+* ExchangeBalances:  0x023239aa37D4aD62153355620c4c4F4959D16AbA  
+* ExchangeAccounts:  0x7f444946C749Fc01be7e6f499ff515600d1c1dA0  
+* ExchangeAdmins:  0xAf3cEdd40f54aFe584047cC6E5A12b39CD0F8f44  
+* ExchangeBlocks:  0xE1111C7299A1C44D9aB5d2a49f5a48847238CDb3  
+* ExchangeTokens:  0xf92e66a5679A59c517c5115a5B7502a8761D2A52  
+* ExchangeGenesis:  0x2B987f520575d55EEDC8C6494c1B368Ba37E19b2  
+* ExchangeDeposits:  0x08Ad14b09E48aaFe33A4bcB596EFCB51a09Ec827  
+* ExchangeWithdrawals:  0xce6C255236A6A441f976511F60EB0035cEE58467  
+
+
