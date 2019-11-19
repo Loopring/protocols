@@ -32,8 +32,8 @@ import "../impl/BaseStorage.sol";
 contract GuardianStorage is BaseStorage, ReentrancyGuard
 {
     constructor(address manager)
-      public
-      BaseStorage(manager) {}
+        public
+        BaseStorage(manager) {}
 
     function isGuardian(
         address addr,
