@@ -75,11 +75,15 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         _;
     }
 
-    constructor(BankRegistry _bankRegistry) public {
+    constructor(BankRegistry _bankRegistry) public
+    {
         bankRegistry = _bankRegistry;
     }
 
-    function owner() public view returns (address) { return _owner; }
+    function owner() public view returns (address)
+    {
+        return _owner;
+    }
 
     function setup(
         address   initialOwner,
