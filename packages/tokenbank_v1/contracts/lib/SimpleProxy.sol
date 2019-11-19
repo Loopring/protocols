@@ -27,11 +27,12 @@ contract SimpleProxy is Proxy
         "org.loopring.protocol.simple.proxy"
     );
 
-    constructor(address _implementation)
-        public
+    function setImplementation(address _implementation)
+        external
     {
+        require(implementation() == address(0), "INITIALIZED_ALREADY");
         bytes32 position = implementationPosition;
-        assembly {sstore(position, _implementation) }
+        assembly { sstore(position, _implementation) }
     }
 
     function implementation()
