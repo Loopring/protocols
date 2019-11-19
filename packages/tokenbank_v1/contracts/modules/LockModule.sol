@@ -30,8 +30,6 @@ contract LockModule is MetaTxModule
 {
     using SignatureUtil for bytes32;
 
-    uint  public lockPeriod;
-
     event WalletLock(address indexed wallet, bool locked);
 
     modifier onlyRelayerOrGuardian(address wallet)
@@ -40,11 +38,6 @@ contract LockModule is MetaTxModule
             msg.sender == address(this) || isGuardian(msg.sender, wallet),
             "NOT_GUARDIAN");
         _;
-    }
-
-    constructor(uint _lockPeriod) public
-    {
-        lockPeriod = _lockPeriod;
     }
 
     function staticMethods()
