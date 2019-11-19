@@ -64,12 +64,12 @@ contract LockModule is MetaTxModule
         returns (bytes4[] memory)
     {
         bytes4[] memory methods = new bytes4[](2);
-        methods[0] = this.getWalletLock.selector;
-        methods[2] = this.isWalletLocked.selector;
+        methods[0] = this.getLock.selector;
+        methods[2] = this.isLocked.selector;
         return methods;
     }
 
-    function lockWallet(address wallet)
+    function lock(address wallet)
         external
         onlyGuardian(wallet)
         nonReentrant
@@ -77,7 +77,7 @@ contract LockModule is MetaTxModule
         lockInternal(wallet, msg.sender);
     }
 
-    function unlockWallet(address wallet)
+    function unlock(address wallet)
         external
         onlyGuardian(wallet)
         nonReentrant
@@ -85,7 +85,7 @@ contract LockModule is MetaTxModule
         unlockInternal(wallet, msg.sender);
     }
 
-    function lockWalletAsGuardian(
+    function lockAsGuardian(
         address wallet,
         address guardian
         )
@@ -96,7 +96,7 @@ contract LockModule is MetaTxModule
         lockInternal(wallet, guardian);
     }
 
-    function unlockWalletAsGuardian(
+    function unlockAsGuardian(
         address wallet,
         address guardian
         )
@@ -107,20 +107,20 @@ contract LockModule is MetaTxModule
         unlockInternal(wallet, guardian);
     }
 
-    function getWalletLock(address wallet)
+    function getLock(address wallet)
         public
         view
         returns (uint)
     {
-        return guardianStorage.getWalletLock(wallet);
+        return guardianStorage.getLock(wallet);
     }
 
-    function isWalletLocked(address wallet)
+    function isLocked(address wallet)
         public
         view
         returns (bool)
     {
-        return getWalletLock(wallet) > 0;
+        return getLock(wallet) > 0;
     }
 
     /// @dev Validating meta-transaction signatures.
@@ -137,8 +137,8 @@ contract LockModule is MetaTxModule
 
         bytes4 method = extractMethod(data);
         require(
-            method == this.lockWalletAsGuardian.selector ||
-            method == this.unlockWalletAsGuardian.selector,
+            method == this.lockAsGuardian.selector ||
+            method == this.unlockAsGuardian.selector,
             "INVALID_METHOD"
         );
 
