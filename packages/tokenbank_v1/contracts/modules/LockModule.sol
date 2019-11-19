@@ -93,7 +93,7 @@ contract LockModule is MetaTxModule
         return getWalletLock(wallet) > 0;
     }
 
-    /// @dev Validating meta-transaction signatures. For all methods
+    /// @dev Validating meta-transaction signatures.
     function validateSignatures(
         address wallet,
         bytes   memory data,
