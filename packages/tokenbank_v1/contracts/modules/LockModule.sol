@@ -23,6 +23,8 @@ import "../iface/Wallet.sol";
 
 import "../impl/MetaTxModule.sol";
 
+import "../storage/GuardianStorage.sol";
+
 
 /// @title LockModule
 /// @dev  A module for managing wallet locking and unlocking by guardians.
@@ -32,10 +34,18 @@ contract LockModule is MetaTxModule
 
     event WalletLock(address indexed wallet, bool locked);
 
+    GuardianStorage public guardianStorage;
+
+    constructor(GuardianStorage _guardianStorage)
+        public
+    {
+        guardianStorage = _guardianStorage;
+    }
+
     modifier onlyRelayerOrGuardian(address wallet)
     {
         require(
-            msg.sender == address(this) || isGuardian(msg.sender, wallet),
+            msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),
             "NOT_GUARDIAN");
         _;
     }
@@ -72,7 +82,7 @@ contract LockModule is MetaTxModule
         view
         returns (uint)
     {
-        return 0;
+        return guardianStorage.getWalletLock(wallet);
     }
 
     function isWalletLocked(address wallet)
@@ -83,6 +93,7 @@ contract LockModule is MetaTxModule
         return getWalletLock(wallet) > 0;
     }
 
+    /// @dev Validating meta-transaction signatures. For all methods
     function validateSignatures(
         address wallet,
         bytes   memory data,
@@ -93,16 +104,14 @@ contract LockModule is MetaTxModule
         returns (bool)
     {
         require(signatures.length == 65, "INVALID_SIGNATURE");
-        address signer = metaTxHash.recoverSigner(signatures, 0);
-        return isGuardian(signer, wallet);
-    }
 
-    function isGuardian(address addr, address wallet)
-        private
-        view
-        returns (bool)
-    {
-        // TODO
-        return true;
+        bytes4 method = extractMethod(data);
+        require(
+            method == this.lockWallet.selector || method == this.unlockWallet.selector,
+            "INVALID_METHOD"
+        );
+
+        address signer = metaTxHash.recoverSigner(signatures, 0);
+        return guardianStorage.isGuardian(signer, wallet);
     }
 }

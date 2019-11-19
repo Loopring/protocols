@@ -19,7 +19,7 @@ pragma solidity ^0.5.11;
 import "../lib/Managed.sol";
 
 
-/// @title ModuleStorage
+/// @title BaseStorage
 /// @dev Modules share states by accessing the same storage instance.
 ///      Using ModuleStorage will achieve better module decoupling.
 ///
@@ -27,7 +27,7 @@ import "../lib/Managed.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract ModuleStorage is Managed
+contract BaseStorage is Managed
 {
     constructor(address manager) public
     {
