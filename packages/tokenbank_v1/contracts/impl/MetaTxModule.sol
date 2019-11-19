@@ -49,7 +49,13 @@ contract MetaTxModule is BaseModule
         bool    success
     );
 
-    /// @dev Validates signatures validation.
+    modifier onlyRelayer
+    {
+        require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
+        _;
+    }
+
+    /// @dev Validates signatures.
     ///      Sub-contract must implement this function for cutomized validation
     ///      of meta transaction signatures.
     /// @param wallet The wallet address.
@@ -98,7 +104,7 @@ contract MetaTxModule is BaseModule
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
             wallet, // from
-            address(this),  // to
+            address(this),  // to. Note the relayer can only call its own methods.
             0, // value
             data,
             nonce,
@@ -141,6 +147,7 @@ contract MetaTxModule is BaseModule
         return wallets[wallet].nonce;
     }
 
+    /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
         internal
         pure
