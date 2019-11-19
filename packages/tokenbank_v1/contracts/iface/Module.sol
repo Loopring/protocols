@@ -32,13 +32,11 @@ import "./Wallet.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract Module
 {
-    /// @dev Initializes the module for the given wallet when the module is added.
-    ///      This function must throw in case of error.
-    ///      Warning: this method can ONLY be called by a wallet.
+    /// @dev Initializes the module for the given wallet after the module is added.
+    ///      Warning: this method shall ONLY be callable by a wallet.
     function initialize(address wallet) external;
 
-    /// @dev Terminate the module for the given wallet when the module is removed.
-    ///      This function must throw in case of error.
-    ///      Warning: this method can ONLY be called by a wallet.
+    /// @dev Terminates the module for the given wallet before the module is removed.
+    ///      Warning: this method shall ONLY be callable by a wallet.
     function terminate(address walelt) external;
 }
