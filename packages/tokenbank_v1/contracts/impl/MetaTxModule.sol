@@ -25,6 +25,9 @@ import "./BaseModule.sol";
 
 /// @title MetaTxModule
 /// @dev This is the base module for supporting meta-transactions.
+///      A MetaTxModule will only relay transactions on itself, and the methods
+///      relayed must as the target wallet address as its first argument, unless
+///      the `extractWalletAddress` is overridden.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
