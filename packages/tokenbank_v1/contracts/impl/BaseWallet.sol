@@ -79,18 +79,20 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         bankRegistry = _bankRegistry;
     }
 
+    function owner() public view returns (address) { return _owner; }
+
     function setup(
-        address   owner,
+        address   initialOwner,
         address[] calldata modules
         )
         external
         nonReentrant
     {
         require(_owner == address(0) && numAddressesInSet(MODULE) == 0, "INITIALIZED_ALREADY");
-        require(owner != address(0), "ZERO_ADDRESS");
+        require(initialOwner != address(0), "ZERO_ADDRESS");
         require(modules.length > 0, "EMPTY_MODULES");
 
-        _owner = owner;
+        _owner = initialOwner;
         bankRegistry.registerWallet(address(this));
         emit WalletSetup(_owner);
 
@@ -105,17 +107,6 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         nonReentrant
     {
         addModuleInternal(_module);
-    }
-
-    function addModuleInternal(address _module)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
-        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
-
-        addAddressToSet(MODULE, _module, true);
-        Module(_module).initialize(address(this));
-        emit ModuleAdded(_module);
     }
 
     function removeModule(address _module)
@@ -158,6 +149,21 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
         methodToModule[_method] = _module;
         emit StaticMethodBound(_method, _module);
+    }
+
+    function supportsInterface(bytes4 _method)
+        external
+        view
+        returns (bool)
+    {
+        return (
+            _method == 0x01ffc9a7 ||
+            _method == this.owner.selector ||
+            _method == this.modules.selector ||
+            _method == this.hasModule.selector ||
+            _method == this.staticMethodModule.selector ||
+            _method == this.tokenBalance.selector ||
+            methodToModule[_method] != address(0));
     }
 
     function staticMethodModule(bytes4 _method)
@@ -222,12 +228,23 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         return transactInternal(to, value, data);
     }
 
+    function addModuleInternal(address _module)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
+
+        addAddressToSet(MODULE, _module, true);
+        Module(_module).initialize(address(this));
+        emit ModuleAdded(_module);
+    }
+
     function transactInternal(
         address to,
         uint    value,
         bytes   memory data
         )
-        private
+        internal
         returns (bytes memory result)
     {
         bool success;

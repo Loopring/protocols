@@ -16,6 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
+import "../thirdparty/ERC165.sol";
 
 /// @title Wallet
 /// @dev Base contract for smart wallets.
@@ -28,7 +29,7 @@ pragma solidity ^0.5.11;
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract Wallet
+contract Wallet is ERC165
 {
     function owner() public view returns (address);
 
