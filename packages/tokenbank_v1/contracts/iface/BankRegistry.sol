@@ -16,27 +16,25 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Ownable.sol";
-
-import "./Wallet.sol";
+import "../lib/Claimable.sol";
 
 
-/// @title Module
-/// @dev Base contract for all smart wallet modules.
-///      Each module must implement the `init` method. It will be called when
-///      the module is added to the given wallet.
+/// @title BankRegistry
+/// @dev A registry for wallets, modules, and probably other managed contracts
+///      in the future.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract Module
+contract BankRegistry is Claimable
 {
-    /// @dev Initializes the module for the given wallet after the module is added.
-    ///      Warning: this method shall ONLY be callable by a wallet.
-    function initialize(address wallet) external;
+    function registerWallet(address wallet) external;
+    function isWallet(address addr) public view returns (bool);
+    function numOfWallets() public view returns (uint);
 
-    /// @dev Terminates the module for the given wallet before the module is removed.
-    ///      Warning: this method shall ONLY be callable by a wallet.
-    function terminate(address walelt) external;
+    function registerModule(address module) external;
+    function deregisterModule(address module) external;
+    function isModuleRegistered(address module) public view returns (bool);
+    function numOfModules() public view returns(uint);
 }
