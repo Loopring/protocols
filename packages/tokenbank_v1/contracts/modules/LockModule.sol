@@ -168,7 +168,6 @@ contract LockModule is MetaTxModule
         }
     }
 
-
     function lockInternal(
         address wallet,
         address guardian

@@ -33,6 +33,8 @@ import "./BaseModule.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
+
+// TODO: provide a method to check if a meta tx can go through.
 contract MetaTxModule is BaseModule
 {
     using MathUint for uint;
