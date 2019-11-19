@@ -28,6 +28,10 @@ import "../storage/GuardianStorage.sol";
 
 /// @title LockModule
 /// @dev  A module for managing wallet locking and unlocking by guardians.
+///       Guardians of a wallet can use a meta-transaction to lock/unlock a wallet,
+///       or they can can the lock/unlock method directly.
+///
+///       TODO: what if the guardian is a thirdparty contract? what if it is a Wallet?
 contract LockModule is MetaTxModule
 {
     using SignatureUtil for bytes32;
