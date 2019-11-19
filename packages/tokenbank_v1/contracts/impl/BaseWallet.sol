@@ -161,7 +161,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         returns (bool)
     {
         return (
-            _method == 0x01ffc9a7 ||
+            _method == 0x01ffc9a7 || // supportsInterface itself
             _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
