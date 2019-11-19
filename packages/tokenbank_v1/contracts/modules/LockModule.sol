@@ -112,7 +112,7 @@ contract LockModule is MetaTxModule
         view
         returns (uint)
     {
-        return guardianStorage.getLock(wallet);
+        return guardianStorage.getWalletLock(wallet);
     }
 
     function isLocked(address wallet)
