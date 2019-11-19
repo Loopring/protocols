@@ -27,7 +27,7 @@ contract UpgraderModule is BaseModule {
         modulesToAdd = _modulesToAdd;
     }
 
-    function initialize(address wallet)
+    function activate(address wallet)
         external
         nonReentrant
         onlyWallet(wallet)
@@ -44,16 +44,16 @@ contract UpgraderModule is BaseModule {
             }
         }
 
-        emit Initialized(wallet);
+        emit Activated(wallet);
 
         w.removeModule(address(this));
     }
 
-    function terminate(address wallet)
+    function deactivate(address wallet)
         external
         // nonReentrant - self-removal module will re-enter.
         onlyWallet(wallet)
     {
-        emit Terminated(wallet);
+        emit Deactivated(wallet);
     }
 }

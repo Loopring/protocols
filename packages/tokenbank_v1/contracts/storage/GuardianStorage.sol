@@ -16,27 +16,36 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Ownable.sol";
-
-import "./Wallet.sol";
+import "../impl/BaseStorage.sol";
 
 
-/// @title Module
-/// @dev Base contract for all smart wallet modules.
-///      Each module must implement the `init` method. It will be called when
-///      the module is added to the given wallet.
+/// @title GuardianStorage
+/// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract Module
+contract GuardianStorage is BaseStorage
 {
-    /// @dev Activate the module for the given wallet after the module is added.
-    ///      Warning: this method shall ONLY be callable by a wallet.
-    function activate(address wallet) external;
+    constructor(address manager)
+        public
+        BaseStorage(manager)
+    {}
 
-    /// @dev Deactivate the module for the given wallet before the module is removed.
-    ///      Warning: this method shall ONLY be callable by a wallet.
-    function deactivate(address walelt) external;
+    function isGuardian(
+        address addr,
+        address wallet
+        )
+        public
+        view
+        returns (bool);
+
+    function getWalletLock(
+        address wallet
+        )
+        public
+        view
+        returns (uint);
+
 }

@@ -32,8 +32,8 @@ import "../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BaseModule is Module, ReentrancyGuard
 {
-    event Initialized (address indexed wallet);
-    event Terminated  (address indexed wallet);
+    event Activated (address indexed wallet);
+    event Deactivated  (address indexed wallet);
 
     modifier onlyWallet(address wallet)
     {
@@ -57,7 +57,7 @@ contract BaseModule is Module, ReentrancyGuard
     ///      Note that the module must have NOT been added to the wallet.
     ///
     ///      Also note that if `module == address(this)`, the wallet contract
-    ///      will throw before calling `initialize`, so there will be no re-entrant.
+    ///      will throw before calling `activate`, so there will be no re-entrant.
     function addModule(
         address wallet,
         address module
@@ -84,29 +84,29 @@ contract BaseModule is Module, ReentrancyGuard
         Wallet(wallet).removeModule(module);
     }
 
-    function initialize(address wallet)
+    function activate(address wallet)
         external
         nonReentrant
         onlyWallet(wallet)
     {
         bindStaticMethods(wallet);
-        emit Initialized(wallet);
+        emit Activated(wallet);
     }
 
-    function terminate(address wallet)
+    function deactivate(address wallet)
         external
         nonReentrant
         onlyWallet(wallet)
     {
         unbindStaticMethods(wallet);
-        emit Terminated(wallet);
+        emit Deactivated(wallet);
     }
 
     ///.@dev Gets the list of static methods for binding to wallets.
     ///      Sub-contracts should override this method to provide readonly methods for
     ///      wallet binding.
     /// @return methods A list of static method selectors for binding to the wallet
-    ///         when this module is initialized for the wallet.
+    ///         when this module is activated for the wallet.
     function staticMethods()
         public
         pure
