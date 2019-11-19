@@ -33,7 +33,7 @@ import "../iface/Module.sol";
 contract BaseModule is Module, ReentrancyGuard
 {
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
-    ///      Note that the current module must have been added to the wallet.
+    ///      Note that the module must have NOT been added to the wallet.
     function addModule(
         address wallet,
         address module
@@ -45,8 +45,8 @@ contract BaseModule is Module, ReentrancyGuard
         Wallet(wallet).addModule(module);
     }
 
-    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
-    ///      Note that the current module must have been added to the wallet.
+    /// @dev Remove a module from a wallet. Callable only by the wallet owner.
+    ///      Note that the module must have been added to the wallet.
     function removeModule(
         address wallet,
         address module
