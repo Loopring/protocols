@@ -92,7 +92,7 @@ contract LockModule is MetaTxModule
         address guardian
         )
         external
-        onlyFromMetaTx
+        onlyMetaTx
         nonReentrant
     {
         // TODO
@@ -104,7 +104,7 @@ contract LockModule is MetaTxModule
         address guardian
         )
         external
-        onlyFromMetaTx
+        onlyMetaTx
         nonReentrant
     {
         // TODO

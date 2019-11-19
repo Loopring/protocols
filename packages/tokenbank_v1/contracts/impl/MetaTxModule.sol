@@ -52,7 +52,7 @@ contract MetaTxModule is BaseModule
         bool    success
     );
 
-    modifier onlyFromMetaTx
+    modifier onlyMetaTx
     {
         require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
         _;
