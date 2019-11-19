@@ -34,7 +34,8 @@ import "../storage/GuardianStorage.sol";
 ///       Guardians of a wallet can use a meta-transaction to lock/unlock a wallet,
 ///       or they can can the lock/unlock method directly.
 ///
-///       TODO: what if the guardian is a thirdparty contract? what if it is a Wallet?
+///       Wallet guardians can be contract addresses. If guardian contracts support
+///       ERC1271, then meta-transactions will also be supported.
 contract LockModule is MetaTxModule
 {
     using SignatureUtil for bytes32;
