@@ -30,7 +30,7 @@ import "./Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-interface Module
+contract Module
 {
     /// @dev Initializes the module for the given wallet when the module is added.
     ///      This function must throw in case of error.

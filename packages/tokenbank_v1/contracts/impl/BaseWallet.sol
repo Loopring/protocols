@@ -43,7 +43,19 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     mapping (bytes4  => address) internal methodToModule;
 
-    /// @dev Emitted when the wallet received Ether.
+    event ModuleAdded           (address indexed module);
+    event ModuleRemoved         (address indexed module);
+    event StaticMethodBound     (bytes4  indexed method, address indexed module);
+
+    event WalletSetup(address indexed owner);
+
+    event Transacted(
+        address indexed module,
+        address indexed to,
+        uint            value,
+        bytes           data
+    );
+
     event Received(
         address indexed sender,
         uint    value,
