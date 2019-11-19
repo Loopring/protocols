@@ -114,7 +114,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
 
         addAddressToSet(MODULE, _module, true);
-        Module(_module).initialize(address(this));
+        Module(_module).activate(address(this));
         emit ModuleAdded(_module);
     }
 
@@ -124,7 +124,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         nonReentrant
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
-        Module(_module).terminate(address(this));
+        Module(_module).deactivate(address(this));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
