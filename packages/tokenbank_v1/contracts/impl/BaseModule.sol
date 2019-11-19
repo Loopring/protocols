@@ -45,7 +45,7 @@ contract BaseModule is Module, ReentrancyGuard
         Wallet(wallet).addModule(module);
     }
 
-    /// @dev Remove a module from a wallet. Callable only by the wallet owner.
+    /// @dev Removes a module from a wallet. Callable only by the wallet owner.
     ///      Note that the module must have been added to the wallet.
     function removeModule(
         address wallet,
@@ -58,23 +58,17 @@ contract BaseModule is Module, ReentrancyGuard
         Wallet(wallet).removeModule(module);
     }
 
-    /// @dev Initializes the module for the given wallet address.
-    ///      This function must throw in case of error.
-    ///      Note that the current module must have been added to the wallet.
     function initialize(address wallet)
         external
-        onlyWallet(wallet)
+        onlyWallet(wallet) // will re-enter
     {
         bindStaticMethods(wallet);
         emit Initialized(wallet);
     }
 
-    /// @dev Initializes the module for the given wallet address.
-    ///      This function must throw in case of error.
-    ///      Note that the current module must NOT have been removed from the wallet.
     function terminate(address wallet)
         external
-        onlyWallet(wallet)
+        onlyWallet(wallet) // will re-enter
     {
         unbindStaticMethods(wallet);
         emit Terminated(wallet);
