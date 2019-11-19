@@ -33,7 +33,8 @@ contract GuardianStorage is BaseStorage, ReentrancyGuard
 {
     constructor(address manager)
         public
-        BaseStorage(manager) {}
+        BaseStorage(manager)
+    {}
 
     function isGuardian(
         address addr,
