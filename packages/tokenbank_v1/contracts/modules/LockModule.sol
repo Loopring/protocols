@@ -16,8 +16,11 @@
 */
 pragma solidity ^0.5.11;
 
+import "../lib/AddressUtil.sol";
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
+
+import "../thirdparty/ERC1271.sol";
 
 import "../iface/Wallet.sol";
 
@@ -35,6 +38,7 @@ import "../storage/GuardianStorage.sol";
 contract LockModule is MetaTxModule
 {
     using SignatureUtil for bytes32;
+    using AddressUtil   for address;
 
     event WalletLock(address indexed wallet, bool locked);
 
@@ -46,10 +50,10 @@ contract LockModule is MetaTxModule
         guardianStorage = _guardianStorage;
     }
 
-    modifier onlyRelayerOrGuardian(address wallet)
+    modifier onlyGuardian(address wallet)
     {
         require(
-            msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),
+            guardianStorage.isGuardian(msg.sender, wallet),
             "NOT_GUARDIAN");
         _;
     }
@@ -67,7 +71,7 @@ contract LockModule is MetaTxModule
 
     function lockWallet(address wallet)
         external
-        onlyRelayerOrGuardian(wallet)
+        onlyGuardian(wallet)
         nonReentrant
     {
         // TODO
@@ -76,7 +80,31 @@ contract LockModule is MetaTxModule
 
     function unlockWallet(address wallet)
         external
-        onlyRelayerOrGuardian(wallet)
+        onlyGuardian(wallet)
+        nonReentrant
+    {
+        // TODO
+        emit WalletLock(wallet, false);
+    }
+
+    function lockWalletAsGuardian(
+        address wallet,
+        address guardian
+        )
+        external
+        onlyFromMetaTx
+        nonReentrant
+    {
+        // TODO
+        emit WalletLock(wallet, true);
+    }
+
+    function unlockWalletAsGuardian(
+        address wallet,
+        address guardian
+        )
+        external
+        onlyFromMetaTx
         nonReentrant
     {
         // TODO
@@ -113,11 +141,33 @@ contract LockModule is MetaTxModule
 
         bytes4 method = extractMethod(data);
         require(
-            method == this.lockWallet.selector || method == this.unlockWallet.selector,
+            method == this.lockWalletAsGuardian.selector ||
+            method == this.unlockWalletAsGuardian.selector,
             "INVALID_METHOD"
         );
 
-        address signer = metaTxHash.recoverSigner(signatures, 0);
-        return guardianStorage.isGuardian(signer, wallet);
+        address guardian = extractGuardianAddress(data);
+        if (!guardianStorage.isGuardian(guardian, wallet)) {
+            return false;
+        }
+
+        if (guardian.isContract()) {
+            return ERC1271(guardian).isValidSignature(data, signatures) == 0x20c13b0b;
+        } else {
+            return  metaTxHash.recoverSigner(signatures, 0) == guardian;
+        }
+    }
+
+    function extractGuardianAddress(bytes memory data)
+        internal
+        pure
+        returns (address guardian)
+    {
+        require(data.length >= 68, "INVALID_DATA");
+        // solium-disable-next-line security/no-inline-assembly
+        assembly {
+            // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
+            guardian := mload(add(data, 68))
+        }
     }
 }
