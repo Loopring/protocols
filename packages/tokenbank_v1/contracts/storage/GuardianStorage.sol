@@ -16,10 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/ReentrancyGuard.sol";
-
 import "../impl/BaseStorage.sol";
-
 
 
 /// @title GuardianStorage
@@ -29,7 +26,7 @@ import "../impl/BaseStorage.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract GuardianStorage is BaseStorage, ReentrancyGuard
+contract GuardianStorage is BaseStorage
 {
     constructor(address manager)
         public
