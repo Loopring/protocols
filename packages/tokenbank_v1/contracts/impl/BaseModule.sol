@@ -55,6 +55,9 @@ contract BaseModule is Module, ReentrancyGuard
 
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
     ///      Note that the module must have NOT been added to the wallet.
+    ///
+    ///      Also note that if `module == address(this)`, the wallet contract
+    ///      will throw before calling `initialize`, so there will be no re-entrant.
     function addModule(
         address wallet,
         address module
@@ -63,6 +66,7 @@ contract BaseModule is Module, ReentrancyGuard
         nonReentrant
         onlyStricklyWalletOwner(wallet)
     {
+        require(module != address(this), "SELF_ADD_PROHIBITED");
         Wallet(wallet).addModule(module);
     }
 
@@ -76,12 +80,14 @@ contract BaseModule is Module, ReentrancyGuard
         nonReentrant
         onlyStricklyWalletOwner(wallet)
     {
+        require(module != address(this), "SELF_REMOVE_PROHIBITED");
         Wallet(wallet).removeModule(module);
     }
 
     function initialize(address wallet)
         external
-        onlyWallet(wallet) // will re-enter
+        nonReentrant
+        onlyWallet(wallet)
     {
         bindStaticMethods(wallet);
         emit Initialized(wallet);
@@ -89,7 +95,8 @@ contract BaseModule is Module, ReentrancyGuard
 
     function terminate(address wallet)
         external
-        onlyWallet(wallet) // will re-enter
+        nonReentrant
+        onlyWallet(wallet)
     {
         unbindStaticMethods(wallet);
         emit Terminated(wallet);
