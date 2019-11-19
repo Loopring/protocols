@@ -33,7 +33,6 @@ import "../iface/Wallet.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract WalletFactory is OwnerManaged, ReentrancyGuard
 {
-    string private constant MANAGER = "__MANAGER__";
     address public walletImplementation;
 
     event WalletCreated(
@@ -41,12 +40,7 @@ contract WalletFactory is OwnerManaged, ReentrancyGuard
         address indexed owner
     );
 
-    event ManagerAdded  (address indexed manager);
-    event ManagerRemoved(address indexed manager);
-
-    constructor(
-        address _walletImplementation
-        )
+    constructor(address _walletImplementation)
         public
         OwnerManaged()
     {

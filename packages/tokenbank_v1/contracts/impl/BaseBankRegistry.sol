@@ -27,10 +27,10 @@ import "../iface/BankRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BaseBankRegistry is BankRegistry, NamedAddressSet
 {
-    string private constant MODULE = "__MODULE__";
-    string private constant WALLET = "__WALLET__";
+    string internal constant MODULE = "__MODULE__";
+    string internal constant WALLET = "__WALLET__";
 
-    address private factory;
+    address internal factory;
 
     event WalletFactoryUpdated(address factory);
 
