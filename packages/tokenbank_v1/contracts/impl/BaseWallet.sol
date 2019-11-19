@@ -155,13 +155,13 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         emit StaticMethodBound(_method, _module);
     }
 
-    function supportsInterface(bytes4 _method)
+    function supportsMethod(bytes4 _method)
         external
         view
         returns (bool)
     {
         return (
-            _method == 0x01ffc9a7 || // supportsInterface itself
+            _method == this.supportsMethod.selector ||
             _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
