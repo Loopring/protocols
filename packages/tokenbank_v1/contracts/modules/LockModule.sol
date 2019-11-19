@@ -74,8 +74,7 @@ contract LockModule is MetaTxModule
         onlyGuardian(wallet)
         nonReentrant
     {
-        // TODO
-        emit WalletLock(wallet, true);
+        lockInternal(wallet, msg.sender);
     }
 
     function unlockWallet(address wallet)
@@ -83,8 +82,7 @@ contract LockModule is MetaTxModule
         onlyGuardian(wallet)
         nonReentrant
     {
-        // TODO
-        emit WalletLock(wallet, false);
+        unlockInternal(wallet, msg.sender);
     }
 
     function lockWalletAsGuardian(
@@ -95,8 +93,7 @@ contract LockModule is MetaTxModule
         onlyMetaTx
         nonReentrant
     {
-        // TODO
-        emit WalletLock(wallet, true);
+        lockInternal(wallet, guardian);
     }
 
     function unlockWalletAsGuardian(
@@ -107,8 +104,7 @@ contract LockModule is MetaTxModule
         onlyMetaTx
         nonReentrant
     {
-        // TODO
-        emit WalletLock(wallet, false);
+        unlockInternal(wallet, guardian);
     }
 
     function getWalletLock(address wallet)
@@ -154,7 +150,7 @@ contract LockModule is MetaTxModule
         if (guardian.isContract()) {
             return ERC1271(guardian).isValidSignature(data, signatures) == 0x20c13b0b;
         } else {
-            return  metaTxHash.recoverSigner(signatures, 0) == guardian;
+            return metaTxHash.recoverSigner(signatures, 0) == guardian;
         }
     }
 
@@ -169,5 +165,26 @@ contract LockModule is MetaTxModule
             // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
             guardian := mload(add(data, 68))
         }
+    }
+
+
+    function lockInternal(
+        address wallet,
+        address guardian
+        )
+        internal
+    {
+        // TODO
+        emit WalletLock(wallet, true);
+    }
+
+    function unlockInternal(
+        address wallet,
+        address guardian
+        )
+        internal
+    {
+        // TODO
+        emit WalletLock(wallet, false);
     }
 }
