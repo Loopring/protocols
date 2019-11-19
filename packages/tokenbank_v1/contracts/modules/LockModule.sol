@@ -134,8 +134,6 @@ contract LockModule is MetaTxModule
         view
         returns (bool)
     {
-        require(signatures.length == 65, "INVALID_SIGNATURE");
-
         bytes4 method = extractMethod(data);
         require(
             method == this.lockAsGuardian.selector ||
@@ -151,7 +149,7 @@ contract LockModule is MetaTxModule
         if (guardian.isContract()) {
             return ERC1271(guardian).isValidSignature(data, signatures) == 0x20c13b0b;
         } else {
-            return metaTxHash.recoverSigner(signatures, 0) == guardian;
+            return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == guardian;
         }
     }
 
