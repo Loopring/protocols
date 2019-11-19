@@ -32,17 +32,11 @@ import "./WalletFactory.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract WalletFactoryWithENS is WalletFactory, Module
 {
-    string private constant MANAGER = "__MANAGER__";
-    address public walletImplementation;
-
     event WalletCreated(
         address indexed wallet,
         address indexed owner,
         string  indexed subdomain
     );
-
-    event ManagerAdded  (address indexed manager);
-    event ManagerRemoved(address indexed manager);
 
     constructor(address _walletImplementation)
         public

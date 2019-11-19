@@ -34,8 +34,8 @@ import "../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 {
-    string private constant MODULE = "__MODULE__";
-    string private constant ERC20_TRANSFER = "transfer(address,uint256)";
+    string internal constant MODULE = "__MODULE__";
+    string internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     BankRegistry public bankRegistry;
 

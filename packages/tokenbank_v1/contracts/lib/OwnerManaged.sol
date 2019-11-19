@@ -16,54 +16,69 @@
 */
 pragma solidity ^0.5.11;
 
+import "./Claimable.sol";
 import "./NamedAddressSet.sol";
 
 
-contract Managed is NamedAddressSet
+contract OwnerManaged is Claimable, NamedAddressSet
 {
     string private constant MANAGER = "__MANAGED__";
-    bool   internal allowToBecomeEmpty = false;
-    bool   internal allowSelfRemoval   = false;
 
     event ManagerAdded  (address indexed manager);
     event ManagerRemoved(address indexed manager);
 
     modifier onlyManager
     {
-        require(isManager(msg.sender), "NOT_A_MANAGER");
+        require(isManager(msg.sender), "NOT_MANAGER");
         _;
     }
 
-    function initManager(address manager)
-        public
+    modifier onlyOwnerOrManager
     {
-        require(numAddressesInSet(MANAGER) == 0, "INITIALIZED_ALREADY");
-        addAddressToSet(MANAGER, manager, true);
+        require(msg.sender == owner || isManager(msg.sender), "NOT_OWNER_OR_MANAGER");
+        _;
     }
 
-    function addManager(address manager)
+    constructor() public Claimable() {}
+
+    /// @dev Gets the managers.
+    /// @return The list of managers.
+    function managers()
         public
-        onlyManager
+        view
+        returns (address[] memory)
     {
-        addManagerInternal(manager);
+        return addressesInSet(MANAGER);
     }
 
-    function removeManager(address manager)
-        public
-        onlyManager
-    {
-        require(allowToBecomeEmpty || numAddressesInSet(MANAGER) > 1, "EMPTY_LIST_PROHIBITED");
-        require(allowSelfRemoval || msg.sender != manager, "SELF_REMOVAL_PROHIBITED");
-        removeAddressFromSet(MANAGER, manager);
-        emit ManagerRemoved(manager);
-    }
-
+    /// @dev Checks if an address is a manger.
+    /// @param addr The address to check.
+    /// @return True if the address is a manager, False otherwise.
     function isManager(address addr)
         public
         view
         returns (bool)
     {
         return isAddressInSet(MANAGER, addr);
+    }
+
+    /// @dev Adds a new manager.
+    /// @param manager The new address to add.
+    function addManager(address manager)
+        public
+        onlyOwner
+    {
+        addManagerInternal(manager);
+    }
+
+    /// @dev Removes a manager.
+    /// @param manager The manager to remove.
+    function removeManager(address manager)
+        public
+        onlyOwner
+    {
+        removeAddressFromSet(MANAGER, manager);
+        emit ManagerRemoved(manager);
     }
 
     function addManagerInternal(address manager)

@@ -16,8 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Claimable.sol";
-import "../lib/NamedAddressSet.sol";
+import "../lib/OwnerManaged.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 
@@ -32,9 +31,8 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
+contract WalletFactory is OwnerManaged, ReentrancyGuard
 {
-    string private constant MANAGER = "__MANAGER__";
     address public walletImplementation;
 
     event WalletCreated(
@@ -42,23 +40,12 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         address indexed owner
     );
 
-    event ManagerAdded  (address indexed manager);
-    event ManagerRemoved(address indexed manager);
-
-    constructor(
-        address _walletImplementation
-        )
+    constructor(address _walletImplementation)
         public
-        Claimable()
+        OwnerManaged()
     {
         walletImplementation = _walletImplementation;
-        addManager(owner);
-    }
-
-    modifier onlyManager
-    {
-        require(isManager(msg.sender), "NOT_A_MANAGER");
-        _;
+        addManagerInternal(owner);
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -97,46 +84,5 @@ contract WalletFactory is Claimable, NamedAddressSet, ReentrancyGuard
         Wallet(_wallet).setup(_owner, _modules);
 
         emit WalletCreated(_wallet, _owner);
-    }
-
-    /// @dev Checks if an address is a manger.
-    /// @param addr The address to check.
-    /// @return True if the address is a manager, False otherwise.
-    function isManager(address addr)
-        public
-        view
-        returns (bool)
-    {
-        return isAddressInSet(MANAGER, addr);
-    }
-
-    /// @dev Gets the managers.
-    /// @return The list of managers.
-    function managers()
-        public
-        view
-        returns (address[] memory)
-    {
-        return addressesInSet(MANAGER);
-    }
-
-    /// @dev Adds a new manager.
-    /// @param manager The new address to add.
-    function addManager(address manager)
-        public
-        onlyOwner
-    {
-        addAddressToSet(MANAGER, manager, true);
-        emit ManagerAdded(manager);
-    }
-
-    /// @dev Removes a manager.
-    /// @param manager The manager to remove.
-    function removeManager(address manager)
-        public
-        onlyOwner
-    {
-        removeAddressFromSet(MANAGER, manager);
-        emit ManagerRemoved(manager);
     }
 }
