@@ -32,6 +32,27 @@ import "../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BaseModule is Module, ReentrancyGuard
 {
+    event Initialized (address indexed wallet);
+    event Terminated  (address indexed wallet);
+
+    modifier onlyWallet(address wallet)
+    {
+        require(msg.sender == wallet, "NOT_FROM_WALLET");
+        _;
+    }
+
+    modifier onlyWalletOwner(address wallet) {
+        require(
+            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            "NOT_FROM_WALLET_OWNER");
+        _;
+    }
+
+    modifier onlyStricklyWalletOwner(address wallet) {
+        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_STRICTLY_WALLET_OWNER");
+        _;
+    }
+
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
     ///      Note that the current module must have been added to the wallet.
     function addModule(

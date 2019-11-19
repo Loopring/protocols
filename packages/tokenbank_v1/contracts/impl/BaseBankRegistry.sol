@@ -32,7 +32,10 @@ contract BaseBankRegistry is BankRegistry, NamedAddressSet
 
     address internal factory;
 
-    event WalletFactoryUpdated(address factory);
+    event WalletRegistered      (address indexed wallet);
+    event ModuleRegistered      (address indexed module);
+    event ModuleDeregistered    (address indexed module);
+    event WalletFactoryUpdated  (address factory);
 
     modifier onlyFactory()
     {

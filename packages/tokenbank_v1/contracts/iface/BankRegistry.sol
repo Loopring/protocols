@@ -29,10 +29,6 @@ import "../lib/Claimable.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BankRegistry is Claimable
 {
-    event WalletRegistered  (address indexed wallet);
-    event ModuleRegistered  (address indexed module);
-    event ModuleDeregistered(address indexed module);
-
     function registerWallet(address wallet) external;
     function isWallet(address addr) public view returns (bool);
     function numOfWallets() public view returns (uint);

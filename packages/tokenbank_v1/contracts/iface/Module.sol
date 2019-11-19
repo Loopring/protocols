@@ -30,29 +30,8 @@ import "./Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-interface Module
+contract Module
 {
-    event Initialized (address indexed wallet);
-    event Terminated  (address indexed wallet);
-
-    modifier onlyWallet(address wallet)
-    {
-        require(msg.sender == wallet, "NOT_FROM_WALLET");
-        _;
-    }
-
-    modifier onlyWalletOwner(address wallet) {
-        require(
-            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
-            "NOT_FROM_WALLET_OWNER");
-        _;
-    }
-
-    modifier onlyStricklyWalletOwner(address wallet) {
-        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_STRICTLY_WALLET_OWNER");
-        _;
-    }
-
     /// @dev Initializes the module for the given wallet when the module is added.
     ///      This function must throw in case of error.
     ///      Warning: this method can ONLY be called by a wallet.
