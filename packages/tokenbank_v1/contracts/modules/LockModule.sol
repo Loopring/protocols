@@ -66,6 +66,7 @@ contract LockModule is MetaTxModule
         onlyRelayerOrGuardian(wallet)
         nonReentrant
     {
+        // TODO
         emit WalletLock(wallet, true);
     }
 
@@ -74,6 +75,7 @@ contract LockModule is MetaTxModule
         onlyRelayerOrGuardian(wallet)
         nonReentrant
     {
+        // TODO
         emit WalletLock(wallet, false);
     }
 
