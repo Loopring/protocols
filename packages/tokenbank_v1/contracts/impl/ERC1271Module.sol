@@ -62,11 +62,7 @@ contract ERC1271Module is BaseModule, ERC1271
         view
         returns (bool)
     {
-        return isSignedBy(
-            Wallet(address(this)).owner(),
-            _data,
-            _signature
-        );
+        return isSignedBy(Wallet(address(this)).owner(), _data, _signature);
     }
 
     function isSignedBy(
