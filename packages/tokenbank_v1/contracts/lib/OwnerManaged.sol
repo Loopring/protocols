@@ -22,7 +22,7 @@ import "./NamedAddressSet.sol";
 
 contract OwnerManaged is Claimable, NamedAddressSet
 {
-    string private constant MANAGER = "__OWNER_MANAGED__";
+    string private constant MANAGER = "__MANAGED__";
 
     event ManagerAdded  (address indexed manager);
     event ManagerRemoved(address indexed manager);
@@ -84,7 +84,7 @@ contract OwnerManaged is Claimable, NamedAddressSet
     function addManagerInternal(address manager)
         internal
     {
-        addAddressToSet(MANAGER, manager);
+        addAddressToSet(MANAGER, manager, true);
         emit ManagerAdded(manager);
     }
 }

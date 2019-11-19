@@ -38,7 +38,7 @@ contract Managed is NamedAddressSet
         public
     {
         require(numAddressesInSet(MANAGER) == 0, "INITIALIZED_ALREADY");
-        addAddressToSet(MANAGER, manager);
+        addAddressToSet(MANAGER, manager, true);
     }
 
     function addManager(address manager)
@@ -69,7 +69,7 @@ contract Managed is NamedAddressSet
     function addManagerInternal(address manager)
         internal
     {
-        addAddressToSet(MANAGER, manager);
+        addAddressToSet(MANAGER, manager, true);
         emit ManagerAdded(manager);
     }
 }

@@ -20,6 +20,7 @@ import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
+import "../iface/BankRegistry.sol";
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
 
@@ -35,6 +36,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 {
     string private constant MODULE = "__MODULE__";
     string private constant ERC20_TRANSFER = "transfer(address,uint256)";
+
+    BankRegistry public bankRegistry;
 
     mapping (bytes4  => address) internal methodToModule;
 
@@ -53,8 +56,13 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     modifier onlyModule
     {
-        require(isAddressInSet(MODULE, msg.sender), "NOT_A_MODULE");
+        require(isAddressInSet(MODULE, msg.sender), "MODULE_UNAUTHORIZED");
+        require(bankRegistry.isModuleRegistered(msg.sender), "INVALID_MODULE");
         _;
+    }
+
+    constructor(BankRegistry _bankRegistry) public {
+        bankRegistry = _bankRegistry;
     }
 
     function setup(
@@ -69,7 +77,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         require(_modules.length > 0, "EMPTY_MODULES");
 
         owner = _owner;
-
+        bankRegistry.registerWallet(address(this));
         emit WalletSetup(owner);
 
         for(uint i = 0; i < _modules.length; i++) {
@@ -89,7 +97,9 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         internal
     {
         require(_module != address(0), "NULL_MODULE");
-        addAddressToSet(MODULE, _module);
+        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
+
+        addAddressToSet(MODULE, _module, true);
         Module(_module).initialize(address(this));
         emit ModuleAdded(_module);
     }
@@ -235,6 +245,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
+        require(bankRegistry.isModuleRegistered(module), "INVALID_MODULE");
 
         assembly {
             let ptr := mload(0x40)
