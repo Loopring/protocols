@@ -30,7 +30,7 @@ pragma solidity ^0.5.11;
 /// https://github.com/argentlabs/argent-contracts
 contract Wallet
 {
-    address public owner;
+
 
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
@@ -44,6 +44,8 @@ contract Wallet
         uint            value,
         bytes           data
     );
+
+    function owner() public view returns (address);
 
     /// @dev Set up this wallet by assigning an original order and a
     ///      list of initial modules. For each module, its `init` method

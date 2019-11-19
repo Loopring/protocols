@@ -34,6 +34,8 @@ import "../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 {
+    address internal _owner;
+
     string internal constant MODULE = "__MODULE__";
     string internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
@@ -50,7 +52,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     modifier onlyOwner
     {
-        require(msg.sender == owner, "NOT_A_OWNER");
+        require(msg.sender == _owner, "NOT_A_OWNER");
         _;
     }
 
@@ -66,22 +68,22 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     }
 
     function setup(
-        address   _owner,
-        address[] calldata _modules
+        address   owner,
+        address[] calldata modules
         )
         external
         nonReentrant
     {
-        require(owner == address(0) && numAddressesInSet(MODULE) == 0, "INITIALIZED_ALREADY");
-        require(_owner != address(0), "ZERO_ADDRESS");
-        require(_modules.length > 0, "EMPTY_MODULES");
+        require(_owner == address(0) && numAddressesInSet(MODULE) == 0, "INITIALIZED_ALREADY");
+        require(owner != address(0), "ZERO_ADDRESS");
+        require(modules.length > 0, "EMPTY_MODULES");
 
-        owner = _owner;
+        _owner = owner;
         bankRegistry.registerWallet(address(this));
-        emit WalletSetup(owner);
+        emit WalletSetup(_owner);
 
-        for(uint i = 0; i < _modules.length; i++) {
-            addModuleInternal(_modules[i]);
+        for(uint i = 0; i < modules.length; i++) {
+            addModuleInternal(modules[i]);
         }
     }
 
