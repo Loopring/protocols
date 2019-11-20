@@ -145,7 +145,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        require(_method != bytes4(0), "BAID_METHOD");
+        require(_method != bytes4(0), "BAD_METHOD");
         require(
             _module == address(0) || methodToModule[_method] == address(0),
             "BAD_MODULE"
