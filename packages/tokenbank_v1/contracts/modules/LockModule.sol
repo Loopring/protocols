@@ -51,10 +51,10 @@ contract LockModule is MetaTxModule
         guardianStorage = _guardianStorage;
     }
 
-    modifier onlyGuardian(address wallet)
+    modifier onlyGuardianOrRelayed(address wallet)
     {
         require(
-            guardianStorage.isGuardian(msg.sender, wallet),
+            msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),
             "NOT_GUARDIAN");
         _;
     }
@@ -72,40 +72,20 @@ contract LockModule is MetaTxModule
 
     function lock(address wallet)
         external
-        onlyGuardian(wallet)
+        onlyGuardianOrRelayed(wallet)
         nonReentrant
     {
-        lockInternal(wallet, msg.sender);
+        // TODO
+        emit WalletLock(wallet, true);
     }
 
     function unlock(address wallet)
         external
-        onlyGuardian(wallet)
+        onlyGuardianOrRelayed(wallet)
         nonReentrant
     {
-        unlockInternal(wallet, msg.sender);
-    }
-
-    function lockAsGuardian(
-        address wallet,
-        address guardian
-        )
-        external
-        onlyMetaTx
-        nonReentrant
-    {
-        lockInternal(wallet, guardian);
-    }
-
-    function unlockAsGuardian(
-        address wallet,
-        address guardian
-        )
-        external
-        onlyMetaTx
-        nonReentrant
-    {
-        unlockInternal(wallet, guardian);
+        // TODO
+        emit WalletLock(wallet, false);
     }
 
     function getLock(address wallet)
@@ -126,6 +106,7 @@ contract LockModule is MetaTxModule
 
     /// @dev Validating meta-transaction signatures.
     function validateSignatures(
+        address signer,
         address wallet,
         bytes   memory data,
         bytes32 metaTxHash,
@@ -136,53 +117,18 @@ contract LockModule is MetaTxModule
     {
         bytes4 method = extractMethod(data);
         require(
-            method == this.lockAsGuardian.selector ||
-            method == this.unlockAsGuardian.selector,
+            method == this.lock.selector || method == this.unlock.selector,
             "INVALID_METHOD"
         );
 
-        address guardian = extractGuardianAddress(data);
-        if (!guardianStorage.isGuardian(guardian, wallet)) {
+        if (!guardianStorage.isGuardian(signer, wallet)) {
             return false;
         }
 
-        if (guardian.isContract()) {
-            return ERC1271(guardian).isValidSignature(data, signatures) == 0x20c13b0b;
+        if (signer.isContract()) {
+            return ERC1271(signer).isValidSignature(data, signatures) == 0x20c13b0b;
         } else {
-            return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == guardian;
+            return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
         }
-    }
-
-    function extractGuardianAddress(bytes memory data)
-        internal
-        pure
-        returns (address guardian)
-    {
-        require(data.length >= 68, "INVALID_DATA");
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
-            guardian := mload(add(data, 68))
-        }
-    }
-
-    function lockInternal(
-        address wallet,
-        address guardian
-        )
-        internal
-    {
-        // TODO
-        emit WalletLock(wallet, true);
-    }
-
-    function unlockInternal(
-        address wallet,
-        address guardian
-        )
-        internal
-    {
-        // TODO
-        emit WalletLock(wallet, false);
     }
 }
