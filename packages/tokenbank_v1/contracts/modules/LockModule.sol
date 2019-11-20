@@ -32,7 +32,7 @@ import "../storage/GuardianStorage.sol";
 /// @title LockModule
 /// @dev  A module for managing wallet locking and unlocking by guardians.
 ///       Guardians of a wallet can use a meta-transaction to lock/unlock a wallet,
-///       or they can can the lock/unlock method directly.
+///       or they can call the lock/unlock method directly.
 ///
 ///       Wallet guardians can be contract addresses. If guardian contracts support
 ///       ERC1271, then meta-transactions will also be supported.
