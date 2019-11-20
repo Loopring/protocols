@@ -19,7 +19,7 @@ pragma solidity ^0.5.11;
 import "./NamedAddressSet.sol";
 
 
-contract Managed is NamedAddressSet
+contract Managable is NamedAddressSet
 {
     string private constant MANAGER = "__MANAGED__";
     bool   internal allowToBecomeEmpty = false;

@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/OwnerManaged.sol";
+import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 
@@ -31,7 +31,7 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is OwnerManaged, ReentrancyGuard
+contract WalletFactory is OwnerManagable, ReentrancyGuard
 {
     address public walletImplementation;
 
@@ -42,7 +42,7 @@ contract WalletFactory is OwnerManaged, ReentrancyGuard
 
     constructor(address _walletImplementation)
         public
-        OwnerManaged()
+        OwnerManagable()
     {
         walletImplementation = _walletImplementation;
         addManagerInternal(owner);

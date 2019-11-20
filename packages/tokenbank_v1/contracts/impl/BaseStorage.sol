@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Managed.sol";
+import "../lib/Managable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
@@ -28,7 +28,7 @@ import "../lib/ReentrancyGuard.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseStorage is Managed, ReentrancyGuard
+contract BaseStorage is Managable, ReentrancyGuard
 {
     constructor(address manager) public
     {

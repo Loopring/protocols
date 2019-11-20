@@ -20,7 +20,7 @@ import "./Claimable.sol";
 import "./NamedAddressSet.sol";
 
 
-contract OwnerManaged is Claimable, NamedAddressSet
+contract OwnerManagable is Claimable, NamedAddressSet
 {
     string private constant MANAGER = "__MANAGED__";
 
