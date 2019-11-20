@@ -38,8 +38,9 @@ import "./BaseModule.sol";
 contract MetaTxModule is BaseModule
 {
     using MathUint for uint;
-    uint constant public BLOCK_BOUND = 100;
-    uint constant public GAS_OVERHEAD = 30000;
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
+    uint   constant public   BLOCK_BOUND = 100;
+    uint   constant public   GAS_OVERHEAD = 30000;
 
     struct WalletState {
         uint nonce;
@@ -70,7 +71,7 @@ contract MetaTxModule is BaseModule
     /// @param metaTxHash The hash that the signatures are signed against.
     /// @param signatures The signatures to be validated by the module.
     /// @return True if signature validation passes; False otherwise.
-    function validateSignatures(
+    function validateMetaTx(
         address signer,
         address wallet,
         bytes   memory data,
@@ -125,7 +126,7 @@ contract MetaTxModule is BaseModule
         );
 
         require(
-            validateSignatures(signer, wallet, data, metaTxHash, signatures),
+            validateMetaTx(signer, wallet, data, metaTxHash, signatures),
             "INVALID_SIGNATURES"
         );
 

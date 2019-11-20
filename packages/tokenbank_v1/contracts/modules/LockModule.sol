@@ -105,7 +105,7 @@ contract LockModule is MetaTxModule
     }
 
     /// @dev Validating meta-transaction signatures.
-    function validateSignatures(
+    function validateMetaTx(
         address signer,
         address wallet,
         bytes   memory data,
@@ -116,19 +116,15 @@ contract LockModule is MetaTxModule
         returns (bool)
     {
         bytes4 method = extractMethod(data);
-        require(
-            method == this.lock.selector || method == this.unlock.selector,
-            "INVALID_METHOD"
-        );
-
-        if (!guardianStorage.isGuardian(signer, wallet)) {
-            return false;
-        }
-
-        if (signer.isContract()) {
-            return ERC1271(signer).isValidSignature(data, signatures) == 0x20c13b0b;
-        } else {
-            return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
+        if (method == this.lock.selector || method == this.unlock.selector) {
+            if (!guardianStorage.isGuardian(signer, wallet)) {
+                return false;
+            }
+            if (signer.isContract()) {
+                return ERC1271(signer).isValidSignature(data, signatures) == ERC1271_MAGICVALUE;
+            } else {
+                return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
+            }
         }
     }
 }
