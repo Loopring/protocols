@@ -19,6 +19,8 @@ pragma solidity ^0.5.11;
 import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
+import "../ens/ENSManager.sol";
+
 import "./WalletFactory.sol";
 
 
@@ -32,16 +34,23 @@ import "./WalletFactory.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract WalletFactoryWithENS is WalletFactory, Module
 {
+    ENSManager public ensManager;
+
     event WalletCreated(
         address indexed wallet,
         address indexed owner,
         string  indexed subdomain
     );
 
-    constructor(address _walletImplementation)
+    constructor(
+        address    _walletImplementation,
+        ENSManager _ensManager
+        )
         public
         WalletFactory(_walletImplementation)
-    {}
+    {
+        ensManager = _ensManager;
+    }
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
@@ -50,8 +59,8 @@ contract WalletFactoryWithENS is WalletFactory, Module
     /// @return _wallet The newly created wallet's address.
     function createWallet(
         address   _owner,
-        address[] calldata _modules,
-        string    calldata _subdomain
+        bytes32   _subdomain,
+        address[] calldata _modules
         )
         external
         payable
@@ -59,28 +68,18 @@ contract WalletFactoryWithENS is WalletFactory, Module
         nonReentrant
         returns (address _wallet)
     {
-        if (bytes(_subdomain).length > 0) {
+        if (_subdomain == bytes32(0)) {
+            _wallet = createWalletInternal(_owner, _modules);
+        } else {
             address[] memory extendedModules = new address[](_modules.length + 1);
             extendedModules[0] = address(this);
             for(uint i = 0; i < _modules.length; i++) {
                 extendedModules[i + 1] = _modules[i];
             }
             _wallet = createWalletInternal(_owner, extendedModules);
+            ensManager.registerSubdomain(_wallet, _subdomain);
 
-            Wallet w = Wallet(_wallet);
-            registerSubdomain(w, _subdomain);
-            w.removeModule(address(this));
-        } else {
-            _wallet = createWalletInternal(_owner, _modules);
+            Wallet(_wallet).removeModule(address(this));
         }
-    }
-
-    function registerSubdomain(
-        Wallet _wallet,
-        string  memory _subdomain
-        )
-        private
-    {
-        // TODO
     }
 }
