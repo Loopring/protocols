@@ -79,19 +79,21 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         uint delayedTransactionIdx
         )
         external
-        nonReentrant
         onlyOwner
     {
         require(delayedTransactionIdx < delayedTransactions.length, "INVALID_INDEX");
         Transaction storage transaction = delayedTransactions[delayedTransactionIdx];
 
         // Check if this transaction can still be executed
-        require(transaction.timestamp > 0, "TRANSACTION_CONSUMED");
+        require(transaction.timestamp > 0, "ALREADY_CONSUMED");
 
         // Make sure the delay is respected
         bytes4 functionSelector = transaction.data.bytesToBytes4(0);
         uint delay = functionDelays[functionSelector];
         require(now >= transaction.timestamp.add(delay), "TOO_EARLY");
+
+        // Make the transaction unusable
+        disableTransaction(transaction);
 
         // Exectute the transaction
         (bool success, bytes memory returnData) = exectuteTransaction(transaction);
@@ -102,9 +104,6 @@ contract DelayedOwner is Claimable, ReentrancyGuard
             transaction.value,
             transaction.data
         );
-
-        // Make the transaction unusable
-        disableTransaction(transaction);
 
         // Return the same data the original transaction would
         // (this will return the data even though this function doesn't have a return vallue in solidity)
