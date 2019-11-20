@@ -73,7 +73,7 @@ library BytesUtil
         pure
         returns (bytes4 data)
     {
-        return bytes4(bytesToBytesX(b, offset, 4));
+        return bytes4(bytesToBytesX(b, offset, 4) & 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000);
     }
 
     function bytesToBytesX(
