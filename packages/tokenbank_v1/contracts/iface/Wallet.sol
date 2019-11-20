@@ -79,6 +79,7 @@ contract Wallet
     ///                 returns address(0) instead.
     function staticMethodModule(bytes4 _method) public view returns (address _module);
 
+    // TODO(someone): remove `tokenBalance` and `transferToken` to `BalanceModule.sol`
     /// @dev Returns this wallet's token or Ether balance.
     ///      This method provides a unified interface for both ERC20 and Ether.
     /// @param _token The token to check, address(0) represents Ether.
