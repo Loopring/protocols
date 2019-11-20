@@ -25,12 +25,11 @@ import "../../iface/ILoopringV3.sol";
 contract LoopringV3Owner is DelayedOwner
 {
     constructor(
-        address loopringV3address
+        ILoopringV3 loopringV3
         )
-        DelayedOwner(loopringV3address)
+        DelayedOwner(address(loopringV3))
         public
     {
-        ILoopringV3 loopringV3 = ILoopringV3(loopringV3address);
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
         setFunctionDelay(loopringV3.updateSettings.selector, 7 days);
         setFunctionDelay(loopringV3.updateProtocolFeeSettings.selector, 7 days);

@@ -25,12 +25,11 @@ import "../../iface/IImplementationManager.sol";
 contract ImplementationManagerOwner is DelayedOwner
 {
     constructor(
-        address implementationManagerAddress
+        IImplementationManager implementationManager
         )
-        DelayedOwner(implementationManagerAddress)
+        DelayedOwner(address(implementationManager))
         public
     {
-        IImplementationManager implementationManager = IImplementationManager(implementationManagerAddress);
         setFunctionDelay(implementationManager.transferOwnership.selector, 7 days);
         setFunctionDelay(implementationManager.register.selector, 1 days);
         setFunctionDelay(implementationManager.setDefault.selector, 7 days);

@@ -35,17 +35,31 @@ contract DelayedOwner is Claimable, ReentrancyGuard
 
     struct Transaction
     {
-        uint timestamp;
-        uint value;
-        bytes data;
+        uint    id;
+        uint    timestamp;
+        uint    value;
+        bytes   data;
+    }
+
+    struct DelayedFunction
+    {
+        bytes4  functionSelector;
+        uint    delay;
     }
 
     event TransactionDelayed(
-        uint    delayedTransactionIdx,
+        uint    id,
         uint    timestamp,
         uint    value,
         bytes   data,
         uint    delay
+    );
+
+    event TransactionCancelled(
+        uint    id,
+        uint    timestamp,
+        uint    value,
+        bytes   data
     );
 
     event TransactionExecuted(
@@ -55,51 +69,57 @@ contract DelayedOwner is Claimable, ReentrancyGuard
     );
 
     event DelayedTransactionExecuted(
-        uint    delayedTransactionIdx,
+        uint    id,
         uint    timestamp,
         uint    value,
         bytes   data
     );
 
-    address public contractAddress;
-    mapping (bytes4 => uint) public functionDelays;
+    address public ownedContract;
 
+    // Active list of delayed functions (delay > 0)
+    DelayedFunction[] public delayedFunctions;
+    // Map from function to the functions's location+1 in the `delayedFunctions` array.
+    mapping (bytes4 => uint) public delayedFunctionMap;
+
+    // Active list of delayed transactions
     Transaction[] public delayedTransactions;
+    // Map from transaction ID to the transaction's location+1 in the `delayedTransactions` array.
+    mapping (uint => uint) public delayedTransactionMap;
+
+    // Used to generate a unique identifier for a delayed transaction
+    uint private totalNumDelayedTransactions = 0;
 
     constructor(
-        address _contractAddress
+        address _ownedContract
         )
         public
     {
-        require(_contractAddress != address(0), "ZERO_ADDRESS");
-        contractAddress = _contractAddress;
+        require(_ownedContract != address(0), "ZERO_ADDRESS");
+        ownedContract = _ownedContract;
     }
 
     function executeDelayedTransaction(
-        uint delayedTransactionIdx
+        uint delayedTransactionId
         )
         external
         onlyOwner
     {
-        require(delayedTransactionIdx < delayedTransactions.length, "INVALID_INDEX");
-        Transaction storage transaction = delayedTransactions[delayedTransactionIdx];
-
-        // Check if this transaction can still be executed
-        require(transaction.timestamp > 0, "ALREADY_CONSUMED");
+        Transaction memory transaction = getDelayedTransaction(delayedTransactionId);
 
         // Make sure the delay is respected
         bytes4 functionSelector = transaction.data.bytesToBytes4(0);
-        uint delay = functionDelays[functionSelector];
+        uint delay = getFunctionDelay(functionSelector);
         require(now >= transaction.timestamp.add(delay), "TOO_EARLY");
 
-        // Make the transaction unusable
-        disableTransaction(transaction);
+        // Remove the transaction
+        removeDelayedTransaction(transaction.id);
 
         // Exectute the transaction
         (bool success, bytes memory returnData) = exectuteTransaction(transaction);
 
         emit DelayedTransactionExecuted(
-            delayedTransactionIdx,
+            transaction.id,
             transaction.timestamp,
             transaction.value,
             transaction.data
@@ -115,24 +135,28 @@ contract DelayedOwner is Claimable, ReentrancyGuard
     }
 
     function cancelDelayedTransaction(
-        uint delayedTransactionIdx
+        uint delayedTransactionId
         )
         external
         nonReentrant
         onlyOwner
     {
-        require(delayedTransactionIdx < delayedTransactions.length, "INVALID_INDEX");
-        Transaction storage transaction = delayedTransactions[delayedTransactionIdx];
+        cancelDelayedTransactionInternal(delayedTransactionId);
+    }
 
-        require(transaction.timestamp > 0, "TRANSACTION_CONSUMED");
-
-        // Make the transaction unusable
-        disableTransaction(transaction);
-
-        // Return the transaction value (if there is any)
-        uint value = transaction.value;
-        if (value > 0) {
-            msg.sender.sendETHAndVerify(value, gasleft());
+    function cancelAllDelayedTransactions()
+        external
+        nonReentrant
+        onlyOwner
+    {
+        // First cache all transactions ids of the transactions we will remove
+        uint[] memory transactionIds = new uint[](delayedTransactions.length);
+        for(uint i = 0; i < delayedTransactions.length; i++) {
+            transactionIds[i] = delayedTransactions[i].id;
+        }
+        // Now remove all delayed transactions
+        for(uint i = 0; i < transactionIds.length; i++) {
+            cancelDelayedTransactionInternal(transactionIds[i]);
         }
     }
 
@@ -149,12 +173,13 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         }
 
         Transaction memory transaction = Transaction(
+            totalNumDelayedTransactions,
             now,
             msg.value,
             msg.data
         );
 
-        uint delay = functionDelays[msg.sig];
+        uint delay = getFunctionDelay(msg.sig);
         if (delay == 0) {
             (bool success, bytes memory returnData) = exectuteTransaction(transaction);
             emit TransactionExecuted(
@@ -171,14 +196,47 @@ contract DelayedOwner is Claimable, ReentrancyGuard
             }
         } else {
             delayedTransactions.push(transaction);
+            delayedTransactionMap[transaction.id] = delayedTransactions.length;
             emit TransactionDelayed(
-                delayedTransactions.length - 1,
+                transaction.id,
                 transaction.timestamp,
                 transaction.value,
                 transaction.data,
                 delay
             );
+            totalNumDelayedTransactions++;
         }
+    }
+
+    function getFunctionDelay(
+        bytes4 functionSelector
+        )
+        public
+        view
+        returns (uint)
+    {
+        uint pos = delayedFunctionMap[functionSelector];
+        if (pos == 0) {
+            return 0;
+        } else {
+            return delayedFunctions[pos - 1].delay;
+        }
+    }
+
+    function getNumDelayedTransactions()
+        external
+        view
+        returns (uint)
+    {
+        return delayedTransactions.length;
+    }
+
+    function getNumDelayedFunctions()
+        external
+        view
+        returns (uint)
+    {
+        return delayedFunctions.length;
     }
 
     // == Internal Functions ==
@@ -189,7 +247,32 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         )
         internal
     {
-        functionDelays[functionSelector] = delay;
+        // Check if the function already has a delay
+        uint pos = delayedFunctionMap[functionSelector];
+        if (pos > 0) {
+            if (delay > 0) {
+                // Just update the delay
+                delayedFunctions[pos - 1].delay = delay;
+            } else {
+                // Remove the delayed function
+                uint size = delayedFunctions.length;
+                if (pos != size) {
+                    DelayedFunction memory lastOne = delayedFunctions[size - 1];
+                    delayedFunctions[pos - 1] = lastOne;
+                    delayedFunctionMap[lastOne.functionSelector] = pos;
+                }
+                delayedTransactions.length -= 1;
+                delete delayedFunctionMap[functionSelector];
+            }
+        } else if (delay > 0) {
+            // Add the new delayed function
+            DelayedFunction memory delayedFunction = DelayedFunction(
+                functionSelector,
+                delay
+            );
+            delayedFunctions.push(delayedFunction);
+            delayedFunctionMap[functionSelector] = delayedFunctions.length;
+        }
     }
 
     function exectuteTransaction(
@@ -198,14 +281,61 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         internal
         returns (bool success, bytes memory returnData)
     {
-        (success, returnData) = contractAddress.call.value(transaction.value)(transaction.data);
+        (success, returnData) = ownedContract.call.value(transaction.value)(transaction.data);
     }
 
-    function disableTransaction(
-        Transaction storage transaction
+    function cancelDelayedTransactionInternal(
+        uint delayedTransactionId
         )
         internal
     {
-        transaction.timestamp = 0;
+        Transaction storage transaction = getDelayedTransaction(delayedTransactionId);
+
+        // Remove the transaction
+        removeDelayedTransaction(transaction.id);
+
+        emit TransactionCancelled(
+            transaction.id,
+            transaction.timestamp,
+            transaction.value,
+            transaction.data
+        );
+
+        // Return the transaction value (if there is any)
+        uint value = transaction.value;
+        if (value > 0) {
+            msg.sender.sendETHAndVerify(value, gasleft());
+        }
+    }
+
+    function getDelayedTransaction(
+        uint transactionId
+        )
+        internal
+        view
+        returns (Transaction storage transaction)
+    {
+        uint pos = delayedTransactionMap[transactionId];
+        require(pos != 0, "TRANSACTION_NOT_FOUND");
+        transaction = delayedTransactions[pos - 1];
+    }
+
+    function removeDelayedTransaction(
+        uint transactionId
+        )
+        internal
+    {
+        uint pos = delayedTransactionMap[transactionId];
+        require(pos != 0, "TRANSACTION_NOT_FOUND");
+
+        uint size = delayedTransactions.length;
+        if (pos != size) {
+            Transaction memory lastOne = delayedTransactions[size - 1];
+            delayedTransactions[pos - 1] = lastOne;
+            delayedTransactionMap[lastOne.id] = pos;
+        }
+
+        delayedTransactions.length -= 1;
+        delete delayedTransactionMap[transactionId];
     }
 }

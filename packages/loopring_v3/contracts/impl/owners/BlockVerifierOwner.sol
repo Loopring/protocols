@@ -25,12 +25,11 @@ import "../../iface/IBlockVerifier.sol";
 contract BlockVerifierOwner is DelayedOwner
 {
     constructor(
-        address blockVerifierAddress
+        IBlockVerifier blockVerifier
         )
-        DelayedOwner(blockVerifierAddress)
+        DelayedOwner(address(blockVerifier))
         public
     {
-        IBlockVerifier blockVerifier = IBlockVerifier(blockVerifierAddress);
         setFunctionDelay(blockVerifier.transferOwnership.selector, 7 days);
         setFunctionDelay(blockVerifier.registerCircuit.selector, 7 days);
         setFunctionDelay(blockVerifier.disableCircuit.selector, 1 days);

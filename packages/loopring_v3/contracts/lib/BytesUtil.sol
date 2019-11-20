@@ -73,7 +73,19 @@ library BytesUtil
         pure
         returns (bytes4 data)
     {
-        require(b.length >= offset + 4, "INVALID_SIZE");
+        return bytes4(bytesToBytesX(b, offset, 4));
+    }
+
+    function bytesToBytesX(
+        bytes memory b,
+        uint  offset,
+        uint  numBytes
+        )
+        private
+        pure
+        returns (bytes32 data)
+    {
+        require(b.length >= offset + numBytes, "INVALID_SIZE");
         assembly {
             data := mload(add(b, add(32, offset)))
         }
