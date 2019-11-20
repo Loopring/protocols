@@ -27,7 +27,7 @@ contract ImplementationManagerOwner is DelayedOwner
     constructor(
         IImplementationManager implementationManager
         )
-        DelayedOwner(address(implementationManager))
+        DelayedOwner(address(implementationManager), 3 days)
         public
     {
         setFunctionDelay(implementationManager.transferOwnership.selector, 7 days);

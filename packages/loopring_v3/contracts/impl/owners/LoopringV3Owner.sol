@@ -27,7 +27,7 @@ contract LoopringV3Owner is DelayedOwner
     constructor(
         ILoopringV3 loopringV3
         )
-        DelayedOwner(address(loopringV3))
+        DelayedOwner(address(loopringV3), 3 days)
         public
     {
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);

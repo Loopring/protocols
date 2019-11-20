@@ -27,7 +27,7 @@ contract BlockVerifierOwner is DelayedOwner
     constructor(
         IBlockVerifier blockVerifier
         )
-        DelayedOwner(address(blockVerifier))
+        DelayedOwner(address(blockVerifier), 3 days)
         public
     {
         setFunctionDelay(blockVerifier.transferOwnership.selector, 7 days);

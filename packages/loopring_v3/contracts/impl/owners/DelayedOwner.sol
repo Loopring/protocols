@@ -68,57 +68,67 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         bytes   data
     );
 
-    event DelayedTransactionExecuted(
+    event PendingTransactionExecuted(
         uint    id,
         uint    timestamp,
         uint    value,
         bytes   data
     );
 
+    // The contract all function calls will be done on.
     address public ownedContract;
+
+    // The maximum amount of time (in seconds) a pending transaction can be executed
+    // (so the amount of time than can pass after the mandatory function specific delay).
+    // If the transaction hasn't been executed before then it can be cancelled so it is removed
+    // from the pending transaction list.
+    uint public timeToLive;
 
     // Active list of delayed functions (delay > 0)
     DelayedFunction[] public delayedFunctions;
     // Map from function to the functions's location+1 in the `delayedFunctions` array.
     mapping (bytes4 => uint) public delayedFunctionMap;
 
-    // Active list of delayed transactions
-    Transaction[] public delayedTransactions;
-    // Map from transaction ID to the transaction's location+1 in the `delayedTransactions` array.
-    mapping (uint => uint) public delayedTransactionMap;
+    // Active list of pending transactions
+    Transaction[] public pendingTransactions;
+    // Map from transaction ID to the transaction's location+1 in the `pendingTransactions` array.
+    mapping (uint => uint) public pendingTransactionMap;
 
     // Used to generate a unique identifier for a delayed transaction
     uint private totalNumDelayedTransactions = 0;
 
     constructor(
-        address _ownedContract
+        address _ownedContract,
+        uint    _timeToLive
         )
         public
     {
         require(_ownedContract != address(0), "ZERO_ADDRESS");
         ownedContract = _ownedContract;
+        timeToLive = _timeToLive;
     }
 
-    function executeDelayedTransaction(
-        uint delayedTransactionId
+    function executeTransaction(
+        uint transactionId
         )
         external
         onlyOwner
     {
-        Transaction memory transaction = getDelayedTransaction(delayedTransactionId);
+        Transaction memory transaction = getTransaction(transactionId);
 
         // Make sure the delay is respected
         bytes4 functionSelector = transaction.data.bytesToBytes4(0);
         uint delay = getFunctionDelay(functionSelector);
         require(now >= transaction.timestamp.add(delay), "TOO_EARLY");
+        require(now <= transaction.timestamp.add(delay).add(timeToLive), "TOO_LATE");
 
         // Remove the transaction
-        removeDelayedTransaction(transaction.id);
+        removeTransaction(transaction.id);
 
         // Exectute the transaction
         (bool success, bytes memory returnData) = exectuteTransaction(transaction);
 
-        emit DelayedTransactionExecuted(
+        emit PendingTransactionExecuted(
             transaction.id,
             transaction.timestamp,
             transaction.value,
@@ -134,35 +144,35 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         }
     }
 
-    function cancelDelayedTransaction(
-        uint delayedTransactionId
+    function cancelTransaction(
+        uint transactionId
         )
         external
         nonReentrant
         onlyOwner
     {
-        cancelDelayedTransactionInternal(delayedTransactionId);
+        cancelTransactionInternal(transactionId);
     }
 
-    function cancelAllDelayedTransactions()
+    function cancelAllTransactions()
         external
         nonReentrant
         onlyOwner
     {
         // First cache all transactions ids of the transactions we will remove
-        uint[] memory transactionIds = new uint[](delayedTransactions.length);
-        for(uint i = 0; i < delayedTransactions.length; i++) {
-            transactionIds[i] = delayedTransactions[i].id;
+        uint[] memory transactionIds = new uint[](pendingTransactions.length);
+        for(uint i = 0; i < pendingTransactions.length; i++) {
+            transactionIds[i] = pendingTransactions[i].id;
         }
         // Now remove all delayed transactions
         for(uint i = 0; i < transactionIds.length; i++) {
-            cancelDelayedTransactionInternal(transactionIds[i]);
+            cancelTransactionInternal(transactionIds[i]);
         }
     }
 
     // If the function that was called has no delay the function is called immediately,
     // otherwise the function call is stored on-chain and can be executed later using
-    // `executeDelayedTransaction` when the necessary time has passed.
+    // `executeTransaction` when the necessary time has passed.
     function()
         external
         payable
@@ -195,8 +205,8 @@ contract DelayedOwner is Claimable, ReentrancyGuard
                 default { return(returnData, mload(returnData)) }
             }
         } else {
-            delayedTransactions.push(transaction);
-            delayedTransactionMap[transaction.id] = delayedTransactions.length;
+            pendingTransactions.push(transaction);
+            pendingTransactionMap[transaction.id] = pendingTransactions.length;
             emit TransactionDelayed(
                 transaction.id,
                 transaction.timestamp,
@@ -223,12 +233,12 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         }
     }
 
-    function getNumDelayedTransactions()
+    function getNumPendingTransactions()
         external
         view
         returns (uint)
     {
-        return delayedTransactions.length;
+        return pendingTransactions.length;
     }
 
     function getNumDelayedFunctions()
@@ -261,7 +271,7 @@ contract DelayedOwner is Claimable, ReentrancyGuard
                     delayedFunctions[pos - 1] = lastOne;
                     delayedFunctionMap[lastOne.functionSelector] = pos;
                 }
-                delayedTransactions.length -= 1;
+                pendingTransactions.length -= 1;
                 delete delayedFunctionMap[functionSelector];
             }
         } else if (delay > 0) {
@@ -284,15 +294,15 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         (success, returnData) = ownedContract.call.value(transaction.value)(transaction.data);
     }
 
-    function cancelDelayedTransactionInternal(
-        uint delayedTransactionId
+    function cancelTransactionInternal(
+        uint transactionId
         )
         internal
     {
-        Transaction storage transaction = getDelayedTransaction(delayedTransactionId);
+        Transaction memory transaction = getTransaction(transactionId);
 
         // Remove the transaction
-        removeDelayedTransaction(transaction.id);
+        removeTransaction(transaction.id);
 
         emit TransactionCancelled(
             transaction.id,
@@ -308,34 +318,34 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         }
     }
 
-    function getDelayedTransaction(
+    function getTransaction(
         uint transactionId
         )
         internal
         view
         returns (Transaction storage transaction)
     {
-        uint pos = delayedTransactionMap[transactionId];
+        uint pos = pendingTransactionMap[transactionId];
         require(pos != 0, "TRANSACTION_NOT_FOUND");
-        transaction = delayedTransactions[pos - 1];
+        transaction = pendingTransactions[pos - 1];
     }
 
-    function removeDelayedTransaction(
+    function removeTransaction(
         uint transactionId
         )
         internal
     {
-        uint pos = delayedTransactionMap[transactionId];
+        uint pos = pendingTransactionMap[transactionId];
         require(pos != 0, "TRANSACTION_NOT_FOUND");
 
-        uint size = delayedTransactions.length;
+        uint size = pendingTransactions.length;
         if (pos != size) {
-            Transaction memory lastOne = delayedTransactions[size - 1];
-            delayedTransactions[pos - 1] = lastOne;
-            delayedTransactionMap[lastOne.id] = pos;
+            Transaction memory lastOne = pendingTransactions[size - 1];
+            pendingTransactions[pos - 1] = lastOne;
+            pendingTransactionMap[lastOne.id] = pos;
         }
 
-        delayedTransactions.length -= 1;
-        delete delayedTransactionMap[transactionId];
+        pendingTransactions.length -= 1;
+        delete pendingTransactionMap[transactionId];
     }
 }
