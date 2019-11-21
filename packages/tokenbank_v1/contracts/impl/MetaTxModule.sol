@@ -38,8 +38,9 @@ import "./BaseModule.sol";
 contract MetaTxModule is BaseModule
 {
     using MathUint for uint;
-    uint constant public BLOCK_BOUND = 100;
-    uint constant public GAS_OVERHEAD = 30000;
+    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
+    uint   constant public   BLOCK_BOUND = 100;
+    uint   constant public   GAS_OVERHEAD = 30000;
 
     struct WalletState {
         uint nonce;
@@ -48,6 +49,7 @@ contract MetaTxModule is BaseModule
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
+        address indexed signer,
         address indexed wallet,
         uint    nonce,
         bytes32 metaTxHash,
@@ -63,12 +65,14 @@ contract MetaTxModule is BaseModule
     /// @dev Validates signatures.
     ///      Sub-contract must implement this function for cutomized validation
     ///      of meta transaction signatures.
+    /// @param signer The meta-tx signer.
     /// @param wallet The wallet address.
     /// @param data The raw transaction to be performed on arbitrary contract.
     /// @param metaTxHash The hash that the signatures are signed against.
     /// @param signatures The signatures to be validated by the module.
     /// @return True if signature validation passes; False otherwise.
-    function validateSignatures(
+    function validateMetaTx(
+        address signer,
         address wallet,
         bytes   memory data,
         bytes32 metaTxHash,
@@ -82,6 +86,7 @@ contract MetaTxModule is BaseModule
     ///      will pay for transaction gas in Ether and charge the wallet Ether or other
     ///      ERC20 tokens as fee. If gasPrice is set to 0, then the relayer won't charge
     ///      the wallet any fee.
+    /// @param signer The address that signed this meta-tx.
     /// @param data The raw transaction to be performed on arbitrary contract.
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
@@ -93,6 +98,7 @@ contract MetaTxModule is BaseModule
     /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
     /// @param signatures Signatures.
     function executeMetaTx(
+        address signer,
         bytes   calldata data,
         uint    nonce,
         uint    gasPrice,
@@ -108,7 +114,7 @@ contract MetaTxModule is BaseModule
 
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
-            wallet, // from
+            signer, // from
             address(this),  // to. Note the relayer can only call its own methods.
             0, // value
             data,
@@ -120,7 +126,7 @@ contract MetaTxModule is BaseModule
         );
 
         require(
-            validateSignatures(wallet, data, metaTxHash, signatures),
+            validateMetaTx(signer, wallet, data, metaTxHash, signatures),
             "INVALID_SIGNATURES"
         );
 
@@ -138,7 +144,7 @@ contract MetaTxModule is BaseModule
             );
         }
 
-        emit ExecutedMetaTx(wallet, nonce, metaTxHash, success);
+        emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);
     }
 
     /// @dev Returns the last nonce used by a wallet.
