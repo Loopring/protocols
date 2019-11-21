@@ -136,11 +136,11 @@ contract DelayedOwner is Claimable, ReentrancyGuard
         );
 
         // Return the same data the original transaction would
-        // (this will return the data even though this function doesn't have a return vallue in solidity)
+        // (this will return the data even though this function doesn't have a return value in solidity)
         assembly {
             switch success
-            case 0 { revert(returnData, mload(returnData)) }
-            default { return(returnData, mload(returnData)) }
+            case 0 { revert(add(returnData, 32), mload(returnData)) }
+            default { return(add(returnData, 32), mload(returnData)) }
         }
     }
 
@@ -198,11 +198,11 @@ contract DelayedOwner is Claimable, ReentrancyGuard
                 transaction.data
             );
             // Return the same data the original transaction would
-            // (this will return the data even though this function doesn't have a return vallue in solidity)
+            // (this will return the data even though this function doesn't have a return value in solidity)
             assembly {
                 switch success
-                case 0 { revert(returnData, mload(returnData)) }
-                default { return(returnData, mload(returnData)) }
+                case 0 { revert(add(returnData, 32), mload(returnData)) }
+                default { return(add(returnData, 32), mload(returnData)) }
             }
         } else {
             pendingTransactions.push(transaction);
