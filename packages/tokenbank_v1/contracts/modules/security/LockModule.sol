@@ -39,11 +39,23 @@ contract LockModule is SecurityModule
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    event WalletLock(address indexed wallet, bool locked);
+    uint public lockPeriod;
 
-    constructor(SecurityStorage _securityStorage)
+    event WalletLock(
+        address indexed wallet,
+        address indexed guardian,
+        bool locked
+        );
+
+    constructor(
+        SecurityStorage _securityStorage,
+        uint _lockPeriod
+        )
         public
-        SecurityModule(_securityStorage) {}
+        SecurityModule(_securityStorage)
+    {
+        lockPeriod = _lockPeriod;
+    }
 
     function staticMethods()
         public
@@ -55,22 +67,27 @@ contract LockModule is SecurityModule
         methods[1] = this.isLocked.selector;
     }
 
-    function lock(address wallet)
+    function lock(address wallet, address guardian)
         external
-        onlyGuardianOrMetaTx(wallet)
+        onlyMetaTxOrFrom(guardian)
+        onlyGuardian(wallet, guardian)
+        onlyWhenUnlocked(wallet)
         nonReentrant
     {
-        // TODO
-        emit WalletLock(wallet, true);
+        require(guardian != address(0), "NULL_GUARDIAN");
+        securityStorage.setLock(wallet, lockPeriod + now, guardian);
+        emit WalletLock(wallet, guardian, true);
     }
 
-    function unlock(address wallet)
+    function unlock(address wallet, address guardian)
         external
-        onlyGuardianOrMetaTx(wallet)
+        onlyMetaTxOrFrom(guardian)
+        onlyGuardian(wallet, guardian)
+        onlyWhenLocked(wallet)
         nonReentrant
     {
-        // TODO
-        emit WalletLock(wallet, false);
+        securityStorage.setLock(wallet, 0, guardian);
+        emit WalletLock(wallet, guardian, false);
     }
 
     function getLock(address wallet)
@@ -86,13 +103,13 @@ contract LockModule is SecurityModule
         view
         returns (bool)
     {
-        return getLock(wallet) > 0;
+        return securityStorage.isLocked(wallet);
     }
 
     /// @dev Validating meta-transaction signatures.
     function validateMetaTx(
         address signer,
-        address wallet,
+        address /*wallet*/,
         bytes   memory data,
         bytes32 metaTxHash,
         bytes   memory signatures)
@@ -102,14 +119,28 @@ contract LockModule is SecurityModule
     {
         bytes4 method = extractMethod(data);
         if (method == this.lock.selector || method == this.unlock.selector) {
-            if (!securityStorage.isGuardian(signer, wallet)) {
-                return false;
-            }
-            if (signer.isContract()) {
-                return ERC1271(signer).isValidSignature(data, signatures) == ERC1271_MAGICVALUE;
+            address guardian = extractGuardian(data);
+            if (guardian != signer) return false;
+
+            if (guardian.isContract()) {
+                // TODO (daniel): return false in case of error, not throw exception
+                return ERC1271(guardian).isValidSignature(data, signatures) != ERC1271_MAGICVALUE;
             } else {
                 return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
             }
+        }
+    }
+
+    function extractGuardian(bytes memory data)
+        private
+        pure
+        returns (address guardian)
+    {
+        require(data.length >= 68, "INVALID_DATA");
+        // solium-disable-next-line security/no-inline-assembly
+        assembly {
+            // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
+            guardian := mload(add(data, 68))
         }
     }
 }

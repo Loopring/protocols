@@ -51,12 +51,20 @@ contract SecurityStorage is BaseStorage
         return cells[wallet].guardianIdx[guardian] > 0;
     }
 
-    function getGuardians(address wallet)
+    function guardians(address wallet)
         public
         view
         returns (address[] memory)
     {
         return cells[wallet].guardians;
+    }
+
+    function numGuardians(address wallet)
+        public
+        view
+        returns (uint)
+    {
+        return cells[wallet].guardians.length;
     }
 
     function addGuardian(address wallet, address guardian)
@@ -108,9 +116,11 @@ contract SecurityStorage is BaseStorage
     function setLock(address wallet, uint lock, address locker)
         external
         onlyManager
-        returns (uint)
     {
-        cells[wallet].lock = uint128(lock);
+        uint128 _lock = uint128(lock);
+        require(uint(_lock) == lock, "LOCK_TOO_LARGE");
+
+        cells[wallet].lock = _lock;
         cells[wallet].locker = locker;
     }
 }
