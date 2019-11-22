@@ -44,8 +44,8 @@ contract LockModule is SecurityModule
     event WalletLock(
         address indexed wallet,
         address indexed guardian,
-        bool locked
-        );
+        bool            locked
+    );
 
     constructor(
         SecurityStorage _securityStorage,
@@ -75,7 +75,7 @@ contract LockModule is SecurityModule
         nonReentrant
     {
         require(guardian != address(0), "NULL_GUARDIAN");
-        securityStorage.setLock(wallet, lockPeriod + now, guardian);
+        securityStorage.setLock(wallet, now + lockPeriod, guardian);
         emit WalletLock(wallet, guardian, true);
     }
 
