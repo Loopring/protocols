@@ -30,7 +30,6 @@ contract SecurityStorage is BaseStorage
 {
     struct Wallet
     {
-        bool      exists;
         uint128   lock;
         address[] guardians;
         mapping   (address => uint) guardianIdx;
@@ -63,18 +62,18 @@ contract SecurityStorage is BaseStorage
         external
         onlyManager
     {
-       Wallet storage w = cells[wallet];
-       require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
-       // TODO: add guardian
+        Wallet storage w = cells[wallet];
+        require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
+        // TODO: add guardian
     }
 
     function removeGuardian(address wallet, address guardian)
         external
         onlyManager
     {
-       Wallet storage w = cells[wallet];
-       require(w.guardianIdx[guardian] > 0, "GUARDIAN_NOT_EXISTS");
-       // TODO: remove guardian
+        Wallet storage w = cells[wallet];
+        require(w.guardianIdx[guardian] > 0, "GUARDIAN_NOT_EXISTS");
+        // TODO: remove guardian
     }
 
     function getLock(address wallet)
