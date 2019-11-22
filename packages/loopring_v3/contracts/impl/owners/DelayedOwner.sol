@@ -16,9 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../iface/IDelayedOwner.sol";
+
 import "../../lib/AddressUtil.sol";
 import "../../lib/BytesUtil.sol";
-import "../../lib/Claimable.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
 
@@ -27,72 +28,17 @@ import "../../lib/ReentrancyGuard.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Base class for an Owner contract where certain functions have
 ///      a mandatory delay for security purposes.
-contract DelayedOwner is Claimable, ReentrancyGuard
+contract DelayedOwner is IDelayedOwner, ReentrancyGuard
 {
     using AddressUtil for address payable;
     using BytesUtil   for bytes;
     using MathUint    for uint;
 
-    struct Transaction
-    {
-        uint    id;
-        uint    timestamp;
-        uint    value;
-        bytes   data;
-    }
-
-    struct DelayedFunction
-    {
-        bytes4  functionSelector;
-        uint    delay;
-    }
-
-    event TransactionDelayed(
-        uint    id,
-        uint    timestamp,
-        uint    value,
-        bytes   data,
-        uint    delay
-    );
-
-    event TransactionCancelled(
-        uint    id,
-        uint    timestamp,
-        uint    value,
-        bytes   data
-    );
-
-    event TransactionExecuted(
-        uint    timestamp,
-        uint    value,
-        bytes   data
-    );
-
-    event PendingTransactionExecuted(
-        uint    id,
-        uint    timestamp,
-        uint    value,
-        bytes   data
-    );
-
-    // The contract all function calls will be done on.
-    address public ownedContract;
-
-    // The maximum amount of time (in seconds) a pending transaction can be executed
-    // (so the amount of time than can pass after the mandatory function specific delay).
-    // If the transaction hasn't been executed before then it can be cancelled so it is removed
-    // from the pending transaction list.
-    uint public timeToLive;
-
-    // Active list of delayed functions (delay > 0)
-    DelayedFunction[] public delayedFunctions;
     // Map from function to the functions's location+1 in the `delayedFunctions` array.
-    mapping (bytes4 => uint) public delayedFunctionMap;
+    mapping (bytes4 => uint) private delayedFunctionMap;
 
-    // Active list of pending transactions
-    Transaction[] public pendingTransactions;
     // Map from transaction ID to the transaction's location+1 in the `pendingTransactions` array.
-    mapping (uint => uint) public pendingTransactionMap;
+    mapping (uint => uint) private pendingTransactionMap;
 
     // Used to generate a unique identifier for a delayed transaction
     uint private totalNumDelayedTransactions = 0;
@@ -271,7 +217,7 @@ contract DelayedOwner is Claimable, ReentrancyGuard
                     delayedFunctions[pos - 1] = lastOne;
                     delayedFunctionMap[lastOne.functionSelector] = pos;
                 }
-                pendingTransactions.length -= 1;
+                delayedFunctions.length -= 1;
                 delete delayedFunctionMap[functionSelector];
             }
         } else if (delay > 0) {

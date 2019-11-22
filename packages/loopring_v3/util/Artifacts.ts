@@ -24,6 +24,8 @@ export class Artifacts {
   public ProtocolFeeVault: any;
   public UniswapTokenSeller: any;
   public AddressWhitelist: any;
+  public DelayedOwnerContract: any;
+  public DelayedTargetContract: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -54,6 +56,9 @@ export class Artifacts {
       "./impl/SignatureBasedAddressWhitelist.sol"
     );
     this.ProtocolFeeVault = artifacts.require("impl/ProtocolFeeVault");
-    this.UniswapTokenSeller = artifacts.require("impl/UniswapTokenSeller");
+    this.DelayedOwnerContract = artifacts.require("test/DelayedOwnerContract");
+    this.DelayedTargetContract = artifacts.require(
+      "test/DelayedTargetContract"
+    );
   }
 }
