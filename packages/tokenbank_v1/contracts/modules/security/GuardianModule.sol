@@ -33,9 +33,7 @@ contract GuardianModule is SecurityModule
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-      // the security period
     uint public pendingPeriod;
-    // the security window
     uint public confirmPeriod;
 
     mapping (address => mapping(address => uint)) public pendingAdditions;
@@ -72,13 +70,8 @@ contract GuardianModule is SecurityModule
         onlyNotWalletOwner(wallet, guardian)
     {
         require(guardian != address(0), "ZERO_ADDRESS");
-        // Guardians must either be an EOA or a contract with an owner()
-        // method that returns an address with a 5000 gas stipend.
-        // Note that this test is not meant to be strict and can be bypassed by custom malicious contracts.
-        // solium-disable-next-line security/no-low-level-calls
-        // (bool success,) = _guardian.call.gas(5000)(abi.encodeWithSignature("owner()"));
-        // require(success, "GM: guardian must be EOA or implement owner()");
 
+        // TODO: check if guardian is a contract address and support ERC1271
         if (securityStorage.numGuardians(wallet) == 0) {
             securityStorage.addGuardian(wallet, guardian);
             emit GuardianAdded(wallet, guardian);
