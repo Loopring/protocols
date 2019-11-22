@@ -83,10 +83,10 @@ contract GuardianModule is SecurityModule
             securityStorage.addGuardian(wallet, guardian);
             emit GuardianAdded(wallet, guardian);
         } else {
-          uint confirmStart = pendingAdditions[wallet][guardian];
-          require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
-          pendingAdditions[wallet][guardian] = now + pendingPeriod;
-          emit GuardianAdditionPending(wallet, guardian, now + pendingPeriod);
+            uint confirmStart = pendingAdditions[wallet][guardian];
+            require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
+            pendingAdditions[wallet][guardian] = now + pendingPeriod;
+            emit GuardianAdditionPending(wallet, guardian, now + pendingPeriod);
         }
     }
 

@@ -51,14 +51,14 @@ contract SecurityModule is MetaTxModule
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-      require(securityStorage.isGuardian(wallet, guardian), "NOT_GUARDIAN");
-      _;
+        require(securityStorage.isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        _;
     }
 
     modifier onlyNotWalletGuardian(address wallet, address guardian)
     {
-      require(!securityStorage.isGuardian(wallet, guardian), "IS_GUARDIAN");
-      _;
+        require(!securityStorage.isGuardian(wallet, guardian), "IS_GUARDIAN");
+        _;
     }
 
     modifier onlyFromMetaTxOr(address guardian)

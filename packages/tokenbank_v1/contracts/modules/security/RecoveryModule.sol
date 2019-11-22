@@ -32,5 +32,6 @@ contract RecoveryModule is SecurityModule
 {
     constructor(SecurityStorage _securityStorage)
         public
-        SecurityModule(_securityStorage) {}
+        SecurityModule(_securityStorage)
+    {}
 }

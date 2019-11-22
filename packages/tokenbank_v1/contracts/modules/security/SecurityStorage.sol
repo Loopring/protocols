@@ -90,8 +90,8 @@ contract SecurityStorage is BaseStorage
         address lastGuardian = w.guardians[w.guardians.length - 1];
 
         if (guardian != lastGuardian) {
-          w.guardians[idx - 1] = lastGuardian;
-          w.guardianIdx[lastGuardian] = idx;
+            w.guardians[idx - 1] = lastGuardian;
+            w.guardianIdx[lastGuardian] = idx;
         }
         w.guardians.length--;
         delete w.guardianIdx[guardian];
