@@ -38,6 +38,16 @@ contract GuardianModule is SecurityModule
     // the security window
     uint public securityWindow;
 
+    mapping (address => mapping(address => uint)) private additionPending;
+    mapping (address => mapping(address => uint)) private revokationPending;
+
+    event GuardianAdditionPending(address indexed wallet, address indexed guardian, uint256 executeAfter);
+    event GuardianRevokationPending(address indexed wallet, address indexed guardian, uint256 executeAfter);
+    event GuardianAdditionCancelled(address indexed wallet, address indexed guardian);
+    event GuardianRevokationCancelled(address indexed wallet, address indexed guardian);
+    event GuardianAdded(address indexed wallet, address indexed guardian);
+    event GuardianRevoked(address indexed wallet, address indexed guardian);
+
     constructor(
         SecurityStorage _securityStorage,
         uint _securityPeriod,
@@ -53,58 +63,46 @@ contract GuardianModule is SecurityModule
     function addGuardian(address wallet, address guardian)
         external
         onlyFromMetaTxOrWalletOwner(wallet)
-        onlyWhenUnlocked(wallet)
+        onlyWhenWalletUnlocked(wallet)
         onlyNotWalletGuardian(wallet, guardian)
         onlyNotWalletOwner(wallet, guardian)
     {
-        // require(!isOwner(_wallet, _guardian), "GM: target guardian cannot be owner");
-        // require(!isGuardian(_wallet, _guardian), "GM: target is already a guardian");
-        // // Guardians must either be an EOA or a contract with an owner()
-        // // method that returns an address with a 5000 gas stipend.
-        // // Note that this test is not meant to be strict and can be bypassed by custom malicious contracts.
-        // // solium-disable-next-line security/no-low-level-calls
+        require(guardian != address(0), "ZERO_ADDRESS");
+        // Guardians must either be an EOA or a contract with an owner()
+        // method that returns an address with a 5000 gas stipend.
+        // Note that this test is not meant to be strict and can be bypassed by custom malicious contracts.
+        // solium-disable-next-line security/no-low-level-calls
         // (bool success,) = _guardian.call.gas(5000)(abi.encodeWithSignature("owner()"));
         // require(success, "GM: guardian must be EOA or implement owner()");
-        // if(guardianStorage.guardianCount(_wallet) == 0) {
-        //     guardianStorage.addGuardian(_wallet, _guardian);
-        //     emit GuardianAdded(address(_wallet), _guardian);
-        // } else {
-        //     bytes32 id = keccak256(abi.encodePacked(address(_wallet), _guardian, "addition"));
-        //     GuardianManagerConfig storage config = configs[address(_wallet)];
-        //     require(
-        //         config.pending[id] == 0 || now > config.pending[id] + securityWindow,
-        //         "GM: addition of target as guardian is already pending");
-        //     config.pending[id] = now + securityPeriod;
-        //     emit GuardianAdditionRequested(address(_wallet), _guardian, now + securityPeriod);
-        // }
-    }
 
+        if (securityStorage.numGuardians(wallet) == 0) {
+            securityStorage.addGuardian(wallet, guardian);
+            emit GuardianAdded(wallet, guardian);
+        } else {
+          uint pendingTime = additionPending[wallet][guardian];
+          require(pendingTime == 0 || now > pendingTime + securityWindow, "ALREADY_PENDING");
+          additionPending[wallet][guardian] = now + securityPeriod;
+          emit GuardianAdditionPending(wallet, guardian, now + securityPeriod);
+        }
+    }
 
     function revokeGuardian(address wallet, address guardian)
         external
         onlyFromMetaTxOrWalletOwner(wallet)
-        onlyWhenUnlocked(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyNotWalletGuardian(wallet, guardian)
     {
-        // require(!isOwner(_wallet, _guardian), "GM: target guardian cannot be owner");
-        // require(!isGuardian(_wallet, _guardian), "GM: target is already a guardian");
         // // Guardians must either be an EOA or a contract with an owner()
         // // method that returns an address with a 5000 gas stipend.
         // // Note that this test is not meant to be strict and can be bypassed by custom malicious contracts.
         // // solium-disable-next-line security/no-low-level-calls
         // (bool success,) = _guardian.call.gas(5000)(abi.encodeWithSignature("owner()"));
         // require(success, "GM: guardian must be EOA or implement owner()");
-        // if(guardianStorage.guardianCount(_wallet) == 0) {
-        //     guardianStorage.addGuardian(_wallet, _guardian);
-        //     emit GuardianAdded(address(_wallet), _guardian);
-        // } else {
-        //     bytes32 id = keccak256(abi.encodePacked(address(_wallet), _guardian, "addition"));
-        //     GuardianManagerConfig storage config = configs[address(_wallet)];
-        //     require(
-        //         config.pending[id] == 0 || now > config.pending[id] + securityWindow,
-        //         "GM: addition of target as guardian is already pending");
-        //     config.pending[id] = now + securityPeriod;
-        //     emit GuardianAdditionRequested(address(_wallet), _guardian, now + securityPeriod);
-        // }
+
+        uint pendingTime = revokationPending[wallet][guardian];
+        require(pendingTime == 0 || now > pendingTime + securityWindow, "ALREADY_PENDING");
+        revokationPending[wallet][guardian] = now + securityPeriod;
+        emit GuardianRevokationPending(wallet, guardian, now + securityPeriod);
     }
 
 

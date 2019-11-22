@@ -71,7 +71,7 @@ contract LockModule is SecurityModule
         external
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
-        onlyWhenUnlocked(wallet)
+        onlyWhenWalletUnlocked(wallet)
         nonReentrant
     {
         require(guardian != address(0), "NULL_GUARDIAN");
@@ -83,7 +83,7 @@ contract LockModule is SecurityModule
         external
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
-        onlyWhenLocked(wallet)
+        onlyWhenWalletLocked(wallet)
         nonReentrant
     {
         securityStorage.setLock(wallet, 0, guardian);

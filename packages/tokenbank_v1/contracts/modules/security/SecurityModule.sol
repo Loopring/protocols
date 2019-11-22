@@ -37,13 +37,13 @@ contract SecurityModule is MetaTxModule
         securityStorage = _securityStorage;
     }
 
-    modifier onlyWhenLocked(address wallet)
+    modifier onlyWhenWalletLocked(address wallet)
     {
         require(securityStorage.isLocked(wallet), "NOT_LOCKED");
         _;
     }
 
-    modifier onlyWhenUnlocked(address wallet)
+    modifier onlyWhenWalletUnlocked(address wallet)
     {
         require(!securityStorage.isLocked(wallet), "LOCKED");
         _;
