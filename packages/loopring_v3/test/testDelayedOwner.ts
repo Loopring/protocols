@@ -402,7 +402,7 @@ contract("DelayedOwner", (accounts: string[]) => {
     }
   });
 
-  it("transaction expired by TTL", async () => {
+  it("Transaction expired by TTL", async () => {
     const ethToTransfer = new BN(web3.utils.toWei("2.34", "ether"));
 
     const functionSelectorA = getFunctionSelector(

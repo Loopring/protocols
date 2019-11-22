@@ -380,7 +380,7 @@ export class ExchangeTestUtil {
     contract: any,
     event: string,
     numExpected: number,
-    filter: any = undefined
+    filter?: any
   ) {
     const eventArr: any = await this.getEventsFromContract(
       contract,
@@ -402,11 +402,7 @@ export class ExchangeTestUtil {
     return items;
   }
 
-  public async assertEventEmitted(
-    contract: any,
-    event: string,
-    filter: any = undefined
-  ) {
+  public async assertEventEmitted(contract: any, event: string, filter?: any) {
     return (await this.assertEventsEmitted(contract, event, 1, filter))[0];
   }
 
