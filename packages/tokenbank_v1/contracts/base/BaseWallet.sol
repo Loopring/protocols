@@ -286,7 +286,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     }
 
     function isLocalStaticMethod(bytes4 _method)
-        internal
+        private
         pure
         returns (bool)
     {

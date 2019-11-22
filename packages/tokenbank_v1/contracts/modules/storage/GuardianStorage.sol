@@ -18,6 +18,8 @@ pragma solidity ^0.5.11;
 
 import "../../base/BaseStorage.sol";
 
+import "./WalletCell.sol";
+
 
 /// @title GuardianStorage
 /// @dev TODO
@@ -28,6 +30,9 @@ import "../../base/BaseStorage.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract GuardianStorage is BaseStorage
 {
+
+    mapping (address => WalletCell) private cells;
+
     constructor(address manager)
         public
         BaseStorage(manager)
