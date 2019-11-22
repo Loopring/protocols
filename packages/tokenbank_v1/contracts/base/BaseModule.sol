@@ -41,14 +41,14 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
-    modifier onlyWalletOwner(address wallet) {
+    modifier onlyMetaTxOrWalletOwner(address wallet) {
         require(
             msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
             "NOT_FROM_WALLET_OWNER");
         _;
     }
 
-    modifier onlyStricklyWalletOwner(address wallet) {
+    modifier onlyWalletOwner(address wallet) {
         require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_STRICTLY_WALLET_OWNER");
         _;
     }
@@ -64,7 +64,7 @@ contract BaseModule is Module, ReentrancyGuard
         )
         external
         nonReentrant
-        onlyStricklyWalletOwner(wallet)
+        onlyWalletOwner(wallet)
     {
         require(module != address(this), "SELF_ADD_PROHIBITED");
         Wallet(wallet).addModule(module);
@@ -78,7 +78,7 @@ contract BaseModule is Module, ReentrancyGuard
         )
         external
         nonReentrant
-        onlyStricklyWalletOwner(wallet)
+        onlyWalletOwner(wallet)
     {
         require(module != address(this), "SELF_REMOVE_PROHIBITED");
         Wallet(wallet).removeModule(module);

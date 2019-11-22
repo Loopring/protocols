@@ -122,9 +122,9 @@ contract LockModule is SecurityModule
             address guardian = extractGuardian(data);
             if (guardian != signer) return false;
 
-            if (guardian.isContract()) {
+            if (signer.isContract()) {
                 // TODO (daniel): return false in case of error, not throw exception
-                return ERC1271(guardian).isValidSignature(data, signatures) != ERC1271_MAGICVALUE;
+                return ERC1271(signer).isValidSignature(data, signatures) != ERC1271_MAGICVALUE;
             } else {
                 return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
             }
