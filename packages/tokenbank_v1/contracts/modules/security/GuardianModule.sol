@@ -34,33 +34,37 @@ contract GuardianModule is SecurityModule
     using AddressUtil   for address;
 
       // the security period
-    uint public securityPeriod;
+    uint public pendingPeriod;
     // the security window
-    uint public securityWindow;
+    uint public confirmPeriod;
 
-    mapping (address => mapping(address => uint)) private additionPending;
-    mapping (address => mapping(address => uint)) private revokationPending;
+    mapping (address => mapping(address => uint)) public additionPending;
+    mapping (address => mapping(address => uint)) public removalPending;
 
-    event GuardianAdditionPending(address indexed wallet, address indexed guardian, uint256 executeAfter);
-    event GuardianRevokationPending(address indexed wallet, address indexed guardian, uint256 executeAfter);
-    event GuardianAdditionCancelled(address indexed wallet, address indexed guardian);
-    event GuardianRevokationCancelled(address indexed wallet, address indexed guardian);
-    event GuardianAdded(address indexed wallet, address indexed guardian);
-    event GuardianRevoked(address indexed wallet, address indexed guardian);
+    event GuardianAdditionPending   (address indexed wallet, address indexed guardian, uint confirmAfter);
+    event GuardianAdded             (address indexed wallet, address indexed guardian);
+    event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
+
+    event GuardianRemovalPending    (address indexed wallet, address indexed guardian, uint confirmAfter);
+    event GuardianRemoved           (address indexed wallet, address indexed guardian);
+    event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
 
     constructor(
         SecurityStorage _securityStorage,
-        uint _securityPeriod,
-        uint _securityWindow
+        uint _pendingPeriod,
+        uint _confirmPeriod
         )
         public
         SecurityModule(_securityStorage)
     {
-        securityPeriod = _securityPeriod;
-        securityWindow = _securityWindow;
+        pendingPeriod = _pendingPeriod;
+        confirmPeriod = _confirmPeriod;
     }
 
-    function addGuardian(address wallet, address guardian)
+    function addGuardian(
+        address wallet,
+        address guardian
+        )
         external
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
@@ -79,14 +83,47 @@ contract GuardianModule is SecurityModule
             securityStorage.addGuardian(wallet, guardian);
             emit GuardianAdded(wallet, guardian);
         } else {
-          uint pendingTime = additionPending[wallet][guardian];
-          require(pendingTime == 0 || now > pendingTime + securityWindow, "ALREADY_PENDING");
-          additionPending[wallet][guardian] = now + securityPeriod;
-          emit GuardianAdditionPending(wallet, guardian, now + securityPeriod);
+          uint confirmStart = additionPending[wallet][guardian];
+          require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
+          additionPending[wallet][guardian] = now + pendingPeriod;
+          emit GuardianAdditionPending(wallet, guardian, now + pendingPeriod);
         }
     }
 
-    function revokeGuardian(address wallet, address guardian)
+    function confirmGuardianAddition(
+        address wallet,
+        address guardian
+        )
+        external
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        uint confirmStart = additionPending[wallet][guardian];
+        require(confirmStart != 0, "NOT_PENDING");
+        require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
+        securityStorage.addGuardian(wallet, guardian);
+        delete additionPending[wallet][guardian];
+        emit GuardianAdded(wallet, guardian);
+    }
+
+    function cancelGuardianAddition(
+        address wallet,
+        address guardian
+        )
+        external
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        uint confirmStart = additionPending[wallet][guardian];
+        require(confirmStart > 0, "INVALID_GUARDIAN");
+        delete additionPending[wallet][guardian];
+        emit GuardianAdditionCancelled(wallet, guardian);
+    }
+
+    function revokeGuardian(
+        address wallet,
+        address guardian
+        )
         external
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
@@ -99,12 +136,41 @@ contract GuardianModule is SecurityModule
         // (bool success,) = _guardian.call.gas(5000)(abi.encodeWithSignature("owner()"));
         // require(success, "GM: guardian must be EOA or implement owner()");
 
-        uint pendingTime = revokationPending[wallet][guardian];
-        require(pendingTime == 0 || now > pendingTime + securityWindow, "ALREADY_PENDING");
-        revokationPending[wallet][guardian] = now + securityPeriod;
-        emit GuardianRevokationPending(wallet, guardian, now + securityPeriod);
+        uint confirmStart = removalPending[wallet][guardian];
+        require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
+        removalPending[wallet][guardian] = now + pendingPeriod;
+        emit GuardianRemovalPending(wallet, guardian, now + pendingPeriod);
     }
 
+    function confirmGuardianRemoval(
+        address wallet,
+        address guardian
+        )
+        external
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        uint confirmStart = removalPending[wallet][guardian];
+        require(confirmStart != 0, "NOT_PENDING");
+        require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
+        securityStorage.removeGuardian(wallet, guardian);
+        delete removalPending[wallet][guardian];
+        emit GuardianRemoved(wallet, guardian);
+    }
+
+    function cancelGuardianRemoval(
+        address wallet,
+        address guardian
+        )
+        external
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        uint confirmStart = removalPending[wallet][guardian];
+        require(confirmStart > 0, "INVALID_GUARDIAN");
+        delete additionPending[wallet][guardian];
+        emit GuardianRemovalCancelled(wallet, guardian);
+    }
 
     function validateMetaTx(
         address signer,
