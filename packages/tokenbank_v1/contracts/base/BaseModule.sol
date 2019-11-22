@@ -53,7 +53,7 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
-    modifier onlyNotWalletOwner(address wallet, address addr) {
+    modifier notWalletOwner(address wallet, address addr) {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
     }

@@ -66,8 +66,8 @@ contract GuardianModule is SecurityModule
         external
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
-        onlyNotWalletGuardian(wallet, guardian)
-        onlyNotWalletOwner(wallet, guardian)
+        notWalletGuardian(wallet, guardian)
+        notWalletOwner(wallet, guardian)
     {
         require(guardian != address(0), "ZERO_ADDRESS");
 
@@ -120,15 +120,8 @@ contract GuardianModule is SecurityModule
         external
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
-        onlyNotWalletGuardian(wallet, guardian)
+        onlyWalletGuardian(wallet, guardian)
     {
-        // // Guardians must either be an EOA or a contract with an owner()
-        // // method that returns an address with a 5000 gas stipend.
-        // // Note that this test is not meant to be strict and can be bypassed by custom malicious contracts.
-        // // solium-disable-next-line security/no-low-level-calls
-        // (bool success,) = _guardian.call.gas(5000)(abi.encodeWithSignature("owner()"));
-        // require(success, "GM: guardian must be EOA or implement owner()");
-
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
         pendingRemovals[wallet][guardian] = now + pendingPeriod;

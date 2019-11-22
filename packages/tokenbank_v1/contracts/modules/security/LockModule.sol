@@ -75,7 +75,7 @@ contract LockModule is SecurityModule
         nonReentrant
     {
         require(guardian != address(0), "NULL_GUARDIAN");
-        securityStorage.setLock(wallet, now + lockPeriod, guardian);
+        securityStorage.setLock(wallet, now + lockPeriod);
         emit WalletLock(wallet, guardian, true);
     }
 
@@ -86,7 +86,7 @@ contract LockModule is SecurityModule
         onlyWhenWalletLocked(wallet)
         nonReentrant
     {
-        securityStorage.setLock(wallet, 0, guardian);
+        securityStorage.setLock(wallet, 0);
         emit WalletLock(wallet, guardian, false);
     }
 

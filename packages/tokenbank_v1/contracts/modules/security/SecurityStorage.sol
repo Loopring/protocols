@@ -31,7 +31,7 @@ contract SecurityStorage is BaseStorage
     struct Wallet
     {
         uint128   lock;
-        address   locker;
+        address   locker; // the module locked/unlocked this wallet
         address[] guardians;
         mapping   (address => uint) guardianIdx;
     }
@@ -113,7 +113,7 @@ contract SecurityStorage is BaseStorage
         return uint(cells[wallet].lock);
     }
 
-    function setLock(address wallet, uint lock, address locker)
+    function setLock(address wallet, uint lock)
         external
         onlyManager
     {
@@ -121,6 +121,6 @@ contract SecurityStorage is BaseStorage
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
         cells[wallet].lock = _lock;
-        cells[wallet].locker = locker;
+        cells[wallet].locker = msg.sender;
     }
 }
