@@ -18,8 +18,6 @@ pragma solidity ^0.5.11;
 
 import "../../base/BaseStorage.sol";
 
-import "./SecurityCell.sol";
-
 
 /// @title SecurityStorage
 /// @dev TODO
@@ -30,7 +28,15 @@ import "./SecurityCell.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract SecurityStorage is BaseStorage
 {
-    mapping (address => address) public cells;
+    struct Wallet
+    {
+        bool      exists;
+        uint128   lock;
+        address[] guardians;
+        mapping   (address => uint) guardianIdx;
+    }
+
+    mapping (address => Wallet) public cells;
 
     constructor(address manager)
         public
@@ -42,9 +48,33 @@ contract SecurityStorage is BaseStorage
         view
         returns (bool)
     {
-        address cell= cells[wallet];
-        if (cell == address(0)) return false;
-        else return SecurityCell(cell).isGuardian(guardian);
+        return cells[wallet].guardianIdx[guardian] > 0;
+    }
+
+    function getGuardians(address wallet)
+        public
+        view
+        returns (address[] memory)
+    {
+        return cells[wallet].guardians;
+    }
+
+    function addGuardian(address wallet, address guardian)
+        external
+        onlyManager
+    {
+       Wallet storage w = cells[wallet];
+       require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
+       // TODO: add guardian
+    }
+
+    function removeGuardian(address wallet, address guardian)
+        external
+        onlyManager
+    {
+       Wallet storage w = cells[wallet];
+       require(w.guardianIdx[guardian] > 0, "GUARDIAN_NOT_EXISTS");
+       // TODO: remove guardian
     }
 
     function getLock(address wallet)
@@ -52,20 +82,14 @@ contract SecurityStorage is BaseStorage
         view
         returns (uint)
     {
-        address cell= cells[wallet];
-        if (cell == address(0)) return 0;
-        else return SecurityCell(cell).lock();
+        return uint(cells[wallet].lock);
     }
 
     function setLock(address wallet, uint lock)
         external
+        onlyManager
         returns (uint)
     {
-        address cell= cells[wallet];
-        if (cell == address(0)) {
-            cell = address(new SecurityCell());
-            cells[wallet] = cell;
-        }
-        SecurityCell(cell).setLock(lock);
+        cells[wallet].lock = uint128(lock);
     }
 }

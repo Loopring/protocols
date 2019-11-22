@@ -36,5 +36,5 @@ contract BankRegistry is Claimable
     function registerModule(address module) external;
     function deregisterModule(address module) external;
     function isModuleRegistered(address module) public view returns (bool);
-    function numOfModules() public view returns(uint);
+    function numOfModules() public view returns (uint);
 }
