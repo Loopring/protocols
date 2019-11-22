@@ -17,6 +17,10 @@
 pragma solidity ^0.5.11;
 
 import "../lib/MathUint.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/SignatureUtil.sol";
+
+import "../thirdparty/ERC1271.sol";
 
 import "../iface/Wallet.sol";
 
@@ -37,7 +41,10 @@ import "./BaseModule.sol";
 // TODO: provide a method to check if a meta tx can go through.
 contract MetaTxModule is BaseModule
 {
-    using MathUint for uint;
+    using MathUint      for uint;
+    using AddressUtil   for address;
+    using SignatureUtil for bytes32;
+
     bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
     uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
@@ -239,6 +246,24 @@ contract MetaTxModule is BaseModule
             require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
             require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
+        }
+    }
+
+    // TODO (daniel): return false in case of ERC1271 error, not throw exception
+    function isSignatureValid(
+        address signer,
+        bytes32 metaTxHash,
+        bytes   memory signatures
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if (signer.isContract()) {
+            bytes memory hash = abi.encodePacked(metaTxHash);
+            return ERC1271(signer).isValidSignature(hash, signatures) == ERC1271_MAGICVALUE;
+        } else {
+            return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
         }
     }
 }

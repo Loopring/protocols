@@ -16,9 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
 
 import "../../thirdparty/ERC1271.sol";
 
@@ -30,9 +28,6 @@ import "./SecurityModule.sol";
 /// @title GuardianModule
 contract GuardianModule is SecurityModule
 {
-    using SignatureUtil for bytes32;
-    using AddressUtil   for address;
-
     uint public pendingPeriod;
     uint public confirmPeriod;
 
@@ -171,14 +166,7 @@ contract GuardianModule is SecurityModule
         bytes4 method = extractMethod(data);
         if (method == this.addGuardian.selector || method == this.revokeGuardian.selector) {
             address owner = Wallet(wallet).owner();
-            if (signer != owner) return false;
-
-            if (signer.isContract()) {
-                // TODO (daniel): return false in case of error, not throw exception
-                return ERC1271(signer).isValidSignature(data, signatures) != ERC1271_MAGICVALUE;
-            } else {
-                return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
-            }
+            return signer == owner && isSignatureValid(signer, metaTxHash, signatures);
         }
     }
 }

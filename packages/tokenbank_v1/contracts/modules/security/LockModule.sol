@@ -16,9 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
 
 import "../../thirdparty/ERC1271.sol";
 
@@ -120,14 +118,7 @@ contract LockModule is SecurityModule
         bytes4 method = extractMethod(data);
         if (method == this.lock.selector || method == this.unlock.selector) {
             address guardian = extractGuardian(data);
-            if (guardian != signer) return false;
-
-            if (signer.isContract()) {
-                // TODO (daniel): return false in case of error, not throw exception
-                return ERC1271(signer).isValidSignature(data, signatures) != ERC1271_MAGICVALUE;
-            } else {
-                return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
-            }
+            return signer == guardian && isSignatureValid(signer, metaTxHash, signatures);
         }
     }
 
