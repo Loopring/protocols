@@ -21,8 +21,6 @@ import "../lib/Claimable.sol";
 
 /// @title IDelayedOwner
 /// @author Brecht Devos - <brecht@loopring.org>
-/// @dev Base class for an Owner contract where certain functions have
-///      a mandatory delay for security purposes.
 contract IDelayedOwner is Claimable
 {
     event TransactionDelayed(
@@ -82,19 +80,27 @@ contract IDelayedOwner is Claimable
     // Active list of pending transactions
     Transaction[] public pendingTransactions;
 
+    /// @dev Executes a pending transaction.
+    /// @param transactionId The id of the pending transaction.
     function executeTransaction(
         uint transactionId
         )
         external;
 
+    /// @dev Cancels a pending transaction.
+    /// @param transactionId The id of the pending transaction.
     function cancelTransaction(
         uint transactionId
         )
         external;
 
+    /// @dev Cancels all pending transactions.
     function cancelAllTransactions()
         external;
 
+    /// @dev Gets the delay for the given function
+    /// @param functionSelector The function selector.
+    /// @return The delay of the function.
     function getFunctionDelay(
         bytes4 functionSelector
         )
@@ -102,11 +108,15 @@ contract IDelayedOwner is Claimable
         view
         returns (uint);
 
+    /// @dev Gets the number of pending transactions.
+    /// @return The number of pending transactions.
     function getNumPendingTransactions()
         external
         view
         returns (uint);
 
+    /// @dev Gets the number of functions that have a delay.
+    /// @return The number of delayed functions.
     function getNumDelayedFunctions()
         external
         view

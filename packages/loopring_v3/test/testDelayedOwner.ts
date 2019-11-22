@@ -11,11 +11,11 @@ contract("DelayedOwner", (accounts: string[]) => {
 
   let exchangeTestUtil: ExchangeTestUtil;
 
-  let oldValue: BN;
-  const newValue = new BN(123);
-
   let TTL: number;
   let MAGIC_VALUE: BN;
+
+  let oldValue: BN;
+  const newValue = new BN(123);
 
   const getFunctionSelector = (functionCall: any) => {
     return functionCall.encodeABI().slice(0, 10);

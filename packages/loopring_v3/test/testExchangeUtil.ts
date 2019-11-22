@@ -396,7 +396,7 @@ export class ExchangeTestUtil {
     assert.equal(
       items.length,
       numExpected,
-      "Expected a single {} event",
+      "Unexpected number of events",
       event
     );
     return items;
