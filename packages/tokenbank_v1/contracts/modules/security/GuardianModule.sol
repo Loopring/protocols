@@ -52,8 +52,10 @@ contract GuardianModule is SecurityModule
 
     function addGuardian(address wallet, address guardian)
         external
-        onlyMetaTxOrWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenUnlocked(wallet)
+        onlyNotWalletGuardian(wallet, guardian)
+        onlyNotWalletOwner(wallet, guardian)
     {
         // require(!isOwner(_wallet, _guardian), "GM: target guardian cannot be owner");
         // require(!isGuardian(_wallet, _guardian), "GM: target is already a guardian");
@@ -80,7 +82,7 @@ contract GuardianModule is SecurityModule
 
     function revokeGuardian(address wallet, address guardian)
         external
-        onlyMetaTxOrWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenUnlocked(wallet)
     {
         // require(!isOwner(_wallet, _guardian), "GM: target guardian cannot be owner");
