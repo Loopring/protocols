@@ -31,6 +31,7 @@ contract SecurityStorage is BaseStorage
     struct Wallet
     {
         uint128   lock;
+        address   locker;
         address[] guardians;
         mapping   (address => uint) guardianIdx;
     }
@@ -62,9 +63,12 @@ contract SecurityStorage is BaseStorage
         external
         onlyManager
     {
+        require(guardian != address(0), "ZERO_ADDRESS");
         Wallet storage w = cells[wallet];
         require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
-        // TODO: add guardian
+
+        w.guardians.push(guardian);
+        w.guardianIdx[guardian] = w.guardians.length;
     }
 
     function removeGuardian(address wallet, address guardian)
@@ -72,8 +76,25 @@ contract SecurityStorage is BaseStorage
         onlyManager
     {
         Wallet storage w = cells[wallet];
-        require(w.guardianIdx[guardian] > 0, "GUARDIAN_NOT_EXISTS");
-        // TODO: remove guardian
+        uint idx = w.guardianIdx[guardian];
+        require(idx > 0, "GUARDIAN_NOT_EXISTS");
+
+        address lastGuardian = w.guardians[w.guardians.length - 1];
+
+        if (guardian != lastGuardian) {
+          w.guardians[idx - 1] = lastGuardian;
+          w.guardianIdx[lastGuardian] = idx;
+        }
+        w.guardians.length--;
+        delete w.guardianIdx[guardian];
+    }
+
+    function isLocked(address wallet)
+        public
+        view
+        returns (bool)
+    {
+        return uint(cells[wallet].lock) > now;
     }
 
     function getLock(address wallet)
@@ -84,11 +105,12 @@ contract SecurityStorage is BaseStorage
         return uint(cells[wallet].lock);
     }
 
-    function setLock(address wallet, uint lock)
+    function setLock(address wallet, uint lock, address locker)
         external
         onlyManager
         returns (uint)
     {
         cells[wallet].lock = uint128(lock);
+        cells[wallet].locker = locker;
     }
 }
