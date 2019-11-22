@@ -145,7 +145,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        require(_method != bytes4(0) && !isLocalMethod(_method), "BAD_METHOD");
+        require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
@@ -158,7 +158,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (bool)
     {
-        return isLocalMethod(_method) || methodToModule[_method] != address(0);
+        return isLocalStaticMethod(_method) || methodToModule[_method] != address(0);
     }
 
     function staticMethodModule(bytes4 _method)
@@ -285,7 +285,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         }
     }
 
-    function isLocalMethod(bytes4 _method)
+    function isLocalStaticMethod(bytes4 _method)
         internal
         pure
         returns (bool)
