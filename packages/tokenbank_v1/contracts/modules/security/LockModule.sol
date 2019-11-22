@@ -62,7 +62,7 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
 
     function lock(address wallet)
         external
-        onlyGuardianOrRelayer(wallet)
+        onlyGuardianOrMetaTx(wallet)
         nonReentrant
     {
         // TODO
@@ -71,7 +71,7 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
 
     function unlock(address wallet)
         external
-        onlyGuardianOrRelayer(wallet)
+        onlyGuardianOrMetaTx(wallet)
         nonReentrant
     {
         // TODO
