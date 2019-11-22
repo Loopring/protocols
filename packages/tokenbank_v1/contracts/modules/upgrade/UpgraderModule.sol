@@ -1,8 +1,8 @@
 pragma solidity ^0.5.4;
 
-import "../iface/BankRegistry.sol";
+import "../../iface/BankRegistry.sol";
 
-import "../impl/BaseModule.sol";
+import "../../base/BaseModule.sol";
 
 
 /// @title UpgraderModule

@@ -285,10 +285,9 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         }
     }
 
-
     function isLocalMethod(bytes4 _method)
         internal
-        view
+        pure
         returns (bool)
     {
         return _method == this.supportsMethod.selector ||
