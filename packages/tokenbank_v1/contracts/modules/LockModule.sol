@@ -62,12 +62,11 @@ contract LockModule is MetaTxModule
     function staticMethods()
         public
         pure
-        returns (bytes4[] memory)
+        returns (bytes4[] memory methods)
     {
-        bytes4[] memory methods = new bytes4[](2);
+        methods = new bytes4[](2);
         methods[0] = this.getLock.selector;
-        methods[2] = this.isLocked.selector;
-        return methods;
+        methods[1] = this.isLocked.selector;
     }
 
     function lock(address wallet)
