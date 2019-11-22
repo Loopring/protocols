@@ -78,7 +78,7 @@ contract MetaTxModule is BaseModule
     /// @param metaTxHash The hash that the signatures are signed against.
     /// @param signatures The signatures to be validated by the module.
     /// @return True if signature validation passes; False otherwise.
-    function validateMetaTx(
+    function isMetaTxValid(
         address signer,
         address wallet,
         bytes   memory data,
@@ -133,7 +133,7 @@ contract MetaTxModule is BaseModule
         );
 
         require(
-            validateMetaTx(signer, wallet, data, metaTxHash, signatures),
+            isMetaTxValid(signer, wallet, data, metaTxHash, signatures),
             "INVALID_SIGNATURES"
         );
 

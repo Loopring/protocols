@@ -105,7 +105,7 @@ contract LockModule is SecurityModule
     }
 
     /// @dev Validating meta-transaction signatures.
-    function validateMetaTx(
+    function isMetaTxValid(
         address signer,
         address /*wallet*/,
         bytes   memory data,

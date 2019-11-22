@@ -153,7 +153,7 @@ contract GuardianModule is SecurityModule
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
-    function validateMetaTx(
+    function isMetaTxValid(
         address signer,
         address wallet,
         bytes   memory data,
