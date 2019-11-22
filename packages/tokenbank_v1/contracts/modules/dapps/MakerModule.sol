@@ -26,17 +26,9 @@ import "../../iface/Wallet.sol";
 
 import "../../base/MetaTxModule.sol";
 
-import "../storage/SecurityStorageAccess.sol";
-import "../storage/SecurityStorage.sol";
-
 
 /// @title MakerModule
-contract MakerModule is MetaTxModule, SecurityStorageAccess
+contract MakerModule is MetaTxModule
 {
 
-    constructor(SecurityStorage _securityStorage)
-        public
-        SecurityStorageAccess(_securityStorage)
-    {
-    }
 }

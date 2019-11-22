@@ -16,6 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../base/MetaTxModule.sol";
+
 import "./SecurityStorage.sol";
 
 
@@ -26,9 +28,8 @@ import "./SecurityStorage.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract SecurityStorageAccess
+contract SecurityModule is MetaTxModule
 {
-
     SecurityStorage internal securityStorage;
     constructor(SecurityStorage _securityStorage)
         public
@@ -39,7 +40,7 @@ contract SecurityStorageAccess
     modifier onlyGuardianOrMetaTx(address wallet)
     {
         require(
-            msg.sender == address(this) || securityStorage.isGuardian(wallet,msg.sender),
+            msg.sender == address(this) || securityStorage.isGuardian(wallet, msg.sender),
             "NOT_GUARDIAN");
         _;
     }

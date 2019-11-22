@@ -24,19 +24,13 @@ import "../../thirdparty/ERC1271.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../../base/MetaTxModule.sol";
-
-import "../storage/SecurityStorageAccess.sol";
-import "../storage/SecurityStorage.sol";
+import "./SecurityModule.sol";
 
 
 /// @title RecoveryModule
-contract RecoveryModule is MetaTxModule, SecurityStorageAccess
+contract RecoveryModule is SecurityModule
 {
-
     constructor(SecurityStorage _securityStorage)
         public
-        SecurityStorageAccess(_securityStorage)
-    {
-    }
+        SecurityModule(_securityStorage) {}
 }

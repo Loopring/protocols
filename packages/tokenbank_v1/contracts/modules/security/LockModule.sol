@@ -24,10 +24,7 @@ import "../../thirdparty/ERC1271.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../../base/MetaTxModule.sol";
-
-import "../storage/SecurityStorageAccess.sol";
-import "../storage/SecurityStorage.sol";
+import "./SecurityModule.sol";
 
 
 /// @title LockModule
@@ -37,7 +34,7 @@ import "../storage/SecurityStorage.sol";
 ///
 ///       Wallet guardians can be contract addresses. If guardian contracts support
 ///       ERC1271, then meta-transactions will also be supported.
-contract LockModule is MetaTxModule, SecurityStorageAccess
+contract LockModule is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
@@ -46,9 +43,7 @@ contract LockModule is MetaTxModule, SecurityStorageAccess
 
     constructor(SecurityStorage _securityStorage)
         public
-        SecurityStorageAccess(_securityStorage)
-    {
-    }
+        SecurityModule(_securityStorage) {}
 
     function staticMethods()
         public
