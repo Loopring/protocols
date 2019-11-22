@@ -16,16 +16,17 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/AddressUtil.sol";
-import "../lib/MathUint.sol";
-import "../lib/SignatureUtil.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
 
-import "../thirdparty/ERC1271.sol";
+import "../../thirdparty/ERC1271.sol";
 
-import "../iface/Wallet.sol";
+import "../../iface/Wallet.sol";
 
-import "../impl/MetaTxModule.sol";
+import "../../base/MetaTxModule.sol";
 
+import "../storage/AccessGuardianStorage.sol";
 import "../storage/GuardianStorage.sol";
 
 
@@ -36,43 +37,32 @@ import "../storage/GuardianStorage.sol";
 ///
 ///       Wallet guardians can be contract addresses. If guardian contracts support
 ///       ERC1271, then meta-transactions will also be supported.
-contract LockModule is MetaTxModule
+contract LockModule is MetaTxModule, AccessGuardianStorage
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
     event WalletLock(address indexed wallet, bool locked);
 
-    GuardianStorage public guardianStorage;
-
     constructor(GuardianStorage _guardianStorage)
         public
+        AccessGuardianStorage(_guardianStorage)
     {
-        guardianStorage = _guardianStorage;
-    }
-
-    modifier onlyGuardianOrRelayed(address wallet)
-    {
-        require(
-            msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),
-            "NOT_GUARDIAN");
-        _;
     }
 
     function staticMethods()
         public
         pure
-        returns (bytes4[] memory)
+        returns (bytes4[] memory methods)
     {
-        bytes4[] memory methods = new bytes4[](2);
+        methods = new bytes4[](2);
         methods[0] = this.getLock.selector;
-        methods[2] = this.isLocked.selector;
-        return methods;
+        methods[1] = this.isLocked.selector;
     }
 
     function lock(address wallet)
         external
-        onlyGuardianOrRelayed(wallet)
+        onlyGuardianOrRelayer(wallet)
         nonReentrant
     {
         // TODO
@@ -81,7 +71,7 @@ contract LockModule is MetaTxModule
 
     function unlock(address wallet)
         external
-        onlyGuardianOrRelayed(wallet)
+        onlyGuardianOrRelayer(wallet)
         nonReentrant
     {
         // TODO

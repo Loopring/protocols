@@ -145,11 +145,9 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        require(_method != bytes4(0), "BAD_METHOD");
-        require(
-            _module == address(0) || methodToModule[_method] == address(0),
-            "BAD_MODULE"
-        );
+        require(_method != bytes4(0) && !isLocalMethod(_method) , "BAD_METHOD");
+        require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
+        require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
         methodToModule[_method] = _module;
         emit StaticMethodBound(_method, _module);
@@ -160,14 +158,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (bool)
     {
-        return (
-            _method == this.supportsMethod.selector ||
-            _method == this.owner.selector ||
-            _method == this.modules.selector ||
-            _method == this.hasModule.selector ||
-            _method == this.staticMethodModule.selector ||
-            _method == this.tokenBalance.selector ||
-            methodToModule[_method] != address(0));
+        return isLocalMethod(_method) || methodToModule[_method] != address(0);
     }
 
     function staticMethodModule(bytes4 _method)
@@ -292,5 +283,18 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
             case 0 { revert(ptr, returndatasize()) }
             default { return(ptr, returndatasize()) }
         }
+    }
+
+    function isLocalMethod(bytes4 _method)
+        internal
+        pure
+        returns (bool)
+    {
+        return _method == this.supportsMethod.selector ||
+            _method == this.owner.selector ||
+            _method == this.modules.selector ||
+            _method == this.hasModule.selector ||
+            _method == this.staticMethodModule.selector ||
+            _method == this.tokenBalance.selector;
     }
 }

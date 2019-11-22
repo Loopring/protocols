@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../impl/BaseStorage.sol";
+import "./GuardianStorage.sol";
 
 
 /// @title GuardianStorage
@@ -26,26 +26,22 @@ import "../impl/BaseStorage.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract GuardianStorage is BaseStorage
+contract AccessGuardianStorage
 {
-    constructor(address manager)
-        public
-        BaseStorage(manager)
-    {}
 
-    function isGuardian(
-        address addr,
-        address wallet
-        )
+    GuardianStorage internal guardianStorage;
+    constructor(GuardianStorage _guardianStorage)
         public
-        view
-        returns (bool);
+    {
+        guardianStorage = _guardianStorage;
+    }
 
-    function getWalletLock(
-        address wallet
-        )
-        public
-        view
-        returns (uint);
+   modifier onlyGuardianOrRelayer(address wallet)
+    {
+        require(
+            msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),
+            "NOT_GUARDIAN");
+        _;
+    }
 
 }

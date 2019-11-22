@@ -35,11 +35,10 @@ contract ERC1271Module is BaseModule, ERC1271
     function staticMethods()
         public
         pure
-        returns (bytes4[] memory)
+        returns (bytes4[] memory methods)
     {
-        bytes4[] memory methods = new bytes4[](1);
+        methods = new bytes4[](1);
         methods[0] = this.isValidSignature.selector;
-        return methods;
     }
 
     /// @dev This is a static method bound to wallet.
