@@ -36,7 +36,7 @@ contract AccessGuardianStorage
         guardianStorage = _guardianStorage;
     }
 
-   modifier onlyGuardianOrMetaTx(address wallet)
+    modifier onlyGuardianOrMetaTx(address wallet)
     {
         require(
             msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),

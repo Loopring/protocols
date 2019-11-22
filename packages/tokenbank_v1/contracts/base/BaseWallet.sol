@@ -145,7 +145,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        require(_method != bytes4(0) && !isLocalMethod(_method) , "BAD_METHOD");
+        require(_method != bytes4(0) && !isLocalMethod(_method), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
