@@ -26,17 +26,17 @@ import "../../iface/Wallet.sol";
 
 import "../../base/MetaTxModule.sol";
 
-import "../storage/AccessGuardianStorage.sol";
-import "../storage/GuardianStorage.sol";
+import "../storage/SecurityStorageAccess.sol";
+import "../storage/SecurityStorage.sol";
 
 
 /// @title LimitModule
-contract LimitModule is MetaTxModule, AccessGuardianStorage
+contract LimitModule is MetaTxModule, SecurityStorageAccess
 {
 
-    constructor(GuardianStorage _guardianStorage)
+    constructor(SecurityStorage _securityStorage)
         public
-        AccessGuardianStorage(_guardianStorage)
+        SecurityStorageAccess(_securityStorage)
     {
     }
 }

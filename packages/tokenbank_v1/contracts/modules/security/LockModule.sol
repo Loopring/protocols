@@ -26,8 +26,8 @@ import "../../iface/Wallet.sol";
 
 import "../../base/MetaTxModule.sol";
 
-import "../storage/AccessGuardianStorage.sol";
-import "../storage/GuardianStorage.sol";
+import "../storage/SecurityStorageAccess.sol";
+import "../storage/SecurityStorage.sol";
 
 
 /// @title LockModule
@@ -37,16 +37,16 @@ import "../storage/GuardianStorage.sol";
 ///
 ///       Wallet guardians can be contract addresses. If guardian contracts support
 ///       ERC1271, then meta-transactions will also be supported.
-contract LockModule is MetaTxModule, AccessGuardianStorage
+contract LockModule is MetaTxModule, SecurityStorageAccess
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
     event WalletLock(address indexed wallet, bool locked);
 
-    constructor(GuardianStorage _guardianStorage)
+    constructor(SecurityStorage _securityStorage)
         public
-        AccessGuardianStorage(_guardianStorage)
+        SecurityStorageAccess(_securityStorage)
     {
     }
 
@@ -83,7 +83,7 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
         view
         returns (uint)
     {
-        return guardianStorage.getWalletLock(wallet);
+        return securityStorage.getLock(wallet);
     }
 
     function isLocked(address wallet)
@@ -107,7 +107,7 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
     {
         bytes4 method = extractMethod(data);
         if (method == this.lock.selector || method == this.unlock.selector) {
-            if (!guardianStorage.isGuardian(signer, wallet)) {
+            if (!securityStorage.isGuardian(signer, wallet)) {
                 return false;
             }
             if (signer.isContract()) {

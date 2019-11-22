@@ -16,41 +16,32 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/BaseStorage.sol";
-
-import "./WalletCell.sol";
+import "./SecurityStorage.sol";
 
 
-/// @title GuardianStorage
+/// @title SecurityStorage
 /// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract GuardianStorage is BaseStorage
+contract SecurityStorageAccess
 {
 
-    mapping (address => WalletCell) private cells;
-
-    constructor(address manager)
+    SecurityStorage internal securityStorage;
+    constructor(SecurityStorage _securityStorage)
         public
-        BaseStorage(manager)
-    {}
+    {
+        securityStorage = _securityStorage;
+    }
 
-    function isGuardian(
-        address addr,
-        address wallet
-        )
-        public
-        view
-        returns (bool);
-
-    function getWalletLock(
-        address wallet
-        )
-        public
-        view
-        returns (uint);
+    modifier onlyGuardianOrMetaTx(address wallet)
+    {
+        require(
+            msg.sender == address(this) || securityStorage.isGuardian(wallet,msg.sender),
+            "NOT_GUARDIAN");
+        _;
+    }
 
 }

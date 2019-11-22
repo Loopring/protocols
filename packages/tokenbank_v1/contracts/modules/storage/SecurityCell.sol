@@ -20,11 +20,11 @@ import "../../lib/NamedAddressSet.sol";
 import "../../lib/Ownable.sol";
 
 
-/// @title WalletCell
+/// @title SecurityCell
 /// @dev Persists data regarding a wallet's security settings.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletCell is Ownable, NamedAddressSet
+contract SecurityCell is Ownable, NamedAddressSet
 {
     address private owner;
     string  private GUARDIAN = "__GUARDIAN__";
@@ -60,5 +60,13 @@ contract WalletCell is Ownable, NamedAddressSet
         returns(uint)
     {
         return numAddressesInSet(GUARDIAN);
+    }
+
+    function isGuardian(address addr)
+        external
+        view
+        returns(bool)
+    {
+        return isAddressInSet(GUARDIAN, addr);
     }
 }
