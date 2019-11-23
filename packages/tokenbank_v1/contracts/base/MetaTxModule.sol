@@ -136,12 +136,13 @@ contract MetaTxModule is BaseModule
         if (gasPrice > 0) {
             uint gasSpent = startGas - gasleft();
             require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
-
             gasSpent = gasSpent.mul(gasPrice).add(GAS_OVERHEAD);
-            require(
-                Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
-                "OUT_OF_GAS"
-            );
+            if (gasToken == address(0)) {
+                invokeWallet(wallet, msg.sender, gasSpent, "");
+            } else {
+                bytes memory transData = abi.encodeWithSignature(ERC20_TRANSFER, msg.sender, gasSpent);
+                invokeWallet(wallet, gasToken, 0 , transData);
+            }
         }
 
         emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);

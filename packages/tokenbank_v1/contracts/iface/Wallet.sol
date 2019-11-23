@@ -79,41 +79,6 @@ contract Wallet
     ///                 returns address(0) instead.
     function staticMethodModule(bytes4 _method) public view returns (address _module);
 
-    // TODO(someone): remove `tokenBalance` and `transferToken` to `BalanceModule.sol`
-    /// @dev Returns this wallet's token or Ether balance.
-    ///      This method provides a unified interface for both ERC20 and Ether.
-    /// @param _token The token to check, address(0) represents Ether.
-    /// @return _balance The token or Ether's balance.
-    function tokenBalance(address _token)
-        public
-        view
-        returns (uint _balance);
-
-    /// @dev Transfers this wallet's token or Ether to another address.
-    ///      This method provides a unified interface for both ERC20 and Ether.
-    ///      This method will emit `Transacted` event if it doesn't throw.
-    ///
-    ///      Note: this method must ONLY allow invocations from a module that has
-    ///      beeen added to this wallet. The wallet owner shall NOT be permitted
-    ///      to call this method directly.
-    ///
-    ///      Also note that this method can be implemented using the `transact`
-    ///      method as well. It is added for convenience.
-    ///
-    ///      Warning: caller must check this method's the return result!!!
-    ///
-    /// @param to The desitination address.
-    /// @param value The amount to transfer.
-    /// @param token The token to check, address(0) represents Ether/ETH.
-    /// @return True if succeeded, False otherwise.
-    function transferToken(
-        address to,
-        uint    value,
-        address token
-        )
-        external
-        returns (bool);
-
     /// @dev Performs generic transactions. Any module that has been added to this
     ///      wallet can use this method to transact on any third-party contract with
     ///      msg.sender as this wallet itself.

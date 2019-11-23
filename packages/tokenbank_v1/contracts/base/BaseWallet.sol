@@ -16,7 +16,6 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/ERC20.sol";
 import "../lib/NamedAddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
@@ -37,7 +36,6 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     address internal _owner;
 
     string internal constant MODULE = "__MODULE__";
-    string internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     BankRegistry public bankRegistry;
 
@@ -49,17 +47,17 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     event WalletSetup(address indexed owner);
 
+    event Received(
+        address indexed sender,
+        uint    value,
+        bytes   data
+    );
+
     event Transacted(
         address indexed module,
         address indexed to,
         uint            value,
         bytes           data
-    );
-
-    event Received(
-        address indexed sender,
-        uint    value,
-        bytes   data
     );
 
     modifier onlyOwner
@@ -158,6 +156,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (bool)
     {
+
         return isLocalMethod(_method) || methodToModule[_method] != address(0);
     }
 
@@ -167,47 +166,6 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         returns (address)
     {
         return methodToModule[_method];
-    }
-
-    function tokenBalance(address token)
-        public
-        view
-        returns (uint)
-    {
-        if (token == address(0)) {
-            return address(this).balance;
-        } else {
-            return ERC20(token).balanceOf(address(this));
-        }
-    }
-
-    function transferToken(
-        address to,
-        uint    value,
-        address token
-        )
-        external
-        onlyModule
-        nonReentrant
-        returns (bool success)
-    {
-        require(to != address(this), "SAME_ADDRESS");
-        bytes memory result;
-        if (token == address(0)) {
-            result = transactInternal(to, value, "");
-        } else {
-            bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER, to, value);
-            result = transactInternal(token, 0, data);
-        }
-
-        // TODO(daniel): Not sure if this will work, this need to be tested!!!
-        if (result.length == 0) {
-            return true;
-        }
-
-        if (result.length == 32) {
-            assembly { success := mload(add(result, 32)) }
-        }
     }
 
     function transact(
@@ -221,17 +179,6 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         returns (bytes memory result)
     {
         return transactInternal(to, value, data);
-    }
-
-    function addModuleInternal(address _module)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
-        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
-
-        addAddressToSet(MODULE, _module, true);
-        Module(_module).activate(address(this));
-        emit ModuleAdded(_module);
     }
 
     function transactInternal(
@@ -252,6 +199,17 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
             }
         }
         emit Transacted(msg.sender, to, value, data);
+    }
+
+    function addModuleInternal(address _module)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
+
+        addAddressToSet(MODULE, _module, true);
+        Module(_module).activate(address(this));
+        emit ModuleAdded(_module);
     }
 
     /// @dev This default function can receive Ether or perform queris to modules
