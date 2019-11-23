@@ -58,6 +58,11 @@ contract RecoveryModule is SecurityModule
         lockPeriod = _lockPeriod;
     }
 
+    /// @dev Starts a recovery for a given wallet.
+    /// @param wallet The wallet for which the recovery shall be cancelled.
+    /// @param newOwner The new owner address to set.
+    /// @param signers A list of addresses that signed the meta transaction.
+    ///        The addresses must be sorted ascendently.
     function startRecovery(
         address   wallet,
         address   newOwner,
@@ -86,6 +91,10 @@ contract RecoveryModule is SecurityModule
         emit RecoveryStarted(wallet, newOwner, recovery.completeAfter);
     }
 
+    /// @dev Cancels a pending recovery for a given wallet.
+    /// @param wallet The wallet for which the recovery shall be cancelled.
+    /// @param signers A list of addresses that signed the meta transaction.
+    ///        The addresses must be sorted ascendently.
     function cancelRecovery(
         address   wallet,
         address[] calldata signers
@@ -107,10 +116,12 @@ contract RecoveryModule is SecurityModule
         emit RecoveryCancelled(wallet);
     }
 
+    /// @dev Complete a recovery by setting up the new owner.
+    ///      This method can be called by anyone as long as the recoveryPeriod finishes.
+    /// @param wallet The wallet for which the recovery shall complete.
     function completeRecovery(address wallet)
         external
         nonReentrantExceptFromThis
-        onlyFromMetaTx
     {
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");
