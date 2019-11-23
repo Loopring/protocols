@@ -32,6 +32,9 @@ contract Wallet
 {
     function owner() public view returns (address);
 
+    /// @dev Set a new owner.
+    function setOwner(address newOwner) external;
+
     /// @dev Set up this wallet by assigning an original order and a
     ///      list of initial modules. For each module, its `init` method
     ///      will be called with `address(this)` as the parameter.

@@ -59,6 +59,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         notWalletGuardian(wallet, guardian)
@@ -83,6 +84,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -99,6 +101,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -113,6 +116,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
@@ -128,6 +132,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -144,6 +149,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -166,7 +172,8 @@ contract GuardianModule is SecurityModule
         bytes4 method = extractMethod(data);
         if (method == this.addGuardian.selector || method == this.revokeGuardian.selector) {
             address owner = Wallet(wallet).owner();
-            return signer == owner && isSignatureValid(signer, metaTxHash, signatures);
+            return signer == owner &&
+                isSignatureValid(signer, metaTxHash, signatures, 0);
         }
     }
 }

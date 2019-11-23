@@ -67,10 +67,10 @@ contract LockModule is SecurityModule
 
     function lock(address wallet, address guardian)
         external
+        nonReentrant
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletUnlocked(wallet)
-        nonReentrant
     {
         require(guardian != address(0), "NULL_GUARDIAN");
         securityStorage.setLock(wallet, now + lockPeriod);
@@ -79,10 +79,10 @@ contract LockModule is SecurityModule
 
     function unlock(address wallet, address guardian)
         external
+        nonReentrant
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletLocked(wallet)
-        nonReentrant
     {
         securityStorage.setLock(wallet, 0);
         emit WalletLock(wallet, guardian, false);
@@ -118,7 +118,8 @@ contract LockModule is SecurityModule
         bytes4 method = extractMethod(data);
         if (method == this.lock.selector || method == this.unlock.selector) {
             address guardian = extractGuardian(data);
-            return signer == guardian && isSignatureValid(signer, metaTxHash, signatures);
+            return signer == guardian &&
+                isSignatureValid(signer, metaTxHash, signatures, 0);
         }
     }
 
@@ -128,7 +129,6 @@ contract LockModule is SecurityModule
         returns (address guardian)
     {
         require(data.length >= 68, "INVALID_DATA");
-        // solium-disable-next-line security/no-inline-assembly
         assembly {
             // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
             guardian := mload(add(data, 68))

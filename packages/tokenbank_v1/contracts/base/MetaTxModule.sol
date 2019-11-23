@@ -253,7 +253,8 @@ contract MetaTxModule is BaseModule
     function isSignatureValid(
         address signer,
         bytes32 metaTxHash,
-        bytes   memory signatures
+        bytes   memory signatures,
+        uint    idx
         )
         internal
         view
@@ -263,7 +264,8 @@ contract MetaTxModule is BaseModule
             bytes memory hash = abi.encodePacked(metaTxHash);
             return ERC1271(signer).isValidSignature(hash, signatures) == ERC1271_MAGICVALUE;
         } else {
-            return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
+            return signatures.length >= 65 * (idx + 1) &&
+                metaTxHash.recoverSigner(signatures, idx) == signer;
         }
     }
 }

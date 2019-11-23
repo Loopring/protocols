@@ -41,10 +41,15 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
+    modifier onlyFromMetaTx() {
+        require(msg.sender == address(this), "NOT_FROM_META_TX");
+        _;
+    }
+
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
         require(
             msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
-            "NOT_FROM_WALLET_OWNER");
+            "NOT_FROM_META)TX_OR_WALLET_OWNER");
         _;
     }
 

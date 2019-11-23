@@ -43,6 +43,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     mapping (bytes4  => address) internal methodToModule;
 
+    event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
     event StaticMethodBound     (bytes4  indexed method, address indexed module);
@@ -83,6 +84,17 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     function owner() public view returns (address)
     {
         return _owner;
+    }
+
+    function setOwenr(address newOwner)
+        external
+        onlyModule
+        nonReentrant
+    {
+        require(newOwner != address(0), "ZERO_ADDRESS");
+        require(newOwner != _owner, "SAME_ADDRESS");
+        _owner = newOwner;
+        emit OwnerChanged(newOwner);
     }
 
     function setup(
