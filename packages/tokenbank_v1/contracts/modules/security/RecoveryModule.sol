@@ -53,7 +53,7 @@ contract RecoveryModule is SecurityModule
         public
         SecurityModule(_securityStorage)
     {
-        // TODO(which should be large?)
+        require(recoveryPeriod <= lockPeriod, "INVALID_VALUES");
         recoveryPeriod = _recoveryPeriod;
         lockPeriod = _lockPeriod;
     }

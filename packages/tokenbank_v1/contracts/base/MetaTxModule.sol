@@ -51,13 +51,16 @@ contract MetaTxModule is BaseModule
     uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
 
-    struct WalletState {
+    struct WalletState
+    {
         uint nonce;
-        mapping (bytes32 => bool) executedMetaTxHash;
+        mapping (bytes32 => bool) metaTxHash;
     }
+
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
+        address indexed transactor,
         address indexed wallet,
         uint    nonce,
         bytes32 metaTxHash,
@@ -142,7 +145,7 @@ contract MetaTxModule is BaseModule
             );
         }
 
-        emit ExecutedMetaTx(wallet, nonce, metaTxHash, success);
+        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
     }
 
     /// @dev Extracts and returns a list of signers for the given meta transaction.
@@ -247,8 +250,8 @@ contract MetaTxModule is BaseModule
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].executedMetaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
-            wallets[wallet].executedMetaTxHash[metaTxHash] = true;
+            require(!wallets[wallet].metaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
+            wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
             require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
             require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
