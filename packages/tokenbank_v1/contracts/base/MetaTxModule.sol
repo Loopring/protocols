@@ -69,22 +69,6 @@ contract MetaTxModule is BaseModule
         _;
     }
 
-    /// @dev Validates signatures.
-    ///      Sub-contract must implement this function for cutomized validation
-    ///      of meta transaction signatures.
-    /// @param wallet The wallet address.
-    /// @param signers The meta-tx signers.
-    /// @param data The raw transaction to be performed on arbitrary contract.
-    /// @return True if signature validation passes; False otherwise.
-    function isMetaTxValid(
-        address   wallet,
-        address[] memory signers,
-        bytes     memory data
-        )
-        internal
-        view
-        returns (bool);
-
     /// @dev Execute a signed meta transaction.
     ///      This method can be called by any relayer without restriction. The relayer
     ///      will pay for transaction gas in Ether and charge the wallet Ether or other
@@ -161,9 +145,12 @@ contract MetaTxModule is BaseModule
     }
 
     /// @dev Extract and return a list of signers for the given meta transaction.
+    ///      Additional validation of the signers can also be done inside this function.
     /// @param wallet The wallet address.
     /// @param method The method selector.
     /// @param data The call data.
+    /// @return signers A list of signers that should have signed this meta transaction.
+    ///                  The list can be empty.
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,
