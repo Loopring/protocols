@@ -27,8 +27,8 @@ import "../../iface/Wallet.sol";
 import "./SecurityModule.sol";
 
 
-/// @title LimitModule
-contract LimitModule is SecurityModule
+/// @title QuotaMadule
+contract QuotaMadule is SecurityModule
 {
     constructor(SecurityStorage _securityStorage)
         public

@@ -16,10 +16,11 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/MathUint.sol";
 import "../lib/AddressUtil.sol";
+import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
 
+import "../thirdparty/BytesUtil.sol";
 import "../thirdparty/ERC1271.sol";
 
 import "../iface/Wallet.sol";
@@ -44,19 +45,22 @@ contract MetaTxModule is BaseModule
     using MathUint      for uint;
     using AddressUtil   for address;
     using SignatureUtil for bytes32;
+    using BytesUtil     for bytes;
 
     bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
     uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
 
-    struct WalletState {
+    struct WalletState
+    {
         uint nonce;
-        mapping (bytes32 => bool) executedMetaTxHash;
+        mapping (bytes32 => bool) metaTxHash;
     }
+
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
-        address indexed signer,
+        address indexed transactor,
         address indexed wallet,
         uint    nonce,
         bytes32 metaTxHash,
@@ -74,7 +78,6 @@ contract MetaTxModule is BaseModule
     ///      will pay for transaction gas in Ether and charge the wallet Ether or other
     ///      ERC20 tokens as fee. If gasPrice is set to 0, then the relayer won't charge
     ///      the wallet any fee.
-    /// @param signer The address that signed this meta-tx.
     /// @param data The raw transaction to be performed on arbitrary contract.
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
@@ -86,7 +89,6 @@ contract MetaTxModule is BaseModule
     /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
     /// @param signatures Signatures.
     function executeMetaTx(
-        address signer,
         bytes   calldata data,
         uint    nonce,
         uint    gasPrice,
@@ -99,7 +101,6 @@ contract MetaTxModule is BaseModule
     {
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
-
 
         bytes32 metaTxHash = getSignHash(
             address(0), // from
@@ -120,11 +121,14 @@ contract MetaTxModule is BaseModule
             data
         );
 
+        require(signatures.length == 65 * signers.length, "BAD_SIGNATURE");
+
         address lastSigner = address(0);
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_ORDER");
             lastSigner = signers[i];
-            require(isSignatureValid(signers[i], metaTxHash, signatures, i), "BAD_SIGNATURE");
+            bytes memory sig = signatures.slice(i * 65, 65);
+            require(isSignatureValid(signers[i], metaTxHash, sig), "BAD_SIGNATURE");
         }
 
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
@@ -141,10 +145,10 @@ contract MetaTxModule is BaseModule
             );
         }
 
-        emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);
+        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
     }
 
-    /// @dev Extract and return a list of signers for the given meta transaction.
+    /// @dev Extracts and returns a list of signers for the given meta transaction.
     ///      Additional validation of the signers can also be done inside this function.
     /// @param wallet The wallet address.
     /// @param method The method selector.
@@ -246,8 +250,8 @@ contract MetaTxModule is BaseModule
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].executedMetaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
-            wallets[wallet].executedMetaTxHash[metaTxHash] = true;
+            require(!wallets[wallet].metaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
+            wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
             require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
             require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
@@ -255,23 +259,29 @@ contract MetaTxModule is BaseModule
         }
     }
 
-    // TODO (daniel): return false in case of ERC1271 error, not throw exception
     function isSignatureValid(
         address signer,
-        bytes32 metaTxHash,
-        bytes   memory signatures,
-        uint    idx
+        bytes32 signHash,
+        bytes   memory signature
         )
         private
         view
         returns (bool)
     {
         if (signer.isContract()) {
-            bytes memory hash = abi.encodePacked(metaTxHash);
-            return ERC1271(signer).isValidSignature(hash, signatures) == ERC1271_MAGICVALUE;
+            bytes memory callData = abi.encodeWithSelector(
+                ERC1271(signer).isValidSignature.selector,
+                signHash,
+                signature
+            );
+            (bool success, bytes memory result) = signer.staticcall(callData);
+            return (
+                success &&
+                result.length == 32 &&
+                result.toBytes4() == ERC1271_MAGICVALUE
+            );
         } else {
-            return signatures.length >= 65 * (idx + 1) &&
-                metaTxHash.recoverSigner(signatures, idx) == signer;
+            return signHash.recoverSigner(signature) == signer;
         }
     }
 }
