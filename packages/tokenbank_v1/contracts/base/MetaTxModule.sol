@@ -144,7 +144,7 @@ contract MetaTxModule is BaseModule
         emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);
     }
 
-    /// @dev Extract and return a list of signers for the given meta transaction.
+    /// @dev Extracts and returns a list of signers for the given meta transaction.
     ///      Additional validation of the signers can also be done inside this function.
     /// @param wallet The wallet address.
     /// @param method The method selector.
