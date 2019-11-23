@@ -126,23 +126,27 @@ contract RecoveryModule is SecurityModule
 
     function extractSigners(
         bytes4  method,
-        address wallet,
+        address /*wallet*/,
         bytes   memory data
         )
         internal
         returns (address[] memory signers)
     {
-
-      require(method == this.startRecovery.selector ||
+        require(method == this.startRecovery.selector ||
             method == this.completeRecovery.selector ||
             method == this.cancelRecovery.selector);
-        // uint
-        // uint start = 68 + 32 * idx;
-        // require(data.length >= start, "INVALID_DATA");
-        //     // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
-        // assembly {signer := mload(add(data, start)) }
-        // signers = new address[](1);
-        // signers[0] = guardian;
+
+        // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
+        require((data.length - 68) % 32 == 0, "INVALID_DATA");
+        uint numSigners = (data.length - 68) / 32;
+        signers = new address[](numSigners);
+
+        address signer;
+        for (uint i = 0; i < numSigners; i++) {
+            uint start = 68 + 32 * i;
+            assembly {signer := mload(add(data, start)) }
+            signers[i] = signer;
+        }
     }
 
 }

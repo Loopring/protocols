@@ -175,6 +175,7 @@ contract GuardianModule is SecurityModule
             signers[0] = Wallet(wallet).owner();
         } else if (method == this.confirmGuardianAddition.selector ||
             method == this.confirmGuardianRemoval.selector){
+            // no signer needed
         } else {
             revert();
         }

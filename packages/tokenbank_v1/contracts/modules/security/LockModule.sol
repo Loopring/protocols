@@ -106,19 +106,17 @@ contract LockModule is SecurityModule
 
     function extractSigners(
         bytes4  method,
-        address wallet,
+        address /*wallet*/,
         bytes   memory data
         )
         internal
         returns (address[] memory signers)
     {
-        require(data.length >= 68, "INVALID_DATA");
         require(method == this.lock.selector || method == this.unlock.selector);
-
+        // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}
+        require(data.length == 100, "INVALID_DATA");
         address guardian;
-        // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
         assembly { guardian := mload(add(data, 68)) }
-
         signers = new address[](1);
         signers[0] = guardian;
     }
