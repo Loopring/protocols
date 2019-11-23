@@ -45,8 +45,8 @@ contract DailyQuotaMadule is SecurityModule
     {
         uint    currentQuota; // 0 indicates default
         uint    pendingQuota;
-        uint128 pengingUntil;
-        uint128 lastSpendDay;
+        uint64  pengingUntil;
+        uint64  lastSpendDay;
         uint    lastSpending;
     }
 
@@ -104,8 +104,8 @@ contract DailyQuotaMadule is SecurityModule
     function daysSinceEpoch()
         internal
         view
-        returns (uint)
+        returns (uint64)
     {
-        return ((now / 3600) + 8) / 24;
+        return uint64(((now / 3600) + 8) / 24);
     }
 }
