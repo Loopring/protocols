@@ -76,7 +76,7 @@ contract SecurityModule is MetaTxModule
             securityStorage.isGuardian(wallet, addr);
     }
 
-    function areWalletOwnerOrGuardian(address wallet, address[] memory addrs)
+    function isWalletOwnerOrGuardian(address wallet, address[] memory addrs)
         internal
         view
         returns (bool)
