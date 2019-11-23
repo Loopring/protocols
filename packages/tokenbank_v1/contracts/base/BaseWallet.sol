@@ -43,6 +43,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     mapping (bytes4  => address) internal methodToModule;
 
+    event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
     event StaticMethodBound     (bytes4  indexed method, address indexed module);
@@ -83,6 +84,17 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
     function owner() public view returns (address)
     {
         return _owner;
+    }
+
+    function setOwenr(address newOwner)
+        external
+        onlyModule
+        nonReentrant
+    {
+        require(newOwner != address(0), "ZERO_ADDRESS");
+        require(newOwner != _owner, "SAME_ADDRESS");
+        _owner = newOwner;
+        emit OwnerChanged(newOwner);
     }
 
     function setup(
@@ -145,7 +157,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         onlyModule
         nonReentrant
     {
-        require(_method != bytes4(0) && !isLocalMethod(_method) , "BAD_METHOD");
+        require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
@@ -158,7 +170,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (bool)
     {
-        return isLocalMethod(_method) || methodToModule[_method] != address(0);
+        return isLocalStaticMethod(_method) || methodToModule[_method] != address(0);
     }
 
     function staticMethodModule(bytes4 _method)
@@ -285,8 +297,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         }
     }
 
-    function isLocalMethod(bytes4 _method)
-        internal
+    function isLocalStaticMethod(bytes4 _method)
+        private
         pure
         returns (bool)
     {

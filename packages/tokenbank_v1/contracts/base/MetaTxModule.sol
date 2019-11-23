@@ -17,6 +17,10 @@
 pragma solidity ^0.5.11;
 
 import "../lib/MathUint.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/SignatureUtil.sol";
+
+import "../thirdparty/ERC1271.sol";
 
 import "../iface/Wallet.sol";
 
@@ -37,7 +41,10 @@ import "./BaseModule.sol";
 // TODO: provide a method to check if a meta tx can go through.
 contract MetaTxModule is BaseModule
 {
-    using MathUint for uint;
+    using MathUint      for uint;
+    using AddressUtil   for address;
+    using SignatureUtil for bytes32;
+
     bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
     uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
@@ -56,7 +63,7 @@ contract MetaTxModule is BaseModule
         bool    success
     );
 
-    modifier onlyMetaTx
+    modifier onlyFromMetaTx
     {
         require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
         _;
@@ -65,18 +72,15 @@ contract MetaTxModule is BaseModule
     /// @dev Validates signatures.
     ///      Sub-contract must implement this function for cutomized validation
     ///      of meta transaction signatures.
-    /// @param signer The meta-tx signer.
     /// @param wallet The wallet address.
+    /// @param signers The meta-tx signers.
     /// @param data The raw transaction to be performed on arbitrary contract.
-    /// @param metaTxHash The hash that the signatures are signed against.
-    /// @param signatures The signatures to be validated by the module.
     /// @return True if signature validation passes; False otherwise.
-    function validateMetaTx(
-        address signer,
-        address wallet,
-        bytes   memory data,
-        bytes32 metaTxHash,
-        bytes   memory signatures)
+    function isMetaTxValid(
+        address   wallet,
+        address[] memory signers,
+        bytes     memory data
+        )
         internal
         view
         returns (bool);
@@ -112,9 +116,9 @@ contract MetaTxModule is BaseModule
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
 
-        address wallet = extractWalletAddress(data);
+
         bytes32 metaTxHash = getSignHash(
-            signer, // from
+            address(0), // from
             address(this),  // to. Note the relayer can only call its own methods.
             0, // value
             data,
@@ -125,10 +129,19 @@ contract MetaTxModule is BaseModule
             "" // extraHash
         );
 
-        require(
-            validateMetaTx(signer, wallet, data, metaTxHash, signatures),
-            "INVALID_SIGNATURES"
+        address wallet = extractWalletAddress(data);
+        address[] memory signers = extractMetaTxSigners(
+            wallet,
+            extractMethod(data),
+            data
         );
+
+        address lastSigner = address(0);
+        for (uint i = 0; i < signers.length; i++) {
+            require(signers[i] > lastSigner, "INVALID_ORDER");
+            lastSigner = signers[i];
+            require(isSignatureValid(signers[i], metaTxHash, signatures, i), "BAD_SIGNATURE");
+        }
 
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
         (bool success,) = address(this).call(data);
@@ -146,6 +159,19 @@ contract MetaTxModule is BaseModule
 
         emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);
     }
+
+    /// @dev Extract and return a list of signers for the given meta transaction.
+    /// @param wallet The wallet address.
+    /// @param method The method selector.
+    /// @param data The call data.
+    function extractMetaTxSigners(
+        address wallet,
+        bytes4  method,
+        bytes   memory data
+        )
+        internal
+        view
+        returns (address[] memory signers);
 
     /// @dev Returns the last nonce used by a wallet.
     /// @param wallet The wallet's address.
@@ -185,7 +211,7 @@ contract MetaTxModule is BaseModule
         address gasToken,
         bytes   memory extraHash
         )
-        internal
+        private
         pure
         returns (bytes32)
     {
@@ -239,6 +265,26 @@ contract MetaTxModule is BaseModule
             require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
             require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
+        }
+    }
+
+    // TODO (daniel): return false in case of ERC1271 error, not throw exception
+    function isSignatureValid(
+        address signer,
+        bytes32 metaTxHash,
+        bytes   memory signatures,
+        uint    idx
+        )
+        private
+        view
+        returns (bool)
+    {
+        if (signer.isContract()) {
+            bytes memory hash = abi.encodePacked(metaTxHash);
+            return ERC1271(signer).isValidSignature(hash, signatures) == ERC1271_MAGICVALUE;
+        } else {
+            return signatures.length >= 65 * (idx + 1) &&
+                metaTxHash.recoverSigner(signatures, idx) == signer;
         }
     }
 }

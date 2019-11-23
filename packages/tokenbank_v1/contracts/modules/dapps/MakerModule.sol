@@ -16,36 +16,19 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/BaseStorage.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
+
+import "../../thirdparty/ERC1271.sol";
+
+import "../../iface/Wallet.sol";
+
+import "../../base/MetaTxModule.sol";
 
 
-/// @title GuardianStorage
-/// @dev TODO
-///
-/// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-contract GuardianStorage is BaseStorage
+/// @title MakerModule
+contract MakerModule is MetaTxModule
 {
-    constructor(address manager)
-        public
-        BaseStorage(manager)
-    {}
-
-    function isGuardian(
-        address addr,
-        address wallet
-        )
-        public
-        view
-        returns (bool);
-
-    function getWalletLock(
-        address wallet
-        )
-        public
-        view
-        returns (uint);
 
 }

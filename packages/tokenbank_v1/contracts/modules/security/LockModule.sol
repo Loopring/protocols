@@ -16,18 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
 
 import "../../thirdparty/ERC1271.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../../base/MetaTxModule.sol";
-
-import "../storage/AccessGuardianStorage.sol";
-import "../storage/GuardianStorage.sol";
+import "./SecurityModule.sol";
 
 
 /// @title LockModule
@@ -37,17 +32,27 @@ import "../storage/GuardianStorage.sol";
 ///
 ///       Wallet guardians can be contract addresses. If guardian contracts support
 ///       ERC1271, then meta-transactions will also be supported.
-contract LockModule is MetaTxModule, AccessGuardianStorage
+contract LockModule is SecurityModule
 {
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    event WalletLock(address indexed wallet, bool locked);
+    uint public lockPeriod;
 
-    constructor(GuardianStorage _guardianStorage)
+    event WalletLock(
+        address indexed wallet,
+        address indexed guardian,
+        bool            locked
+    );
+
+    constructor(
+        SecurityStorage _securityStorage,
+        uint _lockPeriod
+        )
         public
-        AccessGuardianStorage(_guardianStorage)
+        SecurityModule(_securityStorage)
     {
+        lockPeriod = _lockPeriod;
     }
 
     function staticMethods()
@@ -60,22 +65,27 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
         methods[1] = this.isLocked.selector;
     }
 
-    function lock(address wallet)
+    function lock(address wallet, address guardian)
         external
-        onlyGuardianOrRelayer(wallet)
         nonReentrant
+        onlyFromMetaTxOr(guardian)
+        onlyWalletGuardian(wallet, guardian)
+        onlyWhenWalletUnlocked(wallet)
     {
-        // TODO
-        emit WalletLock(wallet, true);
+        require(guardian != address(0), "NULL_GUARDIAN");
+        securityStorage.setLock(wallet, now + lockPeriod);
+        emit WalletLock(wallet, guardian, true);
     }
 
-    function unlock(address wallet)
+    function unlock(address wallet, address guardian)
         external
-        onlyGuardianOrRelayer(wallet)
         nonReentrant
+        onlyFromMetaTxOr(guardian)
+        onlyWalletGuardian(wallet, guardian)
+        onlyWhenWalletLocked(wallet)
     {
-        // TODO
-        emit WalletLock(wallet, false);
+        securityStorage.setLock(wallet, 0);
+        emit WalletLock(wallet, guardian, false);
     }
 
     function getLock(address wallet)
@@ -83,7 +93,7 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
         view
         returns (uint)
     {
-        return guardianStorage.getWalletLock(wallet);
+        return securityStorage.getLock(wallet);
     }
 
     function isLocked(address wallet)
@@ -91,30 +101,24 @@ contract LockModule is MetaTxModule, AccessGuardianStorage
         view
         returns (bool)
     {
-        return getLock(wallet) > 0;
+        return securityStorage.isLocked(wallet);
     }
 
-    /// @dev Validating meta-transaction signatures.
-    function validateMetaTx(
-        address signer,
-        address wallet,
-        bytes   memory data,
-        bytes32 metaTxHash,
-        bytes   memory signatures)
+    function extractMetaTxSigners(
+        bytes4  method,
+        address /*wallet*/,
+        bytes   memory data
+        )
         internal
-        view
-        returns (bool)
+        pure
+        returns (address[] memory signers)
     {
-        bytes4 method = extractMethod(data);
-        if (method == this.lock.selector || method == this.unlock.selector) {
-            if (!guardianStorage.isGuardian(signer, wallet)) {
-                return false;
-            }
-            if (signer.isContract()) {
-                return ERC1271(signer).isValidSignature(data, signatures) == ERC1271_MAGICVALUE;
-            } else {
-                return signatures.length == 65 && metaTxHash.recoverSigner(signatures, 0) == signer;
-            }
-        }
+        require(method == this.lock.selector || method == this.unlock.selector);
+        // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}
+        require(data.length == 100, "INVALID_DATA");
+        address guardian;
+        assembly { guardian := mload(add(data, 68)) }
+        signers = new address[](1);
+        signers[0] = guardian;
     }
 }

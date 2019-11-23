@@ -16,15 +16,22 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/AddressUtil.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
 
-/// @title Managed
-/// @author Daniel Wang - <daniel@loopring.org>
-contract NamedAddressSet
+import "../../thirdparty/ERC1271.sol";
+
+import "../../iface/Wallet.sol";
+
+import "./SecurityModule.sol";
+
+
+/// @title LimitModule
+contract LimitModule is SecurityModule
 {
-    // TODO(daniel): implement this contract.
-    function addAddressToSet(string memory name, address addr, bool maintainList) internal {}
-    function removeAddressFromSet(string memory name, address addr) internal {}
-    function isAddressInSet(string memory name, address addr) internal view returns (bool) {}
-    function numAddressesInSet(string memory name) internal view returns (uint) {}
-    function addressesInSet(string memory name) internal view returns (address[] memory) {}
+    constructor(SecurityStorage _securityStorage)
+        public
+        SecurityModule(_securityStorage)
+    {}
 }
