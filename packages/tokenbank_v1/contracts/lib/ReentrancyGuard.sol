@@ -28,19 +28,28 @@ contract ReentrancyGuard
     //The default value must be 0 in order to work behind a proxy.
     uint private _guardValue;
 
-    // Use this modifier on a function to prevent reentrancy
     modifier nonReentrant()
     {
-        // Check if the guard value has its original value
         require(_guardValue == 0, "REENTRANCY");
-
-        // Set the value to something else
         _guardValue = 1;
-
-        // Function body
         _;
+        _guardValue = 0;
+    }
 
-        // Set the value back
+    modifier nonReentrantExceptFrom(address addr)
+    {
+        require(msg.sender == addr || _guardValue == 0, "REENTRANCY");
+        _guardValue = 1;
+        _;
+        _guardValue = 0;
+
+    }
+
+    modifier nonReentrantExceptFromThis()
+    {
+        require(msg.sender == address(this) || _guardValue == 0, "REENTRANCY");
+        _guardValue = 1;
+        _;
         _guardValue = 0;
     }
 }

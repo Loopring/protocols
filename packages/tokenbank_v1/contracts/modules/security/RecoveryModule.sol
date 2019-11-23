@@ -60,11 +60,11 @@ contract RecoveryModule is SecurityModule
 
     function startRecovery(
         address   wallet,
-        address[] calldata signers,
-        address   newOwner
+        address   newOwner,
+        address[] calldata signers
         )
         external
-        nonReentrant
+        nonReentrantExceptFromThis
         onlyFromMetaTx
         notWalletOwner(wallet, newOwner)
     {
@@ -91,7 +91,7 @@ contract RecoveryModule is SecurityModule
         address[] calldata signers
         )
         external
-        nonReentrant
+        nonReentrantExceptFromThis
         onlyFromMetaTx
     {
         WalletRecovery storage recovery = wallets[wallet];
@@ -109,7 +109,7 @@ contract RecoveryModule is SecurityModule
 
     function completeRecovery(address wallet)
         external
-        nonReentrant
+        nonReentrantExceptFromThis
         onlyFromMetaTx
     {
         WalletRecovery storage recovery = wallets[wallet];
@@ -133,21 +133,30 @@ contract RecoveryModule is SecurityModule
         view
         returns (address[] memory signers)
     {
+        uint skipBytes = 0;
+        if (method == this.startRecovery.selector) {
+            // data layout: {length:32}{sig:4}{_wallet:32}{_newOwner:32}{signer1:32}{signer2:32}{...}
+            skipBytes = 100;
+        } else if (method == this.cancelRecovery.selector) {
+            // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
+            skipBytes = 68;
+        } else if (method == this.completeRecovery.selector){
+            // data layout: {length:32}{sig:4}{_wallet:32}
+            skipBytes = 68;
+            require(data.length == skipBytes, "INVALID_DATA");
+        }
+
         require(
-            method == this.startRecovery.selector ||
-            method == this.completeRecovery.selector ||
-            method == this.cancelRecovery.selector,
-            "INVALID_METHOD"
+            data.length >= skipBytes && (data.length - skipBytes) % 32 == 0,
+            "DATA_INVALID"
         );
 
-        // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
-        require((data.length - 68) % 32 == 0, "INVALID_DATA");
-        uint numSigners = (data.length - 68) / 32;
+        uint numSigners = (data.length - skipBytes) / 32;
         signers = new address[](numSigners);
 
         address signer;
         for (uint i = 0; i < numSigners; i++) {
-            uint start = 68 + 32 * i;
+            uint start = skipBytes + 32 * i;
             assembly {signer := mload(add(data, start)) }
             signers[i] = signer;
         }
