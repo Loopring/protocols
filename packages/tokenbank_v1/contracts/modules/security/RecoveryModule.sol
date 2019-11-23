@@ -147,13 +147,13 @@ contract RecoveryModule is SecurityModule
         uint skipBytes = 0;
         if (method == this.startRecovery.selector) {
             // data layout: {length:32}{sig:4}{_wallet:32}{_newOwner:32}{signer1:32}{signer2:32}{...}
-            skipBytes = 100;
+            skipBytes = 68; // 4+32+32
         } else if (method == this.cancelRecovery.selector) {
             // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
-            skipBytes = 68;
+            skipBytes = 36; // 4+32
         } else if (method == this.completeRecovery.selector){
             // data layout: {length:32}{sig:4}{_wallet:32}
-            skipBytes = 68;
+            skipBytes = 36; // 4+32
             require(data.length == skipBytes, "INVALID_DATA");
         }
 
@@ -167,8 +167,8 @@ contract RecoveryModule is SecurityModule
 
         address signer;
         for (uint i = 0; i < numSigners; i++) {
-            uint start = skipBytes + 32 * i;
-            assembly {signer := mload(add(data, start)) }
+            uint start = 32 + skipBytes + 32 * i;
+            assembly { signer := mload(add(data, start)) }
             signers[i] = signer;
         }
     }

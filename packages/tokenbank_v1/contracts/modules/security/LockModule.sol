@@ -118,7 +118,7 @@ contract LockModule is SecurityModule
             "INVALID_METHOD"
         );
         // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}
-        require(data.length == 100, "INVALID_DATA");
+        require(data.length == 68, "INVALID_DATA");
         address guardian;
         assembly { guardian := mload(add(data, 68)) }
         signers = new address[](1);
