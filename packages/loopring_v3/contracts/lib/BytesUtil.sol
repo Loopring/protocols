@@ -65,6 +65,32 @@ library BytesUtil
         return uint16(bytesToUintX(b, offset, 2) & 0xFFFF);
     }
 
+    function bytesToBytes4(
+        bytes memory b,
+        uint  offset
+        )
+        internal
+        pure
+        returns (bytes4 data)
+    {
+        return bytes4(bytesToBytesX(b, offset, 4) & 0xFFFFFFFF00000000000000000000000000000000000000000000000000000000);
+    }
+
+    function bytesToBytesX(
+        bytes memory b,
+        uint  offset,
+        uint  numBytes
+        )
+        private
+        pure
+        returns (bytes32 data)
+    {
+        require(b.length >= offset + numBytes, "INVALID_SIZE");
+        assembly {
+            data := mload(add(b, add(32, offset)))
+        }
+    }
+
     function bytesToUintX(
         bytes memory b,
         uint  offset,

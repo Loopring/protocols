@@ -373,26 +373,41 @@ export class ExchangeTestUtil {
       });
   }
 
-  public async getTransferEvents(tokens: any[], fromBlock: number) {
-    let transferItems: Array<[string, string, string, BN]> = [];
-    for (const tokenContractInstance of tokens) {
-      const eventArr: any = await this.getEventsFromContract(
-        tokenContractInstance,
-        "Transfer",
-        fromBlock
-      );
-      const items = eventArr.map((eventObj: any) => {
-        return [
-          tokenContractInstance.address,
-          eventObj.args.from,
-          eventObj.args.to,
-          eventObj.args.value
-        ];
-      });
-      transferItems = transferItems.concat(items);
-    }
+  // This works differently from truffleAssert.eventEmitted in that it also is able to
+  // get events emmitted in `deep contracts` (i.e. events not emmitted in the contract
+  // the function got called in).
+  public async assertEventsEmitted(
+    contract: any,
+    event: string,
+    numExpected: number,
+    filter?: any
+  ) {
+    const eventArr: any = await this.getEventsFromContract(
+      contract,
+      event,
+      web3.eth.blockNumber
+    );
+    const items = eventArr.map((eventObj: any) => {
+      if (filter !== undefined) {
+        assert(filter(eventObj.args), "Event values unexpected: " + eventObj);
+      }
+      return eventObj.args;
+    });
+    assert.equal(
+      items.length,
+      numExpected,
+      "Unexpected number of events",
+      event
+    );
+    return items;
+  }
 
-    return transferItems;
+  public async assertEventEmitted(contract: any, event: string, filter?: any) {
+    return (await this.assertEventsEmitted(contract, event, 1, filter))[0];
+  }
+
+  public async assertNoEventEmitted(contract: any, event: string) {
+    this.assertEventsEmitted(contract, event, 0, undefined);
   }
 
   public async setupRing(

@@ -19,7 +19,6 @@ pragma solidity ^0.5.11;
 import "../thirdparty/Verifier.sol";
 import "../thirdparty/BatchVerifier.sol";
 
-import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IBlockVerifier.sol";
@@ -29,7 +28,7 @@ import "../impl/libexchange/ExchangeData.sol";
 
 /// @title An Implementation of IBlockVerifier.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BlockVerifier is Claimable, ReentrancyGuard, IBlockVerifier
+contract BlockVerifier is ReentrancyGuard, IBlockVerifier
 {
     struct Circuit
     {

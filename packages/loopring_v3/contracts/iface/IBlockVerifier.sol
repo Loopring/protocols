@@ -16,10 +16,12 @@
 */
 pragma solidity ^0.5.11;
 
+import "../lib/Claimable.sol";
+
 
 /// @title IBlockVerifier
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IBlockVerifier
+contract IBlockVerifier is Claimable
 {
     // -- Events --
 
