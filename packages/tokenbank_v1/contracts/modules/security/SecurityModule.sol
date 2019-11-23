@@ -31,6 +31,7 @@ import "./SecurityStorage.sol";
 contract SecurityModule is MetaTxModule
 {
     SecurityStorage internal securityStorage;
+
     constructor(SecurityStorage _securityStorage)
         public
     {

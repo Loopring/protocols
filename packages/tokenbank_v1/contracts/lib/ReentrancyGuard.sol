@@ -43,4 +43,19 @@ contract ReentrancyGuard
         // Set the value back
         _guardValue = 0;
     }
+
+    // Use this modifier on a function to prevent reentrancy
+    modifier nonReentrantExceptSelf()
+    {
+        require(msg.sender == address(this) || _guardValue == 0, "REENTRANCY");
+
+        // Set the value to something else
+        _guardValue = 1;
+
+        // Function body
+        _;
+
+        // Set the value back
+        _guardValue = 0;
+    }
 }

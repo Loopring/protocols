@@ -36,7 +36,7 @@ contract SecurityStorage is BaseStorage
         mapping   (address => uint) guardianIdx;
     }
 
-    mapping (address => Wallet) public cells;
+    mapping (address => Wallet) public wallets;
 
     constructor(address manager)
         public
@@ -48,7 +48,7 @@ contract SecurityStorage is BaseStorage
         view
         returns (bool)
     {
-        return cells[wallet].guardianIdx[guardian] > 0;
+        return wallets[wallet].guardianIdx[guardian] > 0;
     }
 
     function guardians(address wallet)
@@ -56,7 +56,7 @@ contract SecurityStorage is BaseStorage
         view
         returns (address[] memory)
     {
-        return cells[wallet].guardians;
+        return wallets[wallet].guardians;
     }
 
     function numGuardians(address wallet)
@@ -64,7 +64,7 @@ contract SecurityStorage is BaseStorage
         view
         returns (uint)
     {
-        return cells[wallet].guardians.length;
+        return wallets[wallet].guardians.length;
     }
 
     function addGuardian(address wallet, address guardian)
@@ -72,7 +72,7 @@ contract SecurityStorage is BaseStorage
         onlyManager
     {
         require(guardian != address(0), "ZERO_ADDRESS");
-        Wallet storage w = cells[wallet];
+        Wallet storage w = wallets[wallet];
         require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
 
         w.guardians.push(guardian);
@@ -83,7 +83,7 @@ contract SecurityStorage is BaseStorage
         external
         onlyManager
     {
-        Wallet storage w = cells[wallet];
+        Wallet storage w = wallets[wallet];
         uint idx = w.guardianIdx[guardian];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
@@ -102,7 +102,7 @@ contract SecurityStorage is BaseStorage
         view
         returns (bool)
     {
-        return uint(cells[wallet].lock) > now;
+        return uint(wallets[wallet].lock) > now;
     }
 
     function getLock(address wallet)
@@ -110,7 +110,7 @@ contract SecurityStorage is BaseStorage
         view
         returns (uint)
     {
-        return uint(cells[wallet].lock);
+        return uint(wallets[wallet].lock);
     }
 
     function setLock(address wallet, uint lock)
@@ -120,7 +120,7 @@ contract SecurityStorage is BaseStorage
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
-        cells[wallet].lock = _lock;
-        cells[wallet].locker = msg.sender;
+        wallets[wallet].lock = _lock;
+        wallets[wallet].locker = msg.sender;
     }
 }

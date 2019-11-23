@@ -67,7 +67,7 @@ contract LockModule is SecurityModule
 
     function lock(address wallet, address guardian)
         external
-        nonReentrant
+        nonReentrantExceptSelf
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletUnlocked(wallet)
@@ -79,7 +79,7 @@ contract LockModule is SecurityModule
 
     function unlock(address wallet, address guardian)
         external
-        nonReentrant
+        nonReentrantExceptSelf
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletLocked(wallet)
