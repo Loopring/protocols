@@ -60,7 +60,7 @@ contract RecoveryModule is SecurityModule
 
     function startRecovery(
         address   wallet,
-        address[] calldata /*signers*/,
+        address[] calldata signers,
         address   newOwner
         )
         external
@@ -70,9 +70,8 @@ contract RecoveryModule is SecurityModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-
         uint guardianCount = securityStorage.numGuardians(wallet);
-        require(guardianCount > 0, "NO_GUARDIANS");
+        require(signers.length >=  (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
 
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter == 0, "ALREAY_STARTED");
@@ -88,7 +87,7 @@ contract RecoveryModule is SecurityModule
 
     function cancelRecovery(
         address   wallet,
-        address[] calldata /*signers*/
+        address[] calldata signers
         )
         external
         nonReentrant
@@ -96,6 +95,9 @@ contract RecoveryModule is SecurityModule
     {
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");
+
+        uint guardianCount = wallets[wallet].guardianCount;
+        require(signers.length >= (guardianCount + 1) / 2, "NOT_ENOUGH_SIGNER");
 
         delete wallets[wallet];
         securityStorage.setLock(wallet, 0);
@@ -120,6 +122,9 @@ contract RecoveryModule is SecurityModule
         emit RecoveryCompleted(wallet, recovery.newOwner);
     }
 
+
+
+
     function isMetaTxValid(
         address /*signer*/,
         address wallet,
@@ -130,21 +135,19 @@ contract RecoveryModule is SecurityModule
         view
         returns (bool)
     {
+        if (signatures.length % 65 > 0) return false;
+        uint numSig = signatures.length / 65;
+        if (data.length != 68 + numSig * 32) return false;
+
         bytes4 method = extractMethod(data);
-        uint requiredSignatures;
-        if (method == this.startRecovery.selector) {
-            requiredSignatures = 0;
-        } else if (method == this.completeRecovery.selector) {
-            requiredSignatures = (securityStorage.numGuardians(wallet) + 1) / 2;
-        } else  if (method == this.cancelRecovery.selector) {
-            requiredSignatures = (wallets[wallet].guardianCount + 1) / 2;
-        } else {
+        if (method != this.startRecovery.selector ||
+            method != this.completeRecovery.selector ||
+            method != this.cancelRecovery.selector) {
             return false;
         }
-        if (signatures.length != 65 * requiredSignatures) return false;
 
         address lastSigner = address(0);
-        for (uint i = 0; i < requiredSignatures; i++) {
+        for (uint i = 0; i < numSig; i++) {
             address signer = extractSigner(data, i);
             if (signer <= lastSigner) {
                 return false;
@@ -168,7 +171,7 @@ contract RecoveryModule is SecurityModule
         pure
         returns (address signer)
     {
-        uint start = 36 + 32 * (idx + 1);
+        uint start = 68 + 32 * idx;
         require(data.length >= start, "INVALID_DATA");
         assembly {
             // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
