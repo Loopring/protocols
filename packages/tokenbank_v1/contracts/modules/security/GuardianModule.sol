@@ -168,17 +168,17 @@ contract GuardianModule is SecurityModule
         view
         returns (address[] memory signers)
     {
-        if(method == this.addGuardian.selector ||
+        if (method == this.addGuardian.selector ||
             method == this.removeGuardian.selector ||
             method == this.cancelGuardianAddition.selector ||
             method == this.cancelGuardianRemoval.selector) {
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
-        } else if (method == this.confirmGuardianAddition.selector ||
-            method == this.confirmGuardianRemoval.selector){
-            // no signer needed
         } else {
-            revert();
+            require(
+                method == this.confirmGuardianAddition.selector ||
+                method == this.confirmGuardianRemoval.selector,
+                "INVALID_METHOD");
         }
     }
 }

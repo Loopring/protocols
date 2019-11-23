@@ -113,7 +113,10 @@ contract LockModule is SecurityModule
         pure
         returns (address[] memory signers)
     {
-        require(method == this.lock.selector || method == this.unlock.selector);
+        require(
+            method == this.lock.selector || method == this.unlock.selector,
+            "INVALID_METHOD"
+        );
         // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}
         require(data.length == 100, "INVALID_DATA");
         address guardian;

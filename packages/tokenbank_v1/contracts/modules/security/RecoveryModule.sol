@@ -74,7 +74,7 @@ contract RecoveryModule is SecurityModule
         require(recovery.completeAfter == 0, "ALREAY_STARTED");
 
         uint guardianCount = securityStorage.numGuardians(wallet);
-        require(signers.length >=  (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         recovery.newOwner = newOwner;
@@ -133,9 +133,12 @@ contract RecoveryModule is SecurityModule
         view
         returns (address[] memory signers)
     {
-        require(method == this.startRecovery.selector ||
+        require(
+            method == this.startRecovery.selector ||
             method == this.completeRecovery.selector ||
-            method == this.cancelRecovery.selector);
+            method == this.cancelRecovery.selector,
+            "INVALID_METHOD"
+        );
 
         // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
         require((data.length - 68) % 32 == 0, "INVALID_DATA");
