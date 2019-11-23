@@ -70,11 +70,12 @@ contract RecoveryModule is SecurityModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-        uint guardianCount = securityStorage.numGuardians(wallet);
-        require(signers.length >=  (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter == 0, "ALREAY_STARTED");
+
+        uint guardianCount = securityStorage.numGuardians(wallet);
+        require(signers.length >=  (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(areWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         recovery.newOwner = newOwner;
         recovery.completeAfter = now + recoveryPeriod;
@@ -98,6 +99,7 @@ contract RecoveryModule is SecurityModule
 
         uint guardianCount = wallets[wallet].guardianCount;
         require(signers.length >= (guardianCount + 1) / 2, "NOT_ENOUGH_SIGNER");
+        require(areWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         delete wallets[wallet];
         securityStorage.setLock(wallet, 0);
@@ -122,60 +124,25 @@ contract RecoveryModule is SecurityModule
         emit RecoveryCompleted(wallet, recovery.newOwner);
     }
 
-
-
-
-    function isMetaTxValid(
-        address /*signer*/,
+    function extractSigners(
+        bytes4  method,
         address wallet,
-        bytes   memory data,
-        bytes32 metaTxHash,
-        bytes   memory signatures)
+        bytes   memory data
+        )
         internal
-        view
-        returns (bool)
+        returns (address[] memory signers)
     {
-        if (signatures.length % 65 > 0) return false;
-        uint numSig = signatures.length / 65;
-        if (data.length != 68 + numSig * 32) return false;
 
-        bytes4 method = extractMethod(data);
-        if (method != this.startRecovery.selector ||
-            method != this.completeRecovery.selector ||
-            method != this.cancelRecovery.selector) {
-            return false;
-        }
-
-        address lastSigner = address(0);
-        for (uint i = 0; i < numSig; i++) {
-            address signer = extractSigner(data, i);
-            if (signer <= lastSigner) {
-                return false;
-            }
-
-            lastSigner = signer;
-            if (Wallet(wallet).owner() != signer &&
-                !securityStorage.isGuardian(wallet, signer)) {
-                return false;
-            }
-
-            if (!isSignatureValid(signer, metaTxHash, signatures, i)) {
-                return false;
-            }
-        }
-        return true;
+      require(method == this.startRecovery.selector ||
+            method == this.completeRecovery.selector ||
+            method == this.cancelRecovery.selector);
+        // uint
+        // uint start = 68 + 32 * idx;
+        // require(data.length >= start, "INVALID_DATA");
+        //     // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
+        // assembly {signer := mload(add(data, start)) }
+        // signers = new address[](1);
+        // signers[0] = guardian;
     }
 
-    function extractSigner(bytes memory data, uint idx)
-        private
-        pure
-        returns (address signer)
-    {
-        uint start = 68 + 32 * idx;
-        require(data.length >= start, "INVALID_DATA");
-        assembly {
-            // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
-            signer := mload(add(data, start))
-        }
-    }
 }

@@ -104,34 +104,22 @@ contract LockModule is SecurityModule
         return securityStorage.isLocked(wallet);
     }
 
-    /// @dev Validating meta-transaction signatures.
-    function isMetaTxValid(
-        address signer,
-        address /*wallet*/,
-        bytes   memory data,
-        bytes32 metaTxHash,
-        bytes   memory signatures)
+    function extractSigners(
+        bytes4  method,
+        address wallet,
+        bytes   memory data
+        )
         internal
-        view
-        returns (bool)
-    {
-        bytes4 method = extractMethod(data);
-        if (method == this.lock.selector || method == this.unlock.selector) {
-            address guardian = extractGuardian(data);
-            return signer == guardian &&
-                isSignatureValid(signer, metaTxHash, signatures, 0);
-        }
-    }
-
-    function extractGuardian(bytes memory data)
-        private
-        pure
-        returns (address guardian)
+        returns (address[] memory signers)
     {
         require(data.length >= 68, "INVALID_DATA");
-        assembly {
-            // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
-            guardian := mload(add(data, 68))
-        }
+        require(method == this.lock.selector || method == this.unlock.selector);
+
+        address guardian;
+        // data layout: {length:32}{sig:4}{_wallet:32}{_guardian:32}{...}
+        assembly { guardian := mload(add(data, 68)) }
+
+        signers = new address[](1);
+        signers[0] = guardian;
     }
 }

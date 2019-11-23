@@ -111,7 +111,7 @@ contract GuardianModule is SecurityModule
         emit GuardianAdditionCancelled(wallet, guardian);
     }
 
-    function revokeGuardian(
+    function removeGuardian(
         address wallet,
         address guardian
         )
@@ -159,21 +159,24 @@ contract GuardianModule is SecurityModule
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
-    function isMetaTxValid(
-        address signer,
+    function extractSigners(
+        bytes4  method,
         address wallet,
-        bytes   memory data,
-        bytes32 metaTxHash,
-        bytes   memory signatures)
+        bytes   memory
+        )
         internal
-        view
-        returns (bool)
+        returns (address[] memory signers)
     {
-        bytes4 method = extractMethod(data);
-        if (method == this.addGuardian.selector || method == this.revokeGuardian.selector) {
-            address owner = Wallet(wallet).owner();
-            return signer == owner &&
-                isSignatureValid(signer, metaTxHash, signatures, 0);
+        if(method == this.addGuardian.selector ||
+            method == this.removeGuardian.selector ||
+            method == this.cancelGuardianAddition.selector ||
+            method == this.cancelGuardianRemoval.selector) {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
+        } else if (method == this.confirmGuardianAddition.selector ||
+            method == this.confirmGuardianRemoval.selector){
+        } else {
+            revert();
         }
     }
 }

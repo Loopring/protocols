@@ -72,18 +72,15 @@ contract MetaTxModule is BaseModule
     /// @dev Validates signatures.
     ///      Sub-contract must implement this function for cutomized validation
     ///      of meta transaction signatures.
-    /// @param signer The meta-tx signer.
     /// @param wallet The wallet address.
+    /// @param signers The meta-tx signers.
     /// @param data The raw transaction to be performed on arbitrary contract.
-    /// @param metaTxHash The hash that the signatures are signed against.
-    /// @param signatures The signatures to be validated by the module.
     /// @return True if signature validation passes; False otherwise.
     function isMetaTxValid(
-        address signer,
-        address wallet,
-        bytes   memory data,
-        bytes32 metaTxHash,
-        bytes   memory signatures)
+        address   wallet,
+        address[] memory signers,
+        bytes     memory data
+        )
         internal
         view
         returns (bool);
@@ -119,9 +116,9 @@ contract MetaTxModule is BaseModule
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
 
-        address wallet = extractWalletAddress(data);
+
         bytes32 metaTxHash = getSignHash(
-            signer, // from
+            address(0), // from
             address(this),  // to. Note the relayer can only call its own methods.
             0, // value
             data,
@@ -132,10 +129,16 @@ contract MetaTxModule is BaseModule
             "" // extraHash
         );
 
-        require(
-            isMetaTxValid(signer, wallet, data, metaTxHash, signatures),
-            "INVALID_SIGNATURES"
-        );
+        address wallet = extractWalletAddress(data);
+        bytes4 method = extractMethod(data);
+        address[] memory signers = extractSigners(method, wallet, data);
+
+        address lastSigner = address(0);
+        for (uint i = 0; i < signers.length; i++) {
+            require(signers[i] > lastSigner, "INVALID_ORDER");
+            lastSigner = signers[i];
+            require(isSignatureValid(signers[i], metaTxHash, signatures, i), "BAD_SIGNATURE");
+        }
 
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
         (bool success,) = address(this).call(data);
@@ -153,6 +156,14 @@ contract MetaTxModule is BaseModule
 
         emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);
     }
+
+    function extractSigners(
+        bytes4  method,
+        address wallet,
+        bytes   memory data
+        )
+        internal
+        returns (address[] memory signers);
 
     /// @dev Returns the last nonce used by a wallet.
     /// @param wallet The wallet's address.
@@ -256,7 +267,7 @@ contract MetaTxModule is BaseModule
         bytes   memory signatures,
         uint    idx
         )
-        internal
+        private
         view
         returns (bool)
     {
