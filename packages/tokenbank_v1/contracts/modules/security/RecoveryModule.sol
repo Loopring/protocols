@@ -64,7 +64,7 @@ contract RecoveryModule is SecurityModule
         address[] calldata signers
         )
         external
-        nonReentrantExceptSelf
+        nonReentrantExceptFromThis
         onlyFromMetaTx
         notWalletOwner(wallet, newOwner)
     {
@@ -91,7 +91,7 @@ contract RecoveryModule is SecurityModule
         address[] calldata signers
         )
         external
-        nonReentrantExceptSelf
+        nonReentrantExceptFromThis
         onlyFromMetaTx
     {
         WalletRecovery storage recovery = wallets[wallet];
@@ -109,7 +109,7 @@ contract RecoveryModule is SecurityModule
 
     function completeRecovery(address wallet)
         external
-        nonReentrantExceptSelf
+        nonReentrantExceptFromThis
         onlyFromMetaTx
     {
         WalletRecovery storage recovery = wallets[wallet];

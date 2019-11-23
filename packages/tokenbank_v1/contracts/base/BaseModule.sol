@@ -99,18 +99,20 @@ contract BaseModule is Module, ReentrancyGuard
         Wallet(wallet).removeModule(module);
     }
 
+    /// @dev This method will cause an re-entry to the same module contract.
     function activate(address wallet)
         external
-        nonReentrant
+        nonReentrantExceptFrom(wallet)
         onlyFromWallet(wallet)
     {
         bindStaticMethods(wallet);
         emit Activated(wallet);
     }
 
+    /// @dev This method will cause an re-entry to the same module contract.
     function deactivate(address wallet)
         external
-        nonReentrant
+        nonReentrantExceptFrom(wallet)
         onlyFromWallet(wallet)
     {
         unbindStaticMethods(wallet);
