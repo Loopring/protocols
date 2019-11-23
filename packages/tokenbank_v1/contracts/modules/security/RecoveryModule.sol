@@ -124,12 +124,13 @@ contract RecoveryModule is SecurityModule
         emit RecoveryCompleted(wallet, recovery.newOwner);
     }
 
-    function extractSigners(
-        bytes4  method,
+    function extractMetaTxSigners(
         address /*wallet*/,
+        bytes4  method,
         bytes   memory data
         )
         internal
+        view
         returns (address[] memory signers)
     {
         require(method == this.startRecovery.selector ||
@@ -148,5 +149,4 @@ contract RecoveryModule is SecurityModule
             signers[i] = signer;
         }
     }
-
 }

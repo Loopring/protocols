@@ -104,12 +104,13 @@ contract LockModule is SecurityModule
         return securityStorage.isLocked(wallet);
     }
 
-    function extractSigners(
+    function extractMetaTxSigners(
         bytes4  method,
         address /*wallet*/,
         bytes   memory data
         )
         internal
+        pure
         returns (address[] memory signers)
     {
         require(method == this.lock.selector || method == this.unlock.selector);

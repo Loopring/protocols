@@ -130,8 +130,11 @@ contract MetaTxModule is BaseModule
         );
 
         address wallet = extractWalletAddress(data);
-        bytes4 method = extractMethod(data);
-        address[] memory signers = extractSigners(method, wallet, data);
+        address[] memory signers = extractMetaTxSigners(
+            wallet,
+            extractMethod(data),
+            data
+        );
 
         address lastSigner = address(0);
         for (uint i = 0; i < signers.length; i++) {
@@ -157,12 +160,17 @@ contract MetaTxModule is BaseModule
         emit ExecutedMetaTx(signer, wallet, nonce, metaTxHash, success);
     }
 
-    function extractSigners(
-        bytes4  method,
+    /// @dev Extract and return a list of signers for the given meta transaction.
+    /// @param wallet The wallet address.
+    /// @param method The method selector.
+    /// @param data The call data.
+    function extractMetaTxSigners(
         address wallet,
+        bytes4  method,
         bytes   memory data
         )
         internal
+        view
         returns (address[] memory signers);
 
     /// @dev Returns the last nonce used by a wallet.
@@ -203,7 +211,7 @@ contract MetaTxModule is BaseModule
         address gasToken,
         bytes   memory extraHash
         )
-        internal
+        private
         pure
         returns (bytes32)
     {

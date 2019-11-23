@@ -159,12 +159,13 @@ contract GuardianModule is SecurityModule
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
-    function extractSigners(
-        bytes4  method,
+    function extractMetaTxSigners(
         address wallet,
+        bytes4  method,
         bytes   memory
         )
         internal
+        view
         returns (address[] memory signers)
     {
         if(method == this.addGuardian.selector ||
