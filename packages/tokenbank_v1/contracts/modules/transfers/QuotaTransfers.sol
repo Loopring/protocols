@@ -70,16 +70,18 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         returns (bytes32 pendingTxId)
     {
-        bytes32 txid = keccak256(abi.encodePacked(
-            "__TRANSFER__",
-            wallet,
-            token,
-            to,
-            amount,
-            keccak256(data)
-        ));
+        bytes32 txid = keccak256(
+            abi.encodePacked(
+                "__TRANSFER__",
+                wallet,
+                token,
+                to,
+                amount,
+                keccak256(data)
+            )
+        );
 
-        authorizeWalletOwnerAndPendingTx(wallet, txid);
+        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
 
         if (whitelistStore.isWhitelisted(wallet, to)) {
             transferInternal(wallet, token, to, amount, data);
@@ -92,7 +94,7 @@ contract QuotaTransfers is TransferModule
             return bytes32(0);
         }
 
-        if (enablePending) {
+        if (!foundPendingTx && enablePending) {
             pendingTxId = txid;
             createPendingTx(wallet, pendingTxId);
         }
@@ -143,15 +145,17 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         returns (bytes32 pendingTxId)
     {
-        bytes32 txid = keccak256(abi.encodePacked(
-            "__CALL_CONTRACT__",
-            wallet,
-            to,
-            amount,
-            keccak256(data)
-        ));
+        bytes32 txid = keccak256(
+            abi.encodePacked(
+                "__CALL_CONTRACT__",
+                wallet,
+                to,
+                amount,
+                keccak256(data)
+            )
+        );
 
-        authorizeWalletOwnerAndPendingTx(wallet, txid);
+        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
 
         if (whitelistStore.isWhitelisted(wallet, to)) {
             callContractInternal(wallet, to, amount, data);
@@ -164,7 +168,7 @@ contract QuotaTransfers is TransferModule
             return bytes32(0);
         }
 
-        if (enablePending) {
+        if (!foundPendingTx && enablePending) {
             pendingTxId = txid;
             createPendingTx(wallet, pendingTxId);
         }
@@ -213,13 +217,15 @@ contract QuotaTransfers is TransferModule
         bytes32 pendingTxId
         )
         private
+        returns (bool foundPendingTx)
     {
         if (msg.sender != Wallet(wallet).owner()) {
-           if (isPendingTxValid(wallet, pendingTxId)) {
-               emit PendingTxExecuted(wallet, pendingTxId, now);
-           } else {
-               revert("UNAUTHORIZED");
-           }
+            if (isPendingTxValid(wallet, pendingTxId)) {
+                foundPendingTx = true;
+                emit PendingTxExecuted(wallet, pendingTxId, now);
+            } else {
+                revert("UNAUTHORIZED");
+            }
         }
     }
 
