@@ -33,7 +33,7 @@ contract QuotaStorage is BaseStorage
     using MathUint for uint;
 
     uint constant internal INFINITE = uint(-1);
-    uint internal defaultQuota;
+    uint public defaultQuota;
 
     struct Quota
     {
@@ -54,10 +54,10 @@ contract QuotaStorage is BaseStorage
 
     constructor(
         uint    _defaultQuota,
-        address manager
+        address _manager
         )
         public
-        BaseStorage(manager)
+        BaseStorage(_manager)
     {
         defaultQuota = _defaultQuota;
     }
