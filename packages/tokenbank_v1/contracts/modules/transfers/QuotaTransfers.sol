@@ -47,30 +47,6 @@ contract QuotaTransfers is TransferModule
         whitelistStore = _whitelistStore;
     }
 
-    function staticMethods()
-        public
-        pure
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](1);
-        methods[0] = this.tokenBalance.selector;
-    }
-
-    function tokenBalance(
-        address wallet,
-        address token
-        )
-        public
-        view
-        returns (uint)
-    {
-        if (token == address(0)) {
-            return wallet.balance;
-        } else {
-            return ERC20(token).balanceOf(wallet);
-        }
-    }
-
     function transferToken(
         address            wallet,
         address            token,
