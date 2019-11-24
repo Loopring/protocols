@@ -22,9 +22,9 @@ pragma solidity ^0.5.11;
 contract NamedAddressSet
 {
     // TODO(daniel): implement this contract.
-    function addAddressToSet(string memory name, address addr, bool maintainList) internal {}
-    function removeAddressFromSet(string memory name, address addr) internal {}
-    function isAddressInSet(string memory name, address addr) internal view returns (bool) {}
-    function numAddressesInSet(string memory name) internal view returns (uint) {}
-    function addressesInSet(string memory name) internal view returns (address[] memory) {}
+    function addAddressToSet(bytes32 key, address addr, bool maintainList) internal {}
+    function removeAddressFromSet(bytes32 key, address addr) internal {}
+    function isAddressInSet(bytes32 key, address addr) internal view returns (bool) {}
+    function numAddressesInSet(bytes32 key) internal view returns (uint) {}
+    function addressesInSet(bytes32 key) internal view returns (address[] memory) {}
 }

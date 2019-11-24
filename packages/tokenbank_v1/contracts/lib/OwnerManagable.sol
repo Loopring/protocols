@@ -22,7 +22,7 @@ import "./NamedAddressSet.sol";
 
 contract OwnerManagable is Claimable, NamedAddressSet
 {
-    string private constant MANAGER = "__MANAGED__";
+    bytes32 internal constant MANAGER = keccak256("__MANAGED__");
 
     event ManagerAdded  (address indexed manager);
     event ManagerRemoved(address indexed manager);

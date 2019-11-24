@@ -36,8 +36,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 {
     address internal _owner;
 
-    string internal constant MODULE = "__MODULE__";
-    string internal constant ERC20_TRANSFER = "transfer(address,uint256)";
+    bytes32 internal constant MODULE = keccak256("__MODULE__");
+    string  internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     BankRegistry public bankRegistry;
 

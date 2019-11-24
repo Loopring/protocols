@@ -23,27 +23,50 @@ import "../../base/DataStore.sol";
 
 /// @title WhitelistStore
 /// @dev This store maintains a wallet's whitelisted addresses.
-contract WhitelistStore is DataStore, NamedAddressSet
+contract WhitelistStore is DataStore
 {
-    string private constant WHITELIST = "__WHITELIST__";
-
     function addToWhitelist(
         address wallet,
-        address addr)
+        address addr
+        )
         external
         onlyManager
     {
-        addAddressToSet(WHITELIST, addr, true);
+        addAddressToSet(walletKey(wallet), addr, true);
     }
 
-    function removeFromWhitelist(address addr)
+    function removeFromWhitelist(
+        address wallet,
+        address addr
+        )
         external
         onlyManager
     {
-        removeAddressFromSet(WHITELIST, addr);
+        removeAddressFromSet(walletKey(wallet), addr);
     }
 
-    function whitelist(
-        address
+    function whitelist(address wallet)
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(walletKey(wallet));
+    }
+
+    function whitelistSize(address wallet)
+        public
+        view
+        returns (uint)
+    {
+        return numAddressesInSet(walletKey(wallet));
+    }
+
+    function walletKey(address addr)
+        private
+        pure
+        returns (bytes32)
+    {
+        return keccak256(abi.encodePacked("__WHITELIST__", addr));
+    }
 
 }

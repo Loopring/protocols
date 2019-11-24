@@ -21,7 +21,8 @@ import "./NamedAddressSet.sol";
 
 contract Managable is NamedAddressSet
 {
-    string private constant MANAGER = "__MANAGED__";
+    bytes32 internal constant MANAGER = keccak256("__MANAGED__");
+
     bool   internal allowToBecomeEmpty = false;
     bool   internal allowSelfRemoval   = false;
 

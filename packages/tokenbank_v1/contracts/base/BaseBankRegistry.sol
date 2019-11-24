@@ -27,8 +27,8 @@ import "../iface/BankRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BaseBankRegistry is BankRegistry, NamedAddressSet
 {
-    string internal constant MODULE = "__MODULE__";
-    string internal constant WALLET = "__WALLET__";
+    bytes32 internal constant MODULE = keccak256("__MODULE__");
+    bytes32 internal constant WALLET = keccak256("__WALLET__");
 
     address internal factory;
 
