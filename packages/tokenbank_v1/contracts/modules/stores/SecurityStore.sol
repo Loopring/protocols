@@ -90,7 +90,7 @@ contract SecurityStore is DataStore
             w.guardians[idx - 1] = lastGuardian;
             w.guardianIdx[lastGuardian] = idx;
         }
-        w.guardians.length--;
+        w.guardians.length -= 1;
         delete w.guardianIdx[guardian];
     }
 

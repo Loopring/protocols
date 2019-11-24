@@ -21,10 +21,86 @@ pragma solidity ^0.5.11;
 /// @author Daniel Wang - <daniel@loopring.org>
 contract AddressSet
 {
-    // TODO(kongliang): implement this contract.
-    function addAddressToSet(bytes32 key, address addr, bool maintainList) internal {}
-    function removeAddressFromSet(bytes32 key, address addr) internal {}
-    function isAddressInSet(bytes32 key, address addr) internal view returns (bool) {}
-    function numAddressesInSet(bytes32 key) internal view returns (uint) {}
-    function addressesInSet(bytes32 key) internal view returns (address[] memory) {}
+    struct Set
+    {
+        address[] addresses;
+        mapping (address => uint) addressPos;
+        uint count;
+    }
+    mapping (bytes32 => Set) private sets;
+
+    function addAddressToSet(
+        bytes32 key,
+        address addr,
+        bool maintainList
+        ) internal
+    {
+        Set storage set = sets[key];
+        require(set.addressPos[addr] == 0, "ADDRESS_EXIST");
+        if (maintainList) {
+            set.addresses.push(addr);
+            set.addressPos[addr] = set.addresses.length;
+        } else {
+            require(set.addresses.length == 0, "MUST_MAINTAIN_LIST");
+            set.addressPos[addr] = 1;
+            set.count += 1;
+        }
+    }
+
+    function removeAddressFromSet(
+        bytes32 key,
+        address addr
+        )
+        internal
+    {
+        Set storage set = sets[key];
+        uint pos = set.addressPos[addr];
+        require(pos != 0, "ADDRESS_NOT_EXIST");
+
+        if (set.addresses.length > 0) {
+            address lastAddr = set.addresses[set.addresses.length - 1];
+            if (lastAddr != addr) {
+                set.addresses[pos - 1] = lastAddr;
+                set.addressPos[lastAddr] = pos;
+            }
+            set.addresses.length -= 1;
+        } else {
+            set.count -= 1;
+        }
+        delete set.addressPos[addr];
+    }
+
+    function removeSet(bytes32 key)
+        internal
+    {
+        delete sets[key];
+    }
+
+    function isAddressInSet(
+        bytes32 key,
+        address addr
+        )
+        internal
+        view
+        returns (bool)
+    {
+        return sets[key].addressPos[addr] != 0;
+    }
+
+    function numAddressesInSet(bytes32 key)
+        internal
+        view
+        returns (uint)
+    {
+        Set storage set = sets[key];
+        return set.addresses.length + set.count;
+    }
+
+    function addressesInSet(bytes32 key)
+        internal
+        view
+        returns (address[] memory)
+    {
+        return sets[key].addresses;
+    }
 }
