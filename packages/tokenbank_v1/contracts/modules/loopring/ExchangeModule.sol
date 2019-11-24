@@ -21,8 +21,8 @@ import "../security/SecurityModule.sol";
 import "./IExchangeV3.sol";
 
 
-/// @title LoopringModule
-contract LoopringModule is SecurityModule
+/// @title ExchangeModule
+contract ExchangeModule is SecurityModule
 {
 
     function createDEXAccount(
