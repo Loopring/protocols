@@ -16,13 +16,11 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/MetaTxModule.sol";
-
 import "./TransferModule.sol";
 
 
-/// @title ApprovedTransferModule
-contract ApprovedTransferModule is MetaTxModule, TransferModule
+/// @title QuotaTransfers
+contract QuotaTransfers is TransferModule
 {
 
 }
