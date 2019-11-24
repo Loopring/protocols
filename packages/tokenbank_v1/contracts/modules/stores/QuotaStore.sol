@@ -39,7 +39,7 @@ contract QuotaStore is DataStore
     {
         uint    currentQuota; // 0 indicates default
         uint    pendingQuota;
-        uint64  pengingEffectiveDay;
+        uint64  pendingUntil;
         uint64  spentDay;
         uint    spentAmount;
     }
@@ -68,12 +68,12 @@ contract QuotaStore is DataStore
     {
         quotas[wallet].currentQuota = currentQuota(wallet);
         quotas[wallet].pendingQuota = newQuota;
-        quotas[wallet].pengingEffectiveDay = nextEffectiveDay();
+        quotas[wallet].pendingUntil = nextEffectiveDay();
 
         emit QuotaScheduled(
             wallet,
             newQuota,
-            quotas[wallet].pengingEffectiveDay
+            quotas[wallet].pendingUntil
         );
     }
 
@@ -89,6 +89,7 @@ contract QuotaStore is DataStore
             addToSpent(wallet, amount);
             return true;
         }
+        return false;
     }
 
     function addToSpent(
@@ -114,9 +115,7 @@ contract QuotaStore is DataStore
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        uint value = (
-            q.pengingEffectiveDay > 0 &&
-            q.pengingEffectiveDay <= todayInChina()) ?
+        uint value = q.pendingUntil >= todayInChina() ?
             q.pendingQuota : q.currentQuota;
 
         return value == 0 ? defaultQuota : value;
@@ -127,13 +126,13 @@ contract QuotaStore is DataStore
         view
         returns (
             uint _pendingQuota,
-            uint _pengingEffectiveDay
+            uint _pendingUntil
         )
     {
         Quota storage q = quotas[wallet];
-        if (q.pengingEffectiveDay > todayInChina()) {
+        if (q.pendingUntil > 0 && q.pendingUntil < todayInChina()) {
             _pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
-            _pengingEffectiveDay = q.pengingEffectiveDay;
+            _pendingUntil = q.pendingUntil;
         }
     }
 
