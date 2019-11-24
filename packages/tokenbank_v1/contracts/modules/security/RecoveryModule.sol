@@ -46,12 +46,12 @@ contract RecoveryModule is SecurityModule
     uint public lockPeriod;
 
     constructor(
-        SecurityStorage _securityStorage,
+        SecurityStore _securityStore,
         uint _recoveryPeriod,
         uint _lockPeriod
         )
         public
-        SecurityModule(_securityStorage)
+        SecurityModule(_securityStore)
     {
         require(recoveryPeriod <= lockPeriod, "INVALID_VALUES");
         recoveryPeriod = _recoveryPeriod;
@@ -78,7 +78,7 @@ contract RecoveryModule is SecurityModule
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter == 0, "ALREAY_STARTED");
 
-        uint guardianCount = securityStorage.numGuardians(wallet);
+        uint guardianCount = securityStore.numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
@@ -86,7 +86,7 @@ contract RecoveryModule is SecurityModule
         recovery.completeAfter = now + recoveryPeriod;
         recovery.guardianCount = guardianCount;
 
-        securityStorage.setLock(wallet, now + lockPeriod);
+        securityStore.setLock(wallet, now + lockPeriod);
 
         emit RecoveryStarted(wallet, newOwner, recovery.completeAfter);
     }
@@ -111,7 +111,7 @@ contract RecoveryModule is SecurityModule
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         delete wallets[wallet];
-        securityStorage.setLock(wallet, 0);
+        securityStore.setLock(wallet, 0);
 
         emit RecoveryCancelled(wallet);
     }
@@ -130,7 +130,7 @@ contract RecoveryModule is SecurityModule
         Wallet(wallet).setOwner(recovery.newOwner);
 
         delete wallets[wallet];
-        securityStorage.setLock(wallet, 0);
+        securityStore.setLock(wallet, 0);
 
         emit RecoveryCompleted(wallet, recovery.newOwner);
     }

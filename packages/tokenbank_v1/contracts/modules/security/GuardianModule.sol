@@ -43,12 +43,12 @@ contract GuardianModule is SecurityModule
     event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
 
     constructor(
-        SecurityStorage _securityStorage,
+        SecurityStore _securityStore,
         uint _pendingPeriod,
         uint _confirmPeriod
         )
         public
-        SecurityModule(_securityStorage)
+        SecurityModule(_securityStore)
     {
         pendingPeriod = _pendingPeriod;
         confirmPeriod = _confirmPeriod;
@@ -68,8 +68,8 @@ contract GuardianModule is SecurityModule
         require(guardian != address(0), "ZERO_ADDRESS");
 
         // TODO: check if guardian is a contract address and support ERC1271
-        if (securityStorage.numGuardians(wallet) == 0) {
-            securityStorage.addGuardian(wallet, guardian);
+        if (securityStore.numGuardians(wallet) == 0) {
+            securityStore.addGuardian(wallet, guardian);
             emit GuardianAdded(wallet, guardian);
         } else {
             uint confirmStart = pendingAdditions[wallet][guardian];
@@ -91,7 +91,7 @@ contract GuardianModule is SecurityModule
         uint confirmStart = pendingAdditions[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
         require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
-        securityStorage.addGuardian(wallet, guardian);
+        securityStore.addGuardian(wallet, guardian);
         delete pendingAdditions[wallet][guardian];
         emit GuardianAdded(wallet, guardian);
     }
@@ -139,7 +139,7 @@ contract GuardianModule is SecurityModule
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
         require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
-        securityStorage.removeGuardian(wallet, guardian);
+        securityStore.removeGuardian(wallet, guardian);
         delete pendingRemovals[wallet][guardian];
         emit GuardianRemoved(wallet, guardian);
     }

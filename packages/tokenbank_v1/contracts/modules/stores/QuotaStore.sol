@@ -18,17 +18,17 @@ pragma solidity ^0.5.11;
 
 import "../../lib/MathUint.sol";
 
-import "../../base/BaseStorage.sol";
+import "../../base/DataStore.sol";
 
 
-/// @title QuotaStorage
-/// @dev This storage maintains daily spending quota for each wallet.
+/// @title QuotaStore
+/// @dev This store maintains daily spending quota for each wallet.
 ///      At the end of the day (Beijing time), the daily quota will be
 ///      restored.
 ///      Changing the quota takes at least 12 hours - if the quota is
 ///      changed in the first 12 hours of the day, it will take effect
 ///      tomorrow; otherwise it will take effect the day after tomorrow.
-contract QuotaStorage is BaseStorage
+contract QuotaStore is DataStore
 {
     using MathUint for uint;
 
@@ -57,7 +57,7 @@ contract QuotaStorage is BaseStorage
         address _manager
         )
         public
-        BaseStorage(_manager)
+        DataStore(_manager)
     {
         defaultQuota = _defaultQuota;
     }

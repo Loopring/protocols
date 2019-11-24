@@ -16,17 +16,17 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/BaseStorage.sol";
+import "../../base/DataStore.sol";
 
 
-/// @title SecurityStorage
+/// @title SecurityStore
 /// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract SecurityStorage is BaseStorage
+contract SecurityStore is DataStore
 {
     struct Wallet
     {
@@ -40,7 +40,7 @@ contract SecurityStorage is BaseStorage
 
     constructor(address manager)
         public
-        BaseStorage(manager)
+        DataStore(manager)
     {}
 
     function isGuardian(address wallet, address guardian)
