@@ -22,6 +22,8 @@ import "../security/SecurityModule.sol";
 /// @title LoopringModule
 contract LoopringModule is SecurityModule
 {
+    bytes4 internal constant LOOPRING_GET_ACCOUNT = bytes4(keccak256("getAccount(address"));
+
     bytes4 internal constant LOOPRING_UPDATE_ACCOUNT_AND_DEPOSIT = bytes4(
         keccak256("updateAccountAndDeposit(uint256,uint256,address,uint96,bytes)")
     );
