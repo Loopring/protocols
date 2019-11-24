@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Managable.sol";
+import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 
 
@@ -28,11 +28,7 @@ import "../lib/ReentrancyGuard.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract DataStore is Managable, ReentrancyGuard
+contract DataStore is OwnerManagable, ReentrancyGuard
 {
-    constructor(address manager) public
-    {
-        address _manager = manager == address(0) ? msg.sender : manager;
-        initManager(_manager);
-    }
+    constructor() public OwnerManagable() {}
 }

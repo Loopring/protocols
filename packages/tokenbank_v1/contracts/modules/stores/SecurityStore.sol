@@ -38,10 +38,7 @@ contract SecurityStore is DataStore
 
     mapping (address => Wallet) public wallets;
 
-    constructor(address manager)
-        public
-        DataStore(manager)
-    {}
+    constructor() public DataStore() {}
 
     function isGuardian(address wallet, address guardian)
         public

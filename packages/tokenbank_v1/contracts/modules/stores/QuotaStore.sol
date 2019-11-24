@@ -52,12 +52,9 @@ contract QuotaStore is DataStore
         uint64          pendingUntil
     );
 
-    constructor(
-        uint    _defaultQuota,
-        address _manager
-        )
+    constructor(uint _defaultQuota)
         public
-        DataStore(_manager)
+        DataStore()
     {
         defaultQuota = _defaultQuota;
     }

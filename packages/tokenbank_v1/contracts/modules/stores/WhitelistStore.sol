@@ -31,11 +31,7 @@ contract WhitelistStore is DataStore
         bool            whitelisted
     );
 
-    constructor(address _manager)
-        public
-        DataStore(_manager)
-    {
-    }
+    constructor() public DataStore() {}
 
     function addToWhitelist(
         address wallet,
