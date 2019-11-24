@@ -65,7 +65,7 @@ contract SecurityStore is DataStore
     }
 
     function addGuardian(address wallet, address guardian)
-        external
+        public
         onlyManager
     {
         require(guardian != address(0), "ZERO_ADDRESS");
@@ -77,7 +77,7 @@ contract SecurityStore is DataStore
     }
 
     function removeGuardian(address wallet, address guardian)
-        external
+        public
         onlyManager
     {
         Wallet storage w = wallets[wallet];
@@ -111,7 +111,7 @@ contract SecurityStore is DataStore
     }
 
     function setLock(address wallet, uint lock)
-        external
+        public
         onlyManager
     {
         uint128 _lock = uint128(lock);

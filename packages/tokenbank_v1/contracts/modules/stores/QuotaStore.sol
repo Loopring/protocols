@@ -63,7 +63,7 @@ contract QuotaStore is DataStore
         address wallet,
         uint    newQuota
         )
-        external
+        public
         onlyManager
     {
         quotas[wallet].currentQuota = currentQuota(wallet);

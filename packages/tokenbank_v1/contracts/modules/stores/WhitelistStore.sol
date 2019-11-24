@@ -37,7 +37,7 @@ contract WhitelistStore is DataStore
         address wallet,
         address addr
         )
-        external
+        public
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
@@ -48,7 +48,7 @@ contract WhitelistStore is DataStore
         address wallet,
         address addr
         )
-        external
+        public
         onlyManager
     {
         removeAddressFromSet(walletKey(wallet), addr);
