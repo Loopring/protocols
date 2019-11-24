@@ -22,6 +22,12 @@ import "../../base/BaseStorage.sol";
 
 
 /// @title QuotaStorage
+/// @dev This storage maintains daily spending quota for each wallet.
+///      At the end of the day (Beijing time), the daily quota will be
+///      restored.
+///      Changing the quota takes at least 12 hours - if the quota is
+///      changed in the first 12 hours of the day, it will take effect
+///      tomorrow; otherwise it will take effect the day after tomorrow.
 contract QuotaStorage is BaseStorage
 {
     using MathUint for uint;
