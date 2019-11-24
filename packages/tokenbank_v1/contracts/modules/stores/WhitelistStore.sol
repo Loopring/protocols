@@ -28,7 +28,7 @@ contract WhitelistStore is DataStore
     event Whitelisted(
         address indexed wallet,
         address indexed addr,
-        bool   whitelisted
+        bool            whitelisted
     );
 
     constructor(address _manager)
