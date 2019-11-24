@@ -25,6 +25,12 @@ import "../../base/DataStore.sol";
 /// @dev This store maintains a wallet's whitelisted addresses.
 contract WhitelistStore is DataStore
 {
+    constructor(address _manager)
+        public
+        DataStore(_manager)
+    {
+    }
+
     function addToWhitelist(
         address wallet,
         address addr
