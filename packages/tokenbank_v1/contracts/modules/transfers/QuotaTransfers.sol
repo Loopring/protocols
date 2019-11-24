@@ -67,6 +67,9 @@ contract QuotaTransfers is TransferModule
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
             return transferInternal(wallet, token, to, amount, data);
         }
+
+        // TODO pending?
+        revert("EXCEED_DAILY_LIMIT");
     }
 
     function approveToken(
@@ -80,7 +83,24 @@ contract QuotaTransfers is TransferModule
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        approveInternal(wallet, token, to, amount);
+        if (whitelistStore.isWhitelisted(wallet, to)) {
+            return approveInternal(wallet, token, to, amount);
+        }
+
+        uint allowance = ERC20(token).allowance(wallet, to);
+        if (allowance >= amount) {
+            return approveInternal(wallet, token, to, amount);
+        }
+
+        allowance -= amount;
+        uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
+
+        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+            return approveInternal(wallet, token, to, allowance);
+        }
+
+        //TODO(daniel): support pending tx?
+        revert("EXCEED_DAILY_LIMIT");
     }
 
     function callContract(
@@ -94,8 +114,18 @@ contract QuotaTransfers is TransferModule
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
+        if (whitelistStore.isWhitelisted(wallet, to)) {
+            return callContractInternal(wallet, to, amount, data);
+        }
 
-        callContractInternal(wallet, to, amount, data);
+        uint valueInCNY = priceProvider.getValueInCNY(address(0), amount);
+        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+            return callContractInternal(wallet, to, amount, data);
+        }
+
+        //TODO(daniel): support pending tx?
+        revert("EXCEED_DAILY_LIMIT");
+
     }
 
     function approveThenCallContract(
@@ -111,8 +141,29 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         notWalletOrItsModule(wallet, to)
     {
-        approveInternal(wallet, token, to, amount);
-        callContractInternal(wallet, to, 0, data);
+        if (whitelistStore.isWhitelisted(wallet, to)) {
+            approveInternal(wallet, token, to, amount);
+            callContractInternal(wallet, to, 0, data);
+            return;
+        }
+
+        uint allowance = ERC20(token).allowance(wallet, to);
+        if (allowance >= amount) {
+            approveInternal(wallet, token, to, amount);
+            callContractInternal(wallet, to, 0, data);
+            return;
+        }
+
+        allowance -= amount;
+        uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
+
+        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+            approveInternal(wallet, token, to, allowance);
+            callContractInternal(wallet, to, 0, data);
+        }
+
+        //TODO(daniel): support pending tx?
+        revert("EXCEED_DAILY_LIMIT");
     }
 
     function extractMetaTxSigners(
