@@ -17,7 +17,7 @@
 pragma solidity ^0.5.11;
 
 import "../lib/ERC20.sol";
-import "../lib/NamedAddressSet.sol";
+import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
@@ -32,12 +32,12 @@ import "../iface/Module.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
+contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 {
     address internal _owner;
 
-    string internal constant MODULE = "__MODULE__";
-    string internal constant ERC20_TRANSFER = "transfer(address,uint256)";
+    bytes32 internal constant MODULE = keccak256("__MODULE__");
+    string  internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     BankRegistry public bankRegistry;
 

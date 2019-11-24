@@ -16,17 +16,17 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/BaseStorage.sol";
+import "../../base/DataStore.sol";
 
 
-/// @title SecurityStorage
+/// @title SecurityStore
 /// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract SecurityStorage is BaseStorage
+contract SecurityStore is DataStore
 {
     struct Wallet
     {
@@ -38,10 +38,7 @@ contract SecurityStorage is BaseStorage
 
     mapping (address => Wallet) public wallets;
 
-    constructor(address manager)
-        public
-        BaseStorage(manager)
-    {}
+    constructor() public DataStore() {}
 
     function isGuardian(address wallet, address guardian)
         public
@@ -68,7 +65,7 @@ contract SecurityStorage is BaseStorage
     }
 
     function addGuardian(address wallet, address guardian)
-        external
+        public
         onlyManager
     {
         require(guardian != address(0), "ZERO_ADDRESS");
@@ -80,7 +77,7 @@ contract SecurityStorage is BaseStorage
     }
 
     function removeGuardian(address wallet, address guardian)
-        external
+        public
         onlyManager
     {
         Wallet storage w = wallets[wallet];
@@ -93,7 +90,7 @@ contract SecurityStorage is BaseStorage
             w.guardians[idx - 1] = lastGuardian;
             w.guardianIdx[lastGuardian] = idx;
         }
-        w.guardians.length--;
+        w.guardians.length -= 1;
         delete w.guardianIdx[guardian];
     }
 
@@ -114,7 +111,7 @@ contract SecurityStorage is BaseStorage
     }
 
     function setLock(address wallet, uint lock)
-        external
+        public
         onlyManager
     {
         uint128 _lock = uint128(lock);
