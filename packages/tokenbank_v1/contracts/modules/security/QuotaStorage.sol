@@ -38,9 +38,9 @@ contract QuotaStorage is BaseStorage
         uint    spentAmount;
     }
 
-    mapping (address => Quota) internal quotas;
+    mapping (address => Quota) public quotas;
 
-    event QuotaChangeScheduled(
+    event QuotaScheduled(
         address indexed wallet,
         uint            pendingQuota,
         uint64          pendingUntil
@@ -67,7 +67,7 @@ contract QuotaStorage is BaseStorage
         quotas[wallet].pendingQuota = newQuota;
         quotas[wallet].pengingEffectiveDay = nextEffectiveDay();
 
-        emit QuotaChangeScheduled(
+        emit QuotaScheduled(
             wallet,
             newQuota,
             quotas[wallet].pengingEffectiveDay
