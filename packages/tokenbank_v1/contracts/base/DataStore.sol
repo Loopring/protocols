@@ -16,11 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Managable.sol";
-import "../lib/ReentrancyGuard.sol";
+import "../lib/OwnerManagable.sol";
 
 
-/// @title BaseStorage
+/// @title DataStore
 /// @dev Modules share states by accessing the same storage instance.
 ///      Using ModuleStorage will achieve better module decoupling.
 ///
@@ -28,11 +27,7 @@ import "../lib/ReentrancyGuard.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseStorage is Managable, ReentrancyGuard
+contract DataStore is OwnerManagable
 {
-    constructor(address manager) public
-    {
-        address _manager = manager == address(0) ? msg.sender : manager;
-        initManager(_manager);
-    }
+    constructor() public OwnerManagable() {}
 }

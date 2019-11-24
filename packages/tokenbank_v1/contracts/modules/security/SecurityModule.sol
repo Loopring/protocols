@@ -18,10 +18,10 @@ pragma solidity ^0.5.11;
 
 import "../../base/MetaTxModule.sol";
 
-import "./SecurityStorage.sol";
+import "../stores/SecurityStore.sol";
 
 
-/// @title SecurityStorage
+/// @title SecurityStore
 /// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -30,35 +30,35 @@ import "./SecurityStorage.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract SecurityModule is MetaTxModule
 {
-    SecurityStorage internal securityStorage;
+    SecurityStore internal securityStore;
 
-    constructor(SecurityStorage _securityStorage)
+    constructor(SecurityStore _securityStore)
         public
     {
-        securityStorage = _securityStorage;
+        securityStore = _securityStore;
     }
 
     modifier onlyWhenWalletLocked(address wallet)
     {
-        require(securityStorage.isLocked(wallet), "NOT_LOCKED");
+        require(securityStore.isLocked(wallet), "NOT_LOCKED");
         _;
     }
 
     modifier onlyWhenWalletUnlocked(address wallet)
     {
-        require(!securityStorage.isLocked(wallet), "LOCKED");
+        require(!securityStore.isLocked(wallet), "LOCKED");
         _;
     }
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(securityStorage.isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        require(securityStore.isGuardian(wallet, guardian), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!securityStorage.isGuardian(wallet, guardian), "IS_GUARDIAN");
+        require(!securityStore.isGuardian(wallet, guardian), "IS_GUARDIAN");
         _;
     }
 
@@ -74,7 +74,7 @@ contract SecurityModule is MetaTxModule
         returns (bool)
     {
         return Wallet(wallet).owner() == addr ||
-            securityStorage.isGuardian(wallet, addr);
+            securityStore.isGuardian(wallet, addr);
     }
 
     function isWalletOwnerOrGuardian(address wallet, address[] memory addrs)
