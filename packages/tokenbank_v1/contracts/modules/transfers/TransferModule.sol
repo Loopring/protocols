@@ -24,24 +24,17 @@ import "../../base/BaseModule.sol";
 /// @title TransferModule
 contract TransferModule is BaseModule
 {
-        // Empty calldata
-    bytes constant internal EMPTY_BYTES = "";
-    // Mock token address for ETH
-    address constant internal ETH_TOKEN = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    // *************** Events *************************** //
-
-    event Transfer(
+    event Transfered(
         address indexed wallet,
         address indexed token,
         address indexed to,
         uint            amount,
         bytes           data
     );
-    event Approval(
+    event Approved(
         address indexed wallet,
         address indexed token,
-        address         spender,
+        address         to,
         uint            amount
     );
     event ContractCalled(
@@ -70,13 +63,13 @@ contract TransferModule is BaseModule
             );
             transact(wallet, token, 0, callData);
         }
-        emit Transfer(wallet, token, to, amount, data);
+        emit Transfered(wallet, token, to, amount, data);
     }
 
     function approveInternal(
         address wallet,
         address token,
-        address spender,
+        address to,
         uint    amount
         )
         internal
@@ -85,11 +78,11 @@ contract TransferModule is BaseModule
 
         bytes memory callData = abi.encodeWithSignature(
             "approve(address,uint)",
-            spender,
+            to,
             amount
         );
         transact(wallet, token, 0, callData);
-        emit Approval(wallet, token, spender, amount);
+        emit Approved(wallet, token, to, amount);
     }
 
     function callContractInternal(
