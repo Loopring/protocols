@@ -25,6 +25,12 @@ import "../../base/DataStore.sol";
 /// @dev This store maintains a wallet's whitelisted addresses.
 contract WhitelistStore is DataStore
 {
+    event Whitelisted(
+        address indexed wallet,
+        address indexed addr,
+        bool   whitelisted
+    );
+
     constructor(address _manager)
         public
         DataStore(_manager)
@@ -39,6 +45,7 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
+        emit Whitelisted(wallet, addr, true);
     }
 
     function removeFromWhitelist(
@@ -49,6 +56,7 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         removeAddressFromSet(walletKey(wallet), addr);
+        emit Whitelisted(wallet, addr, false);
     }
 
     function whitelist(address wallet)
@@ -74,5 +82,4 @@ contract WhitelistStore is DataStore
     {
         return keccak256(abi.encodePacked("__WHITELIST__", addr));
     }
-
 }
