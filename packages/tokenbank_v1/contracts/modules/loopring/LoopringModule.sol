@@ -18,18 +18,10 @@ pragma solidity ^0.5.11;
 
 import "../security/SecurityModule.sol";
 
+import "./ExchangeV3UserInterface.sol";
+
 
 /// @title LoopringModule
 contract LoopringModule is SecurityModule
 {
-    bytes4 internal constant LOOPRING_GET_ACCOUNT = bytes4(keccak256("getAccount(address"));
-
-    bytes4 internal constant LOOPRING_UPDATE_ACCOUNT_AND_DEPOSIT = bytes4(
-        keccak256("updateAccountAndDeposit(uint256,uint256,address,uint96,bytes)")
-    );
-
-    bytes4 internal constant LOOPRING_DEPOSIT = bytes4(keccak256("deposit(address,uint96)"));
-    bytes4 internal constant LOOPRING_WITHDRAW = bytes4(keccak256("withdraw(address,uint96)"));
-    bytes4 internal constant LOOPRING_GET_DEPOSIT_SLOTS = bytes4(keccak256("getNumAvailableDepositSlots()"));
-    bytes4 internal constant LOOPRING_GET_WITHDRAWAL_SLOTS = bytes4(keccak256("getNumAvailableWithdrawalSlots()"));
 }
