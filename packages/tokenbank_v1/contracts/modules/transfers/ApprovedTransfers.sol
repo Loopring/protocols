@@ -16,8 +16,6 @@
 */
 pragma solidity ^0.5.11;
 
-import "../security/SecurityModule.sol";
-
 import "./TransferModule.sol";
 
 
@@ -28,7 +26,7 @@ contract ApprovedTransfers is TransferModule
         SecurityStore _securityStore
         )
         public
-        SecurityModule(_securityStore)
+        TransferModule(_securityStore)
     {
     }
 

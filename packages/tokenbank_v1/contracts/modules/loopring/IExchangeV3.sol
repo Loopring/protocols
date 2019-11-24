@@ -17,11 +17,11 @@
 pragma solidity ^0.5.11;
 
 
-/// @title ExchangeV3UserInterface
-/// @dev This is a partial interface form IExchangeV3
+/// @title IExchangeV3
+/// @dev This is a partial interface form Loopring3.0's IExchangeV3.sol
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ExchangeV3UserInterface
+contract IExchangeV3
 {
     function isInWithdrawalMode()
         external

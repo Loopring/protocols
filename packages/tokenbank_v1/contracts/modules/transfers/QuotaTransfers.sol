@@ -49,7 +49,7 @@ contract QuotaTransfers is TransferModule
         uint _pendingExpiry
         )
         public
-        SecurityModule(_securityStore)
+        TransferModule(_securityStore)
     {
         priceProvider = _priceProvider;
         quotaStore = _quotaStore;

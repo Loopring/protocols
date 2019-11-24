@@ -18,10 +18,65 @@ pragma solidity ^0.5.11;
 
 import "../security/SecurityModule.sol";
 
-import "./ExchangeV3UserInterface.sol";
+import "./IExchangeV3.sol";
 
 
 /// @title LoopringModule
 contract LoopringModule is SecurityModule
 {
+
+    function createDEXAccount(
+        address            wallet,
+        address[] calldata signers,
+        IExchangeV3        exchange
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        if (msg.sender == address(this)) {
+            // (uint24 accountId, _, _) = exchange.getAccount(wallet);
+            // if (accountId != 0) {
+
+            // }
+
+            // this is a meta-tx.
+            // step1; query fee
+            // step2: transfer fee from msg.sender to wallet
+         }
+        // trigger registration.
+    }
+
+
+    function extractMetaTxSigners(
+        address /*wallet*/,
+        bytes4  method,
+        bytes   memory data
+        )
+        internal
+        view
+        returns (address[] memory signers)
+    {
+        require (
+            method == this.createDEXAccount.selector,
+            "INVALID_METHOD"
+        );
+        // ASSUMPTION:
+        // data layout: {data_length:32}{wallet:32}{signers_length:32}{signer1:32}{signer2:32}
+        require(data.length >= 64, "DATA_INVALID");
+
+        uint numSigners;
+        assembly { numSigners := mload(add(data, 64)) }
+        require(data.length >= 64 + 32 * numSigners, "DATA_INVALID");
+
+        signers = new address[](numSigners);
+
+        address signer;
+        for (uint i = 0; i < numSigners; i++) {
+            uint start = 96 + 32 * i;
+            assembly { signer := mload(add(data, start)) }
+            signers[i] = signer;
+        }
+    }
 }
