@@ -44,7 +44,7 @@ contract TransferModule is BaseModule
         address         spender,
         uint            amount
     );
-    event Transacted(
+    event ContractCalled(
         address indexed wallet,
         address indexed to,
         uint            amount,
@@ -92,7 +92,7 @@ contract TransferModule is BaseModule
         emit Approval(wallet, token, spender, amount);
     }
 
-    function transactInternal(
+    function callContractInternal(
         address wallet,
         address to,
         uint    amount,
@@ -101,6 +101,6 @@ contract TransferModule is BaseModule
         internal
     {
         transact(wallet, to, amount, data);
-        emit Transacted(wallet, to, amount, data);
+        emit ContractCalled(wallet, to, amount, data);
     }
 }

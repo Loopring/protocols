@@ -56,27 +56,27 @@ contract ApprovedTransfers is SecurityModule, TransferModule
         address            wallet,
         address[] calldata signers,
         address            token,
-        address            spender,
+        address            to,
         uint               amount
         )
         external
         nonReentrantExceptFromThis
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
-        notWalletOrItsModule(wallet, spender)
+        notWalletOrItsModule(wallet, to)
     {
         uint guardianCount = securityStore.numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
-        approveInternal(wallet, token, spender, amount);
+        approveInternal(wallet, token, to, amount);
     }
 
     function callContract(
         address            wallet,
         address[] calldata signers,
         address            to,
-        uint               value,
+        uint               amount,
         bytes     calldata data
         )
         external
@@ -89,7 +89,29 @@ contract ApprovedTransfers is SecurityModule, TransferModule
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
-        transactInternal(wallet, to, value, data);
+        callContractInternal(wallet, to, amount, data);
+    }
+
+    function approveThenCallContract(
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        address            to,
+        uint               amount,
+        bytes     calldata data
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTx
+        onlyWhenWalletUnlocked(wallet)
+        notWalletOrItsModule(wallet, to)
+    {
+        uint guardianCount = securityStore.numGuardians(wallet);
+        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
+
+        approveInternal(wallet, token, to, amount);
+        callContractInternal(wallet, to, 0, data);
     }
 
     function extractMetaTxSigners(
@@ -104,7 +126,8 @@ contract ApprovedTransfers is SecurityModule, TransferModule
         require (
             method == this.transferToken.selector ||
             method == this.approveToken.selector ||
-            method == this.callContract.selector,
+            method == this.callContract.selector ||
+            method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
         // ASSUMPTION:
