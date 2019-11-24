@@ -30,8 +30,28 @@ import "./SecurityModule.sol";
 /// @title DailyQuotaMadule
 contract DailyQuotaMadule is SecurityModule
 {
+    using MathUint for uint;
+
     uint constant internal INFINITE = uint(-1);
     uint internal defaultQuota;
+
+    struct Quota
+    {
+        uint    currentQuota; // 0 indicates default
+        uint    pendingQuota;
+        uint64  pengingUntil;
+        uint64  spentDay;
+        uint    spentAmount;
+    }
+
+    mapping (address => Quota) internal quotas;
+
+    event QuotaChangeScheduled(
+        address indexed wallet,
+        uint            pendingQuota,
+        uint64          pendingUntil
+    );
+
     constructor(
         SecurityStorage _securityStorage,
         uint _defaultQuota)
@@ -41,16 +61,51 @@ contract DailyQuotaMadule is SecurityModule
         defaultQuota = _defaultQuota;
     }
 
-    struct Quota
+    function changeQuota(
+        address wallet,
+        uint    newQuota
+        )
+        internal
     {
-        uint    currentQuota; // 0 indicates default
-        uint    pendingQuota;
-        uint64  pengingUntil;
-        uint64  lastSpendDay;
-        uint    lastSpending;
+        quotas[wallet].currentQuota = currentQuota(wallet);
+        quotas[wallet].pendingQuota = newQuota;
+        quotas[wallet].pengingUntil = nextEffectiveDay();
+
+        emit QuotaChangeScheduled(
+            wallet,
+            newQuota,
+            quotas[wallet].pengingUntil
+        );
     }
 
-    mapping (address => Quota) internal quotas;
+    function checkAndAddToSpent(
+        address wallet,
+        uint    amount
+        )
+        internal
+        returns (bool)
+    {
+        if (hasEnoughQuota(wallet, amount)) {
+            addToSpent(wallet, amount);
+            return true;
+        }
+    }
+
+    function addToSpent(
+        address wallet,
+        uint    amount
+        )
+        internal
+    {
+        Quota storage q = quotas[wallet];
+        uint64 today = todayInChina();
+        if (q.spentDay == today) {
+            q.spentAmount.add(amount);
+        } else {
+            q.spentDay = today;
+            q.spentAmount = amount;
+        }
+    }
 
     function currentQuota(address wallet)
         public
@@ -60,7 +115,7 @@ contract DailyQuotaMadule is SecurityModule
         Quota storage q = quotas[wallet];
         uint value = (
             q.pengingUntil > 0 &&
-            q.pengingUntil <= daysSinceEpoch()) ?
+            q.pengingUntil <= todayInChina()) ?
             q.pendingQuota : q.currentQuota;
 
         return value == 0 ? defaultQuota : value;
@@ -75,7 +130,7 @@ contract DailyQuotaMadule is SecurityModule
         )
     {
         Quota storage q = quotas[wallet];
-        if (q.pengingUntil > daysSinceEpoch()) {
+        if (q.pengingUntil > todayInChina()) {
             _pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
             _pengingUntil = q.pengingUntil;
         }
@@ -87,7 +142,7 @@ contract DailyQuotaMadule is SecurityModule
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        return q.lastSpendDay < daysSinceEpoch() ? 0 : q.lastSpending;
+        return q.spentDay < todayInChina() ? 0 : q.spentAmount;
     }
 
     function availableQuota(address wallet)
@@ -100,12 +155,33 @@ contract DailyQuotaMadule is SecurityModule
         return quota > spent ? quota - spent : 0;
     }
 
+    function hasEnoughQuota(
+        address wallet,
+        uint    requiredAmount
+        )
+        public
+        view
+        returns (bool)
+    {
+        return availableQuota(wallet) >= requiredAmount;
+    }
+
     /// @dev Return the days since epoch for Beijing (UTC+8)
-    function daysSinceEpoch()
+    function todayInChina()
         internal
         view
         returns (uint64)
     {
         return uint64(((now / 3600) + 8) / 24);
+    }
+
+    function nextEffectiveDay()
+        internal
+        view
+        returns (uint64)
+    {
+        uint hrs = (now / 3600) + 8;
+        uint64 tomorrow = uint64(hrs / 24 + 1); // tomorrow
+        return (hrs % 24 < 12) ? tomorrow + 1 : tomorrow;
     }
 }
