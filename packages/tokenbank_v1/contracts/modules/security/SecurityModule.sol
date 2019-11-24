@@ -18,7 +18,7 @@ pragma solidity ^0.5.11;
 
 import "../../base/MetaTxModule.sol";
 
-import "./SecurityStorage.sol";
+import "../storage/SecurityStorage.sol";
 
 
 /// @title SecurityStorage
