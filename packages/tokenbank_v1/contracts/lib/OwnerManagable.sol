@@ -17,10 +17,10 @@
 pragma solidity ^0.5.11;
 
 import "./Claimable.sol";
-import "./NamedAddressSet.sol";
+import "./AddressSet.sol";
 
 
-contract OwnerManagable is Claimable, NamedAddressSet
+contract OwnerManagable is Claimable, AddressSet
 {
     bytes32 internal constant MANAGER = keccak256("__MANAGED__");
 

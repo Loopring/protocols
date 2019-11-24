@@ -17,11 +17,11 @@
 pragma solidity ^0.5.11;
 
 
-/// @title Managed
+/// @title AddressSet
 /// @author Daniel Wang - <daniel@loopring.org>
-contract NamedAddressSet
+contract AddressSet
 {
-    // TODO(daniel): implement this contract.
+    // TODO(kongliang): implement this contract.
     function addAddressToSet(bytes32 key, address addr, bool maintainList) internal {}
     function removeAddressFromSet(bytes32 key, address addr) internal {}
     function isAddressInSet(bytes32 key, address addr) internal view returns (bool) {}

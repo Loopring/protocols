@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/NamedAddressSet.sol";
+import "../lib/AddressSet.sol";
 
 import "../iface/BankRegistry.sol";
 
@@ -25,7 +25,7 @@ import "../iface/BankRegistry.sol";
 /// @dev Basic implementation of a BankRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract BaseBankRegistry is BankRegistry, NamedAddressSet
+contract BaseBankRegistry is BankRegistry, AddressSet
 {
     bytes32 internal constant MODULE = keccak256("__MODULE__");
     bytes32 internal constant WALLET = keccak256("__WALLET__");

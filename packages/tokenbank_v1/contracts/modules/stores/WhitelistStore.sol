@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/NamedAddressSet.sol";
+import "../../lib/AddressSet.sol";
 
 import "../../base/DataStore.sol";
 
