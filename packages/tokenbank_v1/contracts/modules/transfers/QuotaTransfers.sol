@@ -16,6 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/ERC20.sol";
+
+import "../../iface/PriceProvider.sol";
+
 import "../stores/QuotaStore.sol";
 import "../stores/WhitelistStore.sol";
 
@@ -25,10 +29,12 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
+    PriceProvider  public priceProvider;
     QuotaStore     public quotaStore;
     WhitelistStore public whitelistStore;
 
     constructor(
+        PriceProvider  _priceProvider,
         SecurityStore  _securityStore,
         QuotaStore     _quotaStore,
         WhitelistStore _whitelistStore
@@ -36,8 +42,33 @@ contract QuotaTransfers is TransferModule
         public
         SecurityModule(_securityStore)
     {
+        priceProvider = _priceProvider;
         quotaStore = _quotaStore;
         whitelistStore = _whitelistStore;
+    }
+
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        methods = new bytes4[](1);
+        methods[0] = this.tokenBalance.selector;
+    }
+
+    function tokenBalance(
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (uint)
+    {
+        if (token == address(0)) {
+            return wallet.balance;
+        } else {
+            return ERC20(token).balanceOf(wallet);
+        }
     }
 
     function transferToken(
@@ -48,12 +79,18 @@ contract QuotaTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrantExceptFrom(wallet)
+        nonReentrant
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
+        if (whitelistStore.isWhitelisted(wallet, to)) {
+            return transferInternal(wallet, token, to, amount, data);
+        }
 
-        transferInternal(wallet, token, to, amount, data);
+        uint valueInCNY = priceProvider.getValueInCNY(token, amount);
+        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+            return transferInternal(wallet, token, to, amount, data);
+        }
     }
 
     function approveToken(
@@ -63,7 +100,7 @@ contract QuotaTransfers is TransferModule
         uint               amount
         )
         external
-        nonReentrantExceptFrom(wallet)
+        nonReentrant
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -77,7 +114,7 @@ contract QuotaTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrantExceptFrom(wallet)
+        nonReentrant
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -93,7 +130,7 @@ contract QuotaTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
         notWalletOrItsModule(wallet, to)

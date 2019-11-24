@@ -63,6 +63,16 @@ contract WhitelistStore is DataStore
         return addressesInSet(walletKey(wallet));
     }
 
+    function isWhitelisted(
+        address wallet,
+        address addr)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(walletKey(wallet), addr);
+    }
+
     function whitelistSize(address wallet)
         public
         view
