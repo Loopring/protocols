@@ -19,6 +19,7 @@ pragma solidity ^0.5.11;
 import "../../lib/ERC20.sol";
 
 import "../../iface/PriceProvider.sol";
+import "../../iface/Wallet.sol";
 
 import "../stores/QuotaStore.sol";
 import "../stores/WhitelistStore.sol";
@@ -33,11 +34,19 @@ contract QuotaTransfers is TransferModule
     QuotaStore     public quotaStore;
     WhitelistStore public whitelistStore;
 
+    uint public pendingExpiry;
+
+    mapping (address => mapping(bytes32 => uint)) pendingTransactions;
+
+    event PendingTxCreated (address indexed wallet, bytes32 indexed txid, uint timestamp);
+    event PendingTxExecuted(address indexed wallet, bytes32 indexed txid, uint timestamp);
+
     constructor(
         PriceProvider  _priceProvider,
         SecurityStore  _securityStore,
         QuotaStore     _quotaStore,
-        WhitelistStore _whitelistStore
+        WhitelistStore _whitelistStore,
+        uint _pendingExpiry
         )
         public
         SecurityModule(_securityStore)
@@ -45,6 +54,7 @@ contract QuotaTransfers is TransferModule
         priceProvider = _priceProvider;
         quotaStore = _quotaStore;
         whitelistStore = _whitelistStore;
+        pendingExpiry = _pendingExpiry;
     }
 
     function transferToken(
@@ -52,24 +62,40 @@ contract QuotaTransfers is TransferModule
         address            token,
         address            to,
         uint               amount,
-        bytes     calldata data
+        bytes     calldata data,
+        bool               enablePending
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        returns (bytes32 pendingTxId)
     {
+        bytes32 txid = keccak256(abi.encodePacked(
+            "__TRANSFER__",
+            wallet,
+            token,
+            to,
+            amount,
+            keccak256(data)
+        ));
+
+        authorizeWalletOwnerAndPendingTx(wallet, txid);
+
         if (whitelistStore.isWhitelisted(wallet, to)) {
-            return transferInternal(wallet, token, to, amount, data);
+            transferInternal(wallet, token, to, amount, data);
+            return bytes32(0);
         }
 
         uint valueInCNY = priceProvider.getValueInCNY(token, amount);
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
-            return transferInternal(wallet, token, to, amount, data);
+            transferInternal(wallet, token, to, amount, data);
+            return bytes32(0);
         }
 
-        // TODO pending?
-        revert("EXCEED_DAILY_LIMIT");
+        if (enablePending) {
+            pendingTxId = txid;
+            createPendingTx(wallet, pendingTxId);
+        }
     }
 
     function approveToken(
@@ -84,48 +110,64 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
     {
         if (whitelistStore.isWhitelisted(wallet, to)) {
-            return approveInternal(wallet, token, to, amount);
+            approveInternal(wallet, token, to, amount);
+            return;
         }
 
         uint allowance = ERC20(token).allowance(wallet, to);
         if (allowance >= amount) {
-            return approveInternal(wallet, token, to, amount);
+            approveInternal(wallet, token, to, amount);
+            return;
         }
 
         allowance -= amount;
         uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
 
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
-            return approveInternal(wallet, token, to, allowance);
+            approveInternal(wallet, token, to, allowance);
+            return;
         }
 
-        //TODO(daniel): support pending tx?
-        revert("EXCEED_DAILY_LIMIT");
+        revert("OUT_OF_QUOTA");
     }
 
     function callContract(
         address            wallet,
         address            to,
         uint               amount,
-        bytes     calldata data
+        bytes     calldata data,
+        bool               enablePending
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        returns (bytes32 pendingTxId)
     {
+        bytes32 txid = keccak256(abi.encodePacked(
+            "__CALL_CONTRACT__",
+            wallet,
+            to,
+            amount,
+            keccak256(data)
+        ));
+
+        authorizeWalletOwnerAndPendingTx(wallet, txid);
+
         if (whitelistStore.isWhitelisted(wallet, to)) {
-            return callContractInternal(wallet, to, amount, data);
+            callContractInternal(wallet, to, amount, data);
+            return bytes32(0);
         }
 
         uint valueInCNY = priceProvider.getValueInCNY(address(0), amount);
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
-            return callContractInternal(wallet, to, amount, data);
+            callContractInternal(wallet, to, amount, data);
+            return bytes32(0);
         }
 
-        //TODO(daniel): support pending tx?
-        revert("EXCEED_DAILY_LIMIT");
-
+        if (enablePending) {
+            pendingTxId = txid;
+            createPendingTx(wallet, pendingTxId);
+        }
     }
 
     function approveThenCallContract(
@@ -137,7 +179,7 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTx
+        onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         notWalletOrItsModule(wallet, to)
     {
@@ -160,10 +202,47 @@ contract QuotaTransfers is TransferModule
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
             approveInternal(wallet, token, to, allowance);
             callContractInternal(wallet, to, 0, data);
+            return;
         }
 
-        //TODO(daniel): support pending tx?
-        revert("EXCEED_DAILY_LIMIT");
+        revert("OUT_OF_QUOTA");
+    }
+
+    function authorizeWalletOwnerAndPendingTx(
+        address wallet,
+        bytes32 pendingTxId
+        )
+        private
+    {
+        if (msg.sender != Wallet(wallet).owner()) {
+           if (isPendingTxValid(wallet, pendingTxId)) {
+               emit PendingTxExecuted(wallet, pendingTxId, now);
+           } else {
+               revert("UNAUTHORIZED");
+           }
+        }
+    }
+
+    function isPendingTxValid(
+        address wallet,
+        bytes32 pendingTxId
+        )
+        internal
+        view
+        returns (bool)
+    {
+        uint timestamp = pendingTransactions[wallet][pendingTxId];
+        return timestamp > 0 && now <= timestamp + pendingExpiry;
+    }
+
+    function createPendingTx(
+        address wallet,
+        bytes32 pendingTxId
+        )
+        private
+    {
+        pendingTransactions[wallet][pendingTxId] = now;
+        emit PendingTxCreated(wallet, pendingTxId, now);
     }
 
     function extractMetaTxSigners(
