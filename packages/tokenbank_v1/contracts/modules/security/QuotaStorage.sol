@@ -16,19 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
 
-import "../../thirdparty/ERC1271.sol";
-
-import "../../iface/Wallet.sol";
-
-import "./SecurityModule.sol";
+import "../../base/BaseStorage.sol";
 
 
-/// @title DailyQuotaMadule
-contract DailyQuotaMadule is SecurityModule
+/// @title QuotaStorage
+contract QuotaStorage is BaseStorage
 {
     using MathUint for uint;
 
@@ -39,7 +33,7 @@ contract DailyQuotaMadule is SecurityModule
     {
         uint    currentQuota; // 0 indicates default
         uint    pendingQuota;
-        uint64  pengingUntil;
+        uint64  pengingEffectiveDay;
         uint64  spentDay;
         uint    spentAmount;
     }
@@ -53,10 +47,11 @@ contract DailyQuotaMadule is SecurityModule
     );
 
     constructor(
-        SecurityStorage _securityStorage,
-        uint _defaultQuota)
+        uint    _defaultQuota,
+        address manager
+        )
         public
-        SecurityModule(_securityStorage)
+        BaseStorage(manager)
     {
         defaultQuota = _defaultQuota;
     }
@@ -65,16 +60,17 @@ contract DailyQuotaMadule is SecurityModule
         address wallet,
         uint    newQuota
         )
-        internal
+        external
+        onlyManager
     {
         quotas[wallet].currentQuota = currentQuota(wallet);
         quotas[wallet].pendingQuota = newQuota;
-        quotas[wallet].pengingUntil = nextEffectiveDay();
+        quotas[wallet].pengingEffectiveDay = nextEffectiveDay();
 
         emit QuotaChangeScheduled(
             wallet,
             newQuota,
-            quotas[wallet].pengingUntil
+            quotas[wallet].pengingEffectiveDay
         );
     }
 
@@ -82,7 +78,8 @@ contract DailyQuotaMadule is SecurityModule
         address wallet,
         uint    amount
         )
-        internal
+        public
+        onlyManager
         returns (bool)
     {
         if (hasEnoughQuota(wallet, amount)) {
@@ -95,7 +92,8 @@ contract DailyQuotaMadule is SecurityModule
         address wallet,
         uint    amount
         )
-        internal
+        public
+        onlyManager
     {
         Quota storage q = quotas[wallet];
         uint64 today = todayInChina();
@@ -114,8 +112,8 @@ contract DailyQuotaMadule is SecurityModule
     {
         Quota storage q = quotas[wallet];
         uint value = (
-            q.pengingUntil > 0 &&
-            q.pengingUntil <= todayInChina()) ?
+            q.pengingEffectiveDay > 0 &&
+            q.pengingEffectiveDay <= todayInChina()) ?
             q.pendingQuota : q.currentQuota;
 
         return value == 0 ? defaultQuota : value;
@@ -126,13 +124,13 @@ contract DailyQuotaMadule is SecurityModule
         view
         returns (
             uint _pendingQuota,
-            uint _pengingUntil
+            uint _pengingEffectiveDay
         )
     {
         Quota storage q = quotas[wallet];
-        if (q.pengingUntil > todayInChina()) {
+        if (q.pengingEffectiveDay > todayInChina()) {
             _pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
-            _pengingUntil = q.pengingUntil;
+            _pengingEffectiveDay = q.pengingEffectiveDay;
         }
     }
 
@@ -166,17 +164,23 @@ contract DailyQuotaMadule is SecurityModule
         return availableQuota(wallet) >= requiredAmount;
     }
 
-    /// @dev Return the days since epoch for Beijing (UTC+8)
+    /// @dev Returns the days since epoch for Beijing (UTC+8)
+    /// @return The day since epoch in China.
     function todayInChina()
-        internal
+        public
         view
         returns (uint64)
     {
         return uint64(((now / 3600) + 8) / 24);
     }
 
+    /// @dev Returns the next effective day for a quota change.
+    ///      If the change request is made in the morning, it becomes effective
+    ///      tomorrow; if it is made in the afternoon, it will become effective
+    ///      the day after tomorrow.
+    /// @return The day the quota change will becoem effective.
     function nextEffectiveDay()
-        internal
+        public
         view
         returns (uint64)
     {
