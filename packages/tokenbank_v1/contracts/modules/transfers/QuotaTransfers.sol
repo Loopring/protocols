@@ -57,6 +57,15 @@ contract QuotaTransfers is TransferModule
         pendingExpiry = _pendingExpiry;
     }
 
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        methods = new bytes4[](1);
+        methods[0] = this.isPendingTxValid.selector;
+    }
+
     function transferToken(
         address            wallet,
         address            token,
@@ -233,7 +242,7 @@ contract QuotaTransfers is TransferModule
         address wallet,
         bytes32 pendingTxId
         )
-        internal
+        public
         view
         returns (bool)
     {
