@@ -64,8 +64,8 @@ contract WalletFactoryWithENS is WalletFactory, Module
         )
         external
         payable
-        onlyManager
         nonReentrant
+        onlyManager
         returns (address _wallet)
     {
         if (_subdomain == bytes32(0)) {

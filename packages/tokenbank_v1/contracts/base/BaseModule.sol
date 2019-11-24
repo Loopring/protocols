@@ -68,6 +68,11 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
+    modifier notWalletOrItsModule(address wallet, address addr) {
+        require(addr != wallet && !Wallet(wallet).hasModule(addr), "NOT_ALLOWED");
+        _;
+    }
+
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
     ///      Note that the module must have NOT been added to the wallet.
     ///

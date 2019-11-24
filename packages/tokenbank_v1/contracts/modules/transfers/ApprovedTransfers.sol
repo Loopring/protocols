@@ -16,13 +16,112 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/MetaTxModule.sol";
+import "../security/SecurityModule.sol";
 
 import "./TransferModule.sol";
 
 
 /// @title ApprovedTransfers
-contract ApprovedTransfers is MetaTxModule, TransferModule
+contract ApprovedTransfers is SecurityModule, TransferModule
 {
+    constructor(
+        SecurityStore _securityStore
+        )
+        public
+        SecurityModule(_securityStore)
+    {
+    }
 
+    function transferToken(
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        address            to,
+        uint               amount,
+        bytes     calldata data
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTx
+        onlyWhenWalletUnlocked(wallet)
+    {
+        uint guardianCount = securityStore.numGuardians(wallet);
+        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
+
+        transferInternal(wallet, token, to, amount, data);
+    }
+
+    function approveToken(
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        address            spender,
+        uint               amount
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTx
+        onlyWhenWalletUnlocked(wallet)
+        notWalletOrItsModule(wallet, spender)
+    {
+        uint guardianCount = securityStore.numGuardians(wallet);
+        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
+
+        approveInternal(wallet, token, spender, amount);
+    }
+
+    function callContract(
+        address            wallet,
+        address[] calldata signers,
+        address            to,
+        uint               value,
+        bytes     calldata data
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTx
+        onlyWhenWalletUnlocked(wallet)
+        notWalletOrItsModule(wallet, to)
+    {
+        uint guardianCount = securityStore.numGuardians(wallet);
+        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
+
+        transactInternal(wallet, to, value, data);
+    }
+
+    function extractMetaTxSigners(
+        address /*wallet*/,
+        bytes4  method,
+        bytes   memory data
+        )
+        internal
+        view
+        returns (address[] memory signers)
+    {
+        require (
+            method == this.transferToken.selector ||
+            method == this.approveToken.selector ||
+            method == this.callContract.selector,
+            "INVALID_METHOD"
+        );
+        // ASSUMPTION:
+        // data layout: {data_length:32}{wallet:32}{signers_length:32}{signer1:32}{signer2:32}
+        require(data.length >= 64, "DATA_INVALID");
+
+        uint numSigners;
+        assembly { numSigners := mload(add(data, 64)) }
+        require(data.length >= 64 + 32 * numSigners, "DATA_INVALID");
+
+        signers = new address[](numSigners);
+
+        address signer;
+        for (uint i = 0; i < numSigners; i++) {
+            uint start = 96 + 32 * i;
+            assembly { signer := mload(add(data, start)) }
+            signers[i] = signer;
+        }
+    }
 }
