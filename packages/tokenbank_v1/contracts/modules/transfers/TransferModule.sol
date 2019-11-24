@@ -96,4 +96,16 @@ contract TransferModule is BaseModule
         transact(wallet, to, amount, data);
         emit ContractCalled(wallet, to, amount, data);
     }
+
+    function extractMetaTxSigners(
+        address       /* wallet */,
+        bytes4        /* method */,
+        bytes memory  /* data */
+        )
+        internal
+        view
+        returns (address[] memory)
+    {
+        revert("UNSUPPORTED");
+    }
 }
