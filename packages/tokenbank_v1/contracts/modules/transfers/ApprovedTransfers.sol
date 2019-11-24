@@ -22,7 +22,7 @@ import "./TransferModule.sol";
 
 
 /// @title ApprovedTransfers
-contract ApprovedTransfers is SecurityModule, TransferModule
+contract ApprovedTransfers is TransferModule
 {
     constructor(
         SecurityStore _securityStore

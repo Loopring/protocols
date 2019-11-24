@@ -16,14 +16,15 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/MathUint.sol";
-
-import "../../base/BaseModule.sol";
+import "../security/SecurityModule.sol";
 
 
 /// @title TransferModule
-contract TransferModule is BaseModule
+contract TransferModule is SecurityModule
 {
+    bytes4 internal constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 internal constant ERC20_APPROVE = bytes4(keccak256("approve(address,uint256)"));
+
     event Transfered(
         address indexed wallet,
         address indexed token,
@@ -57,7 +58,7 @@ contract TransferModule is BaseModule
             transact(wallet, to, amount, "");
         } else {
             bytes memory callData = abi.encodeWithSignature(
-                "transfer(address,uint)",
+                "transfer(address,uint256)",
                 to,
                 amount
             );
@@ -77,7 +78,7 @@ contract TransferModule is BaseModule
         require(token != address(0), "UNSUPPORTED");
 
         bytes memory callData = abi.encodeWithSignature(
-            "approve(address,uint)",
+            "approve(address,uint256)",
             to,
             amount
         );
@@ -93,19 +94,10 @@ contract TransferModule is BaseModule
         )
         internal
     {
+        bytes4 method = extractMethod(data);
+        require(method != ERC20_TRANSFER && method != ERC20_APPROVE, "INVALID_METHOD");
+
         transact(wallet, to, amount, data);
         emit ContractCalled(wallet, to, amount, data);
-    }
-
-    function extractMetaTxSigners(
-        address       /* wallet */,
-        bytes4        /* method */,
-        bytes memory  /* data */
-        )
-        internal
-        view
-        returns (address[] memory)
-    {
-        revert("UNSUPPORTED");
     }
 }

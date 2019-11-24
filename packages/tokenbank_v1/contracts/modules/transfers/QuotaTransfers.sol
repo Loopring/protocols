@@ -19,13 +19,11 @@ pragma solidity ^0.5.11;
 import "../stores/QuotaStore.sol";
 import "../stores/WhitelistStore.sol";
 
-import "../security/SecurityModule.sol";
-
 import "./TransferModule.sol";
 
 
 /// @title QuotaTransfers
-contract QuotaTransfers is SecurityModule, TransferModule
+contract QuotaTransfers is TransferModule
 {
     QuotaStore     public quotaStore;
     WhitelistStore public whitelistStore;
@@ -102,5 +100,17 @@ contract QuotaTransfers is SecurityModule, TransferModule
     {
         approveInternal(wallet, token, to, amount);
         callContractInternal(wallet, to, 0, data);
+    }
+
+    function extractMetaTxSigners(
+        address       /* wallet */,
+        bytes4        /* method */,
+        bytes memory  /* data */
+        )
+        internal
+        view
+        returns (address[] memory)
+    {
+        revert("UNSUPPORTED");
     }
 }
