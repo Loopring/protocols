@@ -51,6 +51,18 @@ contract MetaTxModule is BaseModule
     uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
 
+    modifier onlyFromMetaTx() {
+        require(msg.sender == address(this), "NOT_FROM_META_TX");
+        _;
+    }
+
+    modifier onlyFromMetaTxOrWalletOwner(address wallet) {
+        require(
+            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            "NOT_FROM_META)TX_OR_WALLET_OWNER");
+        _;
+    }
+
     struct WalletState
     {
         uint nonce;
@@ -66,12 +78,6 @@ contract MetaTxModule is BaseModule
         bytes32 metaTxHash,
         bool    success
     );
-
-    modifier onlyFromMetaTx
-    {
-        require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
-        _;
-    }
 
     /// @dev Execute a signed meta transaction.
     ///      This method can be called by any relayer without restriction. The relayer
@@ -137,12 +143,13 @@ contract MetaTxModule is BaseModule
         if (gasPrice > 0) {
             uint gasSpent = startGas - gasleft();
             require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
-
             gasSpent = gasSpent.mul(gasPrice).add(GAS_OVERHEAD);
-            require(
-                Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
-                "OUT_OF_GAS"
-            );
+            if (gasToken == address(0)) {
+                invokeWallet(wallet, msg.sender, gasSpent, "");
+            } else {
+                bytes memory transData = abi.encodeWithSignature(ERC20_TRANSFER, msg.sender, gasSpent);
+                transact(wallet, gasToken, 0, transData);
+            }
         }
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);

@@ -50,17 +50,17 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     event WalletSetup(address indexed owner);
 
+    event Received(
+        address indexed sender,
+        uint    value,
+        bytes   data
+    );
+
     event Transacted(
         address indexed module,
         address indexed to,
         uint            value,
         bytes           data
-    );
-
-    event Received(
-        address indexed sender,
-        uint    value,
-        bytes   data
     );
 
     modifier onlyOwner
@@ -181,47 +181,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return methodToModule[_method];
     }
 
-    function tokenBalance(address token)
-        public
-        view
-        returns (uint)
-    {
-        if (token == address(0)) {
-            return address(this).balance;
-        } else {
-            return ERC20(token).balanceOf(address(this));
-        }
-    }
-
-    function transferToken(
-        address to,
-        uint    value,
-        address token
-        )
-        external
-        onlyModule
-        nonReentrant
-        returns (bool success)
-    {
-        require(to != address(this), "SAME_ADDRESS");
-        bytes memory result;
-        if (token == address(0)) {
-            result = transactInternal(to, value, "");
-        } else {
-            bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER, to, value);
-            result = transactInternal(token, 0, data);
-        }
-
-        // TODO(daniel): Not sure if this will work, this need to be tested!!!
-        if (result.length == 0) {
-            return true;
-        }
-
-        if (result.length == 32) {
-            assembly { success := mload(add(result, 32)) }
-        }
-    }
-
     function transact(
         address to,
         uint    value,
@@ -233,17 +192,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         returns (bytes memory result)
     {
         return transactInternal(to, value, data);
-    }
-
-    function addModuleInternal(address _module)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
-        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
-
-        addAddressToSet(MODULE, _module, true);
-        Module(_module).activate(address(this));
-        emit ModuleAdded(_module);
     }
 
     function transactInternal(
@@ -264,6 +212,17 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
             }
         }
         emit Transacted(msg.sender, to, value, data);
+    }
+
+    function addModuleInternal(address _module)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
+
+        addAddressToSet(MODULE, _module, true);
+        Module(_module).activate(address(this));
+        emit ModuleAdded(_module);
     }
 
     /// @dev This default function can receive Ether or perform queris to modules
@@ -306,7 +265,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
             _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
-            _method == this.staticMethodModule.selector ||
-            _method == this.tokenBalance.selector;
+            _method == this.staticMethodModule.selector;
     }
 }
