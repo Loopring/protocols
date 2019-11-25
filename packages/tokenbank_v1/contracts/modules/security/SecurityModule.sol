@@ -38,6 +38,25 @@ contract SecurityModule is MetaTxModule
         securityStore = _securityStore;
     }
 
+    // overriding
+    modifier onlyFromWalletOwner(address wallet) {
+        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_WALLET_OWNER");
+        _;
+        securityStore.touchLastActive(wallet);
+    }
+
+    // overridding
+    modifier onlyFromMetaTxOrWalletOwner(address wallet) {
+        require(
+            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            "NOT_FROM_META)TX_OR_WALLET_OWNER"
+        );
+        _;
+        if (Wallet(wallet).owner() == msg.sender) {
+            securityStore.touchLastActive(wallet);
+        }
+    }
+
     modifier onlyWhenWalletLocked(address wallet)
     {
         require(securityStore.isLocked(wallet), "NOT_LOCKED");
@@ -64,7 +83,10 @@ contract SecurityModule is MetaTxModule
 
     modifier onlyFromMetaTxOr(address guardian)
     {
-        require(msg.sender == address(this) || msg.sender == guardian, "UNAUTHORIZED");
+        require(
+            msg.sender == address(this) || msg.sender == guardian,
+            "UNAUTHORIZED"
+        );
         _;
     }
 

@@ -46,6 +46,11 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
+    modifier onlyFromWalletOwner(address wallet) {
+        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_WALLET_OWNER");
+        _;
+    }
+
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
         require(
             msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
@@ -60,11 +65,6 @@ contract BaseModule is Module, ReentrancyGuard
 
     modifier notWalletOwner(address wallet, address addr) {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
-        _;
-    }
-
-    modifier onlyFromWalletOwner(address wallet) {
-        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_WALLET_OWNER");
         _;
     }
 
