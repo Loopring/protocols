@@ -80,6 +80,7 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         returns (bytes32 pendingTxId)
     {
@@ -119,6 +120,7 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
         bool allowed = whitelistStore.isWhitelisted(wallet, to);
@@ -175,6 +177,7 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         returns (bytes32 pendingTxId)
     {
