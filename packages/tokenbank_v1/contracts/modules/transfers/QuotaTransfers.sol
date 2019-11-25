@@ -207,7 +207,7 @@ contract QuotaTransfers is TransferModule
             return;
         }
 
-        allowance -= amount;
+        allowance = amount - allowance;
         uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
 
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
