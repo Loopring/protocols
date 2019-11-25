@@ -69,7 +69,7 @@ contract RecoveryModule is SecurityModule
         address            newOwner
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
         notWalletOwner(wallet, newOwner)
     {
@@ -100,7 +100,7 @@ contract RecoveryModule is SecurityModule
         address[] calldata signers // enforece data-layout, see extractMetaTxSigners.
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
     {
         WalletRecovery storage recovery = wallets[wallet];
@@ -124,7 +124,7 @@ contract RecoveryModule is SecurityModule
         address[] calldata signers
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
     {
         require(signers.length == 0, "NO_SIGNER_NEEDED");
 

@@ -29,7 +29,6 @@ contract UpgraderModule is BaseModule {
 
     function activate(address wallet)
         external
-        nonReentrantExceptFrom(wallet)
         onlyFromWallet(wallet)
     {
         Wallet w = Wallet(wallet);
@@ -51,7 +50,6 @@ contract UpgraderModule is BaseModule {
 
     function deactivate(address wallet)
         external
-        nonReentrantExceptFrom(wallet)
         onlyFromWallet(wallet)
     {
         emit Deactivated(wallet);

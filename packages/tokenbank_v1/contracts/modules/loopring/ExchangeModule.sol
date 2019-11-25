@@ -31,7 +31,7 @@ contract ExchangeModule is SecurityModule
         IExchangeV3        exchange
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {

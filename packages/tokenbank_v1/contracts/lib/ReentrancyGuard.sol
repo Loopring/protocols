@@ -35,28 +35,4 @@ contract ReentrancyGuard
         _;
         _guardValue = 0;
     }
-
-    modifier nonReentrantExceptFrom(address addr)
-    {
-        if (msg.sender != addr) {
-            require(_guardValue == 0, "REENTRANCY");
-            _guardValue = 1;
-        }
-        _;
-        if (msg.sender != addr) {
-            _guardValue = 0;
-        }
-    }
-
-    modifier nonReentrantExceptFromThis()
-    {
-        if (msg.sender != address(this)) {
-            require(_guardValue == 0, "REENTRANCY");
-            _guardValue = 1;
-        }
-        _;
-        if (msg.sender != address(this)) {
-            _guardValue = 0;
-        }
-    }
 }
