@@ -52,7 +52,7 @@ contract PriceCacheStore is DataStore, PriceOracle
         expiry = _expiry;
     }
 
-    function getTokenValue(address token, uint amount)
+    function tokenPrice(address token, uint amount)
         public
         view
         returns (uint)
@@ -65,7 +65,7 @@ contract PriceCacheStore is DataStore, PriceOracle
         }
     }
 
-    function cachePrice(address token, uint amount, uint value)
+    function cacheTokenPrice(address token, uint amount, uint value)
         external
     {
         prices[token].amount = amount;

@@ -267,11 +267,11 @@ contract QuotaTransfers is TransferModule
         returns (uint value)
     {
         if (amount == 0) return 0;
-        value = priceCacheStore.getTokenValue(token, amount);
+        value = priceCacheStore.tokenPrice(token, amount);
         if (value == 0) {
-            value = getTokenValue(token, amount);
+            value = priceOracle.tokenPrice(token, amount);
             if (value > 0) {
-                priceCacheStore.cachePrice(token, amount, value);
+                priceCacheStore.cacheTokenPrice(token, amount, value);
             }
         }
     }
