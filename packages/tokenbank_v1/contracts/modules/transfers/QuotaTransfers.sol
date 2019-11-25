@@ -111,6 +111,28 @@ contract QuotaTransfers is TransferModule
         }
     }
 
+    function transferTokensFullBalance(
+        address            wallet,
+        address[] calldata tokens,
+        address            to,
+        bytes calldata     logdata
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+    {
+        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+
+        if (allowed) {
+            for (uint i = 0; i < tokens.length; i++) {
+                address token = tokens[i];
+                uint amount = (token == address(0)) ?
+                    wallet.balance : ERC20(token).balanceOf(wallet);
+                transferInternal(wallet, token, to, amount, logdata);
+            }
+        }
+    }
+
     function approveToken(
         address            wallet,
         address            token,

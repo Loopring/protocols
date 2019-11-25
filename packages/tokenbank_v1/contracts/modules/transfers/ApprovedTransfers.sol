@@ -52,7 +52,7 @@ contract ApprovedTransfers is TransferModule
         transferInternal(wallet, token, to, amount, logdata);
     }
 
-    function transferTokens(
+    function transferTokensFullBalance(
         address            wallet,
         address[] calldata signers,
         address[] calldata tokens,
@@ -150,7 +150,7 @@ contract ApprovedTransfers is TransferModule
     {
         require (
             method == this.transferToken.selector ||
-            method == this.transferTokens.selector ||
+            method == this.transferTokensFullBalance.selector ||
             method == this.approveToken.selector ||
             method == this.callContract.selector ||
             method == this.approveThenCallContract.selector,
