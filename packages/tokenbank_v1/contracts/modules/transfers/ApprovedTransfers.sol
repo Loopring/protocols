@@ -16,8 +16,6 @@
 */
 pragma solidity ^0.5.11;
 
-import "../security/SecurityModule.sol";
-
 import "./TransferModule.sol";
 
 
@@ -28,7 +26,7 @@ contract ApprovedTransfers is TransferModule
         SecurityStore _securityStore
         )
         public
-        SecurityModule(_securityStore)
+        TransferModule(_securityStore)
     {
     }
 
@@ -131,18 +129,18 @@ contract ApprovedTransfers is TransferModule
             "INVALID_METHOD"
         );
         // ASSUMPTION:
-        // data layout: {data_length:32}{wallet:32}{signers_length:32}{signer1:32}{signer2:32}
-        require(data.length >= 64, "DATA_INVALID");
+        // data layout: {data_length:32}{wallet:32}{signers_offset:32}{signers_length:32}{signer1:32}{signer2:32}
+        require(data.length >= 32 * 3, "DATA_INVALID");
 
         uint numSigners;
-        assembly { numSigners := mload(add(data, 64)) }
-        require(data.length >= 64 + 32 * numSigners, "DATA_INVALID");
+        assembly { numSigners := mload(add(data, 96)) }
+        require(data.length >= 32 * (3 + numSigners), "DATA_INVALID");
 
         signers = new address[](numSigners);
 
         address signer;
         for (uint i = 0; i < numSigners; i++) {
-            uint start = 96 + 32 * i;
+            uint start = 32 * (4 + i);
             assembly { signer := mload(add(data, start)) }
             signers[i] = signer;
         }

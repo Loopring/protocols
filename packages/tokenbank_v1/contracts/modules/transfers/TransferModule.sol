@@ -45,6 +45,14 @@ contract TransferModule is SecurityModule
         bytes           data
     );
 
+    constructor(
+        SecurityStore _securityStore
+        )
+        public
+        SecurityModule(_securityStore)
+    {
+    }
+
     function transferInternal(
         address wallet,
         address token,

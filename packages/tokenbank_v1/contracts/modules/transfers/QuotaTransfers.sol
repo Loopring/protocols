@@ -49,7 +49,7 @@ contract QuotaTransfers is TransferModule
         uint _pendingExpiry
         )
         public
-        SecurityModule(_securityStore)
+        TransferModule(_securityStore)
     {
         priceProvider = _priceProvider;
         quotaStore = _quotaStore;
@@ -91,21 +91,20 @@ contract QuotaTransfers is TransferModule
         );
 
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-
-        if (whitelistStore.isWhitelisted(wallet, to)) {
-            transferInternal(wallet, token, to, amount, data);
-            return bytes32(0);
+        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        if (!allowed) {
+            uint valueInCNY = priceProvider.getValueInCNY(token, amount);
+            allowed = quotaStore.checkAndAddToSpent(wallet, valueInCNY);
         }
 
-        uint valueInCNY = priceProvider.getValueInCNY(token, amount);
-        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+        if (allowed) {
             transferInternal(wallet, token, to, amount, data);
-            return bytes32(0);
-        }
-
-        if (!foundPendingTx && enablePending) {
+            if (foundPendingTx) {
+                delete pendingTransactions[wallet][txid];
+            }
+        } else if(!foundPendingTx && enablePending) {
+            createPendingTx(wallet, txid);
             pendingTxId = txid;
-            createPendingTx(wallet, pendingTxId);
         }
     }
 
@@ -131,7 +130,7 @@ contract QuotaTransfers is TransferModule
             return;
         }
 
-        allowance -= amount;
+        allowance = amount - allowance;
         uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
 
         if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
@@ -165,21 +164,20 @@ contract QuotaTransfers is TransferModule
         );
 
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-
-        if (whitelistStore.isWhitelisted(wallet, to)) {
-            callContractInternal(wallet, to, amount, data);
-            return bytes32(0);
+        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        if (!allowed) {
+            uint valueInCNY = priceProvider.getValueInCNY(address(0), amount);
+            allowed = quotaStore.checkAndAddToSpent(wallet, valueInCNY);
         }
 
-        uint valueInCNY = priceProvider.getValueInCNY(address(0), amount);
-        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+        if (allowed) {
             callContractInternal(wallet, to, amount, data);
-            return bytes32(0);
-        }
-
-        if (!foundPendingTx && enablePending) {
+            if (foundPendingTx) {
+                delete pendingTransactions[wallet][txid];
+            }
+        } else if(!foundPendingTx && enablePending) {
+            createPendingTx(wallet, txid);
             pendingTxId = txid;
-            createPendingTx(wallet, pendingTxId);
         }
     }
 
