@@ -31,7 +31,7 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
-    PriceOracle   public priceOracle;
+    PriceOracle     public priceOracle;
     PriceCacheStore public priceCacheStore;
     QuotaStore      public quotaStore;
     WhitelistStore  public whitelistStore;
