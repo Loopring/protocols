@@ -29,14 +29,14 @@ contract AggregationalPriceOracle is PriceOracle
 {
     using MathUint for uint;
 
-    address[] public providers;
+    address[] public oracles;
 
     constructor(
-        address[] memory _providers
+        address[] memory _oracles
         )
         public
     {
-        providers = _providers;
+        oracles = _oracles;
     }
 
     function getValue(address token, uint amount)
@@ -45,11 +45,11 @@ contract AggregationalPriceOracle is PriceOracle
         returns (uint)
     {
         uint total;
-        for (uint i = 0; i < providers.length; i++) {
+        for (uint i = 0; i < oracles.length; i++) {
             total = total.add(
-                PriceOracle(providers[i]).getValue(token, amount)
+                PriceOracle(oracles[i]).getValue(token, amount)
             );
         }
-        return total / providers.length;
+        return total / oracles.length;
     }
 }
