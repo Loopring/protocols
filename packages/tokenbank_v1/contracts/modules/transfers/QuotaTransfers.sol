@@ -44,7 +44,7 @@ contract QuotaTransfers is TransferModule
     event PendingTxExecuted(address indexed wallet, bytes32 indexed txid, uint timestamp);
 
     constructor(
-        PriceOracle   _priceOracle,
+        PriceOracle     _priceOracle,
         PriceCacheStore _priceCacheStore,
         SecurityStore   _securityStore,
         QuotaStore      _quotaStore,

@@ -40,7 +40,7 @@ contract PriceCacheStore is DataStore, PriceOracle
     {
         uint amount;
         uint value;
-        uint timestmap;
+        uint timestamp;
     }
 
     mapping (address => TokenPrice) prices;
@@ -58,7 +58,7 @@ contract PriceCacheStore is DataStore, PriceOracle
         returns (uint)
     {
         TokenPrice storage tp = prices[token];
-        if (tp.timestmap > 0 && now < tp.timestmap + expiry) {
+        if (tp.timestamp > 0 && now < tp.timestamp + expiry) {
             return tp.value.mul(amount) / tp.amount;
         } else {
             return 0;
@@ -70,7 +70,7 @@ contract PriceCacheStore is DataStore, PriceOracle
     {
         prices[token].amount = amount;
         prices[token].value = value;
-        prices[token].timestmap = now;
+        prices[token].timestamp = now;
         emit PriceCached(token, amount, value, now);
     }
 }
