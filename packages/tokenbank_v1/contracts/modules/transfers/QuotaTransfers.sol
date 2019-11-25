@@ -211,7 +211,7 @@ contract QuotaTransfers is TransferModule
             return;
         }
 
-        allowance -= amount;
+        allowance = amount - allowance;
         uint tokenValue = getTokenValue(token, allowance);
 
         if (quotaStore.checkAndAddToSpent(wallet, tokenValue)) {
