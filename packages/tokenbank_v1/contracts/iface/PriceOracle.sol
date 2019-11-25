@@ -17,9 +17,11 @@
 pragma solidity ^0.5.11;
 
 
-/// @title PriceProvider
-contract PriceProvider
+/// @title PriceOracle
+contract PriceOracle
 {
-    function getValueInCNY  (address token, uint amount) external returns(uint);
-    function getValueInEther(address token, uint amount) external returns(uint);
+    function getValue(address token, uint amount)
+        public
+        view
+        returns (uint value);
 }
