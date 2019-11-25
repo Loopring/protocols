@@ -22,7 +22,7 @@ import "../../base/DataStore.sol";
 
 
 /// @title WhitelistStore
-/// @dev This store maintains a wallet's whitelisted addresses.
+/// @dev This store maintains a history of reimbursement in Ether.
 contract ReimbursementStore is DataStore
 {
     using MathUint for uint;
