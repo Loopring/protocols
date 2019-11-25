@@ -62,8 +62,8 @@ contract TransferModule is SecurityModule
         if (token == address(0)) {
             transact(wallet, to, amount, "");
         } else {
-            bytes memory callData = abi.encodeWithSignature(
-                "transfer(address,uint256)",
+            bytes memory callData = abi.encodeWithSelector(
+                ERC20_TRANSFER,
                 to,
                 amount
             );
@@ -82,9 +82,8 @@ contract TransferModule is SecurityModule
     {
         require(token != address(0), "UNSUPPORTED");
 
-        bytes memory callData = abi.encodeWithSignature(
-            "approve(address,uint256)",
-            to,
+        bytes memory callData = abi.encodeWithSelector(
+            ERC20_APPROVE,
             amount
         );
         transact(wallet, token, 0, callData);
