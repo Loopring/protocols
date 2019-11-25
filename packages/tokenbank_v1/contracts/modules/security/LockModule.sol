@@ -47,7 +47,7 @@ contract LockModule is SecurityModule
 
     constructor(
         SecurityStore _securityStore,
-        uint _lockPeriod
+        uint          _lockPeriod
         )
         public
         SecurityModule(_securityStore)
@@ -65,7 +65,10 @@ contract LockModule is SecurityModule
         methods[1] = this.isLocked.selector;
     }
 
-    function lock(address wallet, address guardian)
+    function lock(
+        address wallet,
+        address guardian
+        )
         external
         nonReentrantExceptFromThis
         onlyFromMetaTxOr(guardian)
@@ -77,7 +80,10 @@ contract LockModule is SecurityModule
         emit WalletLock(wallet, guardian, true);
     }
 
-    function unlock(address wallet, address guardian)
+    function unlock(
+        address wallet,
+        address guardian
+        )
         external
         nonReentrantExceptFromThis
         onlyFromMetaTxOr(guardian)

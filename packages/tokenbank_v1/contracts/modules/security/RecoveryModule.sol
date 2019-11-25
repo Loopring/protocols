@@ -64,9 +64,9 @@ contract RecoveryModule is SecurityModule
     /// @param signers A list of addresses that signed the meta transaction.
     ///        The addresses must be sorted ascendently.
     function startRecovery(
-        address   wallet,
-        address   newOwner,
-        address[] calldata signers
+        address            wallet,
+        address[] calldata signers,
+        address            newOwner
         )
         external
         nonReentrantExceptFromThis
@@ -96,8 +96,8 @@ contract RecoveryModule is SecurityModule
     /// @param signers A list of addresses that signed the meta transaction.
     ///        The addresses must be sorted ascendently.
     function cancelRecovery(
-        address   wallet,
-        address[] calldata signers
+        address            wallet,
+        address[] calldata signers // enforece data-layout, see extractMetaTxSigners.
         )
         external
         nonReentrantExceptFromThis
@@ -119,10 +119,15 @@ contract RecoveryModule is SecurityModule
     /// @dev Complete a recovery by setting up the new owner.
     ///      This method can be called by anyone as long as the recoveryPeriod finishes.
     /// @param wallet The wallet for which the recovery shall complete.
-    function completeRecovery(address wallet)
+    function completeRecovery(
+        address            wallet,
+        address[] calldata signers
+        )
         external
         nonReentrantExceptFromThis
     {
+        require(signers.length == 0, "NO_SIGNER_NEEDED");
+
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");
         require(recovery.completeAfter < now, "TWO_EARLY");
@@ -144,30 +149,26 @@ contract RecoveryModule is SecurityModule
         view
         returns (address[] memory signers)
     {
-        uint skipBytes = 0;
-        if (method == this.startRecovery.selector) {
-            // data layout: {length:32}{sig:4}{_wallet:32}{_newOwner:32}{signer1:32}{signer2:32}{...}
-            skipBytes = 68; // 4+32+32
-        } else if (method == this.cancelRecovery.selector) {
-            // data layout: {length:32}{sig:4}{_wallet:32}{signer1:32}{signer2:32}{...}
-            skipBytes = 36; // 4+32
-        } else if (method == this.completeRecovery.selector){
-            // data layout: {length:32}{sig:4}{_wallet:32}
-            skipBytes = 36; // 4+32
-            require(data.length == skipBytes, "INVALID_DATA");
-        }
-
-        require(
-            data.length >= skipBytes && (data.length - skipBytes) % 32 == 0,
-            "DATA_INVALID"
+        require (
+            method == this.startRecovery.selector ||
+            method == this.cancelRecovery.selector ||
+            method == this.completeRecovery.selector,
+            "INVALID_METHOD"
         );
 
-        uint numSigners = (data.length - skipBytes) / 32;
+        // ASSUMPTION:
+        // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{signers_length:32}{signer1:32}{signer2:32}
+        require(data.length >= 100, "DATA_INVALID");
+
+        uint numSigners;
+        assembly { numSigners := mload(add(data, 100)) }
+        require(data.length >= (100 + 32 * numSigners), "DATA_INVALID");
+
         signers = new address[](numSigners);
 
         address signer;
         for (uint i = 0; i < numSigners; i++) {
-            uint start = 32 + skipBytes + 32 * i;
+            uint start = 132 + 32 * i;
             assembly { signer := mload(add(data, start)) }
             signers[i] = signer;
         }

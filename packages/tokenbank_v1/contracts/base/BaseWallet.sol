@@ -88,8 +88,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     function setOwenr(address newOwner)
         external
-        onlyModule
         nonReentrant
+        onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
         require(newOwner != _owner, "SAME_ADDRESS");
@@ -119,8 +119,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     function addModule(address _module)
         external
-        onlyModule
         nonReentrant
+        onlyModule
     {
         addModuleInternal(_module);
     }
@@ -154,8 +154,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     function bindStaticMethod(bytes4 _method, address _module)
         external
-        onlyModule
         nonReentrant
+        onlyModule
     {
         require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
@@ -199,8 +199,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         address token
         )
         external
-        onlyModule
         nonReentrant
+        onlyModule
         returns (bool success)
     {
         require(to != address(this), "SAME_ADDRESS");
@@ -228,8 +228,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         bytes   calldata data
         )
         external
-        onlyModule
         nonReentrant
+        onlyModule
         returns (bytes memory result)
     {
         return transactInternal(to, value, data);

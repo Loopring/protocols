@@ -16,13 +16,96 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/MathUint.sol";
-
-import "../../base/BaseModule.sol";
+import "../security/SecurityModule.sol";
 
 
 /// @title TransferModule
-contract TransferModule is BaseModule
+contract TransferModule is SecurityModule
 {
+    bytes4 internal constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
+    bytes4 internal constant ERC20_APPROVE = bytes4(keccak256("approve(address,uint256)"));
 
+    event Transfered(
+        address indexed wallet,
+        address indexed token,
+        address indexed to,
+        uint            amount,
+        bytes           data
+    );
+    event Approved(
+        address indexed wallet,
+        address indexed token,
+        address         to,
+        uint            amount
+    );
+    event ContractCalled(
+        address indexed wallet,
+        address indexed to,
+        uint            amount,
+        bytes           data
+    );
+
+    constructor(
+        SecurityStore _securityStore
+        )
+        public
+        SecurityModule(_securityStore)
+    {
+    }
+
+    function transferInternal(
+        address wallet,
+        address token,
+        address to,
+        uint    amount,
+        bytes   memory data
+        )
+        internal
+    {
+        if (token == address(0)) {
+            transact(wallet, to, amount, "");
+        } else {
+            bytes memory callData = abi.encodeWithSignature(
+                "transfer(address,uint256)",
+                to,
+                amount
+            );
+            transact(wallet, token, 0, callData);
+        }
+        emit Transfered(wallet, token, to, amount, data);
+    }
+
+    function approveInternal(
+        address wallet,
+        address token,
+        address to,
+        uint    amount
+        )
+        internal
+    {
+        require(token != address(0), "UNSUPPORTED");
+
+        bytes memory callData = abi.encodeWithSignature(
+            "approve(address,uint256)",
+            to,
+            amount
+        );
+        transact(wallet, token, 0, callData);
+        emit Approved(wallet, token, to, amount);
+    }
+
+    function callContractInternal(
+        address wallet,
+        address to,
+        uint    amount,
+        bytes   memory data
+        )
+        internal
+    {
+        bytes4 method = extractMethod(data);
+        require(method != ERC20_TRANSFER && method != ERC20_APPROVE, "INVALID_METHOD");
+
+        transact(wallet, to, amount, data);
+        emit ContractCalled(wallet, to, amount, data);
+    }
 }

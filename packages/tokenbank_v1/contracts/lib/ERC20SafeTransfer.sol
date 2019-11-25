@@ -80,7 +80,7 @@ library ERC20SafeTransfer
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)
 
-        // bytes4(keccak256("transfer(address,uint)")) = 0xa9059cbb
+        // bytes4(keccak256("transfer(address,uint256)")) = 0xa9059cbb
         bytes memory callData = abi.encodeWithSelector(
             bytes4(0xa9059cbb),
             to,
@@ -158,7 +158,7 @@ library ERC20SafeTransfer
         // - No value is returned: we assume a revert when the transfer failed (i.e. 'call' returns false)
         // - A single boolean is returned: this boolean needs to be true (non-zero)
 
-        // bytes4(keccak256("transferFrom(address,address,uint)")) = 0x23b872dd
+        // bytes4(keccak256("transferFrom(address,address,uint256)")) = 0x23b872dd
         bytes memory callData = abi.encodeWithSelector(
             bytes4(0x23b872dd),
             from,

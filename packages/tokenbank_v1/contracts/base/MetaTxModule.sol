@@ -232,7 +232,7 @@ contract MetaTxModule is BaseModule
     {
         require(data.length >= 4, "INVALID_DATA");
         assembly {
-            // data layout: {length:32}{sig:4}{_wallet:32}{...}
+            // data layout: {length:32}{sig:4}{...}
             method := mload(add(data, 32))
         }
     }
