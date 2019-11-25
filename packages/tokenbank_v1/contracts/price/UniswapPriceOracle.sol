@@ -16,10 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
+import "../iface/PriceOracle.sol";
 
-/// @title PriceProvider
-contract PriceProvider
+/// @title UniswapPriceOracle
+contract UniswapPriceOracle is PriceOracle
 {
-    function getValueInCNY  (address token, uint amount) external returns(uint);
-    function getValueInEther(address token, uint amount) external returns(uint);
+    function tokenPrice(address token, uint amount)
+        public
+        view
+        returns (uint value);
 }

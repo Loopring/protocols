@@ -18,9 +18,10 @@ pragma solidity ^0.5.11;
 
 import "../../lib/ERC20.sol";
 
-import "../../iface/PriceProvider.sol";
+import "../../iface/PriceOracle.sol";
 import "../../iface/Wallet.sol";
 
+import "../stores/PriceCacheStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/WhitelistStore.sol";
 
@@ -30,9 +31,10 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
-    PriceProvider  public priceProvider;
-    QuotaStore     public quotaStore;
-    WhitelistStore public whitelistStore;
+    PriceOracle     public priceOracle;
+    PriceCacheStore public priceCacheStore;
+    QuotaStore      public quotaStore;
+    WhitelistStore  public whitelistStore;
 
     uint public pendingExpiry;
 
@@ -42,16 +44,18 @@ contract QuotaTransfers is TransferModule
     event PendingTxExecuted(address indexed wallet, bytes32 indexed txid, uint timestamp);
 
     constructor(
-        PriceProvider  _priceProvider,
-        SecurityStore  _securityStore,
-        QuotaStore     _quotaStore,
-        WhitelistStore _whitelistStore,
+        PriceOracle     _priceOracle,
+        PriceCacheStore _priceCacheStore,
+        SecurityStore   _securityStore,
+        QuotaStore      _quotaStore,
+        WhitelistStore  _whitelistStore,
         uint _pendingExpiry
         )
         public
         TransferModule(_securityStore)
     {
-        priceProvider = _priceProvider;
+        priceOracle = _priceOracle;
+        priceCacheStore = _priceCacheStore;
         quotaStore = _quotaStore;
         whitelistStore = _whitelistStore;
         pendingExpiry = _pendingExpiry;
@@ -93,8 +97,8 @@ contract QuotaTransfers is TransferModule
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
         bool allowed = whitelistStore.isWhitelisted(wallet, to);
         if (!allowed) {
-            uint valueInCNY = priceProvider.getValueInCNY(token, amount);
-            allowed = quotaStore.checkAndAddToSpent(wallet, valueInCNY);
+            uint tokenValue = getTokenValue(token, amount);
+            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
         }
 
         if (allowed) {
@@ -131,9 +135,9 @@ contract QuotaTransfers is TransferModule
         }
 
         allowance = amount - allowance;
-        uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
+        uint tokenValue = getTokenValue(token, allowance);
 
-        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+        if (quotaStore.checkAndAddToSpent(wallet, tokenValue)) {
             approveInternal(wallet, token, to, allowance);
             return;
         }
@@ -166,8 +170,8 @@ contract QuotaTransfers is TransferModule
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
         bool allowed = whitelistStore.isWhitelisted(wallet, to);
         if (!allowed) {
-            uint valueInCNY = priceProvider.getValueInCNY(address(0), amount);
-            allowed = quotaStore.checkAndAddToSpent(wallet, valueInCNY);
+            uint tokenValue = getTokenValue(address(0), amount);
+            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
         }
 
         if (allowed) {
@@ -208,9 +212,9 @@ contract QuotaTransfers is TransferModule
         }
 
         allowance = amount - allowance;
-        uint valueInCNY = priceProvider.getValueInCNY(token, allowance);
+        uint tokenValue = getTokenValue(token, allowance);
 
-        if (quotaStore.checkAndAddToSpent(wallet, valueInCNY)) {
+        if (quotaStore.checkAndAddToSpent(wallet, tokenValue)) {
             approveInternal(wallet, token, to, allowance);
             callContractInternal(wallet, to, 0, data);
             return;
@@ -256,6 +260,20 @@ contract QuotaTransfers is TransferModule
     {
         pendingTransactions[wallet][pendingTxId] = now;
         emit PendingTxCreated(wallet, pendingTxId, now);
+    }
+
+    function getTokenValue(address token, uint amount)
+        private
+        returns (uint value)
+    {
+        if (amount == 0) return 0;
+        value = priceCacheStore.tokenPrice(token, amount);
+        if (value == 0) {
+            value = priceOracle.tokenPrice(token, amount);
+            if (value > 0) {
+                priceCacheStore.cacheTokenPrice(token, amount, value);
+            }
+        }
     }
 
     function extractMetaTxSigners(

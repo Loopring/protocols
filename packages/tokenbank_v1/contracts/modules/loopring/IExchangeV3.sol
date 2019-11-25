@@ -104,7 +104,7 @@ contract IExchangeV3
     function getRequestStats()
         external
         view
-        returns(
+        returns (
             uint numDepositRequestsProcessed,
             uint numAvailableDepositSlots,
             uint numWithdrawalRequestsProcessed,
