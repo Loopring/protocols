@@ -16,8 +16,6 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/ERC20.sol";
-
 import "../../iface/Wallet.sol";
 
 import "../stores/ReimbursementStore.sol";
