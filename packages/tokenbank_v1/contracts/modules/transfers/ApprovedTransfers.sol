@@ -72,7 +72,6 @@ contract ApprovedTransfers is TransferModule
             address token = tokens[i];
             uint amount = (token == address(0)) ?
                 wallet.balance : ERC20(token).balanceOf(wallet);
-
             transferInternal(wallet, token, to, amount, logdata);
         }
     }
