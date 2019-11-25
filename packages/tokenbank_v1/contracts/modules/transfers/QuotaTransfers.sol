@@ -71,12 +71,12 @@ contract QuotaTransfers is TransferModule
     }
 
     function transferToken(
-        address            wallet,
-        address            token,
-        address            to,
-        uint               amount,
-        bytes     calldata data,
-        bool               enablePending
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata,
+        bool           enablePending
         )
         external
         nonReentrant
@@ -89,8 +89,7 @@ contract QuotaTransfers is TransferModule
                 wallet,
                 token,
                 to,
-                amount,
-                keccak256(data)
+                amount
             )
         );
 
@@ -102,7 +101,7 @@ contract QuotaTransfers is TransferModule
         }
 
         if (allowed) {
-            transferInternal(wallet, token, to, amount, data);
+            transferInternal(wallet, token, to, amount, logdata);
             if (foundPendingTx) {
                 delete pendingTransactions[wallet][txid];
             }

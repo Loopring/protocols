@@ -16,6 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/ERC20.sol";
+
 import "./TransferModule.sol";
 
 
@@ -36,7 +38,7 @@ contract ApprovedTransfers is TransferModule
         address            token,
         address            to,
         uint               amount,
-        bytes     calldata data
+        bytes     calldata logdata
         )
         external
         nonReentrant
@@ -47,7 +49,32 @@ contract ApprovedTransfers is TransferModule
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
-        transferInternal(wallet, token, to, amount, data);
+        transferInternal(wallet, token, to, amount, logdata);
+    }
+
+    function transferTokens(
+        address            wallet,
+        address[] calldata signers,
+        address[] calldata tokens,
+        address            to,
+        bytes     calldata logdata
+        )
+        external
+        nonReentrant
+        onlyFromMetaTx
+        onlyWhenWalletUnlocked(wallet)
+    {
+        uint guardianCount = securityStore.numGuardians(wallet);
+        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
+
+        for (uint i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint amount = (token == address(0)) ?
+                wallet.balance : ERC20(token).balanceOf(wallet);
+
+            transferInternal(wallet, token, to, amount, logdata);
+        }
     }
 
     function approveToken(
@@ -123,6 +150,7 @@ contract ApprovedTransfers is TransferModule
     {
         require (
             method == this.transferToken.selector ||
+            method == this.transferTokens.selector ||
             method == this.approveToken.selector ||
             method == this.callContract.selector ||
             method == this.approveThenCallContract.selector,
