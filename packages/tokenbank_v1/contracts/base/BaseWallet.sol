@@ -118,6 +118,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     function addModule(address _module)
         external
+        nonReentrant
         onlyModule
     {
         addModuleInternal(_module);

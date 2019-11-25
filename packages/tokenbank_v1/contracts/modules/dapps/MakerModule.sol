@@ -16,19 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressUtil.sol";
-import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
-
-import "../../thirdparty/ERC1271.sol";
-
-import "../../iface/Wallet.sol";
-
 import "../../base/MetaTxModule.sol";
 
 
 /// @title MakerModule
 contract MakerModule is MetaTxModule
 {
-
 }

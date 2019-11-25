@@ -69,7 +69,6 @@ contract RecoveryModule is SecurityModule
         address            newOwner
         )
         external
-        nonReentrant
         onlyFromMetaTx
         notWalletOwner(wallet, newOwner)
     {

@@ -128,7 +128,6 @@ contract ApprovedTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-
         // ASSUMPTION:
         // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{signers_length:32}{signer1:32}{signer2:32}
         require(data.length >= 100, "DATA_INVALID");

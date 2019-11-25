@@ -94,20 +94,20 @@ contract LockModule is SecurityModule
         emit WalletLock(wallet, guardian, false);
     }
 
-    function getLock(address wallet)
+    function getLock()
         public
         view
         returns (uint)
     {
-        return securityStore.getLock(wallet);
+        return securityStore.getLock(address(this));
     }
 
-    function isLocked(address wallet)
+    function isLocked()
         public
         view
         returns (bool)
     {
-        return securityStore.isLocked(wallet);
+        return securityStore.isLocked(address(this));
     }
 
     function extractMetaTxSigners(
