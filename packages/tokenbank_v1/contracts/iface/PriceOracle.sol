@@ -20,7 +20,7 @@ pragma solidity ^0.5.11;
 /// @title PriceOracle
 contract PriceOracle
 {
-    function getValue(address token, uint amount)
+    function getTokenValue(address token, uint amount)
         public
         view
         returns (uint value);

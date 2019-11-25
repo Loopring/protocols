@@ -52,7 +52,7 @@ contract PriceCacheStore is DataStore, PriceOracle
         expiry = _expiry;
     }
 
-    function getValue(address token, uint amount)
+    function getTokenValue(address token, uint amount)
         public
         view
         returns (uint)

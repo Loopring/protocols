@@ -267,7 +267,7 @@ contract QuotaTransfers is TransferModule
         returns (uint value)
     {
         if (amount == 0) return 0;
-        value = priceCacheStore.getValue(token, amount);
+        value = priceCacheStore.getTokenValue(token, amount);
         if (value == 0) {
             value = getTokenValue(token, amount);
             if (value > 0) {

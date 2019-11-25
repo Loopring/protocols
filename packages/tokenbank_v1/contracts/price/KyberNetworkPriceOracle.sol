@@ -37,7 +37,7 @@ contract KyberNetwork {
 /// @title KyberNetworkPriceOracle
 contract KyberNetworkPriceOracle is PriceOracle
 {
-    function getValue(address token, uint amount)
+    function getTokenValue(address token, uint amount)
         public
         view
         returns (uint value);

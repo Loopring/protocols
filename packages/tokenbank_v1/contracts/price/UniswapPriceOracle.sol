@@ -21,7 +21,7 @@ import "../iface/PriceOracle.sol";
 /// @title UniswapPriceOracle
 contract UniswapPriceOracle is PriceOracle
 {
-    function getValue(address token, uint amount)
+    function getTokenValue(address token, uint amount)
         public
         view
         returns (uint value);
