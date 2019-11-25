@@ -201,7 +201,10 @@ contract ExchangeModule is SecurityModule
         )
         private
     {
-        if (wallet.balance >= etherFee) return;
+        if (wallet.balance >= etherFee) {
+            msg.sender.transfer(msg.value);
+            return;
+        }
 
         uint reimbursement = etherFee - wallet.balance;
         require(msg.value >= reimbursement, "INSUFFCIENT_FEE");
