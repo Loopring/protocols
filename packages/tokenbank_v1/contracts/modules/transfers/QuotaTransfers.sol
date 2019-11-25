@@ -64,15 +64,6 @@ contract QuotaTransfers is Claimable, TransferModule
         pendingExpiry = _pendingExpiry;
     }
 
-    function setPriceOracle(PriceOracle _priceOracle)
-        external
-        onlyOwner
-    {
-        require(priceOracle != _priceOracle, "SAME_ADDRESS");
-        priceOracle = _priceOracle;
-        emit PriceOracleUpdated(address(priceOracle));
-    }
-
     function staticMethods()
         public
         pure
@@ -80,6 +71,23 @@ contract QuotaTransfers is Claimable, TransferModule
     {
         methods = new bytes4[](1);
         methods[0] = this.isPendingTxValid.selector;
+    }
+
+    function isPendingTxValid(bytes32 pendingTxId)
+        public
+        view
+        returns (bool)
+    {
+        return isPendingTxValidInternal(address(this), pendingTxId);
+    }
+
+    function setPriceOracle(PriceOracle _priceOracle)
+        external
+        onlyOwner
+    {
+        require(priceOracle != _priceOracle, "SAME_ADDRESS");
+        priceOracle = _priceOracle;
+        emit PriceOracleUpdated(address(priceOracle));
     }
 
     function transferToken(
@@ -243,7 +251,7 @@ contract QuotaTransfers is Claimable, TransferModule
         returns (bool foundPendingTx)
     {
         if (msg.sender != Wallet(wallet).owner()) {
-            if (isPendingTxValid(wallet, pendingTxId)) {
+            if (isPendingTxValidInternal(wallet, pendingTxId)) {
                 foundPendingTx = true;
                 emit PendingTxExecuted(wallet, pendingTxId, now);
             } else {
@@ -252,11 +260,11 @@ contract QuotaTransfers is Claimable, TransferModule
         }
     }
 
-    function isPendingTxValid(
+    function isPendingTxValidInternal(
         address wallet,
         bytes32 pendingTxId
         )
-        public
+        private
         view
         returns (bool)
     {

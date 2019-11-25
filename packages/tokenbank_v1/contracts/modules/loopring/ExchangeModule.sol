@@ -16,6 +16,12 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/ERC20.sol";
+
+import "../../iface/Wallet.sol";
+
+import "../stores/ReimbursementStore.sol";
+
 import "../security/SecurityModule.sol";
 
 import "./IExchangeV3.sol";
@@ -24,47 +30,217 @@ import "./IExchangeV3.sol";
 /// @title ExchangeModule
 contract ExchangeModule is SecurityModule
 {
+    event AccountUpdated(
+        address indexed exchange,
+        address indexed wallet,
+        bool            creation
+    );
 
-    function createDEXAccount(
-        address            wallet,
-        address[] calldata signers,
-        IExchangeV3        exchange
+    event Deposit(
+        address indexed exchange,
+        address indexed wallet,
+        address indexed token,
+        uint96          amount
+    );
+
+    event Withdrawal(
+        address indexed exchange,
+        address indexed wallet,
+        address indexed token,
+        uint96          amount
+    );
+
+    ReimbursementStore internal reimbursementStore;
+
+    constructor(
+        SecurityStore      _securityStore,
+        ReimbursementStore _reimbursementStore
+        )
+        public
+        SecurityModule(_securityStore)
+    {
+        reimbursementStore = _reimbursementStore;
+    }
+
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        methods = new bytes4[](3);
+        methods[0] = this.isExchangeRunning.selector;
+        methods[1] = this.getDEXSlots.selector;
+        methods[2] = this.getDEXAccount.selector;
+    }
+
+    function isExchangeRunning(IExchangeV3 exchange)
+        public
+        view
+        returns (bool)
+    {
+        return (
+            !exchange.isInMaintenance() &&
+            !exchange.isInWithdrawalMode() &&
+            !exchange.isShutdown()
+        );
+    }
+
+    function getDEXSlots(IExchangeV3 exchange)
+        public
+        view
+        returns (
+            uint numAvailableDepositSlots,
+            uint numAvailableWithdrawalSlots
+        )
+    {
+        (,numAvailableDepositSlots, , numAvailableWithdrawalSlots) = exchange.getRequestStats();
+    }
+
+    function getDEXAccount(IExchangeV3 exchange)
+        public
+        view
+        returns (
+            uint24 accountId,
+            uint   pubKeyX,
+            uint   pubKeyY
+        )
+    {
+        return exchange.getAccount(address(this));
+    }
+
+    function createOrUpdateDEXAccount(
+        address payable wallet,
+        IExchangeV3     exchange,
+        uint            pubKeyX,
+        uint            pubKeyY,
+        bytes calldata  permission,
+        address         feeToken,
+        uint            feeAmount
         )
         external
         nonReentrantExceptFromThis
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
+        (uint creationFee, uint updateFee, , ) = exchange.getFees();
+        (uint24 accountId, , ) = exchange.getAccount(wallet);
+
+        uint fee = accountId == 0 ? creationFee : updateFee;
+        checkAndReimburse(wallet, fee, feeToken, feeAmount);
+
+        bytes memory callData = abi.encodeWithSelector(
+            exchange.createOrUpdateAccount.selector,
+            pubKeyX,
+            pubKeyY,
+            permission
+        );
+
+        transact(wallet, address(exchange), fee, callData);
+        emit AccountUpdated(address(exchange), wallet, accountId == 0);
+    }
+
+    function depositToDEX(
+        address payable wallet,
+        IExchangeV3     exchange,
+        address         token,
+        uint96          amount,
+        address         feeToken,
+        uint            feeAmount
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        require(amount > 0, "ZERO_VALUE");
+        (, , uint fee, ) = exchange.getFees();
+        checkAndReimburse(wallet, fee, feeToken, feeAmount);
+
+        bytes memory callData = abi.encodeWithSelector(
+            exchange.deposit.selector,
+            token,
+            amount
+        );
+
+        transact(wallet, address(exchange), fee, callData);
+        emit Deposit(address(exchange), wallet, token, amount);
+    }
+
+    function withdrawFromDEX(
+        address payable wallet,
+        IExchangeV3     exchange,
+        address         token,
+        uint96          amount,
+        address         feeToken,
+        uint            feeAmount
+        )
+        external
+        nonReentrantExceptFromThis
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        require(amount > 0, "ZERO_VALUE");
+        (, , , uint fee) = exchange.getFees();
+        checkAndReimburse(wallet, fee, feeToken, feeAmount);
+
+        bytes memory callData = abi.encodeWithSelector(
+            exchange.withdraw.selector,
+            token,
+            amount
+        );
+
+        transact(wallet, address(exchange), fee, callData);
+        emit Withdrawal(address(exchange), wallet, token, amount);
+    }
+
+    function checkAndReimburse(
+        address payable wallet,
+        uint            etherFee,
+        address         feeToken,
+        uint            feeAmount
+        )
+        private
+    {
+        if (wallet.balance >= etherFee) return;
+
+        uint reimbursement = etherFee - wallet.balance;
+        require(msg.value >= reimbursement, "INSUFFCIENT_FEE");
+
+        uint surplus = msg.value - reimbursement;
+        if (surplus > 0) {
+            msg.sender.transfer(surplus);
+        }
+        wallet.transfer(reimbursement);
+
+        if (feeToken == address(0) || feeAmount == 0 || msg.sender == wallet) {
+            reimbursementStore.checkAndUpdate(wallet, reimbursement);
+        } else {
+            bytes memory callData = abi.encodeWithSelector(
+                ERC20_TRANSFER,
+                msg.sender,
+                feeAmount
+            );
+            transact(wallet, feeToken, 0, callData);
+        }
     }
 
     function extractMetaTxSigners(
-        address /*wallet*/,
+        address wallet,
         bytes4  method,
-        bytes   memory data
+        bytes   memory /* data */
         )
         internal
         view
         returns (address[] memory signers)
     {
         require (
-            method == this.createDEXAccount.selector,
+            method == this.createOrUpdateDEXAccount.selector ||
+            method == this.depositToDEX.selector ||
+            method == this.withdrawFromDEX.selector,
             "INVALID_METHOD"
         );
-        // ASSUMPTION:
-        // data layout: {data_length:32}{wallet:32}{signers_offset:32}{signers_length:32}{signer1:32}{signer2:32}
-        require(data.length >= 32 * 3, "DATA_INVALID");
 
-        uint numSigners;
-        assembly { numSigners := mload(add(data, 96)) }
-        require(data.length >= 32 * (3 + numSigners), "DATA_INVALID");
-
-        signers = new address[](numSigners);
-
-        address signer;
-        for (uint i = 0; i < numSigners; i++) {
-            uint start = 32 * (4 + i);
-            assembly { signer := mload(add(data, start)) }
-            signers[i] = signer;
-        }
+        signers = new address[](1);
+        signers[0] = Wallet(wallet).owner();
     }
 }
