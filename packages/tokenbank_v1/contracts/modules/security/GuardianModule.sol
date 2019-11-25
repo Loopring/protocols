@@ -59,7 +59,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         notWalletGuardian(wallet, guardian)
@@ -84,7 +84,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -101,7 +101,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -116,7 +116,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
@@ -132,7 +132,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
@@ -149,7 +149,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {

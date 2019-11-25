@@ -39,7 +39,7 @@ contract ApprovedTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
     {
@@ -58,7 +58,7 @@ contract ApprovedTransfers is TransferModule
         uint               amount
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
         notWalletOrItsModule(wallet, to)
@@ -78,7 +78,7 @@ contract ApprovedTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
         notWalletOrItsModule(wallet, to)
@@ -99,7 +99,7 @@ contract ApprovedTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrantExceptFromThis
+        nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
         notWalletOrItsModule(wallet, to)

@@ -78,6 +78,10 @@ contract MetaTxModule is BaseModule
     ///      will pay for transaction gas in Ether and charge the wallet Ether or other
     ///      ERC20 tokens as fee. If gasPrice is set to 0, then the relayer won't charge
     ///      the wallet any fee.
+    ///
+    ///      Important! This function needs to be safe against re-entrancy by using
+    ///      the 'Checks Effects Interactions' pattern! We do not use `nonReentrant`
+    ///      because this function is used to call into the same contract.
     /// @param data The raw transaction to be performed on arbitrary contract.
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
@@ -97,7 +101,6 @@ contract MetaTxModule is BaseModule
         bytes   calldata signatures
         )
         external
-        nonReentrant
     {
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
@@ -131,6 +134,8 @@ contract MetaTxModule is BaseModule
             require(isSignatureValid(signers[i], metaTxHash, sig), "BAD_SIGNATURE");
         }
 
+        // Mark the transaction as used before doing the call to guard against re-entrancy
+        // (the only exploit possible here is that the transaction can be executed multiple times).
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
         (bool success,) = address(this).call(data);
 

@@ -86,9 +86,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return _owner;
     }
 
-    function setOwenr(address newOwner)
+    function setOwner(address newOwner)
         external
-        nonReentrant
         onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
@@ -119,7 +118,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     function addModule(address _module)
         external
-        nonReentrant
         onlyModule
     {
         addModuleInternal(_module);
@@ -128,7 +126,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     function removeModule(address _module)
         external
         onlyModule
-        nonReentrant
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
         Module(_module).deactivate(address(this));
@@ -154,7 +151,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
     function bindStaticMethod(bytes4 _method, address _module)
         external
-        nonReentrant
         onlyModule
     {
         require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
@@ -199,7 +195,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         address token
         )
         external
-        nonReentrant
         onlyModule
         returns (bool success)
     {
@@ -228,7 +223,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         bytes   calldata data
         )
         external
-        nonReentrant
         onlyModule
         returns (bytes memory result)
     {
