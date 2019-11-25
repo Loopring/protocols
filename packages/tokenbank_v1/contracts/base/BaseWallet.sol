@@ -248,8 +248,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         internal
         returns (bytes memory result)
     {
-        require(!bankRegistry.isModuleRegistered(to), "CANNOT_TRANSACT_WITH_MODULE");
-
         bool success;
         // solium-disable-next-line security/no-call-value
         (success, result) = to.call.value(value)(data);
