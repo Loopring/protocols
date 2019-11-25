@@ -16,6 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/MathUint.sol";
+
 import "../../iface/Wallet.sol";
 
 import "../stores/ReimbursementStore.sol";
@@ -28,10 +30,11 @@ import "./IExchangeV3.sol";
 /// @title LoopringDEXModule
 contract LoopringDEXModule is SecurityModule
 {
+    using MathUint for uint;
     event AccountUpdated(
         address indexed exchange,
         address indexed wallet,
-        bool            creation
+        bool            newAccount
     );
 
     event Deposit(
@@ -94,7 +97,10 @@ contract LoopringDEXModule is SecurityModule
         (,numAvailableDepositSlots, , numAvailableWithdrawalSlots) = exchange.getRequestStats();
     }
 
-    function getDEXAccount(IExchangeV3 exchange)
+    function getDEXAccount(
+        address     wallet,
+        IExchangeV3 exchange
+        )
         public
         view
         returns (
@@ -103,7 +109,7 @@ contract LoopringDEXModule is SecurityModule
             uint   pubKeyY
         )
     {
-        return exchange.getAccount(address(this));
+        return exchange.getAccount(wallet);
     }
 
     function createOrUpdateDEXAccount(
@@ -120,10 +126,8 @@ contract LoopringDEXModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        (uint creationFee, uint updateFee, , ) = exchange.getFees();
-        (uint24 accountId, , ) = exchange.getAccount(wallet);
+        (uint fee, bool newAccount) = getAccountCreationOrUpdateFee(wallet, exchange);
 
-        uint fee = accountId == 0 ? creationFee : updateFee;
         checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
         bytes memory callData = abi.encodeWithSelector(
@@ -134,7 +138,7 @@ contract LoopringDEXModule is SecurityModule
         );
 
         transact(wallet, address(exchange), fee, callData);
-        emit AccountUpdated(address(exchange), wallet, accountId == 0);
+        emit AccountUpdated(address(exchange), wallet, newAccount);
     }
 
     function depositToDEX(
@@ -223,6 +227,23 @@ contract LoopringDEXModule is SecurityModule
             );
             transact(wallet, feeToken, 0, callData);
         }
+    }
+
+    function getAccountCreationOrUpdateFee(
+        address     wallet,
+        IExchangeV3 exchange
+        )
+        internal
+        view
+        returns (uint fee, bool newAccount)
+    {
+        (uint creationFee, uint updateFee, uint depositFee, ) = exchange.getFees();
+
+        // TODO: This will actual throw when the account doesn't exist. Maybe we should change that so it's easier to use from smart contracts.
+        (uint24 accountId, , ) = exchange.getAccount(wallet);
+
+        fee = depositFee.add(accountId == 0 ? creationFee : updateFee);
+        newAccount = accountId == 0;
     }
 
     function extractMetaTxSigners(

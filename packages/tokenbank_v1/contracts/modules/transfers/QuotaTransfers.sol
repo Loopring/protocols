@@ -73,12 +73,14 @@ contract QuotaTransfers is Claimable, TransferModule
         methods[0] = this.isPendingTxValid.selector;
     }
 
-    function isPendingTxValid(bytes32 pendingTxId)
+    function isPendingTxValid(
+        address wallet,
+        bytes32 pendingTxId)
         public
         view
         returns (bool)
     {
-        return isPendingTxValidInternal(address(this), pendingTxId);
+        return isPendingTxValidInternal(wallet, pendingTxId);
     }
 
     function setPriceOracle(PriceOracle _priceOracle)

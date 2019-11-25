@@ -35,6 +35,7 @@ contract TokenBalances is BaseModule
     }
 
     function tokenBalance(
+        address wallet,
         address token
         )
         public
@@ -42,13 +43,14 @@ contract TokenBalances is BaseModule
         returns (uint)
     {
         if (token == address(0)) {
-            return address(this).balance;
+            return wallet.balance;
         } else {
-            return ERC20(token).balanceOf(address(this));
+            return ERC20(token).balanceOf(wallet);
         }
     }
 
     function tokenBalances(
+        address   wallet,
         address[] memory tokens
         )
         public
@@ -57,7 +59,7 @@ contract TokenBalances is BaseModule
     {
         balances = new uint[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokenBalance(tokens[i]);
+            balances[i] = tokenBalance(wallet, tokens[i]);
         }
     }
 }

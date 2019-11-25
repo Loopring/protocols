@@ -138,6 +138,8 @@ contract MetaTxModule is BaseModule
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
+
+        // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.value(msg.value)(data);
 
         if (gasPrice > 0) {
