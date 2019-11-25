@@ -16,12 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
-import "./NamedAddressSet.sol";
+import "./AddressSet.sol";
 
 
-contract Managable is NamedAddressSet
+contract Managable is AddressSet
 {
-    string private constant MANAGER = "__MANAGED__";
+    bytes32 internal constant MANAGER = keccak256("__MANAGED__");
+
     bool   internal allowToBecomeEmpty = false;
     bool   internal allowSelfRemoval   = false;
 

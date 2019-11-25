@@ -16,32 +16,18 @@
 */
 pragma solidity ^0.5.11;
 
-import "./GuardianStorage.sol";
+import "../lib/OwnerManagable.sol";
 
 
-/// @title GuardianStorage
-/// @dev TODO
+/// @title DataStore
+/// @dev Modules share states by accessing the same storage instance.
+///      Using ModuleStorage will achieve better module decoupling.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract AccessGuardianStorage
+contract DataStore is OwnerManagable
 {
-
-    GuardianStorage internal guardianStorage;
-    constructor(GuardianStorage _guardianStorage)
-        public
-    {
-        guardianStorage = _guardianStorage;
-    }
-
-   modifier onlyGuardianOrRelayer(address wallet)
-    {
-        require(
-            msg.sender == address(this) || guardianStorage.isGuardian(msg.sender, wallet),
-            "NOT_GUARDIAN");
-        _;
-    }
-
+    constructor() public OwnerManagable() {}
 }

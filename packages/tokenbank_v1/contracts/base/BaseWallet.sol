@@ -17,7 +17,7 @@
 pragma solidity ^0.5.11;
 
 import "../lib/ERC20.sol";
-import "../lib/NamedAddressSet.sol";
+import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
@@ -32,17 +32,18 @@ import "../iface/Module.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
+contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 {
     address internal _owner;
 
-    string internal constant MODULE = "__MODULE__";
-    string internal constant ERC20_TRANSFER = "transfer(address,uint256)";
+    bytes32 internal constant MODULE = keccak256("__MODULE__");
+    string  internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     BankRegistry public bankRegistry;
 
     mapping (bytes4  => address) internal methodToModule;
 
+    event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
     event StaticMethodBound     (bytes4  indexed method, address indexed module);
@@ -85,6 +86,17 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         return _owner;
     }
 
+    function setOwenr(address newOwner)
+        external
+        nonReentrant
+        onlyModule
+    {
+        require(newOwner != address(0), "ZERO_ADDRESS");
+        require(newOwner != _owner, "SAME_ADDRESS");
+        _owner = newOwner;
+        emit OwnerChanged(newOwner);
+    }
+
     function setup(
         address   initialOwner,
         address[] calldata modules
@@ -107,8 +119,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     function addModule(address _module)
         external
-        onlyModule
         nonReentrant
+        onlyModule
     {
         addModuleInternal(_module);
     }
@@ -142,10 +154,10 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
 
     function bindStaticMethod(bytes4 _method, address _module)
         external
-        onlyModule
         nonReentrant
+        onlyModule
     {
-        require(_method != bytes4(0) && !isLocalMethod(_method) , "BAD_METHOD");
+        require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
@@ -158,7 +170,7 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         view
         returns (bool)
     {
-        return isLocalMethod(_method) || methodToModule[_method] != address(0);
+        return isLocalStaticMethod(_method) || methodToModule[_method] != address(0);
     }
 
     function staticMethodModule(bytes4 _method)
@@ -187,8 +199,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         address token
         )
         external
-        onlyModule
         nonReentrant
+        onlyModule
         returns (bool success)
     {
         require(to != address(this), "SAME_ADDRESS");
@@ -216,8 +228,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         bytes   calldata data
         )
         external
-        onlyModule
         nonReentrant
+        onlyModule
         returns (bytes memory result)
     {
         return transactInternal(to, value, data);
@@ -285,8 +297,8 @@ contract BaseWallet is Wallet, NamedAddressSet, ReentrancyGuard
         }
     }
 
-    function isLocalMethod(bytes4 _method)
-        internal
+    function isLocalStaticMethod(bytes4 _method)
+        private
         pure
         returns (bool)
     {

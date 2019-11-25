@@ -29,8 +29,8 @@ contract UpgraderModule is BaseModule {
 
     function activate(address wallet)
         external
-        nonReentrant
-        onlyWallet(wallet)
+        nonReentrantExceptFrom(wallet)
+        onlyFromWallet(wallet)
     {
         Wallet w = Wallet(wallet);
         for(uint i = 0; i < modulesToAdd.length; i++) {
@@ -51,8 +51,8 @@ contract UpgraderModule is BaseModule {
 
     function deactivate(address wallet)
         external
-        // nonReentrant - self-removal module will re-enter.
-        onlyWallet(wallet)
+        nonReentrantExceptFrom(wallet)
+        onlyFromWallet(wallet)
     {
         emit Deactivated(wallet);
     }

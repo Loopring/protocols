@@ -16,36 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/BaseStorage.sol";
+import "../iface/PriceOracle.sol";
 
-
-/// @title GuardianStorage
-/// @dev TODO
-///
-/// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-contract GuardianStorage is BaseStorage
+/// @title UniswapPriceOracle
+contract UniswapPriceOracle is PriceOracle
 {
-    constructor(address manager)
-        public
-        BaseStorage(manager)
-    {}
-
-    function isGuardian(
-        address addr,
-        address wallet
-        )
+    function tokenPrice(address token, uint amount)
         public
         view
-        returns (bool);
-
-    function getWalletLock(
-        address wallet
-        )
-        public
-        view
-        returns (uint);
-
+        returns (uint value);
 }

@@ -58,8 +58,8 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
         )
         external
         payable
-        onlyManager
         nonReentrant
+        onlyManager
         returns (address)
     {
         return createWalletInternal(_owner, _modules);
