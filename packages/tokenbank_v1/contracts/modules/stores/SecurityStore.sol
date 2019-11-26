@@ -31,7 +31,7 @@ contract SecurityStore is DataStore
     struct Wallet
     {
         address   inheritor;
-        uint128   lastActive;
+        uint128   lastActive; // the latest timestamp the owner is considered to be active
         uint128   lock;
         address   locker; // the module locked/unlocked this wallet
         address[] guardians;
