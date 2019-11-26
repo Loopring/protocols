@@ -17,35 +17,33 @@
 pragma solidity ^0.5.11;
 
 import "../iface/PriceOracle.sol";
-import "../lib/Ownable.sol";
 
 contract UniswapFactoryInterface {
     // Get Exchange and Token Info
-    function getExchange(address token) external view returns (address exchange);
-    function getToken(address exchange) external view returns (address token);
+    function getExchange(address token)    external view returns (address exchange);
+    function getToken   (address exchange) external view returns (address token);
 }
 
 contract UniswapExchangeInterface {
     // Address of ERC20 token sold on this exchange
     function tokenAddress() external view returns (address token);
     // Get Prices
-    function getEthToTokenInputPrice(uint256 eth_sold) external view returns (uint256 tokens_bought);
-    function getEthToTokenOutputPrice(uint256 tokens_bought) external view returns (uint256 eth_sold);
-    function getTokenToEthInputPrice(uint256 tokens_sold) external view returns (uint256 eth_bought);
-    function getTokenToEthOutputPrice(uint256 eth_bought) external view returns (uint256 tokens_sold);
+    function getEthToTokenInputPrice (uint eth_sold)      external view returns (uint tokens_bought);
+    function getEthToTokenOutputPrice(uint tokens_bought) external view returns (uint eth_sold);
+    function getTokenToEthInputPrice (uint tokens_sold)   external view returns (uint eth_bought);
+    function getTokenToEthOutputPrice(uint eth_bought)    external view returns (uint tokens_sold);
 }
 
 /// @title UniswapPriceOracle
-contract UniswapPriceOracle is PriceOracle, Ownable
+/// @dev Return the value in Ether for any given ERC20 token.
+contract UniswapPriceOracle is PriceOracle
 {
     UniswapFactoryInterface uniswapFactory;
 
-    function setUniswapFactory(address UniswapFactoryAddress)
+    constructor(UniswapFactoryInterface _uniswapFactory)
         public
-        onlyOwner
     {
-        require(UniswapFactoryAddress != address(0), "ZERO_ADDRESS");
-        uniswapFactory = UniswapFactoryInterface(UniswapFactoryAddress);
+        uniswapFactory = _uniswapFactory;
     }
 
     function tokenPrice(address token, uint amount)
@@ -53,12 +51,12 @@ contract UniswapPriceOracle is PriceOracle, Ownable
         view
         returns (uint value)
     {
-        require(address(uniswapFactory) != address(0), "uniswapFactory is None");
-        UniswapExchangeInterface tokenExchange = UniswapExchangeInterface(uniswapFactory.getExchange(token));
-        if (address(tokenExchange) == address(0)) {
-            // No exchange for this token
-            return 0;
-        }
-        return tokenExchange.getTokenToEthInputPrice(amount);
+        if (amount == 0) return 0;
+        if (token == address(0)) return amount;
+
+        address exchange = uniswapFactory.getExchange(token);
+        if (exchange == address(0)) return 0; // no exchange
+
+        return UniswapExchangeInterface(exchange).getTokenToEthInputPrice(amount);
     }
 }

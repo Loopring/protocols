@@ -47,11 +47,11 @@ contract AggregationalPriceOracle is PriceOracle
         uint total;
         uint count;
         for (uint i = 0; i < oracles.length; i++) {
-          uint value = PriceOracle(oracles[i]).tokenPrice(token, amount);
-          if (value > 0) {
-              count += 1;
-              total = total.add(value);
-          }
+            uint value = PriceOracle(oracles[i]).tokenPrice(token, amount);
+            if (value > 0) {
+                count += 1;
+                total = total.add(value);
+            }
         }
         return count == 0 ? 0 : total / count;
     }

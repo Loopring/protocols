@@ -16,6 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/Claimable.sol";
 import "../../lib/ERC20.sol";
 
 import "../../iface/PriceOracle.sol";
@@ -29,7 +30,7 @@ import "./TransferModule.sol";
 
 
 /// @title QuotaTransfers
-contract QuotaTransfers is TransferModule
+contract QuotaTransfers is Claimable, TransferModule
 {
     PriceOracle     public priceOracle;
     PriceCacheStore public priceCacheStore;
@@ -52,6 +53,7 @@ contract QuotaTransfers is TransferModule
         uint _pendingExpiry
         )
         public
+        Claimable()
         TransferModule(_securityStore)
     {
         priceOracle = _priceOracle;
@@ -59,6 +61,13 @@ contract QuotaTransfers is TransferModule
         quotaStore = _quotaStore;
         whitelistStore = _whitelistStore;
         pendingExpiry = _pendingExpiry;
+    }
+
+    function setPriceOracle(PriceOracle _priceOracle)
+        external
+        onlyOwner
+    {
+        priceOracle = _priceOracle;
     }
 
     function staticMethods()
