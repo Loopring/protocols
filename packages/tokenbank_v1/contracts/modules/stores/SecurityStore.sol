@@ -30,6 +30,8 @@ contract SecurityStore is DataStore
 {
     struct Wallet
     {
+        address   inheritor;
+        uint128   lastActive; // the latest timestamp the owner is considered to be active
         uint128   lock;
         address   locker; // the module locked/unlocked this wallet
         address[] guardians;
@@ -119,5 +121,32 @@ contract SecurityStore is DataStore
 
         wallets[wallet].lock = _lock;
         wallets[wallet].locker = msg.sender;
+    }
+
+    function touchLastActive(address wallet)
+        public
+        onlyManager
+    {
+        wallets[wallet].lastActive = uint128(now);
+    }
+
+    function inheritor(address wallet)
+        public
+        view
+        returns (
+            address who,
+            uint    lastActive
+        )
+    {
+        who = wallets[wallet].inheritor;
+        lastActive = uint(wallets[wallet].lastActive);
+    }
+
+    function setInheritor(address wallet, address who)
+        public
+        onlyManager
+    {
+        wallets[wallet].inheritor = who;
+        wallets[wallet].lastActive = uint128(now);
     }
 }
