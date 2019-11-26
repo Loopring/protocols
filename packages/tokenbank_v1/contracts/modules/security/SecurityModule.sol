@@ -47,12 +47,13 @@ contract SecurityModule is MetaTxModule
 
     // overridding
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
+        bool isOwner = Wallet(wallet).owner() == msg.sender;
         require(
-            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            isOwner || msg.sender == address(this),
             "NOT_FROM_META)TX_OR_WALLET_OWNER"
         );
         _;
-        if (Wallet(wallet).owner() == msg.sender) {
+        if (isOwner) {
             securityStore.touchLastActive(wallet);
         }
     }

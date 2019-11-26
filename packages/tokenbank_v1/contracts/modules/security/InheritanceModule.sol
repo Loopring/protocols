@@ -55,15 +55,15 @@ contract InheritanceModule is SecurityModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
-        methods[0] = this.ownerLastActive.selector;
+        methods[0] = this.inheritor.selector;
     }
 
-    function ownerLastActive(address wallet)
+    function inheritor(address wallet)
         public
         view
-        returns (uint)
+        returns (address who, uint lastActive)
     {
-        return securityStore.lastActive(wallet);
+        return securityStore.inheritor(wallet);
     }
 
     function inherit(
@@ -72,21 +72,46 @@ contract InheritanceModule is SecurityModule
         external
         nonReentrant
     {
-        emit Inherited(wallet, address(0), now);
+        (address newOwner, uint lastActive) = securityStore.inheritor(wallet);
+        require(newOwner != address(0), "NULL_INHERITOR");
+        require(now > lastActive + waitingPeriod, "NEED_TO_WAIT");
+
+        securityStore.setInheritor(wallet, address(0));
+
+        Wallet(wallet).setOwner(newOwner);
+
+        emit Inherited(wallet, newOwner, now);
+    }
+
+    function setInheritor(
+        address wallet,
+        address who
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+        securityStore.setInheritor(wallet, who);
     }
 
     function extractMetaTxSigners(
         bytes4  method,
-        address /*wallet*/,
+        address wallet,
         bytes   memory /*data*/
         )
         internal
-        pure
-        returns (address[] memory)
+        view
+        returns (address[] memory signers)
     {
         require(
-            method == this.inherit.selector,
+            method == this.inherit.selector ||
+            method == this.setInheritor.selector,
             "INVALID_METHOD"
         );
+
+        if (method == this.setInheritor.selector) {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
+        }
     }
 }

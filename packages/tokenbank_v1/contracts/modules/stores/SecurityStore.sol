@@ -30,6 +30,7 @@ contract SecurityStore is DataStore
 {
     struct Wallet
     {
+        address   inheritor;
         uint128   lastActive;
         uint128   lock;
         address   locker; // the module locked/unlocked this wallet
@@ -122,18 +123,30 @@ contract SecurityStore is DataStore
         wallets[wallet].locker = msg.sender;
     }
 
-    function lastActive(address wallet)
-        public
-        view
-        returns (uint)
-    {
-        return uint(wallets[wallet].lastActive);
-    }
-
     function touchLastActive(address wallet)
         public
         onlyOwner
     {
+        wallets[wallet].lastActive = uint128(now);
+    }
+
+    function inheritor(address wallet)
+        public
+        view
+        returns (
+            address who,
+            uint    lastActive
+        )
+    {
+        who = wallets[wallet].inheritor;
+        lastActive = uint(wallets[wallet].lastActive);
+    }
+
+    function setInheritor(address wallet, address who)
+        public
+        onlyOwner
+    {
+        wallets[wallet].inheritor = who;
         wallets[wallet].lastActive = uint128(now);
     }
 }
