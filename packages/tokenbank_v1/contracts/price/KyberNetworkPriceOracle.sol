@@ -36,7 +36,7 @@ contract KyberNetworkProxy {
 }
 
 /// @title KyberNetworkPriceOracle
-/// @dev Return the value in Ether for any given ERC20 token.
+/// @dev Returns the value in Ether for any given ERC20 token.
 contract KyberNetworkPriceOracle is PriceOracle
 {
     KyberNetworkProxy kyber;
