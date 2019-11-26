@@ -93,8 +93,53 @@ contract QuotaTransfers is Claimable, TransferModule
     }
 
     function transferToken(
+        address        wallet,
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata,
+        bool           enablePending
+        )
+        external
+        nonReentrant
+        onlyFromWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        returns (bytes32 pendingTxId)
+    {
+        bytes32 txid = keccak256(
+            abi.encodePacked(
+                "__TRANSFER__",
+                wallet,
+                token,
+                to,
+                amount,
+                keccak256(logdata)
+            )
+        );
+
+        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
+        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        if (!allowed) {
+            uint tokenValue = getTokenValue(token, amount);
+            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
+        }
+
+        if (allowed) {
+            transferInternal(wallet, token, to, amount, logdata);
+            if (foundPendingTx) {
+                delete pendingTransactions[wallet][txid];
+            }
+        } else if (enablePending) {
+            require(!foundPendingTx, "DUPLICATE_PENDING");
+            createPendingTx(wallet, txid);
+            pendingTxId = txid;
+        } else {
+            revert("FAILED");
+        }
+    }
+
+    function callContract(
         address            wallet,
-        address            token,
         address            to,
         uint               amount,
         bytes     calldata data,
@@ -107,9 +152,8 @@ contract QuotaTransfers is Claimable, TransferModule
     {
         bytes32 txid = keccak256(
             abi.encodePacked(
-                "__TRANSFER__",
+                "__CALL_CONTRACT__",
                 wallet,
-                token,
                 to,
                 amount,
                 keccak256(data)
@@ -117,20 +161,52 @@ contract QuotaTransfers is Claimable, TransferModule
         );
 
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
+        require(
+            foundPendingTx || Wallet(wallet).owner() == msg.sender,
+            "UNAUTHORIZED"
+        );
+
         bool allowed = whitelistStore.isWhitelisted(wallet, to);
         if (!allowed) {
-            uint tokenValue = getTokenValue(token, amount);
+            uint tokenValue = getTokenValue(address(0), amount);
             allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
         }
 
         if (allowed) {
-            transferInternal(wallet, token, to, amount, data);
+            callContractInternal(wallet, to, amount, data);
             if (foundPendingTx) {
                 delete pendingTransactions[wallet][txid];
             }
-        } else if(!foundPendingTx && enablePending) {
+        } else if (enablePending) {
+            require(!foundPendingTx, "DUPLICATE_PENDING");
             createPendingTx(wallet, txid);
             pendingTxId = txid;
+        } else {
+            revert("FAILED");
+        }
+    }
+
+    function transferTokensFullBalance(
+        address            wallet,
+        address[] calldata tokens,
+        address            to,
+        bytes calldata     logdata
+        )
+        external
+        nonReentrant
+        onlyFromWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        require(
+            whitelistStore.isWhitelisted(wallet, to),
+            "PROHIBITED"
+        );
+
+        for (uint i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint amount = (token == address(0)) ?
+                wallet.balance : ERC20(token).balanceOf(wallet);
+            transferInternal(wallet, token, to, amount, logdata);
         }
     }
 
@@ -165,46 +241,6 @@ contract QuotaTransfers is Claimable, TransferModule
         }
 
         revert("OUT_OF_QUOTA");
-    }
-
-    function callContract(
-        address            wallet,
-        address            to,
-        uint               amount,
-        bytes     calldata data,
-        bool               enablePending
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        returns (bytes32 pendingTxId)
-    {
-        bytes32 txid = keccak256(
-            abi.encodePacked(
-                "__CALL_CONTRACT__",
-                wallet,
-                to,
-                amount,
-                keccak256(data)
-            )
-        );
-
-        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-        bool allowed = whitelistStore.isWhitelisted(wallet, to);
-        if (!allowed) {
-            uint tokenValue = getTokenValue(address(0), amount);
-            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
-        }
-
-        if (allowed) {
-            callContractInternal(wallet, to, amount, data);
-            if (foundPendingTx) {
-                delete pendingTransactions[wallet][txid];
-            }
-        } else if(!foundPendingTx && enablePending) {
-            createPendingTx(wallet, txid);
-            pendingTxId = txid;
-        }
     }
 
     function approveThenCallContract(

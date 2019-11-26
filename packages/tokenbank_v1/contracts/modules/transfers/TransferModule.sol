@@ -27,7 +27,7 @@ contract TransferModule is SecurityModule
         address indexed token,
         address indexed to,
         uint            amount,
-        bytes           data
+        bytes           logdata
     );
     event Approved(
         address indexed wallet,
@@ -55,10 +55,12 @@ contract TransferModule is SecurityModule
         address token,
         address to,
         uint    amount,
-        bytes   memory data
+        bytes   memory logdata
         )
         internal
     {
+        if (amount == 0) return;
+
         if (token == address(0)) {
             transact(wallet, to, amount, "");
         } else {
@@ -69,7 +71,7 @@ contract TransferModule is SecurityModule
             );
             transact(wallet, token, 0, callData);
         }
-        emit Transfered(wallet, token, to, amount, data);
+        emit Transfered(wallet, token, to, amount, logdata);
     }
 
     function approveInternal(
@@ -84,6 +86,7 @@ contract TransferModule is SecurityModule
 
         bytes memory callData = abi.encodeWithSelector(
             ERC20_APPROVE,
+            to,
             amount
         );
         transact(wallet, token, 0, callData);
