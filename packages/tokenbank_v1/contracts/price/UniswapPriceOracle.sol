@@ -20,18 +20,18 @@ import "../iface/PriceOracle.sol";
 
 contract UniswapFactoryInterface {
     // Get Exchange and Token Info
-    function getExchange(address token) external view returns (address exchange);
-    function getToken(address exchange) external view returns (address token);
+    function getExchange(address token)    external view returns (address exchange);
+    function getToken   (address exchange) external view returns (address token);
 }
 
 contract UniswapExchangeInterface {
     // Address of ERC20 token sold on this exchange
     function tokenAddress() external view returns (address token);
     // Get Prices
-    function getEthToTokenInputPrice(uint256 eth_sold) external view returns (uint256 tokens_bought);
-    function getEthToTokenOutputPrice(uint256 tokens_bought) external view returns (uint256 eth_sold);
-    function getTokenToEthInputPrice(uint256 tokens_sold) external view returns (uint256 eth_bought);
-    function getTokenToEthOutputPrice(uint256 eth_bought) external view returns (uint256 tokens_sold);
+    function getEthToTokenInputPrice (uint eth_sold)      external view returns (uint tokens_bought);
+    function getEthToTokenOutputPrice(uint tokens_bought) external view returns (uint eth_sold);
+    function getTokenToEthInputPrice (uint tokens_sold)   external view returns (uint eth_bought);
+    function getTokenToEthOutputPrice(uint eth_bought)    external view returns (uint tokens_sold);
 }
 
 /// @title UniswapPriceOracle
@@ -51,11 +51,12 @@ contract UniswapPriceOracle is PriceOracle
         view
         returns (uint value)
     {
+        if (amount == 0) return 0;
         if (token == address(0)) return amount;
 
-        address uniswap = uniswapFactory.getExchange(token);
-        if (uniswap == address(0)) return 0; // no exchange
+        address exchange = uniswapFactory.getExchange(token);
+        if (exchange == address(0)) return 0; // no exchange
 
-        return UniswapExchangeInterface(uniswap).getTokenToEthInputPrice(amount);
+        return UniswapExchangeInterface(exchange).getTokenToEthInputPrice(amount);
     }
 }
