@@ -125,7 +125,7 @@ contract SecurityStore is DataStore
 
     function touchLastActive(address wallet)
         public
-        onlyOwner
+        onlyManager
     {
         wallets[wallet].lastActive = uint128(now);
     }
@@ -144,7 +144,7 @@ contract SecurityStore is DataStore
 
     function setInheritor(address wallet, address who)
         public
-        onlyOwner
+        onlyManager
     {
         wallets[wallet].inheritor = who;
         wallets[wallet].lastActive = uint128(now);
