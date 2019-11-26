@@ -101,6 +101,7 @@ contract MetaTxModule is BaseModule
         bytes   calldata signatures
         )
         external
+        payable
     {
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
@@ -137,7 +138,9 @@ contract MetaTxModule is BaseModule
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
-        (bool success,) = address(this).call(data);
+
+        // solium-disable-next-line security/no-call-value
+        (bool success,) = address(this).call.value(msg.value)(data);
 
         if (gasPrice > 0) {
             uint gasSpent = startGas - gasleft();
