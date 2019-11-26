@@ -37,7 +37,7 @@ contract KyberNetworkProxy {
 /// @title KyberNetworkPriceOracle
 contract KyberNetworkPriceOracle is PriceOracle, Ownable
 {
-    KyberNetworkProxy public kyber;
+    KyberNetworkProxy kyber;
     address constant ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     function setKyberSource(address kyberContractAddr)
