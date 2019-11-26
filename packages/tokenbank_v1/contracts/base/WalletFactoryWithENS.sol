@@ -59,7 +59,7 @@ contract WalletFactoryWithENS is WalletFactory, Module
     /// @return _wallet The newly created wallet's address.
     function createWallet(
         address   _owner,
-        bytes32   _subdomain,
+        string calldata _subdomain,
         address[] calldata _modules
         )
         external
@@ -68,7 +68,7 @@ contract WalletFactoryWithENS is WalletFactory, Module
         onlyManager
         returns (address _wallet)
     {
-        if (_subdomain == bytes32(0)) {
+        if (bytes(_subdomain).length == 0) {
             _wallet = createWalletInternal(_owner, _modules);
         } else {
             address[] memory extendedModules = new address[](_modules.length + 1);
@@ -77,7 +77,7 @@ contract WalletFactoryWithENS is WalletFactory, Module
                 extendedModules[i + 1] = _modules[i];
             }
             _wallet = createWalletInternal(_owner, extendedModules);
-            ensManager.registerSubdomain(_wallet, _subdomain);
+            ensManager.registerSubdomain(_subdomain, _wallet);
 
             Wallet(_wallet).removeModule(address(this));
         }
