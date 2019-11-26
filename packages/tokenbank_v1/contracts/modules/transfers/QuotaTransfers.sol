@@ -90,7 +90,8 @@ contract QuotaTransfers is TransferModule
                 wallet,
                 token,
                 to,
-                amount
+                amount,
+                keccak256(logdata)
             )
         );
 
@@ -106,9 +107,60 @@ contract QuotaTransfers is TransferModule
             if (foundPendingTx) {
                 delete pendingTransactions[wallet][txid];
             }
-        } else if(!foundPendingTx && enablePending) {
+        } else if (enablePending) {
+            require(!foundPendingTx, "DUPLICATE_PENDING");
             createPendingTx(wallet, txid);
             pendingTxId = txid;
+        } else {
+            revert("FAILED");
+        }
+    }
+
+    function callContract(
+        address            wallet,
+        address            to,
+        uint               amount,
+        bytes     calldata data,
+        bool               enablePending
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        returns (bytes32 pendingTxId)
+    {
+        bytes32 txid = keccak256(
+            abi.encodePacked(
+                "__CALL_CONTRACT__",
+                wallet,
+                to,
+                amount,
+                keccak256(data)
+            )
+        );
+
+        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
+        require(
+            foundPendingTx || Wallet(wallet).owner() == msg.sender,
+            "UNAUTHORIZED"
+        );
+
+        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        if (!allowed) {
+            uint tokenValue = getTokenValue(address(0), amount);
+            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
+        }
+
+        if (allowed) {
+            callContractInternal(wallet, to, amount, data);
+            if (foundPendingTx) {
+                delete pendingTransactions[wallet][txid];
+            }
+        } else if (enablePending) {
+            require(!foundPendingTx, "DUPLICATE_PENDING");
+            createPendingTx(wallet, txid);
+            pendingTxId = txid;
+        } else {
+            revert("FAILED");
         }
     }
 
@@ -123,15 +175,16 @@ contract QuotaTransfers is TransferModule
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        require(
+            whitelistStore.isWhitelisted(wallet, to),
+            "PROHIBITED"
+        );
 
-        if (allowed) {
-            for (uint i = 0; i < tokens.length; i++) {
-                address token = tokens[i];
-                uint amount = (token == address(0)) ?
-                    wallet.balance : ERC20(token).balanceOf(wallet);
-                transferInternal(wallet, token, to, amount, logdata);
-            }
+        for (uint i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            uint amount = (token == address(0)) ?
+                wallet.balance : ERC20(token).balanceOf(wallet);
+            transferInternal(wallet, token, to, amount, logdata);
         }
     }
 
@@ -166,47 +219,6 @@ contract QuotaTransfers is TransferModule
         }
 
         revert("OUT_OF_QUOTA");
-    }
-
-    function callContract(
-        address            wallet,
-        address            to,
-        uint               amount,
-        bytes     calldata data,
-        bool               enablePending
-        )
-        external
-        nonReentrant
-        onlyFromWalletOwner(wallet)
-        onlyWhenWalletUnlocked(wallet)
-        returns (bytes32 pendingTxId)
-    {
-        bytes32 txid = keccak256(
-            abi.encodePacked(
-                "__CALL_CONTRACT__",
-                wallet,
-                to,
-                amount,
-                keccak256(data)
-            )
-        );
-
-        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-        bool allowed = whitelistStore.isWhitelisted(wallet, to);
-        if (!allowed) {
-            uint tokenValue = getTokenValue(address(0), amount);
-            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
-        }
-
-        if (allowed) {
-            callContractInternal(wallet, to, amount, data);
-            if (foundPendingTx) {
-                delete pendingTransactions[wallet][txid];
-            }
-        } else if(!foundPendingTx && enablePending) {
-            createPendingTx(wallet, txid);
-            pendingTxId = txid;
-        }
     }
 
     function approveThenCallContract(
