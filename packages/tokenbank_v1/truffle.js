@@ -53,6 +53,9 @@ module.exports = {
       version: "0.5.11"
     }
   },
+  ens: {
+    enabled: true
+  },
   plugins: ["truffle-plugin-verify", "solidity-coverage"],
   api_keys: {
     etherscan: process.env.ETHERSCAN_API_KEY
@@ -112,6 +115,5 @@ module.exports = {
       gas: 6700000
     }
   },
-  test_directory: "transpiled/test",
-  migrations_directory: "transpiled/migrations"
+  test_directory: "transpiled/test"
 };

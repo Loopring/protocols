@@ -31,7 +31,7 @@ import "./ENS.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-/// @see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md
+/// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md
 contract ENSManager is OwnerManagable {
 
     using strings for *;
