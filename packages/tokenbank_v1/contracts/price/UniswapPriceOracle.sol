@@ -17,7 +17,6 @@
 pragma solidity ^0.5.11;
 
 import "../iface/PriceOracle.sol";
-import "../lib/Ownable.sol";
 
 contract UniswapFactoryInterface {
     // Get Exchange and Token Info
@@ -36,16 +35,15 @@ contract UniswapExchangeInterface {
 }
 
 /// @title UniswapPriceOracle
-contract UniswapPriceOracle is PriceOracle, Ownable
+/// @dev Return the value in Ether for any given ERC20 token.
+contract UniswapPriceOracle is PriceOracle
 {
     UniswapFactoryInterface uniswapFactory;
 
-    function setUniswapFactory(address UniswapFactoryAddress)
+    constructor(UniswapFactoryInterface _uniswapFactory)
         public
-        onlyOwner
     {
-        require(UniswapFactoryAddress != address(0), "ZERO_ADDRESS");
-        uniswapFactory = UniswapFactoryInterface(UniswapFactoryAddress);
+        uniswapFactory = _uniswapFactory;
     }
 
     function tokenPrice(address token, uint amount)
@@ -53,12 +51,11 @@ contract UniswapPriceOracle is PriceOracle, Ownable
         view
         returns (uint value)
     {
-        require(address(uniswapFactory) != address(0), "uniswapFactory is None");
-        UniswapExchangeInterface tokenExchange = UniswapExchangeInterface(uniswapFactory.getExchange(token));
-        if (address(tokenExchange) == address(0)) {
-            // No exchange for this token
-            return 0;
-        }
-        return tokenExchange.getTokenToEthInputPrice(amount);
+        if (token == address(0)) return amount;
+
+        address uniswap = uniswapFactory.getExchange(token);
+        if (uniswap == address(0)) return 0; // no exchange
+
+        return UniswapExchangeInterface(uniswap).getTokenToEthInputPrice(amount);
     }
 }

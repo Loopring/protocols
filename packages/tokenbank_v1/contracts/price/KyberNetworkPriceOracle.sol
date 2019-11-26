@@ -16,11 +16,12 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/PriceOracle.sol";
 import "../lib/ERC20.sol";
-import "../lib/Ownable.sol";
 
-contract KyberNetworkProxy {
+import "../iface/PriceOracle.sol";
+
+
+contract KyberNetworkProxyInterface {
     function getExpectedRate(
         ERC20 src,
         ERC20 dest,
@@ -35,17 +36,16 @@ contract KyberNetworkProxy {
 }
 
 /// @title KyberNetworkPriceOracle
-contract KyberNetworkPriceOracle is PriceOracle, Ownable
+/// @dev Return the value in Ether for any given ERC20 token.
+contract KyberNetworkPriceOracle is PriceOracle
 {
-    KyberNetworkProxy kyber;
-    address constant ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    KyberNetworkProxyInterface kyber;
+    address constant private ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    function setKyberSource(address kyberContractAddr)
+    constructor(KyberNetworkProxyInterface _kyber)
         public
-        onlyOwner
     {
-        require(kyberContractAddr != address(0), "ZERO_ADDRESS");
-        kyber = KyberNetworkProxy(kyberContractAddr);
+        kyber = _kyber;
     }
 
     function tokenPrice(address token, uint amount)
@@ -53,10 +53,14 @@ contract KyberNetworkPriceOracle is PriceOracle, Ownable
         view
         returns (uint value)
     {
-        uint expectedRate;
-
-        require(address(kyber) != address(0), "KyberNetworkProxy is None");
-        (expectedRate,) = kyber.getExpectedRate(ERC20(token), ERC20(ethTokenInKyber), amount);
-        return expectedRate;
+        if (token == address(0)) {
+            value = amount;
+        } else {
+            (value,) = kyber.getExpectedRate(
+                ERC20(token),
+                ERC20(ethTokenInKyber),
+                amount
+            );
+        }
     }
 }
