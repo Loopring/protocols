@@ -50,7 +50,7 @@ contract TokenBalances is BaseModule
     }
 
     function tokenBalances(
-        address wallet,
+        address   wallet,
         address[] memory tokens
         )
         public

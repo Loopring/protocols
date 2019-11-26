@@ -22,9 +22,6 @@ import "../security/SecurityModule.sol";
 /// @title TransferModule
 contract TransferModule is SecurityModule
 {
-    bytes4 internal constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 internal constant ERC20_APPROVE = bytes4(keccak256("approve(address,uint256)"));
-
     event Transfered(
         address indexed wallet,
         address indexed token,

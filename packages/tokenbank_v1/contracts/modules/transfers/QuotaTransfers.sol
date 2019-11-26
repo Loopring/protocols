@@ -16,6 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/Claimable.sol";
 import "../../lib/ERC20.sol";
 
 import "../../iface/PriceOracle.sol";
@@ -29,7 +30,7 @@ import "./TransferModule.sol";
 
 
 /// @title QuotaTransfers
-contract QuotaTransfers is TransferModule
+contract QuotaTransfers is Claimable, TransferModule
 {
     PriceOracle     public priceOracle;
     PriceCacheStore public priceCacheStore;
@@ -40,8 +41,9 @@ contract QuotaTransfers is TransferModule
 
     mapping (address => mapping(bytes32 => uint)) pendingTransactions;
 
-    event PendingTxCreated (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    event PendingTxExecuted(address indexed wallet, bytes32 indexed txid, uint timestamp);
+    event PendingTxCreated   (address indexed wallet, bytes32 indexed txid, uint timestamp);
+    event PendingTxExecuted  (address indexed wallet, bytes32 indexed txid, uint timestamp);
+    event PriceOracleUpdated (address indexed priceOracle);
 
     constructor(
         PriceOracle     _priceOracle,
@@ -52,6 +54,7 @@ contract QuotaTransfers is TransferModule
         uint _pendingExpiry
         )
         public
+        Claimable()
         TransferModule(_securityStore)
     {
         priceOracle = _priceOracle;
@@ -68,6 +71,25 @@ contract QuotaTransfers is TransferModule
     {
         methods = new bytes4[](1);
         methods[0] = this.isPendingTxValid.selector;
+    }
+
+    function isPendingTxValid(
+        address wallet,
+        bytes32 pendingTxId)
+        public
+        view
+        returns (bool)
+    {
+        return isPendingTxValidInternal(wallet, pendingTxId);
+    }
+
+    function setPriceOracle(PriceOracle _priceOracle)
+        external
+        onlyOwner
+    {
+        require(priceOracle != _priceOracle, "SAME_ADDRESS");
+        priceOracle = _priceOracle;
+        emit PriceOracleUpdated(address(priceOracle));
     }
 
     function transferToken(
@@ -267,7 +289,7 @@ contract QuotaTransfers is TransferModule
         returns (bool foundPendingTx)
     {
         if (msg.sender != Wallet(wallet).owner()) {
-            if (isPendingTxValid(wallet, pendingTxId)) {
+            if (isPendingTxValidInternal(wallet, pendingTxId)) {
                 foundPendingTx = true;
                 emit PendingTxExecuted(wallet, pendingTxId, now);
             } else {
@@ -276,11 +298,11 @@ contract QuotaTransfers is TransferModule
         }
     }
 
-    function isPendingTxValid(
+    function isPendingTxValidInternal(
         address wallet,
         bytes32 pendingTxId
         )
-        public
+        private
         view
         returns (bool)
     {
