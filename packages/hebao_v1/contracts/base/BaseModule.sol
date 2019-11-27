@@ -87,7 +87,7 @@ contract BaseModule is Module, ReentrancyGuard
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(module != address(this), "SELF_ADD_PROHIBITED");
         Wallet(wallet).addModule(module);
@@ -101,7 +101,7 @@ contract BaseModule is Module, ReentrancyGuard
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(module != address(this), "SELF_REMOVE_PROHIBITED");
         Wallet(wallet).removeModule(module);

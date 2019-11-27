@@ -138,10 +138,11 @@ contract MetaTxModule is BaseModule
             require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
 
             gasSpent = gasSpent.mul(gasPrice).add(GAS_OVERHEAD);
-            require(
-                Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
-                "OUT_OF_GAS"
-            );
+            // TODO(kongliang): use TransferModule instead
+            // require(
+            //     Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
+            //     "OUT_OF_GAS"
+            // );
         }
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
