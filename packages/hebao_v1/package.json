@@ -1,7 +1,7 @@
 {
-  "name": "tokenbank_v1",
+  "name": "hebao_v1",
   "version": "1.0.0",
-  "description": "TokenBank's Smart Wallet Contracts",
+  "description": "Hebao App's Smart Contracts",
   "main": "index.js",
   "directories": {
     "test": "test"
