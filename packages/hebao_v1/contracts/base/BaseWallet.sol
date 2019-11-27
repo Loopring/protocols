@@ -234,6 +234,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         internal
         returns (bytes memory result)
     {
+        require(to != address(this) && !hasModule(to), "PROHIBITED");
+
         bool success;
         // solium-disable-next-line security/no-call-value
         (success, result) = to.call.value(value)(data);

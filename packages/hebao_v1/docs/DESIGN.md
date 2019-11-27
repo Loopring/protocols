@@ -16,15 +16,56 @@ Wallet 提供的方法几乎都是和 Module 相关，钱包的几乎所有功�
 
 钱包的功能按照 Module 做切割，每个 module 相对都比较小巧，保障维护成本较低。每个钱包在生成后，会自动绑定一些默认的 Module，后续钱包可以发交易增加新的或者去掉已有的 Module，但每个 Module 必须是预注册的，也就意味着 Module 必须由我们来批准，不能是任意合约。
 
-每个 Module 可以提供两类不同的方法，**读方法**和**写方法**。读方法可以通过 Wallet 的`bindStaticMethod`绑定到钱包。每个 Module 都会提供一个`staticMethods`方法，来告诉钱包它提供哪些读方法。当 Module 被加到一个钱包时候，所有的读方法就会自动被绑定到该钱包；当 module 被从一个钱包移除时，绑定的读方法就会被解绑。
+### 添加和删除 Module
 
-假设`getABC`这个只读方法在 Module A 当中并且被绑定到了某个钱包，那么当这个钱包被调用`getABC`的时候，这个调用就会自动被转给 Module A。通过这种静态绑定，我们可以为钱包添加更多的读方法。值得注意的是，不同的 Module 的读方法如果要绑定到 Wallet，必须保证方法名称的全局唯一性，否则绑定就会失败，钱包就无法创建成功。
+下面是钱包添加新 Module Y 的流程。
 
-![AddModule](./images/add_module.png|width=100)
+![](./images/add_module.png)
 
-写方法就不能绑定了。如果需要钱包`X`调用一个第三方合约`C`的某个写方法`doSomething`，需要钱包`X`的 owner 作为 msg.sender，发交易给某个支持`C`的 Module（比如`QuotaTransfers` 和`ApprovedTransfers`模块），由这个 Module 验证权限（msg.sender == owner 或者 data 的签名是 owner），然后 Module 再调用钱包`X`的`transact`方法，然后把具体怎样调用`C`作为数据传给`transact`。 下面举个例子：
+如果 Wallt_A 的 owner 自身没有以太来发起交易，那么就可以通过元交易完成（参考后续章节）。
 
-## 元交易和验签
+下面钱包是移除 Module Y 的流程。
+
+![](./images/remove_module.png)
+
+### 钱包通过 Module 读信息
+
+每个 Module 可以提供两类不同的方法，**读方法**和**写方法**。读方法可以通过 Wallet 的`bindStaticMethod`绑定到钱包。每个 Module 都会提供一个`staticMethods`方法，来告诉钱包它提供哪些读方法。当 Module 被加到一个钱包时候，所有的读方法就会自动被绑定到该钱包；当 module 被从一个钱包移除时，绑定的读方法就会被`unbindStaticMethod`解绑。
+
+假设`getSomething`这个只读方法在 Module A 当中并且被绑定到了某个钱包，那么当这个钱包被调用`getSomething`的时候，这个调用就会自动被转给 Module A。
+
+![](./images/call_static.png)
+
+通过这种静态绑定，我们可以为钱包添加更多的读方法。值得注意的是，不同的 Module 的读方法如果要绑定到 Wallet，必须保证方法名称的全局唯一性，否则绑定就会失败，钱包就无法创建成功。
+
+### 钱包通过 Module 写信息（做转账）
+
+写方法就不能绑定了。我们假设 Wallet_A 想调用某个第三方合约 SomeContract 的 transfer 方法，那么 Wallet_A 的 owner 可以找一个支持这种任意调用的 Module_A，通过它提供的 doSomething 方法来完成操作。注意这个 doSometing 名字并不重要，和 transfer 也没什么关系。
+
+首先需要构造一个 bytes data,来表示调用目标合约 SomeContract 中的方法名字和参数，以及需要发的以太数量。然后把 data 通过 doSomething 方法调用传给 Module_A，ModuleA 会验证 msg.sender 是 Wallet_A 的 owner，在调用 Wallet_A 的 transact 方法。而这个 transact 方法是 Wallet 最核心的方法，它可以以 wallet 作为 msg.sender 来调用任意合约的任意方法（通过 call.value()()）。
+
+![](./images/transact.png)
+
+### 元交易和验签
+
+上面的几个示例都是钱包的 owner 作为 msg.sender 发起交易。但实际上我们是尽量避免钱包的 owner 本身有 Ether 的 - 否则 Wallet 和 Owner 都有 Ether 就比较奇怪。也就是说，绝大多数用户都不会用 owner 来发起交易。
+
+我们设计的思路是 100%的交易都是通过元交易来实现。也就是说，钱包的 owner 生成元交易，并附带签名。
+
+```solidity
+function executeMetaTx(
+    bytes   calldata data,
+    uint    nonce,
+    uint    gasPrice,
+    uint    gasLimit,
+    address gasToken,
+    bytes   calldata signatures
+    )
+    external
+    payable;
+```
+
+![](./images/meta_transact.png)
 
 ### 安全
 

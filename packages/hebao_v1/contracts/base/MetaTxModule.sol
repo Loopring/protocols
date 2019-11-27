@@ -97,7 +97,7 @@ contract MetaTxModule is BaseModule
         uint    gasPrice,
         uint    gasLimit,
         address gasToken,
-        bytes  calldata signatures
+        bytes   calldata signatures
         )
         external
         payable
