@@ -19,8 +19,7 @@ pragma solidity ^0.5.11;
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 
-import "../../ens/ENSManager.sol";
-
+import "../../base/WalletENSManager.sol";
 import "../../base/WalletFactory.sol";
 
 
@@ -32,9 +31,9 @@ import "../../base/WalletFactory.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is WalletFactory, Module
+contract WalletFactoryModule is WalletFactory, Module
 {
-    ENSManager public ensManager;
+    WalletENSManager public ensManager;
 
     event WalletCreated(
         address indexed wallet,
@@ -43,8 +42,8 @@ contract WalletFactory is WalletFactory, Module
     );
 
     constructor(
-        address    _walletImplementation,
-        ENSManager _ensManager
+        address          _walletImplementation,
+        WalletENSManager _ensManager
         )
         public
         WalletFactory(_walletImplementation)
@@ -53,14 +52,15 @@ contract WalletFactory is WalletFactory, Module
     }
 
     /// @dev Create a new wallet by deploying a proxy.
+    /// @param _bankRegistry The BankRegister address.
     /// @param _owner The wallet's owner.
     /// @param _modules The wallet's modules.
     /// @param _subdomain The ENS subdomain to register, use "" to skip.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address _bankRegistry,
-        address _owner,
-        bytes32 _subdomain,
+        address            _bankRegistry,
+        address            _owner,
+        string    calldata _subdomain,
         address[] calldata _modules
         )
         external
@@ -69,7 +69,7 @@ contract WalletFactory is WalletFactory, Module
         onlyManager
         returns (address _wallet)
     {
-        if (_subdomain == bytes32(0)) {
+        if (bytes(_subdomain).length == 0) {
             _wallet = createWalletInternal(_bankRegistry, _owner, _modules);
         } else {
             address[] memory extendedModules = new address[](_modules.length + 1);
@@ -78,7 +78,7 @@ contract WalletFactory is WalletFactory, Module
                 extendedModules[i + 1] = _modules[i];
             }
             _wallet = createWalletInternal(_bankRegistry, _owner, extendedModules);
-            ensManager.registerSubdomain(_wallet, _subdomain);
+            ensManager.register(_wallet, _subdomain);
 
             Wallet(_wallet).removeModule(address(this));
         }
