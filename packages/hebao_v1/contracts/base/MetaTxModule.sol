@@ -86,17 +86,17 @@ contract MetaTxModule is BaseModule
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
     ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
+    /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
     /// @param gasPrice The amount of `gasToken` to pay per gas. 0 is a valid value.
     /// @param gasLimit The max amount of gas that can be used by this meta transaction,
     ///                excluding an extra `GAS_OVERHEAD` for paying the relayer fees.
-    /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
         uint    nonce,
+        address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        address gasToken,
         bytes   calldata signatures
         )
         external
@@ -105,25 +105,20 @@ contract MetaTxModule is BaseModule
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
 
+        address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
-            address(0), // from
+            wallet, // from
             address(this),  // to. Note the relayer can only call its own methods.
             0, // value
             data,
             nonce,
             gasPrice,
             gasLimit,
-            gasToken,
-            "" // extraHash
+            gasToken
         );
 
-        address wallet = extractWalletAddress(data);
-        address[] memory signers = extractMetaTxSigners(
-            wallet,
-            extractMethod(data),
-            data
-        );
-
+        bytes4 method = extractMethod(data);
+        address[] memory signers = extractMetaTxSigners(wallet, method, data);
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -133,20 +128,32 @@ contract MetaTxModule is BaseModule
         // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.value(msg.value)(data);
 
-        if (gasPrice > 0) {
-            uint gasSpent = startGas - gasleft() + GAS_OVERHEAD;
-            require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
-            require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
-
-            gasSpent = gasSpent.mul(gasPrice);
-            // TODO(kongliang): use TransferModule instead
-            // require(
-            //     Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
-            //     "OUT_OF_GAS"
-            // );
-        }
+        reimburseFee(wallet, gasToken, gasPrice, gasLimit, startGas - gasleft());
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
+    }
+
+    function reimburseFee(
+        address wallet,
+        address gasToken,
+        uint    gasPrice,
+        uint    gasLimit,
+        uint    gasSpent
+        )
+        private
+    {
+        if (gasPrice == 0) return;
+
+        uint gasAmount = gasSpent + GAS_OVERHEAD;
+        require(gasAmount <= gasLimit, "EXCEED_GAS_LIMIT");
+        require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
+
+        gasAmount = gasAmount.mul(gasPrice);
+        // TODO(kongliang): use TransferModule instead
+        // require(
+        //     Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
+        //     "OUT_OF_GAS"
+        // );
     }
 
     /// @dev Extracts and returns a list of signers for the given meta transaction.
@@ -200,8 +207,7 @@ contract MetaTxModule is BaseModule
         uint256 nonce,
         uint256 gasPrice,
         uint256 gasLimit,
-        address gasToken,
-        bytes   memory extraHash
+        address gasToken
         )
         public
         pure
@@ -218,10 +224,9 @@ contract MetaTxModule is BaseModule
                 nonce,
                 gasPrice,
                 gasLimit,
-                gasToken,
-                extraHash
-                )
-            );
+                gasToken
+            )
+        );
 
         return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
