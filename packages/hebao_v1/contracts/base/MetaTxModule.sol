@@ -128,12 +128,12 @@ contract MetaTxModule is BaseModule
         // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.value(msg.value)(data);
 
-        reimburseFee(wallet, gasToken, gasPrice, gasLimit, startGas - gasleft());
+        reimburseGasFee(wallet, gasToken, gasPrice, gasLimit, startGas - gasleft());
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
     }
 
-    function reimburseFee(
+    function reimburseGasFee(
         address wallet,
         address gasToken,
         uint    gasPrice,
