@@ -201,7 +201,7 @@ contract MetaTxModule is BaseModule
         address gasToken,
         bytes   memory extraHash
         )
-        private
+        public
         pure
         returns (bytes32)
     {

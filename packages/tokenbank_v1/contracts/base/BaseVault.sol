@@ -97,7 +97,7 @@ contract BaseVault is Vault, AddressSet
         uint256 value,
         bytes   memory data
         )
-        private
+        public
         pure
         returns (bytes32)
     {
