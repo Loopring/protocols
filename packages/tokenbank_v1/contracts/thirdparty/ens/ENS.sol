@@ -1,5 +1,3 @@
-// This code is taken from https://github.com/dong77/argent-contracts/blob/develop/contracts/ens/ENS.sol
-
 pragma solidity ^0.5.11;
 
 /**

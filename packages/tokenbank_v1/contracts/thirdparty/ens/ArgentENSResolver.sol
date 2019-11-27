@@ -1,13 +1,17 @@
 pragma solidity ^0.5.11;
-import "../lib/OwnerManagable.sol";
+import "../../lib/OwnerManagable.sol";
 import "./ENS.sol";
 
-/// @title LoopringENSResolver
-/// @dev Basic implementation of a Resolver.
-/// The contract defines a manager role who is the only role that can add a new name
-/// to the list of resolved names.
-/// This code is taken from https://github.com/dong77/argent-contracts/blob/develop/contracts/ens/ArgentENSResolver.sol
-contract LoopringENSResolver is OwnerManagable, ENSResolver {
+/**
+ * @title ArgentENSResolver
+ * @dev Basic implementation of a Resolver.
+ * The contract defines a manager role who is the only role that can add a new name
+ * to the list of resolved names.
+ * @author Julien Niset - <julien@argent.im>
+ */
+//contract ArgentENSResolver is Owned, Managed, ENSResolver {
+contract ArgentENSResolver is OwnerManagable, ENSResolver {
+
     bytes4 constant SUPPORT_INTERFACE_ID = 0x01ffc9a7;
     bytes4 constant ADDR_INTERFACE_ID = 0x3b3b57de;
     bytes4 constant NAME_INTERFACE_ID = 0x691f3431;
@@ -71,9 +75,7 @@ contract LoopringENSResolver is OwnerManagable, ENSResolver {
      * @return True if the contract implements the requested interface.
      */
     function supportsInterface(bytes4 _interfaceID) public pure returns (bool) {
-        return _interfaceID == SUPPORT_INTERFACE_ID ||
-            _interfaceID == ADDR_INTERFACE_ID ||
-            _interfaceID == NAME_INTERFACE_ID;
+        return _interfaceID == SUPPORT_INTERFACE_ID || _interfaceID == ADDR_INTERFACE_ID || _interfaceID == NAME_INTERFACE_ID;
     }
 
 }

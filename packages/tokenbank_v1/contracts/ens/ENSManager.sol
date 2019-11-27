@@ -16,9 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/OwnerManagable.sol";
-import "../thirdparty/strings.sol";
-import "./ENS.sol";
+import "../thirdparty/ens/ArgentENSManager.sol";
 
 /// @title Wallet
 /// @dev Base contract for smart wallets.
@@ -29,73 +27,20 @@ import "./ENS.sol";
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
 /// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md
-contract ENSManager is OwnerManagable {
-
-    using strings for *;
-
-    // The managed root name
-    string public rootName;
-    // The managed root node
-    bytes32 public rootNode;
-    // The address of the ENS resolver
-    address public ensResolver;
-    // the address of the ENS registry
-    address ensRegistry;
-
-    // namehash('addr.reverse')
-    bytes32 constant public ADDR_REVERSE_NODE = 0x91d1777781884d03a6757a803996e38de2a42967fb37eeaca72729271025a9e2;
-
-    event Registered(address indexed _owner, string _ens);
+/// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-181.md
+contract ENSManager is ArgentENSManager {
 
     constructor(
         string memory _rootName,
         bytes32 _rootNode,
         address _ensRegistry,
         address _ensResolver
-        )
-        public
-    {
-        rootName = _rootName;
-        rootNode = _rootNode;
-        ensRegistry = _ensRegistry;
-        ensResolver = _ensResolver;
-    }
+    ) ArgentENSManager(
+        _rootName,
+        _rootNode,
+        _ensRegistry,
+        _ensResolver
+    ) public { }
 
-    function registerSubdomain(
-        string calldata _label,
-        address _owner
-        )
-        external
-        onlyManager
-    {
-        bytes32 labelNode = keccak256(abi.encodePacked(_label));
-        bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
-        address currentOwner = ENSRegistry(ensRegistry).owner(node);
-        require(currentOwner == address(0), "ENS_NODE_ALREADY_OWNED");
-
-        // Forward ENS
-        ENSRegistry registry = ENSRegistry(ensRegistry);
-        registry.setSubnodeOwner(rootNode, labelNode, address(this));
-        registry.setResolver(node, ensResolver);
-        registry.setOwner(node, _owner);
-        ENSResolver(ensResolver).setAddr(node, _owner);
-
-        // Reverse ENS
-        strings.slice[] memory parts = new strings.slice[](2);
-        parts[0] = _label.toSlice();
-        parts[1] = rootName.toSlice();
-        string memory name = ".".toSlice().join(parts);
-
-        bytes32 reverseNode = getENSReverseRegistrar().node(_owner);
-        ENSResolver(ensResolver).setName(reverseNode, name);
-
-        emit Registered(_owner, name);
-    }
-
-    function getENSReverseRegistrar() internal view returns (ENSReverseRegistrar) {
-        return ENSReverseRegistrar(ENSRegistry(ensRegistry).owner(ADDR_REVERSE_NODE));
-    }
 }

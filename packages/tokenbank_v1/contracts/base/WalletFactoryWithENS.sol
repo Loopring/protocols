@@ -77,7 +77,7 @@ contract WalletFactoryWithENS is WalletFactory, Module
                 extendedModules[i + 1] = _modules[i];
             }
             _wallet = createWalletInternal(_owner, extendedModules);
-            ensManager.registerSubdomain(_subdomain, _wallet);
+            ensManager.register(_subdomain, _wallet);
 
             Wallet(_wallet).removeModule(address(this));
         }
