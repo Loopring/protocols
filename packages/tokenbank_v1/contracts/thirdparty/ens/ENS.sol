@@ -1,4 +1,5 @@
-// This code is taken from https://github.com/dong77/argent-contracts/blob/develop/contracts/ens/ENS.sol
+// Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ENS.sol
+// with few modifications.
 
 pragma solidity ^0.5.11;
 
