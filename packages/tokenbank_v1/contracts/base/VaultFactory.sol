@@ -16,26 +16,20 @@
 */
 pragma solidity ^0.5.11;
 
+import "./BaseVault.sol";
 
 contract VaultFactory
 {
+    event VaultCreated(address indexed vault, uint numOwners, uint requirement);
+
     function createVault(
         address[] calldata owners,
         uint               requirement
         )
         external
+        returns (address vault)
     {
-        // bytes32 salt = keccak256(abi.encodePacked("VAULT_CREATION", subdomain));
-        // bytes memory code = type(SimpleProxy).creationCode;
-        // assembly {
-        //     _wallet := create2(0, add(code, 0x20), mload(code), salt)
-        //     if iszero(extcodesize(_wallet)) {
-        //         revert(0, 0)
-        //     }
-        // }
-        // SimpleProxy(_wallet).setImplementation(walletImplementation);
-        // Wallet(_wallet).setup(_owner, _modules);
-
-        // emit WalletCreated(_wallet, _owner);
+        vault = address(new BaseVault(owners, requirement));
+        emit VaultCreated(vault, owners.length, requirement);
     }
 }

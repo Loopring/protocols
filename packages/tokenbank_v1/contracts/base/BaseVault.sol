@@ -22,9 +22,6 @@ import "../lib/SignatureUtil.sol";
 import "../iface/Vault.sol";
 
 
-contract VaultFactory {
-}
-
 contract BaseVault is Vault, AddressSet
 {
     using SignatureUtil for bytes32;
@@ -89,6 +86,7 @@ contract BaseVault is Vault, AddressSet
             data
         );
         signHash.verifySignatures(signers, signatures);
+        // solium-disable-next-line security/no-call-value
         (bool success, ) = target.call.value(value)(data);
         emit Executed(target, value, data, success);
     }
@@ -133,7 +131,7 @@ contract BaseVault is Vault, AddressSet
         require(count > 1, "PROHIBITED");
 
         if (_requirement == count) {
-          _requirement -= 1;
+            _requirement -= 1;
         }
 
         removeAddressFromSet(OWNERS, owner);
@@ -174,7 +172,7 @@ contract BaseVault is Vault, AddressSet
         view
         returns (bool)
     {
-      return isAddressInSet(OWNERS, _addr);
+        return isAddressInSet(OWNERS, _addr);
     }
 
     function numOwners()

@@ -73,7 +73,7 @@ library SignatureUtil
         } else {
             require(
                 recoverSigner(signHash, signature) == signer,
-               "INVALID_SIGNATURE"
+                "INVALID_SIGNATURE"
             );
         }
     }

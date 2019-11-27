@@ -16,12 +16,12 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/Module.sol";
-import "../iface/Wallet.sol";
+import "../../iface/Module.sol";
+import "../../iface/Wallet.sol";
 
-import "../ens/ENSManager.sol";
+import "../../ens/ENSManager.sol";
 
-import "./WalletFactory.sol";
+import "../../base/WalletFactory.sol";
 
 
 /// @title WalletFactoryModule
