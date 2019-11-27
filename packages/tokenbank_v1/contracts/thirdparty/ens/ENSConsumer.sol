@@ -1,3 +1,7 @@
+
+// Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ENSConsumer.sol
+// with few modifications.
+
 pragma solidity ^0.5.11;
 import "./ENS.sol";
 import "../strings.sol";

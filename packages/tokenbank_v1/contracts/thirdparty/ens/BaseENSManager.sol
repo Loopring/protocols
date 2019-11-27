@@ -1,3 +1,6 @@
+// Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSManager.sol
+// with few modifications.
+
 pragma solidity ^0.5.11;
 import "../strings.sol";
 import "./ENS.sol";
@@ -14,14 +17,14 @@ interface IENSManager {
 }
 
 /**
- * @title ArgentENSManager
+ * @title BaseENSManager
  * @dev Implementation of an ENS manager that orchestrates the complete
  * registration of subdomains for a single root (e.g. argent.eth).
  * The contract defines a manager role who is the only role that can trigger the registration of
  * a new subdomain.
  * @author Julien Niset - <julien@argent.im>
  */
-contract ArgentENSManager is IENSManager, OwnerManagable, ENSConsumer {
+contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
 
     using strings for *;
 

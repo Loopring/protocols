@@ -1,16 +1,19 @@
+// Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSResolver.sol
+// with few modifications.
+
 pragma solidity ^0.5.11;
 import "../../lib/OwnerManagable.sol";
 import "./ENS.sol";
 
 /**
- * @title ArgentENSResolver
+ * @title BaseENSResolver
  * @dev Basic implementation of a Resolver.
  * The contract defines a manager role who is the only role that can add a new name
  * to the list of resolved names.
  * @author Julien Niset - <julien@argent.im>
  */
-//contract ArgentENSResolver is Owned, Managed, ENSResolver {
-contract ArgentENSResolver is OwnerManagable, ENSResolver {
+//contract BaseENSResolver is Owned, Managed, ENSResolver {
+contract BaseENSResolver is OwnerManagable, ENSResolver {
 
     bytes4 constant SUPPORT_INTERFACE_ID = 0x01ffc9a7;
     bytes4 constant ADDR_INTERFACE_ID = 0x3b3b57de;

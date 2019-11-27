@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../thirdparty/ens/ArgentENSManager.sol";
+import "../thirdparty/ens/BaseENSManager.sol";
 
 /// @title Wallet
 /// @dev Base contract for smart wallets.
@@ -29,18 +29,22 @@ import "../thirdparty/ens/ArgentENSManager.sol";
 ///
 /// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md
 /// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-181.md
-contract ENSManager is ArgentENSManager {
+contract WalletENSManager is BaseENSManager {
 
     constructor(
         string memory _rootName,
-        bytes32 _rootNode,
-        address _ensRegistry,
-        address _ensResolver
-    ) ArgentENSManager(
-        _rootName,
-        _rootNode,
-        _ensRegistry,
-        _ensResolver
-    ) public { }
+        bytes32       _rootNode,
+        address       _ensRegistry,
+        address       _ensResolver
+        )
+        public
+        BaseENSManager(
+            _rootName,
+            _rootNode,
+            _ensRegistry,
+            _ensResolver
+        )
+    {
+    }
 
 }
