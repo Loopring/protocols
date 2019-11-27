@@ -41,10 +41,11 @@ contract Wallet
     ///
     ///      Note that calling this method more than once will throw.
     ///
+    /// @param _bankRegistry The BankRegistry instance.
     /// @param _owner The owner of this wallet, must not be address(0).
     /// @param _modules The list of modules to add to this wallet, this list
     ///                 must contain at least one module.
-    function setup(address _owner, address[] calldata _modules) external;
+    function setup(address _bankRegistry, address _owner, address[] calldata _modules) external;
 
     /// @dev Adds a new module. The `init` method of the module
     ///      will be called with `address(this)` as the parameter.

@@ -16,16 +16,73 @@
 */
 pragma solidity ^0.5.11;
 
+import "../thirdparty/ERC1271.sol";
+import "../thirdparty/BytesUtil.sol";
+
+import "./AddressUtil.sol";
+
 
 /// @title SignatureUtil
 /// @author Daniel Wang - <daniel@loopring.org>
 library SignatureUtil
 {
+
+    bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
+
+    function verifySignatures(
+        bytes32   signHash,
+        address[] memory signers,
+        bytes     memory signatures
+        )
+        public
+        view
+    {
+        require(signers.length * 65 == signatures.length, "INVALID_DATA");
+
+        address lastSigner;
+        for (uint i = 0; i < signers.length; i++) {
+            require(signers[i] > lastSigner, "INVALID_ORDER");
+            lastSigner = signers[i];
+            bytes memory sig = BytesUtil.slice(signatures, i * 65, 65);
+            verifySignature(signHash, signers[i], sig);
+        }
+    }
+
+    function verifySignature(
+        bytes32 signHash,
+        address signer,
+        bytes   memory signature
+        )
+        public
+        view
+        returns (bool)
+    {
+        if (AddressUtil.isContract(signer)) {
+            bytes memory callData = abi.encodeWithSelector(
+                ERC1271(signer).isValidSignature.selector,
+                signHash,
+                signature
+            );
+            (bool success, bytes memory result) = signer.staticcall(callData);
+            require(
+                success &&
+                result.length == 32 &&
+                BytesUtil.toBytes4(result) == ERC1271_MAGICVALUE,
+                "INVALID_SIGNATURE"
+            );
+        } else {
+            require(
+                recoverSigner(signHash, signature) == signer,
+                "INVALID_SIGNATURE"
+            );
+        }
+    }
+
     function recoverSigner(
         bytes32      signHash,
         bytes memory signature
         )
-        internal
+        public
         pure
         returns (address)
     {

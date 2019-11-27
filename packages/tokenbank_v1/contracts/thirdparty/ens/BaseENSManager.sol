@@ -80,10 +80,10 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     /**
     * @dev Lets the manager assign an ENS subdomain of the root node to a target address.
     * Registers both the forward and reverse ENS.
-    * @param _label The subdomain label.
     * @param _owner The owner of the subdomain.
+    * @param _label The subdomain label.
     */
-    function register(string calldata _label, address _owner) external onlyManager {
+    function register(address _owner, string calldata _label) external onlyManager {
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
         address currentOwner = getENSRegistry().owner(node);

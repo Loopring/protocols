@@ -76,11 +76,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         _;
     }
 
-    constructor(BankRegistry _bankRegistry) public
-    {
-        bankRegistry = _bankRegistry;
-    }
-
     function owner() public view returns (address)
     {
         return _owner;
@@ -97,7 +92,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     }
 
     function setup(
-        address   initialOwner,
+        address _bankRegistry,
+        address initialOwner,
         address[] calldata modules
         )
         external
@@ -107,6 +103,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(initialOwner != address(0), "ZERO_ADDRESS");
         require(modules.length > 0, "EMPTY_MODULES");
 
+        bankRegistry = BankRegistry(_bankRegistry);
         _owner = initialOwner;
         bankRegistry.registerWallet(address(this));
         emit WalletSetup(_owner);
