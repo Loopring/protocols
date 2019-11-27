@@ -1,2 +1,0 @@
-# TokenBank Smart Wallet Contracts
-
