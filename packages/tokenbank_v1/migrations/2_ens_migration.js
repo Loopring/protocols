@@ -1,7 +1,7 @@
 var ENSResolver = artifacts.require("./ArgentENSResolver.sol");
 var ENSManager = artifacts.require("./ENSManager.sol");
 
-module.exports = function(deployer, network, accounts) {
+module.exports = function(deployer, network) {
   console.log("deploying to network: " + network);
   deployer
     .then(() => {
@@ -11,9 +11,7 @@ module.exports = function(deployer, network, accounts) {
       var rootName = "tokenbank.io";
       var rootNode = web3.utils.sha3(rootName);
       var ensResolver = ENSResolver.address;
-      //TODO: fix this: deployer.ens.registryAddress;
       var ensRegistry = deployer.ens.ensSettings.registryAddress;
-      console.log("deployer:", deployer);
 
       return Promise.all([
         deployer.deploy(
