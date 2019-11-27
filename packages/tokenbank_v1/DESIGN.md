@@ -10,12 +10,30 @@
 
 ## 钱包和模块
 
+
 ## 元交易和验签
 
 ## 守护人
 
-## 钱包坐定
+## 钱包锁定
 
 ## 限额与交易批准
 
 ## dapp 集成
+
+### 
+借贷获息
+
+- Compound
+- BZX
+- DyDX
+- MakerDAO DSR
+- Topo finance
+- Meta Money Market
+
+### 交易
+- Loopring
+- Uinswap
+
+### 博彩
+- PoolTogether
