@@ -56,9 +56,9 @@ Wallet 提供的方法几乎都是和 Module 相关，钱包的几乎所有功�
 function executeMetaTx(
     bytes   calldata data, // 元交易数据
     uint    nonce,
+    address gasToken,
     uint    gasPrice,
     uint    gasLimit,
-    address gasToken,
     bytes   calldata signatures // 签名
     )
     external
@@ -67,11 +67,15 @@ function executeMetaTx(
 
 元交易的本质是把 msg.sender 换成任何一个愿意帮忙发起交易的账号（这个账号最可能是我们自己的一个账号）。然后 relayer 付以太油费，Wallet 付给 relayer 以太或者 ERC20 费用。
 
-元交易中 gasPrice 和 gasLimit 和以太坊原生的概念十分类似，只不过有两点细节不同：第一是 gasPrice 是用 gasToken 为单位计费的，第二是 gasLimit
+元交易中 gasPrice 和 gasLimit 和以太坊原生的概念十分类似，只不过有两点细节不同：第一是 gasPrice 是用 gasToken 为单位计费的，第二是 gasLimit 计算不是完全准确，会有一些小误差，因此需要设置的相对宽松一些。
 
-### 验签
+元交易中的 nonce 可以设置成 0，在这种情况下，交易数据本身需要具有唯一性；否则就需要使用（非严格）递增的 nonce。
+
+下面这个就是使用元交易来完成上面同样第三方合约调用的流程。
 
 ![](./images/meta_transact.png)
+
+### 验签
 
 ### 安全
 
