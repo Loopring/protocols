@@ -46,24 +46,30 @@ Wallet 提供的方法几乎都是和 Module 相关，钱包的几乎所有功�
 
 ![](./images/transact.png)
 
-### 元交易和验签
+### 元交易
 
 上面的几个示例都是钱包的 owner 作为 msg.sender 发起交易。但实际上我们是尽量避免钱包的 owner 本身有 Ether 的 - 否则 Wallet 和 Owner 都有 Ether 就比较奇怪。也就是说，绝大多数用户都不会用 owner 来发起交易。
 
-我们设计的思路是 100%的交易都是通过元交易来实现。也就是说，钱包的 owner 生成元交易，并附带签名。
+我们设计的思路是 100%的交易都是通过元交易来实现。也就是说，钱包的 owner 生成元交易，并附带合适的签名（见下面章节）。然后把这些数据链外发给一个愿意帮忙做转账的一个 relayer（这里的中继和我们交易所的中继不是一个概念）。这个 relayer 调用目标 Module 的`executeMetaTx`方法来发起交易。元交易的 msg.sender 是 relayer，因此 relayer 支付 Ether 做油费；但在调用最后，Wallet 会支付特定的 gasToken 给 relayer 做费用支付。当然，这个 gasToken 也可以是 0x0，代表以太。如果 gasPrice 是 0，代表 Wallat 不想支付任何费用，这时候 relayer 可以决定是不是要帮助执行这个元交易。
 
 ```solidity
 function executeMetaTx(
-    bytes   calldata data,
+    bytes   calldata data, // 元交易数据
     uint    nonce,
     uint    gasPrice,
     uint    gasLimit,
     address gasToken,
-    bytes   calldata signatures
+    bytes   calldata signatures // 签名
     )
     external
     payable;
 ```
+
+元交易的本质是把 msg.sender 换成任何一个愿意帮忙发起交易的账号（这个账号最可能是我们自己的一个账号）。然后 relayer 付以太油费，Wallet 付给 relayer 以太或者 ERC20 费用。
+
+元交易中 gasPrice 和 gasLimit 和以太坊原生的概念十分类似，只不过有两点细节不同：第一是 gasPrice 是用 gasToken 为单位计费的，第二是 gasLimit
+
+### 验签
 
 ![](./images/meta_transact.png)
 

@@ -134,10 +134,11 @@ contract MetaTxModule is BaseModule
         (bool success,) = address(this).call.value(msg.value)(data);
 
         if (gasPrice > 0) {
-            uint gasSpent = startGas - gasleft();
+            uint gasSpent = startGas - gasleft() + GAS_OVERHEAD;
             require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
+            require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
 
-            gasSpent = gasSpent.mul(gasPrice).add(GAS_OVERHEAD);
+            gasSpent = gasSpent.mul(gasPrice);
             // TODO(kongliang): use TransferModule instead
             // require(
             //     Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
