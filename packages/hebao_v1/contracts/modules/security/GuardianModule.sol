@@ -182,7 +182,8 @@ contract GuardianModule is SecurityModule
             require(
                 method == this.confirmGuardianAddition.selector ||
                 method == this.confirmGuardianRemoval.selector,
-                "INVALID_METHOD");
+                "INVALID_METHOD"
+            );
         }
     }
 }
