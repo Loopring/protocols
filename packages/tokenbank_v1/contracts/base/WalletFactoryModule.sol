@@ -24,7 +24,7 @@ import "../ens/ENSManager.sol";
 import "./WalletFactory.sol";
 
 
-/// @title WalletFactoryWithENS
+/// @title WalletFactoryModule
 /// @dev Factory to create new wallets and also register a ENS subdomain for
 ///      newly created wallets.
 ///
@@ -32,7 +32,7 @@ import "./WalletFactory.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactoryWithENS is WalletFactory, Module
+contract WalletFactoryModule is WalletFactory, Module
 {
     ENSManager public ensManager;
 
@@ -58,8 +58,9 @@ contract WalletFactoryWithENS is WalletFactory, Module
     /// @param _subdomain The ENS subdomain to register, use "" to skip.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address   _owner,
-        bytes32   _subdomain,
+        address _bankRegistry,
+        address _owner,
+        bytes32 _subdomain,
         address[] calldata _modules
         )
         external
@@ -69,14 +70,14 @@ contract WalletFactoryWithENS is WalletFactory, Module
         returns (address _wallet)
     {
         if (_subdomain == bytes32(0)) {
-            _wallet = createWalletInternal(_owner, _modules);
+            _wallet = createWalletInternal(_bankRegistry, _owner, _modules);
         } else {
             address[] memory extendedModules = new address[](_modules.length + 1);
             extendedModules[0] = address(this);
             for(uint i = 0; i < _modules.length; i++) {
                 extendedModules[i + 1] = _modules[i];
             }
-            _wallet = createWalletInternal(_owner, extendedModules);
+            _wallet = createWalletInternal(_bankRegistry, _owner, extendedModules);
             ensManager.registerSubdomain(_wallet, _subdomain);
 
             Wallet(_wallet).removeModule(address(this));

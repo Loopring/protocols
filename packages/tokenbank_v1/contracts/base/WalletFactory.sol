@@ -20,6 +20,7 @@ import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 
+import "../iface/BankRegistry.sol";
 import "../iface/Wallet.sol";
 
 
@@ -53,7 +54,8 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
     /// @param _modules The wallet's modules.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address   _owner,
+        address _bankRegistry,
+        address _owner,
         address[] calldata _modules
         )
         external
@@ -62,11 +64,12 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
         onlyManager
         returns (address)
     {
-        return createWalletInternal(_owner, _modules);
+        return createWalletInternal(_bankRegistry, _owner, _modules);
     }
 
     function createWalletInternal(
-        address   _owner,
+        address _bankRegistry,
+        address _owner,
         address[] memory _modules
         )
         internal
@@ -81,7 +84,7 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
             }
         }
         SimpleProxy(_wallet).setImplementation(walletImplementation);
-        Wallet(_wallet).setup(_owner, _modules);
+        Wallet(_wallet).setup(_bankRegistry, _owner, _modules);
 
         emit WalletCreated(_wallet, _owner);
     }

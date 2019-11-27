@@ -47,7 +47,6 @@ contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
-    bytes4 constant internal ERC1271_MAGICVALUE = 0x20c13b0b;
     uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
 
@@ -98,7 +97,7 @@ contract MetaTxModule is BaseModule
         uint    gasPrice,
         uint    gasLimit,
         address gasToken,
-        bytes   calldata signatures
+        bytes  calldata signatures
         )
         external
         payable
@@ -125,15 +124,7 @@ contract MetaTxModule is BaseModule
             data
         );
 
-        require(signatures.length == 65 * signers.length, "BAD_SIGNATURE");
-
-        address lastSigner = address(0);
-        for (uint i = 0; i < signers.length; i++) {
-            require(signers[i] > lastSigner, "INVALID_ORDER");
-            lastSigner = signers[i];
-            bytes memory sig = signatures.slice(i * 65, 65);
-            require(isSignatureValid(signers[i], metaTxHash, sig), "BAD_SIGNATURE");
-        }
+        metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
@@ -264,32 +255,6 @@ contract MetaTxModule is BaseModule
             require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
             require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
-        }
-    }
-
-    function isSignatureValid(
-        address signer,
-        bytes32 signHash,
-        bytes   memory signature
-        )
-        private
-        view
-        returns (bool)
-    {
-        if (signer.isContract()) {
-            bytes memory callData = abi.encodeWithSelector(
-                ERC1271(signer).isValidSignature.selector,
-                signHash,
-                signature
-            );
-            (bool success, bytes memory result) = signer.staticcall(callData);
-            return (
-                success &&
-                result.length == 32 &&
-                result.toBytes4() == ERC1271_MAGICVALUE
-            );
-        } else {
-            return signHash.recoverSigner(signature) == signer;
         }
     }
 }
