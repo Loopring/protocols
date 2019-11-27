@@ -24,7 +24,7 @@ import "../../ens/ENSManager.sol";
 import "../../base/WalletFactory.sol";
 
 
-/// @title WalletFactoryModule
+/// @title WalletFactory
 /// @dev Factory to create new wallets and also register a ENS subdomain for
 ///      newly created wallets.
 ///
@@ -32,7 +32,7 @@ import "../../base/WalletFactory.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactoryModule is WalletFactory, Module
+contract WalletFactory is WalletFactory, Module
 {
     ENSManager public ensManager;
 
