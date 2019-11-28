@@ -175,34 +175,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return methodToModule[_method];
     }
 
-    function transferToken(
-        address to,
-        uint    value,
-        address token
-        )
-        external
-        onlyModule
-        returns (bool success)
-    {
-        require(to != address(this), "SAME_ADDRESS");
-        bytes memory result;
-        if (token == address(0)) {
-            result = transactInternal(to, value, "");
-        } else {
-            bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER, to, value);
-            result = transactInternal(token, 0, data);
-        }
-
-        // TODO(daniel): Not sure if this will work, this need to be tested!!!
-        if (result.length == 0) {
-            return true;
-        }
-
-        if (result.length == 32) {
-            assembly { success := mload(add(result, 32)) }
-        }
-    }
-
     function transact(
         address to,
         uint    value,
