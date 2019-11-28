@@ -16,9 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
-import "../iface/PriceOracle.sol";
-import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
 import "../thirdparty/uniswap/UniswapExchangeInterface.sol";
+import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
+
+import "../iface/PriceOracle.sol";
 
 
 /// @title UniswapPriceOracle
