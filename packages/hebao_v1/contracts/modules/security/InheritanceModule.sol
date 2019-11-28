@@ -76,8 +76,12 @@ contract InheritanceModule is SecurityModule
         require(newOwner != address(0), "NULL_INHERITOR");
         require(now > lastActive + waitingPeriod, "NEED_TO_WAIT");
 
-        securityStore.setInheritor(wallet, address(0));
+        require(
+            msg.sender == address(this) || msg.sender == newOwner,
+            "NOT_ALLOWED"
+        );
 
+        securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
 
         emit Inherited(wallet, newOwner, now);
@@ -103,15 +107,14 @@ contract InheritanceModule is SecurityModule
         view
         returns (address[] memory signers)
     {
-        require(
-            method == this.inherit.selector ||
-            method == this.setInheritor.selector,
-            "INVALID_METHOD"
-        );
-
         if (method == this.setInheritor.selector) {
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
+        } else if (method == this.inherit.selector) {
+            signers = new address[](1);
+            (signers[0],) = securityStore.inheritor(wallet);
+        } else {
+            revert("INVALID_METHOD");
         }
     }
 }

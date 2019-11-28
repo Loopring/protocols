@@ -73,9 +73,7 @@ contract LockModule is SecurityModule
         nonReentrant
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
-        onlyWhenWalletUnlocked(wallet)
     {
-        require(guardian != address(0), "NULL_GUARDIAN");
         securityStore.setLock(wallet, now + lockPeriod);
         emit WalletLock(wallet, guardian, true);
     }
