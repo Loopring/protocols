@@ -101,11 +101,13 @@ function executeMetaTx(
 
 ### 基于时间锁的继承
 
-钱包的 owner 可以设置一个继承人地址，该继承人可以在钱包 onwer 连续不活动一段时间之后（目前计划 1 年）变成钱包新的 owner。每当钱包 owner 调用 Module 中的方法发起交易的时候，就会更新最优一次活动的时间，**但调用 addModule/removeModule 除外**。
+钱包的 owner 可以设置一个继承人地址，该继承人可以在钱包 onwer 连续不活动一段时间之后（目前计划设置为 1 年）变成钱包新的 owner。每当钱包 owner 调用 Module 中的方法发起交易的时候，就会更新最优一次活动的时间，**但调用 addModule/removeModule 除外**。
 
 ### 限额与交易批准
 
 ## Storage 存储合约
+
+Module 之间通过 Storage 共享状态。么个 Storage 都有一个 owner，owner 可以授权哪个 module 可以读写该 storage。
 
 ## dapp 集成
 

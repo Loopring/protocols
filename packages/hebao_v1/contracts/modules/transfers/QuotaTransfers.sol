@@ -131,8 +131,10 @@ contract QuotaTransfers is Claimable, TransferModule
             }
         } else if (enablePending) {
             require(!foundPendingTx, "DUPLICATE_PENDING");
-            createPendingTx(wallet, txid);
             pendingTxId = txid;
+
+            pendingTransactions[wallet][txid] = now;
+            emit PendingTxCreated(wallet, txid, now);
         } else {
             revert("FAILED");
         }
@@ -179,8 +181,10 @@ contract QuotaTransfers is Claimable, TransferModule
             }
         } else if (enablePending) {
             require(!foundPendingTx, "DUPLICATE_PENDING");
-            createPendingTx(wallet, txid);
             pendingTxId = txid;
+
+            pendingTransactions[wallet][txid] = now;
+            emit PendingTxCreated(wallet, txid, now);
         } else {
             revert("FAILED");
         }
@@ -307,16 +311,6 @@ contract QuotaTransfers is Claimable, TransferModule
     {
         uint timestamp = pendingTransactions[wallet][pendingTxId];
         return timestamp > 0 && now <= timestamp + pendingExpiry;
-    }
-
-    function createPendingTx(
-        address wallet,
-        bytes32 pendingTxId
-        )
-        private
-    {
-        pendingTransactions[wallet][pendingTxId] = now;
-        emit PendingTxCreated(wallet, pendingTxId, now);
     }
 
     function getTokenValue(address token, uint amount)
