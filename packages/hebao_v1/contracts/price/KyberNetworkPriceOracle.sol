@@ -20,7 +20,8 @@ import "../lib/ERC20.sol";
 
 import "../iface/PriceOracle.sol";
 
-contract KyberNetwork {
+
+contract KyberNetworkProxy {
     function getExpectedRate(
         ERC20 src,
         ERC20 dest,
@@ -35,10 +36,31 @@ contract KyberNetwork {
 }
 
 /// @title KyberNetworkPriceOracle
+/// @dev Returns the value in Ether for any given ERC20 token.
 contract KyberNetworkPriceOracle is PriceOracle
 {
+    KyberNetworkProxy kyber;
+    address constant private ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    constructor(KyberNetworkProxy _kyber)
+        public
+    {
+        kyber = _kyber;
+    }
+
     function tokenPrice(address token, uint amount)
         public
         view
-        returns (uint value);
+        returns (uint value)
+    {
+        if (amount == 0) return 0;
+        if (token == address(0) || token == ethTokenInKyber) {
+            return amount;
+        }
+        (value,) = kyber.getExpectedRate(
+            ERC20(token),
+            ERC20(ethTokenInKyber),
+            amount
+        );
+    }
 }
