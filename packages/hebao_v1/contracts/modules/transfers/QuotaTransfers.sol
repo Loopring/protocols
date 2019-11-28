@@ -164,7 +164,7 @@ contract QuotaTransfers is Claimable, TransferModule
 
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
         require(
-            foundPendingTx || Wallet(wallet).owner() == msg.sender,
+            foundPendingTx || msg.sender == Wallet(wallet).owner(),
             "UNAUTHORIZED"
         );
 

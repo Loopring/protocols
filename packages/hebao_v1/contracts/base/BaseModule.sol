@@ -50,13 +50,13 @@ contract BaseModule is Module, ReentrancyGuard
     }
 
     modifier onlyFromWalletOwner(address wallet) {
-        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_WALLET_OWNER");
+        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
 
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
         require(
-            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
             "NOT_FROM_META)TX_OR_WALLET_OWNER");
         _;
     }
