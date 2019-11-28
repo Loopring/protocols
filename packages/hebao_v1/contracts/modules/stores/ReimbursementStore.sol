@@ -21,7 +21,7 @@ import "../../lib/MathUint.sol";
 import "../../base/DataStore.sol";
 
 
-/// @title WhitelistStore
+/// @title ReimbursementStore
 /// @dev This store maintains a history of reimbursement in Ether.
 contract ReimbursementStore is DataStore
 {

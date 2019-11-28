@@ -137,7 +137,7 @@ contract LoopringDEXModule is SecurityModule
             permission
         );
 
-        transact(wallet, address(exchange), fee, callData);
+        Wallet(wallet).transact(address(exchange), fee, callData);
         emit AccountUpdated(address(exchange), wallet, newAccount);
     }
 
@@ -164,7 +164,7 @@ contract LoopringDEXModule is SecurityModule
             amount
         );
 
-        transact(wallet, address(exchange), fee, callData);
+        Wallet(wallet).transact(address(exchange), fee, callData);
         emit Deposit(address(exchange), wallet, token, amount);
     }
 
@@ -191,7 +191,7 @@ contract LoopringDEXModule is SecurityModule
             amount
         );
 
-        transact(wallet, address(exchange), fee, callData);
+        Wallet(wallet).transact(address(exchange), fee, callData);
         emit Withdrawal(address(exchange), wallet, token, amount);
     }
 
@@ -225,7 +225,7 @@ contract LoopringDEXModule is SecurityModule
                 msg.sender,
                 feeAmount
             );
-            transact(wallet, feeToken, 0, callData);
+            Wallet(wallet).transact(feeToken, 0, callData);
         }
     }
 

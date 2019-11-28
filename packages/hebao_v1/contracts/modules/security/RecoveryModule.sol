@@ -75,11 +75,18 @@ contract RecoveryModule is SecurityModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
 
+        uint guardianCount = securityStore.numGuardians(wallet);
+        require(guardianCount > 0, "NO_GUARDIAN");
+
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter == 0, "ALREAY_STARTED");
 
-        uint guardianCount = securityStore.numGuardians(wallet);
-        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
+        uint requiredCount = guardianCount / 2;
+        if (guardianCount % 2 == 1) {
+            requiredCount += 1;
+        }
+
+        require(signers.length >= requiredCount, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         recovery.newOwner = newOwner;

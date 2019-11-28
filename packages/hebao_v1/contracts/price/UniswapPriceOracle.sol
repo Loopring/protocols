@@ -16,13 +16,35 @@
 */
 pragma solidity ^0.5.11;
 
+import "../thirdparty/uniswap/UniswapExchangeInterface.sol";
+import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
+
 import "../iface/PriceOracle.sol";
 
+
 /// @title UniswapPriceOracle
+/// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapPriceOracle is PriceOracle
 {
+    UniswapFactoryInterface uniswapFactory;
+
+    constructor(UniswapFactoryInterface _uniswapFactory)
+        public
+    {
+        uniswapFactory = _uniswapFactory;
+    }
+
     function tokenPrice(address token, uint amount)
         public
         view
-        returns (uint value);
+        returns (uint value)
+    {
+        if (amount == 0) return 0;
+        if (token == address(0)) return amount;
+
+        address exchange = uniswapFactory.getExchange(token);
+        if (exchange == address(0)) return 0; // no exchange
+
+        return UniswapExchangeInterface(exchange).getTokenToEthInputPrice(amount);
+    }
 }

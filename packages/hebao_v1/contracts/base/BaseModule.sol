@@ -50,13 +50,13 @@ contract BaseModule is Module, ReentrancyGuard
     }
 
     modifier onlyFromWalletOwner(address wallet) {
-        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_WALLET_OWNER");
+        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
 
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
         require(
-            msg.sender == address(this) || Wallet(wallet).owner() == msg.sender,
+            msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
             "NOT_FROM_META)TX_OR_WALLET_OWNER");
         _;
     }
@@ -133,19 +133,6 @@ contract BaseModule is Module, ReentrancyGuard
     }
 
     // ===== internal & private methods =====
-
-    /// @dev Internal method to transact on the given wallet.
-    function transact(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-        returns (bytes memory)
-    {
-        return Wallet(wallet).transact(to, value, data);
-    }
 
     /// @dev Binds all static methods to the given wallet.
     function bindStaticMethods(address wallet)

@@ -23,7 +23,7 @@ import "../../base/WalletENSManager.sol";
 import "../../base/WalletFactory.sol";
 
 
-/// @title WalletFactory
+/// @title WalletFactoryModule
 /// @dev Factory to create new wallets and also register a ENS subdomain for
 ///      newly created wallets.
 ///

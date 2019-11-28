@@ -22,7 +22,6 @@ import "../stores/SecurityStore.sol";
 
 
 /// @title SecurityStore
-/// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
@@ -40,22 +39,23 @@ contract SecurityModule is MetaTxModule
 
     // overriding
     modifier onlyFromWalletOwner(address wallet) {
-        require(Wallet(wallet).owner() == msg.sender, "NOT_FROM_WALLET_OWNER");
-        _;
+        require(
+            msg.sender == Wallet(wallet).owner(),
+            "NOT_FROM_WALLET_OWNER"
+        );
         securityStore.touchLastActive(wallet);
+        _;
     }
 
     // overridding
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
-        bool isOwner = Wallet(wallet).owner() == msg.sender;
         require(
-            isOwner || msg.sender == address(this),
+            msg.sender == Wallet(wallet).owner() ||
+            msg.sender == address(this),
             "NOT_FROM_META)TX_OR_WALLET_OWNER"
         );
+        securityStore.touchLastActive(wallet);
         _;
-        if (isOwner) {
-            securityStore.touchLastActive(wallet);
-        }
     }
 
     modifier onlyWhenWalletLocked(address wallet)

@@ -20,7 +20,6 @@ import "../../base/DataStore.sol";
 
 
 /// @title SecurityStore
-/// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
