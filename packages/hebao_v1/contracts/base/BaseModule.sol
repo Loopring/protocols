@@ -134,19 +134,6 @@ contract BaseModule is Module, ReentrancyGuard
 
     // ===== internal & private methods =====
 
-    /// @dev Internal method to transact on the given wallet.
-    function transact(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-        returns (bytes memory)
-    {
-        return Wallet(wallet).transact(to, value, data);
-    }
-
     /// @dev Binds all static methods to the given wallet.
     function bindStaticMethods(address wallet)
         internal
