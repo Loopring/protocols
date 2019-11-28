@@ -23,7 +23,7 @@ import "../iface/PriceOracle.sol";
 
 
 /// @title UniswapPriceOracle
-/// @dev Return the value in Ether for any given ERC20 token.
+/// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapPriceOracle is PriceOracle
 {
     UniswapFactoryInterface uniswapFactory;
