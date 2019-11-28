@@ -86,6 +86,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
+        require(newOwner != address(this), "PROHIBITED");
         require(newOwner != _owner, "SAME_ADDRESS");
         _owner = newOwner;
         emit OwnerChanged(newOwner);
@@ -174,18 +175,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return methodToModule[_method];
     }
 
-    function tokenBalance(address token)
-        public
-        view
-        returns (uint)
-    {
-        if (token == address(0)) {
-            return address(this).balance;
-        } else {
-            return ERC20(token).balanceOf(address(this));
-        }
-    }
-
     function transferToken(
         address to,
         uint    value,
@@ -245,6 +234,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         internal
         returns (bytes memory result)
     {
+        require(to != address(this) && !hasModule(to), "PROHIBITED");
+
         bool success;
         // solium-disable-next-line security/no-call-value
         (success, result) = to.call.value(value)(data);
@@ -297,7 +288,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
             _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
-            _method == this.staticMethodModule.selector ||
-            _method == this.tokenBalance.selector;
+            _method == this.staticMethodModule.selector;
     }
 }

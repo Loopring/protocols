@@ -87,7 +87,6 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
-        notWalletOrItsModule(wallet, to)
     {
         uint guardianCount = securityStore.numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
@@ -107,7 +106,6 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
-        notWalletOrItsModule(wallet, to)
     {
         uint guardianCount = securityStore.numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
@@ -128,7 +126,6 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
-        notWalletOrItsModule(wallet, to)
     {
         uint guardianCount = securityStore.numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");

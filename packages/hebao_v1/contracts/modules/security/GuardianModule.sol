@@ -28,6 +28,7 @@ import "./SecurityModule.sol";
 /// @title GuardianModule
 contract GuardianModule is SecurityModule
 {
+    uint constant public MAX_GUARDIANS = 20;
     uint public pendingPeriod;
     uint public confirmPeriod;
 
@@ -44,8 +45,8 @@ contract GuardianModule is SecurityModule
 
     constructor(
         SecurityStore _securityStore,
-        uint _pendingPeriod,
-        uint _confirmPeriod
+        uint          _pendingPeriod,
+        uint          _confirmPeriod
         )
         public
         SecurityModule(_securityStore)
@@ -68,6 +69,9 @@ contract GuardianModule is SecurityModule
         require(guardian != address(0), "ZERO_ADDRESS");
 
         // TODO: check if guardian is a contract address and support ERC1271
+        uint count = securityStore.numGuardians(wallet);
+        require(count < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
+
         if (securityStore.numGuardians(wallet) == 0) {
             securityStore.addGuardian(wallet, guardian);
             emit GuardianAdded(wallet, guardian);
@@ -178,7 +182,8 @@ contract GuardianModule is SecurityModule
             require(
                 method == this.confirmGuardianAddition.selector ||
                 method == this.confirmGuardianRemoval.selector,
-                "INVALID_METHOD");
+                "INVALID_METHOD"
+            );
         }
     }
 }

@@ -254,7 +254,6 @@ contract QuotaTransfers is Claimable, TransferModule
         nonReentrant
         onlyFromWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
-        notWalletOrItsModule(wallet, to)
     {
         if (whitelistStore.isWhitelisted(wallet, to)) {
             approveInternal(wallet, token, to, amount);
