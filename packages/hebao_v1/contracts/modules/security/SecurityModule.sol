@@ -22,7 +22,6 @@ import "../stores/SecurityStore.sol";
 
 
 /// @title SecurityStore
-/// @dev TODO
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///

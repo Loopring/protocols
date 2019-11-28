@@ -21,7 +21,7 @@ import "../../lib/ERC20.sol";
 import "../../base/BaseModule.sol";
 
 
-/// @title QuotaTransfers
+/// @title TokenBalances
 contract TokenBalances is BaseModule
 {
     function staticMethods()
