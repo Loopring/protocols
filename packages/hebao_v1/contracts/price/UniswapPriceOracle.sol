@@ -17,22 +17,9 @@
 pragma solidity ^0.5.11;
 
 import "../iface/PriceOracle.sol";
+import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
+import "../thirdparty/uniswap/UniswapExchangeInterface.sol";
 
-contract UniswapFactoryInterface {
-    // Get Exchange and Token Info
-    function getExchange(address token)    external view returns (address exchange);
-    function getToken   (address exchange) external view returns (address token);
-}
-
-contract UniswapExchangeInterface {
-    // Address of ERC20 token sold on this exchange
-    function tokenAddress() external view returns (address token);
-    // Get Prices
-    function getEthToTokenInputPrice (uint eth_sold)      external view returns (uint tokens_bought);
-    function getEthToTokenOutputPrice(uint tokens_bought) external view returns (uint eth_sold);
-    function getTokenToEthInputPrice (uint tokens_sold)   external view returns (uint eth_bought);
-    function getTokenToEthOutputPrice(uint eth_bought)    external view returns (uint tokens_sold);
-}
 
 /// @title UniswapPriceOracle
 /// @dev Return the value in Ether for any given ERC20 token.
