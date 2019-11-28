@@ -74,7 +74,11 @@ contract InheritanceModule is SecurityModule
     {
         (address newOwner, uint lastActive) = securityStore.inheritor(wallet);
         require(newOwner != address(0), "NULL_INHERITOR");
-        require(now > lastActive + waitingPeriod, "NEED_TO_WAIT");
+
+        require(
+            lastActive > 0 && now > lastActive + waitingPeriod,
+            "NEED_TO_WAIT"
+        );
 
         require(
             msg.sender == address(this) || msg.sender == newOwner,
