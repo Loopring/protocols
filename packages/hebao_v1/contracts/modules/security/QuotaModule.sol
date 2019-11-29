@@ -41,7 +41,7 @@ contract QuotaModule is SecurityModule
         quotaStore = _quotaStore;
     }
 
-    function changeQuota(
+    function changeDailyQuota(
         address wallet,
         uint    newQuota
         )
@@ -53,7 +53,7 @@ contract QuotaModule is SecurityModule
         quotaStore.changeQuota(wallet, newQuota);
     }
 
-    function getQuota(address wallet)
+    function getDailyQuota(address wallet)
         public
         view
         returns (
@@ -73,7 +73,7 @@ contract QuotaModule is SecurityModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
-        methods[0] = this.getQuota.selector;
+        methods[0] = this.getDailyQuota.selector;
     }
 
     function extractMetaTxSigners(
@@ -86,7 +86,7 @@ contract QuotaModule is SecurityModule
         returns (address[] memory signers)
     {
         require (
-            method == this.changeQuota.selector,
+            method == this.changeDailyQuota.selector,
             "INVALID_METHOD"
         );
 
