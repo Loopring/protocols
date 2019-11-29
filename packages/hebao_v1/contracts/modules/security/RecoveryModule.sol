@@ -30,7 +30,6 @@ import "./SecurityModule.sol";
 /// @title RecoveryModule
 contract RecoveryModule is SecurityModule
 {
-
     event RecoveryStarted   (address indexed wallet, address indexed newOwner, uint completeAfter);
     event RecoveryCompleted (address indexed wallet, address indexed newOwner);
     event RecoveryCancelled (address indexed wallet);
