@@ -8,9 +8,9 @@
 
 Wallet 是我们智能钱包的基础合约，用来真正存储用户的资产。
 
-每个 Wallet 必须有一个 owner，这个 owner 可以是以太坊的外部地址（Externally Owned Account，简称 EOA)，也可以是任意的支持 EIP1271 的合约地址。由于 Wallet 本身已经支持了 EIP1271，因此一个 Wallet 的 owner 甚至可以是另外一个 Wallet。Wallet 在设置新的 owner 的时候不会减产新的 owner 是否真的支持 EIP1271，原因是即使设置错误，也可以通过守护人重置 owner。这个后面会讲到。
+每个 Wallet 必须有一个 owner，这个 owner 可以是以太坊的外部地址（Externally Owned Account，简称 EOA)，也可以是任意的支持 EIP1271 的合约地址。由于 Wallet 本身已经支持了 EIP1271，因此一个 Wallet 的 owner 甚至可以是另外一个 Wallet。Wallet 在设置新的 owner 的时候不会检查新的 owner 是否真的支持 EIP1271，原因是即使设置错误，也可以通过守护人重置 owner。这个后面会讲到。
 
-Wallet 提供的方法几乎都是和 Module 相关，钱包的几乎所有功能都是通过不同的 Module 实现的。当钱包被创建的时候，除了必须制定 owner 地址外，还必须提供一个默认的 Module 列表，原因是后续添加和移除 Module，必须通过调用`Wallet.addModule`方法来实现，而这个方法要求它的 msg.sender 必须是一个现有的 Module。这也意味着一个钱包的 Module 列表不能为空，否则就无法添加更多的 Module 了。
+Wallet 提供的方法几乎都是和 Module 相关，钱包的几乎所有功能都是通过不同的 Module 实现的。当钱包被创建的时候，除了必须指定 owner 地址外，还必须提供一个默认的 Module 列表，原因是后续添加和移除 Module，必须通过调用`Wallet.addModule`方法来实现，而这个方法要求它的 msg.sender 必须是一个现有的 Module。这也意味着一个钱包的 Module 列表不能为空，否则就无法添加更多的 Module 了。
 
 ### Module
 
@@ -42,7 +42,7 @@ Wallet 提供的方法几乎都是和 Module 相关，钱包的几乎所有功�
 
 写方法就不能绑定了。我们假设 Wallet_A 想调用某个第三方合约 SomeContract 的 transfer 方法，那么 Wallet_A 的 owner 可以找一个支持这种任意调用的 Module_A，通过它提供的 doSomething 方法来完成操作。注意这个 doSometing 名字并不重要，和 transfer 也没什么关系。
 
-首先需要构造一个 bytes data,来表示调用目标合约 SomeContract 中的方法名字和参数，以及需要发的以太数量。然后把 data 通过 doSomething 方法调用传给 Module_A，ModuleA 会验证 msg.sender 是 Wallet_A 的 owner，在调用 Wallet_A 的 transact 方法。而这个 transact 方法是 Wallet 最核心的方法，它可以以 wallet 作为 msg.sender 来调用任意合约的任意方法（通过 call.value()()）。
+首先需要构造一个 bytes data,来表示调用目标合约 SomeContract 中的方法名字和参数，以及需要发的以太数量。然后把 data 通过 doSomething 方法调用传给 Module_A，ModuleA 会验证 msg.sender 是 Wallet_A 的 owner，再调用 Wallet_A 的 transact 方法。而这个 transact 方法是 Wallet 最核心的方法，它可以以 wallet 作为 msg.sender 来调用任意合约的任意方法（通过 call.value()()）。
 
 ![](./images/transact.png)
 
@@ -77,7 +77,7 @@ function executeMetaTx(
 
 ### 验签
 
-一些元交易需要 wallet 的 owner 对交易数据进行签名，另一些元交易这需要钱包的守护人来签名。但 owner 和守护人可能是其他的合约地址，而不是 EOA。这就要求我们支持合约地址的验签。因此在我们的代码中，凡是涉及到验证签名的地方，必须即提供签名，也要提供签名对应的地址,然后根据地址是否为合约地址来决定怎样验签。
+一些元交易需要 wallet 的 owner 对交易数据进行签名，另一些元交易只需要钱包的守护人来签名。但 owner 和守护人可能是其他的合约地址，而不是 EOA。这就要求我们支持合约地址的验签。因此在我们的代码中，凡是涉及到验证签名的地方，必须即提供签名，也要提供签名对应的地址,然后根据地址是否为合约地址来决定怎样验签。
 
 - 如果是合约地址：尝试使用 ERC1271 验签，如果地址不支持 ERC1271 或者签名不对，就会 throw；
 - 如果是 EOA 地址，就用 ecrecover 验签。
@@ -111,6 +111,7 @@ Quota 模块用来负责记录用户的每日开销（比如 10 个以太）。�
 
 Module 之间通过 Storage 来共享数据。一些 Storage 有 owner，owner 可以授权哪些 module 可以读写该 storage。
 
+
 ## dapp 集成
 
 ### 借贷获息
@@ -125,7 +126,7 @@ Module 之间通过 Storage 来共享数据。一些 Storage 有 owner，owner �
 ### 交易
 
 - Loopring
-- Uinswap
+- Uniswap
 
 ### 博彩
 

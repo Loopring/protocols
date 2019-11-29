@@ -90,6 +90,13 @@ module.exports = {
       gasPrice: 1000000000,
       gas: 6700000
     },
+    goerli: {
+      network_id: "5",
+      provider: function() {
+        return getWalletProvider("goerli");
+      },
+      gasPrice: 1000000000
+    },
     development: {
       host: "localhost",
       port: 8545,
