@@ -105,9 +105,12 @@ function executeMetaTx(
 
 ### 限额与交易批准
 
+Quota 模块用来负责记录用户的每日开销（比如 10 个以太）。目前设计是按照北京时间凌晨 12 点为日间分割。超过限额部分要么会失败，要么可以选择 pending 起来，方便在第二天任意人来触发该 pending 交易。
+
 ## Storage 存储合约
 
-Module 之间通过 Storage 共享状态。每个 Storage 都有一个 owner，owner 可以授权哪个 module 可以读写该 storage。
+Module 之间通过 Storage 来共享数据。一些 Storage 有 owner，owner 可以授权哪些 module 可以读写该 storage。
+
 
 ## dapp 集成
 

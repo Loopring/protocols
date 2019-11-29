@@ -27,8 +27,8 @@ import "../security/SecurityModule.sol";
 import "./IExchangeV3.sol";
 
 
-/// @title LoopringDEXModule
-contract LoopringDEXModule is SecurityModule
+/// @title LoopringModule
+contract LoopringModule is SecurityModule
 {
     using MathUint for uint;
     event AccountUpdated(
