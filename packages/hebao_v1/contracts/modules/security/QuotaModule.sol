@@ -28,7 +28,6 @@ import "./SecurityModule.sol";
 contract QuotaModule is SecurityModule
 {
     QuotaStore    public quotaStore;
-    SecurityStore public securityStore;
 
     constructor(
         SecurityStore  _securityStore,

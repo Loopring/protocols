@@ -28,7 +28,6 @@ import "./SecurityModule.sol";
 contract WhitelistModule is SecurityModule
 {
     WhitelistStore  public whitelistStore;
-    SecurityStore   public securityStore;
 
     constructor(
         SecurityStore  _securityStore,
