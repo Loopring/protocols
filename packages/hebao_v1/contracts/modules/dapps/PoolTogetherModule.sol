@@ -19,8 +19,8 @@ pragma solidity ^0.5.11;
 import "../security/SecurityModule.sol";
 
 
-/// @title PooledTogetherModule
-contract PooledTogetherModule is SecurityModule
+/// @title PoolTogetherModule
+contract PoolTogetherModule is SecurityModule
 {
     constructor(
         SecurityStore _securityStore
