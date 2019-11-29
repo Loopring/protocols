@@ -16,67 +16,99 @@
 */
 pragma solidity ^0.5.11;
 
-// import "../../lib/Claimable.sol";
-// import "../../lib/ERC20.sol";
+import "../../iface/Wallet.sol";
 
-// import "../../iface/PriceOracle.sol";
-// import "../../iface/Wallet.sol";
+import "../stores/WhitelistStore.sol";
+import "../stores/SecurityStore.sol";
 
-// import "../stores/PriceCacheStore.sol";
-// import "../stores/QuotaStore.sol";
-// import "../stores/WhitelistStore.sol";
-
-// import "./TransferModule.sol";
+import "./SecurityModule.sol";
 
 
-/// @title QuotaTransfers
-contract WhitelistModule //is Claimable, TransferModule
+/// @title WhitelistModule
+/// @dev Manages whitelisted addresses.
+contract WhitelistModule is SecurityModule
 {
-    // QuotaStore      public quotaStore;
-    // WhitelistStore  public whitelistStore;
+    WhitelistStore  public whitelistStore;
+    SecurityStore   public securityStore;
 
-    // uint public pendingExpiry;
+    constructor(
+        SecurityStore  _securityStore,
+        WhitelistStore _whitelistStore
+        )
+        public
+        SecurityModule(_securityStore)
+    {
+        whitelistStore = _whitelistStore;
+    }
 
-    // mapping (address => mapping(bytes32 => uint)) pendingTransactions;
+    function addToWhitelist(
+        address wallet,
+        address addr
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        whitelistStore.addToWhitelist(wallet, addr);
+    }
 
-    // event PendingTxCreated   (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    // event PendingTxExecuted  (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    // event PriceOracleUpdated (address indexed priceOracle);
+    function removeFromWhitelist(
+        address wallet,
+        address addr
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        whitelistStore.removeFromWhitelist(wallet, addr);
+    }
 
-    // constructor(
-    //     SecurityStore   _securityStore,
-    //     QuotaStore      _quotaStore,
-    //     )
-    //     public
-    //     Claimable()
-    //     TransferModule(_securityStore)
-    // {
-    //     priceOracle = _priceOracle;
-    //     priceCacheStore = _priceCacheStore;
-    //     quotaStore = _quotaStore;
-    //     whitelistStore = _whitelistStore;
-    //     pendingExpiry = _pendingExpiry;
-    // }
+    function getWhitelist(address wallet)
+        public
+        view
+        returns (address[] memory)
+    {
+        return whitelistStore.whitelist(wallet);
+    }
 
-    // function staticMethods()
-    //     public
-    //     pure
-    //     returns (bytes4[] memory methods)
-    // {
-    //     methods = new bytes4[](0);
-    // }
+    function isWhitelisted(
+        address wallet,
+        address addr)
+        public
+        view
+        returns (bool)
+    {
+        return whitelistStore.isWhitelisted(wallet, addr);
+    }
 
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        methods = new bytes4[](2);
+        methods[0] = this.getWhitelist.selector;
+        methods[1] = this.isWhitelisted.selector;
+    }
 
+    function extractMetaTxSigners(
+        address       wallet,
+        bytes4        method,
+        bytes memory  /* data */
+        )
+        internal
+        view
+        returns (address[] memory signers)
+    {
+        require (
+            method == this.addToWhitelist.selector ||
+            method == this.removeFromWhitelist.selector,
+            "INVALID_METHOD"
+        );
 
-    // function extractMetaTxSigners(
-    //     address       /* wallet */,
-    //     bytes4        /* method */,
-    //     bytes memory  /* data */
-    //     )
-    //     internal
-    //     view
-    //     returns (address[] memory)
-    // {
-    //     revert("UNSUPPORTED");
-    // }
+        signers = new address[](1);
+        signers[0] = Wallet(wallet).owner();
+    }
 }

@@ -16,61 +16,81 @@
 */
 pragma solidity ^0.5.11;
 
-// import "../../lib/Claimable.sol";
-// import "../../lib/ERC20.sol";
+import "../../iface/Wallet.sol";
 
-// import "../../iface/PriceOracle.sol";
-// import "../../iface/Wallet.sol";
+import "../stores/QuotaStore.sol";
+import "../stores/SecurityStore.sol";
 
-// import "../stores/PriceCacheStore.sol";
-// import "../stores/QuotaStore.sol";
-// import "../stores/WhitelistStore.sol";
-
-// import "./TransferModule.sol";
+import "./SecurityModule.sol";
 
 
 /// @title QuotaModule
-contract QuotaModule// is Claimable, TransferModule
+/// @dev Manages transfer quota.
+contract QuotaModule is SecurityModule
 {
-    // QuotaStore      public quotaStore;
+    QuotaStore    public quotaStore;
+    SecurityStore public securityStore;
 
-    // event Quota  (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    // event PendingTxExecuted  (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    // event PriceOracleUpdated (address indexed priceOracle);
+    constructor(
+        SecurityStore  _securityStore,
+        QuotaStore    _quotaStore
+        )
+        public
+        SecurityModule(_securityStore)
+    {
+        quotaStore = _quotaStore;
+    }
 
-    // constructor(
-    //     SecurityStore   _securityStore,
-    //     QuotaStore      _quotaStore,
-    //     )
-    //     public
-    //     Claimable()
-    //     TransferModule(_securityStore)
-    // {
-    //     priceOracle = _priceOracle;
-    //     priceCacheStore = _priceCacheStore;
-    //     quotaStore = _quotaStore;
-    //     whitelistStore = _whitelistStore;
-    //     pendingExpiry = _pendingExpiry;
-    // }
+    function changeQuota(
+        address wallet,
+        uint    newQuota
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        quotaStore.changeQuota(wallet, newQuota);
+    }
 
-    // function staticMethods()
-    //     public
-    //     pure
-    //     returns (bytes4[] memory methods)
-    // {
-    //     methods = new bytes4[](0);
-    // }
+    function getQuota(address wallet)
+        public
+        view
+        returns (
+            uint total,
+            uint spent,
+            uint available
+        )
+    {
+        total = quotaStore.currentQuota(wallet);
+        spent = quotaStore.spentQuota(wallet);
+        available = quotaStore.availableQuota(wallet);
+    }
 
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        methods = new bytes4[](1);
+        methods[0] = this.getQuota.selector;
+    }
 
-    // function extractMetaTxSigners(
-    //     address       /* wallet */,
-    //     bytes4        /* method */,
-    //     bytes memory  /* data */
-    //     )
-    //     internal
-    //     view
-    //     returns (address[] memory)
-    // {
-    //     revert("UNSUPPORTED");
-    // }
+    function extractMetaTxSigners(
+        address       wallet,
+        bytes4        method,
+        bytes memory  /* data */
+        )
+        internal
+        view
+        returns (address[] memory signers)
+    {
+        require (
+            method == this.changeQuota.selector,
+            "INVALID_METHOD"
+        );
+
+        signers = new address[](1);
+        signers[0] = Wallet(wallet).owner();
+    }
 }
