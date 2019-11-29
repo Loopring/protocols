@@ -149,11 +149,12 @@ contract MetaTxModule is BaseModule
         require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
 
         gasAmount = gasAmount.mul(gasPrice);
-        // TODO(kongliang): use TransferModule instead
-        // require(
-        //     Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
-        //     "OUT_OF_GAS"
-        // );
+        require(
+            Wallet(wallet).supportsMethod(ERC20_TRANSFER),
+            "TRANSFER_NOT_SUPPORTED"
+        );
+        bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER_FUNC_STR, msg.sender, gasSpent);
+        Wallet(wallet).transact(gasToken, 0, data);
     }
 
     /// @dev Extracts and returns a list of signers for the given meta transaction.
