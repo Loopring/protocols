@@ -19,7 +19,6 @@ pragma solidity ^0.5.11;
 import "../../iface/Wallet.sol";
 
 import "../stores/QuotaStore.sol";
-import "../stores/SecurityStore.sol";
 
 import "./SecurityModule.sol";
 
