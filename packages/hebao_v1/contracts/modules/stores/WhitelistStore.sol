@@ -51,6 +51,7 @@ contract WhitelistStore is DelayedDataStore
         public
         onlyManager
     {
+        removeAddressTs(walletKey(wallet), addr);
         removeAddressFromSet(walletKey(wallet), addr);
         emit Whitelisted(wallet, addr, false);
     }

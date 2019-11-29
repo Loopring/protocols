@@ -40,7 +40,9 @@ contract DelayedDataStore is OwnerManagable
         bytes32 key,
         address addr,
         bool maintainList
-        ) internal
+        )
+        internal
+        onlyManager
     {
         addressTsMap[key][addr] = now;
         addAddressToSet(key, addr, maintainList);
@@ -56,6 +58,16 @@ contract DelayedDataStore is OwnerManagable
     {
         return (now - addressTsMap[key][addr]) >= delaySecs
             && isAddressInSet(key, addr);
+    }
+
+    function removeAddressTs(
+        bytes32 key,
+        address addr
+        )
+        internal
+        onlyManager
+    {
+        delete addressTsMap[key][addr];
     }
 
 }
