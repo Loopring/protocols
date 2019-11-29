@@ -18,12 +18,12 @@ pragma solidity ^0.5.11;
 
 import "../../lib/AddressSet.sol";
 
-import "../../base/DataStore.sol";
+import "../../base/DelayedDataStore.sol";
 
 
 /// @title WhitelistStore
 /// @dev This store maintains a wallet's whitelisted addresses.
-contract WhitelistStore is DataStore
+contract WhitelistStore is DelayedDataStore
 {
     event Whitelisted(
         address indexed wallet,
@@ -31,7 +31,7 @@ contract WhitelistStore is DataStore
         bool            whitelisted
     );
 
-    constructor() public DataStore() {}
+    constructor(uint _delaySecs) public DelayedDataStore(_delaySecs) {}
 
     function addToWhitelist(
         address wallet,
@@ -40,7 +40,7 @@ contract WhitelistStore is DataStore
         public
         onlyManager
     {
-        addAddressToSet(walletKey(wallet), addr, true);
+        addAddressToSetWithDelay(walletKey(wallet), addr, true);
         emit Whitelisted(wallet, addr, true);
     }
 
@@ -70,7 +70,7 @@ contract WhitelistStore is DataStore
         view
         returns (bool)
     {
-        return isAddressInSet(walletKey(wallet), addr);
+        return isAddressInDelayedSet(walletKey(wallet), addr);
     }
 
     function whitelistSize(address wallet)
