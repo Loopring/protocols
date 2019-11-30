@@ -69,4 +69,58 @@ library MathUint
         uint mantissa = f & ((1 << numBitsMantissa) - 1);
         value = mantissa * (10 ** exponent);
     }
+
+    /**
+    * @dev Integer division of two numbers truncating the quotient, reverts on division by zero.
+    */
+    function div(
+        uint256 a,
+        uint256 b
+        )
+        internal
+        pure
+        returns (uint256)
+    {
+        require(b > 0, "DIVIDE_ZERO");
+        uint256 c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
+
+    /**
+    * @dev Divides two numbers and returns the remainder (unsigned integer modulo),
+    * reverts when dividing by zero.
+    */
+    function mod(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        require(b != 0, "MODULE_ZERO");
+        return a % b;
+    }
+
+    /**
+    * @dev Returns ceil(a / b).
+    */
+    function ceil(
+        uint256 a,
+        uint256 b
+    )
+        internal
+        pure
+        returns (uint256)
+    {
+        uint256 c = a / b;
+        if(a % b == 0) {
+            return c;
+        }
+        else {
+            return c + 1;
+        }
+    }
 }
