@@ -68,8 +68,6 @@ contract Wallet
     /// @return True if the module exists; False otherwise.
     function hasModule(address _module) public view returns (bool);
 
-    function supportsMethod(bytes4 _method) external view returns (bool);
-
     /// @dev Binds a static (readonly) method from the given module to this
     ///      wallet so the method can be invoked using this wallet's default
     ///      function.
