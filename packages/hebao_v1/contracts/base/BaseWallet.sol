@@ -159,14 +159,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         emit StaticMethodBound(_method, _module);
     }
 
-    function supportsMethod(bytes4 _method)
-        external
-        view
-        returns (bool)
-    {
-        return isLocalStaticMethod(_method) || methodToModule[_method] != address(0);
-    }
-
     function staticMethodModule(bytes4 _method)
         public
         view
