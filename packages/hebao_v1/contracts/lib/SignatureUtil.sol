@@ -35,7 +35,7 @@ library SignatureUtil
     enum SignatureType {
         ILLEGAL,
         INVALID,
-        EIP712,
+        EIP_712,
         ETH_SIGN,
         WALLET
     }
@@ -89,7 +89,7 @@ library SignatureUtil
                 verifyERC1271Signature(signHash, signer, signature),
                 "INVALID_ERC1271_SIGNATURE"
             );
-        } else if (signatureType == uint8(SignatureType.EIP712)) {
+        } else if (signatureType == uint8(SignatureType.EIP_712)) {
             require(
                 recoverECDSASigner(signHash, stripped) == signer,
                 "INVALID_ECDSA_SIGNATURE"
