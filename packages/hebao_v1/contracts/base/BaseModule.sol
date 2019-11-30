@@ -49,6 +49,12 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
+    modifier onlyFromWalletModule(address wallet)
+    {
+        require(Wallet(wallet).hasModule(msg.sender), "NOT_FROM_WALLET_MODULE");
+        _;
+    }
+
     modifier onlyFromWalletOwner(address wallet) {
         require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
@@ -86,6 +92,7 @@ contract BaseModule is Module, ReentrancyGuard
     {
         require(module != address(this), "SELF_ADD_PROHIBITED");
         Wallet(wallet).addModule(module);
+        Module(module).activate(wallet);
     }
 
     /// @dev Removes a module from a wallet. Callable only by the wallet owner.
@@ -99,13 +106,14 @@ contract BaseModule is Module, ReentrancyGuard
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(module != address(this), "SELF_REMOVE_PROHIBITED");
+        Module(module).deactivate(wallet);
         Wallet(wallet).removeModule(module);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
     function activate(address wallet)
         external
-        onlyFromWallet(wallet)
+        onlyFromWalletModule(wallet)
     {
         bindStaticMethods(wallet);
         emit Activated(wallet);
@@ -114,7 +122,7 @@ contract BaseModule is Module, ReentrancyGuard
     /// @dev This method will cause an re-entry to the same module contract.
     function deactivate(address wallet)
         external
-        onlyFromWallet(wallet)
+        onlyFromWalletModule(wallet)
     {
         unbindStaticMethods(wallet);
         emit Deactivated(wallet);

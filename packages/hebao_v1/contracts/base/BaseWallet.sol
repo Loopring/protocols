@@ -22,7 +22,6 @@ import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
 import "../iface/Wallet.sol";
-import "../iface/Module.sol";
 
 
 /// @title BaseWallet
@@ -126,7 +125,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         onlyModule
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
-        Module(_module).deactivate(address(this));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
@@ -151,7 +149,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         external
         onlyModule
     {
-        require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
+        require(_method != bytes4(0), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
@@ -222,7 +220,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
 
         addAddressToSet(MODULE, _module, true);
-        Module(_module).activate(address(this));
         emit ModuleAdded(_module);
     }
 
@@ -234,8 +231,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         internal
         returns (bytes memory result)
     {
-        require(to != address(this) && !hasModule(to), "PROHIBITED");
-
         bool success;
         // solium-disable-next-line security/no-call-value
         (success, result) = to.call.value(value)(data);
@@ -270,7 +265,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize())
-            let result := staticcall(gas, module, ptr, calldatasize(), 0, 0)
+            let result := call(gas, module, 0, ptr, calldatasize(), 0, 0)
             returndatacopy(ptr, 0, returndatasize())
 
             switch result
