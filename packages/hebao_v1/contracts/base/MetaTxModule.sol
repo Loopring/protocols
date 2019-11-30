@@ -39,7 +39,6 @@ import "./BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 
-// TODO: provide a method to check if a meta tx can go through.
 contract MetaTxModule is BaseModule
 {
     using MathUint      for uint;
@@ -149,11 +148,12 @@ contract MetaTxModule is BaseModule
         require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
 
         gasAmount = gasAmount.mul(gasPrice);
-        // TODO(kongliang): use TransferModule instead
-        // require(
-        //     Wallet(wallet).transferToken(msg.sender, gasSpent, gasToken),
-        //     "OUT_OF_GAS"
-        // );
+        if (gasToken == address(0)) {
+            Wallet(wallet).transact(msg.sender, gasSpent, "");
+        } else {
+            bytes memory data = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasSpent);
+            Wallet(wallet).transact(gasToken, 0, data);
+        }
     }
 
     /// @dev Extracts and returns a list of signers for the given meta transaction.
