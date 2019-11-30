@@ -153,8 +153,12 @@ contract MetaTxModule is BaseModule
             Wallet(wallet).supportsMethod(ERC20_TRANSFER),
             "TRANSFER_NOT_SUPPORTED"
         );
-        bytes memory data = abi.encodeWithSignature(ERC20_TRANSFER_FUNC_STR, msg.sender, gasSpent);
-        Wallet(wallet).transact(gasToken, 0, data);
+        if (gasToken == address(0)) {
+            Wallet(wallet).transact(msg.sender, gasSpent, "");
+        } else {
+            bytes memory data = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasSpent);
+            Wallet(wallet).transact(gasToken, 0, data);
+        }
     }
 
     /// @dev Extracts and returns a list of signers for the given meta transaction.
