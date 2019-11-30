@@ -16,17 +16,43 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/MathUint.sol";
+
+import "../../iface/Wallet.sol";
+
 import "../security/SecurityModule.sol";
 
 
-/// @title MakerModule
-contract MakerModule is SecurityModule
+/// @title UniswapModule
+contract UniswapModule is SecurityModule
 {
+    using MathUint for uint;
+
     constructor(
         SecurityStore _securityStore
         )
         public
         SecurityModule(_securityStore)
     {
+    }
+
+    function staticMethods()
+        public
+        pure
+        returns (bytes4[] memory methods)
+    {
+        // TODO
+    }
+
+    function extractMetaTxSigners(
+        address wallet,
+        bytes4  method,
+        bytes   memory /* data */
+        )
+        internal
+        view
+        returns (address[] memory signers)
+    {
+        // TODO
     }
 }
