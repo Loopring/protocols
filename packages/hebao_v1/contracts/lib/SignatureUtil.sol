@@ -32,7 +32,6 @@ import "./AddressUtil.sol";
 
 library SignatureUtil
 {
-    /// TODO(daniel): support EIP-712.
     enum SignatureType {
         ILLEGAL,
         INVALID,
