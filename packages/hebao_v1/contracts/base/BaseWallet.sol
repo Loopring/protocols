@@ -248,8 +248,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         pure
         returns (bool)
     {
-        return _method == this.supportsMethod.selector ||
-            _method == this.owner.selector ||
+        return _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
             _method == this.staticMethodModule.selector;
