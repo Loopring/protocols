@@ -47,7 +47,6 @@ contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
-    uint   constant public   BLOCK_BOUND = 100;
     uint   constant public   GAS_OVERHEAD = 30000;
 
     struct WalletState
@@ -260,8 +259,7 @@ contract MetaTxModule is BaseModule
             require(!wallets[wallet].metaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
-            require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
-            require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
+            require(nonce == wallets[wallet].nonce + 1, "INVALID_NONCE");
             wallets[wallet].nonce = nonce;
         }
     }
