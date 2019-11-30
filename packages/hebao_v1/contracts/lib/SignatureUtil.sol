@@ -33,7 +33,13 @@ import "./AddressUtil.sol";
 library SignatureUtil
 {
     /// TODO(daniel): support EIP-712.
-    enum SigningAlgorithm { ECDSA }
+    enum SignatureType {
+        ILLEGAL,
+        INVALID,
+        EIP712,
+        ETH_SIGN,
+        WALLET
+    }
 
     bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
 
@@ -62,17 +68,21 @@ library SignatureUtil
         public
         view
     {
-        uint  length = signature.length;
-        uint8 algorithm;
-        uint8 size;
+        require(signature.length >= 2, "INVALID_DATA");
+        uint  signatureTypeOffset = signature.length - 1;
+        uint8 signatureType;
 
         assembly {
-            algorithm := mload(add(signature, 1))
-            size := mload(add(signature, 2))
+            signatureType := mload(add(signature, signatureTypeOffset))
         }
 
-        require(length == (2 + size), "INVALID_MULTIHASH");
-        bytes memory stripped = BytesUtil.slice(signature, 2, length - 2);
+        require (
+            signatureType == uint8(SignatureType.ILLEGAL) ||
+            signatureType == uint8(SignatureType.INVALID),
+            "UNSUPPORTED_SIGNATURE_TYPES"
+        );
+
+        bytes memory stripped = BytesUtil.slice(signature, 0, signatureTypeOffset);
 
         if (AddressUtil.isContract(signer)) {
             require(
@@ -80,9 +90,17 @@ library SignatureUtil
                 verifyERC1271Signature(signHash, signer, signature),
                 "INVALID_ERC1271_SIGNATURE"
             );
-        } else if (algorithm == uint8(SigningAlgorithm.ECDSA)) {
+        } else if (signatureType == uint8(SignatureType.EIP712)) {
             require(
                 recoverECDSASigner(signHash, stripped) == signer,
+                "INVALID_ECDSA_SIGNATURE"
+            );
+        } else if (signatureType == uint8(SignatureType.ETH_SIGN)) {
+            bytes32 hash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
+            );
+            require(
+                recoverECDSASigner(hash, stripped) == signer,
                 "INVALID_ECDSA_SIGNATURE"
             );
         } else {
