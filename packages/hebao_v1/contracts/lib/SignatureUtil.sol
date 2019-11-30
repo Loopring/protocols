@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../thirdparty/ERC1271.sol";
 import "../thirdparty/BytesUtil.sol";
@@ -39,27 +40,17 @@ library SignatureUtil
     function verifySignatures(
         bytes32   signHash,
         address[] memory signers,
-        bytes     memory signatures
+        bytes[]   memory signatures
         )
         public
         view
     {
-        uint  length = signatures.length;
-        uint  offset;
-        uint8 size;
-
+        require(signers.length == signatures.length, "BAD_DATA");
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_ORDER");
             lastSigner = signers[i];
-
-            require(length >= offset + 2, "invalid multihash format");
-            assembly { size := mload(add(signatures, 2)) }
-            require(length >= (offset + 2 + size), "bad multihash size");
-
-            bytes memory sig = BytesUtil.slice(signatures, offset, size + 2);
-            offset += (2 + size);
-            verifySignature(signHash, signers[i], sig);
+            verifySignature(signHash, signers[i], signatures[i]);
         }
     }
 
@@ -80,7 +71,7 @@ library SignatureUtil
             size := mload(add(signature, 2))
         }
 
-        require(length == (2 + size), "bad multihash size");
+        require(length == (2 + size), "INVALID_MULTIHASH");
         bytes memory stripped = BytesUtil.slice(signature, 2, length - 2);
 
         if (AddressUtil.isContract(signer)) {
