@@ -24,8 +24,15 @@ import "./AddressUtil.sol";
 
 /// @title SignatureUtil
 /// @author Daniel Wang - <daniel@loopring.org>
+/// @dev This method supports multihash standard. Each signature's first byte indicates
+///      the signature's type, the second byte indicates the signature's length, therefore,
+///      each signature will have 2 extra bytes prefix. Mulitple signatures are concatenated
+///      together.
+
 library SignatureUtil
 {
+    /// TODO(daniel): support EIP-712.
+    enum SigningAlgorithm { ECDSA }
 
     bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
 
@@ -37,13 +44,21 @@ library SignatureUtil
         public
         view
     {
-        require(signers.length * 65 == signatures.length, "INVALID_DATA");
+        uint  length = signatures.length;
+        uint  offset;
+        uint8 size;
 
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_ORDER");
             lastSigner = signers[i];
-            bytes memory sig = BytesUtil.slice(signatures, i * 65, 65);
+
+            require(length >= offset + 2, "invalid multihash format");
+            assembly { size := mload(add(signatures, 2)) }
+            require(length >= (offset + 2 + size), "bad multihash size");
+
+            bytes memory sig = BytesUtil.slice(signatures, offset, size + 2);
+            offset += (2 + size);
             verifySignature(signHash, signers[i], sig);
         }
     }
@@ -55,30 +70,58 @@ library SignatureUtil
         )
         public
         view
-        returns (bool)
     {
+        uint  length = signature.length;
+        uint8 algorithm;
+        uint8 size;
+
+        assembly {
+            algorithm := mload(add(signature, 1))
+            size := mload(add(signature, 2))
+        }
+
+        require(length == (2 + size), "bad multihash size");
+        bytes memory stripped = BytesUtil.slice(signature, 2, length - 2);
+
         if (AddressUtil.isContract(signer)) {
-            bytes memory callData = abi.encodeWithSelector(
-                ERC1271(signer).isValidSignature.selector,
-                signHash,
-                signature
-            );
-            (bool success, bytes memory result) = signer.staticcall(callData);
             require(
-                success &&
-                result.length == 32 &&
-                BytesUtil.toBytes4(result) == ERC1271_MAGICVALUE,
-                "INVALID_SIGNATURE"
+                verifyERC1271Signature(signHash, signer, stripped) ||
+                verifyERC1271Signature(signHash, signer, signature),
+                "INVALID_ERC1271_SIGNATURE"
+            );
+        } else if (algorithm == uint8(SigningAlgorithm.ECDSA)) {
+            require(
+                recoverECDSASigner(signHash, stripped) == signer,
+                "INVALID_ECDSA_SIGNATURE"
             );
         } else {
-            require(
-                recoverSigner(signHash, signature) == signer,
-                "INVALID_SIGNATURE"
-            );
+            revert("UNSUPPORTED_SIGNATURE_TYPE");
         }
     }
 
-    function recoverSigner(
+    function verifyERC1271Signature(
+        bytes32 signHash,
+        address signer,
+        bytes   memory signature
+        )
+        private
+        view
+        returns(bool)
+    {
+        bytes memory callData = abi.encodeWithSelector(
+            ERC1271(signer).isValidSignature.selector,
+            signHash,
+            signature
+        );
+        (bool success, bytes memory result) = signer.staticcall(callData);
+        return (
+            success &&
+            result.length == 32 &&
+            BytesUtil.toBytes4(result) == ERC1271_MAGICVALUE
+        );
+    }
+
+    function recoverECDSASigner(
         bytes32      signHash,
         bytes memory signature
         )
