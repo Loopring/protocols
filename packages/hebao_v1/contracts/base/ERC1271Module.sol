@@ -79,6 +79,6 @@ contract ERC1271Module is BaseModule, ERC1271
             abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(_data))
         );
 
-        return signHash.recoverSigner(_signature) == _address;
+        return signHash.recoverECDSASigner(_signature) == _address;
     }
 }

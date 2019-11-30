@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
 import "../lib/MathUint.sol";
@@ -96,7 +97,7 @@ contract MetaTxModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        bytes   calldata signatures
+        bytes[] calldata signatures
         )
         external
         payable

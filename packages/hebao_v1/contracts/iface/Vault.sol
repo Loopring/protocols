@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 
 contract Vault
@@ -30,7 +31,7 @@ contract Vault
         uint      value,
         bytes     calldata data,
         address[] calldata signers,
-        bytes     calldata signatures
+        bytes[]   calldata signatures
         ) external;
 
     /// @dev Adds a new owner.
