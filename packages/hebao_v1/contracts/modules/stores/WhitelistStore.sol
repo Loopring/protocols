@@ -26,7 +26,7 @@ import "../../base/DataStore.sol";
 contract WhitelistStore is DataStore
 {
     // wallet => whitelisted_addr => effective_since
-    mapping(address => mapping(address => uint)) public timestampMap;
+    mapping(address => mapping(address => uint)) public effectiveTimeMap;
 
     event Whitelisted(
         address indexed wallet,
@@ -41,14 +41,14 @@ contract WhitelistStore is DataStore
     function addToWhitelist(
         address wallet,
         address addr,
-        uint    effectiveSince
+        uint    effectiveTime
         )
         public
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
-        uint effective = effectiveSince >= now ? effectiveSince : now;
-        timestampMap[wallet][addr] = effective;
+        uint effective = effectiveTime >= now ? effectiveTime : now;
+        effectiveTimeMap[wallet][addr] = effective;
         emit Whitelisted(wallet, addr, true);
     }
 
@@ -60,7 +60,7 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         removeAddressFromSet(walletKey(wallet), addr);
-        delete timestampMap[wallet][addr];
+        delete effectiveTimeMap[wallet][addr];
         emit Whitelisted(wallet, addr, false);
     }
 
@@ -69,28 +69,29 @@ contract WhitelistStore is DataStore
         view
         returns (
             address[] memory addresses,
-            uint[]    memory effectiveSince
+            uint[]    memory effectiveTimes
         )
     {
         addresses = addressesInSet(walletKey(wallet));
-        effectiveSince = new uint[](addresses.length);
+        effectiveTimes = new uint[](addresses.length);
         for (uint i = 0; i < addresses.length; i++) {
-            effectiveSince[i] = timestampMap[wallet][addresses[i]];
+            effectiveTimes[i] = effectiveTimeMap[wallet][addresses[i]];
         }
     }
 
     function isWhitelisted(
         address wallet,
-        address addr)
+        address addr
+        )
         public
         view
         returns (
             bool isWhitelistedAndEffective,
-            uint effectiveSince
+            uint effectiveTime
         )
     {
-        effectiveSince = timestampMap[wallet][addr];
-        isWhitelistedAndEffective = effectiveSince > 0 && effectiveSince <= now;
+        effectiveTime = effectiveTimeMap[wallet][addr];
+        isWhitelistedAndEffective = effectiveTime > 0 && effectiveTime <= now;
     }
 
     function whitelistSize(address wallet)

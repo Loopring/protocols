@@ -72,7 +72,7 @@ contract WhitelistModule is SecurityModule
         view
         returns (
             address[] memory addresses,
-            uint[]    memory effectiveSince
+            uint[]    memory effectiveTimes
         )
     {
         return whitelistStore.whitelist(wallet);
@@ -85,7 +85,7 @@ contract WhitelistModule is SecurityModule
         view
         returns (
             bool isWhitelistedAndEffective,
-            uint effectiveSince
+            uint effectiveTime
         )
     {
         return whitelistStore.isWhitelisted(wallet, addr);
