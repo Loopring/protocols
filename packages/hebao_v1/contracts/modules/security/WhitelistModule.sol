@@ -85,7 +85,7 @@ contract WhitelistModule is SecurityModule
         view
         returns (
             bool isWhitelistedAndEffective,
-            uint timestamp
+            uint effectiveSince
         )
     {
         return whitelistStore.isWhitelisted(wallet, addr);
