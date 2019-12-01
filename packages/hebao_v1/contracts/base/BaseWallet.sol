@@ -212,6 +212,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         } else {
             revert("UNSUPPORTED_MODE");
         }
+
         if (!success) {
             assembly {
                 returndatacopy(0, 0, returndatasize)
