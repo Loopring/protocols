@@ -89,7 +89,7 @@ contract WhitelistStore is DataStore
         )
     {
         timestamp = timestampMap[wallet][addr];
-        isWhitelistedAndEffective = timestamp > 0 && timestamp < now;
+        isWhitelistedAndEffective = timestamp > 0 && timestamp <= now;
     }
 
     function whitelistSize(address wallet)
