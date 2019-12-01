@@ -142,14 +142,14 @@ contract LoopringModule is SecurityModule
 
         checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
-        bytes memory callData = abi.encodeWithSelector(
+        bytes memory txData = abi.encodeWithSelector(
             exchange.createOrUpdateAccount.selector,
             pubKeyX,
             pubKeyY,
             permission
         );
 
-        transactCall(wallet, address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, txData);
         emit AccountUpdated(address(exchange), wallet, newAccount);
     }
 
@@ -170,13 +170,13 @@ contract LoopringModule is SecurityModule
         (, , uint fee, ) = exchange.getFees();
         checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
-        bytes memory callData = abi.encodeWithSelector(
+        bytes memory txData = abi.encodeWithSelector(
             exchange.deposit.selector,
             token,
             amount
         );
 
-        transactCall(wallet, address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, txData);
         emit Deposit(address(exchange), wallet, token, amount);
     }
 
@@ -197,13 +197,13 @@ contract LoopringModule is SecurityModule
         (, , , uint fee) = exchange.getFees();
         checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
-        bytes memory callData = abi.encodeWithSelector(
+        bytes memory txData = abi.encodeWithSelector(
             exchange.withdraw.selector,
             token,
             amount
         );
 
-        transactCall(wallet, address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, txData);
         emit Withdrawal(address(exchange), wallet, token, amount);
     }
 
@@ -232,12 +232,12 @@ contract LoopringModule is SecurityModule
         if (feeToken == address(0) || feeAmount == 0 || msg.sender == wallet) {
             reimbursementStore.checkAndUpdate(wallet, reimbursement);
         } else {
-            bytes memory callData = abi.encodeWithSelector(
+            bytes memory txData = abi.encodeWithSelector(
                 ERC20_TRANSFER,
                 msg.sender,
                 feeAmount
             );
-            transactCall(wallet, feeToken, 0, callData);
+            transactCall(wallet, feeToken, 0, txData);
         }
     }
 

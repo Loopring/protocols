@@ -47,8 +47,6 @@ contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
-    uint   constant public   GAS_OVERHEAD = 30000;
-
     struct WalletState
     {
         uint nonce;
@@ -85,24 +83,23 @@ contract MetaTxModule is BaseModule
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
     ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
-    /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
-    /// @param gasPrice The amount of `gasToken` to pay per gas. 0 is a valid value.
-    /// @param gasLimit The max amount of gas that can be used by this meta transaction,
-    ///                excluding an extra `GAS_OVERHEAD` for paying the relayer fees.
+    ///
+    /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
+    ///                   and `gasOverhead`. To pay fee in Ether, use address(0) as gasToken.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
         uint    nonce,
-        address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
+        uint[4] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead]
         bytes[] calldata signatures
         )
         external
         payable
     {
+        require(gasSetting[2] > 0, "INVALID_GAS_LIMIT");
+
         uint startGas = gasleft();
-        require(startGas >= gasLimit, "OUT_OF_GAS");
+        require(startGas >= gasSetting[2], "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
@@ -111,13 +108,10 @@ contract MetaTxModule is BaseModule
             msg.value, // value
             data,
             nonce,
-            gasPrice,
-            gasLimit,
-            gasToken
+            gasSetting
         );
 
-        bytes4 method = extractMethod(data);
-        address[] memory signers = extractMetaTxSigners(wallet, method, data);
+        address[] memory signers = extractMetaTxSigners(wallet, extractMethod(data), data);
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -125,34 +119,32 @@ contract MetaTxModule is BaseModule
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.value(msg.value)(data);
+        // (bool success,) = address(this).call.value(msg.value)(data);
 
-        reimburseGasFee(wallet, gasToken, gasPrice, gasLimit, startGas - gasleft());
+        (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(data);
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
+
+        if (gasSetting[1] != 0) {
+            // gasPrice > 0
+            reimburseGasFee(wallet, gasSetting, startGas);
+        }
     }
 
     function reimburseGasFee(
         address wallet,
-        address gasToken,
-        uint    gasPrice,
-        uint    gasLimit,
-        uint    gasSpent
+        uint[4] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead]
+        uint    startGas
         )
         private
     {
-        if (gasPrice == 0) return;
-
-        uint gasAmount = gasSpent + GAS_OVERHEAD;
-        require(gasAmount <= gasLimit, "EXCEED_GAS_LIMIT");
-        require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
-
-        gasAmount = gasAmount.mul(gasPrice);
+        uint gasUsed = (startGas - gasleft()).add(gasSetting[3]).mul(gasSetting[1]);
+        address gasToken = address(gasSetting[0]);
         if (gasToken == address(0)) {
-            transactCall(wallet, msg.sender, gasSpent, "");
+            transactCall(wallet, msg.sender, gasUsed, "");
         } else {
-            bytes memory data = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasSpent);
-            transactCall(wallet, gasToken, 0, data);
+            bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasUsed);
+            transactCall(wallet, gasToken, 0, txData);
         }
     }
 
@@ -202,12 +194,10 @@ contract MetaTxModule is BaseModule
     function getSignHash(
         address from,
         address to,
-        uint256 value,
+        uint    value,
         bytes   memory data,
-        uint256 nonce,
-        uint256 gasPrice,
-        uint256 gasLimit,
-        address gasToken
+        uint    nonce,
+        uint[4] memory gasSetting
         )
         public
         pure
@@ -222,9 +212,10 @@ contract MetaTxModule is BaseModule
                 value,
                 keccak256(data),
                 nonce,
-                gasPrice,
-                gasLimit,
-                gasToken
+                gasSetting[0],
+                gasSetting[1],
+                gasSetting[2],
+                gasSetting[3]
             )
         );
 
