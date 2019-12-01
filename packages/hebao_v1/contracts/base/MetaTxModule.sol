@@ -47,8 +47,6 @@ contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
-    uint constant public MIN_GAS_RESERVE = 20000;
-
     struct WalletState
     {
         uint nonce;
@@ -88,9 +86,9 @@ contract MetaTxModule is BaseModule
     /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
     /// @param gasPrice The amount of `gasToken` to pay per gas. 0 is a valid value.
     /// @param gasLimit The max amount of gas that can be used by this meta transaction,
-    ///                including the `gasReserve`.
-    /// @param gasReserve The amount of `gasToken` reserved for the meta data storage and
-    ///                   extra logic in the meta-transaction.
+    ///                 excluding the `gasOverhead`.
+    /// @param gasOverhead The extra amount of `gasToken` paid for data storage and
+    ///                   extra fee-payment internal transaction.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
@@ -98,17 +96,16 @@ contract MetaTxModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        uint    gasReserve,
+        uint    gasOverhead,
         bytes[] calldata signatures
         )
         external
         payable
     {
-        require(gasReserve >= MIN_GAS_RESERVE, "INVALID_GAS_RESERVE");
-        require(gasLimit > gasReserve, "INVALID_GAS_LIMIT");
+        require(gasLimit > 0, "INVALID_GAS_LIMIT");
 
         uint startGas = gasleft();
-        require(startGas >= gasLimit, "OUT_OF_GAS");
+        require(startGas >= gasLimit.add(gasOverhead), "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
@@ -120,7 +117,7 @@ contract MetaTxModule is BaseModule
             gasToken,
             gasPrice,
             gasLimit,
-            gasReserve
+            gasOverhead
         );
 
         address[] memory signers = extractMetaTxSigners(
@@ -142,7 +139,7 @@ contract MetaTxModule is BaseModule
             gasToken,
             gasPrice,
             gasLimit,
-            gasReserve,
+            gasOverhead,
             startGas - gasleft()
         );
 
@@ -154,23 +151,21 @@ contract MetaTxModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        uint    gasReserve,
+        uint    gasOverhead,
         uint    gasSpent
         )
         private
     {
-        uint gasUsed = gasSpent.add(gasReserve);
-        require(gasUsed <= gasLimit, "EXCEED_GAS_LIMIT");
-        require(gasReserve <= gasleft(), "OUT_OF_GAS");
+        require(gasSpent <= gasLimit, "EXCEED_GAS_LIMIT");
 
         if (gasPrice == 0) return;
 
-        gasUsed = gasUsed.mul(gasPrice);
+        uint totalGasSpent = gasSpent.add(gasOverhead).mul(gasPrice);
         if (gasToken == address(0)) {
-            Wallet(wallet).transact(msg.sender, gasSpent, "");
+            Wallet(wallet).transact(msg.sender, totalGasSpent, "");
         } else {
-            bytes memory data = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasSpent);
-            Wallet(wallet).transact(gasToken, 0, data);
+            bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, totalGasSpent);
+            Wallet(wallet).transact(gasToken, 0, txData);
         }
     }
 
