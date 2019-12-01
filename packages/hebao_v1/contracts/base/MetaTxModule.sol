@@ -47,8 +47,6 @@ contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
-    uint   constant public   GAS_OVERHEAD = 30000;
-
     struct WalletState
     {
         uint nonce;
@@ -88,7 +86,9 @@ contract MetaTxModule is BaseModule
     /// @param gasToken The token to pay the relayer as fees. Use address(0) for Ether.
     /// @param gasPrice The amount of `gasToken` to pay per gas. 0 is a valid value.
     /// @param gasLimit The max amount of gas that can be used by this meta transaction,
-    ///                excluding an extra `GAS_OVERHEAD` for paying the relayer fees.
+    ///                including the `gasReserve`.
+    /// @param gasReserve The amount of `gasToken` reserved for the meta data storage and
+    ///                   extra logic in the meta-transaction.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
@@ -96,11 +96,14 @@ contract MetaTxModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
+        uint    gasReserve,
         bytes[] calldata signatures
         )
         external
         payable
     {
+        require(gasLimit > gasReserve, "INVALID_GAS_LIMIT");
+
         uint startGas = gasleft();
         require(startGas >= gasLimit, "OUT_OF_GAS");
 
@@ -111,13 +114,17 @@ contract MetaTxModule is BaseModule
             msg.value, // value
             data,
             nonce,
+            gasToken,
             gasPrice,
             gasLimit,
-            gasToken
+            gasReserve
         );
 
-        bytes4 method = extractMethod(data);
-        address[] memory signers = extractMetaTxSigners(wallet, method, data);
+        address[] memory signers = extractMetaTxSigners(
+            wallet,
+            extractMethod(data),
+            data
+        );
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -127,7 +134,14 @@ contract MetaTxModule is BaseModule
         // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.value(msg.value)(data);
 
-        reimburseGasFee(wallet, gasToken, gasPrice, gasLimit, startGas - gasleft());
+        reimburseGasFee(
+            wallet,
+            gasToken,
+            gasPrice,
+            gasLimit,
+            gasReserve,
+            startGas - gasleft()
+        );
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
     }
@@ -137,17 +151,18 @@ contract MetaTxModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
+        uint    gasReserve,
         uint    gasSpent
         )
         private
     {
+        uint gasUsed = gasSpent + gasReserve;
+        require(gasUsed <= gasLimit, "EXCEED_GAS_LIMIT");
+        require(gasReserve <= gasleft(), "OUT_OF_GAS");
+
         if (gasPrice == 0) return;
 
-        uint gasAmount = gasSpent + GAS_OVERHEAD;
-        require(gasAmount <= gasLimit, "EXCEED_GAS_LIMIT");
-        require(GAS_OVERHEAD <= gasleft(), "OUT_OF_GAS");
-
-        gasAmount = gasAmount.mul(gasPrice);
+        gasUsed = gasUsed.mul(gasPrice);
         if (gasToken == address(0)) {
             Wallet(wallet).transact(msg.sender, gasSpent, "");
         } else {
@@ -202,12 +217,13 @@ contract MetaTxModule is BaseModule
     function getSignHash(
         address from,
         address to,
-        uint256 value,
+        uint    value,
         bytes   memory data,
-        uint256 nonce,
-        uint256 gasPrice,
-        uint256 gasLimit,
-        address gasToken
+        uint    nonce,
+        address gasToken,
+        uint    gasPrice,
+        uint    gasLimit,
+        uint    gasReserve
         )
         public
         pure
@@ -222,9 +238,10 @@ contract MetaTxModule is BaseModule
                 value,
                 keccak256(data),
                 nonce,
+                gasToken,
                 gasPrice,
                 gasLimit,
-                gasToken
+                gasReserve
             )
         );
 
