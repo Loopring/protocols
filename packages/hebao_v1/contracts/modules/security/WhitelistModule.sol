@@ -29,15 +29,18 @@ import "./SecurityModule.sol";
 contract WhitelistModule is SecurityModule
 {
     WhitelistStore  public whitelistStore;
+    uint delayPeriod;
 
     constructor(
         SecurityStore  _securityStore,
-        WhitelistStore _whitelistStore
+        WhitelistStore _whitelistStore,
+        uint           _delayPeriod
         )
         public
         SecurityModule(_securityStore)
     {
         whitelistStore = _whitelistStore;
+        delayPeriod = _delayPeriod;
     }
 
     function addToWhitelist(
@@ -49,7 +52,7 @@ contract WhitelistModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        whitelistStore.addToWhitelist(wallet, addr);
+        whitelistStore.addToWhitelist(wallet, addr, now + delayPeriod);
     }
 
     function removeFromWhitelist(

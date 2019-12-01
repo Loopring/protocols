@@ -25,7 +25,6 @@ import "../../base/DataStore.sol";
 /// @dev This store maintains a wallet's whitelisted addresses.
 contract WhitelistStore is DataStore
 {
-    uint delayToDffective;
     mapping(address => mapping(address => uint)) public timestampMap;
 
     event Whitelisted(
@@ -34,21 +33,21 @@ contract WhitelistStore is DataStore
         bool            whitelisted
     );
 
-    constructor(uint _delayToDffective)
-        public DataStore()
+    constructor() public DataStore()
     {
-        delayToDffective = _delayToDffective;
     }
 
     function addToWhitelist(
         address wallet,
-        address addr
+        address addr,
+        uint    effectiveSince
         )
         public
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
-        timestampMap[wallet][addr] = now + delayToDffective;
+        uint effective = effectiveSince >= now ? effectiveSince : now;
+        timestampMap[wallet][addr] = effective;
         emit Whitelisted(wallet, addr, true);
     }
 
