@@ -69,13 +69,13 @@ contract WhitelistStore is DataStore
         view
         returns (
             address[] memory addresses,
-            uint[]    memory timestamps
+            uint[]    memory effectiveSince
         )
     {
         addresses = addressesInSet(walletKey(wallet));
-        timestamps = new uint[](addresses.length);
+        effectiveSince = new uint[](addresses.length);
         for (uint i = 0; i < addresses.length; i++) {
-            timestamps[i] = timestampMap[wallet][addresses[i]];
+            effectiveSince[i] = timestampMap[wallet][addresses[i]];
         }
     }
 
@@ -89,8 +89,8 @@ contract WhitelistStore is DataStore
             uint effectiveSince
         )
     {
-        timestamp = timestampMap[wallet][addr];
-        effectiveSince = timestamp > 0 && timestamp <= now;
+        effectiveSince = timestampMap[wallet][addr];
+        isWhitelistedAndEffective = effectiveSince > 0 && effectiveSince <= now;
     }
 
     function whitelistSize(address wallet)
