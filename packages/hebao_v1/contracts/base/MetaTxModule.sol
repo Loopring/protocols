@@ -85,7 +85,7 @@ contract MetaTxModule is BaseModule
     ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
     ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
-    ///                   and `gasOverhead`.
+    ///                   and `gasOverhead`. To pay fee in Ether, use address(0) as gasToken.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
