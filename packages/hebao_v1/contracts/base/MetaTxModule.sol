@@ -105,7 +105,7 @@ contract MetaTxModule is BaseModule
         require(gasLimit > 0, "INVALID_GAS_LIMIT");
 
         uint startGas = gasleft();
-        require(startGas >= gasLimit.add(gasOverhead), "OUT_OF_GAS");
+        require(startGas >= gasLimit, "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
@@ -139,6 +139,8 @@ contract MetaTxModule is BaseModule
         //     .gas(gasLimit.sub(startGas.sub(gasleft())))
         //     .value(msg.value)(data);
 
+        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
+
         reimburseGasFee(
             wallet,
             gasToken,
@@ -147,8 +149,6 @@ contract MetaTxModule is BaseModule
             gasOverhead,
             startGas - gasleft()
         );
-
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
     }
 
     function reimburseGasFee(
