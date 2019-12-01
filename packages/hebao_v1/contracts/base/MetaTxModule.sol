@@ -132,6 +132,29 @@ contract MetaTxModule is BaseModule
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
     }
 
+    /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
+    ///      This method can only be called by a meta transaction.
+    /// @param data The raw transaction data of all transactions.
+    /// @param value The ETH value to send in the transaction.
+    function executeTransactions(
+        bytes[] calldata data,
+        uint[]  calldata value
+        )
+        external
+        payable
+        onlyFromMetaTx
+    {
+        require(data.length == value.length, "INVALID_INPUT");
+        uint totalValue = 0;
+        for (uint i = 0; i < data.length; i++) {
+            // solium-disable-next-line security/no-call-value
+            (bool success,) = address(this).call.value(value[i])(data[i]);
+            require(success, "TX_FAILED");
+            totalValue = totalValue.add(value[i]);
+        }
+        require(totalValue == msg.value, "INVALID_VALUE");
+    }
+
     function reimburseGasFee(
         address wallet,
         address gasToken,
