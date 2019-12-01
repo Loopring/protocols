@@ -47,6 +47,8 @@ contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
+    uint constant public MIN_GAS_RESERVE = 20000;
+
     struct WalletState
     {
         uint nonce;
@@ -102,6 +104,7 @@ contract MetaTxModule is BaseModule
         external
         payable
     {
+        require(gasReserve >= MIN_GAS_RESERVE, "INVALID_GAS_RESERVE");
         require(gasLimit > gasReserve, "INVALID_GAS_LIMIT");
 
         uint startGas = gasleft();
