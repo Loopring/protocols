@@ -117,9 +117,9 @@ contract LoopringModule is SecurityModule
         (bool success, bytes memory result) = address(exchange).staticcall(callData);
         if (success && result.length == 96) {
             assembly {
-                accountId := mload(result)
-                pubKeyX := mload(add(result, 32))
-                pubKeyY := mload(add(result, 64))
+                accountId := mload(add(result, 32))
+                pubKeyX := mload(add(result, 64))
+                pubKeyY := mload(add(result, 96))
             }
         }
     }
