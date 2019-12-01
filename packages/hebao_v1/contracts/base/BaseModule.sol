@@ -80,7 +80,7 @@ contract BaseModule is Module, ReentrancyGuard
         internal
         returns (bytes memory)
     {
-        return Wallet(wallet).transact(uint8(0), to, value, data);
+        return Wallet(wallet).transact(uint8(1), to, value, data);
     }
 
     function transact2(
@@ -92,7 +92,7 @@ contract BaseModule is Module, ReentrancyGuard
         internal
         returns (bytes memory)
     {
-        return Wallet(wallet).transact(uint8(1), to, value, data);
+        return Wallet(wallet).transact(uint8(2), to, value, data);
     }
 
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
