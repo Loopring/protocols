@@ -155,4 +155,28 @@ contract BaseModule is Module, ReentrancyGuard
             w.bindStaticMethod(methods[i], address(0));
         }
     }
+
+    function transactCall(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(uint8(1), to, value, data);
+    }
+
+    function transactDelegateCall(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(uint8(2), to, value, data);
+    }
 }
