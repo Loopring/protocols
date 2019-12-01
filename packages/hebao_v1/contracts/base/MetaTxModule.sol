@@ -134,6 +134,11 @@ contract MetaTxModule is BaseModule
         // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.value(msg.value)(data);
 
+        // TODO(daniel): enable gas settings -- stack too deep
+        // (bool success,) = address(this).call
+        //     .gas(gasLimit.sub(startGas.sub(gasleft())))
+        //     .value(msg.value)(data);
+
         reimburseGasFee(
             wallet,
             gasToken,

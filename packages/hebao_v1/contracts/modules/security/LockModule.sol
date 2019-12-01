@@ -115,7 +115,7 @@ contract LockModule is SecurityModule
         bytes   memory data
         )
         internal
-        pure
+        view
         returns (address[] memory signers)
     {
         require(
