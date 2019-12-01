@@ -67,7 +67,7 @@ contract WhitelistModule is SecurityModule
     function getWhitelist(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (address[] memory, uint[] memory)
     {
         return whitelistStore.whitelist(wallet);
     }

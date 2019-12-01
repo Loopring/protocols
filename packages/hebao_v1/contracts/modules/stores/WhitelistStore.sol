@@ -17,21 +17,24 @@
 pragma solidity ^0.5.11;
 
 import "../../lib/AddressSet.sol";
-
-import "../../base/DelayedDataStore.sol";
+import "../../base/DataStore.sol";
 
 
 /// @title WhitelistStore
 /// @dev This store maintains a wallet's whitelisted addresses.
-contract WhitelistStore is DelayedDataStore
+contract WhitelistStore is DataStore
 {
+    uint public delaySecs;
+
     event Whitelisted(
         address indexed wallet,
         address indexed addr,
         bool            whitelisted
     );
 
-    constructor(uint _delaySecs) public DelayedDataStore(_delaySecs) {}
+    constructor(uint _delaySecs) public {
+        delaySecs = _delaySecs;
+    }
 
     function addToWhitelist(
         address wallet,
@@ -40,7 +43,7 @@ contract WhitelistStore is DelayedDataStore
         public
         onlyManager
     {
-        addAddressToSetWithDelay(walletKey(wallet), addr, true);
+        addAddressToSet(walletKey(wallet), addr, true);
         emit Whitelisted(wallet, addr, true);
     }
 
@@ -51,17 +54,18 @@ contract WhitelistStore is DelayedDataStore
         public
         onlyManager
     {
-        removeAddressTs(walletKey(wallet), addr);
-        removeAddressFromSet(walletKey(wallet), addr);
+        bytes32 key = walletKey(wallet);
+        removeAddressFromSet(key, addr);
         emit Whitelisted(wallet, addr, false);
     }
 
     function whitelist(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (address[] memory whitelisted, uint[] memory addTimestamps)
     {
-        return addressesInSet(walletKey(wallet));
+        whitelisted = addressesInSet(walletKey(wallet));
+        addTimestamps = timestampsInSet(walletKey(wallet));
     }
 
     function isWhitelisted(
@@ -71,7 +75,14 @@ contract WhitelistStore is DelayedDataStore
         view
         returns (bool)
     {
-        return isAddressInDelayedSet(walletKey(wallet), addr);
+        uint pos = posInSet(walletKey(wallet), addr);
+        if (pos > 0) {
+            uint[] memory timestamps = timestampsInSet(walletKey(wallet));
+            uint ts = timestamps[pos - 1];
+            return now - ts > delaySecs;
+        } else {
+            return false;
+        }
     }
 
     function whitelistSize(address wallet)

@@ -26,6 +26,7 @@ contract AddressSet
         address[] addresses;
         mapping (address => uint) addressPos;
         uint count;
+        uint[] addTimestamps;
     }
     mapping (bytes32 => Set) private sets;
 
@@ -39,6 +40,7 @@ contract AddressSet
         require(set.addressPos[addr] == 0, "ADDRESS_EXIST");
         if (maintainList) {
             set.addresses.push(addr);
+            set.addTimestamps.push(now);
             set.addressPos[addr] = set.addresses.length;
         } else {
             require(set.addresses.length == 0, "MUST_MAINTAIN_LIST");
@@ -64,6 +66,10 @@ contract AddressSet
                 set.addressPos[lastAddr] = pos;
             }
             set.addresses.length -= 1;
+
+            uint lastTs = set.addTimestamps[set.addTimestamps.length - 1];
+            set.addTimestamps[pos - 1] = lastTs;
+            set.addTimestamps.length -= 1;
         } else {
             set.count -= 1;
         }
@@ -96,11 +102,27 @@ contract AddressSet
         return set.addresses.length + set.count;
     }
 
+    function posInSet(bytes32 key, address addr)
+        internal
+        view
+        returns (uint)
+    {
+        return sets[key].addressPos[addr];
+    }
+
     function addressesInSet(bytes32 key)
         internal
         view
         returns (address[] memory)
     {
         return sets[key].addresses;
+    }
+
+    function timestampsInSet(bytes32 key)
+        internal
+        view
+        returns (uint[] memory)
+    {
+        return sets[key].addTimestamps;
     }
 }
