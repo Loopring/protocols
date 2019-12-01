@@ -159,7 +159,7 @@ contract MetaTxModule is BaseModule
         )
         private
     {
-        uint gasUsed = gasSpent + gasReserve;
+        uint gasUsed = gasSpent.add(gasReserve);
         require(gasUsed <= gasLimit, "EXCEED_GAS_LIMIT");
         require(gasReserve <= gasleft(), "OUT_OF_GAS");
 
