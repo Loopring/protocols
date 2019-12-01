@@ -149,7 +149,7 @@ contract LoopringModule is SecurityModule
             permission
         );
 
-        transact1(wallet, address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, callData);
         emit AccountUpdated(address(exchange), wallet, newAccount);
     }
 
@@ -176,7 +176,7 @@ contract LoopringModule is SecurityModule
             amount
         );
 
-        transact1(wallet, address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, callData);
         emit Deposit(address(exchange), wallet, token, amount);
     }
 
@@ -203,7 +203,7 @@ contract LoopringModule is SecurityModule
             amount
         );
 
-        transact1(wallet, address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, callData);
         emit Withdrawal(address(exchange), wallet, token, amount);
     }
 
@@ -237,7 +237,7 @@ contract LoopringModule is SecurityModule
                 msg.sender,
                 feeAmount
             );
-            transact1(wallet, feeToken, 0, callData);
+            transactCall(wallet, feeToken, 0, callData);
         }
     }
 

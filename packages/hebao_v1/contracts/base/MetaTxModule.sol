@@ -149,10 +149,10 @@ contract MetaTxModule is BaseModule
 
         gasAmount = gasAmount.mul(gasPrice);
         if (gasToken == address(0)) {
-            transact1(wallet, msg.sender, gasSpent, "");
+            transactCall(wallet, msg.sender, gasSpent, "");
         } else {
             bytes memory data = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasSpent);
-            transact1(wallet, gasToken, 0, data);
+            transactCall(wallet, gasToken, 0, data);
         }
     }
 

@@ -156,7 +156,7 @@ contract BaseModule is Module, ReentrancyGuard
         }
     }
 
-    function transact1(
+    function transactCall(
         address wallet,
         address to,
         uint    value,
@@ -168,7 +168,7 @@ contract BaseModule is Module, ReentrancyGuard
         return Wallet(wallet).transact(uint8(1), to, value, data);
     }
 
-    function transact2(
+    function transactDelegateCall(
         address wallet,
         address to,
         uint    value,
