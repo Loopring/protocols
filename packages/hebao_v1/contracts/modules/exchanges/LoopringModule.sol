@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 
@@ -109,7 +110,18 @@ contract LoopringModule is SecurityModule
             uint   pubKeyY
         )
     {
-        return exchange.getAccount(wallet);
+        bytes memory callData = abi.encodeWithSelector(
+            exchange.getAccount.selector,
+            wallet
+        );
+        (bool success, bytes memory result) = address(exchange).staticcall(callData);
+        if (success && result.length == 96) {
+            assembly {
+                accountId := mload(add(result, 32))
+                pubKeyX := mload(add(result, 64))
+                pubKeyY := mload(add(result, 96))
+            }
+        }
     }
 
     function createOrUpdateDEXAccount(
@@ -137,7 +149,7 @@ contract LoopringModule is SecurityModule
             permission
         );
 
-        Wallet(wallet).transact(address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, callData);
         emit AccountUpdated(address(exchange), wallet, newAccount);
     }
 
@@ -164,7 +176,7 @@ contract LoopringModule is SecurityModule
             amount
         );
 
-        Wallet(wallet).transact(address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, callData);
         emit Deposit(address(exchange), wallet, token, amount);
     }
 
@@ -191,7 +203,7 @@ contract LoopringModule is SecurityModule
             amount
         );
 
-        Wallet(wallet).transact(address(exchange), fee, callData);
+        transactCall(wallet, address(exchange), fee, callData);
         emit Withdrawal(address(exchange), wallet, token, amount);
     }
 
@@ -225,7 +237,7 @@ contract LoopringModule is SecurityModule
                 msg.sender,
                 feeAmount
             );
-            Wallet(wallet).transact(feeToken, 0, callData);
+            transactCall(wallet, feeToken, 0, callData);
         }
     }
 

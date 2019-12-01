@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../lib/AddressSet.sol";
 import "../lib/SignatureUtil.sol";
@@ -74,7 +75,7 @@ contract BaseVault is Vault, AddressSet
         uint      value,
         bytes     calldata data,
         address[] calldata signers,
-        bytes     calldata signatures
+        bytes[]   calldata signatures
         )
         external
     {
