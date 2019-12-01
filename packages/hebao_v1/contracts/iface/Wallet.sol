@@ -30,6 +30,8 @@ pragma solidity ^0.5.11;
 /// https://github.com/argentlabs/argent-contracts
 contract Wallet
 {
+    enum TransactMode {CALL, DELEGATECALL}
+
     function owner() public view returns (address);
 
     /// @dev Set a new owner.
@@ -93,14 +95,16 @@ contract Wallet
     ///      beeen added to this wallet. The wallet owner shall NOT be permitted
     ///      to call this method directly.
     ///
+    /// @param mode The transaction mode.
     /// @param to The desitination address.
     /// @param value The amount of Ether to transfer.
     /// @param data The data to send over using `to.call.value(value)(data)`
     /// @return result The transaction's return value.
     function transact(
-        address to,
-        uint    value,
-        bytes   calldata data
+        TransactMode mode,
+        address      to,
+        uint         value,
+        bytes        calldata data
         )
         external
         returns (bytes memory result);

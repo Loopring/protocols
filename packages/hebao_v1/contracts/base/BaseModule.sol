@@ -71,6 +71,40 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
+    function transact(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(
+            Wallet.TransactMode.CALL,
+            to,
+            value,
+            data
+        );
+    }
+
+    function transact2(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(
+            Wallet.TransactMode.DELEGATECALL,
+            to,
+            value,
+            data
+        );
+    }
+
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
     ///      Note that the module must have NOT been added to the wallet.
     ///

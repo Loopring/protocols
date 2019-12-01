@@ -63,14 +63,14 @@ contract TransferModule is SecurityModule
         if (amount == 0) return;
 
         if (token == address(0)) {
-            Wallet(wallet).transact(to, amount, "");
+            Wallet(wallet).transact(Wallet.TransactMode.CALL,to, amount, "");
         } else {
             bytes memory callData = abi.encodeWithSelector(
                 ERC20_TRANSFER,
                 to,
                 amount
             );
-            Wallet(wallet).transact(token, 0, callData);
+            Wallet(wallet).transact(Wallet.TransactMode.CALL,token, 0, callData);
         }
         emit Transfered(wallet, token, to, amount, logdata);
     }
@@ -90,7 +90,7 @@ contract TransferModule is SecurityModule
             to,
             amount
         );
-        Wallet(wallet).transact(token, 0, callData);
+        Wallet(wallet).transact(Wallet.TransactMode.CALL,token, 0, callData);
         emit Approved(wallet, token, to, amount);
     }
 
@@ -105,7 +105,7 @@ contract TransferModule is SecurityModule
         bytes4 method = extractMethod(data);
         require(method != ERC20_TRANSFER && method != ERC20_APPROVE, "INVALID_METHOD");
 
-        Wallet(wallet).transact(to, amount, data);
+        transact(wallet, to, amount, data);
         emit ContractCalled(wallet, to, amount, data);
     }
 }
