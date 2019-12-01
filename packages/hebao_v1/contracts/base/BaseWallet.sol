@@ -206,9 +206,11 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         if (mode == TransactMode.CALL) {
             // solium-disable-next-line security/no-call-value
             (success, result) = to.call.value(value)(data);
-        } else {
+        } else if (mode == TransactMode.DELEGATECALL) {
             // solium-disable-next-line security/no-call-value
             (success, result) = to.delegatecall(data);
+        } else {
+            revert("UNSUPPORTED_MODE");
         }
         if (!success) {
             assembly {
