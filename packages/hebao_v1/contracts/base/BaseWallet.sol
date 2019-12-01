@@ -168,10 +168,10 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     }
 
     function transact(
-        TransactMode mode,
-        address      to,
-        uint         value,
-        bytes        calldata data
+        uint8    mode,
+        address  to,
+        uint     value,
+        bytes    calldata data
         )
         external
         onlyModule
@@ -192,7 +192,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     }
 
     function transactInternal(
-        TransactMode mode,
+        uint8   mode,
         address to,
         uint    value,
         bytes   memory data
@@ -203,10 +203,10 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(to != address(this) && !hasModule(to), "PROHIBITED");
 
         bool success;
-        if (mode == TransactMode.CALL) {
+        if (mode == 1) {
             // solium-disable-next-line security/no-call-value
             (success, result) = to.call.value(value)(data);
-        } else if (mode == TransactMode.DELEGATECALL) {
+        } else if (mode == 2) {
             // solium-disable-next-line security/no-call-value
             (success, result) = to.delegatecall(data);
         } else {
