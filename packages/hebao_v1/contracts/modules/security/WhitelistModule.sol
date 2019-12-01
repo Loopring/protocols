@@ -68,8 +68,8 @@ contract WhitelistModule is SecurityModule
         public
         view
         returns (
-            address[] memory,
-            uint[] memory
+            address[] memory addresses,
+            uint[]    memory timestamps
         )
     {
         return whitelistStore.whitelist(wallet);
