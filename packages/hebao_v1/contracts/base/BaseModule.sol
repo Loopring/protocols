@@ -71,30 +71,6 @@ contract BaseModule is Module, ReentrancyGuard
         _;
     }
 
-    function transact1(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-        returns (bytes memory)
-    {
-        return Wallet(wallet).transact(uint8(1), to, value, data);
-    }
-
-    function transact2(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-        returns (bytes memory)
-    {
-        return Wallet(wallet).transact(uint8(2), to, value, data);
-    }
-
     /// @dev Adds a module to a wallet. Callable only by the wallet owner.
     ///      Note that the module must have NOT been added to the wallet.
     ///
@@ -178,5 +154,29 @@ contract BaseModule is Module, ReentrancyGuard
         for (uint i = 0; i < methods.length; i++) {
             w.bindStaticMethod(methods[i], address(0));
         }
+    }
+
+    function transact1(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(uint8(1), to, value, data);
+    }
+
+    function transact2(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(uint8(2), to, value, data);
     }
 }
