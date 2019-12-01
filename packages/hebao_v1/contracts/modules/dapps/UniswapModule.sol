@@ -37,7 +37,7 @@ contract UniswapModule is SecurityModule
     {
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

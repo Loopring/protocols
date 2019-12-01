@@ -95,7 +95,7 @@ contract WhitelistModule is SecurityModule
         return whitelistStore.isWhitelisted(wallet, addr);
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

@@ -29,28 +29,32 @@ contract UpgraderModule is BaseModule {
 
     function activate(address wallet)
         external
-        onlyFromWallet(wallet)
+        onlyFromWalletModule(wallet)
     {
         Wallet w = Wallet(wallet);
         for(uint i = 0; i < modulesToAdd.length; i++) {
             if (!w.hasModule(modulesToAdd[i])) {
                 w.addModule(modulesToAdd[i]);
+                Module(modulesToAdd[i]).activate(wallet);
             }
         }
         for(uint i = 0; i < modulesToRemove.length; i++) {
             if (w.hasModule(modulesToRemove[i])) {
+                Module(modulesToRemove[i]).deactivate(wallet);
                 w.removeModule(modulesToRemove[i]);
             }
         }
 
         emit Activated(wallet);
 
+        deactivate(wallet);
         w.removeModule(address(this));
     }
 
+
     function deactivate(address wallet)
-        external
-        onlyFromWallet(wallet)
+        public
+        onlyFromWalletModule(wallet)
     {
         emit Deactivated(wallet);
     }

@@ -64,7 +64,7 @@ contract LoopringModule is SecurityModule
         reimbursementStore = _reimbursementStore;
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

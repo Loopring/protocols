@@ -32,7 +32,7 @@ contract ERC1271Module is BaseModule, ERC1271
 {
     using SignatureUtil for bytes32;
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)
@@ -41,7 +41,7 @@ contract ERC1271Module is BaseModule, ERC1271
         methods[0] = this.isValidSignature.selector;
     }
 
-    /// @dev This is a static method bound to wallet.
+    /// @dev This is a method bound to wallet.
     ///      It checks if the current wallet owner is the data signer.
     function isValidSignature(
         bytes memory _data,

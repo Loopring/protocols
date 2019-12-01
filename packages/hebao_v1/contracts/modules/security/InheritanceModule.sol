@@ -50,7 +50,7 @@ contract InheritanceModule is SecurityModule
         waitingPeriod = _waitingPeriod;
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

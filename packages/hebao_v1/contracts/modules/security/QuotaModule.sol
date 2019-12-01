@@ -66,7 +66,7 @@ contract QuotaModule is SecurityModule
         available = quotaStore.availableQuota(wallet);
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)
