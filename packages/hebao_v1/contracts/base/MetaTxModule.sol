@@ -109,7 +109,7 @@ contract MetaTxModule is BaseModule
         bytes32 metaTxHash = getSignHash(
             wallet, // from
             address(this),  // to. Note the relayer can only call its own methods.
-            0, // value
+            msg.value, // value
             data,
             nonce,
             gasPrice,
