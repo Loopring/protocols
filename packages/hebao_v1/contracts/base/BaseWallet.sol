@@ -168,15 +168,16 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     }
 
     function transact(
-        address to,
-        uint    value,
-        bytes   calldata data
+        uint8    mode,
+        address  to,
+        uint     value,
+        bytes    calldata data
         )
         external
         onlyModule
         returns (bytes memory result)
     {
-        return transactInternal(to, value, data);
+        return transactInternal(mode, to, value, data);
     }
 
     function addModuleInternal(address _module)
@@ -191,6 +192,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     }
 
     function transactInternal(
+        uint8   mode,
         address to,
         uint    value,
         bytes   memory data
@@ -201,8 +203,16 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(to != address(this) && !hasModule(to), "PROHIBITED");
 
         bool success;
-        // solium-disable-next-line security/no-call-value
-        (success, result) = to.call.value(value)(data);
+        if (mode == 1) {
+            // solium-disable-next-line security/no-call-value
+            (success, result) = to.call.value(value)(data);
+        } else if (mode == 2) {
+            // solium-disable-next-line security/no-call-value
+            (success, result) = to.delegatecall(data);
+        } else {
+            revert("UNSUPPORTED_MODE");
+        }
+
         if (!success) {
             assembly {
                 returndatacopy(0, 0, returndatasize)
