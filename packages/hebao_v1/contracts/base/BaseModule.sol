@@ -115,7 +115,7 @@ contract BaseModule is Module, ReentrancyGuard
         external
         onlyFromWalletModule(wallet)
     {
-        bindStaticMethods(wallet);
+        bindMethods(wallet);
         emit Activated(wallet);
     }
 
@@ -124,16 +124,16 @@ contract BaseModule is Module, ReentrancyGuard
         external
         onlyFromWalletModule(wallet)
     {
-        unbindStaticMethods(wallet);
+        unbindMethods(wallet);
         emit Deactivated(wallet);
     }
 
-    ///.@dev Gets the list of static methods for binding to wallets.
-    ///      Sub-contracts should override this method to provide readonly methods for
+    ///.@dev Gets the list of methods for binding to wallets.
+    ///      Sub-contracts should override this method to provide methods for
     ///      wallet binding.
-    /// @return methods A list of static method selectors for binding to the wallet
+    /// @return methods A list of method selectors for binding to the wallet
     ///         when this module is activated for the wallet.
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)
@@ -142,25 +142,25 @@ contract BaseModule is Module, ReentrancyGuard
 
     // ===== internal & private methods =====
 
-    /// @dev Binds all static methods to the given wallet.
-    function bindStaticMethods(address wallet)
+    /// @dev Binds all methods to the given wallet.
+    function bindMethods(address wallet)
         internal
     {
         Wallet w = Wallet(wallet);
-        bytes4[] memory methods = staticMethods();
+        bytes4[] memory methods = boundMethods();
         for (uint i = 0; i < methods.length; i++) {
-            w.bindStaticMethod(methods[i], address(this));
+            w.bindMethod(methods[i], address(this));
         }
     }
 
-    /// @dev Unbinds all static methods from the given wallet.
-    function unbindStaticMethods(address wallet)
+    /// @dev Unbinds all methods from the given wallet.
+    function unbindMethods(address wallet)
         internal
     {
         Wallet w = Wallet(wallet);
-        bytes4[] memory methods = staticMethods();
+        bytes4[] memory methods = boundMethods();
         for (uint i = 0; i < methods.length; i++) {
-            w.bindStaticMethod(methods[i], address(0));
+            w.bindMethod(methods[i], address(0));
         }
     }
 

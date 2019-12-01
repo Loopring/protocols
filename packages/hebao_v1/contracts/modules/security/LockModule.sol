@@ -56,7 +56,7 @@ contract LockModule is SecurityModule
         lockPeriod = _lockPeriod;
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

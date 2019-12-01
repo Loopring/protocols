@@ -65,7 +65,7 @@ contract QuotaTransfers is Claimable, TransferModule
         pendingExpiry = _pendingExpiry;
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

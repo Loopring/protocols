@@ -45,7 +45,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
-    event StaticMethodBound     (bytes4  indexed method, address indexed module);
+    event MethodBound           (bytes4  indexed method, address indexed module);
 
     event WalletSetup(address indexed owner);
 
@@ -145,7 +145,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return isAddressInSet(MODULE, _module);
     }
 
-    function bindStaticMethod(bytes4 _method, address _module)
+    function bindMethod(bytes4 _method, address _module)
         external
         onlyModule
     {
@@ -154,10 +154,10 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
         methodToModule[_method] = _module;
-        emit StaticMethodBound(_method, _module);
+        emit MethodBound(_method, _module);
     }
 
-    function staticMethodModule(bytes4 _method)
+    function boundMethodModule(bytes4 _method)
         public
         view
         returns (address)
@@ -217,8 +217,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         emit Transacted(msg.sender, to, value, data);
     }
 
-    /// @dev This default function can receive Ether or perform queris to modules
-    ///      using staticly bound methods.
+    /// @dev This default function can receive Ether or perform queries to modules
+    ///      using bound methods.
     function()
         external
         payable
@@ -248,7 +248,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         }
     }
 
-    function isLocalStaticMethod(bytes4 _method)
+    function isLocalMethod(bytes4 _method)
         private
         pure
         returns (bool)
@@ -256,6 +256,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
-            _method == this.staticMethodModule.selector;
+            _method == this.boundMethodModule.selector;
     }
 }

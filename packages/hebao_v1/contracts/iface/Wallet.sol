@@ -68,20 +68,20 @@ contract Wallet
     /// @return True if the module exists; False otherwise.
     function hasModule(address _module) public view returns (bool);
 
-    /// @dev Binds a static (readonly) method from the given module to this
+    /// @dev Binds a method from the given module to this
     ///      wallet so the method can be invoked using this wallet's default
     ///      function.
     ///      Note that this method must throw when the given module has
     ///      not been added to this wallet.
     /// @param _method The method's 4-byte selector.
     /// @param _module The module's address. Use address(0) to unbind the method.
-    function bindStaticMethod(bytes4 _method, address _module) external;
+    function bindMethod(bytes4 _method, address _module) external;
 
     /// @dev Returns the module the given method has been bound to.
     /// @param _method The method's 4-byte selector.
     /// @return _module The address of the bound module. If no binding exists,
     ///                 returns address(0) instead.
-    function staticMethodModule(bytes4 _method) public view returns (address _module);
+    function boundMethodModule(bytes4 _method) public view returns (address _module);
 
     /// @dev Performs generic transactions. Any module that has been added to this
     ///      wallet can use this method to transact on any third-party contract with
