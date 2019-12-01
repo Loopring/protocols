@@ -20,8 +20,8 @@ pragma experimental ABIEncoderV2;
 import "../security/SecurityModule.sol";
 
 
-/// @title MakerModule
-contract MakerModule is SecurityModule
+/// @title CompoundModule
+contract CompoundModule is SecurityModule
 {
     constructor(
         SecurityStore _securityStore

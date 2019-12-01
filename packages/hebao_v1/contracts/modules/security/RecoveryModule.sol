@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
@@ -30,7 +31,6 @@ import "./SecurityModule.sol";
 /// @title RecoveryModule
 contract RecoveryModule is SecurityModule
 {
-
     event RecoveryStarted   (address indexed wallet, address indexed newOwner, uint completeAfter);
     event RecoveryCompleted (address indexed wallet, address indexed newOwner);
     event RecoveryCancelled (address indexed wallet);

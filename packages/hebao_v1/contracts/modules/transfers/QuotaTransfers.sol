@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/Claimable.sol";
 import "../../lib/ERC20.sol";
@@ -102,7 +103,7 @@ contract QuotaTransfers is Claimable, TransferModule
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         returns (bytes32 pendingTxId)
     {
@@ -149,6 +150,7 @@ contract QuotaTransfers is Claimable, TransferModule
         )
         external
         nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         returns (bytes32 pendingTxId)
     {
@@ -198,7 +200,7 @@ contract QuotaTransfers is Claimable, TransferModule
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
         require(
@@ -222,7 +224,7 @@ contract QuotaTransfers is Claimable, TransferModule
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
         if (whitelistStore.isWhitelisted(wallet, to)) {
@@ -256,7 +258,7 @@ contract QuotaTransfers is Claimable, TransferModule
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
         if (whitelistStore.isWhitelisted(wallet, to)) {
@@ -328,14 +330,24 @@ contract QuotaTransfers is Claimable, TransferModule
     }
 
     function extractMetaTxSigners(
-        address       /* wallet */,
-        bytes4        /* method */,
+        address       wallet,
+        bytes4        method,
         bytes memory  /* data */
         )
         internal
         view
-        returns (address[] memory)
+        returns (address[] memory signers)
     {
-        revert("UNSUPPORTED");
+        require (
+            method == this.transferToken.selector ||
+            method == this.transferTokensFullBalance.selector ||
+            method == this.approveToken.selector ||
+            method == this.callContract.selector ||
+            method == this.approveThenCallContract.selector,
+            "INVALID_METHOD"
+        );
+
+        signers = new address[](1);
+        signers[0] = Wallet(wallet).owner();
     }
 }

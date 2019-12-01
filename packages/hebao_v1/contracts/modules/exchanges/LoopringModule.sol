@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 
@@ -27,8 +28,8 @@ import "../security/SecurityModule.sol";
 import "./IExchangeV3.sol";
 
 
-/// @title LoopringDEXModule
-contract LoopringDEXModule is SecurityModule
+/// @title LoopringModule
+contract LoopringModule is SecurityModule
 {
     using MathUint for uint;
     event AccountUpdated(
@@ -109,7 +110,18 @@ contract LoopringDEXModule is SecurityModule
             uint   pubKeyY
         )
     {
-        return exchange.getAccount(wallet);
+        bytes memory callData = abi.encodeWithSelector(
+            exchange.getAccount.selector,
+            wallet
+        );
+        (bool success, bytes memory result) = address(exchange).staticcall(callData);
+        if (success && result.length == 96) {
+            assembly {
+                accountId := mload(add(result, 32))
+                pubKeyX := mload(add(result, 64))
+                pubKeyY := mload(add(result, 96))
+            }
+        }
     }
 
     function createOrUpdateDEXAccount(
