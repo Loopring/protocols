@@ -25,6 +25,9 @@ import "../../base/DataStore.sol";
 /// @dev This store maintains a wallet's whitelisted addresses.
 contract WhitelistStore is DataStore
 {
+    // wallet => whitelisted_addr => effective_since
+    mapping(address => mapping(address => uint)) public effectiveTimeMap;
+
     event Whitelisted(
         address indexed wallet,
         address indexed addr,
@@ -35,12 +38,15 @@ contract WhitelistStore is DataStore
 
     function addToWhitelist(
         address wallet,
-        address addr
+        address addr,
+        uint    effectiveTime
         )
         public
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
+        uint effective = effectiveTime >= now ? effectiveTime : now;
+        effectiveTimeMap[wallet][addr] = effective;
         emit Whitelisted(wallet, addr, true);
     }
 
@@ -52,25 +58,38 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         removeAddressFromSet(walletKey(wallet), addr);
+        delete effectiveTimeMap[wallet][addr];
         emit Whitelisted(wallet, addr, false);
     }
 
     function whitelist(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (
+            address[] memory addresses,
+            uint[]    memory effectiveTimes
+        )
     {
-        return addressesInSet(walletKey(wallet));
+        addresses = addressesInSet(walletKey(wallet));
+        effectiveTimes = new uint[](addresses.length);
+        for (uint i = 0; i < addresses.length; i++) {
+            effectiveTimes[i] = effectiveTimeMap[wallet][addresses[i]];
+        }
     }
 
     function isWhitelisted(
         address wallet,
-        address addr)
+        address addr
+        )
         public
         view
-        returns (bool)
+        returns (
+            bool isWhitelistedAndEffective,
+            uint effectiveTime
+        )
     {
-        return isAddressInSet(walletKey(wallet), addr);
+        effectiveTime = effectiveTimeMap[wallet][addr];
+        isWhitelistedAndEffective = effectiveTime > 0 && effectiveTime <= now;
     }
 
     function whitelistSize(address wallet)
