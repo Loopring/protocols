@@ -106,6 +106,6 @@ contract TransferModule is SecurityModule
         require(method != ERC20_TRANSFER && method != ERC20_APPROVE, "INVALID_METHOD");
 
         transactCall(wallet, to, amount, txData);
-        emit ContractCalled(wallet, to, amount, data);
+        emit ContractCalled(wallet, to, amount, txData);
     }
 }
