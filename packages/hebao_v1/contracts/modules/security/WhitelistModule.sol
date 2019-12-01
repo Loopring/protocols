@@ -67,7 +67,10 @@ contract WhitelistModule is SecurityModule
     function getWhitelist(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (
+            address[] memory,
+            uint[] memory
+        )
     {
         return whitelistStore.whitelist(wallet);
     }
@@ -77,7 +80,10 @@ contract WhitelistModule is SecurityModule
         address addr)
         public
         view
-        returns (bool)
+        returns (
+            bool isWhitelistedAndEffective,
+            uint timestamp
+        )
     {
         return whitelistStore.isWhitelisted(wallet, addr);
     }

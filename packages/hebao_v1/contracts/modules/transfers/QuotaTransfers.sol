@@ -119,7 +119,7 @@ contract QuotaTransfers is Claimable, TransferModule
         );
 
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
         if (!allowed) {
             uint tokenValue = getTokenValue(token, amount);
             allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
@@ -170,7 +170,7 @@ contract QuotaTransfers is Claimable, TransferModule
             "UNAUTHORIZED"
         );
 
-        bool allowed = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
         if (!allowed) {
             uint tokenValue = getTokenValue(address(0), amount);
             allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
@@ -203,10 +203,8 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        require(
-            whitelistStore.isWhitelisted(wallet, to),
-            "PROHIBITED"
-        );
+        (bool isAllowed,) = whitelistStore.isWhitelisted(wallet, to);
+        require(isAllowed, "PROHIBITED");
 
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i];
@@ -227,7 +225,8 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        if (whitelistStore.isWhitelisted(wallet, to)) {
+        (bool isAllowed,) = whitelistStore.isWhitelisted(wallet, to);
+        if (isAllowed) {
             approveInternal(wallet, token, to, amount);
             return;
         }
@@ -261,7 +260,8 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        if (whitelistStore.isWhitelisted(wallet, to)) {
+        (bool isAllowed,) = whitelistStore.isWhitelisted(wallet, to);
+        if (isAllowed) {
             approveInternal(wallet, token, to, amount);
             callContractInternal(wallet, to, 0, data);
             return;

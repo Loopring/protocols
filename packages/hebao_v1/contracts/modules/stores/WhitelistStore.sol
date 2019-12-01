@@ -25,13 +25,20 @@ import "../../base/DataStore.sol";
 /// @dev This store maintains a wallet's whitelisted addresses.
 contract WhitelistStore is DataStore
 {
+    uint effectiveDelay;
+    mapping(address => mapping(address => uint)) public timestampMap;
+
     event Whitelisted(
         address indexed wallet,
         address indexed addr,
         bool            whitelisted
     );
 
-    constructor() public DataStore() {}
+    constructor(uint _effectiveDelay)
+        public DataStore()
+    {
+        effectiveDelay = _effectiveDelay;
+    }
 
     function addToWhitelist(
         address wallet,
@@ -41,6 +48,7 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
+        timestampMap[wallet][addr] = now + effectiveDelay;
         emit Whitelisted(wallet, addr, true);
     }
 
@@ -52,15 +60,23 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         removeAddressFromSet(walletKey(wallet), addr);
+        delete timestampMap[wallet][addr];
         emit Whitelisted(wallet, addr, false);
     }
 
     function whitelist(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (
+            address[] memory addresses,
+            uint[]    memory timestamps
+        )
     {
-        return addressesInSet(walletKey(wallet));
+        addresses = addressesInSet(walletKey(wallet));
+        timestamps = new uint[](addresses.length);
+        for (uint i = 0; i < addresses.length; i++) {
+            timestamps[i] = timestampMap[wallet][addresses[i]];
+        }
     }
 
     function isWhitelisted(
@@ -68,9 +84,13 @@ contract WhitelistStore is DataStore
         address addr)
         public
         view
-        returns (bool)
+        returns (
+            bool isWhitelistedAndEffective,
+            uint timestamp
+        )
     {
-        return isAddressInSet(walletKey(wallet), addr);
+        timestamp = timestampMap[wallet][addr];
+        isWhitelistedAndEffective = timestamp > 0 && timestamp < now;
     }
 
     function whitelistSize(address wallet)
