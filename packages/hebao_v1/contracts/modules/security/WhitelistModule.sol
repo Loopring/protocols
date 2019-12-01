@@ -17,6 +17,8 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/MathUint.sol";
+
 import "../../iface/Wallet.sol";
 
 import "../stores/WhitelistStore.sol";
@@ -28,6 +30,8 @@ import "./SecurityModule.sol";
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
 {
+    using MathUint for uint;
+
     WhitelistStore  public whitelistStore;
     uint public delayPeriod;
 
@@ -52,7 +56,7 @@ contract WhitelistModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        whitelistStore.addToWhitelist(wallet, addr, now + delayPeriod);
+        whitelistStore.addToWhitelist(wallet, addr, now.add(delayPeriod));
     }
 
     function removeFromWhitelist(
