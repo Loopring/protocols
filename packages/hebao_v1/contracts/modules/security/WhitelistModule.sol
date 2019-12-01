@@ -29,7 +29,7 @@ import "./SecurityModule.sol";
 contract WhitelistModule is SecurityModule
 {
     WhitelistStore  public whitelistStore;
-    uint delayPeriod;
+    uint public delayPeriod;
 
     constructor(
         SecurityStore  _securityStore,
