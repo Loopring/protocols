@@ -88,7 +88,7 @@ contract MetaTxModule is BaseModule
     /// @param gasLimit The max amount of gas that can be used by this meta transaction,
     ///                 excluding the `gasOverhead`.
     /// @param gasOverhead The extra amount of `gasToken` paid for data storage and
-    ///                   extra fee-payment internal transaction.
+    ///                    extra fee-payment internal transaction.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
