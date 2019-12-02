@@ -50,7 +50,7 @@ library SignatureUtil
         public
         view
     {
-        require(signers.length <= signatures.length, "BAD_DATA");
+        require(signers.length == signatures.length, "BAD_DATA");
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_ORDER");

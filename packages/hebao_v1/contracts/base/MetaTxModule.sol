@@ -147,9 +147,8 @@ contract MetaTxModule is BaseModule
     ///      This method can only be called by a meta transaction.
     /// @param wallet The wallet used in all transactions.
     /// @param metaTxHash The hash of the complete meta transaction that is signed.
-    /// @param signers The signatures used for all transactions. If transactions need different number
-    ///        of signatures the signatures with indices [0, numSigners[ are used.
-    /// @param signatures The signatures used for all signers.
+    /// @param signers The signers needed for all transactions.
+    /// @param signatures The signatures for all signers.
     /// @param data The raw transaction data used for each transaction.
     /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
     function executeTransactions(
@@ -176,13 +175,18 @@ contract MetaTxModule is BaseModule
             address txWallet = extractWalletAddress(data[i]);
             require(txWallet == wallet, "INVALID_DATA");
 
-            // Make sure the signers needed for the transacaction are given in `signers` at [0, txSigners[
+            // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
             bytes4 method = extractMethod(data[i]);
             address[] memory txSigners = extractMetaTxSigners(wallet, method, data[i]);
             require(txSigners.length <= signers.length, "INVALID_INPUT");
-            for (uint s = 0; s < txSigners.length; s++) {
-                require(txSigners[s] == signers[s], "INVALID_INPUT");
+            for (uint j = 0; j < txSigners.length; j++) {
+                // Find the transaction signer in the given signers
+                uint s = 0;
+                while (s < signers.length && txSigners[j] != signers[s]) {
+                    s++;
+                }
+                require(s < signers.length, "INVALID_INPUT");
             }
 
             // solium-disable-next-line security/no-call-value
