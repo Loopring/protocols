@@ -56,12 +56,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         bytes           data
     );
 
-    event Received(
-        address indexed sender,
-        uint    value,
-        bytes   data
-    );
-
     modifier onlyOwner
     {
         require(msg.sender == _owner, "NOT_A_OWNER");
@@ -223,17 +217,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         external
         payable
     {
-        if (msg.value > 0) {
-            // If this was called from an EOA or we have enough gas we should emit an event
-            // Note: we check the origin to avoid that EOA transactions are estimated too low to emit the event
-            // solium-disable-next-line security/no-tx-origin
-            if (msg.sender == tx.origin || gasleft() > 1500) {
-                emit Received(msg.sender, msg.value, msg.data);
-            }
-            return;
-        }
-
-        if (msg.data.length == 0) {
+        if (msg.data.length == 0 || msg.value > 0) {
+            // Note: don't do anything here so send/transfer still works (because of the 2300 gas limit)
             return;
         }
 
