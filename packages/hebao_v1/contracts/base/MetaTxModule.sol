@@ -117,8 +117,15 @@ contract MetaTxModule is BaseModule
         );
 
         bytes4 method = extractMethod(data);
-        address[] memory signers = extractMetaTxSigners(wallet, method, data);
-        metaTxHash.verifySignatures(signers, signatures);
+        // If we exectute multiple transactions using `executeTransactions` we don't need to check
+        // any signatures now, we will check them for each transaction independently
+        if (method != this.executeTransactions.selector) {
+            address[] memory signers = extractMetaTxSigners(wallet, method, data);
+            metaTxHash.verifySignatures(signers, signatures);
+        } else {
+            // Make sure the hash passed into executeTransactions is correct.
+            require(metaTxHash == data.toBytes32(4 + 32), "INVALID_DATA");
+        }
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
@@ -134,19 +141,40 @@ contract MetaTxModule is BaseModule
 
     /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
     ///      This method can only be called by a meta transaction.
-    /// @param data The raw transaction data of all transactions.
-    /// @param value The ETH value to send in the transaction.
+    /// @param wallet The wallet used in all transactions.
+    /// @param metaTxHash The hash of the complete meta transaction that is signed.
+    /// @param defaultSignatures The signatures used for the transaction when the transaction has
+    ///        did not reveive transaction specific signatures (used to save gas of multiple
+    ///        transactions use the same signatures).
+    /// @param data The raw transaction data used for each transaction.
+    /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
+    /// @param signatures The signatures used to validate each transaction. If no signaturs are provided
+    ///        for a transaction the `defaultSignatures` signatures are used.
     function executeTransactions(
-        bytes[] calldata data,
-        uint[]  calldata value
+        address            wallet,
+        bytes32            metaTxHash,
+        bytes[]   calldata defaultSignatures,
+        bytes[]   calldata data,
+        uint[]    calldata value,
+        bytes[][] calldata signatures
         )
         external
         payable
         onlyFromMetaTx
     {
         require(data.length == value.length, "INVALID_INPUT");
+        require(data.length == signatures.length, "INVALID_INPUT");
         uint totalValue = 0;
         for (uint i = 0; i < data.length; i++) {
+            // Check that the wallet is the same for all transactions
+            address txWallet = extractWalletAddress(data[i]);
+            require(txWallet == wallet, "INVALID_DATA");
+
+            // Verify the signatures for this transaction
+            bytes4 method = extractMethod(data[i]);
+            address[] memory signers = extractMetaTxSigners(wallet, method, data[i]);
+            metaTxHash.verifySignatures(signers, signatures[i].length == 0 ? defaultSignatures : signatures[i]);
+
             // solium-disable-next-line security/no-call-value
             (bool success,) = address(this).call.value(value[i])(data[i]);
             require(success, "TX_FAILED");
