@@ -167,12 +167,17 @@ contract GuardianModule is SecurityModule
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,
-        bytes   memory
+        bytes   memory data
         )
         internal
         view
         returns (address[] memory signers)
     {
+        signers = super.extractMetaTxSigners(wallet, method, data);
+        if (signers.length > 0) {
+            return signers;
+        }
+
         if (method == this.addGuardian.selector ||
             method == this.removeGuardian.selector ||
             method == this.cancelGuardianAddition.selector ||

@@ -332,12 +332,17 @@ contract QuotaTransfers is Claimable, TransferModule
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,
-        bytes   memory  /* data */
+        bytes   memory data
         )
         internal
         view
         returns (address[] memory signers)
     {
+        signers = super.extractMetaTxSigners(wallet, method, data);
+        if (signers.length > 0) {
+            return signers;
+        }
+
         require (
             method == this.transferToken.selector ||
             method == this.transferTokensFullBalance.selector ||

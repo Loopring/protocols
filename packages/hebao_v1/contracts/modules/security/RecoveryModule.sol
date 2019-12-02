@@ -148,7 +148,7 @@ contract RecoveryModule is SecurityModule
     }
 
     function extractMetaTxSigners(
-        address /*wallet*/,
+        address wallet,
         bytes4  method,
         bytes   memory data
         )
@@ -156,6 +156,11 @@ contract RecoveryModule is SecurityModule
         view
         returns (address[] memory signers)
     {
+        signers = super.extractMetaTxSigners(wallet, method, data);
+        if (signers.length > 0) {
+            return signers;
+        }
+
         require (
             method == this.startRecovery.selector ||
             method == this.cancelRecovery.selector ||

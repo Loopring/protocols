@@ -101,39 +101,25 @@ contract MetaTxModule is BaseModule
         uint startGas = gasleft();
         require(startGas >= gasSetting[2], "OUT_OF_GAS");
 
-        // Copy data to memory
-        bytes memory _data = data;
-
-        address wallet = extractWalletAddress(_data);
+        address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
             wallet, // from
             address(this),  // to. Note the relayer can only call its own methods.
             msg.value, // value
-            _data,
+            data,
             nonce,
             gasSetting
         );
 
-        bytes4 method = extractMethod(_data);
-        // If we exectute multiple transactions using `executeTransactions` we don't need to check
-        // any signatures now, we will check them for each transaction independently
-        if (method != this.executeTransactions.selector) {
-            address[] memory signers = extractMetaTxSigners(wallet, method, _data);
-            metaTxHash.verifySignatures(signers, signatures);
-        } else {
-            // As `metaTxHash` is the hash of `data` it can't contain the hash of `data`, so set it here
-            require(metaTxHash == 0x0, "INVALID_DATA");
-            assembly {
-                mstore(add(_data, 68), metaTxHash)
-            }
-        }
+        address[] memory signers = extractMetaTxSigners(wallet, extractMethod(data), data);
+        metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(_data);
+        (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(data);
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
 
@@ -146,16 +132,12 @@ contract MetaTxModule is BaseModule
     /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
     ///      This method can only be called by a meta transaction.
     /// @param wallet The wallet used in all transactions.
-    /// @param metaTxHash The hash of the complete meta transaction that is signed.
     /// @param signers The signers needed for all transactions.
-    /// @param signatures The signatures for all signers.
     /// @param data The raw transaction data used for each transaction.
     /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
     function executeTransactions(
         address            wallet,
-        bytes32            metaTxHash,
         address[] calldata signers,
-        bytes[]   calldata signatures,
         bytes[]   calldata data,
         uint[]    calldata value
         )
@@ -164,10 +146,6 @@ contract MetaTxModule is BaseModule
         onlyFromMetaTx
     {
         require(data.length == value.length, "INVALID_INPUT");
-        require(signers.length == signatures.length, "INVALID_INPUT");
-
-        // Verify all signatures a single time
-        metaTxHash.verifySignatures(signers, signatures);
 
         uint totalValue = 0;
         for (uint i = 0; i < data.length; i++) {
@@ -189,6 +167,7 @@ contract MetaTxModule is BaseModule
             // solium-disable-next-line security/no-call-value
             (bool success,) = address(this).call.value(value[i])(data[i]);
             require(success, "TX_FAILED");
+
             totalValue = totalValue.add(value[i]);
         }
         require(totalValue == msg.value, "INVALID_VALUE");
@@ -225,7 +204,27 @@ contract MetaTxModule is BaseModule
         )
         internal
         view
-        returns (address[] memory signers);
+        returns (address[] memory signers)
+    {
+        if (method == this.executeTransactions.selector) {
+            // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{data_offset:32}
+            //              {value_offset:32}{signers_length:32}{signer1:32}{signer2:32}
+            require(data.length >= 164, "DATA_INVALID");
+
+            uint numSigners;
+            assembly { numSigners := mload(add(data, 196)) }
+            require(data.length >= (164 + 32 * numSigners), "DATA_INVALID");
+
+            signers = new address[](numSigners);
+
+            address signer;
+            for (uint i = 0; i < numSigners; i++) {
+                uint start = 228 + 32 * i;
+                assembly { signer := mload(add(data, start)) }
+                signers[i] = signer;
+            }
+        }
+    }
 
     /// @dev Returns the last nonce used by a wallet.
     /// @param wallet The wallet's address.
