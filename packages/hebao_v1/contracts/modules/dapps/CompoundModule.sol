@@ -19,9 +19,11 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
+import "../../iface/SubAccount.sol";
+
 
 /// @title CompoundModule
-contract CompoundModule is SecurityModule
+contract CompoundModule is SubAccount, SecurityModule
 {
     constructor(
         SecurityStore _securityStore
@@ -30,4 +32,33 @@ contract CompoundModule is SecurityModule
         SecurityModule(_securityStore)
     {
     }
+
+    /// @dev Fund Compound for earn interests and automatically enters market
+    ///      so the funds will be used as collateral; or return borrowed assets
+    ///      back to Compound.
+    function deposit(
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        uint               amount
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+    }
+
+    /// @dev Redeem fund from Compound.
+    function withdraw(
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        uint               amount
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+    }
+
 }

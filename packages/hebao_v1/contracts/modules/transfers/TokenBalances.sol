@@ -15,14 +15,17 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 
 import "../../base/BaseModule.sol";
 
+import "../../iface/SubAccount.sol";
+
 
 /// @title TokenBalances
-contract TokenBalances is BaseModule
+contract TokenBalances is SubAccount, BaseModule
 {
     function boundMethods()
         public
@@ -40,13 +43,14 @@ contract TokenBalances is BaseModule
         )
         public
         view
-        returns (uint)
+        returns (int balance)
     {
         if (token == address(0)) {
-            return wallet.balance;
+            balance = int(wallet.balance);
         } else {
-            return ERC20(token).balanceOf(wallet);
+            balance = int(ERC20(token).balanceOf(wallet));
         }
+        require(balance >= 0, "INVALID_BALANCE");
     }
 
     function tokenBalances(
@@ -55,11 +59,14 @@ contract TokenBalances is BaseModule
         )
         public
         view
-        returns (uint[] memory balances)
+        returns (int[] memory balances)
     {
-        balances = new uint[](tokens.length);
+        balances = new int[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
             balances[i] = tokenBalance(wallet, tokens[i]);
         }
     }
+
+    function deposit (address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
+    function withdraw(address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
 }
