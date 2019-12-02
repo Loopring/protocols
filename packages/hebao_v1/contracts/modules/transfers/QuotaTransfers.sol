@@ -126,7 +126,7 @@ contract QuotaTransfers is Claimable, TransferModule
         }
 
         if (allowed) {
-            transferInternal(wallet, token, to, amount, logdata);
+            transferFromWallet(wallet, token, to, amount, logdata);
             if (foundPendingTx) {
                 delete pendingTransactions[wallet][txid];
             }
@@ -210,7 +210,7 @@ contract QuotaTransfers is Claimable, TransferModule
             address token = tokens[i];
             uint amount = (token == address(0)) ?
                 wallet.balance : ERC20(token).balanceOf(wallet);
-            transferInternal(wallet, token, to, amount, logdata);
+            transferFromWallet(wallet, token, to, amount, logdata);
         }
     }
 

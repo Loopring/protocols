@@ -18,10 +18,11 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
+import "../../base/BaseSubAccount.sol";
 
 
 /// @title CompoundModule
-contract CompoundModule is SecurityModule
+contract CompoundModule is BaseSubAccount, SecurityModule
 {
     constructor(
         SecurityStore _securityStore
@@ -30,4 +31,5 @@ contract CompoundModule is SecurityModule
         SecurityModule(_securityStore)
     {
     }
+
 }

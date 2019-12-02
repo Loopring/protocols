@@ -50,7 +50,7 @@ contract ApprovedTransfers is TransferModule
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
-        transferInternal(wallet, token, to, amount, logdata);
+        transferFromWallet(wallet, token, to, amount, logdata);
     }
 
     function transferTokensFullBalance(
@@ -73,7 +73,7 @@ contract ApprovedTransfers is TransferModule
             address token = tokens[i];
             uint amount = (token == address(0)) ?
                 wallet.balance : ERC20(token).balanceOf(wallet);
-            transferInternal(wallet, token, to, amount, logdata);
+            transferFromWallet(wallet, token, to, amount, logdata);
         }
     }
 
