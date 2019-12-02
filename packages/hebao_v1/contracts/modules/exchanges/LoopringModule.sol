@@ -21,8 +21,6 @@ import "../../lib/MathUint.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../stores/ReimbursementStore.sol";
-
 import "../security/SecurityModule.sol";
 
 import "./IExchangeV3.sol";
@@ -52,16 +50,10 @@ contract LoopringModule is SecurityModule
         uint96          amount
     );
 
-    ReimbursementStore internal reimbursementStore;
-
-    constructor(
-        SecurityStore      _securityStore,
-        ReimbursementStore _reimbursementStore
-        )
+    constructor(SecurityStore _securityStore)
         public
         SecurityModule(_securityStore)
     {
-        reimbursementStore = _reimbursementStore;
     }
 
     function boundMethods()
@@ -129,9 +121,7 @@ contract LoopringModule is SecurityModule
         IExchangeV3     exchange,
         uint            pubKeyX,
         uint            pubKeyY,
-        bytes calldata  permission,
-        address         feeToken,
-        uint            feeAmount
+        bytes calldata  permission
         )
         external
         nonReentrant
@@ -139,8 +129,6 @@ contract LoopringModule is SecurityModule
         onlyWhenWalletUnlocked(wallet)
     {
         (uint fee, bool newAccount) = getAccountCreationOrUpdateFee(wallet, exchange);
-
-        checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
         bytes memory txData = abi.encodeWithSelector(
             exchange.createOrUpdateAccount.selector,
@@ -157,9 +145,7 @@ contract LoopringModule is SecurityModule
         address payable wallet,
         IExchangeV3     exchange,
         address         token,
-        uint96          amount,
-        address         feeToken,
-        uint            feeAmount
+        uint96          amount
         )
         external
         nonReentrant
@@ -168,7 +154,6 @@ contract LoopringModule is SecurityModule
     {
         require(amount > 0, "ZERO_VALUE");
         (, , uint fee, ) = exchange.getFees();
-        checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
         bytes memory txData = abi.encodeWithSelector(
             exchange.deposit.selector,
@@ -184,9 +169,7 @@ contract LoopringModule is SecurityModule
         address payable wallet,
         IExchangeV3     exchange,
         address         token,
-        uint96          amount,
-        address         feeToken,
-        uint            feeAmount
+        uint96          amount
         )
         external
         nonReentrant
@@ -195,7 +178,6 @@ contract LoopringModule is SecurityModule
     {
         require(amount > 0, "ZERO_VALUE");
         (, , , uint fee) = exchange.getFees();
-        checkAndReimburse(wallet, fee, feeToken, feeAmount);
 
         bytes memory txData = abi.encodeWithSelector(
             exchange.withdraw.selector,
@@ -207,39 +189,6 @@ contract LoopringModule is SecurityModule
         emit Withdrawal(address(exchange), wallet, token, amount);
     }
 
-    function checkAndReimburse(
-        address payable wallet,
-        uint            etherFee,
-        address         feeToken,
-        uint            feeAmount
-        )
-        private
-    {
-        if (wallet.balance >= etherFee) {
-            msg.sender.transfer(msg.value);
-            return;
-        }
-
-        uint reimbursement = etherFee - wallet.balance;
-        require(msg.value >= reimbursement, "INSUFFCIENT_FEE");
-
-        uint surplus = msg.value - reimbursement;
-        if (surplus > 0) {
-            msg.sender.transfer(surplus);
-        }
-        wallet.transfer(reimbursement);
-
-        if (feeToken == address(0) || feeAmount == 0 || msg.sender == wallet) {
-            reimbursementStore.checkAndUpdate(wallet, reimbursement);
-        } else {
-            bytes memory txData = abi.encodeWithSelector(
-                ERC20_TRANSFER,
-                msg.sender,
-                feeAmount
-            );
-            transactCall(wallet, feeToken, 0, txData);
-        }
-    }
 
     function getAccountCreationOrUpdateFee(
         address     wallet,
