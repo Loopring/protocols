@@ -111,7 +111,7 @@ contract MetaTxModule is BaseModule
             gasSetting
         );
 
-        address[] memory signers = extractMetaTxSigners(wallet, extractMethod(data), data);
+        address[] memory signers = getSigners(wallet, data);
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -119,8 +119,6 @@ contract MetaTxModule is BaseModule
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // solium-disable-next-line security/no-call-value
-        // (bool success,) = address(this).call.value(msg.value)(data);
-
         (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(data);
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
@@ -129,6 +127,50 @@ contract MetaTxModule is BaseModule
             // gasPrice > 0
             reimburseGasFee(wallet, gasSetting, startGas);
         }
+    }
+
+    /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
+    ///      This method can only be called by a meta transaction.
+    /// @param wallet The wallet used in all transactions.
+    /// @param signers The signers needed for all transactions.
+    /// @param data The raw transaction data used for each transaction.
+    /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
+    function executeTransactions(
+        address            wallet,
+        address[] calldata signers,
+        bytes[]   calldata data,
+        uint[]    calldata value
+        )
+        external
+        payable
+        onlyFromMetaTx
+    {
+        require(data.length == value.length, "INVALID_INPUT");
+
+        uint totalValue = 0;
+        for (uint i = 0; i < data.length; i++) {
+            // Check that the wallet is the same for all transactions
+            address txWallet = extractWalletAddress(data[i]);
+            require(txWallet == wallet, "INVALID_DATA");
+
+            // Make sure the signers needed for the transacaction are given in `signers`.
+            // This allows us to check the needed signatures a single time.
+            address[] memory txSigners = getSigners(wallet, data[i]);
+            for (uint j = 0; j < txSigners.length; j++) {
+                uint s = 0;
+                while (s < signers.length && signers[s] != txSigners[j]) {
+                    s++;
+                }
+                require(s < signers.length, "INVALID_INPUT");
+            }
+
+            // solium-disable-next-line security/no-call-value
+            (bool success,) = address(this).call.value(value[i])(data[i]);
+            require(success, "TX_FAILED");
+
+            totalValue = totalValue.add(value[i]);
+        }
+        require(totalValue == msg.value, "INVALID_VALUE");
     }
 
     function reimburseGasFee(
@@ -145,6 +187,37 @@ contract MetaTxModule is BaseModule
         } else {
             bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasUsed);
             transactCall(wallet, gasToken, 0, txData);
+        }
+    }
+
+    function getSigners(
+        address wallet,
+        bytes   memory data
+        )
+        private
+        view
+        returns (address[] memory signers)
+    {
+        bytes4 method = extractMethod(data);
+        if (method == this.executeTransactions.selector) {
+            // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{data_offset:32}
+            //              {value_offset:32}{signers_length:32}{signer1:32}{signer2:32}
+            require(data.length >= 164, "DATA_INVALID");
+
+            uint numSigners;
+            assembly { numSigners := mload(add(data, 196)) }
+            require(data.length >= (164 + 32 * numSigners), "DATA_INVALID");
+
+            signers = new address[](numSigners);
+
+            address signer;
+            for (uint i = 0; i < numSigners; i++) {
+                uint start = 228 + 32 * i;
+                assembly { signer := mload(add(data, start)) }
+                signers[i] = signer;
+            }
+        } else {
+            signers = extractMetaTxSigners(wallet, method, data);
         }
     }
 
