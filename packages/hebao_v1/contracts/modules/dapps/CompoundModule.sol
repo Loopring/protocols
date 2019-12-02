@@ -33,11 +33,6 @@ contract CompoundModule is SubAccount, SecurityModule
     {
     }
 
-    function isSubAccount() public view returns (bool)
-    {
-        return true;
-    }
-
     /// @dev Fund Compound for earn interests and automatically enters market
     ///      so the funds will be used as collateral; or return borrowed assets
     ///      back to Compound.
@@ -45,7 +40,7 @@ contract CompoundModule is SubAccount, SecurityModule
         address wallet,
         address token,
         uint    amount,
-        bytes[] calldata signatures
+        address[] calldata signers
         )
         external
         nonReentrant
@@ -58,7 +53,7 @@ contract CompoundModule is SubAccount, SecurityModule
         address wallet,
         address token,
         uint    amount,
-        bytes[] calldata signatures
+        address[] calldata signers
         )
         external
         nonReentrant

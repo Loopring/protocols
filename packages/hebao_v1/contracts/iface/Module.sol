@@ -39,7 +39,4 @@ contract Module
     /// @dev Deactivates the module for the given wallet before the module is removed.
     ///      Warning: this method shall ONLY be callable by a wallet.
     function deactivate(address walelt) external;
-
-    /// @dev Returns if the module represents a sub-account for each wallet.
-    function isSubAccount() public view returns (bool);
 }

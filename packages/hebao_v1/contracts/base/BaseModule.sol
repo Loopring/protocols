@@ -110,12 +110,6 @@ contract BaseModule is Module, ReentrancyGuard
         Wallet(wallet).removeModule(module);
     }
 
-    /// @dev Returns if the module representing a sub-account.
-    function isSubAccount() public view returns (bool)
-    {
-        return false;
-    }
-
     /// @dev This method will cause an re-entry to the same module contract.
     function activate(address wallet)
         external
