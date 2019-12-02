@@ -101,25 +101,31 @@ contract MetaTxModule is BaseModule
         uint startGas = gasleft();
         require(startGas >= gasSetting[2], "OUT_OF_GAS");
 
-        address wallet = extractWalletAddress(data);
+        // Copy data to memory
+        bytes memory _data = data;
+
+        address wallet = extractWalletAddress(_data);
         bytes32 metaTxHash = getSignHash(
             wallet, // from
             address(this),  // to. Note the relayer can only call its own methods.
             msg.value, // value
-            data,
+            _data,
             nonce,
             gasSetting
         );
 
-        bytes4 method = extractMethod(data);
+        bytes4 method = extractMethod(_data);
         // If we exectute multiple transactions using `executeTransactions` we don't need to check
         // any signatures now, we will check them for each transaction independently
         if (method != this.executeTransactions.selector) {
-            address[] memory signers = extractMetaTxSigners(wallet, method, data);
+            address[] memory signers = extractMetaTxSigners(wallet, method, _data);
             metaTxHash.verifySignatures(signers, signatures);
         } else {
-            // Make sure the hash passed into executeTransactions is correct.
-            require(metaTxHash == data.toBytes32(4 + 32), "INVALID_DATA");
+            // As `metaTxHash` is the hash of `data` it can't contain the hash of `data`, so set it here
+            require(metaTxHash == 0x0, "INVALID_DATA");
+            assembly {
+                mstore(add(_data, 68), metaTxHash)
+            }
         }
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -127,9 +133,7 @@ contract MetaTxModule is BaseModule
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // solium-disable-next-line security/no-call-value
-        // (bool success,) = address(this).call.value(msg.value)(data);
-
-        (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(data);
+        (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(_data);
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
 
@@ -143,13 +147,15 @@ contract MetaTxModule is BaseModule
     ///      This method can only be called by a meta transaction.
     /// @param wallet The wallet used in all transactions.
     /// @param metaTxHash The hash of the complete meta transaction that is signed.
-    /// @param signatures The signatures used for all transactions. If transactions need different number
+    /// @param signers The signatures used for all transactions. If transactions need different number
     ///        of signatures the signatures with indices [0, numSigners[ are used.
+    /// @param signatures The signatures used for all signers.
     /// @param data The raw transaction data used for each transaction.
     /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
     function executeTransactions(
         address            wallet,
         bytes32            metaTxHash,
+        address[] calldata signers,
         bytes[]   calldata signatures,
         bytes[]   calldata data,
         uint[]    calldata value
@@ -159,16 +165,25 @@ contract MetaTxModule is BaseModule
         onlyFromMetaTx
     {
         require(data.length == value.length, "INVALID_INPUT");
+        require(signers.length == signatures.length, "INVALID_INPUT");
+
+        // Verify all signatures a single time
+        metaTxHash.verifySignatures(signers, signatures);
+
         uint totalValue = 0;
         for (uint i = 0; i < data.length; i++) {
             // Check that the wallet is the same for all transactions
             address txWallet = extractWalletAddress(data[i]);
             require(txWallet == wallet, "INVALID_DATA");
 
-            // Verify the signatures for this transaction
+            // Make sure the signers needed for the transacaction are given in `signers` at [0, txSigners[
+            // This allows us to check the needed signatures a single time.
             bytes4 method = extractMethod(data[i]);
-            address[] memory signers = extractMetaTxSigners(wallet, method, data[i]);
-            metaTxHash.verifySignatures(signers, signatures);
+            address[] memory txSigners = extractMetaTxSigners(wallet, method, data[i]);
+            require(txSigners.length <= signers.length, "INVALID_INPUT");
+            for (uint s = 0; s < txSigners.length; s++) {
+                require(txSigners[s] == signers[s], "INVALID_INPUT");
+            }
 
             // solium-disable-next-line security/no-call-value
             (bool success,) = address(this).call.value(value[i])(data[i]);
