@@ -133,10 +133,11 @@ Module 之间通过 Storage 来共享数据。一些 Storage 有 owner，owner �
 
 ## 几个和钱包相关的重要 EIPs
 
-- [EIP:681: URL Format for Transaction Requests](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-681.md)
-- [IIP:712: Ethereum typed structured data hashing and signing](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md) also see https://medium.com/metamask/eip712-is-coming-what-to-expect-and-how-to-use-it-bb92fd1a7a26
-- [EIP725 : Ethereum Identity Standard](https://docs.ethhub.io/built-on-ethereum/identity/ERC725/)
+- [ERC165: Standard Interface Detection](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md)
+- [EIP681: URL Format for Transaction Requests](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-681.md)
+- [EIP712: Ethereum typed structured data hashing and signing](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md) also see https://medium.com/metamask/eip712-is-coming-what-to-expect-and-how-to-use-it-bb92fd1a7a26
+- [EIP725: Ethereum Identity Standard](https://docs.ethhub.io/built-on-ethereum/identity/ERC725/)
 - [EIP1077: Executable Signed Messages refunded by the contract](https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1077.md)
 - [EIP1078: Universal login / signup using ENS subdomains](https://github.com/alexvandesande/EIPs/blob/ee2347027e94b93708939f2e448447d030ca2d76/EIPS/eip-1078.md)
 - [EIP1271: Standard Signature Validation Method for Contracts](https://eips.ethereum.org/EIPS/eip-1271)
-- [EIP:2126: Signature Type Recognition](https://github.com/ethereum/EIPs/blob/202d578acb76bb4b8d0f46630eff4965ca61c092/EIPS/eip-2126.md)
+- [EIP2126: Signature Type Recognition](https://github.com/ethereum/EIPs/blob/202d578acb76bb4b8d0f46630eff4965ca61c092/EIPS/eip-2126.md)
