@@ -51,7 +51,7 @@
     "node": "12.13.0",
     "npm": "^6.9.0",
     "npm-watch": "^0.6.0",
-    "solidity-coverage": "^0.6.7",
+    "solidity-coverage": "^0.7.0-beta.3",
     "solium": "^1.2.4",
     "tslint": "^5.18.0",
     "types-bn": "0.0.1",
