@@ -33,4 +33,9 @@ contract CompoundModule is SubAccount, SecurityModule
     {
     }
 
+    function supportSubAccount() public view returns (bool)
+    {
+        return true;
+    }
+
 }

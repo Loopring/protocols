@@ -20,12 +20,12 @@ pragma solidity ^0.5.11;
 /// @title SubAccount
 contract SubAccount
 {
-    function tokenBalance(address wallet, address token) public view returns (int);
+    function tokenBalance (address wallet, address token) public view returns (int);
     function tokenBalances(address wallet, address[] memory tokens) public view returns (int[] memory balances);
 
     /// @dev Deposits Ether/token from the wallet to this sub-account.
-    function deposit(address wallet, address token, uint amount) internal;
+    function deposit (address wallet, address token, uint amount) external;
 
     /// @dev Withdraw Ether/token from this sub-account to the wallet.
-    function withdraw(address wallet, address token, uint amount) internal;
+    function withdraw(address wallet, address token, uint amount) external;
 }
