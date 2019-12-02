@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 
 /// @title SubAccount
@@ -24,8 +25,20 @@ contract SubAccount
     function tokenBalances(address wallet, address[] memory tokens) public view returns (int[] memory balances);
 
     /// @dev Deposits Ether/token from the wallet to this sub-account.
-    function deposit (address wallet, address token, uint amount) external;
+    function deposit(
+        address wallet,
+        address token,
+        uint    amount,
+        bytes[] calldata signatures
+        )
+        external;
 
     /// @dev Withdraw Ether/token from this sub-account to the wallet.
-    function withdraw(address wallet, address token, uint amount) external;
+    function withdraw(
+        address wallet,
+        address token,
+        uint    amount,
+        bytes[] calldata signatures
+        )
+        external;
 }

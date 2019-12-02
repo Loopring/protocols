@@ -38,4 +38,32 @@ contract CompoundModule is SubAccount, SecurityModule
         return true;
     }
 
+    /// @dev Fund Compound for earn interests and automatically enters market
+    ///      so the funds will be used as collateral; or return borrowed assets
+    ///      back to Compound.
+    function deposit(
+        address wallet,
+        address token,
+        uint    amount,
+        bytes[] calldata signatures
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+    }
+
+    /// @dev Redeem fund from Compound.
+    function withdraw(
+        address wallet,
+        address token,
+        uint    amount,
+        bytes[] calldata signatures
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+    }
+
 }

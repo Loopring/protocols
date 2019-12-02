@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 
@@ -67,6 +68,6 @@ contract TokenBalances is SubAccount, BaseModule
     }
 
     function isSubAccount() public view returns (bool) { return true; }
-    function deposit (address, address, uint) external { revert("UNSUPPORTED"); }
-    function withdraw(address, address, uint) external { revert("UNSUPPORTED"); }
+    function deposit (address, address, uint, bytes[] calldata) external { revert("UNSUPPORTED"); }
+    function withdraw(address, address, uint, bytes[] calldata) external { revert("UNSUPPORTED"); }
 }
