@@ -129,7 +129,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
         removeAddressFromSet(MODULE, _module);
 
-        if (Module(_module).asSubAccount()) {
+        if (Module(_module).isSubAccount()) {
             removeAddressFromSet(SUB_ACCOUNTS, _module);
         }
 
@@ -201,7 +201,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
         addAddressToSet(MODULE, _module, true);
 
-        if (Module(_module).asSubAccount()) {
+        if (Module(_module).isSubAccount()) {
             addAddressToSet(SUB_ACCOUNTS, _module, true);
         }
 

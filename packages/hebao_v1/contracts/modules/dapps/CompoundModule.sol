@@ -33,7 +33,7 @@ contract CompoundModule is SubAccount, SecurityModule
     {
     }
 
-    function asSubAccount() public view returns (bool)
+    function isSubAccount() public view returns (bool)
     {
         return true;
     }

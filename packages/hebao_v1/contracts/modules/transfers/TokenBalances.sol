@@ -66,7 +66,7 @@ contract TokenBalances is SubAccount, BaseModule
         }
     }
 
-    function asSubAccount() public view returns (bool) { return true; }
+    function isSubAccount() public view returns (bool) { return true; }
     function deposit (address, address, uint) external { revert("UNSUPPORTED"); }
     function withdraw(address, address, uint) external { revert("UNSUPPORTED"); }
 }

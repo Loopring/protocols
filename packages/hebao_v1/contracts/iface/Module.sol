@@ -41,5 +41,5 @@ contract Module
     function deactivate(address walelt) external;
 
     /// @dev Returns if the module supports a sub-account.
-    function asSubAccount() public view returns (bool);
+    function isSubAccount() public view returns (bool);
 }
