@@ -37,10 +37,10 @@ contract CompoundModule is SubAccount, SecurityModule
     ///      so the funds will be used as collateral; or return borrowed assets
     ///      back to Compound.
     function deposit(
-        address wallet,
-        address token,
-        uint    amount,
-        address[] calldata signers
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        uint               amount
         )
         external
         nonReentrant
@@ -50,10 +50,10 @@ contract CompoundModule is SubAccount, SecurityModule
 
     /// @dev Redeem fund from Compound.
     function withdraw(
-        address wallet,
-        address token,
-        uint    amount,
-        address[] calldata signers
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        uint               amount
         )
         external
         nonReentrant

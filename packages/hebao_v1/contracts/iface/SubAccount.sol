@@ -26,27 +26,27 @@ contract SubAccount
 
     /// @dev Deposits Ether/token from the wallet to this sub-account.
     /// @param wallet The wallt from which the Ether/token will be transfered out.
+    /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     /// @param token The token address, use 0x0 for Ether.
     /// @param amount The amount of Ether/token to transfer.
-    /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     function deposit(
-        address   wallet,
-        address   token,
-        uint      amount,
-        address[] calldata signers // to support meta-tx
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        uint               amount
         )
         external;
 
     /// @dev Withdraw Ether/token from this sub-account to the wallet.
     /// @param wallet The wallt to which the Ether/token will be transfered to.
+    /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     /// @param token The token address, use 0x0 for Ether.
     /// @param amount The amount of Ether/token to transfer.
-    /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     function withdraw(
-        address   wallet,
-        address   token,
-        uint      amount,
-        address[] calldata signers // to support meta-tx
+        address            wallet,
+        address[] calldata signers,
+        address            token,
+        uint               amount
         )
         external;
 }
