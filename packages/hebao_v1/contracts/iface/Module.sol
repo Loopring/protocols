@@ -40,6 +40,6 @@ contract Module
     ///      Warning: this method shall ONLY be callable by a wallet.
     function deactivate(address walelt) external;
 
-    /// @dev Returns if the module supports a sub-account.
+    /// @dev Returns if the module represents a sub-account for each wallet.
     function isSubAccount() public view returns (bool);
 }
