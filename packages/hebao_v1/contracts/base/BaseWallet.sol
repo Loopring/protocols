@@ -21,7 +21,6 @@ import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
-import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
 
