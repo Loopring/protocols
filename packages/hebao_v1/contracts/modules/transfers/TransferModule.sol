@@ -17,22 +17,19 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/ERC20.sol";
-
 import "../security/SecurityModule.sol";
 
 
 /// @title TransferModule
 contract TransferModule is SecurityModule
 {
-    event MainAccountTransfer(
+    event Transfered(
         address indexed wallet,
         address indexed token,
         address indexed to,
         uint            amount,
         bytes           logdata
     );
-
     event Approved(
         address indexed wallet,
         address indexed token,
@@ -54,48 +51,7 @@ contract TransferModule is SecurityModule
     {
     }
 
-    function boundMethods()
-        public
-        pure
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](2);
-        methods[0] = this.tokenBalance.selector;
-        methods[1] = this.tokenBalances.selector;
-    }
-
-    function tokenBalance(
-        address wallet,
-        address token
-        )
-        public
-        view
-        returns (int balance)
-    {
-        if (token == address(0)) {
-            balance = int(wallet.balance);
-        } else {
-            balance = int(ERC20(token).balanceOf(wallet));
-        }
-
-        require(balance >=0, "INVALID_BALANCE");
-    }
-
-    function tokenBalances(
-        address   wallet,
-        address[] memory tokens
-        )
-        public
-        view
-        returns (int[] memory balances)
-    {
-        balances = new int[](tokens.length);
-        for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokenBalance(wallet, tokens[i]);
-        }
-    }
-
-    function transferFromWallet(
+    function transferInternal(
         address wallet,
         address token,
         address to,
@@ -110,13 +66,13 @@ contract TransferModule is SecurityModule
             transactCall(wallet, to, amount, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(
-                ERC20(token).transfer.selector,
+                ERC20_TRANSFER,
                 to,
                 amount
             );
             transactCall(wallet, token, 0, txData);
         }
-        emit MainAccountTransfer(wallet, token, to, amount, logdata);
+        emit Transfered(wallet, token, to, amount, logdata);
     }
 
     function approveInternal(
@@ -130,7 +86,7 @@ contract TransferModule is SecurityModule
         require(token != address(0), "UNSUPPORTED");
 
         bytes memory txData = abi.encodeWithSelector(
-            ERC20(token).approve.selector,
+            ERC20_APPROVE,
             to,
             amount
         );
