@@ -177,13 +177,10 @@ contract MetaTxModule is BaseModule
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
-            bytes4 method = extractMethod(data[i]);
-            address[] memory txSigners = extractMetaTxSigners(wallet, method, data[i]);
-            require(txSigners.length <= signers.length, "INVALID_INPUT");
+            address[] memory txSigners = extractMetaTxSigners(wallet, extractMethod(data[i]), data[i]);
             for (uint j = 0; j < txSigners.length; j++) {
-                // Find the transaction signer in the given signers
                 uint s = 0;
-                while (s < signers.length && txSigners[j] != signers[s]) {
+                while (s < signers.length && signers[s] != txSigners[j]) {
                     s++;
                 }
                 require(s < signers.length, "INVALID_INPUT");
