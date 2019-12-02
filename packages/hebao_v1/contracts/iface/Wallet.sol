@@ -83,6 +83,11 @@ contract Wallet
     ///                 returns address(0) instead.
     function boundMethodModule(bytes4 _method) public view returns (address _module);
 
+
+    /// @dev Returns a list of sub-accounts
+    /// @return subaccounts A list of subaccounts
+    function subAccounts() public view returns (address[] memory _subAccounts);
+
     /// @dev Performs generic transactions. Any module that has been added to this
     ///      wallet can use this method to transact on any third-party contract with
     ///      msg.sender as this wallet itself.

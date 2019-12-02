@@ -21,6 +21,7 @@ import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
+import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
 
@@ -36,6 +37,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     address internal _owner;
 
     bytes32 internal constant MODULE = keccak256("__MODULE__");
+    bytes32 internal constant SUB_ACCOUNTS = keccak256("__SUB_ACCOUNT__");
     string  internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     BankRegistry public bankRegistry;
@@ -126,6 +128,11 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
         removeAddressFromSet(MODULE, _module);
+
+        if (Module(_module).isSubAccount()) {
+            removeAddressFromSet(SUB_ACCOUNTS, _module);
+        }
+
         emit ModuleRemoved(_module);
     }
 
@@ -135,6 +142,14 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
+    }
+
+    function subAccounts()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(SUB_ACCOUNTS);
     }
 
     function hasModule(address _module)
@@ -185,6 +200,11 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
 
         addAddressToSet(MODULE, _module, true);
+
+        if (Module(_module).isSubAccount()) {
+            addAddressToSet(SUB_ACCOUNTS, _module, true);
+        }
+
         emit ModuleAdded(_module);
     }
 

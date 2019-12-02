@@ -32,11 +32,14 @@ import "./Wallet.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract Module
 {
-    /// @dev Activate the module for the given wallet after the module is added.
+    /// @dev Activates the module for the given wallet after the module is added.
     ///      Warning: this method shall ONLY be callable by a wallet.
     function activate(address wallet) external;
 
-    /// @dev Deactivate the module for the given wallet before the module is removed.
+    /// @dev Deactivates the module for the given wallet before the module is removed.
     ///      Warning: this method shall ONLY be callable by a wallet.
     function deactivate(address walelt) external;
+
+    /// @dev Returns if the module representing a sub-account.
+    function isSubAccount() public view returns (bool);
 }
