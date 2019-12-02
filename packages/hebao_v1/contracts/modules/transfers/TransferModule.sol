@@ -19,13 +19,11 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 
-import "../../base/BaseSubAccount.sol";
-
 import "../security/SecurityModule.sol";
 
 
 /// @title TransferModule
-contract TransferModule is BaseSubAccount, SecurityModule
+contract TransferModule is SecurityModule
 {
     event MainAccountTransfer(
         address indexed wallet,
@@ -54,14 +52,6 @@ contract TransferModule is BaseSubAccount, SecurityModule
         public
         SecurityModule(_securityStore)
     {
-    }
-
-    function subAccountName()
-        public
-        pure
-        returns (string memory)
-    {
-        return "main";
     }
 
     function boundMethods()
@@ -102,25 +92,6 @@ contract TransferModule is BaseSubAccount, SecurityModule
         balances = new int[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
             balances[i] = tokenBalance(wallet, tokens[i]);
-        }
-    }
-
-    // TODO(daniel): no-reentrance
-    function onReceiveToken(
-        address payable wallet,
-        address token,
-        address sourceSubAccount,
-        uint amount
-        )
-        external
-    {
-        if (token == address(0)) {
-            wallet.transfer(amount);
-        } else {
-            require(
-                ERC20(token).transferFrom(address(this), wallet, amount),
-                "TOKEN_TRANSFER_FAILED"
-            );
         }
     }
 
