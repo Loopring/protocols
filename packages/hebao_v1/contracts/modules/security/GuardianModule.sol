@@ -69,7 +69,6 @@ contract GuardianModule is SecurityModule
     {
         require(guardian != address(0), "ZERO_ADDRESS");
 
-        // TODO: check if guardian is a contract address and support ERC1271
         uint count = securityStore.numGuardians(wallet);
         require(count < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
