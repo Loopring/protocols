@@ -111,18 +111,13 @@ contract LockModule is SecurityModule
 
     function extractMetaTxSigners(
         bytes4  method,
-        address wallet,
+        address /*wallet*/,
         bytes   memory data
         )
         internal
         view
         returns (address[] memory signers)
     {
-        signers = super.extractMetaTxSigners(wallet, method, data);
-        if (signers.length > 0) {
-            return signers;
-        }
-
         require(
             method == this.lock.selector || method == this.unlock.selector,
             "INVALID_METHOD"

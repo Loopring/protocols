@@ -111,7 +111,7 @@ contract MetaTxModule is BaseModule
             gasSetting
         );
 
-        address[] memory signers = extractMetaTxSigners(wallet, extractMethod(data), data);
+        address[] memory signers = getSigners(wallet, extractMethod(data), data);
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -155,7 +155,7 @@ contract MetaTxModule is BaseModule
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
-            address[] memory txSigners = extractMetaTxSigners(wallet, extractMethod(data[i]), data[i]);
+            address[] memory txSigners = getSigners(wallet, extractMethod(data[i]), data[i]);
             for (uint j = 0; j < txSigners.length; j++) {
                 uint s = 0;
                 while (s < signers.length && signers[s] != txSigners[j]) {
@@ -190,19 +190,12 @@ contract MetaTxModule is BaseModule
         }
     }
 
-    /// @dev Extracts and returns a list of signers for the given meta transaction.
-    ///      Additional validation of the signers can also be done inside this function.
-    /// @param wallet The wallet address.
-    /// @param method The method selector.
-    /// @param data The call data.
-    /// @return signers A list of signers that should have signed this meta transaction.
-    ///                  The list can be empty.
-    function extractMetaTxSigners(
+    function getSigners(
         address wallet,
         bytes4  method,
         bytes   memory data
         )
-        internal
+        private
         view
         returns (address[] memory signers)
     {
@@ -223,8 +216,26 @@ contract MetaTxModule is BaseModule
                 assembly { signer := mload(add(data, start)) }
                 signers[i] = signer;
             }
+        } else {
+            signers = extractMetaTxSigners(wallet, method, data);
         }
     }
+
+    /// @dev Extracts and returns a list of signers for the given meta transaction.
+    ///      Additional validation of the signers can also be done inside this function.
+    /// @param wallet The wallet address.
+    /// @param method The method selector.
+    /// @param data The call data.
+    /// @return signers A list of signers that should have signed this meta transaction.
+    ///                  The list can be empty.
+    function extractMetaTxSigners(
+        address wallet,
+        bytes4  method,
+        bytes   memory data
+        )
+        internal
+        view
+        returns (address[] memory signers);
 
     /// @dev Returns the last nonce used by a wallet.
     /// @param wallet The wallet's address.

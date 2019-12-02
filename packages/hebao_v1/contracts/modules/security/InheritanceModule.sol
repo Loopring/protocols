@@ -106,17 +106,12 @@ contract InheritanceModule is SecurityModule
     function extractMetaTxSigners(
         bytes4  method,
         address wallet,
-        bytes   memory data
+        bytes   memory /*data*/
         )
         internal
         view
         returns (address[] memory signers)
     {
-        signers = super.extractMetaTxSigners(wallet, method, data);
-        if (signers.length > 0) {
-            return signers;
-        }
-
         if (method == this.setInheritor.selector) {
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
