@@ -224,7 +224,12 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         payable
     {
         if (msg.value > 0) {
-            emit Received(msg.sender, msg.value, msg.data);
+            // If this was called from an EOA or we have enough gas we should emit an event
+            // Note: we check the origin to avoid that EOA transactions are estimated too low to emit the event
+            // solium-disable-next-line security/no-tx-origin
+            if (msg.sender == tx.origin || gasleft() > 1500) {
+                emit Received(msg.sender, msg.value, msg.data);
+            }
             return;
         }
 
