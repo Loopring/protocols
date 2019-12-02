@@ -118,8 +118,13 @@ contract MetaTxModule is BaseModule
         // (the only exploit possible here is that the transaction can be executed multiple times).
         saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
+        // Deposit msg.value to the wallet so it can be used from the wallet
+        if (msg.value > 0) {
+            wallet.sendETHAndVerify(msg.value, gasleft());
+        }
+
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.gas(gasSetting[2]).value(msg.value)(data);
+        (bool success,) = address(this).call.gas(gasSetting[2])(data);
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
 
@@ -134,20 +139,14 @@ contract MetaTxModule is BaseModule
     /// @param wallet The wallet used in all transactions.
     /// @param signers The signers needed for all transactions.
     /// @param data The raw transaction data used for each transaction.
-    /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
     function executeTransactions(
         address            wallet,
         address[] calldata signers,
-        bytes[]   calldata data,
-        uint[]    calldata value
+        bytes[]   calldata data
         )
         external
-        payable
         onlyFromMetaTx
     {
-        require(data.length == value.length, "INVALID_INPUT");
-
-        uint totalValue = 0;
         for (uint i = 0; i < data.length; i++) {
             // Check that the wallet is the same for all transactions
             address txWallet = extractWalletAddress(data[i]);
@@ -165,12 +164,9 @@ contract MetaTxModule is BaseModule
             }
 
             // solium-disable-next-line security/no-call-value
-            (bool success,) = address(this).call.value(value[i])(data[i]);
+            (bool success,) = address(this).call(data[i]);
             require(success, "TX_FAILED");
-
-            totalValue = totalValue.add(value[i]);
         }
-        require(totalValue == msg.value, "INVALID_VALUE");
     }
 
     function reimburseGasFee(
@@ -201,18 +197,18 @@ contract MetaTxModule is BaseModule
         bytes4 method = extractMethod(data);
         if (method == this.executeTransactions.selector) {
             // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{data_offset:32}
-            //              {value_offset:32}{signers_length:32}{signer1:32}{signer2:32}
-            require(data.length >= 164, "DATA_INVALID");
+            //              {signers_length:32}{signer1:32}{signer2:32}
+            require(data.length >= 132, "DATA_INVALID");
 
             uint numSigners;
-            assembly { numSigners := mload(add(data, 196)) }
-            require(data.length >= (164 + 32 * numSigners), "DATA_INVALID");
+            assembly { numSigners := mload(add(data, 164)) }
+            require(data.length >= (132 + 32 * numSigners), "DATA_INVALID");
 
             signers = new address[](numSigners);
 
             address signer;
             for (uint i = 0; i < numSigners; i++) {
-                uint start = 228 + 32 * i;
+                uint start = 196 + 32 * i;
                 assembly { signer := mload(add(data, start)) }
                 signers[i] = signer;
             }
