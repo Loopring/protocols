@@ -111,7 +111,7 @@ contract MetaTxModule is BaseModule
             gasSetting
         );
 
-        address[] memory signers = getSigners(wallet, extractMethod(data), data);
+        address[] memory signers = getSigners(wallet, data);
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -155,7 +155,7 @@ contract MetaTxModule is BaseModule
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
-            address[] memory txSigners = getSigners(wallet, extractMethod(data[i]), data[i]);
+            address[] memory txSigners = getSigners(wallet, data[i]);
             for (uint j = 0; j < txSigners.length; j++) {
                 uint s = 0;
                 while (s < signers.length && signers[s] != txSigners[j]) {
@@ -192,13 +192,13 @@ contract MetaTxModule is BaseModule
 
     function getSigners(
         address wallet,
-        bytes4  method,
         bytes   memory data
         )
         private
         view
         returns (address[] memory signers)
     {
+        bytes4 method = extractMethod(data);
         if (method == this.executeTransactions.selector) {
             // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{data_offset:32}
             //              {value_offset:32}{signers_length:32}{signer1:32}{signer2:32}
