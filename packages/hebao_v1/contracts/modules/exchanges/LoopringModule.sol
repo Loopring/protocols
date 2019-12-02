@@ -251,8 +251,7 @@ contract LoopringModule is SecurityModule
     {
         (uint creationFee, uint updateFee, uint depositFee, ) = exchange.getFees();
 
-        // TODO: This will actual throw when the account doesn't exist. Maybe we should change that so it's easier to use from smart contracts.
-        (uint24 accountId, , ) = exchange.getAccount(wallet);
+        (uint24 accountId, , ) = getDEXAccount(wallet, exchange);
 
         fee = depositFee.add(accountId == 0 ? creationFee : updateFee);
         newAccount = accountId == 0;
