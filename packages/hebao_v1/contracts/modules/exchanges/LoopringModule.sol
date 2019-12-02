@@ -250,7 +250,7 @@ contract LoopringModule is SecurityModule
         returns (uint fee, bool newAccount)
     {
         (uint creationFee, uint updateFee, uint depositFee, ) = exchange.getFees();
-        (uint24 accountId, , ) = getDEXAccount(wallet, exchange);
+        (uint24 accountId, ,) = getDEXAccount(wallet, exchange);
 
         fee = depositFee.add(accountId == 0 ? creationFee : updateFee);
         newAccount = accountId == 0;
