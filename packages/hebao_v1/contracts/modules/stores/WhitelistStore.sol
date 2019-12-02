@@ -26,6 +26,8 @@ contract WhitelistStore is DataStore
 {
     uint public delaySecs;
 
+    mapping (bytes32 => uint[]) private timestampSets;
+
     event Whitelisted(
         address indexed wallet,
         address indexed addr,
@@ -44,6 +46,7 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         addAddressToSet(walletKey(wallet), addr, true);
+        timestampSets[walletKey(wallet)].push(now);
         emit Whitelisted(wallet, addr, true);
     }
 
@@ -55,7 +58,11 @@ contract WhitelistStore is DataStore
         onlyManager
     {
         bytes32 key = walletKey(wallet);
+        uint pos = posInSet(key, addr);
         removeAddressFromSet(key, addr);
+        uint[] storage tsSet = timestampSets[key];
+        tsSet[pos - 1] = tsSet[tsSet.length - 1];
+        tsSet.length -= 1;
         emit Whitelisted(wallet, addr, false);
     }
 
@@ -65,7 +72,7 @@ contract WhitelistStore is DataStore
         returns (address[] memory whitelisted, uint[] memory addTimestamps)
     {
         whitelisted = addressesInSet(walletKey(wallet));
-        addTimestamps = timestampsInSet(walletKey(wallet));
+        addTimestamps = timestampSets[walletKey(wallet)];
     }
 
     function isWhitelisted(
@@ -77,8 +84,7 @@ contract WhitelistStore is DataStore
     {
         uint pos = posInSet(walletKey(wallet), addr);
         if (pos > 0) {
-            uint[] memory timestamps = timestampsInSet(walletKey(wallet));
-            uint ts = timestamps[pos - 1];
+            uint ts = timestampSets[walletKey(wallet)][pos - 1];
             return now - ts > delaySecs;
         } else {
             return false;
