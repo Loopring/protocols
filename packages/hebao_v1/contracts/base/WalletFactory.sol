@@ -22,6 +22,7 @@ import "../lib/SimpleProxy.sol";
 
 import "../iface/BankRegistry.sol";
 import "../iface/Wallet.sol";
+import "../iface/Module.sol";
 
 
 /// @title WalletFactory
@@ -84,7 +85,23 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
             }
         }
         SimpleProxy(_wallet).setImplementation(walletImplementation);
-        Wallet(_wallet).setup(_bankRegistry, _owner, _modules);
+
+        // Temporarily register this contract as a module to the wallet
+        // so we can add/activate the modules.
+        address[] memory setupModules = new address[](1);
+        setupModules[0] = address(this);
+
+        // Setup the wallet
+        Wallet(_wallet).setup(_bankRegistry, _owner, setupModules);
+
+        // Add/Activate modules
+        for(uint i = 0; i < _modules.length; i++) {
+            Wallet(_wallet).addModule(_modules[i]);
+            Module(_modules[i]).activate(_wallet);
+        }
+
+        // Remove this contract from the wallet modules
+        Wallet(_wallet).removeModule(address(this));
 
         emit WalletCreated(_wallet, _owner);
     }

@@ -17,6 +17,8 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/MathUint.sol";
+
 import "../../iface/Wallet.sol";
 
 import "../stores/WhitelistStore.sol";
@@ -28,16 +30,21 @@ import "./SecurityModule.sol";
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
 {
+    using MathUint for uint;
+
     WhitelistStore  public whitelistStore;
+    uint public delayPeriod;
 
     constructor(
         SecurityStore  _securityStore,
-        WhitelistStore _whitelistStore
+        WhitelistStore _whitelistStore,
+        uint           _delayPeriod
         )
         public
         SecurityModule(_securityStore)
     {
         whitelistStore = _whitelistStore;
+        delayPeriod = _delayPeriod;
     }
 
     function addToWhitelist(
@@ -49,7 +56,7 @@ contract WhitelistModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        whitelistStore.addToWhitelist(wallet, addr);
+        whitelistStore.addToWhitelist(wallet, addr, now.add(delayPeriod));
     }
 
     function removeFromWhitelist(
@@ -67,7 +74,10 @@ contract WhitelistModule is SecurityModule
     function getWhitelist(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (
+            address[] memory addresses,
+            uint[]    memory effectiveTimes
+        )
     {
         return whitelistStore.whitelist(wallet);
     }
@@ -77,12 +87,15 @@ contract WhitelistModule is SecurityModule
         address addr)
         public
         view
-        returns (bool)
+        returns (
+            bool isWhitelistedAndEffective,
+            uint effectiveTime
+        )
     {
         return whitelistStore.isWhitelisted(wallet, addr);
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)
@@ -93,9 +106,9 @@ contract WhitelistModule is SecurityModule
     }
 
     function extractMetaTxSigners(
-        address       wallet,
-        bytes4        method,
-        bytes memory  /* data */
+        address wallet,
+        bytes4  method,
+        bytes   memory  /* data */
         )
         internal
         view

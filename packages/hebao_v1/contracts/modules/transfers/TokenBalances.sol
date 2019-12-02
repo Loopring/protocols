@@ -24,7 +24,7 @@ import "../../base/BaseModule.sol";
 /// @title TokenBalances
 contract TokenBalances is BaseModule
 {
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)

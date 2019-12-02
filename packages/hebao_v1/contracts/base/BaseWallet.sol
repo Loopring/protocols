@@ -22,7 +22,6 @@ import "../lib/ReentrancyGuard.sol";
 
 import "../iface/BankRegistry.sol";
 import "../iface/Wallet.sol";
-import "../iface/Module.sol";
 
 
 /// @title BaseWallet
@@ -46,7 +45,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
-    event StaticMethodBound     (bytes4  indexed method, address indexed module);
+    event MethodBound           (bytes4  indexed method, address indexed module);
 
     event WalletSetup(address indexed owner);
 
@@ -126,7 +125,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         onlyModule
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
-        Module(_module).deactivate(address(this));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
@@ -147,19 +145,19 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return isAddressInSet(MODULE, _module);
     }
 
-    function bindStaticMethod(bytes4 _method, address _module)
+    function bindMethod(bytes4 _method, address _module)
         external
         onlyModule
     {
-        require(_method != bytes4(0) && !isLocalStaticMethod(_method), "BAD_METHOD");
+        require(_method != bytes4(0), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
         require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
 
         methodToModule[_method] = _module;
-        emit StaticMethodBound(_method, _module);
+        emit MethodBound(_method, _module);
     }
 
-    function staticMethodModule(bytes4 _method)
+    function boundMethodModule(bytes4 _method)
         public
         view
         returns (address)
@@ -187,7 +185,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
 
         addAddressToSet(MODULE, _module, true);
-        Module(_module).activate(address(this));
         emit ModuleAdded(_module);
     }
 
@@ -200,8 +197,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         internal
         returns (bytes memory result)
     {
-        require(to != address(this) && !hasModule(to), "PROHIBITED");
-
         bool success;
         if (mode == 1) {
             // solium-disable-next-line security/no-call-value
@@ -222,8 +217,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         emit Transacted(msg.sender, to, value, data);
     }
 
-    /// @dev This default function can receive Ether or perform queris to modules
-    ///      using staticly bound methods.
+    /// @dev This default function can receive Ether or perform queries to modules
+    ///      using bound methods.
     function()
         external
         payable
@@ -244,7 +239,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize())
-            let result := staticcall(gas, module, ptr, calldatasize(), 0, 0)
+            let result := call(gas, module, 0, ptr, calldatasize(), 0, 0)
             returndatacopy(ptr, 0, returndatasize())
 
             switch result
@@ -253,7 +248,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         }
     }
 
-    function isLocalStaticMethod(bytes4 _method)
+    function isLocalMethod(bytes4 _method)
         private
         pure
         returns (bool)
@@ -261,6 +256,6 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         return _method == this.owner.selector ||
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
-            _method == this.staticMethodModule.selector;
+            _method == this.boundMethodModule.selector;
     }
 }

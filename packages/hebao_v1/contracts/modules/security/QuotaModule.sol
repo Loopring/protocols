@@ -66,7 +66,7 @@ contract QuotaModule is SecurityModule
         available = quotaStore.availableQuota(wallet);
     }
 
-    function staticMethods()
+    function boundMethods()
         public
         pure
         returns (bytes4[] memory methods)
@@ -76,9 +76,9 @@ contract QuotaModule is SecurityModule
     }
 
     function extractMetaTxSigners(
-        address       wallet,
-        bytes4        method,
-        bytes memory  /* data */
+        address wallet,
+        bytes4  method,
+        bytes   memory  /* data */
         )
         internal
         view
