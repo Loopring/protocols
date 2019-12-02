@@ -45,7 +45,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     mapping (bytes4  => address) internal methodToModule;
 
     event OwnerChanged          (address indexed newOwner);
-    event ModuleAdded           (address indexed module);
+    event ModuleAdded           (address indexed module, bool isSubAccount);
     event ModuleRemoved         (address indexed module);
     event MethodBound           (bytes4  indexed method, address indexed module);
 
@@ -201,11 +201,12 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
         addAddressToSet(MODULE, _module, true);
 
-        if (Module(_module).isSubAccount()) {
+        bool isSubaccount = Module(_module).isSubAccount();
+        if (isSubaccount) {
             addAddressToSet(SUB_ACCOUNTS, _module, true);
         }
 
-        emit ModuleAdded(_module);
+        emit ModuleAdded(_module, isSubaccount);
     }
 
     function transactInternal(
