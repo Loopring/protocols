@@ -20,5 +20,9 @@ pragma solidity ^0.5.11;
 /// @title SubAccount
 contract SubAccount
 {
+    function subAccountName() public pure returns (string memory name);
 
+    function tokenBalance(address wallet, address token) public view returns (int);
+
+    function tokenBalances(address wallet, address[] memory tokens) public view returns (int[] memory balances);
 }

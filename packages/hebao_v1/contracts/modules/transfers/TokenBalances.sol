@@ -20,10 +20,20 @@ import "../../lib/ERC20.sol";
 
 import "../../base/BaseModule.sol";
 
+import "../../iface/SubAccount.sol";
+
 
 /// @title TokenBalances
-contract TokenBalances is BaseModule
+contract TokenBalances is BaseModule, SubAccount
 {
+    function subAccountName()
+        public
+        pure
+        returns (string memory)
+    {
+        return "main";
+    }
+
     function boundMethods()
         public
         pure
@@ -40,13 +50,15 @@ contract TokenBalances is BaseModule
         )
         public
         view
-        returns (uint)
+        returns (int balance)
     {
         if (token == address(0)) {
-            return wallet.balance;
+            balance = int(wallet.balance);
         } else {
-            return ERC20(token).balanceOf(wallet);
+            balance = int(ERC20(token).balanceOf(wallet));
         }
+
+        require(balance >=0, "INVALID_BALANCE");
     }
 
     function tokenBalances(
@@ -55,9 +67,9 @@ contract TokenBalances is BaseModule
         )
         public
         view
-        returns (uint[] memory balances)
+        returns (int[] memory balances)
     {
-        balances = new uint[](tokens.length);
+        balances = new int[](tokens.length);
         for (uint i = 0; i < tokens.length; i++) {
             balances[i] = tokenBalance(wallet, tokens[i]);
         }
