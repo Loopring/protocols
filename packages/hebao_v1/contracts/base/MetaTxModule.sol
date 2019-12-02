@@ -143,27 +143,22 @@ contract MetaTxModule is BaseModule
     ///      This method can only be called by a meta transaction.
     /// @param wallet The wallet used in all transactions.
     /// @param metaTxHash The hash of the complete meta transaction that is signed.
-    /// @param defaultSignatures The signatures used for the transaction when the transaction has
-    ///        did not reveive transaction specific signatures (used to save gas of multiple
-    ///        transactions use the same signatures).
+    /// @param signatures The signatures used for all transactions. If transactions need different number
+    ///        of signatures the signatures with indices [0, numSigners[ are used.
     /// @param data The raw transaction data used for each transaction.
     /// @param value The ETH value to send in each transaction (total MUST match msg.value of meta tx).
-    /// @param signatures The signatures used to validate each transaction. If no signaturs are provided
-    ///        for a transaction the `defaultSignatures` signatures are used.
     function executeTransactions(
         address            wallet,
         bytes32            metaTxHash,
-        bytes[]   calldata defaultSignatures,
+        bytes[]   calldata signatures,
         bytes[]   calldata data,
-        uint[]    calldata value,
-        bytes[][] calldata signatures
+        uint[]    calldata value
         )
         external
         payable
         onlyFromMetaTx
     {
         require(data.length == value.length, "INVALID_INPUT");
-        require(data.length == signatures.length, "INVALID_INPUT");
         uint totalValue = 0;
         for (uint i = 0; i < data.length; i++) {
             // Check that the wallet is the same for all transactions
@@ -173,7 +168,7 @@ contract MetaTxModule is BaseModule
             // Verify the signatures for this transaction
             bytes4 method = extractMethod(data[i]);
             address[] memory signers = extractMetaTxSigners(wallet, method, data[i]);
-            metaTxHash.verifySignatures(signers, signatures[i].length == 0 ? defaultSignatures : signatures[i]);
+            metaTxHash.verifySignatures(signers, signatures);
 
             // solium-disable-next-line security/no-call-value
             (bool success,) = address(this).call.value(value[i])(data[i]);
