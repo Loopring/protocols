@@ -111,7 +111,7 @@ contract BaseModule is Module, ReentrancyGuard
     }
 
     /// @dev Returns if the module representing a sub-account.
-    function supportSubAccount() public view returns (bool)
+    function asSubAccount() public view returns (bool)
     {
         return false;
     }
