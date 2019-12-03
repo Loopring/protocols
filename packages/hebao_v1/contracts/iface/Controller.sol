@@ -29,7 +29,6 @@ import "../iface/PriceOracle.sol";
 
 import "../base/WalletENSManager.sol";
 
-
 /// @title Controller
 ///
 /// @author Daniel Wang - <daniel@loopring.org>

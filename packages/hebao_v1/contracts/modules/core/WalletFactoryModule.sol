@@ -20,8 +20,6 @@ import "../../iface/Controller.sol";
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 
-import "../../base/WalletFactory.sol";
-
 
 /// @title WalletFactoryModule
 /// @dev Factory to create new wallets and also register a ENS subdomain for
@@ -79,7 +77,6 @@ contract WalletFactoryModule is WalletFactory, Module
             }
             _wallet = createWalletInternal(_controller, _owner, extendedModules);
             controller.ensManager().register(_wallet, _subdomain);
-
             Wallet(_wallet).removeModule(address(this));
         }
     }
