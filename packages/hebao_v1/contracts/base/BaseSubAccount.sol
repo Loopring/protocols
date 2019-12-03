@@ -56,6 +56,7 @@ contract BaseSubAccount is SubAccount
         // solium-disable-next-line operator-whitespace
         stats[wallet][token].totalDeposit =
             stats[wallet][token].totalDeposit.add(_amount);
+
         emit SubAccountTransfer(wallet, token, _amount);
     }
 
@@ -71,6 +72,7 @@ contract BaseSubAccount is SubAccount
         // solium-disable-next-line operator-whitespace
         stats[wallet][token].totalWithdrawal =
             stats[wallet][token].totalWithdrawal.add(_amount);
+
         emit SubAccountTransfer(wallet, token, -_amount);
     }
 
