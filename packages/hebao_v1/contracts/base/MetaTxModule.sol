@@ -71,7 +71,9 @@ contract MetaTxModule is BaseModule
         _;
     }
 
-    constructor(Controller _controller) public BaseModule()
+    constructor(Controller _controller)
+        public
+        BaseModule()
     {
         controller = _controller;
     }

@@ -28,7 +28,7 @@ contract QuotaModule is SecurityModule
 {
     QuotaStore    public quotaStore;
 
-    constructor(Controller  _controller)
+    constructor(Controller _controller)
         public
         SecurityModule(_controller)
     {

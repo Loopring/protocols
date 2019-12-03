@@ -27,7 +27,15 @@ import "../iface/Controller.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ControllerImpl is Claimable, Controller
 {
-    constructor(
+    constructor() public Claimable() {}
+    bool private initialized;
+
+    event ContractChanged(
+        string  indexed name,
+        address indexed addr
+    );
+
+    function init(
         ModuleRegistry    _moduleRegistry,
         RelayerRegistry   _relayerRegistry,
         WalletRegistry    _walletRegistry,
@@ -38,17 +46,22 @@ contract ControllerImpl is Claimable, Controller
         PriceOracle       _priceOracle,
         WalletENSManager  _ensManager
         )
-        public
-        Claimable()
+        external
+        onlyOwner
     {
+        require(!initialized, "INITIALIZED_ALREADY");
+        initialized = true;
+
         moduleRegistry = _moduleRegistry;
-        relayerRegistry = _relayerRegistry;
+        relayerRegistry = _relayerRegistry;     // modifiable
         walletRegistry = _walletRegistry;
+
         priceCacheStore = _priceCacheStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-        priceOracle = _priceOracle;
+
+        priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
     }
 
@@ -57,6 +70,7 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         relayerRegistry = _relayerRegistry;
+        emit ContractChanged("RelayerRegistry", address(relayerRegistry));
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
@@ -64,5 +78,6 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         priceOracle = _priceOracle;
+        emit ContractChanged("PriceOracle", address(priceOracle));
     }
 }

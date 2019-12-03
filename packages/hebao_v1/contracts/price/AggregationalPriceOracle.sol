@@ -31,9 +31,7 @@ contract AggregationalPriceOracle is PriceOracle
 
     address[] public oracles;
 
-    constructor(
-        address[] memory _oracles
-        )
+    constructor(address[] memory _oracles)
         public
     {
         oracles = _oracles;
