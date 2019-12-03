@@ -57,4 +57,19 @@ library MathInt
         c = a + b;
         require(a == c - b, "ADD_OVERFLOW");
     }
+
+    function div(
+        int a,
+        int b
+        )
+        internal
+        pure
+        returns (int)
+    {
+        require(b > 0, "DIVIDE_ZERO");
+        int c = a / b;
+        // assert(a == b * c + a % b); // There is no case in which this doesn't hold
+
+        return c;
+    }
 }

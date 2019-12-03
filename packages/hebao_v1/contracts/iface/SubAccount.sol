@@ -18,7 +18,7 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 
-/// @title BaseSubAccount
+/// @title SubAccount
 contract SubAccount
 {
     /// @dev Deposits Ether/token from the wallet to this sub-account.
@@ -104,7 +104,7 @@ contract SubAccount
         view
         returns (int interestRate);
 
-    /// @dev Returns the RIO in BIPs (0.01%).
+    /// @dev Returns the ROI in BIPs (0.01%).
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @return roi The ROI in BIPs.
