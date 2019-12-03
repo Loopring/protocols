@@ -38,8 +38,8 @@ contract QuotaTransfers is TransferModule
     event PriceOracleUpdated (address indexed priceOracle);
 
     constructor(
-        Controller _controller,
-        uint       _pendingExpiry
+        Controller   _controller,
+        uint         _pendingExpiry
         )
         public
         TransferModule(_controller)
@@ -94,8 +94,8 @@ contract QuotaTransfers is TransferModule
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
         (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (!allowed) {
-            uint tokenValue = getTokenValue(token, amount);
-            allowed = controller.quotaStore().checkAndAddToSpent(wallet, tokenValue);
+            controller.quotaManager().checkAndAddToSpent(wallet, token, amount);
+            allowed = true;
         }
 
         if (allowed) {
@@ -145,8 +145,8 @@ contract QuotaTransfers is TransferModule
 
         (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (!allowed) {
-            uint tokenValue = getTokenValue(address(0), amount);
-            allowed = controller.quotaStore().checkAndAddToSpent(wallet, tokenValue);
+            controller.quotaManager().checkAndAddToSpent(wallet, address(0), amount);
+            allowed = true;
         }
 
         if (allowed) {
@@ -211,14 +211,8 @@ contract QuotaTransfers is TransferModule
         }
 
         allowance = amount - allowance;
-        uint tokenValue = getTokenValue(token, allowance);
-
-        if (controller.quotaStore().checkAndAddToSpent(wallet, tokenValue)) {
-            approveInternal(wallet, token, to, allowance);
-            return;
-        }
-
-        revert("OUT_OF_QUOTA");
+        controller.quotaManager().checkAndAddToSpent(wallet, token, allowance);
+        approveInternal(wallet, token, to, allowance);
     }
 
     function approveThenCallContract(
@@ -248,15 +242,10 @@ contract QuotaTransfers is TransferModule
         }
 
         allowance = amount - allowance;
-        uint tokenValue = getTokenValue(token, allowance);
 
-        if (controller.quotaStore().checkAndAddToSpent(wallet, tokenValue)) {
-            approveInternal(wallet, token, to, allowance);
-            callContractInternal(wallet, to, 0, data);
-            return;
-        }
-
-        revert("OUT_OF_QUOTA");
+        controller.quotaManager().checkAndAddToSpent(wallet, token, allowance);
+        approveInternal(wallet, token, to, allowance);
+        callContractInternal(wallet, to, 0, data);
     }
 
     function authorizeWalletOwnerAndPendingTx(
