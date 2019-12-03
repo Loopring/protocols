@@ -32,6 +32,56 @@ contract BaseSubAccount is SubAccount
                                // or negavite for transfering out of this sub-account.
     );
 
+    struct SubAccountStat
+    {
+        int totalDeposit;
+        int totalWithdrawal;
+    }
+
+    mapping (address => mapping(address => SubAccountStat)) private stats;
+
+
+    function trackDeposit(
+        address wallet,
+        address token,
+        uint    amount
+        )
+        internal
+    {
+        int _amount = int(amount);
+        require(_amount >= 0, "INVALID_AMOUNT");
+        stats[wallet][token].totalDeposit = _amount;
+    }
+
+    function trackWithdrawal(
+        address wallet,
+        address token,
+        uint    amount
+        )
+        internal
+    {
+        int _amount = int(amount);
+        require(_amount >= 0, "INVALID_AMOUNT");
+        stats[wallet][token].totalWithdrawal += _amount;
+    }
+
+    function getReturn (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (int)
+    {
+        int totalWithdrawal = stats[wallet][token].totalWithdrawal;
+        int totalDeposit = stats[wallet][token].totalDeposit;
+
+        if (totalDeposit == 0) return 0;
+
+        int totalReturn = totalWithdrawal + tokenBalance(wallet, token);
+        return 10000 * (totalReturn - totalDeposit) / totalDeposit;
+    }
+
     /// @dev The default implementation returns the total's balance or 0.
     function getWithdrawalable (
         address wallet,
@@ -44,7 +94,6 @@ contract BaseSubAccount is SubAccount
         int balance = tokenBalance(wallet, token);
         return balance <= 0 ? 0 : uint(balance);
     }
-
 
     /// @dev The default implementation returns the wallet's balance.
     function getDepositable (
@@ -62,11 +111,7 @@ contract BaseSubAccount is SubAccount
         }
     }
 
-    function getInterestRate(address, address, address)
-        public view returns (int) { return 0; }
-
-    function getReturn (address, address)
-        public view returns (int) { return 0; }
+    function getInterestRate(address, address, address) public view returns (int) { return 0; }
 
     /// @dev Returns the balance for a list of tokens.
     ///
