@@ -38,8 +38,8 @@ contract QuotaTransfers is TransferModule
     event PriceOracleUpdated (address indexed priceOracle);
 
     constructor(
-        Controller   _controller,
-        uint         _pendingExpiry
+        Controller  _controller,
+        uint        _pendingExpiry
         )
         public
         TransferModule(_controller)

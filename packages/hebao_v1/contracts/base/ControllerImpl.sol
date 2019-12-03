@@ -62,7 +62,7 @@ contract ControllerImpl is Claimable, Controller
 
         priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
-        quotaManager = _quotaManager;
+        quotaManager = _quotaManager;           // modifiable
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
@@ -72,7 +72,6 @@ contract ControllerImpl is Claimable, Controller
         priceOracle = _priceOracle;
         emit ContractChanged("PriceOracle", address(priceOracle));
     }
-
 
     function setQuotaManager(QuotaManager _quotaManager)
         external
