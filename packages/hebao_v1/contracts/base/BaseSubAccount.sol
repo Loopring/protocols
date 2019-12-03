@@ -25,7 +25,7 @@ import "../iface/SubAccount.sol";
 /// @title BaseSubAccount
 contract BaseSubAccount is SubAccount
 {
-    event BaseSubAccountTransfer(
+    event SubAccountTransfer(
         address indexed wallet,
         address indexed token,
         int             amount // positive for transfering into this sub-account
