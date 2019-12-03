@@ -39,7 +39,7 @@
     "ganache-core": "^2.8.0",
     "ganache-cli": "^6.7.0",
     "mocha": "^6.2.1",
-    "node": "12.13.0",
+    "node": "13.2.0",
     "npm": "^6.11.3",
     "solidity-coverage": "^0.6.7",
     "solium": "^1.1.8",
