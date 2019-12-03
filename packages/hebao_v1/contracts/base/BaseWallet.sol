@@ -20,7 +20,7 @@ import "../lib/ERC20.sol";
 import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
-import "../iface/BankRegistry.sol";
+import "../iface/Controller.sol";
 import "../iface/Wallet.sol";
 
 
@@ -31,14 +31,14 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
+contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 {
     address internal _owner;
 
     bytes32 internal constant MODULE = keccak256("__MODULE__");
     string  internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
-    BankRegistry public bankRegistry;
+    Controller public controller;
 
     mapping (bytes4  => address) internal methodToModule;
 
@@ -65,7 +65,10 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     modifier onlyModule
     {
         require(isAddressInSet(MODULE, msg.sender), "MODULE_UNAUTHORIZED");
-        require(bankRegistry.isModuleRegistered(msg.sender), "INVALID_MODULE");
+        require(
+            controller.moduleRegistry().isModuleRegistered(msg.sender),
+            "INVALID_MODULE"
+        );
         _;
     }
 
@@ -86,20 +89,23 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     }
 
     function setup(
-        address _bankRegistry,
+        address _controller,
         address initialOwner,
         address[] calldata modules
         )
         external
         nonReentrant
     {
-        require(_owner == address(0) && numAddressesInSet(MODULE) == 0, "INITIALIZED_ALREADY");
+        require(
+            _owner == address(0) && numAddressesInSet(MODULE) == 0,
+            "INITIALIZED_ALREADY"
+        );
         require(initialOwner != address(0), "ZERO_ADDRESS");
         require(modules.length > 0, "EMPTY_MODULES");
 
-        bankRegistry = BankRegistry(_bankRegistry);
+        controller = Controller(_controller);
         _owner = initialOwner;
-        bankRegistry.registerWallet(address(this));
+        controller.walletRegistry().registerWallet(address(this));
         emit WalletSetup(_owner);
 
         for(uint i = 0; i < modules.length; i++) {
@@ -145,7 +151,10 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     {
         require(_method != bytes4(0), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
-        require(bankRegistry.isModuleRegistered(_module), "UNREGISTERED_MODULE");
+        require(
+            controller.moduleRegistry().isModuleRegistered(_module),
+            "UNREGISTERED_MODULE"
+        );
 
         methodToModule[_method] = _module;
         emit MethodBound(_method, _module);
@@ -176,7 +185,10 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
         internal
     {
         require(_module != address(0), "NULL_MODULE");
-        require(bankRegistry.isModuleRegistered(_module), "INVALID_MODULE");
+        require(
+            controller.moduleRegistry().isModuleRegistered(_module),
+            "INVALID_MODULE"
+        );
 
         addAddressToSet(MODULE, _module, true);
         emit ModuleAdded(_module);
@@ -226,7 +238,7 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
 
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
-        require(bankRegistry.isModuleRegistered(module), "INVALID_MODULE");
+        require(controller.moduleRegistry().isModuleRegistered(module), "INVALID_MODULE");
 
         assembly {
             let ptr := mload(0x40)

@@ -30,7 +30,7 @@ import "../iface/Module.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseModule is Module, ReentrancyGuard
+contract BaseModule is ReentrancyGuard, Module
 {
     bytes4 internal constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
     bytes4 internal constant ERC20_APPROVE  = bytes4(keccak256("approve(address,uint256)"));

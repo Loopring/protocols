@@ -20,7 +20,7 @@ import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../lib/SimpleProxy.sol";
 
-import "../iface/BankRegistry.sol";
+import "../iface/Controller.sol";
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
 
@@ -33,7 +33,7 @@ import "../iface/Module.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is OwnerManagable, ReentrancyGuard
+contract WalletFactory is ReentrancyGuard, OwnerManagable
 {
     address public walletImplementation;
 
@@ -55,7 +55,7 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
     /// @param _modules The wallet's modules.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address _bankRegistry,
+        address _controller,
         address _owner,
         address[] calldata _modules
         )
@@ -65,11 +65,11 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
         onlyManager
         returns (address)
     {
-        return createWalletInternal(_bankRegistry, _owner, _modules);
+        return createWalletInternal(_controller, _owner, _modules);
     }
 
     function createWalletInternal(
-        address _bankRegistry,
+        address _controller,
         address _owner,
         address[] memory _modules
         )
@@ -92,7 +92,7 @@ contract WalletFactory is OwnerManagable, ReentrancyGuard
         setupModules[0] = address(this);
 
         // Setup the wallet
-        Wallet(_wallet).setup(_bankRegistry, _owner, setupModules);
+        Wallet(_wallet).setup(_controller, _owner, setupModules);
 
         // Add/Activate modules
         for(uint i = 0; i < _modules.length; i++) {

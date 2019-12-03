@@ -1,6 +1,6 @@
 pragma solidity ^0.5.4;
 
-import "../../iface/BankRegistry.sol";
+import "../../iface/Controller.sol";
 
 import "../../base/BaseModule.sol";
 

@@ -28,7 +28,7 @@ import "./BaseModule.sol";
 
 /// @title ERC1271Module
 /// @dev This is the base module for supporting ERC1271.
-contract ERC1271Module is BaseModule, ERC1271
+contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
 
