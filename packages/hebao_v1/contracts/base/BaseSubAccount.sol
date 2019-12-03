@@ -18,6 +18,7 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../lib/ERC20.sol";
+import "../lib/MathInt.sol";
 
 import "../iface/SubAccount.sol";
 
@@ -25,6 +26,8 @@ import "../iface/SubAccount.sol";
 /// @title BaseSubAccount
 contract BaseSubAccount is SubAccount
 {
+    using MathInt for int;
+
     event SubAccountTransfer(
         address indexed wallet,
         address indexed token,
@@ -50,7 +53,10 @@ contract BaseSubAccount is SubAccount
     {
         int _amount = int(amount);
         require(_amount >= 0, "INVALID_AMOUNT");
-        stats[wallet][token].totalDeposit = _amount;
+        // solium-disable-next-line operator-whitespace
+        stats[wallet][token].totalDeposit =
+            stats[wallet][token].totalDeposit.add(_amount);
+        emit SubAccountTransfer(wallet, token, _amount);
     }
 
     function trackWithdrawal(
@@ -62,7 +68,10 @@ contract BaseSubAccount is SubAccount
     {
         int _amount = int(amount);
         require(_amount >= 0, "INVALID_AMOUNT");
-        stats[wallet][token].totalWithdrawal += _amount;
+        // solium-disable-next-line operator-whitespace
+        stats[wallet][token].totalWithdrawal =
+            stats[wallet][token].totalWithdrawal.add(_amount);
+        emit SubAccountTransfer(wallet, token, -_amount);
     }
 
     function getReturn (
@@ -78,8 +87,10 @@ contract BaseSubAccount is SubAccount
 
         if (totalDeposit == 0) return 0;
 
-        int totalReturn = totalWithdrawal + tokenBalance(wallet, token);
-        return 10000 * (totalReturn - totalDeposit) / totalDeposit;
+        int totalReturn = tokenBalance(wallet, token).add(totalWithdrawal);
+        int earned = totalReturn.sub(totalDeposit);
+
+        return earned.mul(10000) / totalDeposit;
     }
 
     /// @dev The default implementation returns the total's balance or 0.
