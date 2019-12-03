@@ -203,13 +203,20 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
+
         (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
         require(allowed, "PROHIBITED");
 
+        uint gasReserve = gasleft().mul(tx.gasprice);
+
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i];
-            uint amount = (token == address(0)) ?
-                wallet.balance : ERC20(token).balanceOf(wallet);
+            uint amount;
+            if (token != address(0)) {
+                amount = ERC20(token).balanceOf(wallet);
+            } else {
+                amount = wallet.balance.sub(gasReserve);
+            }
             transferInternal(wallet, token, to, amount, logdata);
         }
     }
