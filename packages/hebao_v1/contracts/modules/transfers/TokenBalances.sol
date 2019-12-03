@@ -21,7 +21,7 @@ import "../../lib/ERC20.sol";
 
 import "../../base/BaseModule.sol";
 
-import "../../iface/SubAccount.sol";
+import "../../base/SubAccount.sol";
 
 
 /// @title TokenBalances
@@ -51,20 +51,6 @@ contract TokenBalances is SubAccount, BaseModule
             balance = int(ERC20(token).balanceOf(wallet));
         }
         require(balance >= 0, "INVALID_BALANCE");
-    }
-
-    function tokenBalances(
-        address   wallet,
-        address[] memory tokens
-        )
-        public
-        view
-        returns (int[] memory balances)
-    {
-        balances = new int[](tokens.length);
-        for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokenBalance(wallet, tokens[i]);
-        }
     }
 
     function deposit (address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }

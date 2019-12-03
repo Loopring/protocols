@@ -19,7 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
-import "../../iface/SubAccount.sol";
+import "../../base/SubAccount.sol";
 
 
 /// @title CompoundModule

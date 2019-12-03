@@ -21,9 +21,6 @@ pragma experimental ABIEncoderV2;
 /// @title SubAccount
 contract SubAccount
 {
-    function tokenBalance (address wallet, address token) public view returns (int);
-    function tokenBalances(address wallet, address[] memory tokens) public view returns (int[] memory balances);
-
     /// @dev Deposits Ether/token from the wallet to this sub-account.
     /// @param wallet The wallt from which the Ether/token will be transfered out.
     /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
@@ -49,4 +46,30 @@ contract SubAccount
         uint               amount
         )
         external;
+
+    /// @dev Returns a wallet's token balance in this subaccount.
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @param balance The balance. A negative balance indiciates a loan.
+    function tokenBalance (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (int balance);
+
+    function tokenBalances(
+        address   wallet,
+        address[] memory tokens
+        )
+        public
+        view
+        returns (int[] memory balances)
+    {
+        balances = new int[](tokens.length);
+        for (uint i = 0; i < tokens.length; i++) {
+            balances[i] = tokenBalance(wallet, tokens[i]);
+        }
+    }
 }
