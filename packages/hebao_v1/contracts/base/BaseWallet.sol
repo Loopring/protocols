@@ -219,7 +219,8 @@ contract BaseWallet is Wallet, AddressSet, ReentrancyGuard
     {
         if (msg.data.length == 0 || msg.value > 0) {
             // Note: don't do anything here so send/transfer still works
-            // (because of the 2300 gas limit for send/transfer after Istanbul)
+            // -- the 2300 gas limit for send/transfer may case out-of-gas
+            // issue after Istanbul.
             return;
         }
 
