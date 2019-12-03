@@ -43,7 +43,8 @@ contract ControllerImpl is Claimable, Controller
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
         PriceOracle       _priceOracle,
-        WalletENSManager  _ensManager
+        WalletENSManager  _ensManager,
+        QuotaManager      _quotaManager
         )
         external
         onlyOwner
@@ -61,6 +62,7 @@ contract ControllerImpl is Claimable, Controller
 
         priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
+        quotaManager = _quotaManager;           // modifiable
     }
 
     function setPriceOracle(PriceOracle _priceOracle)
@@ -69,5 +71,13 @@ contract ControllerImpl is Claimable, Controller
     {
         priceOracle = _priceOracle;
         emit ContractChanged("PriceOracle", address(priceOracle));
+    }
+
+    function setQuotaManager(QuotaManager _quotaManager)
+        external
+        onlyOwner
+    {
+        quotaManager = _quotaManager;
+        emit ContractChanged("QuotaManager", address(quotaManager));
     }
 }

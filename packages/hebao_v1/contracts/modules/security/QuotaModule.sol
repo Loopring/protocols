@@ -24,14 +24,23 @@ import "./SecurityModule.sol";
 
 /// @title QuotaModule
 /// @dev Manages transfer quota.
-contract QuotaModule is SecurityModule
+contract QuotaModule is SecurityModule, QuotaManager
 {
-    QuotaStore    public quotaStore;
-
     constructor(Controller _controller)
         public
         SecurityModule(_controller)
     {
+    }
+
+    function checkAndAddToSpent(
+        address wallet,
+        address token,
+        uint    amount
+        )
+        external
+    {
+        uint value = controller.priceOracle().tokenPrice(token, amount);
+        controller.quotaStore().checkAndAddToSpent(wallet, value);
     }
 
     function changeDailyQuota(

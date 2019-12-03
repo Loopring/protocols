@@ -25,6 +25,7 @@ import "../thirdparty/BytesUtil.sol";
 import "../thirdparty/ERC1271.sol";
 
 import "../iface/Controller.sol";
+import "../iface/QuotaManager.sol";
 import "../iface/Wallet.sol";
 
 import "./BaseModule.sol";
@@ -76,6 +77,11 @@ contract MetaTxModule is BaseModule
         BaseModule()
     {
         controller = _controller;
+    }
+
+    function quotaManager() internal view returns (address)
+    {
+        return address(0);
     }
 
     /// @dev Execute a signed meta transaction.
@@ -186,7 +192,13 @@ contract MetaTxModule is BaseModule
         private
     {
         uint gasUsed = (startGas - gasleft()).add(gasSetting[3]).mul(gasSetting[1]);
+
         address gasToken = address(gasSetting[0]);
+
+        if (quotaManager() != address(0)) {
+            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasToken, gasUsed);
+        }
+
         if (gasToken == address(0)) {
             transactCall(wallet, msg.sender, gasUsed, "");
         } else {
