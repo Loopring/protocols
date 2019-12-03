@@ -20,6 +20,8 @@ import "../../iface/Controller.sol";
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 
+import "../../base/WalletFactory.sol";
+
 
 /// @title WalletFactoryModule
 /// @dev Factory to create new wallets and also register a ENS subdomain for
