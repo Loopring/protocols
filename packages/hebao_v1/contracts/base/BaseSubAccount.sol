@@ -43,7 +43,6 @@ contract BaseSubAccount is SubAccount
 
     mapping (address => mapping(address => SubAccountStat)) private stats;
 
-
     function trackDeposit(
         address wallet,
         address token,
