@@ -19,59 +19,59 @@ pragma solidity ^0.5.11;
 import "../lib/AddressSet.sol";
 import "../lib/Claimable.sol";
 
-import "../iface/ModuleRegistry.sol";
+import "../iface/RelayerRegistry.sol";
 
 
-/// @title ModuleRegistryImpl
-/// @dev Basic implementation of a ModuleRegistry.
+/// @title RelayerRegistryImpl
+/// @dev Basic implementation of a RelayerRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
+contract RelayerRegistryImpl is Claimable, AddressSet, RelayerRegistry
 {
-    bytes32 internal constant MODULE = keccak256("__MODULE__");
+    bytes32 internal constant RELAYER = keccak256("__RELAYER__");
 
-    event ModuleRegistered      (address indexed module);
-    event ModuleDeregistered    (address indexed module);
+    event RelayerRegistered      (address indexed relayer);
+    event RelayerDeregistered    (address indexed relayer);
 
     constructor() public Claimable() {}
 
-    function registerModule(address module)
+    function registerRelayer(address relayer)
         external
         onlyOwner
     {
-        addAddressToSet(MODULE, module, true);
-        emit ModuleRegistered(module);
+        addAddressToSet(RELAYER, relayer, true);
+        emit RelayerRegistered(relayer);
     }
 
-    function deregisterModule(address module)
+    function deregisterRelayer(address relayer)
         external
         onlyOwner
     {
-        removeAddressFromSet(MODULE, module);
-        emit ModuleDeregistered(module);
+        removeAddressFromSet(RELAYER, relayer);
+        emit RelayerDeregistered(relayer);
     }
 
-    function isModuleRegistered(address module)
+    function isRelayerRegistered(address relayer)
         public
         view
         returns (bool)
     {
-        return isAddressInSet(MODULE, module);
+        return isAddressInSet(RELAYER, relayer) || numAddressesInSet(RELAYER) == 0;
     }
 
-    function modules()
+    function relayers()
         public
         view
         returns (address[] memory)
     {
-        return addressesInSet(MODULE);
+        return addressesInSet(RELAYER);
     }
 
-    function numOfModules()
+    function numOfRelayers()
         public
         view
         returns (uint)
     {
-        return numAddressesInSet(MODULE);
+        return numAddressesInSet(RELAYER);
     }
 }

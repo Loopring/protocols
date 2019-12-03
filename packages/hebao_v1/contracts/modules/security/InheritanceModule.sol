@@ -41,11 +41,11 @@ contract InheritanceModule is SecurityModule
     );
 
     constructor(
-        SecurityStore _securityStore,
-        uint          _waitingPeriod
+        Controller _controller,
+        uint       _waitingPeriod
         )
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
         waitingPeriod = _waitingPeriod;
     }
@@ -64,7 +64,7 @@ contract InheritanceModule is SecurityModule
         view
         returns (address who, uint lastActive)
     {
-        return securityStore.inheritor(wallet);
+        return controller.securityStore().inheritor(wallet);
     }
 
     function inherit(
@@ -73,7 +73,7 @@ contract InheritanceModule is SecurityModule
         external
         nonReentrant
     {
-        (address newOwner, uint lastActive) = securityStore.inheritor(wallet);
+        (address newOwner, uint lastActive) = controller.securityStore().inheritor(wallet);
         require(newOwner != address(0), "NULL_INHERITOR");
 
         require(
@@ -86,7 +86,7 @@ contract InheritanceModule is SecurityModule
             "NOT_ALLOWED"
         );
 
-        securityStore.setInheritor(wallet, address(0));
+        controller.securityStore().setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
 
         emit Inherited(wallet, newOwner, now);
@@ -100,7 +100,7 @@ contract InheritanceModule is SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        securityStore.setInheritor(wallet, who);
+        controller.securityStore().setInheritor(wallet, who);
     }
 
     function extractMetaTxSigners(
@@ -117,7 +117,7 @@ contract InheritanceModule is SecurityModule
             signers[0] = Wallet(wallet).owner();
         } else if (method == this.inherit.selector) {
             signers = new address[](1);
-            (signers[0],) = securityStore.inheritor(wallet);
+            (signers[0],) = controller.securityStore().inheritor(wallet);
         } else {
             revert("INVALID_METHOD");
         }

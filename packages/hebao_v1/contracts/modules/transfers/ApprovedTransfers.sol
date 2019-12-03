@@ -25,11 +25,9 @@ import "./TransferModule.sol";
 /// @title ApprovedTransfers
 contract ApprovedTransfers is TransferModule
 {
-    constructor(
-        SecurityStore _securityStore
-        )
+    constructor(Controller _controller)
         public
-        TransferModule(_securityStore)
+        TransferModule(_controller)
     {
     }
 
@@ -46,7 +44,7 @@ contract ApprovedTransfers is TransferModule
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
     {
-        uint guardianCount = securityStore.numGuardians(wallet);
+        uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
@@ -65,7 +63,7 @@ contract ApprovedTransfers is TransferModule
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
     {
-        uint guardianCount = securityStore.numGuardians(wallet);
+        uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
@@ -89,7 +87,7 @@ contract ApprovedTransfers is TransferModule
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
     {
-        uint guardianCount = securityStore.numGuardians(wallet);
+        uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
@@ -108,7 +106,7 @@ contract ApprovedTransfers is TransferModule
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
     {
-        uint guardianCount = securityStore.numGuardians(wallet);
+        uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
@@ -128,7 +126,7 @@ contract ApprovedTransfers is TransferModule
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
     {
-        uint guardianCount = securityStore.numGuardians(wallet);
+        uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 

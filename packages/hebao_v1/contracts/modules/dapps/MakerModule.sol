@@ -23,11 +23,9 @@ import "../security/SecurityModule.sol";
 /// @title MakerModule
 contract MakerModule is SecurityModule
 {
-    constructor(
-        SecurityStore _securityStore
-        )
+    constructor(Controller _controller)
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
     }
 }

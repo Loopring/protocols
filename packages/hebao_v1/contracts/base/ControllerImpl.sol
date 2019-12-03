@@ -27,19 +27,42 @@ import "../iface/Controller.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ControllerImpl is Claimable, Controller
 {
-    constructor() public Claimable() {}
-
-    function setModuleRegistry(ModuleRegistry _moduleRegistry)
-        external
-        onlyOwner
+    constructor(
+        ModuleRegistry    _moduleRegistry,
+        RelayerRegistry   _relayerRegistry,
+        WalletRegistry    _walletRegistry,
+        PriceCacheStore   _priceCacheStore,
+        QuotaStore        _quotaStore,
+        SecurityStore     _securityStore,
+        WhitelistStore    _whitelistStore,
+        PriceOracle       _priceOracle,
+        WalletENSManager  _ensManager
+        )
+        public
+        Claimable()
     {
         moduleRegistry = _moduleRegistry;
+        relayerRegistry = _relayerRegistry;
+        walletRegistry = _walletRegistry;
+        priceCacheStore = _priceCacheStore;
+        quotaStore = _quotaStore;
+        securityStore = _securityStore;
+        whitelistStore = _whitelistStore;
+        priceOracle = _priceOracle;
+        ensManager = _ensManager;
     }
 
-    function setWalletRegistry(WalletRegistry _walletRegistry)
+    function setRelayerRegistry(RelayerRegistry _relayerRegistry)
         external
         onlyOwner
     {
-        walletRegistry = _walletRegistry;
+        relayerRegistry = _relayerRegistry;
+    }
+
+    function setPriceOracle(PriceOracle _priceOracle)
+        external
+        onlyOwner
+    {
+        priceOracle = _priceOracle;
     }
 }

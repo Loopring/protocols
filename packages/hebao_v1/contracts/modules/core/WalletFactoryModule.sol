@@ -16,10 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../iface/Controller.sol";
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 
-import "../../base/WalletENSManager.sol";
 import "../../base/WalletFactory.sol";
 
 
@@ -33,7 +33,7 @@ import "../../base/WalletFactory.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract WalletFactoryModule is WalletFactory, Module
 {
-    WalletENSManager public ensManager;
+    Controller public controller;
 
     event WalletCreated(
         address indexed wallet,
@@ -42,13 +42,13 @@ contract WalletFactoryModule is WalletFactory, Module
     );
 
     constructor(
-        address          _walletImplementation,
-        WalletENSManager _ensManager
+        Controller _controller,
+        address    _walletImplementation
         )
         public
         WalletFactory(_walletImplementation)
     {
-        ensManager = _ensManager;
+        controller = _controller;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -78,7 +78,7 @@ contract WalletFactoryModule is WalletFactory, Module
                 extendedModules[i + 1] = _modules[i];
             }
             _wallet = createWalletInternal(_controller, _owner, extendedModules);
-            ensManager.register(_wallet, _subdomain);
+            controller.ensManager().register(_wallet, _subdomain);
 
             Wallet(_wallet).removeModule(address(this));
         }

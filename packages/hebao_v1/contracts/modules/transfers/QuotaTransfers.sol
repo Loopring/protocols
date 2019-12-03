@@ -23,21 +23,12 @@ import "../../lib/ERC20.sol";
 import "../../iface/PriceOracle.sol";
 import "../../iface/Wallet.sol";
 
-import "../stores/PriceCacheStore.sol";
-import "../stores/QuotaStore.sol";
-import "../stores/WhitelistStore.sol";
-
 import "./TransferModule.sol";
 
 
 /// @title QuotaTransfers
-contract QuotaTransfers is Claimable, TransferModule
+contract QuotaTransfers is TransferModule
 {
-    PriceOracle     public priceOracle;
-    PriceCacheStore public priceCacheStore;
-    QuotaStore      public quotaStore;
-    WhitelistStore  public whitelistStore;
-
     uint public pendingExpiry;
 
     mapping (address => mapping(bytes32 => uint)) pendingTransactions;
@@ -47,21 +38,12 @@ contract QuotaTransfers is Claimable, TransferModule
     event PriceOracleUpdated (address indexed priceOracle);
 
     constructor(
-        PriceOracle     _priceOracle,
-        PriceCacheStore _priceCacheStore,
-        SecurityStore   _securityStore,
-        QuotaStore      _quotaStore,
-        WhitelistStore  _whitelistStore,
-        uint _pendingExpiry
+        Controller _controller,
+        uint       _pendingExpiry
         )
         public
-        Claimable()
-        TransferModule(_securityStore)
+        TransferModule(_controller)
     {
-        priceOracle = _priceOracle;
-        priceCacheStore = _priceCacheStore;
-        quotaStore = _quotaStore;
-        whitelistStore = _whitelistStore;
         pendingExpiry = _pendingExpiry;
     }
 
@@ -82,15 +64,6 @@ contract QuotaTransfers is Claimable, TransferModule
         returns (bool)
     {
         return isPendingTxValidInternal(wallet, pendingTxId);
-    }
-
-    function setPriceOracle(PriceOracle _priceOracle)
-        external
-        onlyOwner
-    {
-        require(priceOracle != _priceOracle, "SAME_ADDRESS");
-        priceOracle = _priceOracle;
-        emit PriceOracleUpdated(address(priceOracle));
     }
 
     function transferToken(
@@ -119,10 +92,10 @@ contract QuotaTransfers is Claimable, TransferModule
         );
 
         bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (!allowed) {
             uint tokenValue = getTokenValue(token, amount);
-            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
+            allowed = controller.quotaStore().checkAndAddToSpent(wallet, tokenValue);
         }
 
         if (allowed) {
@@ -170,10 +143,10 @@ contract QuotaTransfers is Claimable, TransferModule
             "UNAUTHORIZED"
         );
 
-        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (!allowed) {
             uint tokenValue = getTokenValue(address(0), amount);
-            allowed = quotaStore.checkAndAddToSpent(wallet, tokenValue);
+            allowed = controller.quotaStore().checkAndAddToSpent(wallet, tokenValue);
         }
 
         if (allowed) {
@@ -203,7 +176,7 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         require(allowed, "PROHIBITED");
 
         for (uint i = 0; i < tokens.length; i++) {
@@ -225,7 +198,7 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (allowed) {
             approveInternal(wallet, token, to, amount);
             return;
@@ -240,7 +213,7 @@ contract QuotaTransfers is Claimable, TransferModule
         allowance = amount - allowance;
         uint tokenValue = getTokenValue(token, allowance);
 
-        if (quotaStore.checkAndAddToSpent(wallet, tokenValue)) {
+        if (controller.quotaStore().checkAndAddToSpent(wallet, tokenValue)) {
             approveInternal(wallet, token, to, allowance);
             return;
         }
@@ -260,7 +233,7 @@ contract QuotaTransfers is Claimable, TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        (bool allowed,) = whitelistStore.isWhitelisted(wallet, to);
+        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (allowed) {
             approveInternal(wallet, token, to, amount);
             callContractInternal(wallet, to, 0, data);
@@ -277,7 +250,7 @@ contract QuotaTransfers is Claimable, TransferModule
         allowance = amount - allowance;
         uint tokenValue = getTokenValue(token, allowance);
 
-        if (quotaStore.checkAndAddToSpent(wallet, tokenValue)) {
+        if (controller.quotaStore().checkAndAddToSpent(wallet, tokenValue)) {
             approveInternal(wallet, token, to, allowance);
             callContractInternal(wallet, to, 0, data);
             return;
@@ -320,11 +293,11 @@ contract QuotaTransfers is Claimable, TransferModule
         returns (uint value)
     {
         if (amount == 0) return 0;
-        value = priceCacheStore.tokenPrice(token, amount);
+        value = controller.priceCacheStore().tokenPrice(token, amount);
         if (value == 0) {
-            value = priceOracle.tokenPrice(token, amount);
+            value = controller.priceOracle().tokenPrice(token, amount);
             if (value > 0) {
-                priceCacheStore.cacheTokenPrice(token, amount, value);
+                controller.priceCacheStore().cacheTokenPrice(token, amount, value);
             }
         }
     }

@@ -29,11 +29,9 @@ contract UniswapModule is SecurityModule
 {
     using MathUint for uint;
 
-    constructor(
-        SecurityStore _securityStore
-        )
+    constructor(Controller _controller)
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
     }
 

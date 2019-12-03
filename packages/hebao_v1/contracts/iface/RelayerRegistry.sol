@@ -15,17 +15,16 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
-pragma experimental ABIEncoderV2;
-
-import "../security/SecurityModule.sol";
 
 
-/// @title PoolTogetherModule
-contract PoolTogetherModule is SecurityModule
+/// @title RelayerRegistry
+/// @dev A registry for wallets.
+/// @author Daniel Wang - <daniel@loopring.org>
+contract RelayerRegistry
 {
-    constructor(Controller _controller)
-        public
-        SecurityModule(_controller)
-    {
-    }
+    function registerRelayer(address relayer) external;
+    function deregisterRelayer(address relayer) external;
+    function isRelayerRegistered(address relayer) public view returns (bool);
+    function relayers() public view returns (address[] memory _relayers);
+    function numOfRelayers() public view returns (uint);
 }

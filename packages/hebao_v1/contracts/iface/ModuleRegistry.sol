@@ -26,5 +26,6 @@ contract ModuleRegistry
     function registerModule(address module) external;
     function deregisterModule(address module) external;
     function isModuleRegistered(address module) public view returns (bool);
+    function modules() public view returns (address[] memory _modules);
     function numOfModules() public view returns (uint);
 }

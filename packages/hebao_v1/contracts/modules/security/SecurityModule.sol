@@ -19,7 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../base/MetaTxModule.sol";
 
-import "../stores/SecurityStore.sol";
+import "../../iface/Controller.sol";
 
 
 /// @title SecurityStore
@@ -32,10 +32,10 @@ contract SecurityModule is MetaTxModule
 {
     SecurityStore internal securityStore;
 
-    constructor(SecurityStore _securityStore)
+    constructor(Controller _controller)
         public
+        MetaTxModule(_controller)
     {
-        securityStore = _securityStore;
     }
 
     // overriding
@@ -44,7 +44,7 @@ contract SecurityModule is MetaTxModule
             msg.sender == Wallet(wallet).owner(),
             "NOT_FROM_WALLET_OWNER"
         );
-        securityStore.touchLastActive(wallet);
+        controller.securityStore().touchLastActive(wallet);
         _;
     }
 
@@ -55,31 +55,31 @@ contract SecurityModule is MetaTxModule
             msg.sender == address(this),
             "NOT_FROM_META)TX_OR_WALLET_OWNER"
         );
-        securityStore.touchLastActive(wallet);
+        controller.securityStore().touchLastActive(wallet);
         _;
     }
 
     modifier onlyWhenWalletLocked(address wallet)
     {
-        require(securityStore.isLocked(wallet), "NOT_LOCKED");
+        require(controller.securityStore().isLocked(wallet), "NOT_LOCKED");
         _;
     }
 
     modifier onlyWhenWalletUnlocked(address wallet)
     {
-        require(!securityStore.isLocked(wallet), "LOCKED");
+        require(!controller.securityStore().isLocked(wallet), "LOCKED");
         _;
     }
 
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
-        require(securityStore.isGuardian(wallet, guardian), "NOT_GUARDIAN");
+        require(controller.securityStore().isGuardian(wallet, guardian), "NOT_GUARDIAN");
         _;
     }
 
     modifier notWalletGuardian(address wallet, address guardian)
     {
-        require(!securityStore.isGuardian(wallet, guardian), "IS_GUARDIAN");
+        require(!controller.securityStore().isGuardian(wallet, guardian), "IS_GUARDIAN");
         _;
     }
 
@@ -98,7 +98,7 @@ contract SecurityModule is MetaTxModule
         returns (bool)
     {
         return Wallet(wallet).owner() == addr ||
-            securityStore.isGuardian(wallet, addr);
+            controller.securityStore().isGuardian(wallet, addr);
     }
 
     function isWalletOwnerOrGuardian(address wallet, address[] memory addrs)

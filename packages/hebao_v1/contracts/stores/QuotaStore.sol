@@ -16,9 +16,9 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/MathUint.sol";
+import "../lib/MathUint.sol";
 
-import "../../base/DataStore.sol";
+import "../base/DataStore.sol";
 
 
 /// @title QuotaStore
