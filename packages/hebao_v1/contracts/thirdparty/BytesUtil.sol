@@ -2,15 +2,6 @@
 pragma solidity ^0.5.11;
 
 library BytesUtil {
-
-    function toBytes4(bytes memory b) internal pure returns (bytes4) {
-        bytes4 out;
-        for (uint i = 0; i < 4; i++) {
-            out |= bytes4(b[i] & 0xFF) >> (i * 8);
-        }
-        return out;
-    }
-
     function concat(
         bytes memory _preBytes,
         bytes memory _postBytes
@@ -377,6 +368,17 @@ library BytesUtil {
         }
 
         return tempUint;
+    }
+
+    function toBytes4(bytes memory _bytes, uint _start) internal  pure returns (bytes4) {
+        require(_bytes.length >= (_start + 4));
+        bytes4 tempBytes4;
+
+        assembly {
+            tempBytes4 := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempBytes4;
     }
 
     function toBytes32(bytes memory _bytes, uint _start) internal  pure returns (bytes32) {

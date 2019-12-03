@@ -32,6 +32,8 @@ import "./AddressUtil.sol";
 
 library SignatureUtil
 {
+    using BytesUtil     for bytes;
+
     enum SignatureType {
         ILLEGAL,
         INVALID,
@@ -125,7 +127,7 @@ library SignatureUtil
         return (
             success &&
             result.length == 32 &&
-            BytesUtil.toBytes4(result) == ERC1271_MAGICVALUE
+            result.toBytes4(0) == ERC1271_MAGICVALUE
         );
     }
 
