@@ -18,7 +18,7 @@ pragma solidity ^0.5.11;
 
 import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
-import "../lib/SimpleProxy.sol";
+import "../thirdparty/OwnedUpgradabilityProxy.sol";
 
 import "../iface/Controller.sol";
 import "../iface/Wallet.sol";
@@ -35,18 +35,15 @@ import "../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract WalletFactory is ReentrancyGuard, OwnerManagable
 {
-    address public walletImplementation;
-
     event WalletCreated(
         address indexed wallet,
         address indexed owner
     );
 
-    constructor(address _walletImplementation)
+    constructor()
         public
         OwnerManagable()
     {
-        walletImplementation = _walletImplementation;
         addManagerInternal(owner);
     }
 
@@ -55,9 +52,9 @@ contract WalletFactory is ReentrancyGuard, OwnerManagable
     /// @param _modules The wallet's modules.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address _controller,
-        address _owner,
-        address[] calldata _modules
+        Controller _controller,
+        address    _owner,
+        address[]  calldata _modules
         )
         external
         payable
@@ -69,22 +66,24 @@ contract WalletFactory is ReentrancyGuard, OwnerManagable
     }
 
     function createWalletInternal(
-        address _controller,
-        address _owner,
-        address[] memory _modules
+        Controller _controller,
+        address    _owner,
+        address[]  memory _modules
         )
         internal
         returns (address payable _wallet)
     {
         bytes32 salt = keccak256(abi.encodePacked("WALLET_CREATION", _owner));
-        bytes memory code = type(SimpleProxy).creationCode;
+        bytes memory code = type(OwnedUpgradabilityProxy).creationCode;
         assembly {
             _wallet := create2(0, add(code, 0x20), mload(code), salt)
             if iszero(extcodesize(_wallet)) {
                 revert(0, 0)
             }
         }
-        SimpleProxy(_wallet).setImplementation(walletImplementation);
+        address walletImplementation = _controller.implementationRegistry().defaultImplementation();
+        OwnedUpgradabilityProxy(_wallet).upgradeTo(walletImplementation);
+        OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
 
         // Temporarily register this contract as a module to the wallet
         // so we can add/activate the modules.
@@ -92,7 +91,7 @@ contract WalletFactory is ReentrancyGuard, OwnerManagable
         setupModules[0] = address(this);
 
         // Setup the wallet
-        Wallet(_wallet).setup(_controller, _owner, setupModules);
+        Wallet(_wallet).setup(address(_controller), _owner, setupModules);
 
         // Add/Activate modules
         for(uint i = 0; i < _modules.length; i++) {
