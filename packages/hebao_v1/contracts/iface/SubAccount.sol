@@ -69,7 +69,7 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @return withdrawable The amount allowed to withdraw.
-    function getWithdrawalable (
+    function tokenWithdrawalable (
         address wallet,
         address token
         )
@@ -82,7 +82,7 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @return depositable The amount allowd to deposit.
-    function getDepositable (
+    function tokenDepositable (
         address wallet,
         address token
         )
@@ -95,7 +95,7 @@ contract SubAccount
     /// @param token The token's address, use 0x0 for Ether.
     /// @param amount The amount to consider.
     /// @return interestRate The interest rate in BIPs.
-    function getInterestRate (
+    function tokenInterestRate (
         address wallet,
         address token,
         address amount
@@ -108,7 +108,7 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @return roi The ROI in BIPs.
-    function getReturn (
+    function tokenReturn (
         address wallet,
         address token
         )

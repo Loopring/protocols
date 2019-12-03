@@ -76,7 +76,7 @@ contract BaseSubAccount is SubAccount
         emit SubAccountTransfer(wallet, token, -_amount);
     }
 
-    function getReturn (
+    function tokenReturn (
         address wallet,
         address token
         )
@@ -94,7 +94,7 @@ contract BaseSubAccount is SubAccount
         return earned.mul(10000) / totalDeposit;
     }
 
-    function getReturnAmount (
+    function tokenReturnAmount (
         address wallet,
         address token
         )
@@ -112,7 +112,7 @@ contract BaseSubAccount is SubAccount
     }
 
     /// @dev The default implementation returns the total's balance or 0.
-    function getWithdrawalable (
+    function tokenWithdrawalable (
         address wallet,
         address token
         )
@@ -125,7 +125,7 @@ contract BaseSubAccount is SubAccount
     }
 
     /// @dev The default implementation returns the wallet's balance.
-    function getDepositable (
+    function tokenDepositable (
         address wallet,
         address token
         )
@@ -140,7 +140,7 @@ contract BaseSubAccount is SubAccount
         }
     }
 
-    function getInterestRate(address, address, address) public view returns (int) { return 0; }
+    function tokenInterestRate(address, address, address) public view returns (int) { return 0; }
 
     /// @dev Returns the balance for a list of tokens.
     ///
