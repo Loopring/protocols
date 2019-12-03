@@ -19,7 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
-import "../../iface/SubAccount.sol";
+import "../../base/SubAccount.sol";
 
 
 /// @title CompoundModule
@@ -46,6 +46,8 @@ contract CompoundModule is SubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
+
+        emit SubAccountTransfer(wallet, token, int(amount));
     }
 
     /// @dev Redeem fund from Compound.
@@ -59,6 +61,7 @@ contract CompoundModule is SubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
+        emit SubAccountTransfer(wallet, token, -int(amount));
     }
 
 }
