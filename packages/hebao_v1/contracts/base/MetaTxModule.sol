@@ -277,7 +277,7 @@ contract MetaTxModule is BaseModule
         )
         internal
         pure
-        returns (address[] memory signers)
+        returns (address[] memory addresses)
     {
         // Find the offset of the function parameter in the call data
         uint dataOffset = data.toUint(4 + 32 * parameterIdx);
@@ -286,7 +286,7 @@ contract MetaTxModule is BaseModule
         require(data.length >= 4 + dataOffset + 32 * (1 + length), "INVALID_DATA");
         // Extract the signers by copying the pointer at the beginning of the array
         // An extra offset of 36 is applied: 32(length) + 4(sig)
-        assembly { signers := add(data, add(36, dataOffset)) }
+        assembly { addresses := add(data, add(36, dataOffset)) }
     }
 
     /// @dev calculate the hash that all signatures will sign against.
