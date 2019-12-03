@@ -17,7 +17,6 @@
 pragma solidity ^0.5.11;
 
 import "./ModuleRegistry.sol";
-import "./RelayerRegistry.sol";
 import "./WalletRegistry.sol";
 
 import "../stores/PriceCacheStore.sol";
@@ -35,7 +34,6 @@ import "../base/WalletENSManager.sol";
 contract Controller
 {
     ModuleRegistry   public moduleRegistry;
-    RelayerRegistry  public relayerRegistry;
     WalletRegistry   public walletRegistry;
 
     PriceCacheStore  public priceCacheStore;

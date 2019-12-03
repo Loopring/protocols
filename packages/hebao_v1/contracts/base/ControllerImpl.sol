@@ -37,7 +37,6 @@ contract ControllerImpl is Claimable, Controller
 
     function init(
         ModuleRegistry    _moduleRegistry,
-        RelayerRegistry   _relayerRegistry,
         WalletRegistry    _walletRegistry,
         PriceCacheStore   _priceCacheStore,
         QuotaStore        _quotaStore,
@@ -53,7 +52,6 @@ contract ControllerImpl is Claimable, Controller
         initialized = true;
 
         moduleRegistry = _moduleRegistry;
-        relayerRegistry = _relayerRegistry;     // modifiable
         walletRegistry = _walletRegistry;
 
         priceCacheStore = _priceCacheStore;
@@ -63,14 +61,6 @@ contract ControllerImpl is Claimable, Controller
 
         priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
-    }
-
-    function setRelayerRegistry(RelayerRegistry _relayerRegistry)
-        external
-        onlyOwner
-    {
-        relayerRegistry = _relayerRegistry;
-        emit ContractChanged("RelayerRegistry", address(relayerRegistry));
     }
 
     function setPriceOracle(PriceOracle _priceOracle)

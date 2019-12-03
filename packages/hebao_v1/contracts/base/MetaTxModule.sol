@@ -109,10 +109,6 @@ contract MetaTxModule is BaseModule
 
         uint startGas = gasleft();
         require(startGas >= gasSetting[2], "OUT_OF_GAS");
-        require(
-            controller.relayerRegistry().isRelayerRegistered(msg.sender),
-            "INVALID_RELAYER"
-        );
 
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = getSignHash(
