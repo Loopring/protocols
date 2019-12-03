@@ -24,8 +24,8 @@ contract SubAccount
     event SubAccountTransfer(
         address indexed wallet,
         address indexed token,
-        int             amount // positive for transfering into this subaccount
-                               // or negavite for transfering out of this account.
+        int             amount // positive for transfering into this sub-account
+                               // or negavite for transfering out of this sub-account.
     );
     /// @dev Deposits Ether/token from the wallet to this sub-account.
     ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
@@ -55,7 +55,7 @@ contract SubAccount
         )
         external;
 
-    /// @dev Returns a wallet's token balance in this subaccount.
+    /// @dev Returns a wallet's token balance in this sub-account.
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @param balance The balance. A negative balance indiciates a loan.
