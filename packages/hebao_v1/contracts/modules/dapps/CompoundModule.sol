@@ -46,6 +46,8 @@ contract CompoundModule is SubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
+
+        emit SubAccountTransfer(wallet, token, int(amount));
     }
 
     /// @dev Redeem fund from Compound.
@@ -59,6 +61,7 @@ contract CompoundModule is SubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
+        emit SubAccountTransfer(wallet, token, -int(amount));
     }
 
 }
