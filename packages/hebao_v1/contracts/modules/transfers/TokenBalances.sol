@@ -56,6 +56,4 @@ contract TokenBalances is BaseSubAccount, BaseModule
     function withdraw(address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
     function getWithdrawalable (address, address ) public view returns (uint) { return 0; }
     function getDepositable (address, address) public view returns (uint ) { return 0; }
-    function getInterestRate (address, address, address) public view returns (int) { return 0; }
-    function getReturn (address, address) public view returns (int) { return 0; }
 }

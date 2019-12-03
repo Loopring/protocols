@@ -39,7 +39,7 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
-        returns (uint withdrawalable)
+        returns (uint)
     {
         int balance = tokenBalance(wallet, token);
         return balance <= 0 ? 0 : uint(balance);
@@ -61,6 +61,12 @@ contract BaseSubAccount is SubAccount
             return ERC20(token).balanceOf(wallet);
         }
     }
+
+    function getInterestRate(address, address, address)
+        public view returns (int) { return 0; }
+
+    function getReturn (address, address)
+        public view returns (int) { return 0; }
 
     /// @dev Returns the balance for a list of tokens.
     ///
