@@ -217,22 +217,7 @@ contract MetaTxModule is BaseModule
     {
         bytes4 method = extractMethod(data);
         if (method == this.executeTransactions.selector) {
-            // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{data_offset:32}
-            //              {signers_length:32}{signer1:32}{signer2:32}
-            require(data.length >= 132, "DATA_INVALID");
-
-            uint numSigners;
-            assembly { numSigners := mload(add(data, 164)) }
-            require(data.length >= (132 + 32 * numSigners), "DATA_INVALID");
-
-            signers = new address[](numSigners);
-
-            address signer;
-            for (uint i = 0; i < numSigners; i++) {
-                uint start = 196 + 32 * i;
-                assembly { signer := mload(add(data, start)) }
-                signers[i] = signer;
-            }
+            return extractAddressesFromCallData(data, 1);
         } else {
             signers = extractMetaTxSigners(wallet, method, data);
         }
@@ -277,6 +262,31 @@ contract MetaTxModule is BaseModule
             // data layout: {length:32}{sig:4}{_wallet:32}{...}
             wallet := mload(add(data, 36))
         }
+    }
+
+    /// @dev Returns a read-only array with the addresses stored in the call data
+    ///      at the specified function parameter index.
+    ///      Example: function bar(address[] signers, uint value);
+    ///               To extact `signers` use parameterIdx := 0
+    ///      Example: function foo(address wallet, address[] signers, address[] contracts);
+    ///               To extact `signers` use parameterIdx := 1
+    ///               To extact `contracts` use parameterIdx := 2
+    function extractAddressesFromCallData(
+        bytes memory data,
+        uint  parameterIdx
+        )
+        internal
+        pure
+        returns (address[] memory signers)
+    {
+        // Find the offset of the function parameter in the call data
+        uint dataOffset = data.toUint(4 + 32 * parameterIdx);
+        // Make sure enough bytes are in data to store the complete array
+        uint length = data.toUint(4 + dataOffset);
+        require(data.length >= 4 + dataOffset + 32 * (1 + length), "INVALID_DATA");
+        // Extract the signers by copying the pointer at the beginning of the array
+        // An extra offset of 36 is applied: 32(length) + 4(sig)
+        assembly { signers := add(data, add(36, dataOffset)) }
     }
 
     /// @dev calculate the hash that all signatures will sign against.

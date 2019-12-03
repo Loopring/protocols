@@ -151,22 +151,6 @@ contract ApprovedTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-
-        // ASSUMPTION:
-        // data layout: {data_length:32}{selector:4}{wallet:32}{signers_offset:32}{signers_length:32}{signer1:32}{signer2:32}
-        require(data.length >= 100, "DATA_INVALID");
-
-        uint numSigners;
-        assembly { numSigners := mload(add(data, 100)) }
-        require(data.length >= (100 + 32 * numSigners), "DATA_INVALID");
-
-        signers = new address[](numSigners);
-
-        address signer;
-        for (uint i = 0; i < numSigners; i++) {
-            uint start = 132 + 32 * i;
-            assembly { signer := mload(add(data, start)) }
-            signers[i] = signer;
-        }
+        return extractAddressesFromCallData(data, 1);
     }
 }
