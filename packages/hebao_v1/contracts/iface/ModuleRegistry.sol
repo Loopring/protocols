@@ -16,24 +16,15 @@
 */
 pragma solidity ^0.5.11;
 
-import "./BaseVault.sol";
 
-contract VaultFactory
+/// @title ModuleRegistry
+/// @dev A registry for modules.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+contract ModuleRegistry
 {
-    event VaultCreated(
-        address indexed vault,
-        uint    numOwners,
-        uint    requirement
-    );
-
-    function createVault(
-        address[] calldata owners,
-        uint               requirement
-        )
-        external
-        returns (address vault)
-    {
-        vault = address(new BaseVault(owners, requirement));
-        emit VaultCreated(vault, owners.length, requirement);
-    }
+    function registerModule(address module) external;
+    function deregisterModule(address module) external;
+    function isModuleRegistered(address module) public view returns (bool);
+    function numOfModules() public view returns (uint);
 }

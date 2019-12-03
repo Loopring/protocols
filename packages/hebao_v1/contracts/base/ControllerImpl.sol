@@ -18,23 +18,28 @@ pragma solidity ^0.5.11;
 
 import "../lib/Claimable.sol";
 
+import "../iface/Controller.sol";
 
-/// @title BankRegistry
-/// @dev A registry for wallets, modules, and probably other managed contracts
-///      in the future.
+
+/// @title ControllerImpl
+/// @dev Basic implementation of a Controller.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-contract BankRegistry is Claimable
+contract ControllerImpl is Claimable, Controller
 {
-    function registerWallet(address wallet) external;
-    function isWallet(address addr) public view returns (bool);
-    function numOfWallets() public view returns (uint);
+    constructor() public Claimable() {}
 
-    function registerModule(address module) external;
-    function deregisterModule(address module) external;
-    function isModuleRegistered(address module) public view returns (bool);
-    function numOfModules() public view returns (uint);
+    function setModuleRegistry(ModuleRegistry _moduleRegistry)
+        external
+        onlyOwner
+    {
+        moduleRegistry = _moduleRegistry;
+    }
+
+    function setWalletRegistry(WalletRegistry _walletRegistry)
+        external
+        onlyOwner
+    {
+        walletRegistry = _walletRegistry;
+    }
 }

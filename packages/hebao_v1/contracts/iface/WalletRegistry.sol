@@ -16,24 +16,13 @@
 */
 pragma solidity ^0.5.11;
 
-import "./BaseVault.sol";
 
-contract VaultFactory
+/// @title WalletRegistry
+/// @dev A registry for wallets.
+/// @author Daniel Wang - <daniel@loopring.org>
+contract WalletRegistry
 {
-    event VaultCreated(
-        address indexed vault,
-        uint    numOwners,
-        uint    requirement
-    );
-
-    function createVault(
-        address[] calldata owners,
-        uint               requirement
-        )
-        external
-        returns (address vault)
-    {
-        vault = address(new BaseVault(owners, requirement));
-        emit VaultCreated(vault, owners.length, requirement);
-    }
+    function registerWallet(address wallet) external;
+    function isWallet(address addr) public view returns (bool);
+    function numOfWallets() public view returns (uint);
 }

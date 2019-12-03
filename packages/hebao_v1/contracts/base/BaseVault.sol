@@ -23,7 +23,7 @@ import "../lib/SignatureUtil.sol";
 import "../iface/Vault.sol";
 
 
-contract BaseVault is Vault, AddressSet
+contract BaseVault is AddressSet, Vault
 {
     using SignatureUtil for bytes32;
 

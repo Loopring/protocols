@@ -16,24 +16,14 @@
 */
 pragma solidity ^0.5.11;
 
-import "./BaseVault.sol";
+import "./ModuleRegistry.sol";
+import "./WalletRegistry.sol";
 
-contract VaultFactory
+/// @title Controller
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+contract Controller
 {
-    event VaultCreated(
-        address indexed vault,
-        uint    numOwners,
-        uint    requirement
-    );
-
-    function createVault(
-        address[] calldata owners,
-        uint               requirement
-        )
-        external
-        returns (address vault)
-    {
-        vault = address(new BaseVault(owners, requirement));
-        emit VaultCreated(vault, owners.length, requirement);
-    }
+    ModuleRegistry public moduleRegistry;
+    WalletRegistry public walletRegistry;
 }

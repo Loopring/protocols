@@ -17,25 +17,23 @@
 pragma solidity ^0.5.11;
 
 import "../lib/AddressSet.sol";
+import "../lib/Claimable.sol";
 
-import "../iface/BankRegistry.sol";
+import "../iface/WalletRegistry.sol";
 
 
-/// @title BaseBankRegistry
-/// @dev Basic implementation of a BankRegistry.
+/// @title WalletRegistryImpl
+/// @dev Basic implementation of a WalletRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract BaseBankRegistry is BankRegistry, AddressSet
+contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 {
-    bytes32 internal constant MODULE = keccak256("__MODULE__");
     bytes32 internal constant WALLET = keccak256("__WALLET__");
 
     address internal factory;
 
     event WalletRegistered      (address indexed wallet);
-    event ModuleRegistered      (address indexed module);
-    event ModuleDeregistered    (address indexed module);
-    event WalletFactoryUpdated  (address factory);
+    event WalletFactoryUpdated  (address indexed factory);
 
     modifier onlyFactory()
     {
@@ -76,37 +74,5 @@ contract BaseBankRegistry is BankRegistry, AddressSet
         returns (uint)
     {
         return numAddressesInSet(WALLET);
-    }
-
-    function registerModule(address module)
-        external
-        onlyOwner
-    {
-        addAddressToSet(MODULE, module, true);
-        emit ModuleRegistered(module);
-    }
-
-    function deregisterModule(address module)
-        external
-        onlyOwner
-    {
-        removeAddressFromSet(MODULE, module);
-        emit ModuleDeregistered(module);
-    }
-
-    function isModuleRegistered(address module)
-        public
-        view
-        returns (bool)
-    {
-        return isAddressInSet(MODULE, module);
-    }
-
-    function numOfModules()
-        public
-        view
-        returns (uint)
-    {
-        return numAddressesInSet(MODULE);
     }
 }
