@@ -19,11 +19,11 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
-import "../../base/SubAccount.sol";
+import "../../base/BaseSubAccount.sol";
 
 
 /// @title CompoundModule
-contract CompoundModule is SubAccount, SecurityModule
+contract CompoundModule is BaseSubAccount, SecurityModule
 {
     constructor(
         SecurityStore _securityStore
@@ -47,7 +47,7 @@ contract CompoundModule is SubAccount, SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
     {
 
-        emit SubAccountTransfer(wallet, token, int(amount));
+        emit BaseSubAccountTransfer(wallet, token, int(amount));
     }
 
     /// @dev Redeem fund from Compound.
@@ -61,7 +61,7 @@ contract CompoundModule is SubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        emit SubAccountTransfer(wallet, token, -int(amount));
+        emit BaseSubAccountTransfer(wallet, token, -int(amount));
     }
 
 }
