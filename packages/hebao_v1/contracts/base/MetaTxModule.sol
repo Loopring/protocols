@@ -327,11 +327,7 @@ contract MetaTxModule is BaseModule
         pure
         returns (bytes4 method)
     {
-        require(data.length >= 4, "INVALID_DATA");
-        assembly {
-            // data layout: {length:32}{sig:4}{...}
-            method := mload(add(data, 32))
-        }
+        return data.toBytes4(0);
     }
 
     /// @dev Save the meta-transaction to history.
