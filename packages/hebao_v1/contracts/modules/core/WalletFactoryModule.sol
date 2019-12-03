@@ -42,11 +42,10 @@ contract WalletFactoryModule is WalletFactory, Module
     );
 
     constructor(
-        Controller _controller,
-        address    _walletImplementation
+        Controller _controller
         )
         public
-        WalletFactory(_walletImplementation)
+        WalletFactory()
     {
         controller = _controller;
     }
@@ -68,14 +67,14 @@ contract WalletFactoryModule is WalletFactory, Module
         returns (address _wallet)
     {
         if (bytes(_subdomain).length == 0) {
-            _wallet = createWalletInternal(address(controller), _owner, _modules);
+            _wallet = createWalletInternal(controller, _owner, _modules);
         } else {
             address[] memory extendedModules = new address[](_modules.length + 1);
             extendedModules[0] = address(this);
             for(uint i = 0; i < _modules.length; i++) {
                 extendedModules[i + 1] = _modules[i];
             }
-            _wallet = createWalletInternal(address(controller), _owner, extendedModules);
+            _wallet = createWalletInternal(controller, _owner, extendedModules);
             controller.ensManager().register(_wallet, _subdomain);
             Wallet(_wallet).removeModule(address(this));
         }
