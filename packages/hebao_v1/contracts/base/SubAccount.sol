@@ -21,7 +21,14 @@ pragma experimental ABIEncoderV2;
 /// @title SubAccount
 contract SubAccount
 {
+    event SubAccountTransfer(
+        address indexed wallet,
+        address indexed token,
+        int             amount // positive for transfering into this subaccount
+                               // or negavite for transfering out of this account.
+    );
     /// @dev Deposits Ether/token from the wallet to this sub-account.
+    ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
     /// @param wallet The wallt from which the Ether/token will be transfered out.
     /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     /// @param token The token address, use 0x0 for Ether.
@@ -35,6 +42,7 @@ contract SubAccount
         external;
 
     /// @dev Withdraw Ether/token from this sub-account to the wallet.
+    ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
     /// @param wallet The wallt to which the Ether/token will be transfered to.
     /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     /// @param token The token address, use 0x0 for Ether.
