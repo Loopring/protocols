@@ -82,15 +82,31 @@ contract BaseSubAccount is SubAccount
         view
         returns (int)
     {
-        int totalWithdrawal = stats[wallet][token].totalWithdrawal;
         int totalDeposit = stats[wallet][token].totalDeposit;
-
         if (totalDeposit == 0) return 0;
 
+        int totalWithdrawal = stats[wallet][token].totalWithdrawal;
         int totalReturn = tokenBalance(wallet, token).add(totalWithdrawal);
         int earned = totalReturn.sub(totalDeposit);
 
         return earned.mul(10000) / totalDeposit;
+    }
+
+    function getReturnAmount (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (int)
+    {
+        int totalDeposit = stats[wallet][token].totalDeposit;
+
+        if (totalDeposit == 0) return 0;
+
+        int totalWithdrawal = stats[wallet][token].totalWithdrawal;
+        int totalReturn = tokenBalance(wallet, token).add(totalWithdrawal);
+        return totalReturn.sub(totalDeposit);
     }
 
     /// @dev The default implementation returns the total's balance or 0.
