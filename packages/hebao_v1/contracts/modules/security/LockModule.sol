@@ -47,11 +47,11 @@ contract LockModule is SecurityModule
     );
 
     constructor(
-        SecurityStore _securityStore,
-        uint          _lockPeriod
+        Controller _controller,
+        uint       _lockPeriod
         )
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
         lockPeriod = _lockPeriod;
     }
@@ -75,7 +75,7 @@ contract LockModule is SecurityModule
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
     {
-        securityStore.setLock(wallet, now + lockPeriod);
+        controller.securityStore().setLock(wallet, now + lockPeriod);
         emit WalletLock(wallet, guardian, true);
     }
 
@@ -89,7 +89,7 @@ contract LockModule is SecurityModule
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletLocked(wallet)
     {
-        securityStore.setLock(wallet, 0);
+        controller.securityStore().setLock(wallet, 0);
         emit WalletLock(wallet, guardian, false);
     }
 
@@ -98,7 +98,7 @@ contract LockModule is SecurityModule
         view
         returns (uint)
     {
-        return securityStore.getLock(wallet);
+        return controller.securityStore().getLock(wallet);
     }
 
     function isLocked(address wallet)
@@ -106,7 +106,7 @@ contract LockModule is SecurityModule
         view
         returns (bool)
     {
-        return securityStore.isLocked(wallet);
+        return controller.securityStore().isLocked(wallet);
     }
 
     function extractMetaTxSigners(

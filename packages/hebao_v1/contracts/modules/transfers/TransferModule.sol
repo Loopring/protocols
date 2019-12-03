@@ -43,11 +43,9 @@ contract TransferModule is SecurityModule
         bytes           data
     );
 
-    constructor(
-        SecurityStore _securityStore
-        )
+    constructor(Controller _controller)
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
     }
 

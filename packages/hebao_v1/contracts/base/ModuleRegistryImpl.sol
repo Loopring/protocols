@@ -59,6 +59,14 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         return isAddressInSet(MODULE, module);
     }
 
+    function modules()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(MODULE);
+    }
+
     function numOfModules()
         public
         view

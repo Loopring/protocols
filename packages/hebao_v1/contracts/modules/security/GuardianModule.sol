@@ -45,12 +45,12 @@ contract GuardianModule is SecurityModule
     event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
 
     constructor(
-        SecurityStore _securityStore,
-        uint          _pendingPeriod,
-        uint          _confirmPeriod
+        Controller _controller,
+        uint       _pendingPeriod,
+        uint       _confirmPeriod
         )
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
         pendingPeriod = _pendingPeriod;
         confirmPeriod = _confirmPeriod;
@@ -69,11 +69,11 @@ contract GuardianModule is SecurityModule
     {
         require(guardian != address(0), "ZERO_ADDRESS");
 
-        uint count = securityStore.numGuardians(wallet);
+        uint count = controller.securityStore().numGuardians(wallet);
         require(count < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
-        if (securityStore.numGuardians(wallet) == 0) {
-            securityStore.addGuardian(wallet, guardian);
+        if (controller.securityStore().numGuardians(wallet) == 0) {
+            controller.securityStore().addGuardian(wallet, guardian);
             emit GuardianAdded(wallet, guardian);
         } else {
             uint confirmStart = pendingAdditions[wallet][guardian];
@@ -95,7 +95,7 @@ contract GuardianModule is SecurityModule
         uint confirmStart = pendingAdditions[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
         require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
-        securityStore.addGuardian(wallet, guardian);
+        controller.securityStore().addGuardian(wallet, guardian);
         delete pendingAdditions[wallet][guardian];
         emit GuardianAdded(wallet, guardian);
     }
@@ -143,7 +143,7 @@ contract GuardianModule is SecurityModule
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
         require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
-        securityStore.removeGuardian(wallet, guardian);
+        controller.securityStore().removeGuardian(wallet, guardian);
         delete pendingRemovals[wallet][guardian];
         emit GuardianRemoved(wallet, guardian);
     }

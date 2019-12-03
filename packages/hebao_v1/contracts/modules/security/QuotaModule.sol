@@ -19,8 +19,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
 
-import "../stores/QuotaStore.sol";
-
 import "./SecurityModule.sol";
 
 
@@ -30,14 +28,10 @@ contract QuotaModule is SecurityModule
 {
     QuotaStore    public quotaStore;
 
-    constructor(
-        SecurityStore  _securityStore,
-        QuotaStore    _quotaStore
-        )
+    constructor(Controller _controller)
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
-        quotaStore = _quotaStore;
     }
 
     function changeDailyQuota(
@@ -49,7 +43,7 @@ contract QuotaModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        quotaStore.changeQuota(wallet, newQuota);
+        controller.quotaStore().changeQuota(wallet, newQuota);
     }
 
     function getDailyQuota(address wallet)
@@ -61,9 +55,9 @@ contract QuotaModule is SecurityModule
             uint available
         )
     {
-        total = quotaStore.currentQuota(wallet);
-        spent = quotaStore.spentQuota(wallet);
-        available = quotaStore.availableQuota(wallet);
+        total = controller.quotaStore().currentQuota(wallet);
+        spent = controller.quotaStore().spentQuota(wallet);
+        available = controller.quotaStore().availableQuota(wallet);
     }
 
     function boundMethods()

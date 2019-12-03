@@ -16,9 +16,9 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressSet.sol";
+import "../lib/AddressSet.sol";
 
-import "../../base/DataStore.sol";
+import "../base/DataStore.sol";
 
 
 /// @title WhitelistStore

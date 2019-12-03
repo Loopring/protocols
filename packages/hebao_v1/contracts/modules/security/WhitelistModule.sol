@@ -21,8 +21,6 @@ import "../../lib/MathUint.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../stores/WhitelistStore.sol";
-
 import "./SecurityModule.sol";
 
 
@@ -32,18 +30,15 @@ contract WhitelistModule is SecurityModule
 {
     using MathUint for uint;
 
-    WhitelistStore  public whitelistStore;
     uint public delayPeriod;
 
     constructor(
-        SecurityStore  _securityStore,
-        WhitelistStore _whitelistStore,
-        uint           _delayPeriod
+        Controller  _controller,
+        uint        _delayPeriod
         )
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
-        whitelistStore = _whitelistStore;
         delayPeriod = _delayPeriod;
     }
 
@@ -56,7 +51,7 @@ contract WhitelistModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        whitelistStore.addToWhitelist(wallet, addr, now.add(delayPeriod));
+        controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));
     }
 
     function removeFromWhitelist(
@@ -68,7 +63,7 @@ contract WhitelistModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        whitelistStore.removeFromWhitelist(wallet, addr);
+        controller.whitelistStore().removeFromWhitelist(wallet, addr);
     }
 
     function getWhitelist(address wallet)
@@ -79,7 +74,7 @@ contract WhitelistModule is SecurityModule
             uint[]    memory effectiveTimes
         )
     {
-        return whitelistStore.whitelist(wallet);
+        return controller.whitelistStore().whitelist(wallet);
     }
 
     function isWhitelisted(
@@ -92,7 +87,7 @@ contract WhitelistModule is SecurityModule
             uint effectiveTime
         )
     {
-        return whitelistStore.isWhitelisted(wallet, addr);
+        return controller.whitelistStore().isWhitelisted(wallet, addr);
     }
 
     function boundMethods()

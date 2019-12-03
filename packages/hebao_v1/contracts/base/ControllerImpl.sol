@@ -28,18 +28,46 @@ import "../iface/Controller.sol";
 contract ControllerImpl is Claimable, Controller
 {
     constructor() public Claimable() {}
+    bool private initialized;
 
-    function setModuleRegistry(ModuleRegistry _moduleRegistry)
+    event ContractChanged(
+        string  indexed name,
+        address indexed addr
+    );
+
+    function init(
+        ModuleRegistry    _moduleRegistry,
+        WalletRegistry    _walletRegistry,
+        PriceCacheStore   _priceCacheStore,
+        QuotaStore        _quotaStore,
+        SecurityStore     _securityStore,
+        WhitelistStore    _whitelistStore,
+        PriceOracle       _priceOracle,
+        WalletENSManager  _ensManager
+        )
         external
         onlyOwner
     {
+        require(!initialized, "INITIALIZED_ALREADY");
+        initialized = true;
+
         moduleRegistry = _moduleRegistry;
+        walletRegistry = _walletRegistry;
+
+        priceCacheStore = _priceCacheStore;
+        quotaStore = _quotaStore;
+        securityStore = _securityStore;
+        whitelistStore = _whitelistStore;
+
+        priceOracle = _priceOracle;             // modifiable
+        ensManager = _ensManager;
     }
 
-    function setWalletRegistry(WalletRegistry _walletRegistry)
+    function setPriceOracle(PriceOracle _priceOracle)
         external
         onlyOwner
     {
-        walletRegistry = _walletRegistry;
+        priceOracle = _priceOracle;
+        emit ContractChanged("PriceOracle", address(priceOracle));
     }
 }

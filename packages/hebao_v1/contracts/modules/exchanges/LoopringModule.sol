@@ -50,9 +50,9 @@ contract LoopringModule is SecurityModule
         uint96          amount
     );
 
-    constructor(SecurityStore _securityStore)
+    constructor(Controller _controller)
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
     }
 

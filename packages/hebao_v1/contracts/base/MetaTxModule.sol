@@ -24,6 +24,7 @@ import "../lib/SignatureUtil.sol";
 import "../thirdparty/BytesUtil.sol";
 import "../thirdparty/ERC1271.sol";
 
+import "../iface/Controller.sol";
 import "../iface/Wallet.sol";
 
 import "./BaseModule.sol";
@@ -53,6 +54,7 @@ contract MetaTxModule is BaseModule
         mapping (bytes32 => bool) metaTxHash;
     }
 
+    Controller public controller;
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
@@ -67,6 +69,13 @@ contract MetaTxModule is BaseModule
     {
         require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
         _;
+    }
+
+    constructor(Controller _controller)
+        public
+        BaseModule()
+    {
+        controller = _controller;
     }
 
     /// @dev Execute a signed meta transaction.

@@ -25,11 +25,9 @@ import "../../base/BaseSubAccount.sol";
 /// @title CompoundModule
 contract CompoundModule is BaseSubAccount, SecurityModule
 {
-    constructor(
-        SecurityStore _securityStore
-        )
+    constructor(Controller _controller)
         public
-        SecurityModule(_securityStore)
+        SecurityModule(_controller)
     {
     }
 

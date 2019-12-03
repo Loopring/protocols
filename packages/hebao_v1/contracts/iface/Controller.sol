@@ -19,11 +19,28 @@ pragma solidity ^0.5.11;
 import "./ModuleRegistry.sol";
 import "./WalletRegistry.sol";
 
+import "../stores/PriceCacheStore.sol";
+import "../stores/QuotaStore.sol";
+import "../stores/SecurityStore.sol";
+import "../stores/WhitelistStore.sol";
+
+import "../iface/PriceOracle.sol";
+
+import "../base/WalletENSManager.sol";
+
 /// @title Controller
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract Controller
 {
-    ModuleRegistry public moduleRegistry;
-    WalletRegistry public walletRegistry;
+    ModuleRegistry   public moduleRegistry;
+    WalletRegistry   public walletRegistry;
+
+    PriceCacheStore  public priceCacheStore;
+    QuotaStore       public quotaStore;
+    SecurityStore    public securityStore;
+    WhitelistStore   public whitelistStore;
+
+    PriceOracle      public priceOracle;
+    WalletENSManager public ensManager;
 }

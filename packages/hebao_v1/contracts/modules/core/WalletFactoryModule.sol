@@ -16,10 +16,10 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../iface/Controller.sol";
 import "../../iface/Module.sol";
 import "../../iface/Wallet.sol";
 
-import "../../base/WalletENSManager.sol";
 import "../../base/WalletFactory.sol";
 
 
@@ -33,7 +33,7 @@ import "../../base/WalletFactory.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract WalletFactoryModule is WalletFactory, Module
 {
-    WalletENSManager public ensManager;
+    Controller public controller;
 
     event WalletCreated(
         address indexed wallet,
@@ -42,23 +42,21 @@ contract WalletFactoryModule is WalletFactory, Module
     );
 
     constructor(
-        address          _walletImplementation,
-        WalletENSManager _ensManager
+        Controller _controller,
+        address    _walletImplementation
         )
         public
         WalletFactory(_walletImplementation)
     {
-        ensManager = _ensManager;
+        controller = _controller;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
-    /// @param _controller The ControllerRegister address.
     /// @param _owner The wallet's owner.
     /// @param _modules The wallet's modules.
     /// @param _subdomain The ENS subdomain to register, use "" to skip.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address            _controller,
         address            _owner,
         string    calldata _subdomain,
         address[] calldata _modules
@@ -70,16 +68,15 @@ contract WalletFactoryModule is WalletFactory, Module
         returns (address _wallet)
     {
         if (bytes(_subdomain).length == 0) {
-            _wallet = createWalletInternal(_controller, _owner, _modules);
+            _wallet = createWalletInternal(address(controller), _owner, _modules);
         } else {
             address[] memory extendedModules = new address[](_modules.length + 1);
             extendedModules[0] = address(this);
             for(uint i = 0; i < _modules.length; i++) {
                 extendedModules[i + 1] = _modules[i];
             }
-            _wallet = createWalletInternal(_controller, _owner, extendedModules);
-            ensManager.register(_wallet, _subdomain);
-
+            _wallet = createWalletInternal(address(controller), _owner, extendedModules);
+            controller.ensManager().register(_wallet, _subdomain);
             Wallet(_wallet).removeModule(address(this));
         }
     }

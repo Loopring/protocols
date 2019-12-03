@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../base/DataStore.sol";
+import "../base/DataStore.sol";
 
 
 /// @title SecurityStore
