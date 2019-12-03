@@ -32,7 +32,6 @@ contract QuotaStore is DataStore
 {
     using MathUint for uint;
 
-    uint constant internal INFINITE = uint(-1);
     uint public defaultQuota;
 
     struct Quota
