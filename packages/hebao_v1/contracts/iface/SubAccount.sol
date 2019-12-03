@@ -18,15 +18,9 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 
-/// @title SubAccount
+/// @title BaseSubAccount
 contract SubAccount
 {
-    event SubAccountTransfer(
-        address indexed wallet,
-        address indexed token,
-        int             amount // positive for transfering into this sub-account
-                               // or negavite for transfering out of this sub-account.
-    );
     /// @dev Deposits Ether/token from the wallet to this sub-account.
     ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
     /// @param wallet The wallt from which the Ether/token will be transfered out.
@@ -67,17 +61,58 @@ contract SubAccount
         view
         returns (int balance);
 
-    function tokenBalances(
-        address   wallet,
-        address[] memory tokens
+
+    /// @dev Returns the amount of token a wallet can withdraw from the sub-account
+    ///      to the wallet. The return value may be smaller than the balance to
+    /// indicate lockup or bigger than the balance to indicate a credit.
+    ///
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @return withdrawable The amount allowed to withdraw.
+    function tokenWithdrawalable (
+        address wallet,
+        address token
         )
         public
         view
-        returns (int[] memory balances)
-    {
-        balances = new int[](tokens.length);
-        for (uint i = 0; i < tokens.length; i++) {
-            balances[i] = tokenBalance(wallet, tokens[i]);
-        }
-    }
+        returns (uint withdrawalable);
+
+    /// @dev Returns the amount of token a wallet can deposit from the wallet into
+    ///      the sub-account. uint(-1) will be returned if there is no limitation.
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @return depositable The amount allowd to deposit.
+    function tokenDepositable (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (uint depositable);
+
+    /// @dev Returns the current interest rate in BIPs (0.01%).
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @param amount The amount to consider.
+    /// @return interestRate The interest rate in BIPs.
+    function tokenInterestRate (
+        address wallet,
+        address token,
+        address amount
+        )
+        public
+        view
+        returns (int interestRate);
+
+    /// @dev Returns the RIO in BIPs (0.01%).
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @return roi The ROI in BIPs.
+    function tokenReturn (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (int roi);
 }

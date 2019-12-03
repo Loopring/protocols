@@ -20,11 +20,11 @@ pragma experimental ABIEncoderV2;
 import "../../lib/ERC20.sol";
 
 import "../../base/BaseModule.sol";
-import "../../base/SubAccount.sol";
+import "../../base/BaseSubAccount.sol";
 
 
 /// @title TokenBalances
-contract TokenBalances is SubAccount, BaseModule
+contract TokenBalances is BaseSubAccount, BaseModule
 {
     function boundMethods()
         public
@@ -54,4 +54,9 @@ contract TokenBalances is SubAccount, BaseModule
 
     function deposit (address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
     function withdraw(address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
+    function tokenWithdrawalable (address, address ) public view returns (uint) { return 0; }
+    function tokenDepositable (address, address) public view returns (uint ) { return 0; }
+    function tokenInterestRate(address, address ) public view returns (int) { return 0; }
+    function tokenReturn(address, address ) public view returns (int) { return 0; }
+    function tokenReturnAmount (address, address ) public view returns (int) { return 0; }
 }

@@ -19,11 +19,11 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
-import "../../base/SubAccount.sol";
+import "../../base/BaseSubAccount.sol";
 
 
 /// @title CompoundModule
-contract CompoundModule is SubAccount, SecurityModule
+contract CompoundModule is BaseSubAccount, SecurityModule
 {
     constructor(
         SecurityStore _securityStore
