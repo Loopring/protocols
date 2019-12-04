@@ -65,10 +65,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     modifier onlyModule
     {
         require(isAddressInSet(MODULE, msg.sender), "MODULE_UNAUTHORIZED");
-        require(
-            controller.moduleRegistry().isModuleRegistered(msg.sender),
-            "INVALID_MODULE"
-        );
         _;
     }
 
@@ -151,10 +147,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     {
         require(_method != bytes4(0), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
-        require(
-            controller.moduleRegistry().isModuleRegistered(_module),
-            "UNREGISTERED_MODULE"
-        );
+        require(isAddressInSet(MODULE, _module), "MODULE_UNAUTHORIZED");
 
         methodToModule[_method] = _module;
         emit MethodBound(_method, _module);
@@ -238,7 +231,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
-        require(controller.moduleRegistry().isModuleRegistered(module), "INVALID_MODULE");
 
         assembly {
             let ptr := mload(0x40)
