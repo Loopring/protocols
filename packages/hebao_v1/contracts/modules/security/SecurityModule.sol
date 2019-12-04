@@ -92,30 +92,6 @@ contract SecurityModule is MetaTxModule
         _;
     }
 
-    function isWalletOwnerOrGuardian(address wallet, address addr)
-        internal
-        view
-        returns (bool)
-    {
-        return Wallet(wallet).owner() == addr ||
-            controller.securityStore().isGuardian(wallet, addr);
-    }
-
-    function isWalletOwnerOrGuardian(address wallet, address[] memory addrs)
-        internal
-        view
-        returns (bool)
-    {
-        if (addrs.length == 0) return false;
-
-        for (uint i = 0; i < addrs.length; i++) {
-            if (!isWalletOwnerOrGuardian(wallet, addrs[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     function quotaManager() internal view returns (address)
     {
         return address(controller.quotaManager());

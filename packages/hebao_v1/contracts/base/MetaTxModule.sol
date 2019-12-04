@@ -84,6 +84,30 @@ contract MetaTxModule is BaseModule
         return address(0);
     }
 
+    function isWalletOwnerOrGuardian(address wallet, address addr)
+        internal
+        view
+        returns (bool)
+    {
+        return Wallet(wallet).owner() == addr ||
+            controller.securityStore().isGuardian(wallet, addr);
+    }
+
+    function isWalletOwnerOrGuardian(address wallet, address[] memory addrs)
+        internal
+        view
+        returns (bool)
+    {
+        if (addrs.length == 0) return false;
+
+        for (uint i = 0; i < addrs.length; i++) {
+            if (!isWalletOwnerOrGuardian(wallet, addrs[i])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /// @dev Execute a signed meta transaction.
     ///      This method can be called by any relayer without restriction. The relayer
     ///      will pay for transaction gas in Ether and charge the wallet Ether or other
@@ -126,7 +150,12 @@ contract MetaTxModule is BaseModule
             gasSetting
         );
 
+        // Get the signers necessary for this meta transaction.
+        // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
+        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
+        // (even a call that fails will reimburse the gas costs).
         address[] memory signers = getSigners(wallet, data);
+        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
