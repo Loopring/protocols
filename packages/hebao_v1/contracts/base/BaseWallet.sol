@@ -42,8 +42,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     mapping (bytes4  => address) internal methodToModule;
 
-    mapping (address => bool) public moduleForceEnabled;
-
     event OwnerChanged          (address indexed newOwner);
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
@@ -66,19 +64,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     modifier onlyModule
     {
-        requireModuleEnabled(msg.sender);
+        require(isAddressInSet(MODULE, msg.sender), "MODULE_UNAUTHORIZED");
         _;
-    }
-
-    function requireModuleEnabled(address module)
-        private
-        view
-        returns (bool)
-    {
-        require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
-        if(!controller.moduleRegistry().isModuleRegistered(module)) {
-            require(moduleForceEnabled[module], "INVALID_MODULE");
-        }
     }
 
     function owner() public view returns (address)
@@ -138,17 +125,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         emit ModuleRemoved(_module);
     }
 
-    function setModuleForceEnabled(
-        address module,
-        bool forceEnabled
-        )
-        external
-    {
-        require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
-        require(isWalletOwnerOrGuardian(msg.sender), "UNAUTHORIZED");
-        moduleForceEnabled[module] = forceEnabled;
-    }
-
     function modules()
         public
         view
@@ -171,7 +147,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     {
         require(_method != bytes4(0), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
-        require(hasModule(_module), "UNKNOWN_MODULE");
 
         methodToModule[_method] = _module;
         emit MethodBound(_method, _module);
@@ -254,7 +229,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         }
 
         address module = methodToModule[msg.sig];
-        requireModuleEnabled(module);
+        require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
         assembly {
             let ptr := mload(0x40)
@@ -277,13 +252,5 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
             _method == this.modules.selector ||
             _method == this.hasModule.selector ||
             _method == this.boundMethodModule.selector;
-    }
-
-    function isWalletOwnerOrGuardian(address addr)
-        internal
-        view
-        returns (bool)
-    {
-        return owner() == addr || controller.securityStore().isGuardian(address(this), addr);
     }
 }
