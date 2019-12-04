@@ -68,7 +68,8 @@ contract InheritanceModule is SecurityModule
     }
 
     function inherit(
-        address wallet
+        address wallet,
+        address[] calldata /*signers*/
         )
         external
         nonReentrant
@@ -106,7 +107,7 @@ contract InheritanceModule is SecurityModule
     function extractMetaTxSigners(
         bytes4  method,
         address wallet,
-        bytes   memory /*data*/
+        bytes   memory data
         )
         internal
         view
@@ -116,8 +117,7 @@ contract InheritanceModule is SecurityModule
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
         } else if (method == this.inherit.selector) {
-            signers = new address[](1);
-            (signers[0],) = controller.securityStore().inheritor(wallet);
+            return extractAddressesFromCallData(data, 1);
         } else {
             revert("INVALID_METHOD");
         }

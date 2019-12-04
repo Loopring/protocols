@@ -87,7 +87,6 @@ contract RecoveryModule is SecurityModule
         }
 
         require(signers.length >= requiredCount, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         recovery.newOwner = newOwner;
         recovery.completeAfter = now + recoveryPeriod;
@@ -115,7 +114,6 @@ contract RecoveryModule is SecurityModule
 
         uint guardianCount = wallets[wallet].guardianCount;
         require(signers.length >= (guardianCount + 1) / 2, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         delete wallets[wallet];
         controller.securityStore().setLock(wallet, 0);
@@ -128,13 +126,11 @@ contract RecoveryModule is SecurityModule
     /// @param wallet The wallet for which the recovery shall complete.
     function completeRecovery(
         address            wallet,
-        address[] calldata signers
+        address[] calldata /*signers*/
         )
         external
         nonReentrant
     {
-        require(signers.length == 0, "NO_SIGNER_NEEDED");
-
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");
         require(recovery.completeAfter < now, "TWO_EARLY");

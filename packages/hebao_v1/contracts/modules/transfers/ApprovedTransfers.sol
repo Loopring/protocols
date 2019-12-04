@@ -46,7 +46,6 @@ contract ApprovedTransfers is TransferModule
     {
         uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         transferInternal(wallet, token, to, amount, logdata);
     }
@@ -65,7 +64,6 @@ contract ApprovedTransfers is TransferModule
     {
         uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i];
@@ -89,7 +87,6 @@ contract ApprovedTransfers is TransferModule
     {
         uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         approveInternal(wallet, token, to, amount);
     }
@@ -108,7 +105,6 @@ contract ApprovedTransfers is TransferModule
     {
         uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         callContractInternal(wallet, to, amount, data);
     }
@@ -128,7 +124,6 @@ contract ApprovedTransfers is TransferModule
     {
         uint guardianCount = controller.securityStore().numGuardians(wallet);
         require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
 
         approveInternal(wallet, token, to, amount);
         callContractInternal(wallet, to, 0, data);
