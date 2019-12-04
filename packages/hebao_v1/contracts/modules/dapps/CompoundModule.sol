@@ -156,7 +156,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         require(cToken != address(0), "NO_MARKET");
 
         uint balance = uint(tokenBalance(wallet, token));
-        require(amount > 0 && balance > amount, "NO_ENOUGH_BALANCE");
+        require(amount > 0 && amount <= balance, "INVALID_WITHDRAW_AMOUNT");
 
         redeem(wallet, cToken, amount);
         trackWithdrawal(wallet, token, amount);

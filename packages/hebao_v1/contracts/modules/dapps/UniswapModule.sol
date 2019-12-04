@@ -128,6 +128,8 @@ contract UniswapModule is BaseSubAccount, SecurityModule
         // TODO: enable signers later
         require(signers.length == 0, "NOT_SUPPORT_NOW");
 
+        require(amount != 0, "UNISWAP_ZERO_WITHDRAW");
+
         address tokenPool = uniswapFactory.getExchange(token);
         require(tokenPool != address(0), "UNISWAP_NO_EXCHANGE");
 
@@ -135,7 +137,7 @@ contract UniswapModule is BaseSubAccount, SecurityModule
         require(tokenAmount >= int(amount), "UNISWAP_NOT_ENOUTH_TOKEN_BALANCE");
 
         int shares = int(ERC20(tokenPool).balanceOf(address(wallet)));
-        int burnedAmount = int(amount) * shares / tokenAmount;
+        int burnedAmount = int(amount).mul(shares).div(tokenAmount);
         transactCall(
             wallet,
             tokenPool,
