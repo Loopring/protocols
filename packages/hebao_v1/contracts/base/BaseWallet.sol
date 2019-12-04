@@ -147,6 +147,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     {
         require(_method != bytes4(0), "BAD_METHOD");
         require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
+        require(isAddressInSet(MODULE, _module), "MODULE_UNAUTHORIZED");
 
         methodToModule[_method] = _module;
         emit MethodBound(_method, _module);
