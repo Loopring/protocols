@@ -21,10 +21,8 @@ import "../../base/BaseSubAccount.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../iface/Wallet.sol";
-import "../../iface/SubAccount.sol";
 import "../../thirdparty/uniswap/UniswapExchangeInterface.sol";
 import "../../thirdparty/uniswap/UniswapFactoryInterface.sol";
-
 import "../security/SecurityModule.sol";
 
 /// @title UniswapModule
@@ -34,7 +32,6 @@ contract UniswapModule is BaseSubAccount, SecurityModule
     using MathInt for int;
     UniswapFactoryInterface uniswapFactory;
     address constant internal ETH_TOKEN_ADDRESS = address(0);
-    address constant internal UNISWAP_ETH_TOKEN_ADDRESS = address(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
 
     constructor(
         Controller _controller,
@@ -81,36 +78,34 @@ contract UniswapModule is BaseSubAccount, SecurityModule
         uint               amount
         )
         external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         // TODO: enable signers later
         require(signers.length == 0, "NOT_SUPPORT_NOW");
 
-        require(amount > 0, "Uniswap: can't add 0 liquidity");
+        require(amount > 0, "UNISWAP_ZERO_DEPOSIT");
+
         address tokenPool = uniswapFactory.getExchange(token);
-        require(tokenPool != address(0), "Uniswap: target token is not traded on Uniswap");
+        require(tokenPool != address(0), "UNISWAP_NO_EXCHANGE");
 
         uint256 tokenBalance = ERC20(token).balanceOf(address(wallet));
-        if(amount > tokenBalance) {
-            uint256 ethToSwap = UniswapExchangeInterface(tokenPool).getEthToTokenOutputPrice(amount - tokenBalance);
-            require(ethToSwap <= address(wallet).balance, "Uniswap: not enough ETH to swap");
-            transactCall(
-                wallet,
-                tokenPool,
-                ethToSwap,
-                abi.encodeWithSignature("ethToTokenSwapOutput(uint256,uint256)", amount - tokenBalance, block.timestamp)
-            );
-        }
+        require(amount <= tokenBalance, "UNISWAP_NOT_ENOUTH_TOKEN_BALANCE");
 
         uint256 tokenLiquidity = ERC20(token).balanceOf(tokenPool);
         uint256 ethLiquidity = tokenPool.balance;
         uint256 ethToPool = (amount - 1).mul(ethLiquidity).div(tokenLiquidity);
-        require(ethToPool <= address(wallet).balance, "Uniswap: not enough ETH to pool");
+        require(ethToPool <= address(wallet).balance, "UNISWAP_NOT_ENOUTH_ETH_BALANCE");
         transactCall(wallet, token, 0, abi.encodeWithSignature("approve(address,uint256)", tokenPool, amount));
         transactCall(
             wallet,
             tokenPool,
             ethToPool,
-            abi.encodeWithSignature("addLiquidity(uint256,uint256,uint256)",1, amount, block.timestamp + 1)
+            abi.encodeWithSignature(
+                "addLiquidity(uint256,uint256,uint256)",
+                1,      // min_liquidity
+                amount, // max_tokens
+                block.timestamp + 1)
         );
         trackDeposit(wallet, token, amount);
     }
@@ -127,15 +122,17 @@ contract UniswapModule is BaseSubAccount, SecurityModule
         uint               amount
     )
         external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         // TODO: enable signers later
         require(signers.length == 0, "NOT_SUPPORT_NOW");
 
         address tokenPool = uniswapFactory.getExchange(token);
-        require(tokenPool != address(0), "Uniswap: The target token is not traded on Uniswap");
+        require(tokenPool != address(0), "UNISWAP_NO_EXCHANGE");
 
         int tokenAmount = tokenBalance(wallet, token);
-        require(tokenAmount >= int(amount), "NOT_ENOUGH_BALANCE");
+        require(tokenAmount >= int(amount), "UNISWAP_NOT_ENOUTH_TOKEN_BALANCE");
 
         int shares = int(ERC20(tokenPool).balanceOf(address(wallet)));
         int burnedAmount = int(amount) * shares / tokenAmount;
@@ -143,15 +140,17 @@ contract UniswapModule is BaseSubAccount, SecurityModule
             wallet,
             tokenPool,
             0,
-            abi.encodeWithSignature("removeLiquidity(uint256,uint256,uint256,uint256)",
-            burnedAmount,   // how many UNIs are burned.
-            1,              // min eth to be withdraw.
-            amount,         // min token to be withdraw.
-            block.timestamp + 1));
+            abi.encodeWithSignature(
+                "removeLiquidity(uint256,uint256,uint256,uint256)",
+                burnedAmount,   // how many UNIs are burned.
+                1,              // min eth to be withdraw.
+                1,              // min token to be withdraw.
+                block.timestamp + 1)
+        );
         trackDeposit(wallet, token, amount);
     }
 
-    function tokenBalance (
+    function tokenBalance(
         address wallet,
         address token
     )
@@ -160,8 +159,8 @@ contract UniswapModule is BaseSubAccount, SecurityModule
         returns (int)
     {
         int tokenValue;
-        require(token != ETH_TOKEN_ADDRESS, "ERC20_TOKEN_BALANCE_ONLY");
-        (tokenValue, ) = tokenBalanceImpl(wallet, token);
+        require(token != ETH_TOKEN_ADDRESS, "INCORRECT_ETH_BALANCE_QUERY");
+        (tokenValue, ) = uniswapTokenBalance(wallet, token);
         return int(tokenValue);
     }
 
@@ -173,20 +172,21 @@ contract UniswapModule is BaseSubAccount, SecurityModule
         view
         returns (int[] memory balances)
     {
-        require(tokens.length > 0, "EMPTY_TOKENS");
+        // avoid the [eth] case, single query should go to tokenBalance
+        require(tokens.length > 1, "INCORRECT_TOKEN_ARRAY");
         balances = new int[](tokens.length);
         uint ethTokenIdx = tokens.length;
         int ethTotalBalance = 0;
-        for (uint i = 0; i < tokens.length; ++i)
-        {
+        for (uint i = 0; i < tokens.length; ++i) {
             if (tokens[i] != ETH_TOKEN_ADDRESS) {
                 int ethEntryBalance = 0;
-                (balances[i], ethEntryBalance) = tokenBalanceImpl(wallet, tokens[i]);
+                (balances[i], ethEntryBalance) = uniswapTokenBalance(wallet, tokens[i]);
                 ethTotalBalance += ethEntryBalance;
             } else {
                 ethTokenIdx = i;
             }
         }
+
         if (ethTokenIdx < tokens.length) {
             balances[ethTokenIdx] = ethTotalBalance;
         }
@@ -194,7 +194,7 @@ contract UniswapModule is BaseSubAccount, SecurityModule
 
     // Internal functions
     // ...
-    function tokenBalanceImpl(
+    function uniswapTokenBalance(
         address wallet,
         address token
     )
@@ -207,9 +207,11 @@ contract UniswapModule is BaseSubAccount, SecurityModule
     {
         address tokenPool = uniswapFactory.getExchange(token);
         require(tokenPool != address(0), "NO_EXCHANGE");
+
         int tokenPoolSize = int(ERC20(token).balanceOf(tokenPool));
         int shares = int(ERC20(tokenPool).balanceOf(address(wallet)));
         int totalSupply = int(ERC20(tokenPool).totalSupply());
+
         token_amount = shares.mul(tokenPoolSize).div(totalSupply);
         eth_amount = shares.mul(int(tokenPool.balance)).div(totalSupply);
         return (token_amount, eth_amount);

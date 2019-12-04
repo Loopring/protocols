@@ -19,7 +19,6 @@ pragma experimental ABIEncoderV2;
 
 import "../../base/BaseSubAccount.sol";
 import "../../lib/Ownable.sol";
-import "../../iface/SubAccount.sol";
 import "../security/SecurityModule.sol";
 
 interface ICToken {
@@ -130,6 +129,8 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         // TODO: enable signers later
         require(signers.length == 0, "NOT_SUPPORT_NOW");
 
+        require(amount != 0, "ZERO_DEPOSIT");
+
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
 
@@ -153,8 +154,10 @@ contract CompoundModule is BaseSubAccount, SecurityModule
 
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
+
         uint balance = uint(tokenBalance(wallet, token));
         require(amount > 0 && balance > amount, "NO_ENOUGH_BALANCE");
+
         redeem(wallet, cToken, amount);
         trackWithdrawal(wallet, token, amount);
     }
@@ -169,6 +172,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     {
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
+
         uint amount = ICToken(cToken).balanceOf(address(wallet));
         uint exchangeRateMantissa = ICToken(cToken).exchangeRateStored();
         uint tokenValue = amount.mul(exchangeRateMantissa).div(10 ** 18);
@@ -191,11 +195,9 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         }
     }
 
-    // internal functions
+    // internal functions for invest
     // ...
     function mint(address _wallet, address _cToken, address _token, uint256 _amount) internal {
-        require(_cToken != address(0), "NO_MARKET");
-        require(_amount > 0, "Compound: amount cannot be 0");
         if(_token == ETH_TOKEN_ADDRESS) {
             transactCall(_wallet, _cToken, _amount, abi.encodeWithSignature("mint()"));
         } else {
@@ -205,8 +207,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     }
 
     function redeem(address _wallet, address _cToken, uint256 _amount) internal {
-        require(_cToken != address(0), "Compound: No market for target token");
-        require(_amount > 0, "Compound: amount cannot be 0");
         transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("redeemUnderlying(uint256)", _amount));
     }
 }
