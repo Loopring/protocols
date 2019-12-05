@@ -139,7 +139,13 @@ contract BaseSubAccount is SubAccount
         }
     }
 
-    function tokenInterestRate(address, address, address) public view returns (int) { return 0; }
+    function tokenInterestRate(address, address, address)
+        public
+        view
+        returns (uint128, uint128)
+    {
+        return (0, 0);
+    }
 
     /// @dev Returns the balance for a list of tokens.
     ///

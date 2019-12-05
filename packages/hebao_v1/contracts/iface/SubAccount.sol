@@ -94,7 +94,9 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @param amount The amount to consider.
-    /// @return interestRate The interest rate in BIPs.
+    /// @return savingInterestRate The interest rate for fundding the sub-account.
+    /// @return borrowInterestRate The interest rate for borrowing tokens
+    ///         from the sub-account.
     function tokenInterestRate (
         address wallet,
         address token,
@@ -102,7 +104,10 @@ contract SubAccount
         )
         public
         view
-        returns (int interestRate);
+        returns (
+            uint128 savingInterestRate,
+            uint128 borrowInterestRate
+        );
 
     /// @dev Returns the RIO in BIPs (0.01%).
     /// @param wallet The wallet's address.
