@@ -126,9 +126,9 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         }
 
         if (loan) {
-            return - int(CToken(cToken).borrowRatePerBlock());
+            return - int(CToken(cToken).borrowRatePerBlock() / (10 ** 14));
         } else {
-            return int(CToken(cToken).supplyRatePerBlock());
+            return int(CToken(cToken).supplyRatePerBlock() / (10 ** 14));
         }
     }
 
