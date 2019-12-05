@@ -94,12 +94,14 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @param amount The amount to consider.
+    /// @param loan The loan or deposit to consider.
     /// @return interestRate The interest rate in BIPs.
     function tokenInterestRate (
         address wallet,
         address token,
-        uint    amount
-        )
+        uint    amount,
+        bool    loan
+    )
         public
         view
         returns (int interestRate);

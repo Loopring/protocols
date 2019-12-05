@@ -110,6 +110,28 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         return int(tokenValue);
     }
 
+    function tokenInterestRate(
+        address /* wallet */,
+        address token,
+        uint    /* amount */,
+        bool    loan
+    )
+        public
+        view
+        returns (int)
+    {
+        address cToken = compoundRegistry.getCToken(token);
+        if (cToken != address(0)) {
+            return 0;
+        }
+
+        if (loan) {
+            return - int(CToken(cToken).borrowRatePerBlock());
+        } else {
+            return int(CToken(cToken).supplyRatePerBlock());
+        }
+    }
+
     /// internal functions for invest
     function mint(
         address _wallet,

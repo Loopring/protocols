@@ -5,6 +5,8 @@ interface CToken {
     function comptroller() external view returns (address);
     function underlying() external view returns (address);
     function symbol() external view returns (string memory);
+    function supplyRatePerBlock() external view returns (uint);
+    function borrowRatePerBlock() external view returns (uint);
     function exchangeRateCurrent() external returns (uint);
     function exchangeRateStored() external view returns (uint);
     function balanceOf(address _account) external view returns (uint);
