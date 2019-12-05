@@ -100,7 +100,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         returns (int)
     {
         address cToken = compoundRegistry.getCToken(token);
-        if (cToken != address(0)) {
+        if (cToken == address(0)) {
             return 0;
         }
 
@@ -121,7 +121,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         returns (int)
     {
         address cToken = compoundRegistry.getCToken(token);
-        if (cToken != address(0)) {
+        if (cToken == address(0)) {
             return 0;
         }
 
