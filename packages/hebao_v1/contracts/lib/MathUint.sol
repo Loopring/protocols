@@ -57,18 +57,6 @@ library MathUint
         require(c >= a, "ADD_OVERFLOW");
     }
 
-    function div(
-        uint a,
-        uint b
-        )
-        internal
-        pure
-        returns (uint c)
-    {
-        require(b > 0, "DIVIDE_ZERO");
-        c = a / b;
-    }
-
     function decodeFloat(
         uint f
         )
