@@ -98,7 +98,7 @@ contract SubAccount
     function tokenInterestRate (
         address wallet,
         address token,
-        address amount
+        uint    amount
         )
         public
         view
