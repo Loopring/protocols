@@ -139,7 +139,7 @@ contract BaseSubAccount is SubAccount
         }
     }
 
-    function tokenInterestRate(address, address, address)
+    function tokenInterestRate(address, address, uint)
         public
         view
         returns (uint128, uint128)
