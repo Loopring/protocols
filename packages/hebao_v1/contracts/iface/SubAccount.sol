@@ -94,7 +94,7 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @param amount The amount to consider.
-    /// @return savingInterestRate The interest rate for fundding the sub-account.
+    /// @return savingInterestRate The interest rate for funding the sub-account.
     /// @return borrowInterestRate The interest rate for borrowing tokens
     ///         from the sub-account.
     function tokenInterestRate (
