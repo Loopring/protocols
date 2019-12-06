@@ -102,7 +102,7 @@ contract SubAccount
         address token,
         uint    amount,
         bool    borrow
-    )
+        )
         public
         view
         returns (int interestRate);
