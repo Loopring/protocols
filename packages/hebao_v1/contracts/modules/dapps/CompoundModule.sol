@@ -114,7 +114,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         address /* wallet */,
         address token,
         uint    /* amount */,
-        bool    loan
+        bool    borrow
     )
         public
         view
@@ -125,7 +125,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
             return 0;
         }
 
-        if (loan) {
+        if (borrow) {
             return - int(CToken(cToken).borrowRatePerBlock() / (10 ** 14));
         } else {
             return int(CToken(cToken).supplyRatePerBlock() / (10 ** 14));

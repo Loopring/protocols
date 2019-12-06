@@ -1,4 +1,5 @@
-pragma solidity ^0.5.8;
+/// From Compound code base - https://github.com/compound-finance/compound-protocol/blob/master/contracts/CErc20.sol
+pragma solidity ^0.5.11;
 
 import "./CToken.sol";
 

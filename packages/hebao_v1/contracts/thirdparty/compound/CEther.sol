@@ -1,3 +1,4 @@
+/// From Compound code base - https://github.com/compound-finance/compound-protocol/blob/master/contracts/CEther.sol
 pragma solidity ^0.5.11;
 
 import "./CToken.sol";
