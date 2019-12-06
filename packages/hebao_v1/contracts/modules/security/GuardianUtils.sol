@@ -86,7 +86,7 @@ library GuardianUtils
             require(walletOwnerSigned, "WALLET_OWNER_SIGNATURE_REQUIRED");
         }
 
-        if (numSelfControlled > 0) {
+        if (numFriends + numFamily + numSocialOther == 0) {
             /* Self authentication */
             uint numSelfControlledSignersRequired = 2;
             // If the owner is allowed to sign:
@@ -100,6 +100,7 @@ library GuardianUtils
             if (walletOwnerSigned) {
                 numSelfControlled += 1;
             }
+            require(totalNumSelfControlled > 0, "SELF_AUTHENTICATION_IMPOSSIBLE");
             if (totalNumSelfControlled >= numSelfControlledSignersRequired) {
                 require(numSelfControlled >= numSelfControlledSignersRequired, "NOT_ENOUGH_SIGNERS");
             } else {
@@ -123,7 +124,7 @@ library GuardianUtils
                 numGroupsSatisfied += isGroupCriteriaValid(numSocialOther, totalNumSocialOther) ? 1 : 0;
             }
 
-            require(numGroupsActive > 0, "SOCIAL_RECOVERY_IMPOSSIBLE");
+            require(numGroupsActive > 0, "SOCIAL_AUTHENTICATION_IMPOSSIBLE");
             require(numGroupsSatisfied >= (numGroupsActive*2 + 2) / 3, "NOT_ENOUGH_SIGNERS");
         }
     }
