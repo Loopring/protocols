@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
 
@@ -27,14 +28,20 @@ import "../base/DataStore.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract SecurityStore is DataStore
 {
+    struct Guardian
+    {
+        address addr;
+        uint    info;
+    }
+
     struct Wallet
     {
-        address   inheritor;
-        uint128   lastActive; // the latest timestamp the owner is considered to be active
-        uint128   lock;
-        address   locker; // the module locked/unlocked this wallet
-        address[] guardians;
-        mapping   (address => uint) guardianIdx;
+        address    inheritor;
+        uint128    lastActive; // the latest timestamp the owner is considered to be active
+        uint128    lock;
+        address    locker; // the module locked/unlocked this wallet
+        Guardian[] guardians;
+        mapping    (address => uint) guardianIdx;
     }
 
     mapping (address => Wallet) public wallets;
@@ -49,10 +56,21 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardianIdx[guardian] > 0;
     }
 
+    function getGuardian(address wallet, address _guardian)
+        public
+        view
+        returns (Guardian memory guardian)
+    {
+        uint index = wallets[wallet].guardianIdx[_guardian];
+        if (index > 0) {
+            guardian = wallets[wallet].guardians[index-1];
+        }
+    }
+
     function guardians(address wallet)
         public
         view
-        returns (address[] memory)
+        returns (Guardian[] memory)
     {
         return wallets[wallet].guardians;
     }
@@ -65,7 +83,7 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardians.length;
     }
 
-    function addGuardian(address wallet, address guardian)
+    function addGuardian(address wallet, address guardian, uint info)
         public
         onlyManager
     {
@@ -73,7 +91,12 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
         require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
 
-        w.guardians.push(guardian);
+        Guardian memory g = Guardian(
+            guardian,
+            info
+        );
+
+        w.guardians.push(g);
         w.guardianIdx[guardian] = w.guardians.length;
     }
 
@@ -85,11 +108,11 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardian];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        address lastGuardian = w.guardians[w.guardians.length - 1];
+        Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
 
-        if (guardian != lastGuardian) {
+        if (guardian != lastGuardian.addr) {
             w.guardians[idx - 1] = lastGuardian;
-            w.guardianIdx[lastGuardian] = idx;
+            w.guardianIdx[lastGuardian.addr] = idx;
         }
         w.guardians.length -= 1;
         delete w.guardianIdx[guardian];

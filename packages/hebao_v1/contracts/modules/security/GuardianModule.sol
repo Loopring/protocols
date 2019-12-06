@@ -33,11 +33,11 @@ contract GuardianModule is SecurityModule
     uint public pendingPeriod;
     uint public confirmPeriod;
 
-    mapping (address => mapping(address => uint)) public pendingAdditions;
+    mapping (address => mapping(address => mapping(uint => uint))) public pendingAdditions;
     mapping (address => mapping(address => uint)) public pendingRemovals;
 
-    event GuardianAdditionPending   (address indexed wallet, address indexed guardian, uint confirmAfter);
-    event GuardianAdded             (address indexed wallet, address indexed guardian);
+    event GuardianAdditionPending   (address indexed wallet, address indexed guardian, uint info, uint confirmAfter);
+    event GuardianAdded             (address indexed wallet, address indexed guardian, uint info);
     event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
 
     event GuardianRemovalPending    (address indexed wallet, address indexed guardian, uint confirmAfter);
@@ -58,7 +58,8 @@ contract GuardianModule is SecurityModule
 
     function addGuardian(
         address wallet,
-        address guardian
+        address guardian,
+        uint    info
         )
         external
         nonReentrant
@@ -73,45 +74,47 @@ contract GuardianModule is SecurityModule
         require(count < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         if (controller.securityStore().numGuardians(wallet) == 0) {
-            controller.securityStore().addGuardian(wallet, guardian);
-            emit GuardianAdded(wallet, guardian);
+            controller.securityStore().addGuardian(wallet, guardian, info);
+            emit GuardianAdded(wallet, guardian, info);
         } else {
-            uint confirmStart = pendingAdditions[wallet][guardian];
+            uint confirmStart = pendingAdditions[wallet][guardian][info];
             require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
-            pendingAdditions[wallet][guardian] = now + pendingPeriod;
-            emit GuardianAdditionPending(wallet, guardian, now + pendingPeriod);
+            pendingAdditions[wallet][guardian][info] = now + pendingPeriod;
+            emit GuardianAdditionPending(wallet, guardian, info, now + pendingPeriod);
         }
     }
 
     function confirmGuardianAddition(
         address wallet,
-        address guardian
+        address guardian,
+        uint    info
         )
         external
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        uint confirmStart = pendingAdditions[wallet][guardian];
+        uint confirmStart = pendingAdditions[wallet][guardian][info];
         require(confirmStart != 0, "NOT_PENDING");
         require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
-        controller.securityStore().addGuardian(wallet, guardian);
-        delete pendingAdditions[wallet][guardian];
-        emit GuardianAdded(wallet, guardian);
+        controller.securityStore().addGuardian(wallet, guardian, info);
+        delete pendingAdditions[wallet][guardian][info];
+        emit GuardianAdded(wallet, guardian, info);
     }
 
     function cancelGuardianAddition(
         address wallet,
-        address guardian
+        address guardian,
+        uint    info
         )
         external
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        uint confirmStart = pendingAdditions[wallet][guardian];
+        uint confirmStart = pendingAdditions[wallet][guardian][info];
         require(confirmStart > 0, "INVALID_GUARDIAN");
-        delete pendingAdditions[wallet][guardian];
+        delete pendingAdditions[wallet][guardian][info];
         emit GuardianAdditionCancelled(wallet, guardian);
     }
 
@@ -159,7 +162,7 @@ contract GuardianModule is SecurityModule
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart > 0, "INVALID_GUARDIAN");
-        delete pendingAdditions[wallet][guardian];
+        delete pendingRemovals[wallet][guardian];
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
