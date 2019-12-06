@@ -1,4 +1,5 @@
-/// From Argent code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/defi/utils/CompoundRegistry.sol
+// From Argent code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/defi/utils/CompoundRegistry.sol
+// with minor modificaiton.
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
