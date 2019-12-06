@@ -62,9 +62,8 @@ contract SecurityStore is DataStore
         returns (Guardian memory guardian)
     {
         uint index = wallets[wallet].guardianIdx[_guardian];
-        if (index > 0) {
-            guardian = wallets[wallet].guardians[index-1];
-        }
+        require(index > 0, "NOT_A_GUARDIAN");
+        guardian = wallets[wallet].guardians[index-1];
     }
 
     function guardians(address wallet)
