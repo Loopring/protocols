@@ -17,18 +17,29 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../security/SecurityModule.sol";
-
 import "../../base/BaseSubAccount.sol";
+
+import "../../thirdparty/compound/CompoundRegistery.sol";
+import "../../thirdparty/compound/CEther.sol";
+import "../../thirdparty/compound/CErc20.sol";
+
+import "../security/SecurityModule.sol";
 
 
 /// @title CompoundModule
 contract CompoundModule is BaseSubAccount, SecurityModule
 {
-    constructor(Controller _controller)
+    CompoundRegistry internal compoundRegistry;
+    address constant internal ETH_TOKEN_ADDRESS = address(0);
+
+    constructor(
+        Controller       _controller,
+        CompoundRegistry _compoundRegistry
+        )
         public
         SecurityModule(_controller)
     {
+        compoundRegistry = _compoundRegistry;
     }
 
     /// @dev Fund Compound for earn interests and automatically enters market
@@ -44,8 +55,17 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
+        // TODO: enable signers later
+        require(signers.length == 0, "NOT_SUPPORT_NOW");
 
-        emit SubAccountTransfer(wallet, token, int(amount));
+        uint allowed = tokenDepositable(wallet, token);
+        require(amount > 0 && amount <= allowed, "INVALID_AMOUNT");
+
+        address cToken = compoundRegistry.getCToken(token);
+        require(cToken != address(0), "NO_MARKET");
+
+        mint(wallet, cToken, token, amount);
+        trackDeposit(wallet, token, amount);
     }
 
     /// @dev Redeem fund from Compound.
@@ -59,7 +79,85 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        emit SubAccountTransfer(wallet, token, -int(amount));
+        // TODO: enable signers later
+        require(signers.length == 0, "NOT_SUPPORT_NOW");
+
+        address cToken = compoundRegistry.getCToken(token);
+        require(cToken != address(0), "NO_MARKET");
+
+        uint balance = uint(tokenBalance(wallet, token));
+        require(amount > 0 && amount <= balance, "INVALID_WITHDRAW_AMOUNT");
+
+        redeem(wallet, cToken, amount);
+        trackWithdrawal(wallet, token, amount);
     }
 
+    function tokenBalance (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (int)
+    {
+        address cToken = compoundRegistry.getCToken(token);
+        if (cToken == address(0)) {
+            return 0;
+        }
+
+        uint amount = CToken(cToken).balanceOf(wallet);
+        uint exchangeRateMantissa = CToken(cToken).exchangeRateStored();
+        uint tokenValue = amount.mul(exchangeRateMantissa) / (10 ** 18);
+        return int(tokenValue);
+    }
+
+    function tokenInterestRate(
+        address /* wallet */,
+        address token,
+        uint    /* amount */,
+        bool    borrow
+        )
+        public
+        view
+        returns (int)
+    {
+        address cToken = compoundRegistry.getCToken(token);
+        if (cToken == address(0)) {
+            return 0;
+        }
+
+        if (borrow) {
+            return - int(CToken(cToken).borrowRatePerBlock() / (10 ** 14));
+        } else {
+            return int(CToken(cToken).supplyRatePerBlock() / (10 ** 14));
+        }
+    }
+
+    // internal functions for invest
+    function mint(
+        address _wallet,
+        address _cToken,
+        address _token,
+        uint    _amount
+        )
+        internal
+    {
+        if (_token == ETH_TOKEN_ADDRESS) {
+            transactCall(_wallet, _cToken, _amount, abi.encodeWithSelector(CEther(0).mint.selector));
+        } else {
+            transactCall(_wallet, _token, 0, abi. encodeWithSelector(ERC20(0).approve.selector, _cToken, _amount));
+            transactCall(_wallet, _cToken, 0, abi. encodeWithSelector(CErc20(0).mint.selector, _amount));
+        }
+    }
+
+    function redeem(
+        address _wallet,
+        address _cToken,
+        uint    _amount
+        )
+        internal
+    {
+        // CErc20 and CEther have same function signature
+        transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("redeemUnderlying(uint256)", _amount));
+    }
 }
