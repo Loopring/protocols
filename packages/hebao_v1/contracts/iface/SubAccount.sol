@@ -94,7 +94,7 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @param amount The amount to consider.
-    /// @param borrow The borrow or supply to consider.
+    /// @param borrow True to query the loan interest; false to query the saving interest.
     /// @return interestRate The interest rate in BIPs. It will be >= 0 for supply
     ///         and <=0 for borrowing.
     function tokenInterestRate (

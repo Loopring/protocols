@@ -35,7 +35,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     constructor(
         Controller       _controller,
         CompoundRegistry _compoundRegistry
-    )
+        )
         public
         SecurityModule(_controller)
     {
@@ -95,7 +95,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     function tokenBalance (
         address wallet,
         address token
-    )
+        )
         public
         view
         returns (int)
@@ -116,7 +116,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         address token,
         uint    /* amount */,
         bool    borrow
-    )
+        )
         public
         view
         returns (int)
@@ -133,16 +133,16 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         }
     }
 
-    /// internal functions for invest
+    // internal functions for invest
     function mint(
         address _wallet,
         address _cToken,
         address _token,
         uint    _amount
-    )
+        )
         internal
     {
-        if(_token == ETH_TOKEN_ADDRESS) {
+        if (_token == ETH_TOKEN_ADDRESS) {
             transactCall(_wallet, _cToken, _amount, abi.encodeWithSelector(CEther(0).mint.selector));
         } else {
             transactCall(_wallet, _token, 0, abi. encodeWithSelector(ERC20(0).approve.selector, _cToken, _amount));
@@ -154,7 +154,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         address _wallet,
         address _cToken,
         uint    _amount
-    )
+        )
         internal
     {
         // CErc20 and CEther have same function signature
