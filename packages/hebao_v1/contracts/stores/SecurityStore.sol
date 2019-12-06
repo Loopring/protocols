@@ -31,7 +31,7 @@ contract SecurityStore is DataStore
     struct Guardian
     {
         address addr;
-        uint    info;
+        uint    types;
     }
 
     struct Wallet
@@ -82,21 +82,26 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardians.length;
     }
 
-    function addGuardian(address wallet, address guardian, uint info)
+    function addOrUpdateGuardian(address wallet, address guardian, uint types)
         public
         onlyManager
     {
         require(guardian != address(0), "ZERO_ADDRESS");
         Wallet storage w = wallets[wallet];
-        require(w.guardianIdx[guardian] == 0, "GUARDIAN_EXISTS");
 
-        Guardian memory g = Guardian(
-            guardian,
-            info
-        );
-
-        w.guardians.push(g);
-        w.guardianIdx[guardian] = w.guardians.length;
+        uint pos = w.guardianIdx[guardian];
+        if (pos == 0) {
+            // Add the new guardian
+            Guardian memory g = Guardian(
+                guardian,
+                types
+            );
+            w.guardians.push(g);
+            w.guardianIdx[guardian] = w.guardians.length;
+        } else {
+            // Update the guardian
+            w.guardians[pos-1].types = types;
+        }
     }
 
     function removeGuardian(address wallet, address guardian)

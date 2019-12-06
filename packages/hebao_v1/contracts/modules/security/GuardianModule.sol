@@ -36,8 +36,8 @@ contract GuardianModule is SecurityModule
     mapping (address => mapping(address => mapping(uint => uint))) public pendingAdditions;
     mapping (address => mapping(address => uint)) public pendingRemovals;
 
-    event GuardianAdditionPending   (address indexed wallet, address indexed guardian, uint info, uint confirmAfter);
-    event GuardianAdded             (address indexed wallet, address indexed guardian, uint info);
+    event GuardianAdditionPending   (address indexed wallet, address indexed guardian, uint types, uint confirmAfter);
+    event GuardianAdded             (address indexed wallet, address indexed guardian, uint types);
     event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
 
     event GuardianRemovalPending    (address indexed wallet, address indexed guardian, uint confirmAfter);
@@ -59,7 +59,7 @@ contract GuardianModule is SecurityModule
     function addGuardian(
         address wallet,
         address guardian,
-        uint    info
+        uint    types
         )
         external
         nonReentrant
@@ -74,47 +74,47 @@ contract GuardianModule is SecurityModule
         require(count < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         if (controller.securityStore().numGuardians(wallet) == 0) {
-            controller.securityStore().addGuardian(wallet, guardian, info);
-            emit GuardianAdded(wallet, guardian, info);
+            controller.securityStore().addOrUpdateGuardian(wallet, guardian, types);
+            emit GuardianAdded(wallet, guardian, types);
         } else {
-            uint confirmStart = pendingAdditions[wallet][guardian][info];
+            uint confirmStart = pendingAdditions[wallet][guardian][types];
             require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
-            pendingAdditions[wallet][guardian][info] = now + pendingPeriod;
-            emit GuardianAdditionPending(wallet, guardian, info, now + pendingPeriod);
+            pendingAdditions[wallet][guardian][types] = now + pendingPeriod;
+            emit GuardianAdditionPending(wallet, guardian, types, now + pendingPeriod);
         }
     }
 
     function confirmGuardianAddition(
         address wallet,
         address guardian,
-        uint    info
+        uint    types
         )
         external
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        uint confirmStart = pendingAdditions[wallet][guardian][info];
+        uint confirmStart = pendingAdditions[wallet][guardian][types];
         require(confirmStart != 0, "NOT_PENDING");
         require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
-        controller.securityStore().addGuardian(wallet, guardian, info);
-        delete pendingAdditions[wallet][guardian][info];
-        emit GuardianAdded(wallet, guardian, info);
+        controller.securityStore().addOrUpdateGuardian(wallet, guardian, types);
+        delete pendingAdditions[wallet][guardian][types];
+        emit GuardianAdded(wallet, guardian, types);
     }
 
     function cancelGuardianAddition(
         address wallet,
         address guardian,
-        uint    info
+        uint    types
         )
         external
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        uint confirmStart = pendingAdditions[wallet][guardian][info];
+        uint confirmStart = pendingAdditions[wallet][guardian][types];
         require(confirmStart > 0, "INVALID_GUARDIAN");
-        delete pendingAdditions[wallet][guardian][info];
+        delete pendingAdditions[wallet][guardian][types];
         emit GuardianAdditionCancelled(wallet, guardian);
     }
 

@@ -24,13 +24,13 @@ import "./SecurityModule.sol";
 library GuardianType
 {
     function None()            internal pure returns (uint) { return      0; }
-    function EOA()             internal pure returns (uint) { return 1 << 0; }
-    function SelfControlled()  internal pure returns (uint) { return 1 << 1; }
-    function Hardware()        internal pure returns (uint) { return 1 << 2; }
-    function Device()          internal pure returns (uint) { return 1 << 3; }
-    function Service()         internal pure returns (uint) { return 1 << 4; }
-    function Family()          internal pure returns (uint) { return 1 << 5; }
-    function Friend()          internal pure returns (uint) { return 1 << 6; }
+    function SelfControlled()  internal pure returns (uint) { return 1 << 0; }
+    function Family()          internal pure returns (uint) { return 1 << 1; }
+    function Friend()          internal pure returns (uint) { return 1 << 2; }
+    function Hardware()        internal pure returns (uint) { return 1 << 3; }
+    function Device()          internal pure returns (uint) { return 1 << 4; }
+    function Service()         internal pure returns (uint) { return 1 << 5; }
+    function EOA()             internal pure returns (uint) { return 1 << 6; }
 }
 
 library GuardianUtils
@@ -81,64 +81,69 @@ library GuardianUtils
             uint numFamily,
             uint numSocialOther
         ) = countGuardians(signingGuardians);
-
-        if (requirement == SigRequirement.OwnerRequired) {
-            require(walletOwnerSigned, "WALLET_OWNER_SIGNATURE_REQUIRED");
+        // Count the wallet owner as a self controlled guardian
+        if (walletOwnerSigned) {
+            numSelfControlled += 1;
         }
 
+        // Check owner requirements
+        if (requirement == SigRequirement.OwnerRequired) {
+            require(walletOwnerSigned, "WALLET_OWNER_SIGNATURE_REQUIRED");
+        } else if (requirement == SigRequirement.OwnerNotAllowed) {
+            require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
+        }
+
+        // If no social guardians are used do self authentication
         if (numFriends + numFamily + numSocialOther == 0) {
             /* Self authentication */
-            uint numSelfControlledSignersRequired = 2;
-
+            uint numSelfControlledRequired = 2;
             // If the owner is allowed to sign:
             // - increase the total number of self controlled guardians
             // - increase the number of required self controlled guardians
             if (requirement != SigRequirement.OwnerNotAllowed) {
                 totalNumSelfControlled += 1;
-                numSelfControlledSignersRequired += 1;
+                numSelfControlledRequired += 1;
             }
-            // Count the wallet owner as a self controlled guardian
-            if (walletOwnerSigned) {
-                numSelfControlled += 1;
-            }
-            require(totalNumSelfControlled > 0, "SELF_AUTHENTICATION_IMPOSSIBLE");
-            if (totalNumSelfControlled >= numSelfControlledSignersRequired) {
-                require(numSelfControlled >= numSelfControlledSignersRequired, "NOT_ENOUGH_SIGNERS");
-            } else {
-                require(numSelfControlled == totalNumSelfControlled, "NOT_ENOUGH_SIGNERS");
-            }
+            // - Either the number of required signers is reached
+            // - or the required number of signers is lower than the total number of self
+            //   controlled guardians, in which case all self controlled guardians need to sign
+            //   (which may include the wallet owner if he is allowed to sign).
+            require(
+                numSelfControlled >= numSelfControlledRequired ||
+                numSelfControlled == totalNumSelfControlled && totalNumSelfControlled > 0,
+                "NOT_ENOUGH_SIGNERS"
+            );
         } else {
             /* Social authentication */
-            uint numGroupsActive = 0;
-            uint numGroupsSatisfied = 0;
-
+            uint numGroups = 0;
+            uint numGroupsWithMajority = 0;
+            // Count the number of active groups and see which ones have a majority of signers
             if (totalNumFriends > 0) {
-                numGroupsActive++;
-                numGroupsSatisfied += isGroupCriteriaValid(numFriends, totalNumFriends) ? 1 : 0;
+                numGroups++;
+                numGroupsWithMajority += hasMajority(numFriends, totalNumFriends) ? 1 : 0;
             }
             if (totalNumFamily > 0) {
-                numGroupsActive++;
-                numGroupsSatisfied += isGroupCriteriaValid(numFamily, totalNumFamily) ? 1 : 0;
+                numGroups++;
+                numGroupsWithMajority += hasMajority(numFamily, totalNumFamily) ? 1 : 0;
             }
             if (totalNumSocialOther > 0) {
-                numGroupsActive++;
-                numGroupsSatisfied += isGroupCriteriaValid(numSocialOther, totalNumSocialOther) ? 1 : 0;
+                numGroups++;
+                numGroupsWithMajority += hasMajority(numSocialOther, totalNumSocialOther) ? 1 : 0;
             }
-
-            require(numGroupsActive > 0, "SOCIAL_AUTHENTICATION_IMPOSSIBLE");
-            require(numGroupsSatisfied >= (numGroupsActive*2 + 2) / 3, "NOT_ENOUGH_SIGNERS");
+            // Require a majority of groups to have a majority of signing guardians
+            require(hasMajority(numGroupsWithMajority, numGroups), "NOT_ENOUGH_SIGNERS");
         }
     }
 
-    function isGroupCriteriaValid(
-        uint numSigners,
-        uint numTotal
+    function hasMajority(
+        uint count,
+        uint total
         )
         internal
         pure
         returns (bool)
     {
-        return (numSigners >= (numTotal + 1) / 2);
+        return (count >= (total / 2) + 1);
     }
 
     function countGuardians(
@@ -146,15 +151,20 @@ library GuardianUtils
         )
         internal
         pure
-        returns (uint numSelfControlled, uint numFriends, uint numFamily, uint numSocialOther)
+        returns (
+            uint numSelfControlled,
+            uint numFriends,
+            uint numFamily,
+            uint numSocialOther
+        )
     {
         for (uint i = 0; i < guardians.length; i++) {
-            if(guardians[i].info & GuardianType.SelfControlled() != 0) {
+            if (guardians[i].types & GuardianType.SelfControlled() != 0) {
                 numSelfControlled++;
             } else {
-                if(guardians[i].info & GuardianType.Friend() != 0) {
+                if (guardians[i].types & GuardianType.Friend() != 0) {
                     numFriends++;
-                } else if(guardians[i].info & GuardianType.Family() != 0) {
+                } else if (guardians[i].types & GuardianType.Family() != 0) {
                     numFamily++;
                 } else {
                     numSocialOther++;

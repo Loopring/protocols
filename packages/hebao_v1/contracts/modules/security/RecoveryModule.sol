@@ -46,7 +46,12 @@ contract RecoveryModule is SecurityModule
     uint public recoveryPeriod;
     uint public lockPeriod;
 
-    modifier onlySufficientSigners(address wallet, address[] memory signers, GuardianUtils.SigRequirement requirement) {
+    modifier onlySufficientSigners(
+        address wallet,
+        address[] memory signers,
+        GuardianUtils.SigRequirement requirement
+        )
+    {
         GuardianUtils.requireSufficientSigners(
             securityStore,
             wallet,
