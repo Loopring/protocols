@@ -65,7 +65,7 @@ library GuardianUtils
         bool walletOwnerSigned = false;
         SecurityStore.Guardian[] memory signingGuardians = new SecurityStore.Guardian[](signers.length);
         uint numGuardians = 0;
-        for (uint i = 0; i < 0; i++) {
+        for (uint i = 0; i < signers.length; i++) {
             if (signers[i] == walletOwner) {
                 walletOwnerSigned = true;
             } else {
@@ -89,6 +89,7 @@ library GuardianUtils
         if (numFriends + numFamily + numSocialOther == 0) {
             /* Self authentication */
             uint numSelfControlledSignersRequired = 2;
+
             // If the owner is allowed to sign:
             // - increase the total number of self controlled guardians
             // - increase the number of required self controlled guardians
