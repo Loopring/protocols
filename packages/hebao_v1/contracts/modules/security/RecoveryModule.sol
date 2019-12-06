@@ -26,6 +26,7 @@ import "../../thirdparty/ERC1271.sol";
 import "../../iface/Wallet.sol";
 
 import "./SecurityModule.sol";
+import "./GuardianUtils.sol";
 
 
 /// @title RecoveryModule
@@ -44,6 +45,21 @@ contract RecoveryModule is SecurityModule
     mapping (address => WalletRecovery) public wallets;
     uint public recoveryPeriod;
     uint public lockPeriod;
+
+    modifier onlySufficientSigners(
+        address wallet,
+        address[] memory signers,
+        GuardianUtils.SigRequirement requirement
+        )
+    {
+        GuardianUtils.requireSufficientSigners(
+            securityStore,
+            wallet,
+            signers,
+            requirement
+        );
+        _;
+    }
 
     constructor(
         Controller _controller,
@@ -72,25 +88,16 @@ contract RecoveryModule is SecurityModule
         nonReentrant
         onlyFromMetaTx
         notWalletOwner(wallet, newOwner)
+        onlySufficientSigners(wallet, signers, GuardianUtils.SigRequirement.OwnerNotAllowed)
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-        uint guardianCount = controller.securityStore().numGuardians(wallet);
-        require(guardianCount > 0, "NO_GUARDIAN");
-
         WalletRecovery storage recovery = wallets[wallet];
-        require(recovery.completeAfter == 0, "ALREAY_STARTED");
-
-        uint requiredCount = guardianCount / 2;
-        if (guardianCount % 2 == 1) {
-            requiredCount += 1;
-        }
-
-        require(signers.length >= requiredCount, "NOT_ENOUGH_SIGNER");
+        require(recovery.completeAfter == 0, "ALREADY_STARTED");
 
         recovery.newOwner = newOwner;
         recovery.completeAfter = now + recoveryPeriod;
-        recovery.guardianCount = guardianCount;
+        recovery.guardianCount = securityStore.numGuardians(wallet);
 
         controller.securityStore().setLock(wallet, now + lockPeriod);
 
@@ -108,12 +115,10 @@ contract RecoveryModule is SecurityModule
         external
         nonReentrant
         onlyFromMetaTx
+        onlySufficientSigners(wallet, signers, GuardianUtils.SigRequirement.OwnerAllowed)
     {
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");
-
-        uint guardianCount = wallets[wallet].guardianCount;
-        require(signers.length >= (guardianCount + 1) / 2, "NOT_ENOUGH_SIGNER");
 
         delete wallets[wallet];
         controller.securityStore().setLock(wallet, 0);

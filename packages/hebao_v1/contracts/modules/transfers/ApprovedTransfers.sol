@@ -21,10 +21,22 @@ import "../../lib/ERC20.sol";
 
 import "./TransferModule.sol";
 
+import "../security/GuardianUtils.sol";
+
 
 /// @title ApprovedTransfers
 contract ApprovedTransfers is TransferModule
 {
+    modifier onlySufficientSigners(address wallet, address[] memory signers) {
+        GuardianUtils.requireSufficientSigners(
+            securityStore,
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        );
+        _;
+    }
+
     constructor(Controller _controller)
         public
         TransferModule(_controller)
@@ -43,10 +55,8 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
+        onlySufficientSigners(wallet, signers)
     {
-        uint guardianCount = controller.securityStore().numGuardians(wallet);
-        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-
         transferInternal(wallet, token, to, amount, logdata);
     }
 
@@ -61,10 +71,8 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
+        onlySufficientSigners(wallet, signers)
     {
-        uint guardianCount = controller.securityStore().numGuardians(wallet);
-        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-
         for (uint i = 0; i < tokens.length; i++) {
             address token = tokens[i];
             uint amount = (token == address(0)) ?
@@ -84,10 +92,8 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
+        onlySufficientSigners(wallet, signers)
     {
-        uint guardianCount = controller.securityStore().numGuardians(wallet);
-        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-
         approveInternal(wallet, token, to, amount);
     }
 
@@ -102,10 +108,8 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
+        onlySufficientSigners(wallet, signers)
     {
-        uint guardianCount = controller.securityStore().numGuardians(wallet);
-        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-
         callContractInternal(wallet, to, amount, data);
     }
 
@@ -121,10 +125,8 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyFromMetaTx
         onlyWhenWalletUnlocked(wallet)
+        onlySufficientSigners(wallet, signers)
     {
-        uint guardianCount = controller.securityStore().numGuardians(wallet);
-        require(signers.length >= (guardianCount + 1)/2, "NOT_ENOUGH_SIGNER");
-
         approveInternal(wallet, token, to, amount);
         callContractInternal(wallet, to, 0, data);
     }
