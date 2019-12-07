@@ -61,28 +61,12 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
         emit WalletRegistered(wallet);
     }
 
-    function deregisterWallet(address wallet)
-        external
-        onlyFactory
-    {
-        removeAddressFromSet(WALLET, wallet);
-        emit WalletDeregistered(wallet);
-    }
-
     function isWalletRegistered(address addr)
         public
         view
         returns (bool)
     {
         return isAddressInSet(WALLET, addr);
-    }
-
-    function wallets()
-        public
-        view
-        returns (address[] memory)
-    {
-        return addressesInSet(WALLET);
     }
 
     function numOfWallets()

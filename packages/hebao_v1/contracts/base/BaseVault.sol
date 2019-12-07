@@ -27,12 +27,13 @@ contract BaseVault is AddressSet, Vault
 {
     using SignatureUtil for bytes32;
 
-    event OwnerAdded(address indexed owner);
+    event OwnerAdded  (address indexed owner);
     event OwnerRemoved(address indexed owner);
     event RequirementChanged(uint requirement);
     event Executed(
         address indexed target,
         uint            value,
+        uint8           mode,
         bytes           data,
         bool            success
     );
@@ -71,9 +72,9 @@ contract BaseVault is AddressSet, Vault
     }
 
     function execute(
-        uint8     mode,
         address   target,
         uint      value,
+        uint8     mode,
         bytes     calldata data,
         address[] calldata signers,
         bytes[]   calldata signatures
@@ -82,27 +83,33 @@ contract BaseVault is AddressSet, Vault
         returns (bytes memory result)
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
+        require(mode == 1 || mode == 2, "INVALID_MODE");
         // Check whether all signers are owners
+
+        address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
-            require(isOwner(signers[i]), "Each signer must be an owner!");
+            require(signers[i] > lastSigner, "INVALID_ORDER");
+            lastSigner = signers[i];
+            require(isOwner(lastSigner), "NOT_OWNER");
         }
+
         bytes32 signHash = getSignHash(
             address(this), // from
             target,
             value,
+            mode,
             data
         );
+
         signHash.verifySignatures(signers, signatures);
 
         bool success;
         if (mode == 1) {
             // solium-disable-next-line security/no-call-value
             (success, result) = target.call.value(value)(data);
-        } else if (mode == 2) {
+        } else {
             // solium-disable-next-line security/no-call-value
             (success, result) = target.delegatecall(data);
-        } else {
-            revert("UNSUPPORTED_MODE");
         }
 
         if (!success) {
@@ -111,13 +118,14 @@ contract BaseVault is AddressSet, Vault
                 revert(0, returndatasize)
             }
         }
-        emit Executed(target, value, data, success);
+        emit Executed(target, value, mode, data, success);
     }
 
     function getSignHash(
         address from,
         address to,
-        uint256 value,
+        uint    value,
+        uint8   mode,
         bytes   memory data
         )
         public
@@ -131,6 +139,7 @@ contract BaseVault is AddressSet, Vault
                 from,
                 to,
                 value,
+                mode,
                 keccak256(data)
                 )
             );
@@ -161,7 +170,7 @@ contract BaseVault is AddressSet, Vault
         emit OwnerRemoved(owner);
     }
 
-    function changeRequirement(uint256 newRequirement)
+    function changeRequirement(uint newRequirement)
         external
         onlyFromExecute
     {
