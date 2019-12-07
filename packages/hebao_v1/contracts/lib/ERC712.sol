@@ -38,12 +38,13 @@ contract ERC712
 
         // TODO(daniel): uncomment the following line and enable `--evm-version istanbul`
         // assembly { _chainid := chainid() }
-
-        return keccak256(abi.encode(
-            EIP712_DOMAIN_TYPEHASH,
-            keccak256(bytes(domain.name)),
-            keccak256(bytes(domain.version)),
-            _chainid
-        ));
+        return keccak256(
+            abi.encode(
+                EIP712_DOMAIN_TYPEHASH,
+                keccak256(bytes(domain.name)),
+                keccak256(bytes(domain.version)),
+                _chainid
+            )
+        );
     }
 }

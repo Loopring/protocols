@@ -18,6 +18,7 @@ pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
+import "../lib/ERC712.sol";
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
 
@@ -42,7 +43,7 @@ import "./BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 
-contract MetaTxModule is BaseModule
+contract MetaTxModule is ERC712, BaseModule
 {
     using MathUint      for uint;
     using AddressUtil   for address;
@@ -55,7 +56,25 @@ contract MetaTxModule is BaseModule
         mapping (bytes32 => bool) metaTxHash;
     }
 
+    struct MetaTransaction
+    {
+        address from;
+        address to;
+        uint    value;
+        bytes   data;
+        uint    nonce;
+        address gasToken;
+        uint    gasPrice;
+        uint    gasLimit;
+        uint    gasOverhead;
+    }
+
+    bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
+        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead)"
+    );
+
     Controller public controller;
+    bytes32 public _domain_seperator;
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
@@ -77,6 +96,7 @@ contract MetaTxModule is BaseModule
         BaseModule()
     {
         controller = _controller;
+        _domain_seperator = hash(EIP712Domain("MetaTxModule", "1"));
     }
 
     function quotaManager() internal view returns (address)
@@ -141,13 +161,24 @@ contract MetaTxModule is BaseModule
         require(startGas >= gasSetting[2], "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
-        bytes32 metaTxHash = getSignHash(
-            wallet, // from
-            address(this),  // to. Note the relayer can only call its own methods.
-            msg.value, // value
-            data,
-            nonce,
-            gasSetting
+        bytes32 metaTxHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                _domain_seperator,
+                hash(
+                    MetaTransaction(
+                        wallet,
+                        address(this),
+                        msg.value,
+                        data,
+                        nonce,
+                        address(gasSetting[0]),
+                        gasSetting[1],
+                        gasSetting[2],
+                        gasSetting[3]
+                    )
+                )
+            )
         );
 
         // Get the signers necessary for this meta transaction.
@@ -318,37 +349,25 @@ contract MetaTxModule is BaseModule
         assembly { addresses := add(data, add(36, dataOffset)) }
     }
 
-    /// @dev calculate the hash that all signatures will sign against.
-    ///      See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1077.md
-    function getSignHash(
-        address from,
-        address to,
-        uint    value,
-        bytes   memory data,
-        uint    nonce,
-        uint[4] memory gasSetting
-        )
-        public
+    function hash(MetaTransaction memory _tx)
+        internal
         pure
         returns (bytes32)
     {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                byte(0x19),
-                byte(0),
-                from,
-                to,
-                value,
-                keccak256(data),
-                nonce,
-                gasSetting[0],
-                gasSetting[1],
-                gasSetting[2],
-                gasSetting[3]
+        return keccak256(
+            abi.encode(
+                METATRANSACTION_TYPEHASH,
+                _tx.from,
+                _tx.to,
+                _tx.value,
+                keccak256(_tx.data),
+                _tx.nonce,
+                _tx.gasToken,
+                _tx.gasPrice,
+                _tx.gasLimit,
+                _tx.gasOverhead
             )
         );
-
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
     function extractMethod(bytes memory data)

@@ -91,12 +91,14 @@ contract BaseVault is AddressSet, ERC712, Vault
         pure
         returns (bytes32)
     {
-        return keccak256(abi.encode(
-            VAULTTRANSACTION_TYPEHASH,
-            _tx.target,
-            _tx.value,
-            keccak256(_tx.data)
-        ));
+        return keccak256(
+            abi.encode(
+                VAULTTRANSACTION_TYPEHASH,
+                _tx.target,
+                _tx.value,
+                keccak256(_tx.data)
+            )
+        );
     }
 
     function execute(
@@ -110,11 +112,13 @@ contract BaseVault is AddressSet, ERC712, Vault
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
 
-        bytes32 signHash = keccak256(abi.encodePacked(
-            "\x19\x01",
-            _domain_seperator,
-            hash(VaultTransaction(target, value, data))
-        ));
+        bytes32 signHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                _domain_seperator,
+                hash(VaultTransaction(target, value, data))
+            )
+        );
 
         signHash.verifySignatures(signers, signatures);
 
