@@ -14,36 +14,54 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-
-contract ERC712
+library EIP712
 {
-    struct EIP712Domain {
+    struct Domain {
         string  name;
         string  version;
     }
 
-    bytes32 constant public EIP712_DOMAIN_TYPEHASH = keccak256(
+    bytes32 constant internal EIP712_DOMAIN_TYPEHASH = keccak256(
         "EIP712Domain(string name,string version,uint256 chainId)"
     );
 
-    function hash(EIP712Domain memory domain)
-        internal
+    string constant internal EIP191_HEADER = "\x19\x01";
+
+    function hash(Domain memory domain)
+        public // TODO: change this to internal when solidity 0.6 is released which fixes this bug:
+               // https://github.com/sc-forks/solidity-coverage/issues/433
         pure
         returns (bytes32)
     {
         uint _chainid;
+        assembly { _chainid := chainid() }
 
-        // TODO(daniel): uncomment the following line and enable `--evm-version istanbul`
-        // assembly { _chainid := chainid() }
         return keccak256(
-            abi.encode(
+            abi.encodePacked(
                 EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes(domain.name)),
                 keccak256(bytes(domain.version)),
                 _chainid
+            )
+        );
+    }
+
+    function hash(
+        bytes32 domainHash,
+        bytes32 dataHash
+        )
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encodePacked(
+                EIP191_HEADER,
+                domainHash,
+                dataHash
             )
         );
     }

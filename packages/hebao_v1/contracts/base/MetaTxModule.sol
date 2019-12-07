@@ -14,11 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
-import "../lib/ERC712.sol";
+import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
 
@@ -43,7 +43,7 @@ import "./BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 
-contract MetaTxModule is ERC712, BaseModule
+contract MetaTxModule is BaseModule
 {
     using MathUint      for uint;
     using AddressUtil   for address;
@@ -54,6 +54,14 @@ contract MetaTxModule is ERC712, BaseModule
     {
         uint nonce;
         mapping (bytes32 => bool) metaTxHash;
+    }
+
+    struct GasSettings
+    {
+        address token;
+        uint    price;
+        uint    limit;
+        uint    overhead;
     }
 
     struct MetaTransaction
@@ -73,8 +81,9 @@ contract MetaTxModule is ERC712, BaseModule
         "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead)"
     );
 
+    bytes32 public DOMAIN_SEPARATOR;
+
     Controller public controller;
-    bytes32 public _domain_seperator;
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
@@ -96,7 +105,7 @@ contract MetaTxModule is ERC712, BaseModule
         BaseModule()
     {
         controller = _controller;
-        _domain_seperator = hash(EIP712Domain("MetaTxModule", "1"));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxModule", "1.0"));
     }
 
     function quotaManager() internal view returns (address)
@@ -155,28 +164,31 @@ contract MetaTxModule is ERC712, BaseModule
         external
         payable
     {
-        require(gasSetting[2] > 0, "INVALID_GAS_LIMIT");
+        GasSettings memory gasSettings = GasSettings(
+            address(gasSetting[0]),
+            gasSetting[1],
+            gasSetting[2],
+            gasSetting[3]
+        );
+        require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
         uint startGas = gasleft();
-        require(startGas >= gasSetting[2], "OUT_OF_GAS");
+        require(startGas >= gasSettings.limit, "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
-        bytes32 erc712SignHash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                _domain_seperator,
-                hash(
-                    MetaTransaction(
-                        wallet,
-                        address(this),
-                        msg.value,
-                        data,
-                        nonce,
-                        address(gasSetting[0]),
-                        gasSetting[1],
-                        gasSetting[2],
-                        gasSetting[3]
-                    )
+        bytes32 metaTxHash = EIP712.hash(
+            DOMAIN_SEPARATOR,
+            hash(
+                MetaTransaction(
+                    wallet,
+                    address(this),
+                    msg.value,
+                    data,
+                    nonce,
+                    gasSettings.token,
+                    gasSettings.price,
+                    gasSettings.limit,
+                    gasSettings.overhead
                 )
             )
         );
@@ -187,11 +199,11 @@ contract MetaTxModule is ERC712, BaseModule
         // (even a call that fails will reimburse the gas costs).
         address[] memory signers = getSigners(wallet, data);
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
-        erc712SignHash.verifySignatures(signers, signatures);
+        metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(wallet, nonce, erc712SignHash);
+        saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -199,13 +211,12 @@ contract MetaTxModule is ERC712, BaseModule
         }
 
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.gas(gasSetting[2])(data);
+        (bool success,) = address(this).call.gas(gasSettings.limit)(data);
 
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, erc712SignHash, success);
+        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
 
-        if (gasSetting[1] != 0) {
-            // gasPrice > 0
-            reimburseGasFee(wallet, gasSetting, startGas);
+        if (gasSettings.price != 0) {
+            reimburseGasFee(wallet, gasSettings, startGas);
         }
     }
 
@@ -245,25 +256,23 @@ contract MetaTxModule is ERC712, BaseModule
     }
 
     function reimburseGasFee(
-        address wallet,
-        uint[4] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead]
-        uint    startGas
+        address     wallet,
+        GasSettings memory gasSettings,
+        uint        startGas
         )
         private
     {
-        uint gasUsed = (startGas - gasleft()).add(gasSetting[3]).mul(gasSetting[1]);
-
-        address gasToken = address(gasSetting[0]);
+        uint gasUsed = (startGas - gasleft()).add(gasSettings.overhead).mul(gasSettings.price);
 
         if (quotaManager() != address(0)) {
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasToken, gasUsed);
+            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasUsed);
         }
 
-        if (gasToken == address(0)) {
+        if (gasSettings.token == address(0)) {
             transactCall(wallet, msg.sender, gasUsed, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasUsed);
-            transactCall(wallet, gasToken, 0, txData);
+            transactCall(wallet, gasSettings.token, 0, txData);
         }
     }
 

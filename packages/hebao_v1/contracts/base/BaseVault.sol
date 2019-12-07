@@ -14,17 +14,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressSet.sol";
-import "../lib/ERC712.sol";
+import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
 
 import "../iface/Vault.sol";
 
 
-contract BaseVault is AddressSet, ERC712, Vault
+contract BaseVault is AddressSet, Vault
 {
     using SignatureUtil for bytes32;
 
@@ -54,7 +54,7 @@ contract BaseVault is AddressSet, ERC712, Vault
     uint    constant public   MAX_OWNERS = 10;
 
     uint    public _requirement;
-    bytes32 public _domain_seperator;
+    bytes32 public DOMAIN_SEPARATOR;
 
     modifier onlyFromExecute
     {
@@ -68,7 +68,7 @@ contract BaseVault is AddressSet, ERC712, Vault
         )
         public
     {
-        _domain_seperator = hash(EIP712Domain("BaseVault", "1"));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("BaseVault", "1.0"));
 
         require(owners.length > 0, "NULL_OWNERS");
         require(owners.length <= MAX_OWNERS, "TOO_MANY_OWNERS");
@@ -92,7 +92,7 @@ contract BaseVault is AddressSet, ERC712, Vault
         returns (bytes32)
     {
         return keccak256(
-            abi.encode(
+            abi.encodePacked(
                 VAULTTRANSACTION_TYPEHASH,
                 _tx.target,
                 _tx.value,
@@ -112,15 +112,12 @@ contract BaseVault is AddressSet, ERC712, Vault
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
 
-        bytes32 erc712SignHash = keccak256(
-            abi.encodePacked(
-                "\x19\x01",
-                _domain_seperator,
-                hash(VaultTransaction(target, value, data))
-            )
+        bytes32 metaTxHash = EIP712.hash(
+            DOMAIN_SEPARATOR,
+            hash(VaultTransaction(target, value, data))
         );
 
-        erc712SignHash.verifySignatures(signers, signatures);
+        metaTxHash.verifySignatures(signers, signatures);
 
         // solium-disable-next-line security/no-call-value
         (bool success, ) = target.call.value(value)(data);

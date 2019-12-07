@@ -1,7 +1,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSResolver.sol
 // with few modifications.
 
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 import "../../lib/OwnerManagable.sol";
 import "./ENS.sol";
 

@@ -1,6 +1,6 @@
 // From Compound code base - https://github.com/compound-finance/compound-protocol/blob/master/contracts/CToken.sol
 // with minor modificaiton.
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 interface CToken {
