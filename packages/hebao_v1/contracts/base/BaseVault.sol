@@ -44,11 +44,10 @@ contract BaseVault is AddressSet, ERC712, Vault
         address   target;
         uint      value;
         bytes     data;
-        address[] signers;
     }
 
-    bytes32 constant public VAULT_TRANSACTION_TYPEHASH = keccak256(
-        "VaultTransaction(address target,uint256 value,bytes data,address[] signers)"
+    bytes32 constant public VAULTTRANSACTION_TYPEHASH = keccak256(
+        "VaultTransaction(address target,uint256 value,bytes data)"
     );
 
     bytes32 constant internal OWNERS = keccak256("__OWNER__");
@@ -69,7 +68,7 @@ contract BaseVault is AddressSet, ERC712, Vault
         )
         public
     {
-        _domain_seperator = hash(ERC712.Domain("BaseVault", "1", address(this), 1837183));
+        _domain_seperator = hash(EIP712Domain("BaseVault", "1"));
 
         require(owners.length > 0, "NULL_OWNERS");
         require(owners.length <= MAX_OWNERS, "TOO_MANY_OWNERS");
@@ -93,11 +92,10 @@ contract BaseVault is AddressSet, ERC712, Vault
         returns (bytes32)
     {
         return keccak256(abi.encode(
-            VAULT_TRANSACTION_TYPEHASH,
+            VAULTTRANSACTION_TYPEHASH,
             _tx.target,
             _tx.value,
-            keccak256(_tx.data),
-            keccak256(bytes(_tx.signers))
+            keccak256(_tx.data)
         ));
     }
 
@@ -112,8 +110,14 @@ contract BaseVault is AddressSet, ERC712, Vault
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
 
-        bytes32 signHash = hash(VaultTransaction(target, value, data, signers));
+        bytes32 signHash = keccak256(abi.encodePacked(
+            "\x19\x01",
+            _domain_seperator,
+            hash(VaultTransaction(target, value, data))
+        ));
+
         signHash.verifySignatures(signers, signatures);
+
         // solium-disable-next-line security/no-call-value
         (bool success, ) = target.call.value(value)(data);
         emit Executed(target, value, data, success);

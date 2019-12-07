@@ -17,26 +17,19 @@
 pragma solidity ^0.5.11;
 pragma experimental ABIEncoderV2;
 
-import "../lib/AddressSet.sol";
-import "../lib/SignatureUtil.sol";
-
-import "../iface/Vault.sol";
-
 
 contract ERC712
 {
-    struct Domain {
+    struct EIP712Domain {
         string  name;
         string  version;
-        address verifyingContract;
-        uint    salt;
     }
 
-    bytes32 constant internal EIP712DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract,uint256 salt)"
+    bytes32 constant public EIP712_DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId)"
     );
 
-    function hash(Domain memory domain)
+    function hash(EIP712Domain memory domain)
         internal
         pure
         returns (bytes32)
@@ -47,12 +40,10 @@ contract ERC712
         // assembly { _chainid := chainid() }
 
         return keccak256(abi.encode(
-            EIP712DOMAIN_TYPEHASH,
+            EIP712_DOMAIN_TYPEHASH,
             keccak256(bytes(domain.name)),
             keccak256(bytes(domain.version)),
-            _chainid,
-            domain.verifyingContract,
-            domain.salt
+            _chainid
         ));
     }
 }
