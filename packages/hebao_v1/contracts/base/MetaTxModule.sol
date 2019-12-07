@@ -161,7 +161,7 @@ contract MetaTxModule is ERC712, BaseModule
         require(startGas >= gasSetting[2], "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
-        bytes32 metaTxHash = keccak256(
+        bytes32 erc712SignHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 _domain_seperator,
@@ -187,11 +187,11 @@ contract MetaTxModule is ERC712, BaseModule
         // (even a call that fails will reimburse the gas costs).
         address[] memory signers = getSigners(wallet, data);
         require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
-        metaTxHash.verifySignatures(signers, signatures);
+        erc712SignHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(wallet, nonce, metaTxHash);
+        saveExecutedMetaTx(wallet, nonce, erc712SignHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -201,7 +201,7 @@ contract MetaTxModule is ERC712, BaseModule
         // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.gas(gasSetting[2])(data);
 
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
+        emit ExecutedMetaTx(msg.sender, wallet, nonce, erc712SignHash, success);
 
         if (gasSetting[1] != 0) {
             // gasPrice > 0

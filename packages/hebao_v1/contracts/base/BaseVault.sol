@@ -112,7 +112,7 @@ contract BaseVault is AddressSet, ERC712, Vault
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
 
-        bytes32 signHash = keccak256(
+        bytes32 erc712SignHash = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 _domain_seperator,
@@ -120,7 +120,7 @@ contract BaseVault is AddressSet, ERC712, Vault
             )
         );
 
-        signHash.verifySignatures(signers, signatures);
+        erc712SignHash.verifySignatures(signers, signatures);
 
         // solium-disable-next-line security/no-call-value
         (bool success, ) = target.call.value(value)(data);
