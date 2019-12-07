@@ -22,7 +22,7 @@ contract Vault
 {
     /// @dev Entrypoint for executing all transactions.
     /// @param target The target address to execute transaction on.
-    /// @param value The amoutn of Ether to send to target.
+    /// @param value The amount of Ether to send to target.
     /// @param data The transaction to execute.
     /// @param signers The addresses that signs the transaction, sorted ascendantly.
     /// @param signatures The signatures matching the signers.

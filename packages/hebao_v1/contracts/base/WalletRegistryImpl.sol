@@ -33,6 +33,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
     address internal factory;
 
     event WalletRegistered      (address indexed wallet);
+    event WalletDeregistered    (address indexed wallet);
     event WalletFactoryUpdated  (address indexed factory);
 
     modifier onlyFactory()
@@ -43,7 +44,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 
     constructor() public Claimable() {}
 
-    function setWalletFacgtory(address _factory)
+    function setWalletFactory(address _factory)
         external
         onlyOwner
     {
@@ -60,12 +61,28 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
         emit WalletRegistered(wallet);
     }
 
-    function isWallet(address addr)
+    function deregisterWallet(address wallet)
+        external
+        onlyFactory
+    {
+        removeAddressFromSet(WALLET, wallet);
+        emit WalletDeregistered(wallet);
+    }
+
+    function isWalletRegistered(address addr)
         public
         view
         returns (bool)
     {
         return isAddressInSet(WALLET, addr);
+    }
+
+    function wallets()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(WALLET);
     }
 
     function numOfWallets()

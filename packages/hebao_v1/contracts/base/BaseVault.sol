@@ -71,6 +71,7 @@ contract BaseVault is AddressSet, Vault
     }
 
     function execute(
+        uint8     mode,
         address   target,
         uint      value,
         bytes     calldata data,
@@ -78,8 +79,13 @@ contract BaseVault is AddressSet, Vault
         bytes[]   calldata signatures
         )
         external
+        returns (bytes memory result)
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
+        // Check whether all signers are owners
+        for (uint i = 0; i < signers.length; i++) {
+            require(isOwner(signers[i]), "Each signer must be an owner!");
+        }
         bytes32 signHash = getSignHash(
             address(this), // from
             target,
@@ -87,8 +93,24 @@ contract BaseVault is AddressSet, Vault
             data
         );
         signHash.verifySignatures(signers, signatures);
-        // solium-disable-next-line security/no-call-value
-        (bool success, ) = target.call.value(value)(data);
+
+        bool success;
+        if (mode == 1) {
+            // solium-disable-next-line security/no-call-value
+            (success, result) = target.call.value(value)(data);
+        } else if (mode == 2) {
+            // solium-disable-next-line security/no-call-value
+            (success, result) = target.delegatecall(data);
+        } else {
+            revert("UNSUPPORTED_MODE");
+        }
+
+        if (!success) {
+            assembly {
+                returndatacopy(0, 0, returndatasize)
+                revert(0, returndatasize)
+            }
+        }
         emit Executed(target, value, data, success);
     }
 

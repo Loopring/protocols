@@ -52,6 +52,7 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4);
 
     function isSignedByWalletOwner(
+        address      _wallet,
         bytes memory _data,
         bytes memory _signature
         )
@@ -59,7 +60,7 @@ contract ERC1271Module is ERC1271, BaseModule
         view
         returns (bool)
     {
-        return isSignedBy(Wallet(address(this)).owner(), _data, _signature);
+        return isSignedBy(Wallet(wallet).owner(), _data, _signature);
     }
 
     function isSignedBy(
