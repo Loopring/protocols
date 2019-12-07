@@ -122,8 +122,8 @@ library GuardianUtils
         }
 
         // Social authentication: Require a majority of groups to have a majority of signing guardians
-        // Or self authentication: When a wallet has enough self controlled guardians a simple majority
-        // of self controlled guardians (inlcuding the wallet when allowed) is enough.
+        // Or self authentication: When a wallet has enough self controlled guardians a majority
+        // of only the self controlled guardians (inlcuding the wallet owner when allowed) is enough.
         require(
             hasMajority(numGroupsWithMajority, numGroups) ||
             (totalNumSelfControlled >= 3 && hasSelfControlledMajority),
