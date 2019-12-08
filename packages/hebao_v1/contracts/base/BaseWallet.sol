@@ -36,7 +36,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     address internal _owner;
 
     bytes32 internal constant MODULE = keccak256("__MODULE__");
-    string  internal constant ERC20_TRANSFER = "transfer(address,uint256)";
 
     Controller public controller;
 

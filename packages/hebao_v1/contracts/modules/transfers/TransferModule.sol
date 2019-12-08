@@ -64,7 +64,7 @@ contract TransferModule is SecurityModule
             transactCall(wallet, to, amount, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(
-                ERC20_TRANSFER,
+                ERC20(0).transfer.selector,
                 to,
                 amount
             );
@@ -84,7 +84,7 @@ contract TransferModule is SecurityModule
         require(token != address(0), "UNSUPPORTED");
 
         bytes memory txData = abi.encodeWithSelector(
-            ERC20_APPROVE,
+            ERC20(0).approve.selector,
             to,
             amount
         );
@@ -101,7 +101,11 @@ contract TransferModule is SecurityModule
         internal
     {
         bytes4 method = extractMethod(txData);
-        require(method != ERC20_TRANSFER && method != ERC20_APPROVE, "INVALID_METHOD");
+        require(
+            method != ERC20(0).transfer.selector &&
+            method != ERC20(0).approve.selector,
+            "INVALID_METHOD"
+        );
 
         transactCall(wallet, to, amount, txData);
         emit ContractCalled(wallet, to, amount, txData);

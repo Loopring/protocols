@@ -17,17 +17,15 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "../../base/BaseSubAccount.sol";
-
 import "../../thirdparty/compound/CompoundRegistery.sol";
 import "../../thirdparty/compound/CEther.sol";
 import "../../thirdparty/compound/CErc20.sol";
 
-import "../security/SecurityModule.sol";
+import "./DAppModule.sol";
 
 
 /// @title CompoundModule
-contract CompoundModule is BaseSubAccount, SecurityModule
+contract CompoundModule is DAppModule
 {
     CompoundRegistry internal compoundRegistry;
     address constant internal ETH_TOKEN_ADDRESS = address(0);
@@ -47,7 +45,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     ///      back to Compound.
     function deposit(
         address            wallet,
-        address[] calldata signers,
         address            token,
         uint               amount
         )
@@ -55,9 +52,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        // TODO: enable signers later
-        require(signers.length == 0, "NOT_SUPPORT_NOW");
-
         uint allowed = tokenDepositable(wallet, token);
         require(amount > 0 && amount <= allowed, "INVALID_AMOUNT");
 
@@ -71,7 +65,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     /// @dev Redeem fund from Compound.
     function withdraw(
         address            wallet,
-        address[] calldata signers,
         address            token,
         uint               amount
         )
@@ -79,9 +72,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        // TODO: enable signers later
-        require(signers.length == 0, "NOT_SUPPORT_NOW");
-
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
 

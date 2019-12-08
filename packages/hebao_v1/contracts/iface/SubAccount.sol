@@ -24,12 +24,10 @@ contract SubAccount
     /// @dev Deposits Ether/token from the wallet to this sub-account.
     ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
     /// @param wallet The wallt from which the Ether/token will be transfered out.
-    /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     /// @param token The token address, use 0x0 for Ether.
     /// @param amount The amount of Ether/token to transfer.
     function deposit(
         address            wallet,
-        address[] calldata signers,
         address            token,
         uint               amount
         )
@@ -38,12 +36,10 @@ contract SubAccount
     /// @dev Withdraw Ether/token from this sub-account to the wallet.
     ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
     /// @param wallet The wallt to which the Ether/token will be transfered to.
-    /// @param signers The list of meta-transaction signers, must be emptpy for normal transactions.
     /// @param token The token address, use 0x0 for Ether.
     /// @param amount The amount of Ether/token to transfer.
     function withdraw(
         address            wallet,
-        address[] calldata signers,
         address            token,
         uint               amount
         )

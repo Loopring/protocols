@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
 import "../lib/EIP712.sol";
+import "../lib/ERC20.sol";
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
 
@@ -271,7 +272,11 @@ contract MetaTxModule is BaseModule
         if (gasSettings.token == address(0)) {
             transactCall(wallet, msg.sender, gasUsed, "");
         } else {
-            bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasUsed);
+            bytes memory txData = abi.encodeWithSelector(
+                ERC20(0).transfer.selector,
+                msg.sender,
+                gasUsed
+            );
             transactCall(wallet, gasSettings.token, 0, txData);
         }
     }
