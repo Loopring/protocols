@@ -14,10 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
+import "../lib/EIP712.sol";
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
 
@@ -55,7 +56,34 @@ contract MetaTxModule is BaseModule
         mapping (bytes32 => bool) metaTxHash;
     }
 
+    struct GasSettings
+    {
+        address token;
+        uint    price;
+        uint    limit;
+        uint    overhead;
+    }
+
+    struct MetaTransaction
+    {
+        address from;
+        address to;
+        uint    value;
+        bytes   data;
+        uint    nonce;
+        address gasToken;
+        uint    gasPrice;
+        uint    gasLimit;
+        uint    gasOverhead;
+    }
+
+    bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
+        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead)"
+    );
+
+    bytes32    public DOMAIN_SEPARATOR;
     Controller public controller;
+
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
@@ -76,6 +104,7 @@ contract MetaTxModule is BaseModule
         public
         BaseModule()
     {
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxModule", "1.0"));
         controller = _controller;
     }
 
@@ -135,19 +164,33 @@ contract MetaTxModule is BaseModule
         external
         payable
     {
-        require(gasSetting[2] > 0, "INVALID_GAS_LIMIT");
+        GasSettings memory gasSettings = GasSettings(
+            address(gasSetting[0]),
+            gasSetting[1],
+            gasSetting[2],
+            gasSetting[3]
+        );
+        require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
         uint startGas = gasleft();
-        require(startGas >= gasSetting[2], "OUT_OF_GAS");
+        require(startGas >= gasSettings.limit, "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
-        bytes32 metaTxHash = getSignHash(
-            wallet, // from
-            address(this),  // to. Note the relayer can only call its own methods.
-            msg.value, // value
-            data,
-            nonce,
-            gasSetting
+        bytes32 metaTxHash = EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
+            hash(
+                MetaTransaction(
+                    wallet,
+                    address(this),
+                    msg.value,
+                    data,
+                    nonce,
+                    gasSettings.token,
+                    gasSettings.price,
+                    gasSettings.limit,
+                    gasSettings.overhead
+                )
+            )
         );
 
         // Get the signers necessary for this meta transaction.
@@ -168,13 +211,12 @@ contract MetaTxModule is BaseModule
         }
 
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.gas(gasSetting[2])(data);
+        (bool success,) = address(this).call.gas(gasSettings.limit)(data);
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
 
-        if (gasSetting[1] != 0) {
-            // gasPrice > 0
-            reimburseGasFee(wallet, gasSetting, startGas);
+        if (gasSettings.price != 0) {
+            reimburseGasFee(wallet, gasSettings, startGas);
         }
     }
 
@@ -214,25 +256,23 @@ contract MetaTxModule is BaseModule
     }
 
     function reimburseGasFee(
-        address wallet,
-        uint[4] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead]
-        uint    startGas
+        address     wallet,
+        GasSettings memory gasSettings,
+        uint        startGas
         )
         private
     {
-        uint gasUsed = (startGas - gasleft()).add(gasSetting[3]).mul(gasSetting[1]);
-
-        address gasToken = address(gasSetting[0]);
+        uint gasUsed = (startGas - gasleft()).add(gasSettings.overhead).mul(gasSettings.price);
 
         if (quotaManager() != address(0)) {
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasToken, gasUsed);
+            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasUsed);
         }
 
-        if (gasToken == address(0)) {
+        if (gasSettings.token == address(0)) {
             transactCall(wallet, msg.sender, gasUsed, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasUsed);
-            transactCall(wallet, gasToken, 0, txData);
+            transactCall(wallet, gasSettings.token, 0, txData);
         }
     }
 
@@ -318,37 +358,25 @@ contract MetaTxModule is BaseModule
         assembly { addresses := add(data, add(36, dataOffset)) }
     }
 
-    /// @dev calculate the hash that all signatures will sign against.
-    ///      See https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1077.md
-    function getSignHash(
-        address from,
-        address to,
-        uint    value,
-        bytes   memory data,
-        uint    nonce,
-        uint[4] memory gasSetting
-        )
-        public
+    function hash(MetaTransaction memory _tx)
+        internal
         pure
         returns (bytes32)
     {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                byte(0x19),
-                byte(0),
-                from,
-                to,
-                value,
-                keccak256(data),
-                nonce,
-                gasSetting[0],
-                gasSetting[1],
-                gasSetting[2],
-                gasSetting[3]
+        return keccak256(
+            abi.encode(
+                METATRANSACTION_TYPEHASH,
+                _tx.from,
+                _tx.to,
+                _tx.value,
+                keccak256(_tx.data),
+                _tx.nonce,
+                _tx.gasToken,
+                _tx.gasPrice,
+                _tx.gasLimit,
+                _tx.gasOverhead
             )
         );
-
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
     function extractMethod(bytes memory data)
