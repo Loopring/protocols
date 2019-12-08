@@ -42,7 +42,7 @@ contract BaseVault is AddressSet, Vault
 
     struct VaultTransaction
     {
-        address   from;
+        address   vault;
         address   target;
         uint      value;
         uint8     mode;
@@ -50,7 +50,7 @@ contract BaseVault is AddressSet, Vault
     }
 
     bytes32 constant public VAULTTRANSACTION_TYPEHASH = keccak256(
-        "VaultTransaction(address from,address target,uint256 value,uint8 mode,bytes data)"
+        "VaultTransaction(address vault,address target,uint256 value,uint8 mode,bytes data)"
     );
 
     bytes32 constant internal OWNERS = keccak256("__OWNER__");
@@ -97,7 +97,7 @@ contract BaseVault is AddressSet, Vault
         return keccak256(
             abi.encode(
                 VAULTTRANSACTION_TYPEHASH,
-                _tx.from,
+                _tx.vault,
                 _tx.target,
                 _tx.value,
                 _tx.mode,
