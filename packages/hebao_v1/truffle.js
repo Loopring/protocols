@@ -48,9 +48,10 @@ module.exports = {
         optimizer: {
           enabled: true,
           runs: 200
-        }
+        },
+        evmVersion: "istanbul"
       },
-      version: "0.5.11"
+      version: "0.5.13"
     }
   },
   ens: {

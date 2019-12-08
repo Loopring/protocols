@@ -1,6 +1,6 @@
 // Copied from https://github.com/ethereum/EIPs/blob/master/EIPS/eip-165.md.
 
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 
 interface ERC165 {
     /// @notice Query if a contract implements an interface

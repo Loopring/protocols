@@ -14,10 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressSet.sol";
+import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
 
 import "../iface/Vault.sol";
@@ -30,6 +31,7 @@ contract BaseVault is AddressSet, Vault
     event OwnerAdded(address indexed owner);
     event OwnerRemoved(address indexed owner);
     event RequirementChanged(uint requirement);
+
     event Executed(
         address indexed target,
         uint            value,
@@ -37,10 +39,22 @@ contract BaseVault is AddressSet, Vault
         bool            success
     );
 
+    struct VaultTransaction
+    {
+        address   target;
+        uint      value;
+        bytes     data;
+    }
+
+    bytes32 constant public VAULTTRANSACTION_TYPEHASH = keccak256(
+        "VaultTransaction(address target,uint256 value,bytes data)"
+    );
+
     bytes32 constant internal OWNERS = keccak256("__OWNER__");
     uint    constant public   MAX_OWNERS = 10;
 
-    uint public _requirement;
+    uint    public _requirement;
+    bytes32 public DOMAIN_SEPARATOR;
 
     modifier onlyFromExecute
     {
@@ -57,6 +71,8 @@ contract BaseVault is AddressSet, Vault
         require(owners.length > 0, "NULL_OWNERS");
         require(owners.length <= MAX_OWNERS, "TOO_MANY_OWNERS");
 
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("BaseVault", "1.0"));
+
         for (uint i = 0; i < owners.length; i++) {
             address owner = owners[i];
             require(owner != address(0), "ZERO_ADDRESS");
@@ -70,6 +86,21 @@ contract BaseVault is AddressSet, Vault
         _requirement = initialRequirement;
     }
 
+    function hash(VaultTransaction memory _tx)
+        internal
+        pure
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encode(
+                VAULTTRANSACTION_TYPEHASH,
+                _tx.target,
+                _tx.value,
+                keccak256(_tx.data)
+            )
+        );
+    }
+
     function execute(
         address   target,
         uint      value,
@@ -80,40 +111,17 @@ contract BaseVault is AddressSet, Vault
         external
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
-        bytes32 signHash = getSignHash(
-            address(this), // from
-            target,
-            value,
-            data
+
+        bytes32 metaTxHash = EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
+            hash(VaultTransaction(target, value, data))
         );
-        signHash.verifySignatures(signers, signatures);
+
+        metaTxHash.verifySignatures(signers, signatures);
+
         // solium-disable-next-line security/no-call-value
         (bool success, ) = target.call.value(value)(data);
         emit Executed(target, value, data, success);
-    }
-
-    function getSignHash(
-        address from,
-        address to,
-        uint256 value,
-        bytes   memory data
-        )
-        public
-        pure
-        returns (bytes32)
-    {
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                byte(0x19),
-                byte(0),
-                from,
-                to,
-                value,
-                keccak256(data)
-                )
-            );
-
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
     }
 
     function addOwner(address owner)
