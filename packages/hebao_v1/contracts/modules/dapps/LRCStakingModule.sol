@@ -80,6 +80,8 @@ contract LRCStakingModule is DAppModule
             amount
         );
         transactCall(wallet, address(stakingPool), 0, txData);
+        trackDeposit(wallet, token, amount);
+
     }
 
     function withdraw(
@@ -114,6 +116,7 @@ contract LRCStakingModule is DAppModule
                 amount
             );
             transactCall(wallet, address(stakingPool), 0, txData);
+            trackWithdrawal(wallet, token, amount);
         }
     }
 
