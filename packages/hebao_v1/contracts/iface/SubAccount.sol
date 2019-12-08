@@ -61,7 +61,6 @@ contract SubAccount
         view
         returns (int balance);
 
-
     /// @dev Returns the amount of token a wallet can withdraw from the sub-account
     ///      to the wallet. The return value may be smaller than the balance to
     /// indicate lockup or bigger than the balance to indicate a credit.
