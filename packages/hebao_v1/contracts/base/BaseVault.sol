@@ -86,11 +86,8 @@ contract BaseVault is AddressSet, Vault
         require(mode == 1 || mode == 2, "INVALID_MODE");
         // Check whether all signers are owners
 
-        address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
-            require(signers[i] > lastSigner, "INVALID_ORDER");
-            lastSigner = signers[i];
-            require(isOwner(lastSigner), "NOT_OWNER");
+            require(isOwner(signers[i]), "NOT_OWNER");
         }
 
         bytes32 signHash = getSignHash(
