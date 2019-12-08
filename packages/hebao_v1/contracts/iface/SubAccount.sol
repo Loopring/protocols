@@ -69,7 +69,7 @@ contract SubAccount
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
     /// @return withdrawable The amount allowed to withdraw.
-    function tokenWithdrawalable (
+    function tokenWithdrawable (
         address wallet,
         address token
         )

@@ -111,7 +111,7 @@ contract BaseSubAccount is SubAccount
     }
 
     /// @dev The default implementation returns the total's balance or 0.
-    function tokenWithdrawalable (
+    function tokenWithdrawable (
         address wallet,
         address token
         )
