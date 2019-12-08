@@ -119,7 +119,7 @@ library SignatureUtil
         returns(bool)
     {
         bytes memory callData = abi.encodeWithSelector(
-            ERC1271(signer).isValidSignature.selector,
+            ERC1271(0).isValidSignature.selector,
             signHash,
             signature
         );
