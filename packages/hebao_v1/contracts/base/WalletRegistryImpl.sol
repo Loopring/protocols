@@ -43,7 +43,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 
     constructor() public Claimable() {}
 
-    function setWalletFacgtory(address _factory)
+    function setWalletFactory(address _factory)
         external
         onlyOwner
     {
@@ -60,7 +60,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
         emit WalletRegistered(wallet);
     }
 
-    function isWallet(address addr)
+    function isWalletRegistered(address addr)
         public
         view
         returns (bool)
