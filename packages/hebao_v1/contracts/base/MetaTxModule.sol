@@ -81,9 +81,9 @@ contract MetaTxModule is BaseModule
         "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead)"
     );
 
-    bytes32 public DOMAIN_SEPARATOR;
-
+    bytes32    public DOMAIN_SEPARATOR;
     Controller public controller;
+
     mapping (address => WalletState) public wallets;
 
     event ExecutedMetaTx(
@@ -104,8 +104,8 @@ contract MetaTxModule is BaseModule
         public
         BaseModule()
     {
-        controller = _controller;
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxModule", "1.0"));
+        controller = _controller;
     }
 
     function quotaManager() internal view returns (address)
@@ -176,7 +176,7 @@ contract MetaTxModule is BaseModule
         require(startGas >= gasSettings.limit, "OUT_OF_GAS");
 
         address wallet = extractWalletAddress(data);
-        bytes32 metaTxHash = EIP712.hash(
+        bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
             hash(
                 MetaTransaction(

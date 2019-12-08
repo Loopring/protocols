@@ -68,10 +68,10 @@ contract BaseVault is AddressSet, Vault
         )
         public
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("BaseVault", "1.0"));
-
         require(owners.length > 0, "NULL_OWNERS");
         require(owners.length <= MAX_OWNERS, "TOO_MANY_OWNERS");
+
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("BaseVault", "1.0"));
 
         for (uint i = 0; i < owners.length; i++) {
             address owner = owners[i];
@@ -92,7 +92,7 @@ contract BaseVault is AddressSet, Vault
         returns (bytes32)
     {
         return keccak256(
-            abi.encodePacked(
+            abi.encode(
                 VAULTTRANSACTION_TYPEHASH,
                 _tx.target,
                 _tx.value,
@@ -112,7 +112,7 @@ contract BaseVault is AddressSet, Vault
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
 
-        bytes32 metaTxHash = EIP712.hash(
+        bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
             hash(VaultTransaction(target, value, data))
         );

@@ -40,7 +40,7 @@ library EIP712
         assembly { _chainid := chainid() }
 
         return keccak256(
-            abi.encodePacked(
+            abi.encode(
                 EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes(domain.name)),
                 keccak256(bytes(domain.version)),
@@ -49,7 +49,7 @@ library EIP712
         );
     }
 
-    function hash(
+    function hashPacked(
         bytes32 domainHash,
         bytes32 dataHash
         )
