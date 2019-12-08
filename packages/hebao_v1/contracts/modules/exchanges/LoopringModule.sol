@@ -21,9 +21,9 @@ import "../../lib/MathUint.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../security/SecurityModule.sol";
+import "../../thirdparty/loopring/IExchangeV3.sol";
 
-import "./IExchangeV3.sol";
+import "../security/SecurityModule.sol";
 
 
 /// @title LoopringModule

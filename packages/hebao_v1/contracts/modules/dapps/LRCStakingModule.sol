@@ -20,8 +20,8 @@ pragma experimental ABIEncoderV2;
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 
-import "../../thirdparty/lrc_staking/IUserStakingPool.sol";
-import "../../thirdparty/lrc_staking/IProtocolFeeVault.sol";
+import "../../thirdparty/loopring/IProtocolFeeVault.sol";
+import "../../thirdparty/loopring/IUserStakingPool.sol";
 
 import "./DAppModule.sol";
 
