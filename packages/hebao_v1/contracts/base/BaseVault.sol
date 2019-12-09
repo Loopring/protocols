@@ -28,26 +28,29 @@ contract BaseVault is AddressSet, Vault
 {
     using SignatureUtil for bytes32;
 
-    event OwnerAdded(address indexed owner);
+    event OwnerAdded  (address indexed owner);
     event OwnerRemoved(address indexed owner);
     event RequirementChanged(uint requirement);
 
     event Executed(
         address indexed target,
         uint            value,
+        uint8           mode,
         bytes           data,
         bool            success
     );
 
     struct VaultTransaction
     {
+        address   vault;
         address   target;
         uint      value;
+        uint8     mode;
         bytes     data;
     }
 
     bytes32 constant public VAULTTRANSACTION_TYPEHASH = keccak256(
-        "VaultTransaction(address target,uint256 value,bytes data)"
+        "VaultTransaction(address vault,address target,uint256 value,uint8 mode,bytes data)"
     );
 
     bytes32 constant internal OWNERS = keccak256("__OWNER__");
@@ -94,8 +97,10 @@ contract BaseVault is AddressSet, Vault
         return keccak256(
             abi.encode(
                 VAULTTRANSACTION_TYPEHASH,
+                _tx.vault,
                 _tx.target,
                 _tx.value,
+                _tx.mode,
                 keccak256(_tx.data)
             )
         );
@@ -104,24 +109,45 @@ contract BaseVault is AddressSet, Vault
     function execute(
         address   target,
         uint      value,
+        uint8     mode,
         bytes     calldata data,
         address[] calldata signers,
         bytes[]   calldata signatures
         )
         external
+        returns (bytes memory result)
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
+        require(mode == 1 || mode == 2, "INVALID_MODE");
+
+        // Check whether all signers are owners
+        for (uint i = 0; i < signers.length; i++) {
+            require(isOwner(signers[i]), "NOT_OWNER");
+        }
 
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
-            hash(VaultTransaction(target, value, data))
+            hash(VaultTransaction(address(this), target, value, mode, data))
         );
 
         metaTxHash.verifySignatures(signers, signatures);
 
-        // solium-disable-next-line security/no-call-value
-        (bool success, ) = target.call.value(value)(data);
-        emit Executed(target, value, data, success);
+        bool success;
+        if (mode == 1) {
+            // solium-disable-next-line security/no-call-value
+            (success, result) = target.call.value(value)(data);
+        } else {
+            // solium-disable-next-line security/no-call-value
+            (success, result) = target.delegatecall(data);
+        }
+
+        if (!success) {
+            assembly {
+                returndatacopy(0, 0, returndatasize)
+                revert(0, returndatasize)
+            }
+        }
+        emit Executed(target, value, mode, data, success);
     }
 
     function addOwner(address owner)
@@ -147,7 +173,7 @@ contract BaseVault is AddressSet, Vault
         emit OwnerRemoved(owner);
     }
 
-    function changeRequirement(uint256 newRequirement)
+    function changeRequirement(uint newRequirement)
         external
         onlyFromExecute
     {

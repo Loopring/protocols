@@ -23,6 +23,6 @@ pragma solidity ^0.5.13;
 contract WalletRegistry
 {
     function registerWallet(address wallet) external;
-    function isWallet(address addr) public view returns (bool);
+    function isWalletRegistered(address addr) public view returns (bool);
     function numOfWallets() public view returns (uint);
 }
