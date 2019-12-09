@@ -23,12 +23,24 @@
 - deposit: 1, 2, 4, 8, 15, 31, 64, 128, 256
 - onchainWithdrawal: 1, 2, 4, 8, 16, 32, 64, 128, 256
 
+### These tokens are supported by all exchanges:
+
+- ETH: 0x0, tokenId: 0
+- WETH: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, tokenId: 1
+- LRC: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD, tokenId: 2
+
 ### WEDAX Exchange contract address:
 
 - exchangeID: 1
 - exchangeAddress: 0x7D3D221A8D8AbDd868E8e88811fFaF033e68E108
 - exchange stake: 500000 LRC
 - takerFeeBips: 50; makerFeeBips: 25
+- operator: 0x056C0263E87c2edBF7083620832D25216b1cB05D
+- dummy account: 0x732E2501D6Bd54EEbf4Fb2800F664399413AF26A
+
+#### WEDAX supported tokens:
+
+- USDT: 0xdac17f958d2ee523a2206206994597c13d831ec7, tokenId: 3
 
 ### contract libs:
 
