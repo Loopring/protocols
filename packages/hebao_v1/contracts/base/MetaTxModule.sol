@@ -172,9 +172,6 @@ contract MetaTxModule is BaseModule
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
-        uint startGas = gasleft();
-        require(startGas >= gasSettings.limit, "OUT_OF_GAS");
-
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
@@ -210,13 +207,18 @@ contract MetaTxModule is BaseModule
             wallet.sendETHAndVerify(msg.value, gasleft());
         }
 
+        require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
+        uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
         (bool success,) = address(this).call.gas(gasSettings.limit)(data);
+        gasUsed = gasUsed - gasleft();
+        // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
+        gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
 
         emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
 
         if (gasSettings.price != 0) {
-            reimburseGasFee(wallet, gasSettings, startGas);
+            reimburseGasFee(wallet, gasSettings, gasUsed);
         }
     }
 
@@ -258,20 +260,20 @@ contract MetaTxModule is BaseModule
     function reimburseGasFee(
         address     wallet,
         GasSettings memory gasSettings,
-        uint        startGas
+        uint        gasUsed
         )
         private
     {
-        uint gasUsed = (startGas - gasleft()).add(gasSettings.overhead).mul(gasSettings.price);
+        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
 
         if (quotaManager() != address(0)) {
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasUsed);
+            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
         }
 
         if (gasSettings.token == address(0)) {
-            transactCall(wallet, msg.sender, gasUsed, "");
+            transactCall(wallet, msg.sender, gasCost, "");
         } else {
-            bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasUsed);
+            bytes memory txData = abi.encodeWithSelector(ERC20_TRANSFER, msg.sender, gasCost);
             transactCall(wallet, gasSettings.token, 0, txData);
         }
     }
