@@ -194,11 +194,8 @@ contract MetaTxModule is BaseModule
         );
 
         // Get the signers necessary for this meta transaction.
-        // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
-        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
-        // (even a call that fails will reimburse the gas costs).
         address[] memory signers = getSigners(wallet, data);
-        require(isWalletOwnerOrGuardian(wallet, signers), "UNAUTHORIZED");
+        require(areAuthorizedMetaTxSigners(wallet, data, signers), "UNAUTHORIZED");
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -292,6 +289,21 @@ contract MetaTxModule is BaseModule
         }
     }
 
+    function areAuthorizedMetaTxSigners(
+        address   wallet,
+        bytes     memory /*data*/,
+        address[] memory signers
+        )
+        private
+        view
+        returns (bool)
+    {
+        // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
+        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
+        // (even a call that fails will reimburse the gas costs).
+        return isWalletOwnerOrGuardian(wallet, signers);
+    }
+
     /// @dev Extracts and returns a list of signers for the given meta transaction.
     ///      Additional validation of the signers can also be done inside this function.
     /// @param wallet The wallet address.
@@ -325,12 +337,22 @@ contract MetaTxModule is BaseModule
         pure
         returns (address wallet)
     {
-        require(data.length >= 36, "INVALID_DATA");
-        // solium-disable-next-line security/no-inline-assembly
-        assembly {
-            // data layout: {length:32}{sig:4}{_wallet:32}{...}
-            wallet := mload(add(data, 36))
-        }
+        wallet = extractAddressFromCallData(data, 0);
+    }
+
+    /// @dev Returns the address stored in the call data
+    ///      at the specified function parameter index.
+    ///      Example: function bar(uint value, address signer, bytes data);
+    ///               To extact `signer` use parameterIdx := 1
+    function extractAddressFromCallData(
+        bytes memory data,
+        uint  parameterIdx
+        )
+        internal
+        pure
+        returns (address addr)
+    {
+        addr = data.toAddress(4 + 32 * parameterIdx);
     }
 
     /// @dev Returns a read-only array with the addresses stored in the call data
