@@ -25,35 +25,15 @@ import "../security/SecurityModule.sol";
 /// @title DAppModule
 contract DAppModule is BaseSubAccount, SecurityModule
 {
-    // Override this methods to return a list of functions that the owner
-    // can invoke through meta-transactions.
-    function ownerMetaFunctions()
-        internal
-        pure
-        returns (bytes4[] memory selectors)
-    {
-        selectors = new bytes4[](2);
-        selectors[0] = this.deposit.selector;
-        selectors[1] = this.withdraw.selector;
-    }
-
     function extractMetaTxSigners(
         address wallet,
-        bytes4  method,
-        bytes   memory
+        bytes4  /* method */,
+        bytes   memory /* data */
         )
         internal
         view
         returns (address[] memory signers)
     {
-        bool found = false;
-        bytes4[] memory selectors = ownerMetaFunctions();
-
-        for (uint i = 0; i < selectors.length && !found; i++) {
-            if (method == selectors[i]) found = true;
-        }
-        require(found, "INVALID_METHOD");
-
         signers = new address[](1);
         signers[0] = Wallet(wallet).owner();
     }
