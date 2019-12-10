@@ -179,15 +179,4 @@ contract LRCStakingModule is DAppModule
         if (token != lrcTokenAddress) return 0;
         else return super.tokenDepositable(wallet, token);
     }
-
-    function ownerMetaFunctions()
-        internal
-        pure
-        returns (bytes4[] memory selectors)
-    {
-        selectors = new bytes4[](3);
-        selectors[0] = this.deposit.selector;
-        selectors[1] = this.withdraw.selector;
-        selectors[2] = this.claimReward.selector;
-    }
 }
