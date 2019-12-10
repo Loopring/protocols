@@ -68,14 +68,16 @@ contract LRCStakingModule is DAppModule
             "INVALID_AMOUNT"
         );
 
-        bytes memory txData = abi.encodeWithSelector(
-            ERC20(0).approve.selector,
-            address(stakingPool),
-            amount
-        );
-        transactCall(wallet, token, 0, txData);
+        if (ERC20(token).allowance(wallet, address(stakingPool)) < amount) {
+            bytes memory txData = abi.encodeWithSelector(
+                ERC20(token).approve.selector,
+                address(stakingPool),
+                amount
+            );
+            transactCall(wallet, token, 0, txData);
+        }
 
-        txData = abi.encodeWithSelector(
+        bytes memory txData = abi.encodeWithSelector(
             stakingPool.stake.selector,
             amount
         );
