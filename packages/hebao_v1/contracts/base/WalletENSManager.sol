@@ -18,17 +18,13 @@ pragma solidity ^0.5.13;
 
 import "../thirdparty/ens/BaseENSManager.sol";
 
-/// @title Wallet
-/// @dev Base contract for smart wallets.
-///      Sub-contracts must NOT use non-default constructor to initialize
-///      wallet states, instead, `init` shall be used. This is to enable
-///      proxies to be deployed in front of the real wallet contract for
-///      saving gas.
+/// @title WalletENSManager
+/// @dev An ENS manager to interactive with ENS module.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
-/// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-137.md
-/// see https://github.com/ethereum/EIPs/blob/master/EIPS/eip-181.md
+/// The design of this contract is inspired by Argent's contract codebase:
+/// https://github.com/argentlabs/argent-contracts
 contract WalletENSManager is BaseENSManager {
 
     constructor(

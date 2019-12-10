@@ -22,17 +22,22 @@ contract Vault
 {
     /// @dev Entrypoint for executing all transactions.
     /// @param target The target address to execute transaction on.
-    /// @param value The amoutn of Ether to send to target.
+    /// @param value The amount of Ether to send to target.
     /// @param data The transaction to execute.
+    /// @param mode The execution mode. 1 for CALL and 2 for DELEGATECALL.
     /// @param signers The addresses that signs the transaction, sorted ascendantly.
     /// @param signatures The signatures matching the signers.
+    /// @return result The transaction result.
     function execute(
         address   target,
         uint      value,
+        uint8     mode,
         bytes     calldata data,
         address[] calldata signers,
         bytes[]   calldata signatures
-        ) external;
+        )
+        external
+        returns (bytes memory result);
 
     /// @dev Adds a new owner.
     /// @param _owner The owner to add.
@@ -44,7 +49,7 @@ contract Vault
 
     /// @dev Change the number of signatures required to execute transactions.
     /// @param _requirement The new requirement.
-    function changeRequirement(uint256 _requirement) external;
+    function changeRequirement(uint _requirement) external;
 
     /// @dev Returns the number of signatures required to execute transactions.
     /// @return requirement The requirement.
