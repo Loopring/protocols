@@ -32,9 +32,6 @@ import "../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract BaseModule is ReentrancyGuard, Module
 {
-    bytes4 internal constant ERC20_TRANSFER = bytes4(keccak256("transfer(address,uint256)"));
-    bytes4 internal constant ERC20_APPROVE  = bytes4(keccak256("approve(address,uint256)"));
-
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
