@@ -23,6 +23,7 @@ import "../security/SecurityModule.sol";
 
 
 /// @title DAppModule
+/// @dev DAppModule only allows wallet owners to use meta-transactions.
 contract DAppModule is BaseSubAccount, SecurityModule
 {
     function extractMetaTxSigners(
