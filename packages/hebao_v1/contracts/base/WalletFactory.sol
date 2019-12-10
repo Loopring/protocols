@@ -19,6 +19,7 @@ pragma solidity ^0.5.13;
 import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
 import "../thirdparty/OwnedUpgradabilityProxy.sol";
+import "../thirdparty/Create2.sol";
 
 import "../iface/Controller.sol";
 import "../iface/Wallet.sol";
@@ -33,36 +34,24 @@ import "../iface/Module.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract WalletFactory is ReentrancyGuard, OwnerManagable
+contract WalletFactory is ReentrancyGuard
 {
     event WalletCreated(
         address indexed wallet,
         address indexed owner
     );
 
-    constructor()
-        public
-        OwnerManagable()
-    {
-        addManagerInternal(owner);
-    }
-
-    /// @dev Create a new wallet by deploying a proxy.
-    /// @param _owner The wallet's owner.
-    /// @param _modules The wallet's modules.
-    /// @return _wallet The newly created wallet's address.
-    function createWallet(
-        Controller _controller,
-        address    _owner,
-        address[]  calldata _modules
+    function computeWalletAddress(
+        address owner
         )
-        external
-        payable
-        nonReentrant
-        onlyManager
+        public
+        view
         returns (address)
     {
-        return createWalletInternal(_controller, _owner, _modules);
+        return Create2.computeAddress(
+            getSalt(owner),
+            getWalletCode()
+        );
     }
 
     function createWalletInternal(
@@ -73,14 +62,12 @@ contract WalletFactory is ReentrancyGuard, OwnerManagable
         internal
         returns (address payable _wallet)
     {
-        bytes32 salt = keccak256(abi.encodePacked("WALLET_CREATION", _owner));
-        bytes memory code = type(OwnedUpgradabilityProxy).creationCode;
-        assembly {
-            _wallet := create2(0, add(code, 0x20), mload(code), salt)
-            if iszero(extcodesize(_wallet)) {
-                revert(0, 0)
-            }
-        }
+        // Deploy the wallet address
+        _wallet = Create2.deploy(
+            getSalt(_owner),
+            getWalletCode()
+        );
+
         address walletImplementation = _controller.implementationRegistry().defaultImplementation();
         OwnedUpgradabilityProxy(_wallet).upgradeTo(walletImplementation);
         OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
@@ -103,5 +90,23 @@ contract WalletFactory is ReentrancyGuard, OwnerManagable
         Wallet(_wallet).removeModule(address(this));
 
         emit WalletCreated(_wallet, _owner);
+    }
+
+    function getSalt(
+        address owner
+        )
+        internal
+        pure
+        returns (bytes32 salt)
+    {
+        return keccak256(abi.encodePacked("WALLET_CREATION", owner));
+    }
+
+    function getWalletCode()
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return type(OwnedUpgradabilityProxy).creationCode;
     }
 }
