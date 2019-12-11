@@ -52,9 +52,9 @@ contract LRCStakingModule is DAppModule
     }
 
     function deposit(
-        address            wallet,
-        address            token,
-        uint               amount
+        address wallet,
+        address token,
+        uint    amount
         )
         external
         nonReentrant
@@ -68,14 +68,16 @@ contract LRCStakingModule is DAppModule
             "INVALID_AMOUNT"
         );
 
-        bytes memory txData = abi.encodeWithSelector(
-            ERC20(0).approve.selector,
-            address(stakingPool),
-            amount
-        );
-        transactCall(wallet, token, 0, txData);
+        if (ERC20(token).allowance(wallet, address(stakingPool)) < amount) {
+            bytes memory txData = abi.encodeWithSelector(
+                ERC20(token).approve.selector,
+                address(stakingPool),
+                amount
+            );
+            transactCall(wallet, token, 0, txData);
+        }
 
-        txData = abi.encodeWithSelector(
+        bytes memory txData = abi.encodeWithSelector(
             stakingPool.stake.selector,
             amount
         );
@@ -85,9 +87,9 @@ contract LRCStakingModule is DAppModule
     }
 
     function withdraw(
-        address            wallet,
-        address            token,
-        uint               amount
+        address wallet,
+        address token,
+        uint    amount
         )
         external
         nonReentrant
@@ -178,5 +180,28 @@ contract LRCStakingModule is DAppModule
     {
         if (token != lrcTokenAddress) return 0;
         else return super.tokenDepositable(wallet, token);
+    }
+
+    /// @dev Returns an estimated interest rate.
+    function tokenInterestRate (
+        address /*wallet*/,
+        address token,
+        uint    amount,
+        bool    borrow
+        )
+        public
+        view
+        returns (int interestRate)
+    {
+        if (token != lrcTokenAddress || borrow) return 0;
+
+        uint totalStaking = stakingPool.getTotalStaking().add(amount);
+        if (totalStaking == 0) return 0;
+
+        uint remainingReward;
+        (,,,,,,,remainingReward) = feeVault.getProtocolFeeStats();
+
+        interestRate = int(remainingReward.mul(10000) / totalStaking);
+        require(interestRate >= 0, "MATH_ERROR");
     }
 }
