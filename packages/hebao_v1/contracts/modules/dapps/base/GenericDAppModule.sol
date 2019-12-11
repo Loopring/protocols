@@ -19,7 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../../lib/AddressSet.sol";
 import "../../../lib/Claimable.sol";
-import "../../../thirdparty/BytesUtil.sol";
+import "../../security/GuardianUtils.sol";
 
 import "../../security/SecurityModule.sol";
 
@@ -30,11 +30,53 @@ import "../../security/SecurityModule.sol";
 ///      with the wallet address and then the dApp's address.
 contract GenericDAppModule is Claimable, AddressSet, SecurityModule
 {
-    using BytesUtil for bytes;
+    enum SecuritySetting
+    {
+        Owner,
+        Majority
+    }
 
     bytes32 internal constant DAPPS = keccak256("__DAPP__");
 
     event DAppEnabled(address indexed dapp, bool enabled);
+
+    mapping (address => SecuritySetting) public securitySettings;
+    mapping (address => mapping(address => bool)) public approvedDApps;
+
+    modifier onlyApprovedDapp(
+        address          wallet,
+        address          dapp
+        )
+    {
+        require(isDAppApproved(wallet, dapp), "DAPP_NOT_APPROVED");
+        _;
+    }
+
+    modifier onlyWhenAuthorized(
+        address           wallet,
+        address[] memory  signers
+        )
+    {
+        SecuritySetting securitySetting = securitySettings[wallet];
+        if (securitySetting == SecuritySetting.Owner) {
+            address walletOwner = Wallet(wallet).owner();
+            require(
+                msg.sender == walletOwner ||
+                signers.length == 1 && signers[0] == walletOwner,
+                "UNAUTHORIZED"
+            );
+        } else if(securitySetting == SecuritySetting.Majority) {
+            GuardianUtils.requireSufficientSigners(
+                securityStore,
+                wallet,
+                signers,
+                GuardianUtils.SigRequirement.OwnerRequired
+            );
+        } else {
+            revert("UNKNOWN_SECURITY");
+        }
+        _;
+    }
 
     constructor(Controller _controller)
         public
@@ -83,45 +125,103 @@ contract GenericDAppModule is Claimable, AddressSet, SecurityModule
         return addressesInSet(DAPPS);
     }
 
-    function()
+    function setSecurity(
+        address            wallet,
+        address[] calldata signers,
+        uint8              _securitySetting
+        )
         external
-        payable
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyWhenAuthorized(wallet, signers)
     {
-        address wallet = extractWalletAddress(msg.data);
-        require(!controller.securityStore().isLocked(wallet), "LOCKED");
-        require(
-            msg.sender == Wallet(wallet).owner() ||
-            msg.sender == address(this),
-            "NOT_FROM_METATX_OR_WALLET_OWNER"
-        );
-        controller.securityStore().touchLastActive(wallet);
-
-        address dapp = msg.data.toAddress(msg.data.length - 32);
-        require(isAddressInSet(DAPPS, dapp), "DAPP_UNAUTHORIZED");
-
-        bytes memory txData = msg.data.slice(0, msg.data.length - 64);
-        transactCall(wallet, dapp, msg.value, txData);
+        securitySettings[wallet] = SecuritySetting(_securitySetting);
     }
 
-    function extractWalletAddress(bytes memory data)
-        internal
-        pure
-        returns (address wallet)
+    function setDAppApproved(
+        address            wallet,
+        address[] calldata signers,
+        address            dapp,
+        bool               approved
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyWhenAuthorized(wallet, signers)
     {
-        require(data.length >= 64, "INVALID_DATA");
-        wallet = data.toAddress(msg.data.length - 64);
+        approvedDApps[wallet][dapp] = approved;
+    }
+
+    function isDAppApproved(
+        address wallet,
+        address dapp
+        )
+        public
+        view
+        returns (bool approved)
+    {
+        SecuritySetting securitySetting = securitySettings[wallet];
+        if (securitySetting == SecuritySetting.Owner) {
+            approved = isDAppEnabled(dapp);
+        } else if(securitySetting == SecuritySetting.Majority) {
+            approved = isDAppEnabled(dapp) && approvedDApps[wallet][dapp];
+        } else {
+            revert("UNKNOWN_SECURITY");
+        }
+    }
+
+    function callDApp(
+        address          wallet,
+        address          dapp,
+        uint             value,
+        bytes   calldata data
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyApprovedDapp(wallet, dapp)
+    {
+        transactCall(wallet, dapp, value, data);
+    }
+
+    function approveERC20(
+        address wallet,
+        address dapp,
+        address token,
+        uint    amount
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyApprovedDapp(wallet, dapp)
+    {
+        bytes memory txData = abi.encodeWithSelector(
+            ERC20(token).approve.selector,
+            dapp,
+            amount
+        );
+        transactCall(wallet, token, 0, txData);
     }
 
     function extractMetaTxSigners(
-        address wallet,
-        bytes4  /* method */,
-        bytes   memory /* data */
+        address        wallet,
+        bytes4         method,
+        bytes   memory data
         )
         internal
         view
         returns (address[] memory signers)
     {
-        signers = new address[](1);
-        signers[0] = Wallet(wallet).owner();
+        if (method == this.setDAppApproved.selector ||
+            method == this.setSecurity.selector) {
+            return extractAddressesFromCallData(data, 1);
+        } else {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
+        }
     }
 }
