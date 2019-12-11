@@ -24,7 +24,7 @@ import "../../security/SecurityModule.sol";
 
 /// @title GenericDAppModule
 /// @dev GenericDAppModule allows wallet owners to transact directly or through meta
-///      transactions on any whitelisted dApps. The transaction data must be appended
+///      transactions on the specified dApp. The transaction data must be appended
 ///      with the wallet address.
 contract GenericDAppModule is SecurityModule
 {
