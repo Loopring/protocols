@@ -43,15 +43,23 @@ contract GenericDAppModule is Claimable, AddressSet, SecurityModule
     {
     }
 
-    function enableDapp(address dapp)
+    function enableDApp(address dapp)
         external
         onlyOwner
     {
+        require(
+            !controller.moduleRegistry().isModuleRegistered(dapp),
+            "MODULE_NOT_SUPPORTED"
+        );
+        require(
+            !controller.walletRegistry().isWalletRegistered(dapp),
+            "WALLET_NOT_SUPPORTED"
+        );
         addAddressToSet(DAPPS, dapp, true);
         emit DAppEnabled(dapp, true);
     }
 
-    function disableDapp(address dapp)
+    function disableDApp(address dapp)
         external
         onlyOwner
     {
@@ -59,11 +67,20 @@ contract GenericDAppModule is Claimable, AddressSet, SecurityModule
         emit DAppEnabled(dapp, false);
     }
 
-    function dapps()
+    function isDAppEnabled(address dapp)
         public
         view
+        returns (bool)
     {
-        addressesInSet(DAPPS);
+        return isAddressInSet(DAPPS, dapp);
+    }
+
+    function enabledDApps()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(DAPPS);
     }
 
     function()
