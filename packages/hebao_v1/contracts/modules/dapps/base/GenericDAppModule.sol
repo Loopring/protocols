@@ -87,9 +87,7 @@ contract GenericDAppModule is Claimable, AddressSet, SecurityModule
         external
         payable
     {
-        require(msg.data.length >= 64, "INVALID_DATA");
-        address wallet = msg.data.toAddress(msg.data.length - 64);
-
+        address wallet = extractWalletAddress(msg.data);
         require(!controller.securityStore().isLocked(wallet), "LOCKED");
         require(
             msg.sender == Wallet(wallet).owner() ||
