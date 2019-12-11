@@ -17,6 +17,8 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
+import "../../../lib/AddressSet.sol";
+import "../../../lib/Claimable.sol";
 import "../../../thirdparty/BytesUtil.sol";
 
 import "../../security/SecurityModule.sol";
@@ -24,31 +26,61 @@ import "../../security/SecurityModule.sol";
 
 /// @title GenericDAppModule
 /// @dev GenericDAppModule allows wallet owners to transact directly or through meta
-///      transactions on the specified dApp. The transaction data must be appended
-///      with the wallet address.
-contract GenericDAppModule is SecurityModule
+///      transactions on any whitelisted dApps. The transaction data must be appended
+///      with the wallet address and then the dApp's address.
+contract GenericDAppModule is Claimable, AddressSet, SecurityModule
 {
     using BytesUtil for bytes;
 
-    address public dapp;
-    string  public name;
+    bytes32 internal constant DAPPS = keccak256("__DAPP__");
 
-    constructor(
-        Controller    _controller,
-        address       _dapp,
-        string memory _name
-        )
+    event DAppEnabled(address indexed dapp, bool enabled);
+
+    constructor(Controller _controller)
         public
+        Claimable()
         SecurityModule(_controller)
     {
+    }
+
+    function enableDApp(address dapp)
+        external
+        onlyOwner
+    {
         require(
-            _dapp != address(0) &&
-            !controller.moduleRegistry().isModuleRegistered(_dapp) &&
-            !controller.walletRegistry().isWalletRegistered(_dapp),
-            "INVALID_DAPP"
+            !controller.moduleRegistry().isModuleRegistered(dapp),
+            "MODULE_NOT_SUPPORTED"
         );
-        dapp = _dapp;
-        name = _name;
+        require(
+            !controller.walletRegistry().isWalletRegistered(dapp),
+            "WALLET_NOT_SUPPORTED"
+        );
+        addAddressToSet(DAPPS, dapp, true);
+        emit DAppEnabled(dapp, true);
+    }
+
+    function disableDApp(address dapp)
+        external
+        onlyOwner
+    {
+        removeAddressFromSet(DAPPS, dapp);
+        emit DAppEnabled(dapp, false);
+    }
+
+    function isDAppEnabled(address dapp)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(DAPPS, dapp);
+    }
+
+    function enabledDApps()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(DAPPS);
     }
 
     function()
@@ -64,7 +96,10 @@ contract GenericDAppModule is SecurityModule
         );
         controller.securityStore().touchLastActive(wallet);
 
-        bytes memory txData = msg.data.slice(0, msg.data.length - 32);
+        address dapp = msg.data.toAddress(msg.data.length - 32);
+        require(isAddressInSet(DAPPS, dapp), "DAPP_UNAUTHORIZED");
+
+        bytes memory txData = msg.data.slice(0, msg.data.length - 64);
         transactCall(wallet, dapp, msg.value, txData);
     }
 
@@ -73,8 +108,8 @@ contract GenericDAppModule is SecurityModule
         pure
         returns (address wallet)
     {
-        require(data.length >= 32, "INVALID_DATA");
-        wallet = data.toAddress(msg.data.length - 32);
+        require(data.length >= 64, "INVALID_DATA");
+        wallet = data.toAddress(msg.data.length - 64);
     }
 
     function extractMetaTxSigners(
