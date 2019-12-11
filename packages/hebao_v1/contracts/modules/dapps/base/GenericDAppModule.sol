@@ -41,14 +41,11 @@ contract GenericDAppModule is SecurityModule
         public
         SecurityModule(_controller)
     {
-        require(_dapp != address(0), "ZERO_ADDRESS");
         require(
-            !controller.moduleRegistry().isModuleRegistered(_dapp),
-            "MODULE_NOT_SUPPORTED"
-        );
-        require(
+            _dapp != address(0) &&
+            !controller.moduleRegistry().isModuleRegistered(_dapp) &&
             !controller.walletRegistry().isWalletRegistered(_dapp),
-            "WALLET_NOT_SUPPORTED"
+            "INVALID_DAPP"
         );
         dapp = _dapp;
         name = _name;
