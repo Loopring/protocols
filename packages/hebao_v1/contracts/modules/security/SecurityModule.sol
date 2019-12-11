@@ -53,7 +53,7 @@ contract SecurityModule is MetaTxModule
         require(
             msg.sender == Wallet(wallet).owner() ||
             msg.sender == address(this),
-            "NOT_FROM_META)TX_OR_WALLET_OWNER"
+            "NOT_FROM_METATX_OR_WALLET_OWNER"
         );
         controller.securityStore().touchLastActive(wallet);
         _;
