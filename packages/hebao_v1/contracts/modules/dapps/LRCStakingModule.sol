@@ -23,11 +23,11 @@ import "../../lib/MathUint.sol";
 import "../../thirdparty/loopring/IProtocolFeeVault.sol";
 import "../../thirdparty/loopring/IUserStakingPool.sol";
 
-import "./DAppModule.sol";
+import "./SubAccountDAppModule.sol";
 
 
 /// @title LRCStakingModule
-contract LRCStakingModule is DAppModule
+contract LRCStakingModule is SubAccountDAppModule
 {
     using MathUint for uint;
 

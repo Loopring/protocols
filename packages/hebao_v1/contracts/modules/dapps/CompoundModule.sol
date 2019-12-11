@@ -21,11 +21,11 @@ import "../../thirdparty/compound/CompoundRegistery.sol";
 import "../../thirdparty/compound/CEther.sol";
 import "../../thirdparty/compound/CErc20.sol";
 
-import "./DAppModule.sol";
+import "./SubAccountDAppModule.sol";
 
 
 /// @title CompoundModule
-contract CompoundModule is DAppModule
+contract CompoundModule is SubAccountDAppModule
 {
     CompoundRegistry internal compoundRegistry;
     address constant internal ETH_TOKEN_ADDRESS = address(0);
