@@ -1,0 +1,85 @@
+/*
+
+  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+  http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+*/
+pragma solidity ^0.5.13;
+
+import "../lib/AddressSet.sol";
+import "../lib/Claimable.sol";
+
+import "../iface/DAppRegistry.sol";
+
+
+/// @title DAppRegistryImpl
+contract DAppRegistryImpl is Claimable, AddressSet, DAppRegistry
+{
+    bytes32 internal constant DAPPS = keccak256("__DAPP__");
+
+    event DAppEnabled(address indexed dapp, bool enabled);
+
+    constructor()
+        public
+        Claimable()
+    {
+    }
+
+    function enableDApp(address dapp)
+        external
+        onlyOwner
+    {
+        addAddressToSet(DAPPS, dapp, true);
+        emit DAppEnabled(dapp, true);
+    }
+
+    function disableDApp(address dapp)
+        external
+        onlyOwner
+    {
+        removeAddressFromSet(DAPPS, dapp);
+        emit DAppEnabled(dapp, false);
+    }
+
+    function isDAppEnabled(address dapp)
+        public
+        view
+        returns (bool)
+    {
+        return isAddressInSet(DAPPS, dapp);
+    }
+
+    function enabledDApps()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(DAPPS);
+    }
+
+    function dapps()
+        public
+        view
+        returns (address[] memory)
+    {
+        return addressesInSet(DAPPS);
+    }
+
+    function numOfDApps()
+        public
+        view
+        returns (uint)
+    {
+        return numAddressesInSet(DAPPS);
+    }
+}

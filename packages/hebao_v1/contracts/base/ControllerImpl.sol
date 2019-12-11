@@ -36,15 +36,17 @@ contract ControllerImpl is Claimable, Controller
     );
 
     function init(
-        ModuleRegistry    _moduleRegistry,
-        WalletRegistry    _walletRegistry,
-        PriceCacheStore   _priceCacheStore,
-        QuotaStore        _quotaStore,
-        SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore,
-        PriceOracle       _priceOracle,
-        WalletENSManager  _ensManager,
-        QuotaManager      _quotaManager
+        ModuleRegistry          _moduleRegistry,
+        WalletRegistry          _walletRegistry,
+        ImplementationRegistry  _implementationRegistry,
+        DAppRegistry            _dappRegistry,
+        PriceCacheStore         _priceCacheStore,
+        QuotaStore              _quotaStore,
+        SecurityStore           _securityStore,
+        WhitelistStore          _whitelistStore,
+        PriceOracle             _priceOracle,
+        WalletENSManager        _ensManager,
+        QuotaManager            _quotaManager
         )
         external
         onlyOwner
@@ -54,6 +56,8 @@ contract ControllerImpl is Claimable, Controller
 
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;
+        implementationRegistry = _implementationRegistry;
+        dappRegistry = _dappRegistry;
 
         priceCacheStore = _priceCacheStore;
         quotaStore = _quotaStore;

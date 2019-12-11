@@ -19,6 +19,7 @@ pragma solidity ^0.5.13;
 import "./ModuleRegistry.sol";
 import "./WalletRegistry.sol";
 import "./ImplementationRegistry.sol";
+import "./DAppRegistry.sol";
 
 import "../stores/PriceCacheStore.sol";
 import "../stores/QuotaStore.sol";
@@ -38,6 +39,7 @@ contract Controller
     ModuleRegistry          public moduleRegistry;
     WalletRegistry          public walletRegistry;
     ImplementationRegistry  public implementationRegistry;
+    DAppRegistry            public dappRegistry;
 
     PriceCacheStore  public priceCacheStore;
     QuotaStore       public quotaStore;

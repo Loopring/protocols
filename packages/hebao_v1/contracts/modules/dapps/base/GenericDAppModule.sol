@@ -17,28 +17,21 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "../../../lib/AddressSet.sol";
-import "../../../lib/Claimable.sol";
-import "../../security/GuardianUtils.sol";
-
 import "../../security/SecurityModule.sol";
+
+import "../../security/GuardianUtils.sol";
 
 
 /// @title GenericDAppModule
 /// @dev GenericDAppModule allows wallet owners to transact directly or through meta
-///      transactions on any whitelisted dApps. The transaction data must be appended
-///      with the wallet address and then the dApp's address.
-contract GenericDAppModule is Claimable, AddressSet, SecurityModule
+///      transactions on any whitelisted dApps.
+contract GenericDAppModule is SecurityModule
 {
     enum SecuritySetting
     {
         Owner,
         Majority
     }
-
-    bytes32 internal constant DAPPS = keccak256("__DAPP__");
-
-    event DAppEnabled(address indexed dapp, bool enabled);
 
     mapping (address => SecuritySetting) public securitySettings;
     mapping (address => mapping(address => bool)) public approvedDApps;
@@ -80,49 +73,8 @@ contract GenericDAppModule is Claimable, AddressSet, SecurityModule
 
     constructor(Controller _controller)
         public
-        Claimable()
         SecurityModule(_controller)
     {
-    }
-
-    function enableDApp(address dapp)
-        external
-        onlyOwner
-    {
-        require(
-            !controller.moduleRegistry().isModuleRegistered(dapp),
-            "MODULE_NOT_SUPPORTED"
-        );
-        require(
-            !controller.walletRegistry().isWalletRegistered(dapp),
-            "WALLET_NOT_SUPPORTED"
-        );
-        addAddressToSet(DAPPS, dapp, true);
-        emit DAppEnabled(dapp, true);
-    }
-
-    function disableDApp(address dapp)
-        external
-        onlyOwner
-    {
-        removeAddressFromSet(DAPPS, dapp);
-        emit DAppEnabled(dapp, false);
-    }
-
-    function isDAppEnabled(address dapp)
-        public
-        view
-        returns (bool)
-    {
-        return isAddressInSet(DAPPS, dapp);
-    }
-
-    function enabledDApps()
-        public
-        view
-        returns (address[] memory)
-    {
-        return addressesInSet(DAPPS);
     }
 
     function setSecurity(
@@ -164,9 +116,9 @@ contract GenericDAppModule is Claimable, AddressSet, SecurityModule
     {
         SecuritySetting securitySetting = securitySettings[wallet];
         if (securitySetting == SecuritySetting.Owner) {
-            approved = isDAppEnabled(dapp);
+            approved = controller.dappRegistry().isDAppEnabled(dapp);
         } else if(securitySetting == SecuritySetting.Majority) {
-            approved = isDAppEnabled(dapp) && approvedDApps[wallet][dapp];
+            approved = controller.dappRegistry().isDAppEnabled(dapp) && approvedDApps[wallet][dapp];
         } else {
             revert("UNKNOWN_SECURITY");
         }
