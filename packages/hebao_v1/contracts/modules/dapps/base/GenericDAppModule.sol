@@ -17,11 +17,11 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/AddressSet.sol";
-import "../../lib/Claimable.sol";
-import "../../thirdparty/BytesUtil.sol";
+import "../../../lib/AddressSet.sol";
+import "../../../lib/Claimable.sol";
+import "../../../thirdparty/BytesUtil.sol";
 
-import "../security/SecurityModule.sol";
+import "../../security/SecurityModule.sol";
 
 
 /// @title GenericDAppModule

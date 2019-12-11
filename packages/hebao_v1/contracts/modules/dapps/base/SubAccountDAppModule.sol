@@ -17,9 +17,9 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "../../base/BaseSubAccount.sol";
+import "../../../base/BaseSubAccount.sol";
 
-import "../security/SecurityModule.sol";
+import "../../security/SecurityModule.sol";
 
 
 /// @title SubAccountDAppModule

@@ -21,7 +21,7 @@ import "../../thirdparty/compound/CompoundRegistery.sol";
 import "../../thirdparty/compound/CEther.sol";
 import "../../thirdparty/compound/CErc20.sol";
 
-import "./SubAccountDAppModule.sol";
+import "./base/SubAccountDAppModule.sol";
 
 
 /// @title CompoundModule

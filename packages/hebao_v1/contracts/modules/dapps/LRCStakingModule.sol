@@ -23,7 +23,7 @@ import "../../lib/MathUint.sol";
 import "../../thirdparty/loopring/IProtocolFeeVault.sol";
 import "../../thirdparty/loopring/IUserStakingPool.sol";
 
-import "./SubAccountDAppModule.sol";
+import "./base/SubAccountDAppModule.sol";
 
 
 /// @title LRCStakingModule
