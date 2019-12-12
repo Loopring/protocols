@@ -35,6 +35,7 @@ contract QuotaTransfers is TransferModule
 
     event PendingTxCreated   (address indexed wallet, bytes32 indexed txid, uint timestamp);
     event PendingTxExecuted  (address indexed wallet, bytes32 indexed txid, uint timestamp);
+    event PendingTxCancelled (address indexed wallet, bytes32 indexed txid);
     event PriceOracleUpdated (address indexed priceOracle);
 
     constructor(
@@ -248,6 +249,20 @@ contract QuotaTransfers is TransferModule
         callContractInternal(wallet, to, 0, data);
     }
 
+    function cancelPendingTx(
+        address wallet,
+        bytes32 pendingTxId
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        require(pendingTransactions[wallet][pendingTxId] != 0, "NOT_FOUND");
+        pendingTransactions[wallet][pendingTxId] = 0;
+        emit PendingTxCancelled(wallet, pendingTxId);
+    }
+
     function authorizeWalletOwnerAndPendingTx(
         address wallet,
         bytes32 pendingTxId
@@ -305,7 +320,8 @@ contract QuotaTransfers is TransferModule
             method == this.transferTokensFullBalance.selector ||
             method == this.approveToken.selector ||
             method == this.callContract.selector ||
-            method == this.approveThenCallContract.selector,
+            method == this.approveThenCallContract.selector ||
+            method == this.cancelPendingTx.selector,
             "INVALID_METHOD"
         );
 
