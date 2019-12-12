@@ -47,6 +47,7 @@ contract GenericDAppModule is SecurityModule
             !controller.walletRegistry().isWalletRegistered(_dapp),
             "INVALID_DAPP"
         );
+        require(bytes(_name).length > 0, "INVALID_NAME");
         dapp = _dapp;
         name = _name;
     }
@@ -64,7 +65,7 @@ contract GenericDAppModule is SecurityModule
         transactCall(wallet, dapp, value, data);
     }
 
-    function approveERC20(
+    function approveDApp(
         address wallet,
         address token,
         uint    amount
@@ -74,7 +75,7 @@ contract GenericDAppModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        approveERC20Internal(wallet, token, amount);
+        approveDAppInternal(wallet, token, amount);
     }
 
     function approveAndCallDApp(
@@ -89,11 +90,11 @@ contract GenericDAppModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        approveERC20Internal(wallet, token, approvedAmount);
+        approveDAppInternal(wallet, token, approvedAmount);
         transactCall(wallet, dapp, value, data);
     }
 
-    function approveERC20Internal(
+    function approveDAppInternal(
         address wallet,
         address token,
         uint    amount
