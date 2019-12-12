@@ -255,61 +255,36 @@ contract MetaTxModule is BaseModule
         }
     }
 
-    function reimburseGasFee(
-        address     wallet,
-        GasSettings memory gasSettings,
-        uint        gasUsed
-        )
-        private
-    {
-        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
-
-        if (quotaManager() != address(0)) {
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
-        }
-
-        if (gasSettings.token == address(0)) {
-            transactCall(wallet, msg.sender, gasCost, "");
-        } else {
-            bytes memory txData = abi.encodeWithSelector(
-                ERC20(0).transfer.selector,
-                msg.sender,
-                gasCost
-            );
-            transactCall(wallet, gasSettings.token, 0, txData);
-        }
-    }
-
-    function getSigners(
-        address wallet,
-        bytes   memory data
-        )
-        private
+    /// @dev Returns the last nonce used by a wallet.
+    /// @param wallet The wallet's address.
+    /// @return Last nonce used.
+    function lastNonce(address wallet)
+        public
         view
-        returns (address[] memory signers)
+        returns (uint)
     {
-        bytes4 method = extractMethod(data);
-        if (method == this.executeTransactions.selector) {
-            return extractAddressesFromCallData(data, 1);
-        } else {
-            signers = extractMetaTxSigners(wallet, method, data);
+        return wallets[wallet].nonce;
+    }
+
+    function collectTokens(address[] calldata tokens)
+        external
+        nonReentrant
+    {
+        address to = controller.collectTo();
+
+        for (uint i = 0; i < tokens.length; i++) {
+            address token = tokens[i];
+            if (token == address(0)) {
+                uint amount = address(this).balance;
+                to.sendETH(amount, gasleft());
+            } else {
+                uint amount = ERC20(token).balanceOf(address(this));
+                if (amount > 0) ERC20(token).transfer(to, amount);
+            }
         }
     }
 
-    function areAuthorizedMetaTxSigners(
-        address   wallet,
-        bytes     memory /*data*/,
-        address[] memory signers
-        )
-        private
-        view
-        returns (bool)
-    {
-        // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
-        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
-        // (even a call that fails will reimburse the gas costs).
-        return isWalletOwnerOrGuardian(wallet, signers);
-    }
+    // ---- internal functions -----
 
     /// @dev Extracts and returns a list of signers for the given meta transaction.
     ///      Additional validation of the signers can also be done inside this function.
@@ -326,17 +301,6 @@ contract MetaTxModule is BaseModule
         internal
         view
         returns (address[] memory signers);
-
-    /// @dev Returns the last nonce used by a wallet.
-    /// @param wallet The wallet's address.
-    /// @return Last nonce used.
-    function lastNonce(address wallet)
-        public
-        view
-        returns (uint)
-    {
-        return wallets[wallet].nonce;
-    }
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
@@ -414,6 +378,64 @@ contract MetaTxModule is BaseModule
         returns (bytes4 method)
     {
         return data.toBytes4(0);
+    }
+
+    function reimburseGasFee(
+        address     wallet,
+        GasSettings memory gasSettings,
+        uint        gasUsed
+        )
+        private
+    {
+        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
+
+        if (quotaManager() != address(0)) {
+            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
+        }
+
+        if (gasSettings.token == address(0)) {
+            transactCall(wallet, msg.sender, gasCost, "");
+        } else {
+            bytes memory txData = abi.encodeWithSelector(
+                ERC20(0).transfer.selector,
+                msg.sender,
+                gasCost
+            );
+            transactCall(wallet, gasSettings.token, 0, txData);
+        }
+    }
+
+    // ---- private functions -----
+
+    function getSigners(
+        address wallet,
+        bytes   memory data
+        )
+        private
+        view
+        returns (address[] memory signers)
+    {
+        bytes4 method = extractMethod(data);
+        if (method == this.executeTransactions.selector) {
+            return extractAddressesFromCallData(data, 1);
+        } else {
+            signers = extractMetaTxSigners(wallet, method, data);
+        }
+    }
+
+    function areAuthorizedMetaTxSigners(
+        address   wallet,
+        bytes     memory /*data*/,
+        address[] memory signers
+        )
+        private
+        view
+        returns (bool)
+    {
+        // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
+        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
+        // (even a call that fails will reimburse the gas costs).
+        return isWalletOwnerOrGuardian(wallet, signers);
     }
 
     /// @dev Save the meta-transaction to history.

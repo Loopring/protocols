@@ -17,8 +17,6 @@
 pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/AddressUtil.sol";
-
 import "../../base/MetaTxModule.sol";
 
 import "../../iface/Controller.sol";
@@ -97,23 +95,5 @@ contract SecurityModule is MetaTxModule
     function quotaManager() internal view returns (address)
     {
         return address(controller.quotaManager());
-    }
-
-    function collectTokens(address[] calldata tokens)
-        external
-        nonReentrant
-    {
-        address to = controller.collectTo();
-
-        for (uint i = 0; i < tokens.length; i++) {
-            address token = tokens[i];
-            if (token == address(0)) {
-                uint amount = address(this).balance;
-                AddressUtil.sendETH(to, amount, gasleft());
-            } else {
-                uint amount = ERC20(token).balanceOf(address(this));
-                if (amount > 0) ERC20(token).transfer(to, amount);
-            }
-        }
     }
 }
