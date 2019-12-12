@@ -35,16 +35,20 @@ import "../base/WalletENSManager.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract Controller
 {
+    // The address to which all colletable tokens/ether in modules will
+    // be sent to.
+    address public collectTo;
+
     ModuleRegistry          public moduleRegistry;
     WalletRegistry          public walletRegistry;
     ImplementationRegistry  public implementationRegistry;
 
-    PriceCacheStore  public priceCacheStore;
-    QuotaStore       public quotaStore;
-    SecurityStore    public securityStore;
-    WhitelistStore   public whitelistStore;
+    PriceCacheStore         public priceCacheStore;
+    QuotaStore              public quotaStore;
+    SecurityStore           public securityStore;
+    WhitelistStore          public whitelistStore;
 
-    PriceOracle      public priceOracle;
-    WalletENSManager public ensManager;
-    QuotaManager     public quotaManager;
+    PriceOracle             public priceOracle;
+    WalletENSManager        public ensManager;
+    QuotaManager            public quotaManager;
 }
