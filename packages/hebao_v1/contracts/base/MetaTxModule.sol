@@ -266,6 +266,8 @@ contract MetaTxModule is BaseModule
         return wallets[wallet].nonce;
     }
 
+    /// @dev Collects tokens and ether owned by this module to a controlled address.
+    /// @param tokens The list of tokens and ether to collect.
     function collectTokens(address[] calldata tokens)
         external
         nonReentrant
