@@ -60,7 +60,7 @@ contract BaseModule is ReentrancyGuard, Module
     modifier onlyFromMetaTxOrWalletOwner(address wallet) {
         require(
             msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
-            "NOT_FROM_META)TX_OR_WALLET_OWNER");
+            "NOT_FROM_METATX_OR_WALLET_OWNER");
         _;
     }
 
@@ -183,5 +183,16 @@ contract BaseModule is ReentrancyGuard, Module
         returns (bytes memory)
     {
         return Wallet(wallet).transact(uint8(2), to, value, data);
+    }
+
+    function transactStaticCall(
+        address wallet,
+        address to,
+        bytes   memory data
+        )
+        internal
+        returns (bytes memory)
+    {
+        return Wallet(wallet).transact(uint8(3), to, 0, data);
     }
 }
