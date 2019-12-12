@@ -30,36 +30,29 @@ contract GenericDAppModule is SecurityModule
 {
     using BytesUtil for bytes;
 
-    address public _dapp;
-    string  public _name;
+    address public dapp;
+    string  public name;
 
     constructor(
         Controller    _controller,
-        address       dapp,
-        string memory name
+        address       _dapp,
+        string memory _name
         )
         public
         SecurityModule(_controller)
     {
         require(
-            dapp != address(0) &&
-            !controller.moduleRegistry().isModuleRegistered(dapp) &&
-            !controller.walletRegistry().isWalletRegistered(dapp),
+            _dapp != address(0) &&
+            !controller.moduleRegistry().isModuleRegistered(_dapp) &&
+            !controller.walletRegistry().isWalletRegistered(_dapp),
             "INVALID_DAPP"
         );
-        _dapp = dapp;
-        _name = name;
-    }
-
-    modifier onlyApprovedDapp(address addr)
-    {
-        require(addr == _dapp, "DAPP_NOT_APPROVED");
-        _;
+        dapp = _dapp;
+        name = _name;
     }
 
     function callDApp(
         address          wallet,
-        address          dapp,
         uint             value,
         bytes   calldata data
         )
@@ -67,14 +60,12 @@ contract GenericDAppModule is SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
-        onlyApprovedDapp(dapp)
     {
         transactCall(wallet, dapp, value, data);
     }
 
     function approveERC20(
         address wallet,
-        address dapp,
         address token,
         uint    amount
         )
@@ -82,14 +73,12 @@ contract GenericDAppModule is SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
-        onlyApprovedDapp(dapp)
     {
-        approveERC20Internal(wallet, dapp, token, amount);
+        approveERC20Internal(wallet, token, amount);
     }
 
     function approveAndCallDApp(
         address          wallet,
-        address          dapp,
         address          token,
         uint             approvedAmount,
         uint             value,
@@ -99,15 +88,13 @@ contract GenericDAppModule is SecurityModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
-        onlyApprovedDapp(dapp)
     {
-        approveERC20Internal(wallet, dapp, token, approvedAmount);
+        approveERC20Internal(wallet, token, approvedAmount);
         transactCall(wallet, dapp, value, data);
     }
 
     function approveERC20Internal(
         address wallet,
-        address dapp,
         address token,
         uint    amount
         )
