@@ -83,14 +83,6 @@ library GuardianUtils
             uint numFamily,
             uint numSocialOther
         ) = countGuardians(signingGuardians);
-        // Count the wallet owner as a self controlled guardian
-        if (walletOwnerSigned) {
-            numSelfControlled += 1;
-        }
-        // If the owner is allowed to sign increase the total number of self controlled guardians
-        if (requirement != SigRequirement.OwnerNotAllowed) {
-            totalNumSelfControlled += 1;
-        }
 
         // Check owner requirements
         if (requirement == SigRequirement.OwnerRequired) {
@@ -101,8 +93,11 @@ library GuardianUtils
 
         uint numGroups = 0;
         uint numGroupsWithMajority = 0;
-        bool hasSelfControlledMajority = false;
         // Count the number of active groups and see which ones have a majority of signers
+        if (requirement != SigRequirement.OwnerNotAllowed) {
+            numGroups++;
+            numGroupsWithMajority += walletOwnerSigned ? 1 : 0;
+        }
         if (totalNumFriends > 0) {
             numGroups++;
             numGroupsWithMajority += hasMajority(numFriends, totalNumFriends) ? 1 : 0;
@@ -117,18 +112,25 @@ library GuardianUtils
         }
         if (totalNumSelfControlled > 0) {
             numGroups++;
-            hasSelfControlledMajority = hasMajority(numSelfControlled, totalNumSelfControlled);
-            numGroupsWithMajority += hasSelfControlledMajority ? 1 : 0;
+            numGroupsWithMajority += hasMajority(numSelfControlled, totalNumSelfControlled) ? 1 : 0;
         }
 
         // Social authentication: Require a majority of groups to have a majority of signing guardians
         // Or self authentication: When a wallet has enough self controlled guardians a majority
         // of only the self controlled guardians (inlcuding the wallet owner when allowed) is enough.
-        require(
-            hasMajority(numGroupsWithMajority, numGroups) ||
-            (totalNumSelfControlled >= 3 && hasSelfControlledMajority),
-            "NOT_ENOUGH_SIGNERS"
-        );
+        if (!hasMajority(numGroupsWithMajority, numGroups)) {
+            // We need at least 3 self controlled guardians
+            require(totalNumSelfControlled >= 3, "NOT_ENOUGH_SIGNERS");
+            // Count the wallet owner as a self controlled guardian
+            if (walletOwnerSigned) {
+                numSelfControlled += 1;
+            }
+            // If the owner is allowed to sign increase the total number of self controlled guardians
+            if (requirement != SigRequirement.OwnerNotAllowed) {
+                totalNumSelfControlled += 1;
+            }
+            require(hasMajority(numSelfControlled, totalNumSelfControlled), "NOT_ENOUGH_SIGNERS");
+        }
     }
 
     function hasMajority(
