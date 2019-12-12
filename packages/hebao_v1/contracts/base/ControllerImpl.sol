@@ -53,7 +53,9 @@ contract ControllerImpl is Claimable, Controller
         require(!initialized, "INITIALIZED_ALREADY");
         initialized = true;
 
-        collectTo = _collectTo;
+        require(_collectTo != address(0), "ZERO_ADDRESS");
+        collectTo = _collectTo;                 // modifiable
+
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;
 
