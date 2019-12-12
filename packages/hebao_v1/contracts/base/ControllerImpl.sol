@@ -73,6 +73,7 @@ contract ControllerImpl is Claimable, Controller
         external
         onlyOwner
     {
+        require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;
         emit ValueChanged("CollectTo", collectTo);
     }
