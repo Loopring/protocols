@@ -42,6 +42,14 @@ library GuardianUtils
         OwnerRequired
     }
 
+    struct GuardianGroupSizes
+    {
+        uint numSelfControlled;
+        uint numFriends;
+        uint numFamily;
+        uint numSocialOther;
+    }
+
     function requireSufficientSigners(
         SecurityStore   securityStore,
         address         wallet,
@@ -53,17 +61,11 @@ library GuardianUtils
     {
         // Calculate total group sizes
         SecurityStore.Guardian[] memory allGuardians = securityStore.guardians(wallet);
-        (
-            uint totalNumSelfControlled,
-            uint totalNumFriends,
-            uint totalNumFamily,
-            uint totalNumSocialOther
-        ) = countGuardians(allGuardians);
+        GuardianGroupSizes memory total = countGuardians(allGuardians);
 
         // Calculate how many signers are in each group
         bool walletOwnerSigned = false;
         SecurityStore.Guardian[] memory signingGuardians = new SecurityStore.Guardian[](signers.length);
-        {
         address walletOwner = Wallet(wallet).owner();
         uint numGuardians = 0;
         for (uint i = 0; i < signers.length; i++) {
@@ -76,13 +78,7 @@ library GuardianUtils
         // Update the signingGuardians array with the actual number of guardians that have signed
         // (could be 1 less than the length if the owner signed as well)
         assembly { mstore(signingGuardians, numGuardians) }
-        }
-        (
-            uint numSelfControlled,
-            uint numFriends,
-            uint numFamily,
-            uint numSocialOther
-        ) = countGuardians(signingGuardians);
+        GuardianGroupSizes memory signed = countGuardians(signingGuardians);
 
         // Check owner requirements
         if (requirement == SigRequirement.OwnerRequired) {
@@ -98,21 +94,21 @@ library GuardianUtils
             numGroups++;
             numGroupsWithMajority += walletOwnerSigned ? 1 : 0;
         }
-        if (totalNumFriends > 0) {
+        if (total.numFriends > 0) {
             numGroups++;
-            numGroupsWithMajority += hasMajority(numFriends, totalNumFriends) ? 1 : 0;
+            numGroupsWithMajority += hasMajority(signed.numFriends, total.numFriends) ? 1 : 0;
         }
-        if (totalNumFamily > 0) {
+        if (total.numFamily > 0) {
             numGroups++;
-            numGroupsWithMajority += hasMajority(numFamily, totalNumFamily) ? 1 : 0;
+            numGroupsWithMajority += hasMajority(signed.numFamily, total.numFamily) ? 1 : 0;
         }
-        if (totalNumSocialOther > 0) {
+        if (total.numSocialOther > 0) {
             numGroups++;
-            numGroupsWithMajority += hasMajority(numSocialOther, totalNumSocialOther) ? 1 : 0;
+            numGroupsWithMajority += hasMajority(signed.numSocialOther, total.numSocialOther) ? 1 : 0;
         }
-        if (totalNumSelfControlled > 0) {
+        if (total.numSelfControlled > 0) {
             numGroups++;
-            numGroupsWithMajority += hasMajority(numSelfControlled, totalNumSelfControlled) ? 1 : 0;
+            numGroupsWithMajority += hasMajority(signed.numSelfControlled, total.numSelfControlled) ? 1 : 0;
         }
 
         // Social authentication: Require a majority of groups to have a majority of signing guardians
@@ -120,16 +116,16 @@ library GuardianUtils
         // of only the self controlled guardians (inlcuding the wallet owner when allowed) is enough.
         if (!hasMajority(numGroupsWithMajority, numGroups)) {
             // We need at least 3 self controlled guardians
-            require(totalNumSelfControlled >= 3, "NOT_ENOUGH_SIGNERS");
+            require(total.numSelfControlled >= 3, "NOT_ENOUGH_SIGNERS");
             // Count the wallet owner as a self controlled guardian
             if (walletOwnerSigned) {
-                numSelfControlled += 1;
+                signed.numSelfControlled += 1;
             }
             // If the owner is allowed to sign increase the total number of self controlled guardians
             if (requirement != SigRequirement.OwnerNotAllowed) {
-                totalNumSelfControlled += 1;
+                total.numSelfControlled += 1;
             }
-            require(hasMajority(numSelfControlled, totalNumSelfControlled), "NOT_ENOUGH_SIGNERS");
+            require(hasMajority(signed.numSelfControlled, total.numSelfControlled), "NOT_ENOUGH_SIGNERS");
         }
     }
 
@@ -149,23 +145,18 @@ library GuardianUtils
         )
         internal
         pure
-        returns (
-            uint numSelfControlled,
-            uint numFriends,
-            uint numFamily,
-            uint numSocialOther
-        )
+        returns (GuardianGroupSizes memory groups)
     {
         for (uint i = 0; i < guardians.length; i++) {
             if (guardians[i].types & GuardianType.SelfControlled() != 0) {
-                numSelfControlled++;
+                groups.numSelfControlled++;
             } else {
                 if (guardians[i].types & GuardianType.Friend() != 0) {
-                    numFriends++;
+                    groups.numFriends++;
                 } else if (guardians[i].types & GuardianType.Family() != 0) {
-                    numFamily++;
+                    groups.numFamily++;
                 } else {
-                    numSocialOther++;
+                    groups.numSocialOther++;
                 }
             }
         }
