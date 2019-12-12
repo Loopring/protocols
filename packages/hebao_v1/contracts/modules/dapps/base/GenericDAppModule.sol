@@ -30,51 +30,96 @@ contract GenericDAppModule is SecurityModule
 {
     using BytesUtil for bytes;
 
-    address public dapp;
-    string  public name;
+    address public _dapp;
+    string  public _name;
 
     constructor(
         Controller    _controller,
-        address       _dapp,
-        string memory _name
+        address       dapp,
+        string memory name
         )
         public
         SecurityModule(_controller)
     {
         require(
-            _dapp != address(0) &&
-            !controller.moduleRegistry().isModuleRegistered(_dapp) &&
-            !controller.walletRegistry().isWalletRegistered(_dapp),
+            dapp != address(0) &&
+            !controller.moduleRegistry().isModuleRegistered(dapp) &&
+            !controller.walletRegistry().isWalletRegistered(dapp),
             "INVALID_DAPP"
         );
-        dapp = _dapp;
-        name = _name;
+        _dapp = dapp;
+        _name = name;
     }
 
-    function()
+    modifier onlyApprovedDapp(address addr)
+    {
+        require(addr == _dapp, "DAPP_NOT_APPROVED");
+        _;
+    }
+
+    function callDApp(
+        address          wallet,
+        address          dapp,
+        uint             value,
+        bytes   calldata data
+        )
         external
-        payable
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyApprovedDapp(dapp)
     {
-        address wallet = extractWalletAddress(msg.data);
-        require(!controller.securityStore().isLocked(wallet), "LOCKED");
-        require(
-            msg.sender == Wallet(wallet).owner() ||
-            msg.sender == address(this),
-            "NOT_FROM_METATX_OR_WALLET_OWNER"
-        );
-        controller.securityStore().touchLastActive(wallet);
-
-        bytes memory txData = msg.data.slice(0, msg.data.length - 32);
-        transactCall(wallet, dapp, msg.value, txData);
+        transactCall(wallet, dapp, value, data);
     }
 
-    function extractWalletAddress(bytes memory data)
-        internal
-        pure
-        returns (address wallet)
+    function approveERC20(
+        address wallet,
+        address dapp,
+        address token,
+        uint    amount
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyApprovedDapp(dapp)
     {
-        require(data.length >= 32, "INVALID_DATA");
-        wallet = data.toAddress(msg.data.length - 32);
+        approveERC20Internal(wallet, dapp, token, amount);
+    }
+
+    function approveAndCallDApp(
+        address          wallet,
+        address          dapp,
+        address          token,
+        uint             approvedAmount,
+        uint             value,
+        bytes   calldata data
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyApprovedDapp(dapp)
+    {
+        approveERC20Internal(wallet, dapp, token, approvedAmount);
+        transactCall(wallet, dapp, value, data);
+    }
+
+    function approveERC20Internal(
+        address wallet,
+        address dapp,
+        address token,
+        uint    amount
+        )
+        internal
+        nonReentrant
+    {
+        bytes memory txData = abi.encodeWithSelector(
+            ERC20(token).approve.selector,
+            dapp,
+            amount
+        );
+        transactCall(wallet, token, 0, txData);
     }
 
     function extractMetaTxSigners(
