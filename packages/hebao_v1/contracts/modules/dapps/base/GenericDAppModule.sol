@@ -151,6 +151,36 @@ contract GenericDAppModule is SecurityModule
         onlyWhenWalletUnlocked(wallet)
         onlyApprovedDapp(wallet, dapp)
     {
+        approveERC20Internal(wallet, dapp, token, amount);
+    }
+
+    function approveAndCallDApp(
+        address          wallet,
+        address          dapp,
+        address          token,
+        uint             approvedAmount,
+        uint             value,
+        bytes   calldata data
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyApprovedDapp(wallet, dapp)
+    {
+        approveERC20Internal(wallet, dapp, token, approvedAmount);
+        transactCall(wallet, dapp, value, data);
+    }
+
+    function approveERC20Internal(
+        address wallet,
+        address dapp,
+        address token,
+        uint    amount
+        )
+        internal
+        nonReentrant
+    {
         bytes memory txData = abi.encodeWithSelector(
             ERC20(token).approve.selector,
             dapp,
