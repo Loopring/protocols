@@ -30,12 +30,13 @@ contract ControllerImpl is Claimable, Controller
     constructor() public Claimable() {}
     bool private initialized;
 
-    event ContractChanged(
+    event ValueChanged(
         string  indexed name,
         address indexed addr
     );
 
     function init(
+        address           _collectTo,
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
         PriceCacheStore   _priceCacheStore,
@@ -52,6 +53,7 @@ contract ControllerImpl is Claimable, Controller
         require(!initialized, "INITIALIZED_ALREADY");
         initialized = true;
 
+        collectTo = _collectTo;
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;
 
@@ -65,12 +67,20 @@ contract ControllerImpl is Claimable, Controller
         quotaManager = _quotaManager;           // modifiable
     }
 
+    function setCollectTo(address _collectTo)
+        external
+        onlyOwner
+    {
+        collectTo = _collectTo;
+        emit ValueChanged("CollectTo", collectTo);
+    }
+
     function setPriceOracle(PriceOracle _priceOracle)
         external
         onlyOwner
     {
         priceOracle = _priceOracle;
-        emit ContractChanged("PriceOracle", address(priceOracle));
+        emit ValueChanged("PriceOracle", address(priceOracle));
     }
 
     function setQuotaManager(QuotaManager _quotaManager)
@@ -78,6 +88,6 @@ contract ControllerImpl is Claimable, Controller
         onlyOwner
     {
         quotaManager = _quotaManager;
-        emit ContractChanged("QuotaManager", address(quotaManager));
+        emit ValueChanged("QuotaManager", address(quotaManager));
     }
 }

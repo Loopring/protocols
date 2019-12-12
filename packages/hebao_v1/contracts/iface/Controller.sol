@@ -39,12 +39,14 @@ contract Controller
     WalletRegistry          public walletRegistry;
     ImplementationRegistry  public implementationRegistry;
 
-    PriceCacheStore  public priceCacheStore;
-    QuotaStore       public quotaStore;
-    SecurityStore    public securityStore;
-    WhitelistStore   public whitelistStore;
+    PriceCacheStore         public priceCacheStore;
+    QuotaStore              public quotaStore;
+    SecurityStore           public securityStore;
+    WhitelistStore          public whitelistStore;
 
-    PriceOracle      public priceOracle;
-    WalletENSManager public ensManager;
-    QuotaManager     public quotaManager;
+    PriceOracle             public priceOracle;
+    WalletENSManager        public ensManager;
+    QuotaManager            public quotaManager;
+
+    address public collectTo;
 }
