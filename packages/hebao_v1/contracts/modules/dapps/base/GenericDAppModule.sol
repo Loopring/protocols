@@ -111,8 +111,7 @@ contract GenericDAppModule is SecurityModule
         address token,
         uint    amount
         )
-        internal
-        nonReentrant
+        private
     {
         bytes memory txData = abi.encodeWithSelector(
             ERC20(token).approve.selector,
