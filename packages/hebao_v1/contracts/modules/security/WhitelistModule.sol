@@ -18,6 +18,7 @@ pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
+import "./GuardianUtils.sol";
 
 import "../../iface/Wallet.sol";
 
@@ -31,6 +32,16 @@ contract WhitelistModule is SecurityModule
     using MathUint for uint;
 
     uint public delayPeriod;
+
+    modifier onlySufficientSigners(address wallet, address[] memory signers) {
+        GuardianUtils.requireSufficientSigners(
+            securityStore,
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        );
+        _;
+    }
 
     constructor(
         Controller  _controller,
@@ -52,6 +63,19 @@ contract WhitelistModule is SecurityModule
         onlyWhenWalletUnlocked(wallet)
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));
+    }
+
+    function addToWhitelistImmediately(
+        address            wallet,
+        address[] calldata signers,
+        address            addr
+        )
+        external
+        nonReentrant
+        onlySufficientSigners(wallet, signers)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        controller.whitelistStore().addToWhitelist(wallet, addr, now);
     }
 
     function removeFromWhitelist(
@@ -103,19 +127,20 @@ contract WhitelistModule is SecurityModule
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,
-        bytes   memory  /* data */
+        bytes   memory data
         )
         internal
         view
         returns (address[] memory signers)
     {
-        require (
-            method == this.addToWhitelist.selector ||
-            method == this.removeFromWhitelist.selector,
-            "INVALID_METHOD"
-        );
-
-        signers = new address[](1);
-        signers[0] = Wallet(wallet).owner();
+        if (method == this.addToWhitelist.selector ||
+            method == this.removeFromWhitelist.selector) {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
+        } else if(method == this.addToWhitelistImmediately.selector) {
+            return extractAddressesFromCallData(data, 1);
+        } else {
+            revert("INVALID_METHOD");
+        }
     }
 }
