@@ -49,17 +49,6 @@ contract QuotaModule is SecurityModule, QuotaManager
         delayPeriod = _delayPeriod;
     }
 
-    function checkAndAddToSpent(
-        address wallet,
-        address token,
-        uint    amount
-        )
-        external
-    {
-        uint value = controller.priceOracle().tokenPrice(token, amount);
-        controller.quotaStore().checkAndAddToSpent(wallet, value);
-    }
-
     function changeDailyQuota(
         address wallet,
         uint    newQuota
