@@ -44,6 +44,7 @@ library GuardianUtils
 
     struct GuardianGroupSizes
     {
+        uint numHardware;
         uint numSelfControlled;
         uint numFriends;
         uint numFamily;
@@ -87,46 +88,36 @@ library GuardianUtils
             require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
         }
 
-        uint numGroups = 0;
-        uint numGroupsWithMajority = 0;
+        uint totalNumVotes = 0;
+        uint numVotes = 0;
         // Count the number of active groups and see which ones have a majority of signers
         if (requirement != SigRequirement.OwnerNotAllowed) {
-            numGroups++;
-            numGroupsWithMajority += walletOwnerSigned ? 1 : 0;
+            totalNumVotes += 1;
+            numVotes += walletOwnerSigned ? 1 : 0;
         }
         if (total.numFriends > 0) {
-            numGroups++;
-            numGroupsWithMajority += hasMajority(signed.numFriends, total.numFriends) ? 1 : 0;
+            totalNumVotes += 1;
+            numVotes += hasMajority(signed.numFriends, total.numFriends) ? 1 : 0;
         }
         if (total.numFamily > 0) {
-            numGroups++;
-            numGroupsWithMajority += hasMajority(signed.numFamily, total.numFamily) ? 1 : 0;
+            totalNumVotes += 1;
+            numVotes += hasMajority(signed.numFamily, total.numFamily) ? 1 : 0;
         }
         if (total.numSocialOther > 0) {
-            numGroups++;
-            numGroupsWithMajority += hasMajority(signed.numSocialOther, total.numSocialOther) ? 1 : 0;
+            totalNumVotes += 1;
+            numVotes += hasMajority(signed.numSocialOther, total.numSocialOther) ? 1 : 0;
         }
         if (total.numSelfControlled > 0) {
-            numGroups++;
-            numGroupsWithMajority += hasMajority(signed.numSelfControlled, total.numSelfControlled) ? 1 : 0;
+            totalNumVotes += 1;
+            numVotes += hasMajority(signed.numSelfControlled, total.numSelfControlled) ? 1 : 0;
+        }
+        if (total.numHardware > 0) {
+            totalNumVotes += total.numHardware;
+            numVotes += signed.numHardware;
         }
 
-        // Social authentication: Require a majority of groups to have a majority of signing guardians
-        // Or self authentication: When a wallet has enough self controlled guardians a majority
-        // of only the self controlled guardians (inlcuding the wallet owner when allowed) is enough.
-        if (!hasMajority(numGroupsWithMajority, numGroups)) {
-            // We need at least 3 self controlled guardians
-            require(total.numSelfControlled >= 3, "NOT_ENOUGH_SIGNERS");
-            // Count the wallet owner as a self controlled guardian
-            if (walletOwnerSigned) {
-                signed.numSelfControlled += 1;
-            }
-            // If the owner is allowed to sign increase the total number of self controlled guardians
-            if (requirement != SigRequirement.OwnerNotAllowed) {
-                total.numSelfControlled += 1;
-            }
-            require(hasMajority(signed.numSelfControlled, total.numSelfControlled), "NOT_ENOUGH_SIGNERS");
-        }
+        // We need a majority of votes
+        require(hasMajority(numVotes, totalNumVotes), "NOT_ENOUGH_SIGNERS");
     }
 
     function hasMajority(
@@ -148,7 +139,9 @@ library GuardianUtils
         returns (GuardianGroupSizes memory groups)
     {
         for (uint i = 0; i < guardians.length; i++) {
-            if (guardians[i].types & GuardianType.SelfControlled() != 0) {
+            if (guardians[i].types & GuardianType.Hardware() != 0) {
+                groups.numHardware++;
+            } else if (guardians[i].types & GuardianType.SelfControlled() != 0) {
                 groups.numSelfControlled++;
             } else {
                 if (guardians[i].types & GuardianType.Friend() != 0) {
