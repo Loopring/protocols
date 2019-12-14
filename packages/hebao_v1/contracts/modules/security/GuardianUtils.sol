@@ -112,8 +112,8 @@ library GuardianUtils
             numVotes += hasMajority(signed.numSelfControlled, total.numSelfControlled) ? 1 : 0;
         }
         if (total.numHardware > 0) {
-            totalNumVotes += total.numHardware;
-            numVotes += signed.numHardware;
+            totalNumVotes += 1;
+            numVotes += 1;
         }
 
         // We need a majority of votes
