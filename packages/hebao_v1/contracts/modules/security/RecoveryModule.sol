@@ -46,21 +46,6 @@ contract RecoveryModule is SecurityModule
     uint public recoveryPeriod;
     uint public lockPeriod;
 
-    modifier onlySufficientSigners(
-        address wallet,
-        address[] memory signers,
-        GuardianUtils.SigRequirement requirement
-        )
-    {
-        GuardianUtils.requireSufficientSigners(
-            securityStore,
-            wallet,
-            signers,
-            requirement
-        );
-        _;
-    }
-
     constructor(
         Controller _controller,
         uint      _recoveryPeriod,
@@ -88,7 +73,7 @@ contract RecoveryModule is SecurityModule
         nonReentrant
         onlyFromMetaTx
         notWalletOwner(wallet, newOwner)
-        onlySufficientSigners(wallet, signers, GuardianUtils.SigRequirement.OwnerNotAllowed)
+        onlyWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerNotAllowed)
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
 
@@ -115,7 +100,7 @@ contract RecoveryModule is SecurityModule
         external
         nonReentrant
         onlyFromMetaTx
-        onlySufficientSigners(wallet, signers, GuardianUtils.SigRequirement.OwnerAllowed)
+        onlyWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerAllowed)
     {
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");

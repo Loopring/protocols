@@ -33,16 +33,6 @@ contract WhitelistModule is SecurityModule
 
     uint public delayPeriod;
 
-    modifier onlySufficientSigners(address wallet, address[] memory signers) {
-        GuardianUtils.requireSufficientSigners(
-            securityStore,
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        );
-        _;
-    }
-
     constructor(
         Controller  _controller,
         uint        _delayPeriod
@@ -72,7 +62,7 @@ contract WhitelistModule is SecurityModule
         )
         external
         nonReentrant
-        onlySufficientSigners(wallet, signers)
+        onlyWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
         onlyWhenWalletUnlocked(wallet)
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now);
