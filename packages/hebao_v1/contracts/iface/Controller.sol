@@ -20,7 +20,6 @@ import "./ModuleRegistry.sol";
 import "./WalletRegistry.sol";
 import "./ImplementationRegistry.sol";
 
-import "../stores/PriceCacheStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
 import "../stores/WhitelistStore.sol";
@@ -43,7 +42,6 @@ contract Controller
     WalletRegistry          public walletRegistry;
     ImplementationRegistry  public implementationRegistry;
 
-    PriceCacheStore         public priceCacheStore;
     QuotaStore              public quotaStore;
     SecurityStore           public securityStore;
     WhitelistStore          public whitelistStore;

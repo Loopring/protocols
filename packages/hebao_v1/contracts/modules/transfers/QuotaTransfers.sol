@@ -292,20 +292,6 @@ contract QuotaTransfers is TransferModule
         return timestamp > 0 && now <= timestamp + pendingExpiry;
     }
 
-    function getTokenValue(address token, uint amount)
-        private
-        returns (uint value)
-    {
-        if (amount == 0) return 0;
-        value = controller.priceCacheStore().tokenPrice(token, amount);
-        if (value == 0) {
-            value = controller.priceOracle().tokenPrice(token, amount);
-            if (value > 0) {
-                controller.priceCacheStore().cacheTokenPrice(token, amount, value);
-            }
-        }
-    }
-
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,

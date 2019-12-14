@@ -27,6 +27,8 @@ import "../base/DataStore.sol";
 contract PriceCacheStore is DataStore, PriceOracle
 {
     using MathUint for uint;
+
+    PriceOracle oracle;
     uint expiry;
 
     event PriceCached (
@@ -45,10 +47,14 @@ contract PriceCacheStore is DataStore, PriceOracle
 
     mapping (address => TokenPrice) prices;
 
-    constructor(uint _expiry)
+    constructor(
+        PriceOracle _oracle,
+        uint        _expiry
+        )
         public
         DataStore()
     {
+        oracle = _oracle;
         expiry = _expiry;
     }
 
@@ -65,8 +71,43 @@ contract PriceCacheStore is DataStore, PriceOracle
         }
     }
 
-    function cacheTokenPrice(address token, uint amount, uint value)
+    function updateTokenPrice(
+        address token,
+        uint    amount
+        )
         external
+        onlyManager
+    {
+        uint value = oracle.tokenPrice(token, amount);
+        if (value > 0) {
+            cacheTokenPrice(token, amount, value);
+        }
+    }
+
+    function setTokenPrice(
+        address token,
+        uint    amount,
+        uint    value
+        )
+        external
+        onlyManager
+    {
+        cacheTokenPrice(token, amount, value);
+    }
+
+    function setOracle(PriceOracle _oracle)
+        external
+        onlyManager
+    {
+        oracle = _oracle;
+    }
+
+    function cacheTokenPrice(
+        address token,
+        uint    amount,
+        uint    value
+        )
+        internal
     {
         prices[token].amount = amount;
         prices[token].value = value;
