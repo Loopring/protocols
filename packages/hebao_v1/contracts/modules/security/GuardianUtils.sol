@@ -77,30 +77,24 @@ library GuardianUtils
             totalNumVotes += 1;
             numVotes += walletOwnerSigned ? 1 : 0;
         }
-        // Group 0: No grouping
         if (total[0] > 0) {
+            // Group 0: No grouping
             totalNumVotes += total[0];
             numVotes += signed[0];
         }
-        // Groups [1, 5]: Single guardian needed per group
-        for (uint i = 1; i < 5; i++) {
+        for (uint i = 1; i < MAX_NUM_GROUPS(); i++) {
             if (total[i] > 0) {
                 totalNumVotes += 1;
-                numVotes += signed[i] > 0 ? 1 : 0;
-            }
-        }
-        // Groups [6, 10]: Half the guardians needed per group
-        for (uint i = 6; i < 10; i++) {
-            if (total[i] > 0) {
-                totalNumVotes += 1;
-                numVotes += hasHalf(signed[i], total[i]) ? 1 : 0;
-            }
-        }
-        // Groups [11, 15]: A majority of guardians needed per group
-        for (uint i = 11; i < MAX_NUM_GROUPS(); i++) {
-            if (total[i] > 0) {
-                totalNumVotes += 1;
-                numVotes += hasMajority(signed[i], total[i]) ? 1 : 0;
+                if (i < 6) {
+                    // Groups [1, 5]: Single guardian needed per group
+                    numVotes += signed[i] > 0 ? 1 : 0;
+                } else if (i < 11) {
+                    // Groups [6, 10]: Half the guardians needed per group
+                    numVotes += hasHalf(signed[i], total[i]) ? 1 : 0;
+                } else {
+                    // Groups [11, 15]: A majority of guardians needed per group
+                    numVotes += hasMajority(signed[i], total[i]) ? 1 : 0;
+                }
             }
         }
 
