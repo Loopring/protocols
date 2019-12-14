@@ -20,27 +20,33 @@ pragma experimental ABIEncoderV2;
 import "../../iface/Wallet.sol";
 
 import "./SecurityModule.sol";
+import "./GuardianUtils.sol";
 
 
 /// @title QuotaModule
 /// @dev Manages transfer quota.
 contract QuotaModule is SecurityModule, QuotaManager
 {
-    constructor(Controller _controller)
+    uint public delayPeriod;
+
+    modifier onlySufficientSigners(address wallet, address[] memory signers) {
+        GuardianUtils.requireSufficientSigners(
+            securityStore,
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        );
+        _;
+    }
+
+    constructor(
+        Controller _controller,
+        uint       _delayPeriod
+        )
         public
         SecurityModule(_controller)
     {
-    }
-
-    function checkAndAddToSpent(
-        address wallet,
-        address token,
-        uint    amount
-        )
-        external
-    {
-        uint value = controller.priceOracle().tokenPrice(token, amount);
-        controller.quotaStore().checkAndAddToSpent(wallet, value);
+        delayPeriod = _delayPeriod;
     }
 
     function changeDailyQuota(
@@ -52,7 +58,20 @@ contract QuotaModule is SecurityModule, QuotaManager
         onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
     {
-        controller.quotaStore().changeQuota(wallet, newQuota);
+        controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
+    }
+
+    function changeDailyQuotaImmediately(
+        address            wallet,
+        address[] calldata signers,
+        uint               newQuota
+        )
+        external
+        nonReentrant
+        onlySufficientSigners(wallet, signers)
+        onlyWhenWalletUnlocked(wallet)
+    {
+        controller.quotaStore().changeQuota(wallet, newQuota, now);
     }
 
     function getDailyQuota(address wallet)
@@ -81,18 +100,19 @@ contract QuotaModule is SecurityModule, QuotaManager
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,
-        bytes   memory  /* data */
+        bytes   memory data
         )
         internal
         view
         returns (address[] memory signers)
     {
-        require (
-            method == this.changeDailyQuota.selector,
-            "INVALID_METHOD"
-        );
-
-        signers = new address[](1);
-        signers[0] = Wallet(wallet).owner();
+        if (method == this.changeDailyQuota.selector) {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
+        } else if(method == this.changeDailyQuotaImmediately.selector) {
+            return extractAddressesFromCallData(data, 1);
+        } else {
+            revert("INVALID_METHOD");
+        }
     }
 }

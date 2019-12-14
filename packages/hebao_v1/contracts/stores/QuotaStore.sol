@@ -39,7 +39,7 @@ contract QuotaStore is DataStore
         uint    currentQuota; // 0 indicates default
         uint    pendingQuota;
         uint64  pendingUntil;
-        uint64  spentDay;
+        uint64  spentTimestamp;
         uint    spentAmount;
     }
 
@@ -60,14 +60,15 @@ contract QuotaStore is DataStore
 
     function changeQuota(
         address wallet,
-        uint    newQuota
+        uint    newQuota,
+        uint    effectiveTime
         )
         public
         onlyManager
     {
         quotas[wallet].currentQuota = currentQuota(wallet);
         quotas[wallet].pendingQuota = newQuota;
-        quotas[wallet].pendingUntil = nextEffectiveDay();
+        quotas[wallet].pendingUntil = uint64(effectiveTime);
 
         emit QuotaScheduled(
             wallet,
@@ -99,13 +100,8 @@ contract QuotaStore is DataStore
         onlyManager
     {
         Quota storage q = quotas[wallet];
-        uint64 today = todayInChina();
-        if (q.spentDay == today) {
-            q.spentAmount.add(amount);
-        } else {
-            q.spentDay = today;
-            q.spentAmount = amount;
-        }
+        q.spentAmount = spentQuota(wallet).add(amount);
+        q.spentTimestamp = uint64(now);
     }
 
     function currentQuota(address wallet)
@@ -114,7 +110,7 @@ contract QuotaStore is DataStore
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        uint value = q.pendingUntil >= todayInChina() ?
+        uint value = q.pendingUntil >= now ?
             q.pendingQuota : q.currentQuota;
 
         return value == 0 ? defaultQuota : value;
@@ -129,7 +125,7 @@ contract QuotaStore is DataStore
         )
     {
         Quota storage q = quotas[wallet];
-        if (q.pendingUntil > 0 && q.pendingUntil < todayInChina()) {
+        if (q.pendingUntil > 0 && q.pendingUntil < now) {
             _pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
             _pendingUntil = q.pendingUntil;
         }
@@ -141,7 +137,12 @@ contract QuotaStore is DataStore
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        return q.spentDay < todayInChina() ? 0 : q.spentAmount;
+        uint timeSinceLastSpent = now.sub(q.spentTimestamp);
+        if (timeSinceLastSpent < 1 days) {
+            return q.spentAmount.mul(1 days - timeSinceLastSpent) / 1 days;
+        } else {
+            return 0;
+        }
     }
 
     function availableQuota(address wallet)
@@ -163,30 +164,5 @@ contract QuotaStore is DataStore
         returns (bool)
     {
         return availableQuota(wallet) >= requiredAmount;
-    }
-
-    /// @dev Returns the days since epoch for Beijing (UTC+8)
-    /// @return The day since epoch in China.
-    function todayInChina()
-        public
-        view
-        returns (uint64)
-    {
-        return uint64(((now / 3600) + 8) / 24);
-    }
-
-    /// @dev Returns the next effective day for a quota change.
-    ///      If the change request is made in the morning, it becomes effective
-    ///      tomorrow; if it is made in the afternoon, it will become effective
-    ///      the day after tomorrow.
-    /// @return The day the quota change will becoem effective.
-    function nextEffectiveDay()
-        public
-        view
-        returns (uint64)
-    {
-        uint hrs = (now / 3600) + 8;
-        uint64 tomorrow = uint64(hrs / 24 + 1); // tomorrow
-        return (hrs % 24 < 12) ? tomorrow + 1 : tomorrow;
     }
 }
