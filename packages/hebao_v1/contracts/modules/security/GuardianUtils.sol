@@ -143,14 +143,12 @@ library GuardianUtils
                 groups.numHardware++;
             } else if (guardians[i].types & GuardianType.SelfControlled() != 0) {
                 groups.numSelfControlled++;
+            } else if (guardians[i].types & GuardianType.Friend() != 0) {
+                groups.numFriends++;
+            } else if (guardians[i].types & GuardianType.Family() != 0) {
+                groups.numFamily++;
             } else {
-                if (guardians[i].types & GuardianType.Friend() != 0) {
-                    groups.numFriends++;
-                } else if (guardians[i].types & GuardianType.Family() != 0) {
-                    groups.numFamily++;
-                } else {
-                    groups.numSocialOther++;
-                }
+                groups.numSocialOther++;
             }
         }
     }
