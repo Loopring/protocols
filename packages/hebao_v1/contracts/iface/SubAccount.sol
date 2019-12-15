@@ -70,7 +70,7 @@ contract SubAccount
         )
         public
         view
-        returns (uint withdrawalable);
+        returns (bool unsupported, uint withdrawalable);
 
     /// @dev Returns the amount of token a wallet can deposit from the wallet into
     ///      the sub-account. uint(-1) will be returned if there is no limitation.
@@ -83,7 +83,35 @@ contract SubAccount
         )
         public
         view
-        returns (uint depositable);
+        returns (bool unsupported, uint depositable);
+
+    /// @dev Checks if a certain amount of withdrawal is allowed.
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @param amount The amount to withdraw.
+    /// @return True if withdrawal is allowed, false otherwise.
+    function canWithdrawToken (
+        address wallet,
+        address token,
+        uint    amount
+        )
+        public
+        view
+        returns (bool);
+
+    /// @dev Checks if a certain amount of deposit is allowed.
+    /// @param wallet The wallet's address.
+    /// @param token The token's address, use 0x0 for Ether.
+    /// @param amount The amount to deposit.
+    /// @return True if deposit is allowed, false otherwise.
+    function canDepositToken (
+        address wallet,
+        address token,
+        uint    amount
+        )
+        public
+        view
+        returns (bool);
 
     /// @dev Returns the current interest rate in BIPs (0.01%).
     /// @param wallet The wallet's address.

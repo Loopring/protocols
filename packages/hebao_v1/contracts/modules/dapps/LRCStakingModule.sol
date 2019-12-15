@@ -63,8 +63,7 @@ contract LRCStakingModule is SubAccountDAppModule
     {
         require(token == lrcTokenAddress, "LRC_ONLY");
         require(
-            amount > 0 &&
-            amount <= tokenDepositable(wallet, token),
+            amount > 0 && canDepositToken(wallet, token ,amount),
             "INVALID_AMOUNT"
         );
 
@@ -83,7 +82,6 @@ contract LRCStakingModule is SubAccountDAppModule
         );
         transactCall(wallet, address(stakingPool), 0, txData);
         trackDeposit(wallet, token, amount);
-
     }
 
     function withdraw(
@@ -159,15 +157,17 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         public
         view
-        returns (uint withdrawalable)
+        returns (bool unsupported, uint withdrawalable)
     {
-        if (token != lrcTokenAddress) return 0;
+        if (token != lrcTokenAddress) {
+            unsupported = true;
+        } else {
+            uint _withdrawalWaitTime;
+            uint _balance;
+            (_withdrawalWaitTime,, _balance, ) = stakingPool.getUserStaking(wallet);
 
-        uint _withdrawalWaitTime;
-        uint _balance;
-        (_withdrawalWaitTime,, _balance, ) = stakingPool.getUserStaking(wallet);
-
-        return _withdrawalWaitTime == 0 ? _balance : 0;
+            withdrawalable = _withdrawalWaitTime == 0 ? _balance : 0;
+        }
     }
 
     function tokenDepositable(
@@ -176,10 +176,13 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         public
         view
-        returns (uint depositable)
+        returns (bool unsupported, uint depositable)
     {
-        if (token != lrcTokenAddress) return 0;
-        else return super.tokenDepositable(wallet, token);
+        if (token != lrcTokenAddress) {
+            unsupported = true;
+        } else {
+            return super.tokenDepositable(wallet, token);
+        }
     }
 
     /// @dev Returns an estimated interest rate.

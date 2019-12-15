@@ -52,8 +52,7 @@ contract CompoundModule is SubAccountDAppModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        uint allowed = tokenDepositable(wallet, token);
-        require(amount > 0 && amount <= allowed, "INVALID_AMOUNT");
+        require(canDepositToken(wallet, token, amount), "NOT_ALLOWED");
 
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
@@ -75,8 +74,7 @@ contract CompoundModule is SubAccountDAppModule
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
 
-        uint balance = uint(tokenBalance(wallet, token));
-        require(amount > 0 && amount <= balance, "INVALID_WITHDRAW_AMOUNT");
+        require(canWithdrawToken(wallet, token, amount), "NOT_ALLOWED");
 
         redeem(wallet, cToken, amount);
         trackWithdrawal(wallet, token, amount);
