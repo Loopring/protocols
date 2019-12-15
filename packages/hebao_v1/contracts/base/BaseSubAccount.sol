@@ -117,10 +117,10 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
-        returns (uint)
+        returns (bool, uint balance)
     {
-        int balance = tokenBalance(wallet, token);
-        return balance <= 0 ? 0 : uint(balance);
+        int _balance = tokenBalance(wallet, token);
+        balance = _balance <= 0 ? 0 : uint(_balance);
     }
 
     /// @dev The default implementation returns the wallet's balance.
@@ -130,13 +130,39 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
-        returns (uint withdrawalable)
+        returns (bool, uint withdrawalable)
     {
         if (token == address(0)) {
-            return wallet.balance;
+            withdrawalable = wallet.balance;
         } else {
-            return ERC20(token).balanceOf(wallet);
+            withdrawalable = ERC20(token).balanceOf(wallet);
         }
+    }
+
+    function canWithdrawToken (
+        address wallet,
+        address token,
+        uint    amount
+        )
+        public
+        view
+        returns (bool)
+    {
+        (bool unsupported, uint withdrawalable) = tokenWithdrawalable(wallet, token);
+        return !unsupported && amount <= withdrawalable;
+    }
+
+    function canDepositToken (
+        address wallet,
+        address token,
+        uint    amount
+        )
+        public
+        view
+        returns (bool)
+    {
+        (bool unsupported, uint depositable) = tokenWithdrawalable(wallet, token);
+        return !unsupported && amount <= depositable;
     }
 
     function tokenInterestRate(address, address, uint, bool) public view returns (int) { return 0; }
