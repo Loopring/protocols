@@ -63,7 +63,7 @@ contract LRCStakingModule is SubAccountDAppModule
     {
         require(token == lrcTokenAddress, "LRC_ONLY");
         require(amount > 0, "ZERO_AMOUNT");
-        require(canDepositToken(wallet, token ,amount), "NOT_ALLOWED");
+        require(canDepositToken(wallet, token, amount), "NOT_ALLOWED");
 
         if (ERC20(token).allowance(wallet, address(stakingPool)) < amount) {
             bytes memory txData = abi.encodeWithSelector(
@@ -136,11 +136,9 @@ contract LRCStakingModule is SubAccountDAppModule
     {
         if (token != lrcTokenAddress) return 0;
 
-        uint _balance;
-        uint _reward;
-        (,, _balance, _reward) = stakingPool.getUserStaking(wallet);
-        _balance = _balance.add(_reward);
-        balance = int(_balance);
+        (,, uint _balance, uint _reward) = stakingPool.getUserStaking(wallet);
+        balance = int(_balance.add(_reward));
+
         require(balance >= 0, "INVALID_BALANCE");
     }
 
@@ -155,10 +153,7 @@ contract LRCStakingModule is SubAccountDAppModule
         if (token != lrcTokenAddress) {
             unsupported = true;
         } else {
-            uint _withdrawalWaitTime;
-            uint _balance;
-            (_withdrawalWaitTime,, _balance, ) = stakingPool.getUserStaking(wallet);
-
+            (uint _withdrawalWaitTime, , uint _balance,) = stakingPool.getUserStaking(wallet);
             withdrawalable = _withdrawalWaitTime == 0 ? _balance : 0;
         }
     }
@@ -194,10 +189,9 @@ contract LRCStakingModule is SubAccountDAppModule
         uint totalStaking = stakingPool.getTotalStaking().add(amount);
         if (totalStaking == 0) return 0;
 
-        uint remainingReward;
-        (,,,,,,,remainingReward) = feeVault.getProtocolFeeStats();
-
+        (,,,,,,, uint remainingReward) = feeVault.getProtocolFeeStats();
         interestRate = int(remainingReward.mul(10000) / totalStaking);
+
         require(interestRate >= 0, "MATH_ERROR");
     }
 }
