@@ -52,6 +52,7 @@ contract CompoundModule is SubAccountDAppModule
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
+        require(amount > 0, "ZERO_AMOUNT");
         require(canDepositToken(wallet, token, amount), "NOT_ALLOWED");
 
         address cToken = compoundRegistry.getCToken(token);
@@ -73,7 +74,7 @@ contract CompoundModule is SubAccountDAppModule
     {
         address cToken = compoundRegistry.getCToken(token);
         require(cToken != address(0), "NO_MARKET");
-
+        require(amount > 0, "ZERO_AMOUNT");
         require(canWithdrawToken(wallet, token, amount), "NOT_ALLOWED");
 
         redeem(wallet, cToken, amount);

@@ -62,10 +62,8 @@ contract LRCStakingModule is SubAccountDAppModule
         onlyWhenWalletUnlocked(wallet)
     {
         require(token == lrcTokenAddress, "LRC_ONLY");
-        require(
-            amount > 0 && canDepositToken(wallet, token ,amount),
-            "INVALID_AMOUNT"
-        );
+        require(amount > 0, "ZERO_AMOUNT");
+        require(canDepositToken(wallet, token ,amount), "NOT_ALLOWED");
 
         if (ERC20(token).allowance(wallet, address(stakingPool)) < amount) {
             bytes memory txData = abi.encodeWithSelector(
@@ -96,12 +94,7 @@ contract LRCStakingModule is SubAccountDAppModule
     {
         require(token == lrcTokenAddress, "LRC_ONLY");
 
-        (
-            uint withdrawalWaitTime,
-            uint rewardWaitTime,
-            uint balance,
-            uint pendingReward
-        ) = stakingPool.getUserStaking(wallet);
+        (, uint rewardWaitTime, , uint pendingReward) = stakingPool.getUserStaking(wallet);
 
         if (amount == 0) {
             // claim LRC reward.
@@ -110,7 +103,7 @@ contract LRCStakingModule is SubAccountDAppModule
             transactCall(wallet, address(stakingPool), 0, txData);
         } else {
              // withdraw LRC
-            require(withdrawalWaitTime == 0 && amount <= balance, "UNABLE_TO_WITHDRAW");
+            require(canWithdrawToken(wallet, token, amount), "NOT_ALLOWED");
             bytes memory txData = abi.encodeWithSelector(
                 stakingPool.withdraw.selector,
                 amount
