@@ -58,10 +58,6 @@ library GuardianUtils
                 signingGuardians[numGuardians++] = securityStore.getGuardian(wallet, signers[i]);
             }
         }
-        // Update the signingGuardians array with the actual number of guardians that have signed
-        // (could be 1 less than the length if the owner signed as well)
-        assembly { mstore(signingGuardians, numGuardians) }
-        uint[16] memory signed = countGuardians(signingGuardians);
 
         // Check owner requirements
         if (requirement == SigRequirement.OwnerRequired) {
@@ -69,6 +65,11 @@ library GuardianUtils
         } else if (requirement == SigRequirement.OwnerNotAllowed) {
             require(!walletOwnerSigned, "WALLET_OWNER_SIGNATURE_NOT_ALLOWED");
         }
+
+        // Update the signingGuardians array with the actual number of guardians that have signed
+        // (could be 1 less than the length if the owner signed as well)
+        assembly { mstore(signingGuardians, numGuardians) }
+        uint[16] memory signed = countGuardians(signingGuardians);
 
         // Count the number of votes
         uint totalNumVotes = 0;
