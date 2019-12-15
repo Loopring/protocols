@@ -59,7 +59,11 @@ contract QuotaModule is SecurityModule, QuotaManager
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now);
     }

@@ -42,7 +42,11 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         transferInternal(wallet, token, to, amount, logdata);
     }
@@ -57,7 +61,11 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         for (uint i = 0; i < tokens.length; i++) {
             uint amount = (tokens[i] == address(0)) ?
@@ -76,7 +84,11 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         approveInternal(wallet, token, to, amount);
     }
@@ -91,7 +103,11 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         callContractInternal(wallet, to, amount, data);
     }
@@ -107,7 +123,11 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         approveInternal(wallet, token, to, amount);
         callContractInternal(wallet, to, 0, data);

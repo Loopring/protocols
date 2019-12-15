@@ -72,7 +72,11 @@ contract RecoveryModule is SecurityModule
         external
         nonReentrant
         notWalletOwner(wallet, newOwner)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerNotAllowed)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerNotAllowed
+        )
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
 
@@ -98,7 +102,11 @@ contract RecoveryModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerAllowed)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerAllowed
+        )
     {
         WalletRecovery storage recovery = wallets[wallet];
         require(recovery.completeAfter > 0, "NOT_STARTED");

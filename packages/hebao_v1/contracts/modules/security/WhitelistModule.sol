@@ -63,7 +63,11 @@ contract WhitelistModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now);
     }
