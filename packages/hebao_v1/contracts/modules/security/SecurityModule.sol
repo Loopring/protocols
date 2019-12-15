@@ -60,12 +60,13 @@ contract SecurityModule is MetaTxModule
         _;
     }
 
-    modifier onlyWithMajority(
+    modifier onlyFromMetaTxWithMajority(
         address                      wallet,
         address[] memory             signers,
         GuardianUtils.SigRequirement requirement
         )
     {
+        require(msg.sender == address(this), "NOT_FROM_META_TX");
         GuardianUtils.requireMajority(
             securityStore,
             wallet,

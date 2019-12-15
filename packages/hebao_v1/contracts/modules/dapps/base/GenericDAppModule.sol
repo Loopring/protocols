@@ -54,8 +54,8 @@ contract GenericDAppModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         transactCall(wallet, dapp, value, data);
     }
@@ -67,8 +67,8 @@ contract GenericDAppModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         approveDAppInternal(wallet, token, amount);
     }
@@ -82,8 +82,8 @@ contract GenericDAppModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         approveDAppInternal(wallet, token, approvedAmount);
         transactCall(wallet, dapp, value, data);

@@ -125,8 +125,8 @@ contract LoopringModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         (uint fee, bool newAccount) = getAccountCreationOrUpdateFee(wallet, exchange);
 
@@ -149,8 +149,8 @@ contract LoopringModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(amount > 0, "ZERO_VALUE");
         (, , uint fee, ) = exchange.getFees();
@@ -173,8 +173,8 @@ contract LoopringModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(amount > 0, "ZERO_VALUE");
         (, , , uint fee) = exchange.getFees();

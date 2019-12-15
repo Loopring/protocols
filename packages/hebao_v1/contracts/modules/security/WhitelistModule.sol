@@ -49,8 +49,8 @@ contract WhitelistModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));
     }
@@ -62,8 +62,12 @@ contract WhitelistModule is SecurityModule
         )
         external
         nonReentrant
-        onlyWithMajority(wallet, signers, GuardianUtils.SigRequirement.OwnerRequired)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now);
     }
@@ -74,8 +78,8 @@ contract WhitelistModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.whitelistStore().removeFromWhitelist(wallet, addr);
     }
