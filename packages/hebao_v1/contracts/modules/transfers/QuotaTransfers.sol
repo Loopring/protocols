@@ -77,8 +77,8 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes32 pendingTxId)
     {
         bytes32 txid = keccak256(
@@ -124,8 +124,8 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes32 pendingTxId)
     {
         bytes32 txid = keccak256(
@@ -174,8 +174,8 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         require(allowed, "PROHIBITED");
@@ -196,8 +196,8 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (allowed) {
@@ -225,8 +225,8 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (allowed) {
@@ -255,8 +255,8 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(pendingTransactions[wallet][pendingTxId] != 0, "NOT_FOUND");
         pendingTransactions[wallet][pendingTxId] = 0;

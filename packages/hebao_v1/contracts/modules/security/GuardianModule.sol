@@ -63,10 +63,10 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         notWalletGuardian(wallet, guardian)
         notWalletOwner(wallet, guardian)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS(), "INVALID_GROUP");
@@ -92,8 +92,8 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingAdditions[wallet][guardian][group];
         require(confirmStart != 0, "NOT_PENDING");
@@ -110,8 +110,8 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingAdditions[wallet][guardian][group];
         require(confirmStart > 0, "INVALID_GUARDIAN");
@@ -125,9 +125,9 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
@@ -141,8 +141,8 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
@@ -158,8 +158,8 @@ contract GuardianModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart > 0, "INVALID_GUARDIAN");
