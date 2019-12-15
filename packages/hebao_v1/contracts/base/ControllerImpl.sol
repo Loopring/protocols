@@ -39,7 +39,6 @@ contract ControllerImpl is Claimable, Controller
         address           _collectTo,
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
-        PriceCacheStore   _priceCacheStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
@@ -59,7 +58,6 @@ contract ControllerImpl is Claimable, Controller
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;
 
-        priceCacheStore = _priceCacheStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
