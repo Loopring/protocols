@@ -58,8 +58,8 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(token == lrcTokenAddress, "LRC_ONLY");
         require(
@@ -93,8 +93,8 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(token == lrcTokenAddress, "LRC_ONLY");
 
@@ -125,8 +125,8 @@ contract LRCStakingModule is SubAccountDAppModule
     function claimReward(address wallet)
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         (, uint rewardWaitTime, , uint pendingReward) = stakingPool.getUserStaking(wallet);
 

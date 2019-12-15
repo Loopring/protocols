@@ -41,8 +41,8 @@ contract WalletUpgraderModule is SecurityModule
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(
             controller.implementationRegistry().isImplementationRegistered(implementation),

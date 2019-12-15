@@ -20,6 +20,7 @@ pragma experimental ABIEncoderV2;
 import "../../base/MetaTxModule.sol";
 
 import "../../iface/Controller.sol";
+import "../security/GuardianUtils.sol";
 
 
 /// @title SecurityStore
@@ -56,6 +57,22 @@ contract SecurityModule is MetaTxModule
             "NOT_FROM_METATX_OR_WALLET_OWNER"
         );
         controller.securityStore().touchLastActive(wallet);
+        _;
+    }
+
+    modifier onlyFromMetaTxWithMajority(
+        address                      wallet,
+        address[] memory             signers,
+        GuardianUtils.SigRequirement requirement
+        )
+    {
+        require(msg.sender == address(this), "NOT_FROM_META_TX");
+        GuardianUtils.requireMajority(
+            securityStore,
+            wallet,
+            signers,
+            requirement
+        );
         _;
     }
 

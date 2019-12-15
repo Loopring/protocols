@@ -29,16 +29,6 @@ contract QuotaModule is SecurityModule, QuotaManager
 {
     uint public delayPeriod;
 
-    modifier onlySufficientSigners(address wallet, address[] memory signers) {
-        GuardianUtils.requireSufficientSigners(
-            securityStore,
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        );
-        _;
-    }
-
     constructor(
         Controller _controller,
         uint       _delayPeriod
@@ -55,8 +45,8 @@ contract QuotaModule is SecurityModule, QuotaManager
         )
         external
         nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
     }
@@ -68,8 +58,12 @@ contract QuotaModule is SecurityModule, QuotaManager
         )
         external
         nonReentrant
-        onlySufficientSigners(wallet, signers)
         onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxWithMajority(
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        )
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now);
     }

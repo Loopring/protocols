@@ -18,6 +18,7 @@ pragma solidity ^0.5.13;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
+import "../iface/Data.sol";
 
 
 /// @title SecurityStore
@@ -28,19 +29,13 @@ import "../base/DataStore.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract SecurityStore is DataStore
 {
-    struct Guardian
-    {
-        address addr;
-        uint    types;
-    }
-
     struct Wallet
     {
         address    inheritor;
         uint128    lastActive; // the latest timestamp the owner is considered to be active
         uint128    lock;
         address    locker; // the module locked/unlocked this wallet
-        Guardian[] guardians;
+        Data.Guardian[] guardians;
         mapping    (address => uint) guardianIdx;
     }
 
@@ -59,7 +54,7 @@ contract SecurityStore is DataStore
     function getGuardian(address wallet, address _guardian)
         public
         view
-        returns (Guardian memory guardian)
+        returns (Data.Guardian memory guardian)
     {
         uint index = wallets[wallet].guardianIdx[_guardian];
         require(index > 0, "NOT_A_GUARDIAN");
@@ -69,7 +64,7 @@ contract SecurityStore is DataStore
     function guardians(address wallet)
         public
         view
-        returns (Guardian[] memory)
+        returns (Data.Guardian[] memory)
     {
         return wallets[wallet].guardians;
     }
@@ -82,7 +77,7 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardians.length;
     }
 
-    function addOrUpdateGuardian(address wallet, address guardian, uint types)
+    function addOrUpdateGuardian(address wallet, address guardian, uint group)
         public
         onlyManager
     {
@@ -92,15 +87,15 @@ contract SecurityStore is DataStore
         uint pos = w.guardianIdx[guardian];
         if (pos == 0) {
             // Add the new guardian
-            Guardian memory g = Guardian(
+            Data.Guardian memory g = Data.Guardian(
                 guardian,
-                types
+                group
             );
             w.guardians.push(g);
             w.guardianIdx[guardian] = w.guardians.length;
         } else {
             // Update the guardian
-            w.guardians[pos-1].types = types;
+            w.guardians[pos-1].group = group;
         }
     }
 
@@ -112,7 +107,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardian];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+        Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
 
         if (guardian != lastGuardian.addr) {
             w.guardians[idx - 1] = lastGuardian;
