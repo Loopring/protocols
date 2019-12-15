@@ -36,7 +36,7 @@ library GuardianUtils
     function requireMajority(
         SecurityStore   securityStore,
         address         wallet,
-        address[]       memory signers,
+        address[]       memory signers, // Assume there are no duplicate signers
         SigRequirement  requirement
         )
         internal
