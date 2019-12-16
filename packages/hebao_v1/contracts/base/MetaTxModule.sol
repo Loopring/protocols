@@ -63,6 +63,7 @@ contract MetaTxModule is BaseModule
         uint    price;
         uint    limit;
         uint    overhead;
+        address recipient;
     }
 
     struct MetaTransaction
@@ -76,10 +77,11 @@ contract MetaTxModule is BaseModule
         uint    gasPrice;
         uint    gasLimit;
         uint    gasOverhead;
+        address feeRecipient;
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead)"
+        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -154,12 +156,13 @@ contract MetaTxModule is BaseModule
     ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
     ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
-    ///                   and `gasOverhead`. To pay fee in Ether, use address(0) as gasToken.
+    ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
+    ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
         uint    nonce,
-        uint[4] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead]
+        uint[5] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
         bytes[] calldata signatures
         )
         external
@@ -169,7 +172,8 @@ contract MetaTxModule is BaseModule
             address(gasSetting[0]),
             gasSetting[1],
             gasSetting[2],
-            gasSetting[3]
+            gasSetting[3],
+            address(gasSetting[4])
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
@@ -186,7 +190,8 @@ contract MetaTxModule is BaseModule
                     gasSettings.token,
                     gasSettings.price,
                     gasSettings.limit,
-                    gasSettings.overhead
+                    gasSettings.overhead,
+                    gasSettings.recipient
                 )
             )
         );
@@ -395,12 +400,13 @@ contract MetaTxModule is BaseModule
             QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
         }
 
+        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
         if (gasSettings.token == address(0)) {
-            transactCall(wallet, msg.sender, gasCost, "");
+            transactCall(wallet, feeRecipient, gasCost, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(
                 ERC20(0).transfer.selector,
-                msg.sender,
+                feeRecipient,
                 gasCost
             );
             transactCall(wallet, gasSettings.token, 0, txData);
