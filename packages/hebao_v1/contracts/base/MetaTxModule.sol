@@ -374,7 +374,8 @@ contract MetaTxModule is BaseModule
                 _tx.gasToken,
                 _tx.gasPrice,
                 _tx.gasLimit,
-                _tx.gasOverhead
+                _tx.gasOverhead,
+                _tx.feeRecipient
             )
         );
     }
