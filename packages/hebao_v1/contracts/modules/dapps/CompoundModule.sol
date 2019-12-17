@@ -455,6 +455,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         )
         internal
     {
+        // CErc20 and CEther have same function signature
         transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("redeemUnderlying(uint256)", _amount));
     }
 
@@ -481,7 +482,14 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("repayBorrow(uint256)", _amount));
     }
 
-    function isCollaterlCToken(address wallet, address cToken) internal view returns (bool) {
+    function isCollaterlCToken(
+        address wallet,
+        address cToken
+        )
+        internal
+        view
+        returns (bool)
+    {
         return Comptroller(comptroller).checkMembership(wallet, CToken(cToken));
     }
 
