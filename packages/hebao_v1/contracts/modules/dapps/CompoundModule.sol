@@ -38,9 +38,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     Comptroller      internal comptroller;
     address constant internal ETH_TOKEN_ADDRESS = address(0);
 
-    // wallet to ctoken borrow
-    mapping(address => address) internal borrowedCToken;
-
     constructor(
         Controller       _controller,
         CompoundRegistry _compoundRegistry,
@@ -79,27 +76,31 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         //  a. borrowed > 0 && amount <= borrowed ==> repayBorrow();
         //  b. borrowed > 0 && amount > borrowed  ==> repayBorrow() && deposit();
         //  c. borrowed == 0                      ==> deposit();
-        if (hasLoan(wallet)) {
-            if (hasCTokenLoan(wallet, cToken)) {
-                uint borrowed = CToken(cToken).borrowBalanceCurrent(wallet);
-                if (amount <= borrowed) {
-                    repayBorrow(wallet, token, amount);
-                    trackRepayBorrow(wallet, token, amount);
-                } else {
-                    repayBorrow(wallet, token, borrowed);
-                    trackRepayBorrow(wallet, token, borrowed);
-                    mint(wallet, cToken, token, amount - borrowed);
-                    trackDeposit(wallet, token, amount - borrowed);
-                }
-                return;
-            }
+        uint repayAmount;
+        uint mintAmount;
+        uint borrowed = CToken(cToken).borrowBalanceCurrent(wallet);
+        if (borrowed > amount) {
+            repayAmount = amount;
+        } else {
+            repayAmount = borrowed;
+            mintAmount = amount - borrowed;
         }
 
-        mint(wallet, cToken, token, amount);
-        trackDeposit(wallet, token, amount);
+        // repay borrowed amount if need
+        if (repayAmount > 0 ) {
+            repayBorrow(wallet, token, borrowed);
+            trackRepayBorrow(wallet, token, borrowed);
+        }
+
+        // mint new.
+        if (mintAmount > 0) {
+            // TODO: check if we need exit market here.
+            mint(wallet, cToken, token, mintAmount);
+            trackDeposit(wallet, token, mintAmount);
+        }
     }
 
-    /// @dev Redeem fund from Compound.
+    /// @dev Redeem or borrow fund from Compound.
     function withdraw(
         address            wallet,
         address[] calldata signers,
@@ -118,47 +119,60 @@ contract CompoundModule is BaseSubAccount, SecurityModule
 
         require(amount > 0, "ZERO_WITHDRAW_AMOUNT");
 
-        if (hasLoan(wallet)) {
-            // if wallet has loan, we can only borrow more same token until borrow capacity reaches.
-            if (hasCTokenLoan(wallet, cToken)) {
-                uint borrowable = borrowCapacity(wallet, token);
-                require(amount <= borrowable, "INVALID_WITHDRAW_AMOUNT");
-                borrow(wallet, cToken, amount);
-                trackBorrow(wallet, token, amount);
-                return;
+        if (isCollaterlCToken(wallet, cToken)) {
+            // for collaterl token, check liquidity to withdraw.
+            (uint collateralRemovable, uint borrowableAfterRemove) = collateralTokenRemovable(wallet, token);
+            require(amount <= collateralRemovable + borrowableAfterRemove, "INVALID_WITHDRAW_AMOUNT");
+
+            uint redeemable = collateralRemovable;
+            uint borrowable;
+            if (amount <= collateralRemovable) {
+                redeemable = amount;
             } else {
-                return;
+                borrowable = amount - collateralRemovable;
             }
+
+            if (redeemable > 0) {
+                redeemUnderlying(wallet, cToken, redeemable);
+                trackWithdrawal(wallet, token, redeemable);
+            }
+
+            if (borrowable > 0) {
+                borrow(wallet, cToken, borrowable);
+                trackBorrow(wallet, token, borrowable);
+            }
+            return;
         }
 
-        // 3 cases:
-        //  a. balance >  0 && amount <= balance                                    ==> redeem();
-        //  b. balance >  0 && amount > balance && amount - balance <= withdrawable ==> redeem() && borrow();
-        //  c. balance <= 0 && amount <= withdrawable                               ==> borrow();
-        // else do nothing.
-        int balance = tokenBalanceCurrent(wallet, token);
-        uint borrowable = borrowCapacity(wallet, token);
-        if (balance > 0) {
-            if (amount <= uint(balance)) {
-                redeemUnderlying(wallet, cToken, amount);
-                trackWithdrawal(wallet, token, amount);
-            } else { // amount > balance;
-                uint borrowAmount = amount - uint(balance);
-                require(borrowAmount <= borrowable, "INVALID_WITHDRAW_AMOUNT");
-                redeemUnderlying(wallet, cToken, uint(balance));
-                trackWithdrawal(wallet, token, uint(balance));
+        // Non-collateral token, user exchange current cToken and borrow more according to liquidity.
+        // 2 cases:
+        //  a. amount <= balance                                  ==> redeem();
+        //  b. amount > balance && amount - balance <= borrowable ==> redeem() && borrow();
+        uint balance = CToken(cToken).balanceOfUnderlying(wallet);
+        uint borrowable = tokenBorrowable(wallet, token); // other collaterals tokens as this one is not.
+        require(amount <= balance + borrowable, "INVALID_WITHDRAW_AMOUNT");
 
-                borrow(wallet, cToken, borrowAmount);
-                trackBorrow(wallet, token, borrowAmount);
-            }
+        uint withdrawAmount;
+        uint borrowAmount;
+        if (amount <= balance) {
+            withdrawAmount = amount;
         } else {
-            require(amount <= borrowable, "INVALID_WITHDRAW_AMOUNT");
-            borrow(wallet, cToken, amount);
-            trackBorrow(wallet, token, amount);
+            withdrawAmount = balance;
+            borrowAmount = amount - withdrawAmount;
+        }
+
+        if (withdrawAmount > 0) {
+            redeemUnderlying(wallet, cToken, withdrawAmount);
+            trackWithdrawal(wallet, token, amount);
+        }
+
+        if (borrowAmount > 0) {
+            borrow(wallet, cToken, borrowAmount);
+            trackBorrow(wallet, token, borrowAmount);
         }
     }
 
-    /// @dev tokenBalance in Compound is the deposited underlying token minus the borrowed underlying token.
+    /// @dev tokenBalance is just the mapping from cToken to token, regardless of the collateral part.
     function tokenBalance (
         address wallet,
         address token
@@ -172,22 +186,13 @@ contract CompoundModule is BaseSubAccount, SecurityModule
             return 0;
         }
 
-        if (hasLoan(wallet)) {
-            if (hasCTokenLoan(wallet, cToken)) {
-                return - int(CToken(cToken).borrowBalanceStored(wallet));
-            } else if (isCollaterlCToken(wallet, cToken)) {
-                // if cToken is in collateral market of compound, no withdraw allowed.
-                return 0;
-            }
-        }
-
-        (uint err, uint cTokenSupply, uint tokenBorrow, uint exchangeRateMantissa) = CToken(cToken).getAccountSnapshot(wallet);
+        (uint err, uint cTokenSupply, , uint exchangeRateMantissa) = CToken(cToken).getAccountSnapshot(wallet);
         if (err != 0) {
             return 0;
         }
 
         int tokenSupply = int(cTokenSupply.mul(exchangeRateMantissa)) / (10 ** 18);
-        return tokenSupply - int(tokenBorrow);
+        return tokenSupply;
     }
 
     function tokenInterestRate(
@@ -209,6 +214,124 @@ contract CompoundModule is BaseSubAccount, SecurityModule
             return - int(CToken(cToken).borrowRatePerBlock() / (10 ** 14));
         } else {
             return int(CToken(cToken).supplyRatePerBlock() / (10 ** 14));
+        }
+    }
+
+    /// @dev tokenWithdrawalable calculates withdrawable token amount according to token type.
+    ///      For non-collateral token, it is the token balance plus borrowable amount.
+    ///      For collateral token, it removable part of this token collateral and borrowable amount of left other tokens collaterals.
+    function tokenWithdrawalable (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (
+            uint userWithdrawable
+        )
+    {
+        address cToken = compoundRegistry.getCToken(token);
+        if (cToken == address(0)) {
+            return 0;
+        }
+
+        if (isCollaterlCToken(wallet, cToken)) {
+            // if token is in collaterl markets, amount is calculated based on liquidity
+            (uint collateralRemovable, uint borrowableAfterRemove) = collateralTokenRemovable(wallet, token);
+            userWithdrawable = collateralRemovable + borrowableAfterRemove;
+        } else {
+            // otherwise, user redeem all mint token amount.
+            userWithdrawable = uint(tokenBalance(wallet, token)) + tokenBorrowable(wallet, token);
+        }
+    }
+
+    /// @dev get current borrowable token amount according user's liquidity.
+    function tokenBorrowable (
+        address wallet,
+        address token
+        )
+        public
+        view
+        returns (uint)
+    {
+        address cToken = compoundRegistry.getCToken(token);
+        if (cToken == address(0)) {
+            return 0;
+        }
+
+        address priceOracle = address(Comptroller(comptroller).oracle);
+        uint price = ComptrollerPriceOracle(priceOracle).getUnderlyingPrice(CToken(cToken));
+        require(price != 0, "TOKEN_NO_PRICE");
+
+        (uint err, uint liquidity, ) = Comptroller(comptroller).getAccountLiquidity(wallet);
+        if (err != 0) {
+            return err;
+        }
+
+        // amount == liquidity / price, i.e. amount_of_ETH / token_to_ETH price
+        return liquidity / price;
+    }
+
+    /// @dev get removable part of current collateral token.
+    ///      returns safeLiquidityToToken the safe part of cToken can be redeemed, which will not cause liquidation.
+    ///              leftLiquidityToToken, the borrowable token based on user's remain liquidity after removable liquidity is removed.
+    function collateralTokenRemovable(
+        address wallet,
+        address token
+        )
+        internal
+        view
+        returns (
+            uint safeLiquidityToToken,
+            uint leftLiquidityToToken
+        )
+    {
+        address cToken = compoundRegistry.getCToken(token);
+        if (cToken == address(0)) {
+            return (0, 0);
+        }
+
+        require(isCollaterlCToken(wallet, token), "NOT_COLLATERAL_CTOKEN");
+
+        address priceOracle = address(Comptroller(comptroller).oracle);
+        uint price = ComptrollerPriceOracle(priceOracle).getUnderlyingPrice(CToken(cToken));
+        require(price != 0, "TOKEN_NO_PRICE");
+
+        (uint err, uint liquidity, ) = Comptroller(comptroller).getAccountLiquidity(wallet);
+        if (err != 0 || liquidity == 0) {
+            return (0, 0);
+        }
+
+        // mapping(address => Comptroller.Market) storage markets = Comptroller(comptroller).markets;
+        (bool isListed, uint collateralFactorMantissa) = ComptrollerV2Storage(comptroller).markets(cToken);
+        if (isListed) {
+            return (0, 0);
+        }
+
+        // calculate current cToken liquidity
+        uint cTokenSupply;
+        uint exchangeRateMantissa;
+        (err, cTokenSupply, , exchangeRateMantissa) = CToken(cToken).getAccountSnapshot(wallet);
+        if (err != 0) {
+            return (0, 0);
+        }
+        uint cTokenToTokenAmount = cTokenSupply.mul(exchangeRateMantissa) / (10 ** 18);
+        uint normalizedTokenLiquidity = cTokenToTokenAmount.mul(price);
+        uint currentHoldLiquidity = normalizedTokenLiquidity.mul(collateralFactorMantissa) / (10 ** 18);
+
+        if (currentHoldLiquidity <= liquidity) {
+            // current holding liquidity <= free liquidity, means we have other enough collaterals.
+            // we can remove this cToken all.
+            safeLiquidityToToken = cTokenToTokenAmount;
+
+            // After removal, we still have free liquidity, so we can borrow more.
+            leftLiquidityToToken = (liquidity - currentHoldLiquidity) / price;
+        } else {
+            // current holding liquidity >= free liquidity, means part of our cToken is already used as collateral.
+            // So we can remove only a part of this cToken.
+            safeLiquidityToToken = liquidity / price;
+            // After removal, we don't have free liquidity, so we can borrow 0.
+            leftLiquidityToToken = 0;
         }
     }
 
@@ -265,55 +388,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         return 0;
     }
 
-    function tokenWithdrawalable (
-        address wallet,
-        address token
-        )
-        public
-        view
-        returns (uint)
-    {
-        int balance = tokenBalance(wallet, token);
-        if (balance <= 0) {
-            return borrowCapacity(wallet, token);
-        }
-
-        // not balance + borrowCapacity because balance is collateral if borrow.
-        return uint(balance);
-    }
-
-    /// @dev get current borrowable token amount from CToken.
-    ///      If wallet has another CToken loan, return 0.
-    function borrowCapacity (
-        address wallet,
-        address token
-        )
-        public
-        view
-        returns (uint)
-    {
-        address cToken = compoundRegistry.getCToken(token);
-        if (cToken == address(0)) {
-            return 0;
-        }
-
-        if (hasLoan(wallet) && !hasCTokenLoan(wallet, cToken)) {
-            return 0;
-        }
-
-        address priceOracle = address(Comptroller(comptroller).oracle);
-        uint price = ComptrollerPriceOracle(priceOracle).getUnderlyingPrice(CToken(cToken));
-        require(price != 0, "TOKEN_NO_PRICE");
-
-        (uint err, uint liquidity, ) = Comptroller(comptroller).getAccountLiquidity(wallet);
-        if (err != 0) {
-            return err;
-        }
-
-        // amount == liquidity / price, i.e. amount_of_ETH / token_to_ETH price
-        return liquidity / price;
-    }
-
     // internal functions
 
     /// @dev get token balance based in real time from CToken. This is not a view func
@@ -331,16 +405,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         }
 
         uint supplyBalance = CToken(cToken).balanceOfUnderlying(wallet);
-        uint borrowBalance = CToken(cToken).borrowBalanceCurrent(wallet);
-        return int(supplyBalance) - int(borrowBalance);
-    }
-
-    function hasLoan(address wallet) internal view returns (bool) {
-        return borrowedCToken[wallet] != address(0);
-    }
-
-    function hasCTokenLoan(address wallet, address CToken) internal view returns (bool) {
-        return borrowedCToken[wallet] == CToken;
+        return int(supplyBalance);
     }
 
     function trackBorrow(address wallet, address token, uint amount) internal {
@@ -400,11 +465,8 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         internal
     {
         // CErc20 and CEther have same function signature
-        require(!hasLoan(_wallet) || hasCTokenLoan(_wallet, _cToken), "BORROW_CONDITION_NOT_MATCH");
-
         enterMarketIfNeeded(_wallet, _cToken);
         transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("borrow(uint256)", _amount));
-        borrowedCToken[_wallet] = _cToken;
     }
 
     function repayBorrow(
@@ -416,10 +478,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     {
         // CErc20 and CEther have same function signature
         transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("repayBorrow(uint256)", _amount));
-        if (CToken(_cToken).borrowBalanceCurrent(_wallet) == 0) {
-            // clear loan flag if loan closes.
-            borrowedCToken[_wallet] = address(0);
-        }
     }
 
     function isCollaterlCToken(address wallet, address cToken) internal view returns (bool) {
