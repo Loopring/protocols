@@ -94,7 +94,8 @@ contract CompoundModule is BaseSubAccount, SecurityModule
 
         // mint new.
         if (mintAmount > 0) {
-            // TODO: check if we need exit market here.
+            // repay is done, exit market to get savings.
+            exitMarketsIfNeeded(wallet, cToken);
             mint(wallet, cToken, token, mintAmount);
             trackDeposit(wallet, token, mintAmount);
         }
@@ -354,7 +355,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         for (uint i = 0; i < tokens.length; ++i) {
             address cToken = compoundRegistry.getCToken(tokens[i]);
             if (cToken != address(0) && amounts[i] != 0) {
-                enterMarketIfNeeded(wallet, cToken);
+                enterMarketsIfNeeded(wallet, cToken);
                 mint(wallet, cToken, tokens[i], amounts[i]);
                 emit CollateralAdded(wallet, tokens[i], amounts[i]);
             }
@@ -381,7 +382,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
             address cToken = compoundRegistry.getCToken(tokens[i]);
             if (cToken != address(0)) {
                 redeemUnderlying(wallet, cToken, amounts[i]);
-                exitMarketIfNeeded(wallet, cToken);
+                exitMarketsIfNeeded(wallet, cToken);
             }
         }
 
@@ -465,7 +466,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         internal
     {
         // CErc20 and CEther have same function signature
-        enterMarketIfNeeded(_wallet, _cToken);
+        enterMarketsIfNeeded(_wallet, _cToken);
         transactCall(_wallet, _cToken, 0, abi.encodeWithSignature("borrow(uint256)", _amount));
     }
 
@@ -487,7 +488,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     /// @dev Enters a cToken market if it was not entered before.
     /// @param wallet The target wallet.
     /// @param cToken The cToken contract.
-    function enterMarketIfNeeded(address wallet, address cToken) internal {
+    function enterMarketsIfNeeded(address wallet, address cToken) internal {
         if(!isCollaterlCToken(wallet, cToken)) {
             address[] memory market = new address[](1);
             market[0] = cToken;
@@ -498,7 +499,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
     /// @dev Exits a cToken market if there is no more collateral and debt.
     /// @param wallet The target wallet.
     /// @param cToken The cToken contract.
-    function exitMarketIfNeeded(address wallet, address cToken) internal {
+    function exitMarketsIfNeeded(address wallet, address cToken) internal {
         uint collateral = CToken(cToken).balanceOf(wallet);
         uint debt = CToken(cToken).borrowBalanceStored(wallet);
         if(collateral == 0 && debt == 0) {
