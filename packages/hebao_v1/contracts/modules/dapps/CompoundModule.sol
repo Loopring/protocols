@@ -30,8 +30,8 @@ import "../security/SecurityModule.sol";
 /// @title CompoundModule
 contract CompoundModule is BaseSubAccount, SecurityModule
 {
-    event CollateralAdded(address indexed _wallet, address _collateral, uint _collateralAmount);
-    event CollateralRemoved(address indexed _wallet, address _collateral, uint _collateralAmount);
+    event CollateralCTokenAdded(address indexed _wallet, address _collateral);
+    event CollateralCTokenRemoved(address indexed _wallet, address _collateral);
     event SubAccountBorrow(address indexed _wallet, address _debtToken, int _debtAmount);
 
     CompoundRegistry internal compoundRegistry;
@@ -50,9 +50,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         comptroller = _comptroller;
     }
 
-    /// @dev Fund Compound for earn interests and automatically enters market
-    ///      so the funds will be used as collateral; or return borrowed assets
-    ///      back to Compound.
+    /// @dev Fund Compound for earn interests if no borrowings or repay borrowings otherwise.
     function deposit(
         address            wallet,
         address[] calldata signers,
@@ -142,7 +140,6 @@ contract CompoundModule is BaseSubAccount, SecurityModule
                 borrow(wallet, cToken, borrowable);
                 trackBorrow(wallet, token, borrowable);
             }
-            return;
         }
 
         // Non-collateral token, user exchange current cToken and borrow more according to liquidity.
@@ -173,7 +170,8 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         }
     }
 
-    /// @dev tokenBalance is just the mapping from cToken to token, regardless of the collateral part.
+    /// @dev tokenBalance return positive number which is mapping from cToken to token if no loan, regardless of the collateral part,
+    ///      otherwise, return a minus token amount to indicate the loan.
     function tokenBalance (
         address wallet,
         address token
@@ -187,9 +185,14 @@ contract CompoundModule is BaseSubAccount, SecurityModule
             return 0;
         }
 
-        (uint err, uint cTokenSupply, , uint exchangeRateMantissa) = CToken(cToken).getAccountSnapshot(wallet);
+        (uint err, uint cTokenSupply, uint tokenBorrow, uint exchangeRateMantissa) = CToken(cToken).getAccountSnapshot(wallet);
         if (err != 0) {
             return 0;
+        }
+
+        // Return - loan if exist
+        if (tokenBorrow != 0) {
+            return - int(tokenBorrow);
         }
 
         int tokenSupply = int(cTokenSupply.mul(exchangeRateMantissa)) / (10 ** 18);
@@ -354,10 +357,11 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         // address[] memory cTokens = new address[](tokens.length);
         for (uint i = 0; i < tokens.length; ++i) {
             address cToken = compoundRegistry.getCToken(tokens[i]);
-            if (cToken != address(0) && amounts[i] != 0) {
+            if (cToken != address(0)) {
                 enterMarketsIfNeeded(wallet, cToken);
-                mint(wallet, cToken, tokens[i], amounts[i]);
-                emit CollateralAdded(wallet, tokens[i], amounts[i]);
+                if (amounts[i] != 0) {
+                    mint(wallet, cToken, tokens[i], amounts[i]);
+                }
             }
         }
 
@@ -501,6 +505,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
             address[] memory market = new address[](1);
             market[0] = cToken;
             transactCall(wallet, address(comptroller), 0, abi.encodeWithSignature("enterMarkets(address[])", market));
+            emit CollateralCTokenAdded(wallet, cToken);
         }
     }
 
@@ -512,6 +517,7 @@ contract CompoundModule is BaseSubAccount, SecurityModule
         uint debt = CToken(cToken).borrowBalanceStored(wallet);
         if(collateral == 0 && debt == 0) {
             transactCall(wallet, address(comptroller), 0, abi.encodeWithSignature("exitMarket(address)", cToken));
+            emit CollateralCTokenRemoved(wallet, cToken);
         }
     }
 }
