@@ -21,6 +21,7 @@ import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Controller.sol";
+import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
 
@@ -67,6 +68,15 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         _;
     }
 
+    modifier onlyOwnerOrModule
+    {
+        require(
+            msg.sender == _owner || isAddressInSet(MODULE, msg.sender),
+            "MODULE_UNAUTHORIZED"
+        );
+        _;
+    }
+
     function owner() public view returns (address)
     {
         return _owner;
@@ -110,7 +120,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function addModule(address _module)
         external
-        onlyModule
+        onlyOwnerOrModule
     {
         addModuleInternal(_module);
     }
@@ -120,6 +130,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
+        Module(_module).deactivate(address(this));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
@@ -183,6 +194,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         );
 
         addAddressToSet(MODULE, _module, true);
+        Module(_module).activate(address(this));
         emit ModuleAdded(_module);
     }
 

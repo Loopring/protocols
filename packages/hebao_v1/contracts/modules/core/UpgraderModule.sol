@@ -29,7 +29,7 @@ contract UpgraderModule is BaseModule {
 
     function activate(address wallet)
         external
-        onlyFromWalletModule(wallet)
+        onlyFromWallet(wallet)
     {
         Wallet w = Wallet(wallet);
         for(uint i = 0; i < modulesToAdd.length; i++) {
@@ -54,7 +54,7 @@ contract UpgraderModule is BaseModule {
 
     function deactivate(address wallet)
         public
-        onlyFromWalletModule(wallet)
+        onlyFromWallet(wallet)
     {
         emit Deactivated(wallet);
     }
