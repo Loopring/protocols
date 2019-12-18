@@ -71,7 +71,6 @@ contract BaseModule is ReentrancyGuard, Module
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external
-        onlyFromWallet(msg.sender)
     {
         bindMethods(msg.sender);
         emit Activated(msg.sender);
@@ -80,7 +79,6 @@ contract BaseModule is ReentrancyGuard, Module
     /// @dev This method will cause an re-entry to the same module contract.
     function deactivate()
         external
-        onlyFromWallet(msg.sender)
     {
         unbindMethods(msg.sender);
         emit Deactivated(msg.sender);

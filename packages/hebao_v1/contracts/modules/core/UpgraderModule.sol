@@ -29,7 +29,6 @@ contract UpgraderModule is BaseModule {
 
     function activate()
         external
-        onlyFromWallet(msg.sender)
     {
         Wallet w = Wallet(msg.sender);
         for(uint i = 0; i < modulesToAdd.length; i++) {
@@ -51,7 +50,6 @@ contract UpgraderModule is BaseModule {
 
     function deactivate()
         external
-        onlyFromWallet(msg.sender)
     {
         emit Deactivated(msg.sender);
     }
