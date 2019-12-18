@@ -46,7 +46,7 @@ contract RecoveryModule is SecurityModule
 
     constructor(
         Controller _controller,
-        uint      _recoveryPeriod
+        uint       _recoveryPeriod
         )
         public
         SecurityModule(_controller)
