@@ -130,7 +130,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
-        Module(_module).deactivate(address(this));
+        Module(_module).deactivate();
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
@@ -194,7 +194,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         );
 
         addAddressToSet(MODULE, _module, true);
-        Module(_module).activate(address(this));
+        Module(_module).activate();
         emit ModuleAdded(_module);
     }
 

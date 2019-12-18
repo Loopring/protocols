@@ -69,21 +69,21 @@ contract BaseModule is ReentrancyGuard, Module
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
-    function activate(address wallet)
+    function activate()
         external
-        onlyFromWallet(wallet)
+        onlyFromWallet(msg.sender)
     {
-        bindMethods(wallet);
-        emit Activated(wallet);
+        bindMethods(msg.sender);
+        emit Activated(msg.sender);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
-    function deactivate(address wallet)
+    function deactivate()
         external
-        onlyFromWallet(wallet)
+        onlyFromWallet(msg.sender)
     {
-        unbindMethods(wallet);
-        emit Deactivated(wallet);
+        unbindMethods(msg.sender);
+        emit Deactivated(msg.sender);
     }
 
     ///.@dev Gets the list of methods for binding to wallets.

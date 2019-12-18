@@ -83,7 +83,6 @@ contract WalletFactory is ReentrancyGuard
         // Add/Activate modules
         for(uint i = 0; i < _modules.length; i++) {
             Wallet(_wallet).addModule(_modules[i]);
-            Module(_modules[i]).activate(_wallet);
         }
 
         // Remove this contract from the wallet modules
