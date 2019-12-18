@@ -47,6 +47,7 @@ contract InheritanceModule is SecurityModule
         public
         SecurityModule(_controller)
     {
+        require(_waitingPeriod > 0, "INVALID_DELAY");
         waitingPeriod = _waitingPeriod;
     }
 

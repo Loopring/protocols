@@ -40,6 +40,7 @@ contract WhitelistModule is SecurityModule
         public
         SecurityModule(_controller)
     {
+        require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
     }
 
@@ -50,6 +51,7 @@ contract WhitelistModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletNotRecovering(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));

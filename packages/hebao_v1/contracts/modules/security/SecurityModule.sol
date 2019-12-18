@@ -88,6 +88,12 @@ contract SecurityModule is MetaTxModule
         _;
     }
 
+    modifier onlyWhenWalletNotRecovering(address wallet)
+    {
+        require(!controller.securityStore().isRecovering(wallet), "RECOVERING");
+        _;
+    }
+
     modifier onlyWalletGuardian(address wallet, address guardian)
     {
         require(controller.securityStore().isGuardian(wallet, guardian), "NOT_GUARDIAN");

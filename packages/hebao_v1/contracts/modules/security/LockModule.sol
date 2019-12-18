@@ -53,6 +53,7 @@ contract LockModule is SecurityModule
         public
         SecurityModule(_controller)
     {
+        require(_lockPeriod > 0, "INVALID_DELAY");
         lockPeriod = _lockPeriod;
     }
 

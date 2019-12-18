@@ -37,6 +37,7 @@ contract SecurityStore is DataStore
         address    locker; // the module locked/unlocked this wallet
         Data.Guardian[] guardians;
         mapping    (address => uint) guardianIdx;
+        bool       recovering;
     }
 
     mapping (address => Wallet) public wallets;
@@ -142,6 +143,21 @@ contract SecurityStore is DataStore
 
         wallets[wallet].lock = _lock;
         wallets[wallet].locker = msg.sender;
+    }
+
+    function isRecovering(address wallet)
+        public
+        view
+        returns (bool)
+    {
+        return wallets[wallet].recovering;
+    }
+
+    function setRecovering(address wallet, bool _recovering)
+        public
+        onlyManager
+    {
+        wallets[wallet].recovering = _recovering;
     }
 
     function touchLastActive(address wallet)

@@ -44,19 +44,16 @@ contract RecoveryModule is SecurityModule
 
     mapping (address => WalletRecovery) public wallets;
     uint public recoveryPeriod;
-    uint public lockPeriod;
 
     constructor(
         Controller _controller,
-        uint      _recoveryPeriod,
-        uint      _lockPeriod
+        uint      _recoveryPeriod
         )
         public
         SecurityModule(_controller)
     {
-        require(recoveryPeriod <= lockPeriod, "INVALID_VALUES");
+        require(_recoveryPeriod > 0, "INVALID_DELAY");
         recoveryPeriod = _recoveryPeriod;
-        lockPeriod = _lockPeriod;
     }
 
     /// @dev Starts a recovery for a given wallet.
@@ -87,7 +84,7 @@ contract RecoveryModule is SecurityModule
         recovery.completeAfter = now + recoveryPeriod;
         recovery.guardianCount = securityStore.numGuardians(wallet);
 
-        controller.securityStore().setLock(wallet, now + lockPeriod);
+        controller.securityStore().setRecovering(wallet, true);
 
         emit RecoveryStarted(wallet, newOwner, recovery.completeAfter);
     }
@@ -112,7 +109,7 @@ contract RecoveryModule is SecurityModule
         require(recovery.completeAfter > 0, "NOT_STARTED");
 
         delete wallets[wallet];
-        controller.securityStore().setLock(wallet, 0);
+        controller.securityStore().setRecovering(wallet, false);
 
         emit RecoveryCancelled(wallet);
     }
@@ -134,7 +131,7 @@ contract RecoveryModule is SecurityModule
         Wallet(wallet).setOwner(recovery.newOwner);
 
         delete wallets[wallet];
-        controller.securityStore().setLock(wallet, 0);
+        controller.securityStore().setRecovering(wallet, false);
 
         emit RecoveryCompleted(wallet, recovery.newOwner);
     }
