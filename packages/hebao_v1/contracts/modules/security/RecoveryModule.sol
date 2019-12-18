@@ -39,7 +39,6 @@ contract RecoveryModule is SecurityModule
     struct WalletRecovery {
         address newOwner;
         uint    completeAfter;
-        uint    guardianCount;
     }
 
     mapping (address => WalletRecovery) public wallets;
@@ -82,7 +81,6 @@ contract RecoveryModule is SecurityModule
 
         recovery.newOwner = newOwner;
         recovery.completeAfter = now + recoveryPeriod;
-        recovery.guardianCount = securityStore.numGuardians(wallet);
 
         controller.securityStore().setRecovering(wallet, true);
 

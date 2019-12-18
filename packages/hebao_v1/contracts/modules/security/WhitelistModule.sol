@@ -51,7 +51,6 @@ contract WhitelistModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyWhenWalletNotRecovering(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));
