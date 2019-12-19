@@ -181,32 +181,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
         returns (bytes memory result)
     {
-        return transactInternal(mode, to, value, data);
-    }
-
-    function addModuleInternal(address _module)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
-        require(
-            controller.moduleRegistry().isModuleRegistered(_module),
-            "INVALID_MODULE"
-        );
-
-        addAddressToSet(MODULE, _module, true);
-        Module(_module).activate();
-        emit ModuleAdded(_module);
-    }
-
-    function transactInternal(
-        uint8   mode,
-        address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-        returns (bytes memory result)
-    {
         require(
             !controller.moduleRegistry().isModuleRegistered(to),
             "TRANSACT_ON_MODULE_DISALLOWED"
@@ -234,6 +208,20 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
             }
         }
         emit Transacted(msg.sender, to, value, data);
+    }
+
+    function addModuleInternal(address _module)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(
+            controller.moduleRegistry().isModuleRegistered(_module),
+            "INVALID_MODULE"
+        );
+
+        addAddressToSet(MODULE, _module, true);
+        Module(_module).activate();
+        emit ModuleAdded(_module);
     }
 
     /// @dev This default function can receive Ether or perform queries to modules
