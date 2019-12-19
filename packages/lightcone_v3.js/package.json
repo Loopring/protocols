@@ -33,7 +33,7 @@
     "blake-hash": "^1.1.0",
     "bn.js": "^4.11.8",
     "ethereumjs-abi": "0.6.7",
-    "ethereumjs-tx": "1.3.3",
+    "ethereumjs-tx": "2.1.2",
     "ethereumjs-util": "5.2.0",
     "ethereumjs-wallet": "0.6.0",
     "hdkey": "0.7.1",
