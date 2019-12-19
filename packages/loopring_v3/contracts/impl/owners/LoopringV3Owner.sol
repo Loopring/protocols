@@ -26,8 +26,8 @@ import "./ChainlinkTokenPriceOracle.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract LoopringV3Owner is DelayedOwner
 {
-    ILoopringV3 loopringV3;
-    ChainlinkTokenPriceOracle oracle;
+    ILoopringV3 public loopringV3;
+    ChainlinkTokenPriceOracle public oracle;
 
     uint public minExchangeStakeWithDataAvailabilityUSD;
     uint public minExchangeStakeWithoutDataAvailabilityUSD;
@@ -53,7 +53,7 @@ contract LoopringV3Owner is DelayedOwner
         ILoopringV3                _loopringV3,
         ChainlinkTokenPriceOracle  _oracle
         )
-        DelayedOwner(address(loopringV3), 3 minutes)
+        DelayedOwner(address(_loopringV3), 3 minutes)
         public
     {
         loopringV3 = _loopringV3;
@@ -64,6 +64,8 @@ contract LoopringV3Owner is DelayedOwner
         setFunctionDelay(loopringV3.updateProtocolFeeSettings.selector, 7 minutes);
 
         setFunctionDelay(address(this), LoopringV3Owner(this).setValuesInUSD.selector, 7 minutes);
+
+        lastUpdateTime = now;
     }
 
     function updateValuesInLRC()
