@@ -21,29 +21,32 @@ contract("DelayedOwner", (accounts: string[]) => {
     return functionCall.encodeABI().slice(0, 10);
   };
 
-  const getFunctionDelay = async (functionSelector: string) => {
-    return (await delayedContract.getFunctionDelay(
-      functionSelector
-    )).toNumber();
+  const getFunctionDelay = async (to: string, functionSelector: string) => {
+    return (
+      await delayedContract.getFunctionDelay(to, functionSelector)
+    ).toNumber();
   };
 
   const checkFunctionDelay = async (
+    to: string,
     functionSelector: string,
     delay: number
   ) => {
-    const functionDelay = await getFunctionDelay(functionSelector);
+    const functionDelay = await getFunctionDelay(to, functionSelector);
     assert.equal(functionDelay, delay, "invalid function delay");
   };
 
   const setFunctionDelayChecked = async (
+    to: string,
     functionSelector: string,
     delay: number
   ) => {
     await delayedContract.setFunctionDelayExternal(
+      to,
       functionSelector,
       new BN(delay)
     );
-    await checkFunctionDelay(functionSelector, delay);
+    await checkFunctionDelay(to, functionSelector, delay);
   };
 
   const cancelTransactionChecked = async (id: BN) => {
@@ -58,7 +61,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumDelayedFunctions = async (numExpected: number) => {
-    const numDelayedFunctions = (await delayedContract.getNumDelayedFunctions()).toNumber();
+    const numDelayedFunctions = (
+      await delayedContract.getNumDelayedFunctions()
+    ).toNumber();
     assert.equal(
       numDelayedFunctions,
       numExpected,
@@ -67,7 +72,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumPendingTransactions = async (numExpected: number) => {
-    const numPendingTransactions = (await delayedContract.getNumPendingTransactions()).toNumber();
+    const numPendingTransactions = (
+      await delayedContract.getNumPendingTransactions()
+    ).toNumber();
     assert.equal(
       numPendingTransactions,
       numExpected,
@@ -104,26 +111,26 @@ contract("DelayedOwner", (accounts: string[]) => {
     );
 
     // Set some function delays
-    await setFunctionDelayChecked("0x00000001", 1);
-    await setFunctionDelayChecked("0x00000002", 2);
-    await setFunctionDelayChecked("0x00000003", 3);
+    await setFunctionDelayChecked(accounts[1], "0x00000001", 1);
+    await setFunctionDelayChecked(accounts[2], "0x00000002", 2);
+    await setFunctionDelayChecked(accounts[3], "0x00000003", 3);
     await checkNumDelayedFunctions(3);
 
     // Remove the delay of 2
-    await setFunctionDelayChecked("0x00000002", 0);
+    await setFunctionDelayChecked(accounts[2], "0x00000002", 0);
     await checkNumDelayedFunctions(2);
     // Check if the function delays of the remaining functions are still correct
-    checkFunctionDelay("0x00000001", 1);
-    checkFunctionDelay("0x00000003", 3);
+    checkFunctionDelay(accounts[1], "0x00000001", 1);
+    checkFunctionDelay(accounts[3], "0x00000003", 3);
 
     // Remove the delay of 1
-    await setFunctionDelayChecked("0x00000001", 0);
+    await setFunctionDelayChecked(accounts[1], "0x00000001", 0);
     await checkNumDelayedFunctions(1);
     // Check if the function delays of the remaining functions are still correct
-    checkFunctionDelay("0x00000003", 3);
+    checkFunctionDelay(accounts[3], "0x00000003", 3);
 
     // Remove the delay of 3
-    await setFunctionDelayChecked("0x00000003", 0);
+    await setFunctionDelayChecked(accounts[3], "0x00000003", 0);
     await checkNumDelayedFunctions(0);
   });
 
@@ -132,6 +139,7 @@ contract("DelayedOwner", (accounts: string[]) => {
 
     // Check function delay
     await checkFunctionDelay(
+      targetContract.address,
       getFunctionSelector(
         targetContract.contract.methods.immediateFunctionPayable(0)
       ),
@@ -169,6 +177,7 @@ contract("DelayedOwner", (accounts: string[]) => {
   it("Immediate function (view)", async () => {
     // Check function delay
     await checkFunctionDelay(
+      targetContract.address,
       getFunctionSelector(
         targetContract.contract.methods.immediateFunctionView()
       ),
@@ -182,6 +191,7 @@ contract("DelayedOwner", (accounts: string[]) => {
   it("Immediate function (revert)", async () => {
     // Check function delay
     await checkFunctionDelay(
+      targetContract.address,
       getFunctionSelector(
         targetContract.contract.methods.immediateFunctionRevert(0)
       ),
@@ -201,7 +211,10 @@ contract("DelayedOwner", (accounts: string[]) => {
     const functionSelector = getFunctionSelector(
       targetContract.contract.methods.delayedFunctionPayable(0)
     );
-    const functionDelay = await getFunctionDelay(functionSelector);
+    const functionDelay = await getFunctionDelay(
+      targetContract.address,
+      functionSelector
+    );
     assert(functionDelay > 0, "invalid function delay");
 
     // Store the amount of ETH in the contract before the call
@@ -408,7 +421,10 @@ contract("DelayedOwner", (accounts: string[]) => {
     const functionSelectorA = getFunctionSelector(
       targetContract.contract.methods.delayedFunctionPayable(0)
     );
-    const functionDelayA = await getFunctionDelay(functionSelectorA);
+    const functionDelayA = await getFunctionDelay(
+      targetContract.address,
+      functionSelectorA
+    );
     assert(functionDelayA > 0, "invalid function delay");
 
     // Store the amount of ETH in the contract before the call
