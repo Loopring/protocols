@@ -46,12 +46,6 @@ contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    modifier onlyFromWalletModule(address wallet)
-    {
-        require(Wallet(wallet).hasModule(msg.sender), "NOT_FROM_WALLET_MODULE");
-        _;
-    }
-
     modifier onlyFromWalletOwner(address wallet) {
         require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
@@ -74,55 +68,20 @@ contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
-    ///      Note that the module must have NOT been added to the wallet.
-    ///
-    ///      Also note that if `module == address(this)`, the wallet contract
-    ///      will throw before calling `activate`, so there will be no re-entrant.
-    function addModule(
-        address wallet,
-        address module
-        )
+    /// @dev This method will cause an re-entry to the same module contract.
+    function activate()
         external
-        nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
     {
-        require(module != address(this), "SELF_ADD_PROHIBITED");
-        Wallet(wallet).addModule(module);
-        Module(module).activate(wallet);
-    }
-
-    /// @dev Removes a module from a wallet. Callable only by the wallet owner.
-    ///      Note that the module must have been added to the wallet.
-    function removeModule(
-        address wallet,
-        address module
-        )
-        external
-        nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
-    {
-        require(module != address(this), "SELF_REMOVE_PROHIBITED");
-        Module(module).deactivate(wallet);
-        Wallet(wallet).removeModule(module);
+        bindMethods(msg.sender);
+        emit Activated(msg.sender);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
-    function activate(address wallet)
+    function deactivate()
         external
-        onlyFromWalletModule(wallet)
     {
-        bindMethods(wallet);
-        emit Activated(wallet);
-    }
-
-    /// @dev This method will cause an re-entry to the same module contract.
-    function deactivate(address wallet)
-        external
-        onlyFromWalletModule(wallet)
-    {
-        unbindMethods(wallet);
-        emit Deactivated(wallet);
+        unbindMethods(msg.sender);
+        emit Deactivated(msg.sender);
     }
 
     ///.@dev Gets the list of methods for binding to wallets.
