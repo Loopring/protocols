@@ -21,6 +21,7 @@ import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Controller.sol";
+import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
 
@@ -86,7 +87,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function setup(
         address _controller,
         address initialOwner,
-        address[] calldata modules
+        address bootstrapModule
         )
         external
         nonReentrant
@@ -96,16 +97,14 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
             "INITIALIZED_ALREADY"
         );
         require(initialOwner != address(0), "ZERO_ADDRESS");
-        require(modules.length > 0, "EMPTY_MODULES");
+        require(bootstrapModule != address(0), "NO_BOOTSTRAP_MODULE");
 
         controller = Controller(_controller);
         _owner = initialOwner;
         controller.walletRegistry().registerWallet(address(this));
-        emit WalletSetup(_owner);
 
-        for(uint i = 0; i < modules.length; i++) {
-            addModuleInternal(modules[i]);
-        }
+        emit WalletSetup(_owner);
+        addModuleInternal(bootstrapModule);
     }
 
     function addModule(address _module)
@@ -120,6 +119,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
+        Module(_module).deactivate(address(this));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
@@ -183,6 +183,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         );
 
         addAddressToSet(MODULE, _module, true);
+        Module(_module).activate(address(this));
         emit ModuleAdded(_module);
     }
 

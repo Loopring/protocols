@@ -89,7 +89,6 @@ contract BaseModule is ReentrancyGuard, Module
     {
         require(module != address(this), "SELF_ADD_PROHIBITED");
         Wallet(wallet).addModule(module);
-        Module(module).activate(wallet);
     }
 
     /// @dev Removes a module from a wallet. Callable only by the wallet owner.
@@ -103,7 +102,6 @@ contract BaseModule is ReentrancyGuard, Module
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(module != address(this), "SELF_REMOVE_PROHIBITED");
-        Module(module).deactivate(wallet);
         Wallet(wallet).removeModule(module);
     }
 

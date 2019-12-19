@@ -72,22 +72,16 @@ contract WalletFactory is ReentrancyGuard
         OwnedUpgradabilityProxy(_wallet).upgradeTo(walletImplementation);
         OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
 
-        // Temporarily register this contract as a module to the wallet
-        // so we can add/activate the modules.
-        address[] memory setupModules = new address[](1);
-        setupModules[0] = address(this);
-
+        Wallet w = Wallet(_wallet);
         // Setup the wallet
-        Wallet(_wallet).setup(address(_controller), _owner, setupModules);
+        w.setup(address(_controller), _owner, address(this));
 
-        // Add/Activate modules
-        for(uint i = 0; i < _modules.length; i++) {
-            Wallet(_wallet).addModule(_modules[i]);
-            Module(_modules[i]).activate(_wallet);
+        for (uint i = 0; i < _modules.length; i++) {
+            w.addModule(_modules[i]);
         }
 
         // Remove this contract from the wallet modules
-        Wallet(_wallet).removeModule(address(this));
+        w.removeModule(address(this));
 
         emit WalletCreated(_wallet, _owner);
     }
