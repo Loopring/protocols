@@ -114,7 +114,7 @@ contract LoopringV3Owner is DelayedOwner
         );
     }
 
-    function delayedSetValuesInUSD(
+    function setDelayedValuesInUSD(
         uint _minExchangeStakeWithDataAvailabilityUSD,
         uint _minExchangeStakeWithoutDataAvailabilityUSD,
         uint _revertFineUSD
@@ -122,13 +122,22 @@ contract LoopringV3Owner is DelayedOwner
         external
         onlyOwner
     {
-        bytes memory callData = abi.encodeWithSelector(
-            LoopringV3Owner(0).setValuesInUSD.selector,
-            _minExchangeStakeWithDataAvailabilityUSD,
-            _minExchangeStakeWithoutDataAvailabilityUSD,
-            _revertFineUSD
-        );
-        transactInternal(address(this), 0, callData);
+        // Allow setting the values immediately if they are not yet initialized
+        if (minExchangeStakeWithDataAvailabilityUSD == 0 &&
+            minExchangeStakeWithoutDataAvailabilityUSD == 0 &&
+            revertFineUSD == 0) {
+            minExchangeStakeWithDataAvailabilityUSD = _minExchangeStakeWithDataAvailabilityUSD;
+            minExchangeStakeWithoutDataAvailabilityUSD = _minExchangeStakeWithoutDataAvailabilityUSD;
+            revertFineUSD = _revertFineUSD;
+        } else {
+            bytes memory callData = abi.encodeWithSelector(
+                LoopringV3Owner(0).setValuesInUSD.selector,
+                _minExchangeStakeWithDataAvailabilityUSD,
+                _minExchangeStakeWithoutDataAvailabilityUSD,
+                _revertFineUSD
+            );
+            transactInternal(address(this), 0, callData);
+        }
     }
 
     function setValuesInUSD(
