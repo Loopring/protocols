@@ -76,7 +76,7 @@ contract LockModule is SecurityModule
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
     {
-        controller.securityStore().setLock(wallet, now + lockPeriod);
+        controller.securityStore().setLock(wallet, now + lockPeriod, guardian);
         emit WalletLock(wallet, guardian, true);
     }
 
@@ -90,14 +90,14 @@ contract LockModule is SecurityModule
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletLocked(wallet)
     {
-        controller.securityStore().setLock(wallet, 0);
+        controller.securityStore().setLock(wallet, 0, guardian);
         emit WalletLock(wallet, guardian, false);
     }
 
     function getLock(address wallet)
         public
         view
-        returns (uint)
+        returns (uint _lock, address _guardian)
     {
         return controller.securityStore().getLock(wallet);
     }

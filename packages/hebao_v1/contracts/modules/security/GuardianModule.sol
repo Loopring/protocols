@@ -94,7 +94,6 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyWhenWalletNotRecovering(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingAdditions[wallet][guardian][group];
@@ -144,7 +143,6 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyWhenWalletNotRecovering(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingRemovals[wallet][guardian];

@@ -73,7 +73,6 @@ contract WalletFactory is ReentrancyGuard
         OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
 
         Wallet w = Wallet(_wallet);
-        // Setup the wallet
         w.setup(address(_controller), _owner, address(this));
 
         for (uint i = 0; i < _modules.length; i++) {

@@ -34,10 +34,9 @@ contract SecurityStore is DataStore
         address    inheritor;
         uint128    lastActive; // the latest timestamp the owner is considered to be active
         uint128    lock;
-        address    locker; // the module locked/unlocked this wallet
+        address    locker; // the guardian locked/unlocked this wallet
         Data.Guardian[] guardians;
         mapping    (address => uint) guardianIdx;
-        bool       recovering;
     }
 
     mapping (address => Wallet) public wallets;
@@ -129,35 +128,23 @@ contract SecurityStore is DataStore
     function getLock(address wallet)
         public
         view
-        returns (uint)
+        returns (uint _lock, address _guardian)
     {
-        return uint(wallets[wallet].lock);
+        _lock = uint(wallets[wallet].lock);
+        _guardian = wallets[wallet].locker;
     }
 
-    function setLock(address wallet, uint lock)
+    function setLock(address wallet, uint lock, address guardian)
         public
         onlyManager
     {
+        require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
+
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
         wallets[wallet].lock = _lock;
-        wallets[wallet].locker = msg.sender;
-    }
-
-    function isRecovering(address wallet)
-        public
-        view
-        returns (bool)
-    {
-        return wallets[wallet].recovering;
-    }
-
-    function setRecovering(address wallet, bool _recovering)
-        public
-        onlyManager
-    {
-        wallets[wallet].recovering = _recovering;
+        wallets[wallet].locker = guardian;
     }
 
     function touchLastActive(address wallet)
