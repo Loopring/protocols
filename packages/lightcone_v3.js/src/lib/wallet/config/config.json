@@ -129,7 +129,7 @@
       "id": 3,
       "symbol": "USDT",
       "name": "USD token",
-      "digits": 2,
+      "digits": 6,
       "address": "0xdac17f958d2ee523a2206206994597c13d831ec7",
       "unit": "USDT",
       "website": "https://coinbase.com",
