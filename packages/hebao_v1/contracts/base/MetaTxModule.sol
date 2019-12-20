@@ -312,7 +312,7 @@ contract MetaTxModule is BaseModule
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
         internal
-        pure
+        view
         returns (address wallet)
     {
         wallet = extractAddressFromCallData(data, 0);

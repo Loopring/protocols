@@ -97,6 +97,16 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         }
     }
 
+    function extractWalletAddress(bytes memory data)
+        internal
+        view
+        returns (address wallet)
+    {
+        require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
+        address owner = extractAddressFromCallData(data, 0);
+        wallet = computeWalletAddress(owner);
+    }
+
     function areAuthorizedMetaTxSigners(
         address   wallet,
         bytes     memory /*data*/,
