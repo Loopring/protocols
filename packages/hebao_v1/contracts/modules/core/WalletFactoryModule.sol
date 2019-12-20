@@ -50,17 +50,14 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         public
         MetaTxModule(_controller)
     {
-
     }
 
     /// @dev Create a new wallet by deploying a proxy.
-    /// @param _expectedWallet The expected smart contract wallet address that will be created.
     /// @param _owner The wallet's owner.
     /// @param _modules The wallet's modules.
     /// @param _subdomain The ENS subdomain to register, use "" to skip.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address            _expectedWallet,
         address            _owner,
         string    calldata _subdomain,
         address[] calldata _modules
@@ -68,21 +65,19 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         external
         payable
         nonReentrant
+        returns (address _wallet)
     {
-        address _wallet;
-        if (bytes(_subdomain).length == 0) {
-            _wallet = createWalletInternal(controller, _owner, _modules);
-        } else {
-            address[] memory extendedModules = new address[](_modules.length + 1);
-            extendedModules[0] = address(this);
-            for(uint i = 0; i < _modules.length; i++) {
-                extendedModules[i + 1] = _modules[i];
-            }
-            _wallet = createWalletInternal(controller, _owner, extendedModules);
-            controller.ensManager().register(_wallet, _subdomain);
-            Wallet(_wallet).removeModule(address(this));
+        _wallet = createWalletInternal(controller, _owner, address(this));
+        Wallet w = Wallet(_wallet);
+
+        for(uint i = 0; i < _modules.length; i++) {
+            w.addModule(_modules[i]);
         }
-        require(_wallet == _expectedWallet, "UNEXPECTED_WALLET_ADDRESS");
+
+        if (bytes(_subdomain).length > 0) {
+            controller.ensManager().register(_wallet, _subdomain);
+        }
+        w.removeModule(address(this));
     }
 
     function extractMetaTxSigners(
@@ -100,6 +95,16 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         } else {
             revert("INVALID_METHOD");
         }
+    }
+
+    function extractWalletAddress(bytes memory data)
+        internal
+        view
+        returns (address wallet)
+    {
+        require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
+        address owner = extractAddressFromCallData(data, 0);
+        wallet = computeWalletAddress(owner);
     }
 
     function areAuthorizedMetaTxSigners(

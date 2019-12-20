@@ -43,9 +43,8 @@ contract Wallet
     ///
     /// @param _controller The Controller instance.
     /// @param _owner The owner of this wallet, must not be address(0).
-    /// @param _modules The list of modules to add to this wallet, this list
-    ///                 must contain at least one module.
-    function setup(address _controller, address _owner, address[] calldata _modules) external;
+    /// @param _boostrapModule The bootstrap module.
+    function setup(address _controller, address _owner, address _boostrapModule) external;
 
     /// @dev Adds a new module. The `init` method of the module
     ///      will be called with `address(this)` as the parameter.

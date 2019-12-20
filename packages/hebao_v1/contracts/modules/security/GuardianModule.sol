@@ -52,6 +52,7 @@ contract GuardianModule is SecurityModule
         public
         SecurityModule(_controller)
     {
+        require(_pendingPeriod > 0 && _confirmPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;
         confirmPeriod = _confirmPeriod;
     }
@@ -97,7 +98,7 @@ contract GuardianModule is SecurityModule
     {
         uint confirmStart = pendingAdditions[wallet][guardian][group];
         require(confirmStart != 0, "NOT_PENDING");
-        require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
+        require(now > confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
         controller.securityStore().addOrUpdateGuardian(wallet, guardian, group);
         delete pendingAdditions[wallet][guardian][group];
         emit GuardianAdded(wallet, guardian, group);
@@ -146,7 +147,7 @@ contract GuardianModule is SecurityModule
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
-        require(now > confirmStart && now < confirmStart + confirmPeriod, "EXPIRED");
+        require(now > confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
         controller.securityStore().removeGuardian(wallet, guardian);
         delete pendingRemovals[wallet][guardian];
         emit GuardianRemoved(wallet, guardian);

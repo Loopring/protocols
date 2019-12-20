@@ -36,6 +36,7 @@ contract QuotaModule is SecurityModule, QuotaManager
         public
         SecurityModule(_controller)
     {
+        require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
     }
 
