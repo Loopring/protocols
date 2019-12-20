@@ -26,21 +26,34 @@ import "./ChainlinkTokenPriceOracle.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 contract LoopringV3Owner is DelayedOwner
 {
+    uint public constant numMovingAverageDataPoints = 7;
+
     ILoopringV3 public loopringV3;
     ChainlinkTokenPriceOracle public oracle;
 
-    uint public minExchangeStakeWithDataAvailabilityUSD;
-    uint public minExchangeStakeWithoutDataAvailabilityUSD;
-    uint public revertFineUSD;
+    struct Costs
+    {
+        uint minExchangeStakeDA;
+        uint minExchangeStakeNDA;
+        uint revertFine;
+    }
+
+    Costs public USD;
+    Costs[] public LRC;
 
     uint public lastUpdateTime;
-
-    uint public constant dampingPeriod = 7 days;
+    uint internal updateIndex = 0;
 
     event LRCValuesUpdated(
         uint minExchangeStakeWithDataAvailabilityLRC,
         uint minExchangeStakeWithoutDataAvailabilityLRC,
         uint revertFineLRC
+    );
+
+    event USDValuesUpdated(
+        uint minExchangeStakeWithDataAvailabilityUSD,
+        uint minExchangeStakeWithoutDataAvailabilityUSD,
+        uint revertFineUSD
     );
 
     modifier onlyDelayed
@@ -53,48 +66,60 @@ contract LoopringV3Owner is DelayedOwner
         ILoopringV3                _loopringV3,
         ChainlinkTokenPriceOracle  _oracle
         )
-        DelayedOwner(address(_loopringV3), 3 minutes)
+        DelayedOwner(address(_loopringV3), 3 days)
         public
     {
         loopringV3 = _loopringV3;
         oracle = _oracle;
 
-        setFunctionDelay(loopringV3.transferOwnership.selector, 7 minutes);
-        setFunctionDelay(loopringV3.updateSettings.selector, 7 minutes);
-        setFunctionDelay(loopringV3.updateProtocolFeeSettings.selector, 7 minutes);
+        setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
+        setFunctionDelay(loopringV3.updateSettings.selector, 7 days);
+        setFunctionDelay(loopringV3.updateProtocolFeeSettings.selector, 7 days);
 
-        setFunctionDelay(address(this), LoopringV3Owner(this).setValuesInUSD.selector, 7 minutes);
+        setFunctionDelay(address(this), LoopringV3Owner(this).setValuesInUSD.selector, 7 days);
 
+        // Fill in the initial data points with the current LRC costs
+        Costs memory currentLrcCosts = Costs(
+            loopringV3.minExchangeStakeWithDataAvailability(),
+            loopringV3.minExchangeStakeWithoutDataAvailability(),
+            loopringV3.revertFineLRC()
+        );
+        for (uint i = 0; i < numMovingAverageDataPoints; i++) {
+            LRC.push(currentLrcCosts);
+        }
         lastUpdateTime = now;
     }
 
     function updateValuesInLRC()
         external
     {
-        uint minExchangeStakeWithDataAvailabilityLRC = oracle.usd2lrc(minExchangeStakeWithDataAvailabilityUSD);
-        uint minExchangeStakeWithoutDataAvailabilityLRC = oracle.usd2lrc(minExchangeStakeWithoutDataAvailabilityUSD);
-        uint revertFineLRC = oracle.usd2lrc(revertFineUSD);
+        // Allow the values to be updated every day
+        require(lastUpdateTime <= now.add(1 days), "TOO_SOON");
 
-        if (now >= lastUpdateTime && lastUpdateTime <= now.add(dampingPeriod)) {
-            uint elapsed = now - lastUpdateTime;
+        // Get the current LRC amounts
+        Costs memory currentLrcCosts = Costs(
+            oracle.usd2lrc(USD.minExchangeStakeDA),
+            oracle.usd2lrc(USD.minExchangeStakeNDA),
+            oracle.usd2lrc(USD.revertFine)
+        );
+        // Use the LRC array as a circular buffer
+        LRC[updateIndex] = currentLrcCosts;
+        updateIndex = (updateIndex + 1) % numMovingAverageDataPoints;
 
-            minExchangeStakeWithDataAvailabilityLRC = damp(
-                loopringV3.minExchangeStakeWithDataAvailability(),
-                minExchangeStakeWithDataAvailabilityLRC,
-                elapsed
-            );
-            minExchangeStakeWithoutDataAvailabilityLRC = damp(
-                loopringV3.minExchangeStakeWithoutDataAvailability(),
-                minExchangeStakeWithoutDataAvailabilityLRC,
-                elapsed
-            );
-            revertFineLRC = damp(
-                loopringV3.revertFineLRC(),
-                revertFineLRC,
-                elapsed
-            );
+        // Calculate the simple moving average over `numMovingAverageDataPoints` points
+        Costs memory movingAverage;
+        for (uint i = 0; i < numMovingAverageDataPoints; i++) {
+            movingAverage.minExchangeStakeDA = movingAverage.minExchangeStakeDA.add(LRC[i].minExchangeStakeDA);
+            movingAverage.minExchangeStakeNDA = movingAverage.minExchangeStakeNDA.add(LRC[i].minExchangeStakeNDA);
+            movingAverage.revertFine = movingAverage.revertFine.add(LRC[i].revertFine);
         }
+        movingAverage.minExchangeStakeDA /= numMovingAverageDataPoints;
+        movingAverage.minExchangeStakeNDA /= numMovingAverageDataPoints;
+        movingAverage.revertFine /= numMovingAverageDataPoints;
 
+        lastUpdateTime = now;
+
+        // Set the new LRC values on the protocol contract immediately
         loopringV3.updateSettings(
             loopringV3.protocolFeeVault(),
             loopringV3.blockVerifierAddress(),
@@ -103,69 +128,77 @@ contract LoopringV3Owner is DelayedOwner
             loopringV3.maxWithdrawalFee(),
             loopringV3.tokenRegistrationFeeLRCBase(),
             loopringV3.tokenRegistrationFeeLRCDelta(),
-            minExchangeStakeWithDataAvailabilityLRC,
-            minExchangeStakeWithoutDataAvailabilityLRC,
-            revertFineLRC,
+            movingAverage.minExchangeStakeDA,
+            movingAverage.minExchangeStakeNDA,
+            movingAverage.revertFine,
             loopringV3.withdrawalFineLRC()
         );
 
         emit LRCValuesUpdated(
-            minExchangeStakeWithDataAvailabilityLRC,
-            minExchangeStakeWithoutDataAvailabilityLRC,
-            revertFineLRC
+            movingAverage.minExchangeStakeDA,
+            movingAverage.minExchangeStakeNDA,
+            movingAverage.revertFine
         );
     }
 
     function setDelayedValuesInUSD(
-        uint _minExchangeStakeWithDataAvailabilityUSD,
-        uint _minExchangeStakeWithoutDataAvailabilityUSD,
-        uint _revertFineUSD
+        uint minExchangeStakeWithDataAvailabilityUSD,
+        uint minExchangeStakeWithoutDataAvailabilityUSD,
+        uint revertFineUSD
         )
         external
         onlyOwner
     {
         // Allow setting the values immediately if they are not yet initialized
-        if (minExchangeStakeWithDataAvailabilityUSD == 0 &&
-            minExchangeStakeWithoutDataAvailabilityUSD == 0 &&
-            revertFineUSD == 0) {
-            minExchangeStakeWithDataAvailabilityUSD = _minExchangeStakeWithDataAvailabilityUSD;
-            minExchangeStakeWithoutDataAvailabilityUSD = _minExchangeStakeWithoutDataAvailabilityUSD;
-            revertFineUSD = _revertFineUSD;
+        if (USD.minExchangeStakeDA == 0 &&
+            USD.minExchangeStakeNDA == 0 &&
+            USD.revertFine == 0) {
+            setValuesInUSDInternal(
+                minExchangeStakeWithDataAvailabilityUSD,
+                minExchangeStakeWithoutDataAvailabilityUSD,
+                revertFineUSD
+            );
         } else {
             bytes memory callData = abi.encodeWithSelector(
                 LoopringV3Owner(0).setValuesInUSD.selector,
-                _minExchangeStakeWithDataAvailabilityUSD,
-                _minExchangeStakeWithoutDataAvailabilityUSD,
-                _revertFineUSD
+                minExchangeStakeWithDataAvailabilityUSD,
+                minExchangeStakeWithoutDataAvailabilityUSD,
+                revertFineUSD
             );
             transactInternal(address(this), 0, callData);
         }
     }
 
     function setValuesInUSD(
-        uint _minExchangeStakeWithDataAvailabilityUSD,
-        uint _minExchangeStakeWithoutDataAvailabilityUSD,
-        uint _revertFineUSD
+        uint minExchangeStakeDAUSD,
+        uint minExchangeStakeNDAUSD,
+        uint revertFineUSD
         )
         external
         onlyDelayed
     {
-        minExchangeStakeWithDataAvailabilityUSD = _minExchangeStakeWithDataAvailabilityUSD;
-        minExchangeStakeWithoutDataAvailabilityUSD = _minExchangeStakeWithoutDataAvailabilityUSD;
-        revertFineUSD = _revertFineUSD;
+        setValuesInUSDInternal(
+            minExchangeStakeDAUSD,
+            minExchangeStakeNDAUSD,
+            revertFineUSD
+        );
     }
 
-    function damp(
-        uint value,
-        uint newValue,
-        uint elapsed
+    function setValuesInUSDInternal(
+        uint minExchangeStakeWithDataAvailabilityUSD,
+        uint minExchangeStakeWithoutDataAvailabilityUSD,
+        uint revertFineUSD
         )
         internal
-        pure
-        returns (uint)
     {
-        return value.mul(dampingPeriod - elapsed).add(
-            newValue.mul(elapsed)
-        ) / dampingPeriod;
+        USD.minExchangeStakeDA = minExchangeStakeWithDataAvailabilityUSD;
+        USD.minExchangeStakeNDA = minExchangeStakeWithoutDataAvailabilityUSD;
+        USD.revertFine = revertFineUSD;
+
+        emit USDValuesUpdated(
+            USD.minExchangeStakeDA,
+            USD.minExchangeStakeNDA,
+            USD.revertFine
+        );
     }
 }
