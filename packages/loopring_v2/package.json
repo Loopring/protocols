@@ -38,7 +38,7 @@
     "dirty-chai": "^2.0.1",
     "ganache-cli": "6.2.4",
     "mocha": "^6.2.1",
-    "node": "12.13.0",
+    "node": "13.5.0",
     "npm": "^6.11.3",
     "solidity-coverage": "^0.6.7",
     "solium": "^1.1.8",
