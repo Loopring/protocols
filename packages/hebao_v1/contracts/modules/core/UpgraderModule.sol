@@ -38,12 +38,8 @@ contract UpgraderModule is BaseModule {
     function activate()
         external
     {
-        if (implementation != address(0) &&
-            implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {
-            require(
-                controller.implementationRegistry().isImplementationRegistered(implementation),
-                "INVALID_WALLET_IMPLEMENTATION"
-            );
+        if (implementation != OwnedUpgradabilityProxy(msg.sender).implementation() &&
+            controller.implementationRegistry().isImplementationRegistered(implementation)) {
             bytes memory txData = abi.encodeWithSelector(
                 OwnedUpgradabilityProxy(0).upgradeTo.selector,
                 implementation
