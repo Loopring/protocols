@@ -114,7 +114,12 @@ contract SecurityModule is MetaTxModule
         _;
     }
 
-    function quotaManager() internal view returns (address)
+    // ----- internal methods -----
+
+    function quotaManager()
+        internal
+        view
+        returns (address)
     {
         return address(controller.quotaManager());
     }

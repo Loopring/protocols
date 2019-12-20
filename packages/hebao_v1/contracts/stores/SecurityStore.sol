@@ -34,7 +34,7 @@ contract SecurityStore is DataStore
         address    inheritor;
         uint128    lastActive; // the latest timestamp the owner is considered to be active
         uint128    lock;
-        address    lockedBy;
+        address    lockedBy;   // the module that locked the wallet.
 
         Data.Guardian[] guardians;
 
@@ -143,16 +143,16 @@ contract SecurityStore is DataStore
         public
         onlyManager
     {
-        require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
-        uint128 _lock = uint128(lock);
-        require(uint(_lock) == lock, "LOCK_TOO_LARGE");
-
-        if (wallets[wallet].lock > now) {
+        if (isLocked(wallet)) {
             require(
                 wallets[wallet].lockedBy == msg.sender,
                 "MUST_UNLOCK_BY_THE_SAME_MODULE"
             );
         }
+
+        require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
+        uint128 _lock = uint128(lock);
+        require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
         wallets[wallet].lock = _lock;
         wallets[wallet].lockedBy = msg.sender;
