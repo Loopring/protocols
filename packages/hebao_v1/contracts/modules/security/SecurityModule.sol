@@ -33,6 +33,11 @@ contract SecurityModule is MetaTxModule
 {
     SecurityStore internal securityStore;
 
+    event WalletLock(
+        address indexed wallet,
+        bool            locked
+    );
+
     constructor(Controller _controller)
         public
         MetaTxModule(_controller)
@@ -112,5 +117,36 @@ contract SecurityModule is MetaTxModule
     function quotaManager() internal view returns (address)
     {
         return address(controller.quotaManager());
+    }
+
+    function lockWallet(address wallet)
+        internal
+    {
+        controller.securityStore().setLock(wallet, now + controller.lockPeriod());
+        emit WalletLock(wallet, true);
+    }
+
+    function unlockWallet(address wallet)
+        internal
+        onlyWhenWalletLocked(wallet)
+    {
+        controller.securityStore().setLock(wallet, 0);
+        emit WalletLock(wallet, false);
+    }
+
+    function getWalletLock(address wallet)
+        internal
+        view
+        returns (uint _lock, address _lockedBy)
+    {
+        return controller.securityStore().getLock(wallet);
+    }
+
+    function isWalletLocked(address wallet)
+        internal
+        view
+        returns (bool)
+    {
+        return controller.securityStore().isLocked(wallet);
     }
 }

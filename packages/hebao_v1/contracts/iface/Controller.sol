@@ -37,6 +37,7 @@ contract Controller
     // The address to which all colletable tokens/ether in modules will
     // be sent to.
     address public collectTo;
+    uint    public lockPeriod;
 
     ModuleRegistry          public moduleRegistry;
     WalletRegistry          public walletRegistry;

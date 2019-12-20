@@ -38,23 +38,12 @@ contract LockModule is SecurityModule
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    uint public lockPeriod;
-
-    event WalletLock(
-        address indexed wallet,
-        address indexed guardian,
-        bool            locked
-    );
-
     constructor(
-        Controller _controller,
-        uint       _lockPeriod
+        Controller _controller
         )
         public
         SecurityModule(_controller)
     {
-        require(_lockPeriod > 0, "INVALID_DELAY");
-        lockPeriod = _lockPeriod;
     }
 
     function boundMethods()
@@ -67,39 +56,31 @@ contract LockModule is SecurityModule
         methods[1] = this.isLocked.selector;
     }
 
-    function lock(
-        address wallet,
-        address guardian
-        )
+    function lock(address wallet, address guardian)
         external
         nonReentrant
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
     {
-        controller.securityStore().setLock(wallet, now + lockPeriod, guardian);
-        emit WalletLock(wallet, guardian, true);
+        lockWallet(wallet);
     }
 
-    function unlock(
-        address wallet,
-        address guardian
-        )
+    function unlock(address wallet, address guardian)
         external
         nonReentrant
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
         onlyWhenWalletLocked(wallet)
     {
-        controller.securityStore().setLock(wallet, 0, guardian);
-        emit WalletLock(wallet, guardian, false);
+        unlockWallet(wallet);
     }
 
     function getLock(address wallet)
         public
         view
-        returns (uint _lock, address _guardian)
+        returns (uint _lock, address _lockedBy)
     {
-        return controller.securityStore().getLock(wallet);
+        return getWalletLock(wallet);
     }
 
     function isLocked(address wallet)
@@ -107,7 +88,7 @@ contract LockModule is SecurityModule
         view
         returns (bool)
     {
-        return controller.securityStore().isLocked(wallet);
+        return isWalletLocked(wallet);
     }
 
     function extractMetaTxSigners(
