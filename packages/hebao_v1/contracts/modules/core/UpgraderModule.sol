@@ -4,9 +4,11 @@ import "../../iface/Controller.sol";
 
 import "../../base/BaseModule.sol";
 
+import "../../thirdparty/OwnedUpgradabilityProxy.sol";
+
 
 /// @title UpgraderModule
-/// @dev This module removes obsolsted modules and add new modules, then
+/// @dev This module removes obsoleted modules and add new modules, then
 ///      removes itself.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
@@ -14,22 +16,40 @@ import "../../base/BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    address[] public modulesToRemove;
-    address[] public modulesToAdd;
+    Controller public controller;
+    address[]  public modulesToRemove;
+    address[]  public modulesToAdd;
+    address    public implementation;
 
     constructor(
-        address[] memory _modulesToRemove,
-        address[] memory _modulesToAdd
+        Controller       _controller,
+        address          _implementation,
+        address[] memory _modulesToAdd,
+        address[] memory _modulesToRemove
         )
         public
     {
-        modulesToRemove = _modulesToRemove;
+        controller = _controller;
+        implementation = _implementation;
         modulesToAdd = _modulesToAdd;
+        modulesToRemove = _modulesToRemove;
     }
 
     function activate()
         external
     {
+        if (implementation != address(0)) {
+            require(
+                controller.implementationRegistry().isImplementationRegistered(implementation),
+                "INVALID_WALLET_IMPLEMENTATION"
+            );
+            bytes memory txData = abi.encodeWithSelector(
+                OwnedUpgradabilityProxy(address(0x0)).upgradeTo.selector,
+                implementation
+            );
+            transactCall(msg.sender, msg.sender, 0, txData);
+        }
+
         Wallet w = Wallet(msg.sender);
         for(uint i = 0; i < modulesToAdd.length; i++) {
             if (!w.hasModule(modulesToAdd[i])) {
@@ -43,14 +63,6 @@ contract UpgraderModule is BaseModule {
         }
 
         emit Activated(msg.sender);
-
         w.removeModule(address(this));
-    }
-
-
-    function deactivate()
-        external
-    {
-        emit Deactivated(msg.sender);
     }
 }
