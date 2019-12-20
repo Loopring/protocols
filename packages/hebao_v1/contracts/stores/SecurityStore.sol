@@ -45,7 +45,10 @@ contract SecurityStore is DataStore
 
     constructor() public DataStore() {}
 
-    function isGuardian(address wallet, address guardian)
+    function isGuardian(
+        address wallet,
+        address guardian
+        )
         public
         view
         returns (bool)
@@ -53,7 +56,10 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardianIdx[guardian] > 0;
     }
 
-    function getGuardian(address wallet, address _guardian)
+    function getGuardian(
+        address wallet,
+        address _guardian
+        )
         public
         view
         returns (Data.Guardian memory guardian)
@@ -79,7 +85,11 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardians.length;
     }
 
-    function addOrUpdateGuardian(address wallet, address guardian, uint group)
+    function addOrUpdateGuardian(
+        address wallet,
+        address guardian,
+        uint    group
+        )
         public
         onlyManager
     {
@@ -101,7 +111,10 @@ contract SecurityStore is DataStore
         }
     }
 
-    function removeGuardian(address wallet, address guardian)
+    function removeGuardian(
+        address wallet,
+        address guardian
+        )
         public
         onlyManager
     {
@@ -138,7 +151,7 @@ contract SecurityStore is DataStore
 
     function setLock(
         address wallet,
-        uint lock
+        uint    lock
         )
         public
         onlyManager

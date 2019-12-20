@@ -56,7 +56,10 @@ contract LockModule is SecurityModule
         methods[1] = this.isLocked.selector;
     }
 
-    function lock(address wallet, address guardian)
+    function lock(
+        address wallet,
+        address guardian
+        )
         external
         nonReentrant
         onlyFromMetaTxOr(guardian)
@@ -65,7 +68,10 @@ contract LockModule is SecurityModule
         lockWallet(wallet);
     }
 
-    function unlock(address wallet, address guardian)
+    function unlock(
+        address wallet,
+        address guardian
+        )
         external
         nonReentrant
         onlyFromMetaTxOr(guardian)

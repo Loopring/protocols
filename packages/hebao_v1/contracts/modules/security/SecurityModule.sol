@@ -35,7 +35,7 @@ contract SecurityModule is MetaTxModule
 
     event WalletLock(
         address indexed wallet,
-        bool            locked
+        uint            lock
     );
 
     constructor(Controller _controller)
@@ -127,8 +127,9 @@ contract SecurityModule is MetaTxModule
     function lockWallet(address wallet)
         internal
     {
-        controller.securityStore().setLock(wallet, now + controller.lockPeriod());
-        emit WalletLock(wallet, true);
+        uint lock = now + controller.lockPeriod();
+        controller.securityStore().setLock(wallet, lock);
+        emit WalletLock(wallet, lock);
     }
 
     function unlockWallet(address wallet)
@@ -136,7 +137,7 @@ contract SecurityModule is MetaTxModule
         onlyWhenWalletLocked(wallet)
     {
         controller.securityStore().setLock(wallet, 0);
-        emit WalletLock(wallet, false);
+        emit WalletLock(wallet, 0);
     }
 
     function getWalletLock(address wallet)
