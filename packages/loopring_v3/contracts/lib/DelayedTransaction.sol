@@ -21,6 +21,7 @@ import "../iface/IDelayedTransaction.sol";
 import "./AddressUtil.sol";
 import "./BytesUtil.sol";
 import "./MathUint.sol";
+import "./Map.sol";
 
 
 /// @title DelayedOwner
@@ -32,12 +33,13 @@ contract DelayedTransaction is IDelayedTransaction
     using AddressUtil for address payable;
     using BytesUtil   for bytes;
     using MathUint    for uint;
+    using Map         for Map.Data;
 
-    // Map from address and function to the functions's location+1 in the `delayedFunctions` array.
-    mapping (address => mapping (bytes4 => uint)) private delayedFunctionMap;
+    // Map of delayed (delay > 0) functions (DelayedFunction -> delay)
+    Map.Data internal delayedFunctions;
 
-    // Map from transaction ID to the transaction's location+1 in the `pendingTransactions` array.
-    mapping (uint => uint) private pendingTransactionMap;
+    // Map of pending transactions (id -> Transaction)
+    Map.Data internal pendingTransactions;
 
     // Used to generate a unique identifier for a delayed transaction
     uint private totalNumDelayedTransactions = 0;
@@ -121,9 +123,9 @@ contract DelayedTransaction is IDelayedTransaction
         onlyAuthorized
     {
         // First cache all transactions ids of the transactions we will remove
-        uint[] memory transactionIds = new uint[](pendingTransactions.length);
-        for(uint i = 0; i < pendingTransactions.length; i++) {
-            transactionIds[i] = pendingTransactions[i].id;
+        uint[] memory transactionIds = new uint[](pendingTransactions.keys.length);
+        for(uint i = 0; i < pendingTransactions.keys.length; i++) {
+            transactionIds[i] = abi.decode(pendingTransactions.keys[i], (uint));
         }
         // Now remove all delayed transactions
         for(uint i = 0; i < transactionIds.length; i++) {
@@ -139,11 +141,12 @@ contract DelayedTransaction is IDelayedTransaction
         view
         returns (uint)
     {
-        uint pos = delayedFunctionMap[to][functionSelector];
-        if (pos == 0) {
-            return 0;
+        DelayedFunction memory delayedFunction = DelayedFunction(to, functionSelector);
+        bytes memory key = encodeDelayedFunction(delayedFunction);
+        if (delayedFunctions.contains(key)) {
+            return abi.decode(delayedFunctions.get(key), (uint));
         } else {
-            return delayedFunctions[pos - 1].delay;
+            return 0;
         }
     }
 
@@ -152,7 +155,30 @@ contract DelayedTransaction is IDelayedTransaction
         view
         returns (uint)
     {
-        return pendingTransactions.length;
+        return pendingTransactions.size();
+    }
+
+    function getPendingTransaction(
+        uint index
+        )
+        external
+        view
+        returns (
+            uint    id,
+            uint    timestamp,
+            address to,
+            uint    value,
+            bytes   memory data
+        )
+    {
+        Transaction memory transaction = decodeTransaction(
+            pendingTransactions.get(pendingTransactions.keys[index])
+        );
+        id = transaction.id;
+        timestamp = transaction.timestamp;
+        to = transaction.to;
+        value = transaction.value;
+        data = transaction.data;
     }
 
     function getNumDelayedFunctions()
@@ -160,7 +186,24 @@ contract DelayedTransaction is IDelayedTransaction
         view
         returns (uint)
     {
-        return delayedFunctions.length;
+        return delayedFunctions.size();
+    }
+
+    function getDelayedFunction(
+        uint index
+        )
+        external
+        view
+        returns (
+            address to,
+            bytes4  functionSelector,
+            uint    delay
+        )
+    {
+        DelayedFunction memory delayedFunction = decodeDelayedFunction(delayedFunctions.keys[index]);
+        to = delayedFunction.to;
+        functionSelector = delayedFunction.functionSelector;
+        delay = abi.decode(delayedFunctions.get(delayedFunctions.keys[index]), (uint));
     }
 
     // == Internal Functions ==
@@ -198,8 +241,10 @@ contract DelayedTransaction is IDelayedTransaction
                 default { return(add(returnData, 32), mload(returnData)) }
             }
         } else {
-            pendingTransactions.push(transaction);
-            pendingTransactionMap[transaction.id] = pendingTransactions.length;
+            pendingTransactions.set(
+                abi.encode(transaction.id),
+                encodeTransaction(transaction)
+            );
             emit TransactionDelayed(
                 transaction.id,
                 transaction.timestamp,
@@ -219,32 +264,12 @@ contract DelayedTransaction is IDelayedTransaction
         )
         internal
     {
-        // Check if the function already has a delay
-        uint pos = delayedFunctionMap[to][functionSelector];
-        if (pos > 0) {
-            if (delay > 0) {
-                // Just update the delay
-                delayedFunctions[pos - 1].delay = delay;
-            } else {
-                // Remove the delayed function
-                uint size = delayedFunctions.length;
-                if (pos != size) {
-                    DelayedFunction memory lastOne = delayedFunctions[size - 1];
-                    delayedFunctions[pos - 1] = lastOne;
-                    delayedFunctionMap[lastOne.to][lastOne.functionSelector] = pos;
-                }
-                delayedFunctions.length -= 1;
-                delete delayedFunctionMap[to][functionSelector];
-            }
-        } else if (delay > 0) {
-            // Add the new delayed function
-            DelayedFunction memory delayedFunction = DelayedFunction(
-                to,
-                functionSelector,
-                delay
-            );
-            delayedFunctions.push(delayedFunction);
-            delayedFunctionMap[to][functionSelector] = delayedFunctions.length;
+        DelayedFunction memory delayedFunction = DelayedFunction(to, functionSelector);
+        bytes memory key = encodeDelayedFunction(delayedFunction);
+        if (delay > 0) {
+            delayedFunctions.set(key, abi.encode(delay));
+        } else if (delayedFunctions.contains(key)) {
+            delayedFunctions.remove(key);
         }
     }
 
@@ -288,11 +313,11 @@ contract DelayedTransaction is IDelayedTransaction
         )
         internal
         view
-        returns (Transaction storage transaction)
+        returns (Transaction memory transaction)
     {
-        uint pos = pendingTransactionMap[transactionId];
-        require(pos != 0, "TRANSACTION_NOT_FOUND");
-        transaction = pendingTransactions[pos - 1];
+        transaction = decodeTransaction(
+            pendingTransactions.get(abi.encode(transactionId))
+        );
     }
 
     function removeTransaction(
@@ -300,18 +325,71 @@ contract DelayedTransaction is IDelayedTransaction
         )
         internal
     {
-        uint pos = pendingTransactionMap[transactionId];
-        require(pos != 0, "TRANSACTION_NOT_FOUND");
+        pendingTransactions.remove(abi.encode(transactionId));
+    }
 
-        uint size = pendingTransactions.length;
-        if (pos != size) {
-            Transaction memory lastOne = pendingTransactions[size - 1];
-            pendingTransactions[pos - 1] = lastOne;
-            pendingTransactionMap[lastOne.id] = pos;
-        }
+    function encodeTransaction(
+        Transaction memory transaction
+        )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(
+            transaction.id,
+            transaction.timestamp,
+            transaction.to,
+            transaction.value,
+            transaction.data
+        );
+    }
 
-        pendingTransactions.length -= 1;
-        delete pendingTransactionMap[transactionId];
+    function decodeTransaction(
+        bytes memory data
+        )
+        internal
+        pure
+        returns (Transaction memory transaction)
+    {
+        (
+            transaction.id,
+            transaction.timestamp,
+            transaction.to,
+            transaction.value,
+            transaction.data
+        ) = abi.decode(
+            data,
+            (uint, uint, address, uint, bytes)
+        );
+    }
+
+    function encodeDelayedFunction(
+        DelayedFunction memory delayedFunction
+        )
+        internal
+        pure
+        returns (bytes memory)
+    {
+        return abi.encode(
+            delayedFunction.to,
+            delayedFunction.functionSelector
+        );
+    }
+
+    function decodeDelayedFunction(
+        bytes memory data
+        )
+        internal
+        pure
+        returns (DelayedFunction memory delayedFunction)
+    {
+        (
+            delayedFunction.to,
+            delayedFunction.functionSelector
+        ) = abi.decode(
+            data,
+            (address, bytes4)
+        );
     }
 
     function isAuthorizedForTransactions(address sender)

@@ -66,7 +66,6 @@ contract IDelayedTransaction
     {
         address to;
         bytes4  functionSelector;
-        uint    delay;
     }
 
     // The maximum amount of time (in seconds) a pending transaction can be executed
@@ -74,12 +73,6 @@ contract IDelayedTransaction
     // If the transaction hasn't been executed before then it can be cancelled so it is removed
     // from the pending transaction list.
     uint public timeToLive;
-
-    // Active list of delayed functions (delay > 0)
-    DelayedFunction[] public delayedFunctions;
-
-    // Active list of pending transactions
-    Transaction[] public pendingTransactions;
 
     /// @dev Executes a pending transaction.
     /// @param to The contract address to call
@@ -127,10 +120,38 @@ contract IDelayedTransaction
         view
         returns (uint);
 
+    /// @dev Gets the pending transaction at the specified index
+    /// @return The pending transaction
+    function getPendingTransaction(
+        uint index
+        )
+        external
+        view
+        returns (
+            uint    id,
+            uint    timestamp,
+            address to,
+            uint    value,
+            bytes   memory data
+        );
+
     /// @dev Gets the number of functions that have a delay.
     /// @return The number of delayed functions.
     function getNumDelayedFunctions()
         external
         view
         returns (uint);
+
+    /// @dev Gets the delayed function at the specified index
+    /// @return The delayed function
+    function getDelayedFunction(
+        uint index
+        )
+        external
+        view
+        returns (
+            address to,
+            bytes4  functionSelector,
+            uint    delay
+        );
 }

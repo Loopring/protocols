@@ -279,7 +279,7 @@ contract("DelayedOwner", (accounts: string[]) => {
     // Try to execute the same delayed transaction again
     await expectThrow(
       delayedContract.executeTransaction(event.id),
-      "TRANSACTION_NOT_FOUND"
+      "NOT_FOUND"
     );
 
     // Check the amount of ETH in the contract after the call
@@ -347,7 +347,7 @@ contract("DelayedOwner", (accounts: string[]) => {
     // Try to cancel the a transaction twice
     await expectThrow(
       delayedContract.executeTransaction(eventD.id),
-      "TRANSACTION_NOT_FOUND"
+      "NOT_FOUND"
     );
 
     // Execute the last non-cancelled transaction
@@ -362,7 +362,7 @@ contract("DelayedOwner", (accounts: string[]) => {
     // Try to cancel the transaction after it has been executed
     await expectThrow(
       delayedContract.executeTransaction(eventB.id),
-      "TRANSACTION_NOT_FOUND"
+      "NOT_FOUND"
     );
   });
 
@@ -406,11 +406,11 @@ contract("DelayedOwner", (accounts: string[]) => {
     for (const transactionId of transactionIds) {
       await expectThrow(
         delayedContract.executeTransaction(transactionId),
-        "TRANSACTION_NOT_FOUND"
+        "NOT_FOUND"
       );
       await expectThrow(
         delayedContract.cancelTransaction(transactionId),
-        "TRANSACTION_NOT_FOUND"
+        "NOT_FOUND"
       );
     }
   });
@@ -485,12 +485,12 @@ contract("DelayedOwner", (accounts: string[]) => {
     // Try to execute the same transaction again
     await expectThrow(
       delayedContract.executeTransaction(eventA.id),
-      "TRANSACTION_NOT_FOUND"
+      "NOT_FOUND"
     );
     // Try to cancel the same transaction again
     await expectThrow(
       delayedContract.cancelTransaction(eventA.id),
-      "TRANSACTION_NOT_FOUND"
+      "NOT_FOUND"
     );
 
     // Check the amount of ETH in the contract after the call
