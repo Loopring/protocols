@@ -16,20 +16,17 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    Controller public controller;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
     address    public implementation;
 
     constructor(
-        Controller       _controller,
         address          _implementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove
         )
         public
     {
-        controller = _controller;
         implementation = _implementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
@@ -38,8 +35,8 @@ contract UpgraderModule is BaseModule {
     function activate()
         external
     {
-        if (implementation != OwnedUpgradabilityProxy(msg.sender).implementation() &&
-            controller.implementationRegistry().isImplementationRegistered(implementation)) {
+        if (implementation != address(0) &&
+            implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {
             bytes memory txData = abi.encodeWithSelector(
                 OwnedUpgradabilityProxy(0).upgradeTo.selector,
                 implementation
