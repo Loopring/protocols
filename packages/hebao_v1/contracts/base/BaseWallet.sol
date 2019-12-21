@@ -127,8 +127,9 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         external
         onlyModule
     {
-        require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
-        Module(_module).deactivate();
+        // Allow deactivate to fail to make sure the module can be removed
+        // solium-disable-next-line
+        _module.call(abi.encode(Module(0).deactivate.selector));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }

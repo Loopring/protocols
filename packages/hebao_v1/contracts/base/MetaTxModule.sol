@@ -427,6 +427,9 @@ contract MetaTxModule is BaseModule
         bytes4 method = extractMethod(data);
         if (method == this.executeTransactions.selector) {
             return extractAddressesFromCallData(data, 1);
+        } else if (method == this.addModule.selector) {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
         } else {
             signers = extractMetaTxSigners(wallet, method, data);
         }
