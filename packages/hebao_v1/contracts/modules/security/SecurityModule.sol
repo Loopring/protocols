@@ -134,6 +134,7 @@ contract SecurityModule is MetaTxModule
 
     function lockWallet(address wallet, uint _lockPeriod)
         internal
+        onlyWhenWalletUnlocked(wallet)
     {
         require(_lockPeriod > 0, "ZERO_VALUE");
         uint lock = now + _lockPeriod;
@@ -141,10 +142,12 @@ contract SecurityModule is MetaTxModule
         emit WalletLock(wallet, lock);
     }
 
-    function unlockWallet(address wallet)
-        internal
+    function unlockWallet(address wallet, bool forceUnlock)
         onlyWhenWalletLocked(wallet)
+        internal
     {
+        (, address _lockedBy) = controller.securityStore().getLock(wallet);
+        require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
         controller.securityStore().setLock(wallet, 0);
         emit WalletLock(wallet, 0);
     }
