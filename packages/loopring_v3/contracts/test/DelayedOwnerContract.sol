@@ -39,11 +39,12 @@ contract DelayedOwnerContract is DelayedOwner
     }
 
     function setFunctionDelayExternal(
-        bytes4 functionSelector,
-        uint   delay
+        address to,
+        bytes4  functionSelector,
+        uint    delay
         )
         external
     {
-        setFunctionDelay(functionSelector, delay);
+        setFunctionDelay(to, functionSelector, delay);
     }
 }

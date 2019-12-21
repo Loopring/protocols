@@ -16,16 +16,15 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/Claimable.sol";
 
-
-/// @title IDelayedOwner
+/// @title IDelayedTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IDelayedOwner is Claimable
+contract IDelayedTransaction
 {
     event TransactionDelayed(
         uint    id,
         uint    timestamp,
+        address to,
         uint    value,
         bytes   data,
         uint    delay
@@ -34,12 +33,14 @@ contract IDelayedOwner is Claimable
     event TransactionCancelled(
         uint    id,
         uint    timestamp,
+        address to,
         uint    value,
         bytes   data
     );
 
     event TransactionExecuted(
         uint    timestamp,
+        address to,
         uint    value,
         bytes   data
     );
@@ -47,6 +48,7 @@ contract IDelayedOwner is Claimable
     event PendingTransactionExecuted(
         uint    id,
         uint    timestamp,
+        address to,
         uint    value,
         bytes   data
     );
@@ -55,18 +57,17 @@ contract IDelayedOwner is Claimable
     {
         uint    id;
         uint    timestamp;
+        address to;
         uint    value;
         bytes   data;
     }
 
     struct DelayedFunction
     {
+        address to;
         bytes4  functionSelector;
         uint    delay;
     }
-
-    // The contract all function calls will be done on.
-    address public ownedContract;
 
     // The maximum amount of time (in seconds) a pending transaction can be executed
     // (so the amount of time than can pass after the mandatory function specific delay).
@@ -79,6 +80,16 @@ contract IDelayedOwner is Claimable
 
     // Active list of pending transactions
     Transaction[] public pendingTransactions;
+
+    /// @dev Executes a pending transaction.
+    /// @param to The contract address to call
+    /// @param data The call data
+    function transact(
+        address to,
+        bytes   calldata data
+        )
+        external
+        payable;
 
     /// @dev Executes a pending transaction.
     /// @param transactionId The id of the pending transaction.
@@ -102,7 +113,8 @@ contract IDelayedOwner is Claimable
     /// @param functionSelector The function selector.
     /// @return The delay of the function.
     function getFunctionDelay(
-        bytes4 functionSelector
+        address to,
+        bytes4  functionSelector
         )
         public
         view
