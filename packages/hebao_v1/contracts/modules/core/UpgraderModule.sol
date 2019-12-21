@@ -16,9 +16,9 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
+    address    public implementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
-    address    public implementation;
 
     constructor(
         address          _implementation,
