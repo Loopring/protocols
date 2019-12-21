@@ -127,7 +127,16 @@ contract SecurityModule is MetaTxModule
     function lockWallet(address wallet)
         internal
     {
-        uint lock = now + controller.lockPeriod();
+        uint lock = now + controller.defaultLockPeriod();
+        controller.securityStore().setLock(wallet, lock);
+        emit WalletLock(wallet, lock);
+    }
+
+    function lockWallet(address wallet, uint _lockPeriod)
+        internal
+    {
+        require(_lockPeriod > 0, "ZERO_VALUE");
+        uint lock = now + _lockPeriod;
         controller.securityStore().setLock(wallet, lock);
         emit WalletLock(wallet, lock);
     }
