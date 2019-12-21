@@ -132,14 +132,6 @@ contract SecurityStore is DataStore
         delete w.guardianIdx[guardian];
     }
 
-    function isLocked(address wallet)
-        public
-        view
-        returns (bool)
-    {
-        return uint(wallets[wallet].lock) > now;
-    }
-
     function getLock(address wallet)
         public
         view
@@ -156,13 +148,6 @@ contract SecurityStore is DataStore
         public
         onlyManager
     {
-        if (isLocked(wallet)) {
-            require(
-                wallets[wallet].lockedBy == msg.sender,
-                "MUST_UNLOCK_BY_THE_SAME_MODULE"
-            );
-        }
-
         require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");

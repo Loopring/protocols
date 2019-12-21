@@ -83,13 +83,13 @@ contract SecurityModule is MetaTxModule
 
     modifier onlyWhenWalletLocked(address wallet)
     {
-        require(controller.securityStore().isLocked(wallet), "NOT_LOCKED");
+        require(isWalletLocked(wallet), "NOT_LOCKED");
         _;
     }
 
     modifier onlyWhenWalletUnlocked(address wallet)
     {
-        require(!controller.securityStore().isLocked(wallet), "LOCKED");
+        require(!isWalletLocked(wallet), "LOCKED");
         _;
     }
 
@@ -153,6 +153,7 @@ contract SecurityModule is MetaTxModule
         view
         returns (bool)
     {
-        return controller.securityStore().isLocked(wallet);
+        (uint _lock,) = controller.securityStore().getLock(wallet);
+        return _lock > now;
     }
 }
