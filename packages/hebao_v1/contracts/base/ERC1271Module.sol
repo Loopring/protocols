@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../thirdparty/ERC1271.sol";
 
@@ -28,28 +28,19 @@ import "./BaseModule.sol";
 
 /// @title ERC1271Module
 /// @dev This is the base module for supporting ERC1271.
-contract ERC1271Module is ERC1271, BaseModule
+abstract contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
 
     function boundMethods()
         public
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
         methods[0] = this.isValidSignature.selector;
     }
-
-    /// @dev This is a method bound to wallet.
-    ///      It checks if the current wallet owner is the data signer.
-    function isValidSignature(
-        bytes memory _data,
-        bytes memory _signature
-        )
-        public
-        view
-        returns (bytes4);
 
     function isSignedByWalletOwner(
         address      _wallet,

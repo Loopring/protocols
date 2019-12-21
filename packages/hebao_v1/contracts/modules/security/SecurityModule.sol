@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../base/MetaTxModule.sol";
@@ -29,7 +29,7 @@ import "../security/GuardianUtils.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract SecurityModule is MetaTxModule
+abstract contract SecurityModule is MetaTxModule
 {
     SecurityStore internal securityStore;
 
@@ -40,7 +40,7 @@ contract SecurityModule is MetaTxModule
     }
 
     // overriding
-    modifier onlyFromWalletOwner(address wallet) {
+    modifier onlyFromWalletOwner(address wallet) override {
         require(
             msg.sender == Wallet(wallet).owner(),
             "NOT_FROM_WALLET_OWNER"
@@ -50,7 +50,7 @@ contract SecurityModule is MetaTxModule
     }
 
     // overridding
-    modifier onlyFromMetaTxOrWalletOwner(address wallet) {
+    modifier onlyFromMetaTxOrWalletOwner(address wallet) override {
         require(
             msg.sender == Wallet(wallet).owner() ||
             msg.sender == address(this),
@@ -109,7 +109,7 @@ contract SecurityModule is MetaTxModule
         _;
     }
 
-    function quotaManager() internal view returns (address)
+    function quotaManager() internal view override returns (address)
     {
         return address(controller.quotaManager());
     }

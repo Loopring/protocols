@@ -14,19 +14,20 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "./ERC20.sol";
 
 
 /// @title Burnable ERC20 Token Interface
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BurnableERC20 is ERC20
+abstract contract BurnableERC20 is ERC20
 {
     function burn(
         uint value
         )
         public
+        virtual
         returns (bool);
 
     function burnFrom(
@@ -34,5 +35,6 @@ contract BurnableERC20 is ERC20
         uint value
         )
         public
+        virtual
         returns (bool);
 }

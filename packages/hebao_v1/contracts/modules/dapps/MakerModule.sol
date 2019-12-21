@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
@@ -26,6 +26,18 @@ contract MakerModule is SecurityModule
     constructor(Controller _controller)
         public
         SecurityModule(_controller)
+    {
+    }
+
+    function extractMetaTxSigners(
+        address /*wallet*/,
+        bytes4  /*method*/,
+        bytes   memory /*data*/
+        )
+        internal
+        view
+        override
+        returns (address[] memory signers)
     {
     }
 }

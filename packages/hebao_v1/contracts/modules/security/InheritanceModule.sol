@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
@@ -54,6 +54,7 @@ contract InheritanceModule is SecurityModule
     function boundMethods()
         public
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -106,12 +107,13 @@ contract InheritanceModule is SecurityModule
     }
 
     function extractMetaTxSigners(
-        bytes4  method,
         address wallet,
+        bytes4  method,
         bytes   memory data
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.setInheritor.selector) {

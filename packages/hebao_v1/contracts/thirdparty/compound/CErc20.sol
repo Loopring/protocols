@@ -1,6 +1,6 @@
 // From Compound code base - https://github.com/compound-finance/compound-protocol/blob/master/contracts/CErc20.sol
 // with minor modificaiton.
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "./CToken.sol";
 
@@ -10,7 +10,7 @@ import "./CToken.sol";
  * @notice CTokens which wrap an EIP-20 underlying
  * @author Compound
  */
-contract CErc20 is CToken {
+abstract contract CErc20 is CToken {
 
     /*** User Interface ***/
 
@@ -20,14 +20,14 @@ contract CErc20 is CToken {
      * @param mintAmount The amount of the underlying asset to supply
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function mint(uint mintAmount) external returns (uint);
+    function mint(uint mintAmount) external virtual returns (uint);
     /**
      * @notice Sender redeems cTokens in exchange for the underlying asset
      * @dev Accrues interest whether or not the operation succeeds, unless reverted
      * @param redeemTokens The number of cTokens to redeem into underlying
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeem(uint redeemTokens) external returns (uint);
+    function redeem(uint redeemTokens) external virtual returns (uint);
 
     /**
      * @notice Sender redeems cTokens in exchange for a specified amount of underlying asset
@@ -35,21 +35,21 @@ contract CErc20 is CToken {
      * @param redeemAmount The amount of underlying to redeem
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function redeemUnderlying(uint redeemAmount) external returns (uint);
+    function redeemUnderlying(uint redeemAmount) external virtual returns (uint);
 
     /**
       * @notice Sender borrows assets from the protocol to their own address
       * @param borrowAmount The amount of the underlying asset to borrow
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
-    function borrow(uint borrowAmount) external returns (uint);
+    function borrow(uint borrowAmount) external virtual returns (uint);
 
     /**
      * @notice Sender repays their own borrow
      * @param repayAmount The amount to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrow(uint repayAmount) external returns (uint);
+    function repayBorrow(uint repayAmount) external virtual returns (uint);
 
     /**
      * @notice Sender repays a borrow belonging to borrower
@@ -57,7 +57,7 @@ contract CErc20 is CToken {
      * @param repayAmount The amount to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function repayBorrowBehalf(address borrower, uint repayAmount) external returns (uint);
+    function repayBorrowBehalf(address borrower, uint repayAmount) external virtual returns (uint);
 
     /**
      * @notice The sender liquidates the borrowers collateral.
@@ -67,5 +67,5 @@ contract CErc20 is CToken {
      * @param repayAmount The amount of the underlying borrowed asset to repay
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
-    function liquidateBorrow(address borrower, uint repayAmount, CToken cTokenCollateral) external returns (uint);
+    function liquidateBorrow(address borrower, uint repayAmount, CToken cTokenCollateral) external virtual returns (uint);
 }

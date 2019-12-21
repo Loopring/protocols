@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
@@ -44,7 +44,7 @@ import "./BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 
-contract MetaTxModule is BaseModule
+abstract contract MetaTxModule is BaseModule
 {
     using MathUint      for uint;
     using AddressUtil   for address;
@@ -97,7 +97,7 @@ contract MetaTxModule is BaseModule
         bool    success
     );
 
-    modifier onlyFromMetaTx
+    modifier onlyFromMetaTx override
     {
         require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
         _;
@@ -111,7 +111,7 @@ contract MetaTxModule is BaseModule
         controller = _controller;
     }
 
-    function quotaManager() internal view returns (address)
+    function quotaManager() internal view virtual returns (address)
     {
         return address(0);
     }
@@ -307,12 +307,14 @@ contract MetaTxModule is BaseModule
         )
         internal
         view
+        virtual
         returns (address[] memory signers);
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
         internal
         view
+        virtual
         returns (address wallet)
     {
         wallet = extractAddressFromCallData(data, 0);
@@ -437,8 +439,9 @@ contract MetaTxModule is BaseModule
         bytes     memory /*data*/,
         address[] memory signers
         )
-        private
+        internal
         view
+        virtual
         returns (bool)
     {
         // We need at least one signer, and all signers need to be either the wallet owner or a guardian.

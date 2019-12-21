@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressSet.sol";
@@ -115,6 +115,7 @@ contract BaseVault is AddressSet, Vault
         bytes[]   calldata signatures
         )
         external
+        override
         returns (bytes memory result)
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
@@ -143,8 +144,8 @@ contract BaseVault is AddressSet, Vault
 
         if (!success) {
             assembly {
-                returndatacopy(0, 0, returndatasize)
-                revert(0, returndatasize)
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
         emit Executed(target, value, mode, data, success);
@@ -152,6 +153,7 @@ contract BaseVault is AddressSet, Vault
 
     function addOwner(address owner)
         external
+        override
         onlyFromExecute
     {
         addAddressToSet(OWNERS, owner, true);
@@ -160,6 +162,7 @@ contract BaseVault is AddressSet, Vault
 
     function removeOwner(address owner)
         external
+        override
         onlyFromExecute
     {
         uint count = numOwners();
@@ -175,6 +178,7 @@ contract BaseVault is AddressSet, Vault
 
     function changeRequirement(uint newRequirement)
         external
+        override
         onlyFromExecute
     {
         require(
@@ -189,6 +193,7 @@ contract BaseVault is AddressSet, Vault
     function requirement()
         public
         view
+        override
         returns (uint)
     {
         return _requirement;
@@ -197,6 +202,7 @@ contract BaseVault is AddressSet, Vault
     function owners()
         public
         view
+        override
         returns (address[] memory)
     {
         return addressesInSet(OWNERS);
@@ -205,6 +211,7 @@ contract BaseVault is AddressSet, Vault
     function isOwner(address _addr)
         public
         view
+        override
         returns (bool)
     {
         return isAddressInSet(OWNERS, _addr);

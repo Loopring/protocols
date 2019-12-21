@@ -1,7 +1,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSResolver.sol
 // with few modifications.
 
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 import "../../lib/OwnerManagable.sol";
 import "./ENS.sol";
 
@@ -39,7 +39,7 @@ contract BaseENSResolver is OwnerManagable, ENSResolver {
      * @param _node The node to update.
      * @param _addr The address to set.
      */
-    function setAddr(bytes32 _node, address _addr) public onlyManager {
+    function setAddr(bytes32 _node, address _addr) public override onlyManager {
         records[_node].addr = _addr;
         emit AddrChanged(_node, _addr);
     }
@@ -49,7 +49,7 @@ contract BaseENSResolver is OwnerManagable, ENSResolver {
      * @param _node The node to update.
      * @param _name The name to set.
      */
-    function setName(bytes32 _node, string memory _name) public onlyManager {
+    function setName(bytes32 _node, string memory _name) public override onlyManager {
         records[_node].name = _name;
         emit NameChanged(_node, _name);
     }
@@ -59,7 +59,7 @@ contract BaseENSResolver is OwnerManagable, ENSResolver {
      * @param _node The target node.
      * @return the address of the target node.
      */
-    function addr(bytes32 _node) public view returns (address) {
+    function addr(bytes32 _node) public view override returns (address) {
         return records[_node].addr;
     }
 
@@ -68,7 +68,7 @@ contract BaseENSResolver is OwnerManagable, ENSResolver {
      * @param _node The target ENS node.
      * @return the name of the target ENS node.
      */
-    function name(bytes32 _node) public view returns (string memory) {
+    function name(bytes32 _node) public view override returns (string memory) {
         return records[_node].name;
     }
 

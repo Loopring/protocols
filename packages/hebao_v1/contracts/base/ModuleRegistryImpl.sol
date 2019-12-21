@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/AddressSet.sol";
 import "../lib/Claimable.sol";
@@ -37,6 +37,7 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 
     function registerModule(address module)
         external
+        override
         onlyOwner
     {
         addAddressToSet(MODULE, module, true);
@@ -45,6 +46,7 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 
     function deregisterModule(address module)
         external
+        override
         onlyOwner
     {
         removeAddressFromSet(MODULE, module);
@@ -52,24 +54,27 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
     }
 
     function isModuleRegistered(address module)
-        public
+        external
         view
+        override
         returns (bool)
     {
         return isAddressInSet(MODULE, module);
     }
 
     function modules()
-        public
+        external
         view
+        override
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
     }
 
     function numOfModules()
-        public
+        external
         view
+        override
         returns (uint)
     {
         return numAddressesInSet(MODULE);

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/AddressSet.sol";
 import "../lib/Claimable.sol";
@@ -40,6 +40,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
 
     function registerImplementation(address implementation)
         external
+        override
         onlyOwner
     {
         addAddressToSet(IMPLEMENTATION, implementation, true);
@@ -48,6 +49,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
 
     function deregisterImplementation(address implementation)
         external
+        override
         onlyOwner
     {
         removeAddressFromSet(IMPLEMENTATION, implementation);
@@ -57,6 +59,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
     function isImplementationRegistered(address implementation)
         public
         view
+        override
         returns (bool)
     {
         return isAddressInSet(IMPLEMENTATION, implementation);
@@ -64,6 +67,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
 
     function setDefaultImplementation(address implementation)
         external
+        override
         onlyOwner
     {
         require(implementation != _defaultImplementation, "DEFAULT_IMPLEMENTATION_UNCHANGED");
@@ -77,6 +81,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
     function defaultImplementation()
         public
         view
+        override
         returns (address)
     {
         require(isImplementationRegistered(_defaultImplementation), "INVALID_DEFAULT_IMPLEMENTATION");
@@ -86,6 +91,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
     function implementations()
         public
         view
+        override
         returns (address[] memory)
     {
         return addressesInSet(IMPLEMENTATION);
@@ -94,6 +100,7 @@ contract ImplementationRegistryImpl is Claimable, AddressSet, ImplementationRegi
     function numOfImplementations()
         public
         view
+        override
         returns (uint)
     {
         return numAddressesInSet(IMPLEMENTATION);

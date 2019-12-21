@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
@@ -113,7 +113,7 @@ contract SecurityStore is DataStore
             w.guardians[idx - 1] = lastGuardian;
             w.guardianIdx[lastGuardian.addr] = idx;
         }
-        w.guardians.length -= 1;
+        w.guardians.pop();
         delete w.guardianIdx[guardian];
     }
 

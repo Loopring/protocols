@@ -1,6 +1,6 @@
 // From Argent code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/defi/utils/CompoundRegistry.sol
 // with minor modificaiton.
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/Claimable.sol";
@@ -25,7 +25,8 @@ contract CompoundRegistry is Claimable {
     /// @param _cToken The cToken
     function addCToken(address _underlying, address _cToken) external onlyOwner {
         require(cTokens[_underlying].index == 0, "CR: cToken already added");
-        cTokens[_underlying].index = uint128(tokens.push(_underlying));
+        tokens.push(_underlying);
+        cTokens[_underlying].index = uint128(tokens.length);
         cTokens[_underlying].market = _cToken;
         emit CTokenAdded(_underlying, _cToken);
     }
@@ -40,7 +41,7 @@ contract CompoundRegistry is Claimable {
             tokens[targetIndex] = last;
             cTokens[last].index = targetIndex;
         }
-        tokens.length --;
+        tokens.pop();
         delete cTokens[_underlying];
         emit CTokenRemoved(_underlying);
     }

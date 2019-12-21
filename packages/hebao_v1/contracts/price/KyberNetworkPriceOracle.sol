@@ -14,14 +14,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/ERC20.sol";
 
 import "../iface/PriceOracle.sol";
 
 
-contract KyberNetworkProxy {
+abstract contract KyberNetworkProxy {
     function getExpectedRate(
         ERC20 src,
         ERC20 dest,
@@ -29,6 +29,7 @@ contract KyberNetworkProxy {
         )
         public
         view
+        virtual
         returns (
             uint expectedRate,
             uint slippageRate
@@ -51,6 +52,7 @@ contract KyberNetworkPriceOracle is PriceOracle
     function tokenPrice(address token, uint amount)
         public
         view
+        override
         returns (uint value)
     {
         if (amount == 0) return 0;

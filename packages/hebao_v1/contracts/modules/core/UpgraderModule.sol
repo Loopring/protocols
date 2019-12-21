@@ -1,4 +1,4 @@
-pragma solidity ^0.5.4;
+pragma solidity ^0.6.0;
 
 import "../../iface/Controller.sol";
 
@@ -34,6 +34,7 @@ contract UpgraderModule is BaseModule {
 
     function activate()
         external
+        override
     {
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "./Ownable.sol";
 
@@ -39,6 +39,7 @@ contract Claimable is Ownable
         address newOwner
         )
         public
+        override
         onlyOwner
     {
         require(newOwner != address(0) && newOwner != owner, "INVALID_ADDRESS");

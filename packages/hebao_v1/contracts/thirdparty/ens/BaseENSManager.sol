@@ -1,7 +1,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ArgentENSManager.sol
 // with few modifications.
 
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 import "../strings.sol";
 import "./ENS.sol";
 import "./ENSConsumer.sol";
@@ -62,7 +62,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
      * and the address of the new Manager should be provided.
      * @param _newOwner The address of the new ENS manager that will manage the root node.
      */
-    function changeRootnodeOwner(address _newOwner) external onlyOwner {
+    function changeRootnodeOwner(address _newOwner) external override onlyOwner {
         getENSRegistry().setOwner(rootNode, _newOwner);
         emit RootnodeOwnerChange(rootNode, _newOwner);
     }
@@ -83,7 +83,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     * @param _owner The owner of the subdomain.
     * @param _label The subdomain label.
     */
-    function register(address _owner, string calldata _label) external onlyManager {
+    function register(string calldata _label, address _owner) external override onlyManager {
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
         address currentOwner = getENSRegistry().owner(node);
@@ -113,7 +113,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
      * @param _subnode The target subnode.
      * @return true if the subnode is available.
      */
-    function isAvailable(bytes32 _subnode) public view returns (bool) {
+    function isAvailable(bytes32 _subnode) public view override returns (bool) {
         bytes32 node = keccak256(abi.encodePacked(rootNode, _subnode));
         address currentOwner = getENSRegistry().owner(node);
         if(currentOwner == address(0)) {
