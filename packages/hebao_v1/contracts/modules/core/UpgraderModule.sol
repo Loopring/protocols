@@ -47,7 +47,6 @@ contract UpgraderModule is BaseModule {
         w.removeModule(address(this));
     }
 
-
     function deactivate()
         external
     {
