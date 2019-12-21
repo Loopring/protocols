@@ -65,7 +65,6 @@ contract LockModule is SecurityModule
         // onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
-
     {
         lockWallet(wallet);
     }
