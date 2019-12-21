@@ -140,33 +140,33 @@ contract CompoundModule is BaseSubAccount, SecurityModule
                 borrow(wallet, cToken, borrowable);
                 trackBorrow(wallet, token, borrowable);
             }
-        }
-
-        // Non-collateral token, user exchange current cToken and borrow more according to liquidity.
-        // 2 cases:
-        //  a. amount <= balance                                  ==> redeem();
-        //  b. amount > balance && amount - balance <= borrowable ==> redeem() && borrow();
-        uint balance = CToken(cToken).balanceOfUnderlying(wallet);
-        uint borrowable = tokenBorrowable(wallet, token); // other collaterals tokens as this one is not.
-        require(amount <= balance + borrowable, "INVALID_WITHDRAW_AMOUNT");
-
-        uint withdrawAmount;
-        uint borrowAmount;
-        if (amount <= balance) {
-            withdrawAmount = amount;
         } else {
-            withdrawAmount = balance;
-            borrowAmount = amount - withdrawAmount;
-        }
+            // Non-collateral token, user exchange current cToken and borrow more according to liquidity.
+            // 2 cases:
+            //  a. amount <= balance                                  ==> redeem();
+            //  b. amount > balance && amount - balance <= borrowable ==> redeem() && borrow();
+            uint balance = CToken(cToken).balanceOfUnderlying(wallet);
+            uint borrowable = tokenBorrowable(wallet, token); // other collaterals tokens as this one is not.
+            require(amount <= balance + borrowable, "INVALID_WITHDRAW_AMOUNT");
 
-        if (withdrawAmount > 0) {
-            redeemUnderlying(wallet, cToken, withdrawAmount);
-            trackWithdrawal(wallet, token, amount);
-        }
+            uint withdrawAmount;
+            uint borrowAmount;
+            if (amount <= balance) {
+                withdrawAmount = amount;
+            } else {
+                withdrawAmount = balance;
+                borrowAmount = amount - withdrawAmount;
+            }
 
-        if (borrowAmount > 0) {
-            borrow(wallet, cToken, borrowAmount);
-            trackBorrow(wallet, token, borrowAmount);
+            if (withdrawAmount > 0) {
+                redeemUnderlying(wallet, cToken, withdrawAmount);
+                trackWithdrawal(wallet, token, amount);
+            }
+
+            if (borrowAmount > 0) {
+                borrow(wallet, cToken, borrowAmount);
+                trackBorrow(wallet, token, borrowAmount);
+            }
         }
     }
 
