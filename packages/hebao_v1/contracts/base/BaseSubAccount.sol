@@ -176,7 +176,20 @@ abstract contract BaseSubAccount is SubAccount
         return !unsupported && amount <= depositable;
     }
 
-    function tokenInterestRate(address, address, uint, bool) public view override virtual returns (int) { return 0; }
+    function tokenInterestRate(
+        address,
+        address,
+        uint,
+        bool
+        )
+        public
+        view
+        override
+        virtual
+        returns (int)
+    {
+        return 0;
+    }
 
     /// @dev Returns the balance for a list of tokens.
     ///
