@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "..//lib/MathUint.sol";
 
@@ -61,6 +61,7 @@ contract PriceCacheStore is DataStore, PriceOracle
     function tokenPrice(address token, uint amount)
         public
         view
+        override
         returns (uint)
     {
         TokenPrice storage tp = prices[token];

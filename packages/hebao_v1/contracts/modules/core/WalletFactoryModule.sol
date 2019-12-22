@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../base/MetaTxModule.sol";
@@ -75,7 +75,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         }
 
         if (bytes(_subdomain).length > 0) {
-            controller.ensManager().register(_wallet, _subdomain);
+            controller.ensManager().register(_subdomain, _wallet);
         }
         w.removeModule(address(this));
     }
@@ -87,6 +87,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.createWallet.selector) {
@@ -100,6 +101,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     function extractWalletAddress(bytes memory data)
         internal
         view
+        override
         returns (address wallet)
     {
         require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
@@ -112,8 +114,9 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         bytes     memory /*data*/,
         address[] memory /*signers*/
         )
-        private
+        internal
         view
+        override
         returns (bool)
     {
         // The wallet doesn't exist yet, so the owner of the wallet (or any guardians) has not yet been set.

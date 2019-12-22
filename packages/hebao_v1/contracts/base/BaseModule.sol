@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/ReentrancyGuard.sol";
 
@@ -35,35 +35,35 @@ contract BaseModule is ReentrancyGuard, Module
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
-    modifier onlyFromWallet(address wallet)
+    modifier onlyFromWallet(address wallet) virtual
     {
         require(msg.sender == wallet, "NOT_FROM_WALLET");
         _;
     }
 
-    modifier onlyFromMetaTx() {
+    modifier onlyFromMetaTx() virtual {
         require(msg.sender == address(this), "NOT_FROM_META_TX");
         _;
     }
 
-    modifier onlyFromWalletOwner(address wallet) {
+    modifier onlyFromWalletOwner(address wallet) virtual {
         require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
 
-    modifier onlyFromMetaTxOrWalletOwner(address wallet) {
+    modifier onlyFromMetaTxOrWalletOwner(address wallet) virtual {
         require(
             msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
             "NOT_FROM_METATX_OR_WALLET_OWNER");
         _;
     }
 
-    modifier onlyWalletOwner(address wallet, address addr) {
+    modifier onlyWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() == addr, "NOT_WALLET_OWNER");
         _;
     }
 
-    modifier notWalletOwner(address wallet, address addr) {
+    modifier notWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
     }
@@ -82,6 +82,8 @@ contract BaseModule is ReentrancyGuard, Module
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external
+        override
+        virtual
     {
         bindMethods(msg.sender);
         emit Activated(msg.sender);
@@ -90,6 +92,8 @@ contract BaseModule is ReentrancyGuard, Module
     /// @dev This method will cause an re-entry to the same module contract.
     function deactivate()
         external
+        override
+        virtual
     {
         unbindMethods(msg.sender);
         emit Deactivated(msg.sender);
@@ -103,6 +107,7 @@ contract BaseModule is ReentrancyGuard, Module
     function boundMethods()
         public
         pure
+        virtual
         returns (bytes4[] memory methods)
     {
     }

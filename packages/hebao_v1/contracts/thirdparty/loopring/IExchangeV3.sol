@@ -14,14 +14,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 
 /// @title IExchangeV3
 /// @dev This is a partial interface form Loopring3.0's IExchangeV3.sol
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchangeV3
+interface IExchangeV3
 {
     function isInWithdrawalMode()
         external

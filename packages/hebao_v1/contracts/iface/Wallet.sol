@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 
 /// @title Wallet
@@ -28,9 +28,9 @@ pragma solidity ^0.5.13;
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract Wallet
+interface Wallet
 {
-    function owner() public view returns (address);
+    function owner() external view returns (address);
 
     /// @dev Set a new owner.
     function setOwner(address newOwner) external;
@@ -60,12 +60,12 @@ contract Wallet
     /// @dev Returns the list of modules added to this wallet in the order
     ///      they were added.
     /// @return _modules The list of modules added to this wallet.
-    function modules() public view returns (address[] memory _modules);
+    function modules() external view returns (address[] memory _modules);
 
     /// @dev Checks if a module has been added to this wallet.
     /// @param _module The module to check.
     /// @return True if the module exists; False otherwise.
-    function hasModule(address _module) public view returns (bool);
+    function hasModule(address _module) external view returns (bool);
 
     /// @dev Binds a method from the given module to this
     ///      wallet so the method can be invoked using this wallet's default
@@ -80,7 +80,7 @@ contract Wallet
     /// @param _method The method's 4-byte selector.
     /// @return _module The address of the bound module. If no binding exists,
     ///                 returns address(0) instead.
-    function boundMethodModule(bytes4 _method) public view returns (address _module);
+    function boundMethodModule(bytes4 _method) external view returns (address _module);
 
     /// @dev Performs generic transactions. Any module that has been added to this
     ///      wallet can use this method to transact on any third-party contract with

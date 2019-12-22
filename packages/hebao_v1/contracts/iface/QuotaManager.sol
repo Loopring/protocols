@@ -14,11 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 
-contract QuotaManager
+interface QuotaManager
 {
     /// @dev Check and update quota for spending the additional amount.
     ///      Must revert in case of error.

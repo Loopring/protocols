@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/Ownable.sol";
 
@@ -30,7 +30,7 @@ import "./Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract Module
+interface Module
 {
     /// @dev Activates the module for the given wallet (msg.sender) after the module is added.
     ///      Warning: this method shall ONLY be callable by a wallet.

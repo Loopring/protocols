@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
@@ -29,6 +29,7 @@ contract TokenBalances is BaseSubAccount, BaseModule
     function boundMethods()
         public
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
@@ -42,6 +43,7 @@ contract TokenBalances is BaseSubAccount, BaseModule
         )
         public
         view
+        override
         returns (int balance)
     {
         if (token == address(0)) {
@@ -52,11 +54,11 @@ contract TokenBalances is BaseSubAccount, BaseModule
         require(balance >= 0, "INVALID_BALANCE");
     }
 
-    function deposit (address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
-    function withdraw(address, address[] calldata, address, uint) external { revert("UNSUPPORTED"); }
-    function tokenWithdrawalable (address, address ) public view returns (bool, uint) { }
-    function tokenDepositable (address, address) public view returns (bool, uint ) { }
-    function tokenInterestRate(address, address, uint, bool) public view returns (int) { }
-    function tokenReturn(address, address ) public view returns (int) { }
-    function tokenReturnAmount (address, address ) public view returns (int) { }
+    function deposit (address, address, uint) external override virtual { revert("UNSUPPORTED"); }
+    function withdraw(address, address, uint) external override virtual { revert("UNSUPPORTED"); }
+    function tokenWithdrawalable (address, address ) public view override virtual returns (bool, uint) { }
+    function tokenDepositable (address, address) public view override virtual returns (bool, uint ) { }
+    function tokenInterestRate(address, address, uint, bool) public view override virtual returns (int) { }
+    function tokenReturn(address, address ) public view override virtual returns (int) { }
+    function tokenReturnAmount (address, address ) public view override virtual returns (int) { }
 }

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
@@ -78,6 +78,7 @@ contract RecoveryModule is SecurityModule
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         require (method == this.recover.selector, "INVALID_METHOD");

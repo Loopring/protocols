@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/ERC20.sol";
 import "../lib/AddressSet.sol";
@@ -77,13 +77,14 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         _;
     }
 
-    function owner() public view returns (address)
+    function owner() override external view returns (address)
     {
         return _owner;
     }
 
     function setOwner(address newOwner)
         external
+        override
         onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
@@ -99,6 +100,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         address bootstrapModule
         )
         external
+        override
         nonReentrant
     {
         require(
@@ -118,6 +120,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function addModule(address _module)
         external
+        override
         onlyOwnerOrModule
     {
         addModuleInternal(_module);
@@ -125,6 +128,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function removeModule(address _module)
         external
+        override
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
@@ -135,16 +139,18 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     }
 
     function modules()
-        public
+        external
         view
+        override
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
     }
 
     function hasModule(address _module)
-        public
+        external
         view
+        override
         returns (bool)
     {
         return isAddressInSet(MODULE, _module);
@@ -152,6 +158,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function bindMethod(bytes4 _method, address _module)
         external
+        override
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
@@ -163,8 +170,9 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     }
 
     function boundMethodModule(bytes4 _method)
-        public
+        external
         view
+        override
         returns (address)
     {
         return methodToModule[_method];
@@ -177,6 +185,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         bytes    calldata data
         )
         external
+        override
         onlyModule
         returns (bytes memory result)
     {
@@ -202,8 +211,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
         if (!success) {
             assembly {
-                returndatacopy(0, 0, returndatasize)
-                revert(0, returndatasize)
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
         emit Transacted(msg.sender, to, value, data);
@@ -225,7 +234,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.
-    function()
+    fallback()
         external
         payable
     {
@@ -242,7 +251,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize())
-            let result := call(gas, module, 0, ptr, calldatasize(), 0, 0)
+            let result := call(gas(), module, 0, ptr, calldatasize(), 0, 0)
             returndatacopy(ptr, 0, returndatasize())
 
             switch result
