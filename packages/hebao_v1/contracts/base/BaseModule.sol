@@ -68,6 +68,17 @@ contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
+    function addModule(
+        address wallet,
+        address module
+        )
+        external
+        nonReentrant
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+        Wallet(wallet).addModule(module);
+    }
+
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external

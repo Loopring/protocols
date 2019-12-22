@@ -33,6 +33,11 @@ abstract contract SecurityModule is MetaTxModule
 {
     SecurityStore internal securityStore;
 
+    event WalletLock(
+        address indexed wallet,
+        uint            lock
+    );
+
     constructor(Controller _controller)
         public
         MetaTxModule(_controller)
@@ -78,13 +83,13 @@ abstract contract SecurityModule is MetaTxModule
 
     modifier onlyWhenWalletLocked(address wallet)
     {
-        require(controller.securityStore().isLocked(wallet), "NOT_LOCKED");
+        require(isWalletLocked(wallet), "NOT_LOCKED");
         _;
     }
 
     modifier onlyWhenWalletUnlocked(address wallet)
     {
-        require(!controller.securityStore().isLocked(wallet), "LOCKED");
+        require(!isWalletLocked(wallet), "LOCKED");
         _;
     }
 
@@ -109,8 +114,59 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
-    function quotaManager() internal view override returns (address)
+    // ----- internal methods -----
+
+    function quotaManager()
+        internal
+        view
+        override
+        returns (address)
     {
         return address(controller.quotaManager());
+    }
+
+    function lockWallet(address wallet)
+        internal
+    {
+        lockWallet(wallet, controller.defaultLockPeriod());
+    }
+
+    function lockWallet(address wallet, uint _lockPeriod)
+        internal
+        onlyWhenWalletUnlocked(wallet)
+    {
+        // cannot lock the wallet twice by different modules.
+        require(_lockPeriod > 0, "ZERO_VALUE");
+        uint lock = now + _lockPeriod;
+        controller.securityStore().setLock(wallet, lock);
+        emit WalletLock(wallet, lock);
+    }
+
+    function unlockWallet(address wallet, bool forceUnlock)
+        internal
+    {
+        (uint _lock, address _lockedBy) = controller.securityStore().getLock(wallet);
+        if (_lock > now) {
+            require(forceUnlock || _lockedBy == address(this), "UNABLE_TO_UNLOCK");
+            controller.securityStore().setLock(wallet, 0);
+            emit WalletLock(wallet, 0);
+        }
+    }
+
+    function getWalletLock(address wallet)
+        internal
+        view
+        returns (uint _lock, address _lockedBy)
+    {
+        return controller.securityStore().getLock(wallet);
+    }
+
+    function isWalletLocked(address wallet)
+        internal
+        view
+        returns (bool)
+    {
+        (uint _lock,) = controller.securityStore().getLock(wallet);
+        return _lock > now;
     }
 }
