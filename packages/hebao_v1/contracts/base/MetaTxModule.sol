@@ -111,7 +111,11 @@ abstract contract MetaTxModule is BaseModule
         controller = _controller;
     }
 
-    function quotaManager() internal view virtual returns (address)
+    function quotaManager()
+        internal
+        view
+        virtual
+        returns (address)
     {
         return address(0);
     }
