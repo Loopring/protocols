@@ -22,7 +22,7 @@ import "../lib/MathUint.sol";
 import "../iface/IDowntimeCostCalculator.sol";
 
 
-/// @title A fixed price IDowntimeCostCalculator implememntation.
+/// @title A fixed price IDowntimeCostCalculator implementation.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
 {
