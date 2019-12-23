@@ -29,7 +29,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
     event PriceUpdated(uint pricePerMinute);
 
     using MathUint for uint;
-    uint public pricePerMinute = 1000 ether;
+    uint public pricePerMinute = 0;
 
     constructor() public Claimable() { }
 
