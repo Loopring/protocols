@@ -8,7 +8,7 @@
 
 - LRCAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD [lrctoken.eth](https://etherscan.io/address/lrctoken.eth)
 - WETHAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-- ProtocolFeeVaultAddress: 0xa8b6A3EFBcdd578154a913F33dc9949808B7A9f4 [feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)
+- ProtocolFeeVaultAddress: 0x5BB8EF8efD18C6034EC9277DaCA9a5E29B1f1Cb1 [feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)
 - UniversalRegistry: 0x4c2103152a1A402af283fa52903569f05477611f [registry.lrctoken.eth](https://etherscan.io/address/registry.lrctoken.eth)
 - BlockVerifier: 0x40598B41cc17a7E56dd72F415E8223aaCCA94cF7 [blockverifier.lrctoken.eth](https://etherscan.io/address/blockverifier.lrctoken.eth)
 - DowntimeCostCalculator: 0xeE38E95D0D6dfEAb38bAab9C70ed32b1b0Fd686D
