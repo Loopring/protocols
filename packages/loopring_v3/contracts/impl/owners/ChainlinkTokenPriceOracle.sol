@@ -40,7 +40,9 @@ contract ChainlinkTokenPriceOracle
         Lrc2Eth = _Lrc2Eth;
     }
 
-    /// @param usd 1 wei == 1 USD
+    /// @dev Converts USD to LRC using chainlink oracles
+    /// @param usd The amount of USD (1 wei == 1 USD)
+    /// @return The amount of LRC
     function usd2lrc(uint usd)
         external
         view
