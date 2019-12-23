@@ -22,32 +22,29 @@ import "../lib/MathUint.sol";
 import "../iface/IDowntimeCostCalculator.sol";
 
 
-/// @title The default IDowntimeCostCalculator implementation.
+/// @title A fixed price IDowntimeCostCalculator implementation.
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
 {
+    event PriceUpdated(uint pricePerMinute);
+
     using MathUint for uint;
+    uint public pricePerMinute = 0;
 
-    uint public basePricePerMinute;
-    uint public maxPenalty;
-    uint public gracePeriodsMinutes;
-    uint public gracePeriodPricePerMinute;
-    uint public maxAwailableDowntimeMinutes;
+    constructor() public Claimable() { }
 
-    event SettingsUpdated(
-        uint oldBasePricePerMinute,
-        uint oldMaxPenalty,
-        uint oldGracePeriodMinutes,
-        uint oldGracePeriodPricePerMinute,
-        uint oldMaxAwailableDowntimeMinutes
-    );
-
-    constructor() Claimable() public {}
+    function setPrice(uint _pricePerMinute)
+        external
+        onlyOwner
+    {
+        pricePerMinute = _pricePerMinute;
+        emit PriceUpdated(_pricePerMinute);
+    }
 
     function getDowntimeCostLRC(
-        uint  totalTimeInMaintenanceSeconds,
-        uint  totalDEXLifeTimeSeconds,
-        uint  numDowntimeMinutes,
+        uint  /* totalTimeInMaintenanceSeconds */,
+        uint  /* totalDEXLifeTimeSeconds */,
+        uint  /* numDowntimeMinutes */,
         uint  /* exchangeStakedLRC */,
         uint  durationToPurchaseMinutes
         )
@@ -55,81 +52,6 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         view
         returns (uint)
     {
-        uint newCost = getTotalCost(
-            totalTimeInMaintenanceSeconds,
-            totalDEXLifeTimeSeconds,
-            numDowntimeMinutes.add(durationToPurchaseMinutes)
-        );
-
-        uint oldCost = getTotalCost(
-            totalTimeInMaintenanceSeconds,
-            totalDEXLifeTimeSeconds,
-            numDowntimeMinutes
-        );
-
-        return newCost > oldCost ? newCost - oldCost : 0;
-    }
-
-    function updateSettings(
-        uint _basePricePerMinute,
-        uint _maxPenalty,
-        uint _gracePeriodsMinutes,
-        uint _gracePeriodPricePerMinute,
-        uint _maxAvailableDowntimeMinutes
-        )
-        external
-        onlyOwner
-    {
-        require(
-            _basePricePerMinute > 0 &&
-            _maxPenalty > 0 &&
-            _gracePeriodPricePerMinute > 0 &&
-            _maxAvailableDowntimeMinutes > 0,
-            "ZERO_VALUE"
-        );
-        require(_gracePeriodPricePerMinute <= _basePricePerMinute, "INVALID_PRICE");
-
-        emit SettingsUpdated(
-            basePricePerMinute,
-            maxPenalty,
-            gracePeriodsMinutes,
-            gracePeriodPricePerMinute,
-            maxAwailableDowntimeMinutes
-        );
-
-        basePricePerMinute = _basePricePerMinute;
-        maxPenalty = _maxPenalty;
-        gracePeriodsMinutes = _gracePeriodsMinutes;
-        gracePeriodPricePerMinute = _gracePeriodPricePerMinute;
-        maxAwailableDowntimeMinutes = _maxAvailableDowntimeMinutes;
-    }
-
-    function getTotalCost(
-        uint totalTimeInMaintenanceSeconds,
-        uint totalDEXLifeTimeSeconds,
-        uint downtimeMinutes
-        )
-        private
-        view
-        returns (uint)
-    {
-        require(downtimeMinutes <= maxAwailableDowntimeMinutes, "PURCHASE_PROHIBITED");
-        uint totalMinutes = downtimeMinutes.add(totalTimeInMaintenanceSeconds / 60);
-
-        if (totalMinutes <= gracePeriodsMinutes) {
-            return totalMinutes.mul(gracePeriodPricePerMinute);
-        }
-
-        uint timeBeyondGracePeriodMinutes = totalMinutes - gracePeriodsMinutes;
-        uint penalty = timeBeyondGracePeriodMinutes.mul(600000) / totalDEXLifeTimeSeconds + 100;
-        uint _maxPenalty = maxPenalty.mul(100);
-
-        if (penalty > _maxPenalty) {
-            penalty = _maxPenalty;
-        }
-
-        return gracePeriodsMinutes.mul(gracePeriodPricePerMinute).add(
-            timeBeyondGracePeriodMinutes.mul(basePricePerMinute).mul(penalty) / 100
-        );
+        return durationToPurchaseMinutes.mul(pricePerMinute);
     }
 }
