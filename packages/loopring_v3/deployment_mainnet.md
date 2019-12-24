@@ -8,7 +8,7 @@
 
 - LRCAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD [lrctoken.eth](https://etherscan.io/address/lrctoken.eth)
 - WETHAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-- ProtocolFeeVaultAddress: 0x5BB8EF8efD18C6034EC9277DaCA9a5E29B1f1Cb1 ([feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)- ENS incorrect, need update)
+- ProtocolFeeVaultAddress: 0x5BB8EF8efD18C6034EC9277DaCA9a5E29B1f1Cb1 [feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)
 - UniversalRegistry: 0x4c2103152a1A402af283fa52903569f05477611f [registry.lrctoken.eth](https://etherscan.io/address/registry.lrctoken.eth)
 - BlockVerifier: 0x40598B41cc17a7E56dd72F415E8223aaCCA94cF7 [blockverifier.lrctoken.eth](https://etherscan.io/address/blockverifier.lrctoken.eth)
 - DowntimeCostCalculator: 0x873685f032c6Aa1572766401f3198a1f09A5C221
@@ -16,6 +16,7 @@
 - UserStakingPoolAddress: 0xF4662bB1C4831fD411a95b8050B3A5998d8A4A5b [stakingpool.lrctoken.eth](https://etherscan.io/address/stakingpool.lrctoken.eth)
 - LoopringV3: 0x8745074248634f37327Ee748137C8b31238002C7 [loopring30.lrctoken.eth](https://etherscan.io/address/loopring30.lrctoken.eth)
 - ExchangeV3: 0xc2D1E8FB0C10810BB888231E7B85118042846105 [exchange30b4.lrctoken.eth](https://etherscan.io/address/exchange30b4.lrctoken.eth)
+- ExchangeV3 ImplementationManager: 0xbef66a28a7aa03d3feaebc3e19d58386474520a5
 
 ### vks with following blockSize are registered in blockverifier contract:
 
