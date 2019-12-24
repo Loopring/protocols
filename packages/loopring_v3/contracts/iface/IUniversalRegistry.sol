@@ -189,7 +189,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @dev Returns the protocol associated with an exchange.
     /// @param exchangeAddress The address of the exchange.
     /// @return protocol The protocol address.
-    /// @return implementationManager The protocol's implementation manager.
+    /// @return manager The protocol's implementation manager.
     /// @return enabled Whether the protocol is enabled.
     function getExchangeProtocol(
         address exchangeAddress
@@ -198,6 +198,6 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         view
         returns (
             address protocol,
-            address implementationManager
+            address manager
         );
 }
