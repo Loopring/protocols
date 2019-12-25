@@ -18,9 +18,9 @@ pragma solidity ^0.5.11;
 
 import "../iface/IDelayedTransaction.sol";
 
-import "./AddressUtil.sol";
-import "./BytesUtil.sol";
-import "./MathUint.sol";
+import "../lib/AddressUtil.sol";
+import "../lib/BytesUtil.sol";
+import "../lib/MathUint.sol";
 
 
 /// @title DelayedOwner
