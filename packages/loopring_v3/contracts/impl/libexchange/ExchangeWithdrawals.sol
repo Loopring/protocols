@@ -338,26 +338,26 @@ library ExchangeWithdrawals
         uint feeAmount = 0;
         uint32 lastRequestTimestamp = 0;
         {
-            uint startIndex = previousBlock.numDepositRequestsCommitted;
-            uint endIndex = requestedBlock.numDepositRequestsCommitted;
-            if(endIndex > startIndex) {
-                feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
-                    S.depositChain[startIndex - 1].accumulatedFee
-                );
-                lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
-            } else {
-                startIndex = previousBlock.numWithdrawalRequestsCommitted;
-                endIndex = requestedBlock.numWithdrawalRequestsCommitted;
+        uint startIndex = previousBlock.numDepositRequestsCommitted;
+        uint endIndex = requestedBlock.numDepositRequestsCommitted;
+        if(endIndex > startIndex) {
+            feeAmount = S.depositChain[endIndex - 1].accumulatedFee.sub(
+                S.depositChain[startIndex - 1].accumulatedFee
+            );
+            lastRequestTimestamp = S.depositChain[endIndex - 1].timestamp;
+        } else {
+            startIndex = previousBlock.numWithdrawalRequestsCommitted;
+            endIndex = requestedBlock.numWithdrawalRequestsCommitted;
 
-                if(endIndex > startIndex) {
-                    feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
-                        S.withdrawalChain[startIndex - 1].accumulatedFee
-                    );
-                    lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
-                } else {
-                    revert("BLOCK_HAS_NO_OPERATOR_FEE");
-                }
+            if(endIndex > startIndex) {
+                feeAmount = S.withdrawalChain[endIndex - 1].accumulatedFee.sub(
+                    S.withdrawalChain[startIndex - 1].accumulatedFee
+                );
+                lastRequestTimestamp = S.withdrawalChain[endIndex - 1].timestamp;
+            } else {
+                revert("BLOCK_HAS_NO_OPERATOR_FEE");
             }
+        }
         }
 
         // Calculate how much of the fee the operator gets for the block
