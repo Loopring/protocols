@@ -16,6 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../iface/ITokenPriceProvider.sol";
+
 import "../../thirdparty/chainlink/AggregatorInterfaceV1.sol";
 import "../../thirdparty/chainlink/AggregatorInterfaceV2.sol";
 
@@ -23,7 +25,7 @@ import "../../lib/MathUint.sol";
 
 
 /// @author Brecht Devos - <brecht@loopring.org>
-contract ChainlinkTokenPriceOracle
+contract ChainlinkTokenPriceProvider is ITokenPriceProvider
 {
     using MathUint    for uint;
 
@@ -40,9 +42,6 @@ contract ChainlinkTokenPriceOracle
         Lrc2Eth = _Lrc2Eth;
     }
 
-    /// @dev Converts USD to LRC using chainlink oracles
-    /// @param usd The amount of USD (1 wei == 1 USD)
-    /// @return The amount of LRC
     function usd2lrc(uint usd)
         external
         view
@@ -50,6 +49,9 @@ contract ChainlinkTokenPriceOracle
     {
         uint EthUsd = uint(Eth2Usd.currentAnswer());
         uint LrcEth = uint(Lrc2Eth.latestAnswer());
-        return usd.mul(100000000 * 1 ether * 1 ether) / LrcEth.mul(EthUsd);
+        // https://docs.chain.link/docs/using-chainlink-reference-contracts#section-live-reference-data-contracts-ethereum-mainnet
+        // EthUsd is scaled by 100000000
+        // LrcEth is scaled by 10**18
+        return usd.mul(100000000 * 1 ether) / LrcEth.mul(EthUsd);
     }
 }
