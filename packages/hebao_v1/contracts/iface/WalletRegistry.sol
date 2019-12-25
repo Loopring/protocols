@@ -14,15 +14,15 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 
 /// @title WalletRegistry
 /// @dev A registry for wallets.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletRegistry
+interface WalletRegistry
 {
     function registerWallet(address wallet) external;
-    function isWalletRegistered(address addr) public view returns (bool);
-    function numOfWallets() public view returns (uint);
+    function isWalletRegistered(address addr) external view returns (bool);
+    function numOfWallets() external view returns (uint);
 }

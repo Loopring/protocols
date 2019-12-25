@@ -13,7 +13,7 @@ describe("config test", function() {
     assert.strictEqual(config.getMaxFeeBips(), 20);
 
     let tokens = config.getTokens();
-    assert.strictEqual(tokens.length, 3);
+    assert.strictEqual(tokens.length, 4);
 
     // ETH
     let eth = config.getTokenBySymbol("ETH");

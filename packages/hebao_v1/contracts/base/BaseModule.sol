@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/ReentrancyGuard.sol";
 
@@ -35,50 +35,39 @@ contract BaseModule is ReentrancyGuard, Module
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
-    modifier onlyFromWallet(address wallet)
+    modifier onlyFromWallet(address wallet) virtual
     {
         require(msg.sender == wallet, "NOT_FROM_WALLET");
         _;
     }
 
-    modifier onlyFromMetaTx() {
+    modifier onlyFromMetaTx() virtual {
         require(msg.sender == address(this), "NOT_FROM_META_TX");
         _;
     }
 
-    modifier onlyFromWalletModule(address wallet)
-    {
-        require(Wallet(wallet).hasModule(msg.sender), "NOT_FROM_WALLET_MODULE");
-        _;
-    }
-
-    modifier onlyFromWalletOwner(address wallet) {
+    modifier onlyFromWalletOwner(address wallet) virtual {
         require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
 
-    modifier onlyFromMetaTxOrWalletOwner(address wallet) {
+    modifier onlyFromMetaTxOrWalletOwner(address wallet) virtual {
         require(
             msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
             "NOT_FROM_METATX_OR_WALLET_OWNER");
         _;
     }
 
-    modifier onlyWalletOwner(address wallet, address addr) {
+    modifier onlyWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() == addr, "NOT_WALLET_OWNER");
         _;
     }
 
-    modifier notWalletOwner(address wallet, address addr) {
+    modifier notWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
     }
 
-    /// @dev Adds a module to a wallet. Callable only by the wallet owner.
-    ///      Note that the module must have NOT been added to the wallet.
-    ///
-    ///      Also note that if `module == address(this)`, the wallet contract
-    ///      will throw before calling `activate`, so there will be no re-entrant.
     function addModule(
         address wallet,
         address module
@@ -87,42 +76,27 @@ contract BaseModule is ReentrancyGuard, Module
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        require(module != address(this), "SELF_ADD_PROHIBITED");
         Wallet(wallet).addModule(module);
-        Module(module).activate(wallet);
-    }
-
-    /// @dev Removes a module from a wallet. Callable only by the wallet owner.
-    ///      Note that the module must have been added to the wallet.
-    function removeModule(
-        address wallet,
-        address module
-        )
-        external
-        nonReentrant
-        onlyFromMetaTxOrWalletOwner(wallet)
-    {
-        require(module != address(this), "SELF_REMOVE_PROHIBITED");
-        Module(module).deactivate(wallet);
-        Wallet(wallet).removeModule(module);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
-    function activate(address wallet)
+    function activate()
         external
-        onlyFromWalletModule(wallet)
+        override
+        virtual
     {
-        bindMethods(wallet);
-        emit Activated(wallet);
+        bindMethods(msg.sender);
+        emit Activated(msg.sender);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
-    function deactivate(address wallet)
+    function deactivate()
         external
-        onlyFromWalletModule(wallet)
+        override
+        virtual
     {
-        unbindMethods(wallet);
-        emit Deactivated(wallet);
+        unbindMethods(msg.sender);
+        emit Deactivated(msg.sender);
     }
 
     ///.@dev Gets the list of methods for binding to wallets.
@@ -133,6 +107,7 @@ contract BaseModule is ReentrancyGuard, Module
     function boundMethods()
         public
         pure
+        virtual
         returns (bytes4[] memory methods)
     {
     }

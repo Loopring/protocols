@@ -1,8 +1,8 @@
 // Copied from https://eips.ethereum.org/EIPS/eip-1271.
 
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
-contract ERC1271 {
+abstract contract ERC1271 {
 
     // bytes4(keccak256("isValidSignature(bytes,bytes)")
     bytes4 constant internal MAGICVALUE = 0x20c13b0b;
@@ -21,5 +21,6 @@ contract ERC1271 {
         bytes memory _signature)
         public
         view
+        virtual
         returns (bytes4 magicValue);
 }

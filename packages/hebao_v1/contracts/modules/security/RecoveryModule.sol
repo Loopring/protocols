@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
@@ -32,39 +32,24 @@ import "./GuardianUtils.sol";
 /// @title RecoveryModule
 contract RecoveryModule is SecurityModule
 {
-    event RecoveryStarted   (address indexed wallet, address indexed newOwner, uint completeAfter);
-    event RecoveryCompleted (address indexed wallet, address indexed newOwner);
-    event RecoveryCancelled (address indexed wallet);
+    event Recovered(
+        address indexed wallet,
+        address indexed oldOwner,
+        address indexed newOwner
+    );
 
-    struct WalletRecovery {
-        address newOwner;
-        uint    completeAfter;
-        uint    guardianCount;
-    }
-
-    mapping (address => WalletRecovery) public wallets;
-    uint public recoveryPeriod;
-    uint public lockPeriod;
-
-    constructor(
-        Controller _controller,
-        uint      _recoveryPeriod,
-        uint      _lockPeriod
-        )
+    constructor(Controller _controller)
         public
         SecurityModule(_controller)
     {
-        require(recoveryPeriod <= lockPeriod, "INVALID_VALUES");
-        recoveryPeriod = _recoveryPeriod;
-        lockPeriod = _lockPeriod;
     }
 
-    /// @dev Starts a recovery for a given wallet.
+    /// @dev Recover a wallet by setting a new owner.
     /// @param wallet The wallet for which the recovery shall be cancelled.
     /// @param newOwner The new owner address to set.
     /// @param signers A list of addresses that signed the meta transaction.
     ///        The addresses must be sorted ascendently.
-    function startRecovery(
+    function recover(
         address            wallet,
         address[] calldata signers,
         address            newOwner
@@ -78,65 +63,12 @@ contract RecoveryModule is SecurityModule
             GuardianUtils.SigRequirement.OwnerNotAllowed
         )
     {
+        Wallet w = Wallet(wallet);
+        require(newOwner != w.owner(), "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-        WalletRecovery storage recovery = wallets[wallet];
-        require(recovery.completeAfter == 0, "ALREADY_STARTED");
-
-        recovery.newOwner = newOwner;
-        recovery.completeAfter = now + recoveryPeriod;
-        recovery.guardianCount = securityStore.numGuardians(wallet);
-
-        controller.securityStore().setLock(wallet, now + lockPeriod);
-
-        emit RecoveryStarted(wallet, newOwner, recovery.completeAfter);
-    }
-
-    /// @dev Cancels a pending recovery for a given wallet.
-    /// @param wallet The wallet for which the recovery shall be cancelled.
-    /// @param signers A list of addresses that signed the meta transaction.
-    ///        The addresses must be sorted ascendently.
-    function cancelRecovery(
-        address            wallet,
-        address[] calldata signers // enforece data-layout, see extractMetaTxSigners.
-        )
-        external
-        nonReentrant
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerAllowed
-        )
-    {
-        WalletRecovery storage recovery = wallets[wallet];
-        require(recovery.completeAfter > 0, "NOT_STARTED");
-
-        delete wallets[wallet];
-        controller.securityStore().setLock(wallet, 0);
-
-        emit RecoveryCancelled(wallet);
-    }
-
-    /// @dev Complete a recovery by setting up the new owner.
-    ///      This method can be called by anyone as long as the recoveryPeriod finishes.
-    /// @param wallet The wallet for which the recovery shall complete.
-    function completeRecovery(
-        address            wallet,
-        address[] calldata /*signers*/
-        )
-        external
-        nonReentrant
-    {
-        WalletRecovery storage recovery = wallets[wallet];
-        require(recovery.completeAfter > 0, "NOT_STARTED");
-        require(recovery.completeAfter < now, "TWO_EARLY");
-
-        Wallet(wallet).setOwner(recovery.newOwner);
-
-        delete wallets[wallet];
-        controller.securityStore().setLock(wallet, 0);
-
-        emit RecoveryCompleted(wallet, recovery.newOwner);
+        w.setOwner(newOwner);
+        emit Recovered(wallet, w.owner(), newOwner);
     }
 
     function extractMetaTxSigners(
@@ -146,14 +78,10 @@ contract RecoveryModule is SecurityModule
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
-        require (
-            method == this.startRecovery.selector ||
-            method == this.cancelRecovery.selector ||
-            method == this.completeRecovery.selector,
-            "INVALID_METHOD"
-        );
+        require (method == this.recover.selector, "INVALID_METHOD");
         return extractAddressesFromCallData(data, 1);
     }
 }

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/AddressSet.sol";
 import "../lib/Claimable.sol";
@@ -54,6 +54,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 
     function registerWallet(address wallet)
         external
+        override
         onlyFactory
     {
         addAddressToSet(WALLET, wallet, false);
@@ -63,6 +64,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
     function isWalletRegistered(address addr)
         public
         view
+        override
         returns (bool)
     {
         return isAddressInSet(WALLET, addr);
@@ -71,6 +73,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
     function numOfWallets()
         public
         view
+        override
         returns (uint)
     {
         return numAddressesInSet(WALLET);

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
@@ -44,7 +44,7 @@ import "./BaseModule.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 
-contract MetaTxModule is BaseModule
+abstract contract MetaTxModule is BaseModule
 {
     using MathUint      for uint;
     using AddressUtil   for address;
@@ -63,6 +63,7 @@ contract MetaTxModule is BaseModule
         uint    price;
         uint    limit;
         uint    overhead;
+        address recipient;
     }
 
     struct MetaTransaction
@@ -76,10 +77,11 @@ contract MetaTxModule is BaseModule
         uint    gasPrice;
         uint    gasLimit;
         uint    gasOverhead;
+        address feeRecipient;
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead)"
+        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -95,7 +97,7 @@ contract MetaTxModule is BaseModule
         bool    success
     );
 
-    modifier onlyFromMetaTx
+    modifier onlyFromMetaTx override
     {
         require(msg.sender == address(this), "NOT_FROM_THIS_MODULE");
         _;
@@ -109,7 +111,11 @@ contract MetaTxModule is BaseModule
         controller = _controller;
     }
 
-    function quotaManager() internal view returns (address)
+    function quotaManager()
+        internal
+        view
+        virtual
+        returns (address)
     {
         return address(0);
     }
@@ -154,12 +160,13 @@ contract MetaTxModule is BaseModule
     ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
     ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
-    ///                   and `gasOverhead`. To pay fee in Ether, use address(0) as gasToken.
+    ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
+    ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
     /// @param signatures Signatures.
     function executeMetaTx(
         bytes   calldata data,
         uint    nonce,
-        uint[4] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead]
+        uint[5] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
         bytes[] calldata signatures
         )
         external
@@ -169,7 +176,8 @@ contract MetaTxModule is BaseModule
             address(gasSetting[0]),
             gasSetting[1],
             gasSetting[2],
-            gasSetting[3]
+            gasSetting[3],
+            address(gasSetting[4])
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
@@ -186,7 +194,8 @@ contract MetaTxModule is BaseModule
                     gasSettings.token,
                     gasSettings.price,
                     gasSettings.limit,
-                    gasSettings.overhead
+                    gasSettings.overhead,
+                    gasSettings.recipient
                 )
             )
         );
@@ -302,12 +311,14 @@ contract MetaTxModule is BaseModule
         )
         internal
         view
+        virtual
         returns (address[] memory signers);
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
         internal
-        pure
+        view
+        virtual
         returns (address wallet)
     {
         wallet = extractAddressFromCallData(data, 0);
@@ -369,7 +380,8 @@ contract MetaTxModule is BaseModule
                 _tx.gasToken,
                 _tx.gasPrice,
                 _tx.gasLimit,
-                _tx.gasOverhead
+                _tx.gasOverhead,
+                _tx.feeRecipient
             )
         );
     }
@@ -395,12 +407,13 @@ contract MetaTxModule is BaseModule
             QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
         }
 
+        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
         if (gasSettings.token == address(0)) {
-            transactCall(wallet, msg.sender, gasCost, "");
+            transactCall(wallet, feeRecipient, gasCost, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(
                 ERC20(0).transfer.selector,
-                msg.sender,
+                feeRecipient,
                 gasCost
             );
             transactCall(wallet, gasSettings.token, 0, txData);
@@ -420,6 +433,9 @@ contract MetaTxModule is BaseModule
         bytes4 method = extractMethod(data);
         if (method == this.executeTransactions.selector) {
             return extractAddressesFromCallData(data, 1);
+        } else if (method == this.addModule.selector) {
+            signers = new address[](1);
+            signers[0] = Wallet(wallet).owner();
         } else {
             signers = extractMetaTxSigners(wallet, method, data);
         }
@@ -430,8 +446,9 @@ contract MetaTxModule is BaseModule
         bytes     memory /*data*/,
         address[] memory signers
         )
-        private
+        internal
         view
+        virtual
         returns (bool)
     {
         // We need at least one signer, and all signers need to be either the wallet owner or a guardian.

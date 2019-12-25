@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
@@ -38,27 +38,18 @@ contract LockModule is SecurityModule
     using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
-    uint public lockPeriod;
-
-    event WalletLock(
-        address indexed wallet,
-        address indexed guardian,
-        bool            locked
-    );
-
     constructor(
-        Controller _controller,
-        uint       _lockPeriod
+        Controller _controller
         )
         public
         SecurityModule(_controller)
     {
-        lockPeriod = _lockPeriod;
     }
 
     function boundMethods()
         public
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
@@ -72,11 +63,11 @@ contract LockModule is SecurityModule
         )
         external
         nonReentrant
+        // onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
     {
-        controller.securityStore().setLock(wallet, now + lockPeriod);
-        emit WalletLock(wallet, guardian, true);
+        lockWallet(wallet);
     }
 
     function unlock(
@@ -85,20 +76,19 @@ contract LockModule is SecurityModule
         )
         external
         nonReentrant
+        // onlyWhenWalletLocked(wallet)
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
-        onlyWhenWalletLocked(wallet)
     {
-        controller.securityStore().setLock(wallet, 0);
-        emit WalletLock(wallet, guardian, false);
+        unlockWallet(wallet, false);
     }
 
     function getLock(address wallet)
         public
         view
-        returns (uint)
+        returns (uint _lock, address _lockedBy)
     {
-        return controller.securityStore().getLock(wallet);
+        return getWalletLock(wallet);
     }
 
     function isLocked(address wallet)
@@ -106,16 +96,17 @@ contract LockModule is SecurityModule
         view
         returns (bool)
     {
-        return controller.securityStore().isLocked(wallet);
+        return isWalletLocked(wallet);
     }
 
     function extractMetaTxSigners(
-        bytes4  method,
         address /*wallet*/,
+        bytes4  method,
         bytes   memory data
         )
         internal
-        pure
+        view
+        override
         returns (address[] memory signers)
     {
         require(

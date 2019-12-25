@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../thirdparty/compound/CompoundRegistery.sol";
@@ -49,6 +49,7 @@ contract CompoundModule is SubAccountDAppModule
         uint               amount
         )
         external
+        override
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -69,6 +70,7 @@ contract CompoundModule is SubAccountDAppModule
         uint               amount
         )
         external
+        override
         nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -87,6 +89,7 @@ contract CompoundModule is SubAccountDAppModule
         )
         public
         view
+        override
         returns (int)
     {
         address cToken = compoundRegistry.getCToken(token);
@@ -108,6 +111,7 @@ contract CompoundModule is SubAccountDAppModule
         )
         public
         view
+        override
         returns (int)
     {
         address cToken = compoundRegistry.getCToken(token);

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/Claimable.sol";
@@ -51,6 +51,7 @@ contract QuotaTransfers is TransferModule
     function boundMethods()
         public
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -299,6 +300,7 @@ contract QuotaTransfers is TransferModule
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         require (

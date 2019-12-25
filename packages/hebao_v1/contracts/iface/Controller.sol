@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "./ModuleRegistry.sol";
 import "./WalletRegistry.sol";
@@ -37,6 +37,7 @@ contract Controller
     // The address to which all colletable tokens/ether in modules will
     // be sent to.
     address public collectTo;
+    uint    public defaultLockPeriod;
 
     ModuleRegistry          public moduleRegistry;
     WalletRegistry          public walletRegistry;

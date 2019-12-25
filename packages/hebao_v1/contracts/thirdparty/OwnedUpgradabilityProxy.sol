@@ -1,7 +1,7 @@
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import './UpgradabilityProxy.sol';
 
@@ -38,7 +38,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
 
   /**
    * @dev Tells the address of the owner
-   * @return the address of the owner
+   * @return owner the address of the owner
    */
   function proxyOwner() public view returns (address owner) {
     bytes32 position = proxyOwnerPosition;

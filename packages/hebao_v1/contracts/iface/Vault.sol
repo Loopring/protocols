@@ -14,11 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 
-contract Vault
+abstract contract Vault
 {
     /// @dev Entrypoint for executing all transactions.
     /// @param target The target address to execute transaction on.
@@ -37,30 +37,31 @@ contract Vault
         bytes[]   calldata signatures
         )
         external
+        virtual
         returns (bytes memory result);
 
     /// @dev Adds a new owner.
     /// @param _owner The owner to add.
-    function addOwner(address _owner) external;
+    function addOwner(address _owner) external virtual;
 
     /// @dev Removes an existing owner.
     /// @param _owner The owenr to remove.
-    function removeOwner(address _owner) external;
+    function removeOwner(address _owner) external virtual;
 
     /// @dev Change the number of signatures required to execute transactions.
     /// @param _requirement The new requirement.
-    function changeRequirement(uint _requirement) external;
+    function changeRequirement(uint _requirement) external virtual;
 
     /// @dev Returns the number of signatures required to execute transactions.
-    /// @return requirement The requirement.
-    function requirement() public view returns (uint _requirement);
+    /// @return _requirement The requirement.
+    function requirement() public view virtual returns (uint _requirement);
 
     /// @dev Returns the list of owners.
     /// @return _owners The list of owners.
-    function owners() public view returns (address[] memory _owners);
+    function owners() public view virtual returns (address[] memory _owners);
 
     /// @dev Returns if an address is an owner.
     /// @param _addr The address to check.
     /// @return _isOwner True if the address is an owner.
-    function isOwner(address _addr) public view returns (bool _isOwner);
+    function isOwner(address _addr) public view virtual returns (bool _isOwner);
 }

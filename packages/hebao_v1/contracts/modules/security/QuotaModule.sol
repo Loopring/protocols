@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
@@ -25,7 +25,7 @@ import "./GuardianUtils.sol";
 
 /// @title QuotaModule
 /// @dev Manages transfer quota.
-contract QuotaModule is SecurityModule, QuotaManager
+contract QuotaModule is SecurityModule
 {
     uint public delayPeriod;
 
@@ -36,6 +36,7 @@ contract QuotaModule is SecurityModule, QuotaManager
         public
         SecurityModule(_controller)
     {
+        require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
     }
 
@@ -85,6 +86,7 @@ contract QuotaModule is SecurityModule, QuotaManager
     function boundMethods()
         public
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -98,6 +100,7 @@ contract QuotaModule is SecurityModule, QuotaManager
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.changeDailyQuota.selector) {

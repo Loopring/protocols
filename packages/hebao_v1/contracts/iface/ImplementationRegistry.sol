@@ -14,19 +14,19 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 
 /// @title ImplementationRegistry
 /// @dev A registry for wallet implementations.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract ImplementationRegistry
+abstract contract ImplementationRegistry
 {
-    function registerImplementation(address implementation) external;
-    function deregisterImplementation(address implementation) external;
-    function isImplementationRegistered(address implementation) public view returns (bool);
-    function setDefaultImplementation(address implementation) external;
-    function defaultImplementation() public view returns (address);
-    function implementations() public view returns (address[] memory _implementation);
-    function numOfImplementations() public view returns (uint);
+    function registerImplementation(address implementation) external virtual;
+    function deregisterImplementation(address implementation) external virtual;
+    function isImplementationRegistered(address implementation) public view virtual returns (bool);
+    function setDefaultImplementation(address implementation) external virtual;
+    function defaultImplementation() public view virtual returns (address);
+    function implementations() public view virtual returns (address[] memory _implementation);
+    function numOfImplementations() public view virtual returns (uint);
 }

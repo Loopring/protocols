@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -57,37 +57,19 @@ contract WalletFactory is ReentrancyGuard
     function createWalletInternal(
         Controller _controller,
         address    _owner,
-        address[]  memory _modules
+        address    _bootstrapModule
         )
         internal
         returns (address payable _wallet)
     {
         // Deploy the wallet address
-        _wallet = Create2.deploy(
-            getSalt(_owner),
-            getWalletCode()
-        );
+        _wallet = Create2.deploy(getSalt(_owner), getWalletCode());
 
         address walletImplementation = _controller.implementationRegistry().defaultImplementation();
         OwnedUpgradabilityProxy(_wallet).upgradeTo(walletImplementation);
         OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
 
-        // Temporarily register this contract as a module to the wallet
-        // so we can add/activate the modules.
-        address[] memory setupModules = new address[](1);
-        setupModules[0] = address(this);
-
-        // Setup the wallet
-        Wallet(_wallet).setup(address(_controller), _owner, setupModules);
-
-        // Add/Activate modules
-        for(uint i = 0; i < _modules.length; i++) {
-            Wallet(_wallet).addModule(_modules[i]);
-            Module(_modules[i]).activate(_wallet);
-        }
-
-        // Remove this contract from the wallet modules
-        Wallet(_wallet).removeModule(address(this));
+        Wallet(_wallet).setup(address(_controller), _owner, _bootstrapModule);
 
         emit WalletCreated(_wallet, _owner);
     }

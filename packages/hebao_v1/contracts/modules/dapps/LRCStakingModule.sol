@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
@@ -57,6 +57,7 @@ contract LRCStakingModule is SubAccountDAppModule
         uint    amount
         )
         external
+        override
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
@@ -88,6 +89,7 @@ contract LRCStakingModule is SubAccountDAppModule
         uint    amount
         )
         external
+        override
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
@@ -132,6 +134,7 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         public
         view
+        override
         returns (int balance)
     {
         if (token != lrcTokenAddress) return 0;
@@ -148,6 +151,7 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         public
         view
+        override
         returns (bool unsupported, uint withdrawalable)
     {
         if (token != lrcTokenAddress) {
@@ -164,6 +168,7 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         public
         view
+        override
         returns (bool unsupported, uint depositable)
     {
         if (token != lrcTokenAddress) {
@@ -182,6 +187,7 @@ contract LRCStakingModule is SubAccountDAppModule
         )
         public
         view
+        override
         returns (int interestRate)
     {
         if (token != lrcTokenAddress || borrow) return 0;

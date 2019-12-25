@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../../thirdparty/BytesUtil.sol";
@@ -111,6 +111,7 @@ contract GenericDAppModule is SecurityModule
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         signers = new address[](1);

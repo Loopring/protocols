@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../../base/BaseSubAccount.sol";
@@ -24,7 +24,7 @@ import "../../security/SecurityModule.sol";
 
 /// @title SubAccountDAppModule
 /// @dev SubAccountDAppModule only allows wallet owners to use meta-transactions.
-contract SubAccountDAppModule is BaseSubAccount, SecurityModule
+abstract contract SubAccountDAppModule is BaseSubAccount, SecurityModule
 {
     function extractMetaTxSigners(
         address wallet,
@@ -33,6 +33,7 @@ contract SubAccountDAppModule is BaseSubAccount, SecurityModule
         )
         internal
         view
+        override
         returns (address[] memory signers)
     {
         signers = new address[](1);

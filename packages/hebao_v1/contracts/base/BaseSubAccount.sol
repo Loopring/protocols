@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../lib/ERC20.sol";
@@ -24,7 +24,7 @@ import "../iface/SubAccount.sol";
 
 
 /// @title BaseSubAccount
-contract BaseSubAccount is SubAccount
+abstract contract BaseSubAccount is SubAccount
 {
     using MathInt for int;
 
@@ -81,6 +81,8 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
+        override
+        virtual
         returns (int)
     {
         int totalDeposit = stats[wallet][token].totalDeposit;
@@ -99,6 +101,7 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
+        virtual
         returns (int)
     {
         int totalDeposit = stats[wallet][token].totalDeposit;
@@ -117,6 +120,8 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
+        override
+        virtual
         returns (bool, uint balance)
     {
         int _balance = tokenBalance(wallet, token);
@@ -130,6 +135,8 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
+        override
+        virtual
         returns (bool, uint withdrawalable)
     {
         if (token == address(0)) {
@@ -146,6 +153,8 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
+        override
+        virtual
         returns (bool)
     {
         (bool unsupported, uint withdrawalable) = tokenWithdrawalable(wallet, token);
@@ -159,13 +168,28 @@ contract BaseSubAccount is SubAccount
         )
         public
         view
+        override
+        virtual
         returns (bool)
     {
         (bool unsupported, uint depositable) = tokenWithdrawalable(wallet, token);
         return !unsupported && amount <= depositable;
     }
 
-    function tokenInterestRate(address, address, uint, bool) public view returns (int) { return 0; }
+    function tokenInterestRate(
+        address,
+        address,
+        uint,
+        bool
+        )
+        public
+        view
+        override
+        virtual
+        returns (int)
+    {
+        return 0;
+    }
 
     /// @dev Returns the balance for a list of tokens.
     ///

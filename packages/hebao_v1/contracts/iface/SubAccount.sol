@@ -14,12 +14,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 
 /// @title SubAccount
-contract SubAccount
+abstract contract SubAccount
 {
     /// @dev Deposits Ether/token from the wallet to this sub-account.
     ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
@@ -31,7 +31,8 @@ contract SubAccount
         address            token,
         uint               amount
         )
-        external;
+        external
+        virtual;
 
     /// @dev Withdraw Ether/token from this sub-account to the wallet.
     ///      The method must throw in case of error, or must emit a SubAccountTransfer event.
@@ -43,7 +44,8 @@ contract SubAccount
         address            token,
         uint               amount
         )
-        external;
+        external
+        virtual;
 
     /// @dev Returns a wallet's token balance in this sub-account.
     /// @param wallet The wallet's address.
@@ -55,6 +57,7 @@ contract SubAccount
         )
         public
         view
+        virtual
         returns (int balance);
 
     /// @dev Returns the amount of token a wallet can withdraw from the sub-account
@@ -63,6 +66,7 @@ contract SubAccount
     ///
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
+    /// @return unsupported True if the token is supported, else false.
     /// @return withdrawable The amount allowed to withdraw.
     function tokenWithdrawalable (
         address wallet,
@@ -70,12 +74,14 @@ contract SubAccount
         )
         public
         view
-        returns (bool unsupported, uint withdrawalable);
+        virtual
+        returns (bool unsupported, uint withdrawable);
 
     /// @dev Returns the amount of token a wallet can deposit from the wallet into
     ///      the sub-account. uint(-1) will be returned if there is no limitation.
     /// @param wallet The wallet's address.
     /// @param token The token's address, use 0x0 for Ether.
+    /// @return unsupported True if the token is supported, else false.
     /// @return depositable The amount allowd to deposit.
     function tokenDepositable (
         address wallet,
@@ -83,6 +89,7 @@ contract SubAccount
         )
         public
         view
+        virtual
         returns (bool unsupported, uint depositable);
 
     /// @dev Checks if a certain amount of withdrawal is allowed.
@@ -97,6 +104,7 @@ contract SubAccount
         )
         public
         view
+        virtual
         returns (bool);
 
     /// @dev Checks if a certain amount of deposit is allowed.
@@ -111,6 +119,7 @@ contract SubAccount
         )
         public
         view
+        virtual
         returns (bool);
 
     /// @dev Returns the current interest rate in BIPs (0.01%).
@@ -128,6 +137,7 @@ contract SubAccount
         )
         public
         view
+        virtual
         returns (int interestRate);
 
     /// @dev Returns the ROI in BIPs (0.01%).
@@ -140,5 +150,6 @@ contract SubAccount
         )
         public
         view
+        virtual
         returns (int roi);
 }

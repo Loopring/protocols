@@ -14,14 +14,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
 
 /// @title TransferModule
-contract TransferModule is SecurityModule
+abstract contract TransferModule is SecurityModule
 {
     event Transfered(
         address indexed wallet,

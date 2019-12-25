@@ -14,18 +14,18 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 
 /// @title ModuleRegistry
 /// @dev A registry for modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ModuleRegistry
+interface ModuleRegistry
 {
     function registerModule(address module) external;
     function deregisterModule(address module) external;
-    function isModuleRegistered(address module) public view returns (bool);
-    function modules() public view returns (address[] memory _modules);
-    function numOfModules() public view returns (uint);
+    function isModuleRegistered(address module) external view returns (bool);
+    function modules() external view returns (address[] memory _modules);
+    function numOfModules() external view returns (uint);
 }

@@ -14,13 +14,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 import "../lib/ERC20.sol";
 import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Controller.sol";
+import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
 
@@ -67,13 +68,23 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         _;
     }
 
-    function owner() public view returns (address)
+    modifier onlyOwnerOrModule
+    {
+        require(
+            msg.sender == _owner || isAddressInSet(MODULE, msg.sender),
+            "MODULE_UNAUTHORIZED"
+        );
+        _;
+    }
+
+    function owner() override external view returns (address)
     {
         return _owner;
     }
 
     function setOwner(address newOwner)
         external
+        override
         onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
@@ -86,9 +97,10 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function setup(
         address _controller,
         address initialOwner,
-        address[] calldata modules
+        address bootstrapModule
         )
         external
+        override
         nonReentrant
     {
         require(
@@ -96,45 +108,49 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
             "INITIALIZED_ALREADY"
         );
         require(initialOwner != address(0), "ZERO_ADDRESS");
-        require(modules.length > 0, "EMPTY_MODULES");
+        require(bootstrapModule != address(0), "NO_BOOTSTRAP_MODULE");
 
         controller = Controller(_controller);
         _owner = initialOwner;
         controller.walletRegistry().registerWallet(address(this));
-        emit WalletSetup(_owner);
 
-        for(uint i = 0; i < modules.length; i++) {
-            addModuleInternal(modules[i]);
-        }
+        emit WalletSetup(_owner);
+        addModuleInternal(bootstrapModule);
     }
 
     function addModule(address _module)
         external
-        onlyModule
+        override
+        onlyOwnerOrModule
     {
         addModuleInternal(_module);
     }
 
     function removeModule(address _module)
         external
+        override
         onlyModule
     {
-        require(numAddressesInSet(MODULE) > 1, "PROHIBITED");
+        // Allow deactivate to fail to make sure the module can be removed
+        // solium-disable-next-line
+        _module.call(abi.encode(Module(0).deactivate.selector));
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
 
     function modules()
-        public
+        external
         view
+        override
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
     }
 
     function hasModule(address _module)
-        public
+        external
         view
+        override
         returns (bool)
     {
         return isAddressInSet(MODULE, _module);
@@ -142,6 +158,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function bindMethod(bytes4 _method, address _module)
         external
+        override
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
@@ -153,8 +170,9 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     }
 
     function boundMethodModule(bytes4 _method)
-        public
+        external
         view
+        override
         returns (address)
     {
         return methodToModule[_method];
@@ -167,34 +185,15 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         bytes    calldata data
         )
         external
+        override
         onlyModule
         returns (bytes memory result)
     {
-        return transactInternal(mode, to, value, data);
-    }
-
-    function addModuleInternal(address _module)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
         require(
-            controller.moduleRegistry().isModuleRegistered(_module),
-            "INVALID_MODULE"
+            !controller.moduleRegistry().isModuleRegistered(to),
+            "TRANSACT_ON_MODULE_DISALLOWED"
         );
 
-        addAddressToSet(MODULE, _module, true);
-        emit ModuleAdded(_module);
-    }
-
-    function transactInternal(
-        uint8   mode,
-        address to,
-        uint    value,
-        bytes   memory data
-        )
-        internal
-        returns (bytes memory result)
-    {
         bool success;
         if (mode == 1) {
             // solium-disable-next-line security/no-call-value
@@ -212,16 +211,30 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
         if (!success) {
             assembly {
-                returndatacopy(0, 0, returndatasize)
-                revert(0, returndatasize)
+                returndatacopy(0, 0, returndatasize())
+                revert(0, returndatasize())
             }
         }
         emit Transacted(msg.sender, to, value, data);
     }
 
+    function addModuleInternal(address _module)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(
+            controller.moduleRegistry().isModuleRegistered(_module),
+            "INVALID_MODULE"
+        );
+
+        addAddressToSet(MODULE, _module, true);
+        Module(_module).activate();
+        emit ModuleAdded(_module);
+    }
+
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.
-    function()
+    fallback()
         external
         payable
     {
@@ -238,7 +251,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         assembly {
             let ptr := mload(0x40)
             calldatacopy(ptr, 0, calldatasize())
-            let result := call(gas, module, 0, ptr, calldatasize(), 0, 0)
+            let result := call(gas(), module, 0, ptr, calldatasize(), 0, 0)
             returndatacopy(ptr, 0, returndatasize())
 
             switch result

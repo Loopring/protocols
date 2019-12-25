@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
@@ -34,8 +34,10 @@ contract SecurityStore is DataStore
         address    inheritor;
         uint128    lastActive; // the latest timestamp the owner is considered to be active
         uint128    lock;
-        address    locker; // the module locked/unlocked this wallet
+        address    lockedBy;   // the module that locked the wallet.
+
         Data.Guardian[] guardians;
+
         mapping    (address => uint) guardianIdx;
     }
 
@@ -43,7 +45,10 @@ contract SecurityStore is DataStore
 
     constructor() public DataStore() {}
 
-    function isGuardian(address wallet, address guardian)
+    function isGuardian(
+        address wallet,
+        address guardian
+        )
         public
         view
         returns (bool)
@@ -51,7 +56,10 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardianIdx[guardian] > 0;
     }
 
-    function getGuardian(address wallet, address _guardian)
+    function getGuardian(
+        address wallet,
+        address _guardian
+        )
         public
         view
         returns (Data.Guardian memory guardian)
@@ -77,7 +85,11 @@ contract SecurityStore is DataStore
         return wallets[wallet].guardians.length;
     }
 
-    function addOrUpdateGuardian(address wallet, address guardian, uint group)
+    function addOrUpdateGuardian(
+        address wallet,
+        address guardian,
+        uint    group
+        )
         public
         onlyManager
     {
@@ -99,7 +111,10 @@ contract SecurityStore is DataStore
         }
     }
 
-    function removeGuardian(address wallet, address guardian)
+    function removeGuardian(
+        address wallet,
+        address guardian
+        )
         public
         onlyManager
     {
@@ -113,35 +128,32 @@ contract SecurityStore is DataStore
             w.guardians[idx - 1] = lastGuardian;
             w.guardianIdx[lastGuardian.addr] = idx;
         }
-        w.guardians.length -= 1;
+        w.guardians.pop();
         delete w.guardianIdx[guardian];
-    }
-
-    function isLocked(address wallet)
-        public
-        view
-        returns (bool)
-    {
-        return uint(wallets[wallet].lock) > now;
     }
 
     function getLock(address wallet)
         public
         view
-        returns (uint)
+        returns (uint _lock, address _module)
     {
-        return uint(wallets[wallet].lock);
+        _lock = uint(wallets[wallet].lock);
+        _module = wallets[wallet].lockedBy;
     }
 
-    function setLock(address wallet, uint lock)
+    function setLock(
+        address wallet,
+        uint    lock
+        )
         public
         onlyManager
     {
+        require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
         uint128 _lock = uint128(lock);
         require(uint(_lock) == lock, "LOCK_TOO_LARGE");
 
         wallets[wallet].lock = _lock;
-        wallets[wallet].locker = msg.sender;
+        wallets[wallet].lockedBy = msg.sender;
     }
 
     function touchLastActive(address wallet)

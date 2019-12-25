@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.13;
+pragma solidity ^0.6.0;
 
 
 /// @title AddressSet
@@ -63,7 +63,7 @@ contract AddressSet
                 set.addresses[pos - 1] = lastAddr;
                 set.addressPos[lastAddr] = pos;
             }
-            set.addresses.length -= 1;
+            set.addresses.pop();
         } else {
             set.count -= 1;
         }
