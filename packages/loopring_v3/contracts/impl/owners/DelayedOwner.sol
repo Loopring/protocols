@@ -16,8 +16,9 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/DelayedTransaction.sol";
 import "../../lib/Claimable.sol";
+
+import "../../impl/DelayedTransaction.sol";
 
 
 /// @title  DelayedOwner
