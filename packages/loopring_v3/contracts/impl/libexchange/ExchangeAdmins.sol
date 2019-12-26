@@ -147,7 +147,7 @@ library ExchangeAdmins
             uint numMinutesToPurchase = durationMinutes.sub(numMinutesLeft);
             uint costLRC = getDowntimeCostLRC(S, numMinutesToPurchase);
             if (costLRC > 0) {
-                address feeVault = loopring.protocolFeeVault();
+                address feeVault = S.loopring.protocolFeeVault();
                 S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, costLRC);
             }
             S.numDowntimeMinutes = S.numDowntimeMinutes.add(numMinutesToPurchase);

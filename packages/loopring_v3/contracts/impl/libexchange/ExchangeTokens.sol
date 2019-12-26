@@ -88,7 +88,7 @@ library ExchangeTokens
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
         if (amountToBurn > 0) {
-            address feeVault = loopring.protocolFeeVault();
+            address feeVault = S.loopring.protocolFeeVault();
             S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, amountToBurn);
         }
 
