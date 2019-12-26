@@ -30,6 +30,7 @@ import "./ExchangeMode.sol";
 library ExchangeTokens
 {
     using MathUint          for uint;
+    using ERC20SafeTransfer for address;
     using ExchangeMode      for ExchangeData.State;
 
     event TokenRegistered(
