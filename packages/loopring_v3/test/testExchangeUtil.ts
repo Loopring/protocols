@@ -343,6 +343,10 @@ export class ExchangeTestUtil {
     );
   }
 
+  public isProofComputingDisabled() {
+    return process.argv.indexOf("--disable-proof") > -1;
+  }
+
   public async createOperator(exchangeID: number, owner: string) {
     // Make an account for the operator
     const keyPair = this.getKeyPairEDDSA();
@@ -1413,6 +1417,8 @@ export class ExchangeTestUtil {
   }
 
   public async generateKeys(blockFilename: string) {
+    if(isProofComputingDisabled()) return true;
+
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
     const blockVersion = 0;
 
@@ -1463,6 +1469,8 @@ export class ExchangeTestUtil {
   }
 
   public async verifyBlocks(blocks: Block[]) {
+    if(isProofComputingDisabled()) return true;
+
     if (blocks.length === 0) {
       return;
     }
