@@ -65,7 +65,7 @@ contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    string  constant public version = "3.0-beta5";
+    string  constant public version = "3.0-beta6";
 
     address public wethAddress;
     uint    public totalStake;
