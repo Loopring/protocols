@@ -21,6 +21,7 @@ import "../lib/ERC20SafeTransfer.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
+import "../iface/ILoopringV3.sol";
 import "../iface/IUniversalRegistry.sol";
 
 import "./proxies/AutoUpgradabilityProxy.sol";
@@ -157,7 +158,7 @@ contract UniversalRegistry is IUniversalRegistry {
 
         ILoopring loopring = ILoopring(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
-        address feeVault = loopring.protocolFeeVault();
+        address feeVault = ILoopringV3(_implementation).protocolFeeVault();
 
         if (exchangeCreationCostLRC > 0) {
             lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, exchangeCreationCostLRC);
