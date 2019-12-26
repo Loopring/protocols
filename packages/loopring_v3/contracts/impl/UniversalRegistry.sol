@@ -16,8 +16,8 @@
 */
 pragma solidity ^0.5.11;
 
-import "../lib/BurnableERC20.sol";
 import "../lib/SimpleProxy.sol";
+import "../lib/ERC20SafeTransfer.sol";
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
@@ -31,6 +31,9 @@ import "./ImplementationManager.sol";
 /// @title An Implementation of IUniversalRegistry
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract UniversalRegistry is IUniversalRegistry {
+
+    using ERC20SafeTransfer for address;
+
     struct Protocol
     {
         address protocol;
@@ -154,12 +157,10 @@ contract UniversalRegistry is IUniversalRegistry {
 
         ILoopring loopring = ILoopring(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
+        address feeVault = loopring.protocolFeeVault();
 
         if (exchangeCreationCostLRC > 0) {
-            require(
-                BurnableERC20(lrcAddress).burnFrom(msg.sender, exchangeCreationCostLRC),
-                "BURN_FAILURE"
-            );
+            lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, exchangeCreationCostLRC);
         }
 
         exchangeAddress = forgeInternal(forgeMode, _implementation);

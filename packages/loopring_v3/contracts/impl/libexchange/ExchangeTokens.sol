@@ -88,7 +88,8 @@ library ExchangeTokens
         require(S.tokens.length < ExchangeData.MAX_NUM_TOKENS(), "TOKEN_REGISTRY_FULL");
 
         if (amountToBurn > 0) {
-            require(BurnableERC20(S.lrcAddress).burnFrom(msg.sender, amountToBurn), "BURN_FAILURE");
+            address feeVault = loopring.protocolFeeVault();
+            S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, amountToBurn);
         }
 
         ExchangeData.Token memory token = ExchangeData.Token(tokenAddress, false);

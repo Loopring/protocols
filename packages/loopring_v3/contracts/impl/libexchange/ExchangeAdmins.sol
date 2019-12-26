@@ -147,10 +147,8 @@ library ExchangeAdmins
             uint numMinutesToPurchase = durationMinutes.sub(numMinutesLeft);
             uint costLRC = getDowntimeCostLRC(S, numMinutesToPurchase);
             if (costLRC > 0) {
-                require(
-                    BurnableERC20(S.lrcAddress).burnFrom(msg.sender, costLRC),
-                    "BURN_FAILURE"
-                );
+                address feeVault = loopring.protocolFeeVault();
+                S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, costLRC);
             }
             S.numDowntimeMinutes = S.numDowntimeMinutes.add(numMinutesToPurchase);
         }
