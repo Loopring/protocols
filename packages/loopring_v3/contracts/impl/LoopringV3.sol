@@ -210,8 +210,7 @@ contract LoopringV3 is ILoopringV3
             burnedLRC = amount;
         }
         if (burnedLRC > 0) {
-            lrcAddress.safeTransferAndVerify(protocolFeeVault, burnedLRC)
-
+            lrcAddress.safeTransferAndVerify(protocolFeeVault, burnedLRC);
             exchange.exchangeStake = exchange.exchangeStake.sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }
