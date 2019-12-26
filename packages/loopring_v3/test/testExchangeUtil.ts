@@ -1417,7 +1417,7 @@ export class ExchangeTestUtil {
   }
 
   public async generateKeys(blockFilename: string) {
-    if(isProofComputingDisabled()) return true;
+    if(this.isProofComputingDisabled()) return true;
 
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
     const blockVersion = 0;
@@ -1469,7 +1469,7 @@ export class ExchangeTestUtil {
   }
 
   public async verifyBlocks(blocks: Block[]) {
-    if(isProofComputingDisabled()) return true;
+    if(this.isProofComputingDisabled()) return true;
 
     if (blocks.length === 0) {
       return;
