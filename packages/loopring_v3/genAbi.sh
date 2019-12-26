@@ -9,7 +9,7 @@ node_modules/solc/solcjs \
 node_modules/solc/solcjs \
     -o ABI/version30/ --overwrite \
     --abi contracts/lib/*.sol \
-    --allow-paths contracts/thirdparty/*.sol
+    --allow-paths contracts/thirdparty/*.sol contracts/iface/*.sol
 
 node_modules/solc/solcjs \
     -o ABI/version30/ --overwrite \
