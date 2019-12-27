@@ -18,6 +18,17 @@
 - ExchangeV3: 0xc2D1E8FB0C10810BB888231E7B85118042846105 [exchange30b4.lrctoken.eth](https://etherscan.io/address/exchange30b4.lrctoken.eth)
 - ExchangeV3 ImplementationManager: 0xbef66a28a7aa03d3feaebc3e19d58386474520a5
 
+#### price-providers  
+
+- ChainlinkTokenPriceProvider: 0x3B740FeE3ED82FA676286938E124A8Bb74553f93  
+- MovingAveragePriceProvider: 0x388110217e4d194d501BB52c3AB28dC709EB450d  
+
+#### owners  
+
+- BlockVerifierOwner: 0xb3941215651f37B681526eA359642174F8e71b3F  
+- ImplementationManagerOwner: 0xAAB867f1648AC89d7339C595a22378ED9D3D3F8a  
+- LoopringV3Owner: 0xFc4aE885815c5b469ce6AC17F945a6dA38992F17  
+
 ### vks with following blockSize are registered in blockverifier contract:
 
 - trade: 1, 2, 4, 8, 14, 31, 63, 128, 256, 512, 1024
