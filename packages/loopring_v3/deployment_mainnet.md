@@ -1,7 +1,7 @@
 ## Deployment infos for Loopring 3.0-beta4:
 
 - release url: https://github.com/Loopring/protocols/releases/tag/3.0-beta4
-- depoyer: 0x4374D3d032B3c96785094ec9f384f07077792768
+- deployer: 0x4374D3d032B3c96785094ec9f384f07077792768
 - Migrations: 0x277c2c086F7435496e7D892aC370e5BeDe2bA8E4
 
 ### contracts
@@ -41,7 +41,7 @@
 - WETH: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, tokenId: 1
 - LRC: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD, tokenId: 2
 
-### WEDAX Exchange contract address:
+### WEDEX Exchange contract address:
 
 - exchangeID: 1
 - exchangeAddress: 0x7D3D221A8D8AbDd868E8e88811fFaF033e68E108
@@ -50,7 +50,7 @@
 - operator: 0x056C0263E87c2edBF7083620832D25216b1cB05D
 - dummy account: 0x732E2501D6Bd54EEbf4Fb2800F664399413AF26A
 
-#### WEDAX supported tokens:
+#### WEDEX supported tokens:
 
 - USDT: 0xdac17f958d2ee523a2206206994597c13d831ec7, tokenId: 3
 
