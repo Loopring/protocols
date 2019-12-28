@@ -26,6 +26,13 @@ import "../../lib/ERC20SafeTransfer.sol";
 
 
 /// @title  BatchOperator
+/// @dev    This contract can act as a DEX operator to batch the following ExchangeV30
+///         transactions to save some gas (~10% according to Brecht Devos):
+///            - commitBlock
+///            - verifyBlocks
+///            - revertBlock
+///            - distributeWithdrawals
+///
 /// @author Daniel Wang - <daniel@loopring.org>
 contract BatchOperator is Claimable
 {
