@@ -25,8 +25,8 @@ import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
 
-/// @title  BlockVerifierOwner
-/// @author Brecht Devos - <brecht@loopring.org>
+/// @title  BatchOperator
+/// @author Daniel Wang - <daniel@loopring.org>
 contract BatchOperator is Claimable
 {
     using ERC20SafeTransfer for address;
