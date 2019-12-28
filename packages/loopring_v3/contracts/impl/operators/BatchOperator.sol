@@ -51,14 +51,31 @@ contract BatchOperator is Claimable
     }
 
     function batchCall(
-        uint[]  calldata txValues,
         bytes[] calldata transactions
         )
         external
         payable
         onlyOwner
     {
-        require(txValues.length > 0, "EMPTY_DATA");
+        require(transactions.length > 0, "EMPTY_DATA");
+        require(msg.value == 0, "INVALID_MSG_VALUE");
+
+        for (uint i = 0; i < transactions.length; i++) {
+            /* solium-disable-next-line */
+            (bool success, ) = exchange.call(transactions[i]);
+            require(success, "FAILURE");
+        }
+    }
+
+    function batchCall(
+        bytes[] calldata transactions,
+        uint[]  calldata txValues
+        )
+        external
+        payable
+        onlyOwner
+    {
+        require(transactions.length > 0, "EMPTY_DATA");
         require(txValues.length == transactions.length, "INVALID_DATA");
 
         uint msgValue = msg.value;
@@ -72,6 +89,8 @@ contract BatchOperator is Claimable
             (bool success, ) = exchange.call.value(txValue)(transactions[i]);
             require(success, "FAILURE");
         }
+
+        owner.sendETHAndVerify(msgValue, gasleft());
     }
 
     function drain(address token, uint amount)
