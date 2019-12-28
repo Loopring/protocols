@@ -115,7 +115,7 @@ contract BatchOperator is Claimable
             _amount = _balance;
         }
 
-        if (_balance == 0) return;
+        if (_amount == 0) return;
 
         if (token == address(0)) {
             owner.sendETHAndVerify(_amount, gasleft());
