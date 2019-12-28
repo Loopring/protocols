@@ -78,19 +78,21 @@ contract BatchOperator is Claimable
         require(transactions.length > 0, "EMPTY_DATA");
         require(txValues.length == transactions.length, "INVALID_DATA");
 
-        uint msgValue = msg.value;
+        uint ethLeft = msg.value;
 
         for (uint i = 0; i < transactions.length; i++) {
             uint txValue = txValues[i];
-            require(msgValue >= txValue, "OUT_OF_ETHER");
+            require(ethLeft >= txValue, "OUT_OF_ETHER");
 
-            msgValue -= txValue;
+            ethLeft -= txValue;
             /* solium-disable-next-line */
             (bool success, ) = exchange.call.value(txValue)(transactions[i]);
             require(success, "FAILURE");
         }
 
-        owner.sendETHAndVerify(msgValue, gasleft());
+        if (ethLeft > 0) {
+            owner.sendETHAndVerify(ethLeft, gasleft());
+        }
     }
 
     function drain(address token, uint amount)
