@@ -128,12 +128,10 @@ contract BatchOperator is Claimable
 
     function() external payable
     {
-        if (msg.sender == owner) {
-            /* solium-disable-next-line */
-            (bool success, ) = exchange.call.value(msg.value)(msg.data);
-            require(success, "FAILURE");
-        } else {
-            revert("UNSUPPORTED");
-        }
+        if (msg.sender != owner) revert("UNAUTHORIZED");
+
+        /* solium-disable-next-line */
+        (bool success, ) = exchange.call.value(msg.value)(msg.data);
+        require(success, "FAILURE");
     }
 }
