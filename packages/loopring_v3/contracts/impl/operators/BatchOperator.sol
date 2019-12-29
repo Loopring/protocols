@@ -61,44 +61,14 @@ contract BatchOperator is Claimable
         bytes[] calldata transactions
         )
         external
-        payable
         onlyOwner
     {
         require(transactions.length > 0, "EMPTY_DATA");
-        require(msg.value == 0, "INVALID_MSG_VALUE");
-
+  
         for (uint i = 0; i < transactions.length; i++) {
             /* solium-disable-next-line */
             (bool success, ) = exchange.call(transactions[i]);
             require(success, "FAILURE");
-        }
-    }
-
-    function batchCall(
-        bytes[] calldata transactions,
-        uint[]  calldata txValues
-        )
-        external
-        payable
-        onlyOwner
-    {
-        require(transactions.length > 0, "EMPTY_DATA");
-        require(txValues.length == transactions.length, "INVALID_DATA");
-
-        uint ethLeft = msg.value;
-
-        for (uint i = 0; i < transactions.length; i++) {
-            uint txValue = txValues[i];
-            require(ethLeft >= txValue, "OUT_OF_ETHER");
-
-            ethLeft -= txValue;
-            /* solium-disable-next-line */
-            (bool success, ) = exchange.call.value(txValue)(transactions[i]);
-            require(success, "FAILURE");
-        }
-
-        if (ethLeft > 0) {
-            owner.sendETHAndVerify(ethLeft, gasleft());
         }
     }
 
@@ -131,7 +101,7 @@ contract BatchOperator is Claimable
         if (msg.sender != owner) return;
 
         /* solium-disable-next-line */
-        (bool success, ) = exchange.call.value(msg.value)(msg.data);
+        (bool success, ) = exchange.call(msg.data);
         require(success, "FAILURE");
     }
 }
