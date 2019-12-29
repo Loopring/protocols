@@ -44,12 +44,16 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         string  indexed subdomain
     );
 
+    address public walletImplementation;
+
     constructor(
-        Controller _controller
+        Controller _controller,
+        address    _walletImplementation
         )
         public
         MetaTxModule(_controller)
     {
+        walletImplementation = _walletImplementation;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -67,7 +71,12 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         nonReentrant
         returns (address _wallet)
     {
-        _wallet = createWalletInternal(controller, _owner, address(this));
+        _wallet = createWalletInternal(
+            controller,
+            walletImplementation,
+            _owner,
+            address(this)
+        );
         Wallet w = Wallet(_wallet);
 
         for(uint i = 0; i < _modules.length; i++) {

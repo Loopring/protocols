@@ -31,8 +31,7 @@ library EIP712
     string constant internal EIP191_HEADER = "\x19\x01";
 
     function hash(Domain memory domain)
-        public // TODO: change this to internal when solidity 0.6 is released which fixes this bug:
-               // https://github.com/sc-forks/solidity-coverage/issues/433
+        internal
         pure
         returns (bytes32)
     {

@@ -32,11 +32,11 @@ abstract contract Vault
         address   target,
         uint      value,
         uint8     mode,
-        bytes     calldata data,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        bytes     memory data,
+        address[] memory signers,
+        bytes[]   memory signatures
         )
-        external
+        public
         virtual
         returns (bytes memory result);
 

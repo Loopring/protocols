@@ -112,7 +112,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
         controller = Controller(_controller);
         _owner = initialOwner;
-        controller.walletRegistry().registerWallet(address(this));
 
         emit WalletSetup(_owner);
         addModuleInternal(bootstrapModule);

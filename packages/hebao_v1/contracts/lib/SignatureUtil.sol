@@ -29,7 +29,6 @@ import "./AddressUtil.sol";
 ///      the signature's type, the second byte indicates the signature's length, therefore,
 ///      each signature will have 2 extra bytes prefix. Mulitple signatures are concatenated
 ///      together.
-
 library SignatureUtil
 {
     using BytesUtil     for bytes;
@@ -49,7 +48,7 @@ library SignatureUtil
         address[] memory signers,
         bytes[]   memory signatures
         )
-        public
+        internal
         view
     {
         require(signers.length == signatures.length, "BAD_DATA");
@@ -66,43 +65,31 @@ library SignatureUtil
         address signer,
         bytes   memory signature
         )
-        public
+        internal
         view
     {
-        require(signature.length >= 2, "INVALID_DATA");
         uint  signatureTypeOffset = signature.length - 1;
-        uint8 signatureType;
+        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
-        assembly {
-            signatureType := mload(add(signature, signatureTypeOffset))
-        }
-
-        require (
-            signatureType == uint8(SignatureType.ILLEGAL) ||
-            signatureType == uint8(SignatureType.INVALID),
-            "UNSUPPORTED_SIGNATURE_TYPES"
-        );
-
-        bytes memory stripped = BytesUtil.slice(signature, 0, signatureTypeOffset);
+        bytes memory stripped = signature.slice(0, signatureTypeOffset);
 
         if (AddressUtil.isContract(signer)) {
             require(
-                verifyERC1271Signature(signHash, signer, stripped) ||
-                verifyERC1271Signature(signHash, signer, signature),
+                verifyERC1271Signature(signHash, signer, stripped),
                 "INVALID_ERC1271_SIGNATURE"
             );
-        } else if (signatureType == uint8(SignatureType.EIP_712)) {
+        } else if (signatureType == SignatureType.EIP_712) {
             require(
                 recoverECDSASigner(signHash, stripped) == signer,
-                "INVALID_ECDSA_SIGNATURE"
+                "INVALID_EIP712_SIGNATURE"
             );
-        } else if (signatureType == uint8(SignatureType.ETH_SIGN)) {
+        } else if (signatureType == SignatureType.ETH_SIGN) {
             bytes32 hash = keccak256(
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
             );
             require(
                 recoverECDSASigner(hash, stripped) == signer,
-                "INVALID_ECDSA_SIGNATURE"
+                "INVALID_ETHSIGN_SIGNATURE"
             );
         } else {
             revert("UNSUPPORTED_SIGNATURE_TYPE");
@@ -135,7 +122,7 @@ library SignatureUtil
         bytes32      signHash,
         bytes memory signature
         )
-        public
+        internal
         pure
         returns (address)
     {

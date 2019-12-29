@@ -1,5 +1,5 @@
-var ENSResolver = artifacts.require("./ArgentENSResolver.sol");
-var ENSManager = artifacts.require("./ENSManager.sol");
+var ENSResolver = artifacts.require("./BaseENSResolver.sol");
+var ENSManager = artifacts.require("./WalletENSManager.sol");
 
 module.exports = function(deployer, network) {
   console.log("deploying to network: " + network);
@@ -8,7 +8,7 @@ module.exports = function(deployer, network) {
       return Promise.all([deployer.deploy(ENSResolver)]);
     })
     .then(() => {
-      var rootName = "tokenbank.io";
+      var rootName = "hebao.io";
       var rootNode = web3.utils.sha3(rootName);
       var ensResolver = ENSResolver.address;
       var ensRegistry = deployer.ens.ensSettings.registryAddress;

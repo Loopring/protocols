@@ -37,6 +37,7 @@ contract ControllerImpl is Claimable, Controller
 
     function init(
         address           _collectTo,
+        uint              _defaultLockPeriod,
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
         QuotaStore        _quotaStore,
@@ -54,6 +55,7 @@ contract ControllerImpl is Claimable, Controller
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;                 // modifiable
+        defaultLockPeriod = defaultLockPeriod;
 
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;

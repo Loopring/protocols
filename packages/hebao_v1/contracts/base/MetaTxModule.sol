@@ -57,19 +57,10 @@ abstract contract MetaTxModule is BaseModule
         mapping (bytes32 => bool) metaTxHash;
     }
 
-    struct GasSettings
-    {
-        address token;
-        uint    price;
-        uint    limit;
-        uint    overhead;
-        address recipient;
-    }
-
     struct MetaTransaction
     {
-        address from;
-        address to;
+        address wallet;
+        address module;
         uint    value;
         bytes   data;
         uint    nonce;
@@ -81,7 +72,7 @@ abstract contract MetaTxModule is BaseModule
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
+        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -94,6 +85,7 @@ abstract contract MetaTxModule is BaseModule
         address indexed wallet,
         uint    nonce,
         bytes32 metaTxHash,
+        uint    gasUsed,
         bool    success
     );
 
@@ -153,79 +145,60 @@ abstract contract MetaTxModule is BaseModule
     ///      Important! This function needs to be safe against re-entrancy by using
     ///      the 'Checks Effects Interactions' pattern! We do not use `nonReentrant`
     ///      because this function is used to call into the same contract.
-    /// @param data The raw transaction to be performed on this module.
-    /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
+    /// @param metaTransaction The raw transaction to be performed on this module.
+    /// @param metaTransaction The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
     ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
     ///
-    /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
+    /// @param metaTransaction A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
     /// @param signatures Signatures.
     function executeMetaTx(
-        bytes   calldata data,
-        uint    nonce,
-        uint[5] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
-        bytes[] calldata signatures
+        MetaTransaction memory metaTransaction,
+        bytes[]         memory signatures
         )
-        external
+        public
         payable
     {
-        GasSettings memory gasSettings = GasSettings(
-            address(gasSetting[0]),
-            gasSetting[1],
-            gasSetting[2],
-            gasSetting[3],
-            address(gasSetting[4])
-        );
-        require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
+        require(metaTransaction.gasLimit > 0, "INVALID_GAS_LIMIT");
+        require(metaTransaction.value == msg.value, "INVALID_INPUT");
+        require(metaTransaction.module == address(this), "INVALID_INPUT");
 
-        address wallet = extractWalletAddress(data);
+        address wallet = extractWalletAddress(metaTransaction.data);
+        require(metaTransaction.wallet == wallet, "INVALID_INPUT");
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
-            hash(
-                MetaTransaction(
-                    wallet,
-                    address(this),
-                    msg.value,
-                    data,
-                    nonce,
-                    gasSettings.token,
-                    gasSettings.price,
-                    gasSettings.limit,
-                    gasSettings.overhead,
-                    gasSettings.recipient
-                )
-            )
+            hash(metaTransaction)
         );
 
         // Get the signers necessary for this meta transaction.
-        address[] memory signers = getSigners(wallet, data);
-        require(areAuthorizedMetaTxSigners(wallet, data, signers), "UNAUTHORIZED");
+        address[] memory signers = getSigners(wallet, metaTransaction.data);
+        require(areAuthorizedMetaTxSigners(wallet, metaTransaction.data, signers), "UNAUTHORIZED");
         metaTxHash.verifySignatures(signers, signatures);
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(wallet, nonce, metaTxHash);
+        saveExecutedMetaTx(wallet, metaTransaction.nonce, metaTxHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
             wallet.sendETHAndVerify(msg.value, gasleft());
         }
 
-        require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
+        require(gasleft() >= metaTransaction.gasLimit, "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.gas(gasSettings.limit)(data);
+        (bool success,) = address(this).call.gas(metaTransaction.gasLimit)(metaTransaction.data);
         gasUsed = gasUsed - gasleft();
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
-        gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
+        gasUsed = gasUsed < metaTransaction.gasLimit ? gasUsed : metaTransaction.gasLimit;
 
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
+        emit ExecutedMetaTx(msg.sender, wallet, metaTransaction.nonce, metaTxHash, gasUsed, success);
 
-        if (gasSettings.price != 0) {
-            reimburseGasFee(wallet, gasSettings, gasUsed);
+        if (metaTransaction.gasPrice != 0) {
+            reimburseGasFee(metaTransaction, gasUsed);
         }
     }
 
@@ -336,7 +309,7 @@ abstract contract MetaTxModule is BaseModule
         pure
         returns (address addr)
     {
-        addr = data.toAddress(4 + 32 * parameterIdx);
+        addr = data.toAddress(4 + 32 * parameterIdx + 12);
     }
 
     /// @dev Returns a read-only array with the addresses stored in the call data
@@ -372,8 +345,8 @@ abstract contract MetaTxModule is BaseModule
         return keccak256(
             abi.encode(
                 METATRANSACTION_TYPEHASH,
-                _tx.from,
-                _tx.to,
+                _tx.wallet,
+                _tx.module,
                 _tx.value,
                 keccak256(_tx.data),
                 _tx.nonce,
@@ -395,28 +368,27 @@ abstract contract MetaTxModule is BaseModule
     }
 
     function reimburseGasFee(
-        address     wallet,
-        GasSettings memory gasSettings,
-        uint        gasUsed
+        MetaTransaction memory metaTransaction,
+        uint                   gasUsed
         )
         private
     {
-        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
+        uint gasCost = gasUsed.add(metaTransaction.gasOverhead).mul(metaTransaction.gasPrice);
 
         if (quotaManager() != address(0)) {
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
+            QuotaManager(quotaManager()).checkAndAddToSpent(metaTransaction.wallet, metaTransaction.gasToken, gasCost);
         }
 
-        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
-        if (gasSettings.token == address(0)) {
-            transactCall(wallet, feeRecipient, gasCost, "");
+        address feeRecipient = (metaTransaction.feeRecipient == address(0)) ? msg.sender : metaTransaction.feeRecipient;
+        if (metaTransaction.gasToken == address(0)) {
+            transactCall(metaTransaction.wallet, feeRecipient, gasCost, "");
         } else {
             bytes memory txData = abi.encodeWithSelector(
                 ERC20(0).transfer.selector,
                 feeRecipient,
                 gasCost
             );
-            transactCall(wallet, gasSettings.token, 0, txData);
+            transactCall(metaTransaction.wallet, metaTransaction.gasToken, 0, txData);
         }
     }
 
