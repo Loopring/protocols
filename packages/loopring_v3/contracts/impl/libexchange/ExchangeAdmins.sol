@@ -33,6 +33,7 @@ import "./ExchangeMode.sol";
 library ExchangeAdmins
 {
     using MathUint          for uint;
+    using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
     using ExchangeMode      for ExchangeData.State;
 
@@ -225,11 +226,10 @@ library ExchangeAdmins
         amount = totalBalance - userBalance;
 
         if (amount > 0) {
-            if (token != address(0)) {
-                token.safeTransferAndVerify(recipient, amount);
-            } else {
+            if (token == address(0))
                 recipient.sendETHAndVerify(amount, gasleft());
-            }
+            else
+                token.safeTransferAndVerify(recipient, amount);
         }
     }
 
