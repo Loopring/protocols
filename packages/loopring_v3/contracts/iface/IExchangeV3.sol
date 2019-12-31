@@ -136,6 +136,12 @@ contract IExchangeV3 is IExchange
         uint8 previousMakerFeeBips
     );
 
+    event TokenNotOwnedByUsersWithdrawn(
+        address sender,
+        address token,
+        address feeVault,
+        uint    amount
+    );
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
@@ -387,15 +393,12 @@ contract IExchangeV3 is IExchange
         external
         returns (uint);
 
-    /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops.
-    ///      Can only be called by the exchange owner.
+    /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops, to fee vault.
     ///
     /// @param tokenAddress The adderss of the token.
-    /// @param recipient The address to send the token or ether.
     /// @return The amount of token withdrawn
     function withdrawTokenNotOwnedByUsers(
-        address tokenAddress,
-        address payable recipient
+        address tokenAddress
         )
         external
         returns (uint);

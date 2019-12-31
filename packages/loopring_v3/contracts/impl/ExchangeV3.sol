@@ -304,15 +304,16 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function withdrawTokenNotOwnedByUsers(
-        address tokenAddress,
-        address payable recipient
+        address tokenAddress
         )
         external
         nonReentrant
-        onlyOwner
-        returns(uint)
+        returns(uint amount)
     {
-        return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
+        address payable feeVault = state.loopring.protocolFeeVault();
+        require(feeVault != address(0), "ZERO_ADDRESS");
+        amount = state.withdrawTokenNotOwnedByUsers(tokenAddress, feeVault);
+        emit TokenNotOwnedByUsersWithdrawn(msg.sender, tokenAddress, feeVault, amount);
     }
 
     function withdrawProtocolFeeStake(
