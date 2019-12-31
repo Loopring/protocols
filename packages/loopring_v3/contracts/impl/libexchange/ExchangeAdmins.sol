@@ -226,10 +226,7 @@ library ExchangeAdmins
         amount = totalBalance - userBalance;
 
         if (amount > 0) {
-            if (token == address(0))
-                recipient.sendETHAndVerify(amount, gasleft());
-            else
-                token.safeTransferAndVerify(recipient, amount);
+            token.safeTransferAndVerify(recipient, amount);
         }
     }
 
