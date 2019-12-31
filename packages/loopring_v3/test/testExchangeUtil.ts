@@ -3023,10 +3023,10 @@ export class ExchangeTestUtil {
       lrcBalanceBefore.eq(lrcBalanceAfter.add(revertFineLRC)),
       "LRC balance of exchange needs to be reduced by revertFineLRC"
     );
-    assert(
-      lrcSupplyBefore.eq(lrcSupplyAfter.add(revertFineLRC)),
-      "LRC supply needs to be reduced by revertFineLRC"
-    );
+    // assert(
+    //   lrcSupplyBefore.eq(lrcSupplyAfter.add(revertFineLRC)),
+    //   "LRC supply needs to be reduced by revertFineLRC"
+    // );
 
     logInfo("Reverted to block " + (blockIdx - 1));
     this.pendingBlocks[this.exchangeId] = [];
