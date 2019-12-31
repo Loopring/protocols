@@ -16,6 +16,7 @@
 */
 pragma solidity ^0.5.11;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
@@ -224,7 +225,11 @@ library ExchangeAdmins
         amount = totalBalance - userBalance;
 
         if (amount > 0) {
-            token.safeTransferAndVerify(recipient, amount);
+            if (token != address(0)) {
+                token.safeTransferAndVerify(recipient, amount);
+            } else {
+                recipient.sendETHAndVerify(amount, gasleft());
+            }
         }
     }
 
