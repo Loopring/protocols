@@ -64,7 +64,7 @@ contract BatchOperator is Claimable
         onlyOwner
     {
         require(transactions.length > 0, "EMPTY_DATA");
-  
+
         for (uint i = 0; i < transactions.length; i++) {
             /* solium-disable-next-line */
             (bool success, ) = exchange.call(transactions[i]);
