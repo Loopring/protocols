@@ -16,7 +16,6 @@
 */
 pragma solidity ^0.5.11;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
@@ -33,7 +32,6 @@ import "./ExchangeMode.sol";
 library ExchangeAdmins
 {
     using MathUint          for uint;
-    using AddressUtil       for address payable;
     using ERC20SafeTransfer for address;
     using ExchangeMode      for ExchangeData.State;
 
