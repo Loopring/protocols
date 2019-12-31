@@ -156,9 +156,9 @@ contract UniversalRegistry is IUniversalRegistry {
             implementation
         );
 
-        ILoopring loopring = ILoopring(_protocol);
+        ILoopringV3 loopring = ILoopringV3(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
-        address feeVault = ILoopringV3(_implementation).protocolFeeVault();
+        address feeVault = loopring.protocolFeeVault();
 
         if (exchangeCreationCostLRC > 0) {
             lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, exchangeCreationCostLRC);
