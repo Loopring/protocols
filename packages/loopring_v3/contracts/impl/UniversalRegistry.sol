@@ -161,7 +161,11 @@ contract UniversalRegistry is IUniversalRegistry {
         address feeVault = loopring.protocolFeeVault();
 
         if (exchangeCreationCostLRC > 0) {
-            lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, exchangeCreationCostLRC);
+            lrcAddress.safeTransferFromAndVerify(
+                msg.sender,
+                feeVault,
+                exchangeCreationCostLRC
+            );
         }
 
         exchangeAddress = forgeInternal(forgeMode, _implementation);
