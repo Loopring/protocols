@@ -17,7 +17,6 @@
 pragma solidity ^0.5.11;
 
 import "../lib/AddressUtil.sol";
-import "../lib/BurnableERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
 
@@ -211,11 +210,7 @@ contract LoopringV3 is ILoopringV3
             burnedLRC = amount;
         }
         if (burnedLRC > 0) {
-            require(
-                BurnableERC20(lrcAddress).burn(burnedLRC),
-                "BURN_FAILURE"
-            );
-
+            lrcAddress.safeTransferAndVerify(protocolFeeVault, burnedLRC);
             exchange.exchangeStake = exchange.exchangeStake.sub(burnedLRC);
             totalStake = totalStake.sub(burnedLRC);
         }

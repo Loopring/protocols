@@ -53,10 +53,12 @@ contract("Exchange", (accounts: string[]) => {
       lrcBalanceAfter.eq(lrcBalanceBefore.sub(registrationCost)),
       "LRC balance of exchange owner needs to be reduced by registration cost"
     );
-    assert(
-      lrcSupplyAfter.eq(lrcSupplyBefore.sub(registrationCost)),
-      "LRC supply needs to be reduced by registration cost"
-    );
+
+    // Transfer LRC to FeeVault instead of burn, so totalSupply will not change.
+    // assert(
+    //   lrcSupplyAfter.eq(lrcSupplyBefore.sub(registrationCost)),
+    //   "LRC supply needs to be reduced by registration cost"
+    // );
 
     const tokenIdContract = await exchange.getTokenID(tokenAddress);
     const tokenAddressContract = await exchange.getTokenAddress(tokenIdEvent);
