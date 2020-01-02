@@ -21,3 +21,4 @@ __pycache__
 genkeys/
 EDDSA_KeyPair.json
 *.deployed
+*.tar

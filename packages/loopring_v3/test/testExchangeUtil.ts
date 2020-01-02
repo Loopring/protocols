@@ -1412,6 +1412,52 @@ export class ExchangeTestUtil {
     return block;
   }
 
+  public async encodeCommitBlock(
+    operatorId: number,
+    blockType: BlockType,
+    blockSize: number,
+    data: string,
+    filename: string
+  ) {
+    const publicDataHashAndInput = this.getPublicDataHashAndInput(data);
+    const publicDataHash = publicDataHashAndInput.publicDataHash;
+    const publicInput = publicDataHashAndInput.publicInput;
+    logDebug("[EVM]PublicData: " + data);
+    logDebug("[EVM]PublicDataHash: " + publicDataHash);
+    logDebug("[EVM]PublicInput: " + publicInput);
+
+    const compressedData = compress(
+      data,
+      this.compressionType,
+      this.lzDecompressor.address
+    );
+
+    // Make sure the keys are generated
+    await this.generateKeys(filename);
+
+    const numBlocksBefore = await this.getNumBlocksOnchain();
+
+    const blockVersion = 0;
+    let offchainData =
+      this.getRandomInt(2) === 0
+        ? "0x0ff" + this.blocks[this.exchangeId].length
+        : "0x";
+    if (offchainData.length % 2 == 1) {
+      offchainData += "0";
+    }
+    const operatorContract = this.operator ? this.operator : this.exchange;
+    const encodedTx = await operatorContract.commitBlock(
+      web3.utils.toBN(blockType),
+      web3.utils.toBN(blockSize),
+      web3.utils.toBN(blockVersion),
+      web3.utils.hexToBytes(compressedData),
+      web3.utils.hexToBytes(offchainData),
+      { from: this.exchangeOperator }
+    );
+
+    return encodedTx;
+  }
+
   public async generateKeys(blockFilename: string) {
     const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
     const blockVersion = 0;
@@ -2559,6 +2605,176 @@ export class ExchangeTestUtil {
 
     this.pendingRings[exchangeID] = [];
     return blocks;
+  }
+
+  public async packCommitRings(exchangeID: number, forcedBlockSize?: number) {
+    const pendingRings = this.pendingRings[exchangeID];
+    if (pendingRings.length === 0) {
+      return [];
+    }
+
+    // Generate the token transfers for the ring
+    const blockNumber = await web3.eth.getBlockNumber();
+    const timestamp = (await web3.eth.getBlock(blockNumber)).timestamp + 30;
+
+    let numRingsDone = 0;
+    const blockTxDatas: string[] = [];
+    while (numRingsDone < pendingRings.length) {
+      // Get all rings for the block
+      const blockSize = forcedBlockSize
+        ? forcedBlockSize
+        : this.getBestBlockSize(
+            pendingRings.length - numRingsDone,
+            this.ringSettlementBlockSizes
+          );
+      const rings: RingInfo[] = [];
+      for (let b = numRingsDone; b < numRingsDone + blockSize; b++) {
+        if (b < pendingRings.length) {
+          rings.push(pendingRings[b]);
+        } else {
+          rings.push(this.dummyRing);
+        }
+      }
+      assert(rings.length === blockSize);
+      numRingsDone += blockSize;
+
+      // Hash the labels
+      const labels: number[] = [];
+      for (const ring of rings) {
+        labels.push(ring.orderA.label);
+        labels.push(ring.orderB.label);
+      }
+      const labelHash = this.hashLabels(labels);
+
+      const currentBlockIdx = (await this.getNumBlocksOnchain()) - 1;
+
+      const protocolFees = await this.exchange.getProtocolFeeValues();
+      const protocolTakerFeeBips = protocolFees.takerFeeBips.toNumber();
+      const protocolMakerFeeBips = protocolFees.makerFeeBips.toNumber();
+
+      const operator = await this.getActiveOperator(exchangeID);
+      const ringBlock: RingBlock = {
+        rings,
+        onchainDataAvailability: this.onchainDataAvailability,
+        timestamp,
+        protocolTakerFeeBips,
+        protocolMakerFeeBips,
+        exchangeID,
+        operatorAccountID: operator
+      };
+
+      // Store state before
+      const stateBefore = await this.loadExchangeStateForRingBlock(
+        exchangeID,
+        currentBlockIdx,
+        ringBlock
+      );
+
+      // Create the block
+      const [blockIdx, blockFilename] = await this.createBlock(
+        exchangeID,
+        0,
+        JSON.stringify(ringBlock, replacer, 4),
+        false
+      );
+
+      // Read in the block
+      const block = JSON.parse(fs.readFileSync(blockFilename, "ascii"));
+
+      // Pack the data that needs to be committed onchain
+      const bs = new Bitstream();
+      bs.addNumber(exchangeID, 4);
+      bs.addBN(new BN(block.merkleRootBefore, 10), 32);
+      bs.addBN(new BN(block.merkleRootAfter, 10), 32);
+      bs.addNumber(ringBlock.timestamp, 4);
+      bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
+      bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
+      bs.addBN(new BN(labelHash, 10), 32);
+      const da = new Bitstream();
+      if (block.onchainDataAvailability) {
+        bs.addNumber(block.operatorAccountID, 3);
+        for (const ringSettlement of block.ringSettlements) {
+          const ring = ringSettlement.ring;
+          const orderA = ringSettlement.ring.orderA;
+          const orderB = ringSettlement.ring.orderB;
+
+          da.addNumber(
+            orderA.orderID * 2 ** Constants.NUM_BITS_ORDERID + orderB.orderID,
+            5
+          );
+          da.addNumber(
+            orderA.accountID * 2 ** Constants.NUM_BITS_ACCOUNTID +
+              orderB.accountID,
+            5
+          );
+
+          da.addNumber(orderA.tokenS, 1);
+          da.addNumber(ring.fFillS_A, 3);
+          let buyMask = orderA.buy ? 0b10000000 : 0;
+          let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
+          da.addNumber(
+            buyMask + rebateMask + orderA.feeBips + orderA.rebateBips,
+            1
+          );
+
+          da.addNumber(orderB.tokenS, 1);
+          da.addNumber(ring.fFillS_B, 3);
+          buyMask = orderB.buy ? 0b10000000 : 0;
+          rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
+          da.addNumber(
+            buyMask + rebateMask + orderB.feeBips + orderB.rebateBips,
+            1
+          );
+        }
+      }
+      if (block.onchainDataAvailability) {
+        // Apply circuit transfrom
+        const transformedData = this.transformRingSettlementsData(da.getData());
+        bs.addHex(transformedData);
+      }
+
+      // Write the block signature
+      const publicDataHashAndInput = this.getPublicDataHashAndInput(
+        bs.getData()
+      );
+      this.signRingBlock(block, publicDataHashAndInput.publicInput);
+      fs.writeFileSync(
+        blockFilename,
+        JSON.stringify(block, undefined, 4),
+        "utf8"
+      );
+
+      // Validate the block after generating the signature
+      await this.validateBlock(blockFilename);
+
+      // Store state after
+      const stateAfter = await this.loadExchangeStateForRingBlock(
+        exchangeID,
+        currentBlockIdx + 1,
+        ringBlock
+      );
+
+      // Validate state change
+      this.validateRingSettlements(
+        ringBlock,
+        bs.getData(),
+        stateBefore,
+        stateAfter
+      );
+
+      // Commit the block
+      const commitTx = await this.encodeCommitBlock(
+        operator,
+        BlockType.RING_SETTLEMENT,
+        blockSize,
+        bs.getData(),
+        blockFilename
+      );
+      blockTxDatas.push(commitTx);
+    }
+
+    this.pendingRings[exchangeID] = [];
+    return blockTxDatas;
   }
 
   public getRingTransformations() {
