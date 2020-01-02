@@ -68,7 +68,7 @@ contract BatchOperator is Claimable
         for (uint i = 0; i < transactions.length; i++) {
             /* solium-disable-next-line */
             (bool success, ) = exchange.call(transactions[i]);
-            require(success, "FAILURE");
+            require(success, "FAILURE_IN_BATCHCALL");
         }
     }
 
@@ -102,6 +102,6 @@ contract BatchOperator is Claimable
 
         /* solium-disable-next-line */
         (bool success, ) = exchange.call(msg.data);
-        require(success, "FAILURE");
+        require(success, "FAILURE_IN_FALLBACK");
     }
 }

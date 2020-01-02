@@ -1446,14 +1446,45 @@ export class ExchangeTestUtil {
       offchainData += "0";
     }
     const operatorContract = this.operator ? this.operator : this.exchange;
-    const encodedTx = await operatorContract.commitBlock(
-      web3.utils.toBN(blockType),
-      web3.utils.toBN(blockSize),
-      web3.utils.toBN(blockVersion),
-      web3.utils.hexToBytes(compressedData),
-      web3.utils.hexToBytes(offchainData),
-      { from: this.exchangeOperator }
-    );
+    const encodedTx = await operatorContract.contract.methods
+      .commitBlock(
+        blockType,
+        blockSize,
+        blockVersion,
+        web3.utils.hexToBytes(compressedData),
+        web3.utils.hexToBytes(offchainData)
+      )
+      .encodeABI();
+
+    // const numBlocksAfter = await this.getNumBlocksOnchain();
+    // const blockIdx = (await this.getNumBlocksOnchain()) - 1;
+
+    // const block: Block = {
+    //   blockIdx: blockIdx + 1,
+    //   filename,
+    //   blockType,
+    //   blockSize,
+    //   blockVersion,
+    //   blockState: BlockState.COMMITTED,
+    //   operator: this.operator ? this.operator.address : this.exchangeOperator,
+    //   origin: this.exchangeOperator,
+    //   operatorId,
+    //   data,
+    //   offchainData,
+    //   compressedData,
+    //   publicDataHash,
+    //   publicInput,
+    //   blockFeeWithdrawn: false,
+    //   blockFeeAmountWithdrawn: new BN(0),
+    //   committedTimestamp: 0,
+    //   transactionHash: "",
+    // };
+
+    // this.pendingBlocks[this.exchangeId].push(block);
+    // this.blocks[this.exchangeId].push(block);
+
+    // Check the current state against the explorer state
+    // await this.checkExplorerState();
 
     return encodedTx;
   }
