@@ -1,18 +1,23 @@
-# Deployment infos for Loopring V3.1.1
+# Deployment info for Loopring V3.1.1
 
 - release url: https://github.com/Loopring/protocols/releases/tag/Loopring_3.1.1
 - deployer: 0x4374D3d032B3c96785094ec9f384f07077792768
 
 ## contract addresses
 
+### Contracts shared with V3.0-beta4:
+
 - LRCAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD [lrctoken.eth](https://etherscan.io/address/lrctoken.eth)
 - WETHAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
 - ProtocolFeeVaultAddress: 0x5BB8EF8efD18C6034EC9277DaCA9a5E29B1f1Cb1 [feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)
-- UniversalRegistry: 0x36F568EF555df25be4B6e15D16994F3A8374214E
 - BlockVerifier: 0x40598B41cc17a7E56dd72F415E8223aaCCA94cF7 [blockverifier.lrctoken.eth](https://etherscan.io/address/blockverifier.lrctoken.eth)
 - DowntimeCostCalculator: 0x873685f032c6Aa1572766401f3198a1f09A5C221
 - UniswapTokenSellerAddress: 0xaf92B83231a78978A236CA9D682CEBbAe97E62cB
 - UserStakingPoolAddress: 0xF4662bB1C4831fD411a95b8050B3A5998d8A4A5b [stakingpool.lrctoken.eth](https://etherscan.io/address/stakingpool.lrctoken.eth)
+
+### New deployed:
+
+- UniversalRegistry: 0x36F568EF555df25be4B6e15D16994F3A8374214E
 - LoopringV3: 0x18dd1dda037B009F7C1024dDdD58e4Fe9F960ac7
 - ExchangeV3: 0x730Ea81C982939931d7514CC3Fbc22eAf7D372ec
 
