@@ -707,7 +707,7 @@ The throughput is limited by:
 
 Without data-availability, we are only limited by the number of constraints in a single block.
 
-The gas limit in an Ethereum block is 10,000,000 gas. An Ethereum block is generated every ~15 seconds.
+The gas limit in an Ethereum block is 10,000,000 gas. An Ethereum block is generated every ~13 seconds (this is the case since the Muir Glacier HF).
 
 ### On-chain Data-availability Limit
 
@@ -732,12 +732,12 @@ In a single block, we are currently limited by the number of constraints used in
 
 Using 7 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
 
-- => (10,000,000 - 225,000 \* 7) / 320 = ~26300 trades/Ethereum block = **~1750 trades/second**
+- => (10,000,000 - 225,000 \* 7) / 320 = ~26300 trades/Ethereum block = **~2025 trades/second**
 
 Without data-availability we are limited by how many blocks (and thus by how many trades/block) we can commit and verify in a single Ethereum block:
 
 - => 10,000,000 / 225,000 = ~45 blocks/Ethereum block
-- = ~4800 trades/block \* 45 blocks/Ethereum block = ~216000 trades/Ethereum block = **~14500 trades/second**
+- = ~4800 trades/block \* 45 blocks/Ethereum block = ~216000 trades/Ethereum block = **~16400 trades/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
 
@@ -747,7 +747,7 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 |                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
 | :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
 | Trades per Ethereum Block              |      33      |                  26300                   |                  216000                   |
-| Trades per Second                      |      2-3     |                   1750                   |                   14500                   |
+| Trades per Second                      |      2-3     |                   2025                   |                   16400                   |
 | Cost per Trade                         | 300,000 gas  |                 375 gas                  |                  47 gas                   |
 | Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
 
