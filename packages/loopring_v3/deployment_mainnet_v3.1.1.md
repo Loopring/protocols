@@ -49,9 +49,18 @@
 - exchangeID: 1
 - exchangeAddress: 0xD97D09f3bd931a14382ac60f156C1285a56Bb51B
 - exchange stake: 500000 LRC
-- takerFeeBips: 40; makerFeeBips: 20
+- protocol Fees: takerFeeBips: 40, makerFeeBips: 20
 - operator: 0x056C0263E87c2edBF7083620832D25216b1cB05D
 
 ### Supported Tokens In WEDEX Exchange-2:
 
 - USDT: 0xdac17f958d2ee523a2206206994597c13d831ec7, tokenId: 3
+
+## Loopring Exchange Info (from 2020-01-13):
+
+- exchangeID: 2
+- exchangeAddress: 0x944644Ea989Ec64c2Ab9eF341D383cEf586A5777
+- exchange stake: 750000LRC
+- protocol Fees: takerFeeBips: 40, makerFeeBips: 20
+- owner: 0x4374D3d032B3c96785094ec9f384f07077792768
+- operator: 0x4374D3d032B3c96785094ec9f384f07077792768
