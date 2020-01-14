@@ -1,6 +1,6 @@
 {
   "name": "loopring_v3.js",
-  "version": "0.1.0",
+  "version": "0.5.2",
   "description": "loopring_v3.js",
   "main": "build/index.js",
   "types": "build/index.d.ts",
