@@ -47,6 +47,6 @@
     "ethereumjs-util": "^6.1.0",
     "express": "^4.16.3",
     "lodash": ">=4.17.11",
-    "web3": "^1.0.0-beta.48"
+    "web3": "^2.0.0-alpha.1"
   }
 }

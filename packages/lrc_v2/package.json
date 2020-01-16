@@ -28,6 +28,6 @@
     "lodash": "^4.17.11",
     "request-promise": "^4.2.2",
     "truffle": "^5.0.2",
-    "web3": "^1.0.0-beta.37"
+    "web3": "^2.0.0-alpha.1"
   }
 }
