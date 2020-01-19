@@ -13,3 +13,4 @@ export * from "./src/float";
 export * from "./src/protocol_v3";
 export * from "./src/exchange_v3";
 export * from "./src/explorer";
+export * from "./src/request_processors/ring_settlement_processor";

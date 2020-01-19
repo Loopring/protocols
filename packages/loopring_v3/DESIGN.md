@@ -619,16 +619,9 @@ We do however know the approximate time the block will be committed on the Ether
 From the yellow paper:
 
 - 4 gas is paid for every zero byte of data or code for a transaction
-- 68 gas is paid for every non-zero byte of data or code for a transaction
-
-In the calculations below we use 68 gas/byte for our data-availability data.
-
-After Instanbul:
-
-- 4 gas is paid for every zero byte of data or code for a transaction
 - 16 gas is paid for every non-zero byte of data or code for a transaction
 
-The cost for verifying a proof (batched) will also be reduced from 200,000 gas to about 75,000 gas.
+In the calculations below we use 16 gas/byte for our data-availability data.
 
 #### Compression
 
@@ -653,8 +646,7 @@ If the exchange uses an operator contract it's also possible to decompress compr
 ```
 
 - => **20 bytes/ring**
-- => Calldata cost: (2 _ 10) _ 68 = **1360 gas/ring**
-- => (After Istanbul) Calldata cost: (2 _ 10) _ 16 = **320 gas/ring**
+- => Calldata cost: (2 \* 10) \* 16 = **320 gas/ring**
 
 This data data is further transformed to make it more compressable:
 
@@ -679,8 +671,7 @@ This data data is further transformed to make it more compressable:
 ```
 
 - => **9 bytes/cancel**
-- => Calldata cost: 9 \* 68 = **612 gas/cancel**
-- => (After Istanbul) Calldata cost: 9 \* 16 = **144 gas/cancel**
+- => Calldata cost: 9 \* 16 = **144 gas/cancel**
 
 #### Withdrawal data
 
@@ -699,81 +690,65 @@ This data data is further transformed to make it more compressable:
 ```
 
 - => On-chain: **7 bytes/withdrawal**
-- => On-chain withdrawal calldata cost: 7 \* 68 = **476 gas/on-chain withdrawal**
-- => (After Istanbul) On-chain withdrawal calldata cost: 7 \* 16 = **112 gas/on-chain withdrawal**
+- => On-chain withdrawal calldata cost: 7 \* 16 = **112 gas/on-chain withdrawal**
 - => With data-availability: **10 bytes/withdrawal**
-- => With data-availability calldata cost: 10 \* 68 = **680 gas/off-chain withdrawal**
-- => (After Istanbul) With data-availability calldata cost: 10 \* 16 = **160 gas/off-chain withdrawal**
+- => With data-availability calldata cost: 10 \* 16 = **160 gas/off-chain withdrawal**
 
 The approved withdrawal calldata also needs to be stored on-chain so that the data can be used when actually withdrawing the tokens when allowed (storing 32 bytes of data costs 20,000 gas):
 
 - => Data storage cost: (7 / 32) \* 20,000 = **4,375 gas/withdrawal**
 
-## Throughput (Ring Settlements)
+## Throughput (Trade Settlements)
 
 The throughput is limited by:
 
 - The cost of the data we have to send in the calldata for the on-chain data-availability.
-- The 256,000,000 constraints limit that allows efficient proof verification on-on-chain.
+- The `2^28` constraints limit that allows for efficient proof generation.
 
 Without data-availability, we are only limited by the number of constraints in a single block.
 
-The gas limit in an Ethereum block is 8,000,000 gas. An Ethereum block is generated every ~15 seconds.
+The gas limit in an Ethereum block is 10,000,000 gas. An Ethereum block is generated every ~13 seconds (this is the case since the Muir Glacier HF).
 
 ### On-chain Data-availability Limit
 
-- Commiting a block + Verifying a proof (batched): ~350,000 gas
-- (After Instanbul) Commiting a block + Verifying a proof (batched): ~225,000 gas
-- => (8,000,000 - 350,000) / 1,360 = **5600 rings/Ethereum block = ~375 rings/second**
-- => (After Istanbul) (8,000,000 - 225,000) / 320 = **24300 rings/Ethereum block = ~1600 rings/second**)
+- Commiting a block + Verifying a proof (batched): ~225,000 gas
+- => (10,000,000 - 225,000) / 320 = **30500 trades/Ethereum block = ~2050 trades/second**)
 
 ### Constraints Limit
 
 We can only prove circuits with a maximum of `2^28` ~= 268M constraints efficiently (the roots-of-unity of the alt_bn128 curve is `2^28`, so we need to stay below `2^28` constraints so we can use FFT for generating the proof).
 
-Currently, our bring settlement circuit with data-availability support uses ~68,500 constraints/ring:
+Currently, our ring settlement circuit with data-availability support uses ~64,500 constraints/ring:
 
-- `2^28` / 68,500 = 3900 rings/block
+- `2^28` / 64,500 = 4150 trades/block
 
-Our ring settlement circuit without data-availability support uses ~60,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
+Our ring settlement circuit without data-availability support uses ~56,000 constraints/ring (this is cheaper than with data-availability because we don't have to hash the data-availability data in the circuit):
 
-- `2^28` / 60,000 = 4500 rings/block
+- `2^28` / 56,000 = 4800 trades/block
 
 ### Results
 
-In a single block, we are currently limited by the number of constraints used in the circuit. Committing and verifying a proof costs _only_ ~350,000 gas so multiple blocks can be committed if needed.
+In a single block, we are currently limited by the number of constraints used in the circuit. Committing and verifying a proof costs _only_ ~225,000 gas so multiple blocks can be committed if needed.
 
-Using 2 (6 after istanbul) blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
+Using 7 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
 
-- => (8,000,000 - 350,000 \* 2) / 1,360 = ~5350 rings/Ethereum block = **~350 rings/second**
-- => (After Istanbul) (8,000,000 - 225,000 \* 6) / 320 = ~20800 rings/Ethereum block = **~1400 rings/second**
+- => (10,000,000 - 225,000 \* 7) / 320 = ~26300 trades/Ethereum block = **~2025 trades/second**
 
-Without data-availability we are limited by how many blocks (and thus by how many rings/block) we can commit and verify in a single Ethereum block:
+Without data-availability we are limited by how many blocks (and thus by how many trades/block) we can commit and verify in a single Ethereum block:
 
-- => 8,000,000 / 350,000 = ~23 blocks/Ethereum block
-- = ~4500 rings/block \* 23 blocks/Ethereum block = ~103500 rings/Ethereum block = **~6900 rings/second**
-- (After Istanbul) => 8,000,000 / 225,000 = ~35 blocks/Ethereum block
-- (After Istanbul) = ~4500 rings/block \* 35 blocks/Ethereum block = ~157500 rings/Ethereum block = **~10500 rings/second**
+- => 10,000,000 / 225,000 = ~45 blocks/Ethereum block
+- = ~4800 trades/block \* 45 blocks/Ethereum block = ~216000 trades/Ethereum block = **~16400 trades/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
 
 - Gas cost/ring settlement: ~300,000 gas
-- => 8,000,000 / 300,000 = 26 rings/Ethereum block = **~2 rings/second**.
+- => 10,000,000 / 300,000 = 33 trades/Ethereum block = **2-3 trades/second**.
 
 |                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
 | :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
-| Trades per Ethereum Block              |      26      |                   5350                   |                  103500                   |
-| Trades per Second                      |      2       |                   350                    |                   6900                    |
-| Cost per Trade                         | 300,000 gas  |                 1500 gas                 |                  77 gas                   |
-| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
-
-After Istanbul:
-
-|                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
-| :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
-| Trades per Ethereum Block              |      26      |                  20800                   |                  157500                   |
-| Trades per Second                      |      2       |                   1400                   |                   10500                   |
-| Cost per Trade                         | 300,000 gas  |                 385 gas                  |                  51 gas                   |
+| Trades per Ethereum Block              |      33      |                  26300                   |                  216000                   |
+| Trades per Second                      |     2-3      |                   2025                   |                   16400                   |
+| Cost per Trade                         | 300,000 gas  |                 375 gas                  |                  47 gas                   |
 | Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.

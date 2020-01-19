@@ -193,7 +193,7 @@ export class Explorer {
 
   private async processProtocolRegistered(event: any) {
     const version = event.returnValues.version;
-    if (version === "3.0") {
+    if (version === "3.0" || version === "3.1") {
       const protocol = new ProtocolV3();
       protocol.initialize(
         this.web3,

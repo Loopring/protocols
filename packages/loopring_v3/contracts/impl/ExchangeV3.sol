@@ -37,7 +37,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    string  constant public version = "3.0-beta4";
+    string  constant public version = "3.1.1";
     bytes32 constant public genesisBlockHash = 0x2b4827daf74c0ab30deb68b1c337dec40579bb3ff45ce9478288e1a2b83a3a01;
 
     using ExchangeAdmins        for ExchangeData.State;
@@ -304,15 +304,16 @@ contract ExchangeV3 is IExchangeV3
     }
 
     function withdrawTokenNotOwnedByUsers(
-        address tokenAddress,
-        address payable recipient
+        address tokenAddress
         )
         external
         nonReentrant
-        onlyOwner
-        returns(uint)
+        returns(uint amount)
     {
-        return state.withdrawTokenNotOwnedByUsers(tokenAddress, recipient);
+        address payable feeVault = state.loopring.protocolFeeVault();
+        require(feeVault != address(0), "ZERO_ADDRESS");
+        amount = state.withdrawTokenNotOwnedByUsers(tokenAddress, feeVault);
+        emit TokenNotOwnedByUsersWithdrawn(msg.sender, tokenAddress, feeVault, amount);
     }
 
     function withdrawProtocolFeeStake(

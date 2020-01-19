@@ -1,26 +1,31 @@
 #!/bin/sh
 
-rm -rf ABI/
+ABI_PATH="./ABI"
+rm -rf $ABI_PATH
+mkdir $ABI_PATH
 
-node_modules/solc/solcjs \
+solc \
     -o ABI/ --overwrite \
     --abi contracts/thirdparty/*.sol
 
-node_modules/solc/solcjs \
+solc \
     -o ABI/ --overwrite \
     --abi contracts/lib/*.sol \
     --allow-paths contracts/thirdparty/*.sol
 
-node_modules/solc/solcjs \
+solc \
     -o ABI/ --overwrite \
     --abi contracts/iface/*.sol \
-    --allow-paths contracts/thirdparty/*.sol contracts/lib/*.sol
+    --allow-paths contracts/thirdparty/*.sol contracts/lib/*.sol \
+    contracts/base/*.sol contracts/stores/*.sol
 
-ABI_PATH="ABI/"
+solc \
+    -o ABI/ --overwrite \
+    --abi contracts/base/*.sol \
+    --allow-paths contracts/thirdparty/*.sol contracts/lib/*.sol \
+    contracts/iface/*.sol contracts/stores/*.sol
 
-for file in $ABI_PATH/*
-do
-    rename_file=$(echo $file | awk '{split($0,a,"_"); print a[5]}')
-    mv $file $ABI_PATH/$rename_file
-done
-
+# for file in $ABI_PATH/*
+# do
+#     mv $file "${file##*_}"
+# done
