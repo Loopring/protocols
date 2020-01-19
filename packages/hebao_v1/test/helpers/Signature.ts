@@ -1,5 +1,6 @@
-import { Bitstream } from "../util/Bitstream";
+import { Bitstream } from "../../util/Bitstream";
 import ethUtil = require("ethereumjs-util");
+import fs = require("fs");
 
 export enum SignatureType {
   ILLEGAL,
@@ -10,22 +11,23 @@ export enum SignatureType {
 }
 
 export async function batchSign(
-  privateKeys: string[],
+  signers: string[],
   message: Buffer,
   type: SignatureType = SignatureType.EIP_712
 ) {
   let signatures: string[] = [];
-  for (const privateKey of privateKeys) {
-    signatures.push(await sign(privateKey, message, type));
+  for (const signer of signers) {
+    signatures.push(await sign(signer, message, type));
   }
   return signatures;
 }
 
 export async function sign(
-  privateKey: string,
+  signer: string,
   message: Buffer,
   type: SignatureType = SignatureType.EIP_712
 ) {
+  const privateKey = getPrivateKey(signer);
   let signature: string;
   switch (+type) {
     case SignatureType.ETH_SIGN:
@@ -60,19 +62,6 @@ async function signEthereum(message: Buffer, privateKey: string) {
 
 async function signEIP712(message: Buffer, privateKey: string) {
   const signature = ethUtil.ecsign(message, new Buffer(privateKey, "hex"));
-
-  try {
-    const pub = ethUtil.ecrecover(
-      message,
-      signature.v,
-      signature.r,
-      signature.s
-    );
-    const recoveredAddress = "0x" + ethUtil.pubToAddress(pub).toString("hex");
-    console.log("Recovered: " + recoveredAddress);
-  } catch {
-    return "0x";
-  }
 
   const data = new Bitstream();
   data.addHex(ethUtil.bufferToHex(signature.r));
@@ -117,4 +106,10 @@ function verifyECDSA(message: Buffer, data: Bitstream, signer: string) {
   } catch {
     return false;
   }
+}
+
+function getPrivateKey(address: string) {
+  const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
+  const data = JSON.parse(textData);
+  return data.private_keys[address.toLowerCase()];
 }

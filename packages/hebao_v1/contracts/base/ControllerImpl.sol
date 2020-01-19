@@ -55,7 +55,7 @@ contract ControllerImpl is Claimable, Controller
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;                 // modifiable
-        defaultLockPeriod = defaultLockPeriod;
+        defaultLockPeriod = _defaultLockPeriod;
 
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;

@@ -86,7 +86,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         if (bytes(_subdomain).length > 0) {
             controller.ensManager().register(_subdomain, _wallet);
         }
-        w.removeModule(address(this));
+        //w.removeModule(address(this));
     }
 
     function extractMetaTxSigners(
@@ -118,7 +118,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         wallet = computeWalletAddress(owner);
     }
 
-    function areAuthorizedMetaTxSigners(
+    function areMetaTxSignersAuthorized(
         address   wallet,
         bytes     memory /*data*/,
         address[] memory /*signers*/

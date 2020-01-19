@@ -97,7 +97,7 @@ contract ApprovedTransfers is TransferModule
         address            wallet,
         address[] calldata signers,
         address            to,
-        uint               amount,
+        uint               value,
         bytes     calldata data
         )
         external
@@ -109,7 +109,7 @@ contract ApprovedTransfers is TransferModule
             GuardianUtils.SigRequirement.OwnerRequired
         )
     {
-        callContractInternal(wallet, to, amount, data);
+        callContractInternal(wallet, to, value, data);
     }
 
     function approveThenCallContract(

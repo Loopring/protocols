@@ -1,71 +1,117 @@
-import { MetaTransaction, getHash } from "./MetaTransaction";
-import { SignatureType, batchSign, verifySignatures } from "./Signature";
+import {
+  Context,
+  getContext,
+  createContext,
+  executeTransaction,
+  toAmount
+} from "./helpers/TestUtils";
+import { transferFrom } from "./helpers/TokenUtils";
+import { assertEventEmitted, assertNoEventEmitted } from "../util/Events";
+import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
-import fs = require("fs");
-const truffleAssert = require("truffle-assertions");
 
-const WalletFactoryModule = artifacts.require("WalletFactoryModule");
+contract("WalletFactoryModule", () => {
+  let defaultCtx: Context;
+  let ctx: Context;
 
-contract("WalletFactoryModule", (accounts: string[]) => {
-  const owner1 = accounts[0];
-  const owner2 = accounts[1];
-  const zeroAddress = "0x0000000000000000000000000000000000000000";
-  let walletFactoryModule: any;
+  let useMetaTx: boolean = false;
+  const walletDomain = ".loopring.io";
 
-  const getPrivateKey = (address: string) => {
-    const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
-    const data = JSON.parse(textData);
-    return data.private_keys[address.toLowerCase()];
+  const createWalletChecked = async (
+    owner: string,
+    walletName: string = ""
+  ) => {
+    const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+
+    if (useMetaTx) {
+      // Transfer 0.1 ETH to the wallet to pay for the wallet creation
+      await transferFrom(ctx, owner, wallet, "ETH", toAmount("0.1"));
+    }
+
+    await executeTransaction(
+      ctx.walletFactoryModule.contract.methods.createWallet(
+        owner,
+        walletName,
+        []
+      ),
+      ctx,
+      useMetaTx,
+      wallet,
+      [owner],
+      { gasPrice: new BN(1) }
+    );
+    await assertEventEmitted(
+      ctx.walletFactoryModule,
+      "WalletCreated",
+      (event: any) => {
+        return event.wallet === wallet && event.owner === owner;
+      }
+    );
+    if (walletName !== "") {
+      await assertEventEmitted(
+        ctx.walletENSManager,
+        "Registered",
+        (event: any) => {
+          return (
+            event._ens === walletName + walletDomain && event._owner === wallet
+          );
+        }
+      );
+    } else {
+      await assertNoEventEmitted(ctx.walletENSManager, "Registered");
+    }
+
+    const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+    assert.equal(await walletContract.owner(), owner, "wallet owner incorrect");
+
+    // Try to create the wallet again
+    await expectThrow(
+      executeTransaction(
+        ctx.walletFactoryModule.contract.methods.createWallet(
+          owner,
+          walletName,
+          []
+        ),
+        ctx,
+        useMetaTx,
+        wallet,
+        [owner],
+        { gasPrice: new BN(1) }
+      ),
+      useMetaTx ? "UNAUTHORIZED" : "CREATE2_FAILED"
+    );
+  };
+
+  const description = (descr: string, metaTx: boolean = useMetaTx) => {
+    return descr + (metaTx ? " (meta tx)" : "");
   };
 
   before(async () => {
-    walletFactoryModule = await WalletFactoryModule.deployed();
+    defaultCtx = await getContext();
   });
 
-  it("user should be able to create a wallet himself", async () => {
-    const owner = owner1;
-    const wallet = await walletFactoryModule.computeWalletAddress(owner);
-    const tx = await walletFactoryModule.createWallet(owner, "", []);
-    truffleAssert.eventEmitted(tx, "WalletCreated", (event: any) => {
-      return event.wallet == wallet && event.owner == owner;
-    });
+  beforeEach(async () => {
+    ctx = await createContext(defaultCtx);
   });
 
-  it("user should be able to create a wallet using a meta tx", async () => {
-    const owner = owner2;
-    const wallet = await walletFactoryModule.computeWalletAddress(owner);
-    const data = walletFactoryModule.contract.methods
-      .createWallet(owner, "", [])
-      .encodeABI();
-    const nonce = (await walletFactoryModule.lastNonce(wallet)).toNumber() + 1;
-    const metaTransaction: MetaTransaction = {
-      wallet,
-      module: walletFactoryModule.address,
-      value: 0,
-      data,
-      nonce,
-      gasToken: zeroAddress,
-      gasPrice: 0,
-      gasLimit: 1000000,
-      gasOverhead: 25000,
-      feeRecipient: zeroAddress,
-      // Don't use this yet: https://github.com/trufflesuite/ganache-core/issues/515
-      chainId: /*await web3.eth.net.getId()*/ 1
-    };
+  [false, true].forEach(function(metaTx) {
+    it(
+      description("user should be able to create a wallet without ENS", metaTx),
+      async () => {
+        useMetaTx = metaTx;
+        await createWalletChecked(ctx.owners[0]);
+      }
+    );
 
-    const hash = getHash(metaTransaction);
-    const signatures = await batchSign(
-      [getPrivateKey(owner2)],
-      hash,
-      SignatureType.EIP_712
+    it(
+      description("user should be able to create a wallet with ENS", metaTx),
+      async () => {
+        useMetaTx = metaTx;
+        await createWalletChecked(
+          ctx.owners[0],
+          "MyWallet" + (useMetaTx ? "A" : "B")
+        );
+      }
     );
-    verifySignatures([owner2], hash, signatures);
-    const tx = await walletFactoryModule.executeMetaTx(
-      metaTransaction,
-      signatures
-    );
-    truffleAssert.eventEmitted(tx, "WalletCreated", (event: any) => {
-      return event.wallet == wallet && event.owner == owner;
-    });
   });
 });

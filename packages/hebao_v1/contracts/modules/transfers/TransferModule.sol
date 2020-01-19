@@ -39,7 +39,7 @@ abstract contract TransferModule is SecurityModule
     event ContractCalled(
         address indexed wallet,
         address indexed to,
-        uint            amount,
+        uint            value,
         bytes           data
     );
 
@@ -95,7 +95,7 @@ abstract contract TransferModule is SecurityModule
     function callContractInternal(
         address wallet,
         address to,
-        uint    amount,
+        uint    value,
         bytes   memory txData
         )
         internal
@@ -107,7 +107,7 @@ abstract contract TransferModule is SecurityModule
             "INVALID_METHOD"
         );
 
-        transactCall(wallet, to, amount, txData);
-        emit ContractCalled(wallet, to, amount, txData);
+        transactCall(wallet, to, value, txData);
+        emit ContractCalled(wallet, to, value, txData);
     }
 }
