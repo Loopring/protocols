@@ -36,7 +36,7 @@
     "ganache-cli": "^6.1.0",
     "solium": "^1.1.6",
     "truffle": "5.1.8",
-    "tslint": "5.20.1",
+    "tslint": "6.0.0",
     "typescript": "^3.6.3",
     "web3-typescript-typings": "^0.10.2",
     "webpack": "^4.0.0"
