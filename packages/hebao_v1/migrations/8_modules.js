@@ -21,6 +21,7 @@ const QuotaTransfers = artifacts.require(
 const ApprovedTransfers = artifacts.require(
   "./modules/transfers/ApprovedTransfers.sol"
 );
+const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
 
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const BaseWallet = artifacts.require("./base/BaseWallet.sol");
@@ -60,7 +61,8 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(WhitelistModule, ControllerImpl.address, 1 * 24 * 3600),
         deployer.deploy(QuotaModule, ControllerImpl.address, 1 * 24 * 3600),
         deployer.deploy(QuotaTransfers, ControllerImpl.address, 1 * 24 * 3600),
-        deployer.deploy(ApprovedTransfers, ControllerImpl.address)
+        deployer.deploy(ApprovedTransfers, ControllerImpl.address),
+        deployer.deploy(ERC1271Module)
       ]);
     })
     .then(() => {
@@ -86,8 +88,14 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       QuotaStore.deployed().then(quotaStore => {
         return Promise.all([
+          quotaStore.addManager(GuardianModule.address),
+          quotaStore.addManager(RecoveryModule.address),
+          quotaStore.addManager(LockModule.address),
+          quotaStore.addManager(InheritanceModule.address),
+          quotaStore.addManager(WhitelistModule.address),
           quotaStore.addManager(QuotaModule.address),
-          quotaStore.addManager(QuotaTransfers.address)
+          quotaStore.addManager(QuotaTransfers.address),
+          quotaStore.addManager(ApprovedTransfers.address)
         ]);
       });
     })
@@ -102,7 +110,8 @@ module.exports = function(deployer, network, accounts) {
           moduleRegistryImpl.registerModule(WhitelistModule.address),
           moduleRegistryImpl.registerModule(QuotaModule.address),
           moduleRegistryImpl.registerModule(QuotaTransfers.address),
-          moduleRegistryImpl.registerModule(ApprovedTransfers.address)
+          moduleRegistryImpl.registerModule(ApprovedTransfers.address),
+          moduleRegistryImpl.registerModule(ERC1271Module.address)
         ]);
       });
     })
@@ -131,6 +140,7 @@ module.exports = function(deployer, network, accounts) {
       console.log("QuotaModule:", QuotaModule.address);
       console.log("QuotaTransfers:", QuotaTransfers.address);
       console.log("ApprovedTransfers:", ApprovedTransfers.address);
+      console.log("ERC1271Module:", ERC1271Module.address);
       console.log("");
     });
 };

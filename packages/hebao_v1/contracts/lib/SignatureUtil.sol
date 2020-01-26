@@ -21,6 +21,7 @@ import "../thirdparty/ERC1271.sol";
 import "../thirdparty/BytesUtil.sol";
 
 import "./AddressUtil.sol";
+import "./MathUint.sol";
 
 
 /// @title SignatureUtil
@@ -32,6 +33,7 @@ import "./AddressUtil.sol";
 library SignatureUtil
 {
     using BytesUtil     for bytes;
+    using MathUint      for uint;
 
     enum SignatureType {
         ILLEGAL,
@@ -51,7 +53,7 @@ library SignatureUtil
         internal
         view
     {
-        require(signers.length == signatures.length, "BAD_DATA");
+        require(signers.length == signatures.length, "BAD_SIGNATURE_DATA");
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
@@ -68,12 +70,12 @@ library SignatureUtil
         internal
         view
     {
-        uint  signatureTypeOffset = signature.length - 1;
+        uint signatureTypeOffset = signature.length.sub(1);
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
 
-        if (AddressUtil.isContract(signer)) {
+        if (signatureType == SignatureType.WALLET) {
             require(
                 verifyERC1271Signature(signHash, signer, stripped),
                 "INVALID_ERC1271_SIGNATURE"
@@ -107,7 +109,7 @@ library SignatureUtil
     {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271(0).isValidSignature.selector,
-            signHash,
+            abi.encode(signHash),
             signature
         );
         (bool success, bytes memory result) = signer.staticcall(callData);

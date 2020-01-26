@@ -27,6 +27,7 @@ export interface Context {
   quotaModule: any;
   quotaTransfers: any;
   approvedTransfers: any;
+  erc1271Module: any;
 
   baseWallet: any;
 
@@ -64,6 +65,7 @@ export async function getContext() {
     quotaModule: await contracts.QuotaModule.deployed(),
     quotaTransfers: await contracts.QuotaTransfers.deployed(),
     approvedTransfers: await contracts.ApprovedTransfers.deployed(),
+    erc1271Module: await contracts.ERC1271Module.deployed(),
 
     baseWallet: await contracts.BaseWallet.deployed(),
     securityStore: await contracts.SecurityStore.deployed(),
@@ -100,7 +102,8 @@ export function getAllModuleAddresses(ctx: Context) {
     ctx.whitelistModule.address,
     ctx.quotaModule.address,
     ctx.quotaTransfers.address,
-    ctx.approvedTransfers.address
+    ctx.approvedTransfers.address,
+    ctx.erc1271Module.address
   ];
 }
 
@@ -146,14 +149,14 @@ export async function executeTransaction(
     if (!event.success) {
       // Check if the return data contains the revert reason.
       // If it does we can easily re-throw the actual revert reason of the function call done in the meta tx
-      if (event.returnData.startsWith("0x08c379a0")) {
+      if (event.returnData && event.returnData.startsWith("0x08c379a0")) {
         const decoded = web3.eth.abi.decodeParameters(
           ["string"],
           event.returnData.slice(10)
         );
-        assert.fail("Meta tx internal revert: " + decoded[0]);
+        assert.fail("Meta tx call revert: " + decoded[0]);
       } else {
-        assert.fail("Meta tx internal revert");
+        assert.fail("Meta tx call failed");
       }
     }
     return result;
@@ -175,4 +178,10 @@ export async function getBlockTime(blockNumber: number) {
 
 export function toAmount(value: string) {
   return new BN(web3.utils.toWei(value, "ether"));
+}
+
+export function sortAddresses(addresses: string[]) {
+  return addresses.sort((a: string, b: string) => {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
 }

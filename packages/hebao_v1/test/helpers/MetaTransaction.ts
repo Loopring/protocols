@@ -1,6 +1,11 @@
 import BN = require("bn.js");
 import { Constants } from "./Constants";
-import { SignatureType, batchSign, verifySignatures } from "./Signature";
+import {
+  SignatureType,
+  batchSign,
+  verifySignatures,
+  appendType
+} from "./Signature";
 import { Context } from "./TestUtils";
 import { getTokenAddress } from "./TokenUtils";
 import { getEIP712Message } from "../../util/EIP712";
@@ -81,6 +86,7 @@ export async function executeMetaTransaction(
 ) {
   // Defaults
   const from = options.from ? options.from : web3.eth.defaultAccount;
+  const gas = options.gas ? options.gas : 5000000;
   const value = options.value ? options.value : new BN(0);
   const gasToken = options.gasToken ? options.gasToken : "ETH";
   const gasPrice = options.gasPrice ? options.gasPrice : new BN(0);
@@ -89,12 +95,14 @@ export async function executeMetaTransaction(
   const feeRecipient = options.feeRecipient
     ? options.feeRecipient
     : Constants.zeroAddress;
-  const signatureType = options.signatureType
-    ? options.signatureType
-    : SignatureType.EIP_712;
-  const nonce = options.nonce
-    ? options.nonce
-    : +(await contract.methods.lastNonce(wallet).call()) + 1;
+  const signatureTypes =
+    options.signatureTypes !== undefined
+      ? options.signatureTypes
+      : Array(signers.length).fill(SignatureType.EIP_712);
+  const nonce =
+    options.nonce !== undefined
+      ? options.nonce
+      : +(await contract.methods.lastNonce(wallet).call()) + 1;
 
   // Create the meta transaction
   const metaTransaction: MetaTransaction = {
@@ -114,7 +122,7 @@ export async function executeMetaTransaction(
 
   // Sign the meta transaction
   const hash = getHash(metaTransaction);
-  const signatures = await batchSign(signers, hash, signatureType);
+  const signatures = await batchSign(ctx, signers, hash, signatureTypes);
   verifySignatures(signers, hash, signatures);
 
   // Execute the meta transaction
@@ -127,7 +135,7 @@ export async function executeMetaTransaction(
   ];
   return contract.methods
     .executeMetaTx(metaTransaction.data, nonce, gasSettings, signatures)
-    .send({ from, gas: 5000000 });
+    .send({ from, gas, gasPrice: 0 });
 }
 
 export interface TransactionOptions {
@@ -139,6 +147,6 @@ export interface TransactionOptions {
   gasLimit?: number;
   gasOverhead?: number;
   feeRecipient?: string;
-  signatureType?: SignatureType;
+  signatureTypes?: SignatureType[];
   nonce?: number;
 }

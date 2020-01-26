@@ -19,13 +19,12 @@ pragma solidity ^0.6.0;
 import "../lib/MathUint.sol";
 
 import "../base/DataStore.sol";
-import "../iface/QuotaManager.sol";
 
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
 ///      A rolling daily limit is used.
-contract QuotaStore is DataStore, QuotaManager
+contract QuotaStore is DataStore
 {
     using MathUint for uint;
 
@@ -79,7 +78,6 @@ contract QuotaStore is DataStore, QuotaManager
         uint    amount
         )
         public
-        override
         onlyManager
     {
         require(hasEnoughQuota(wallet, amount), "QUOTA_EXCEEDED");
@@ -155,7 +153,6 @@ contract QuotaStore is DataStore, QuotaManager
         )
         public
         view
-        override
         returns (bool)
     {
         return availableQuota(wallet) >= requiredAmount;

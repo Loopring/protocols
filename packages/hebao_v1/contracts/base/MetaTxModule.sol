@@ -27,7 +27,6 @@ import "../thirdparty/BytesUtil.sol";
 import "../thirdparty/ERC1271.sol";
 
 import "../iface/Controller.sol";
-import "../iface/QuotaManager.sol";
 import "../iface/Wallet.sol";
 
 import "./BaseModule.sol";
@@ -113,7 +112,7 @@ abstract contract MetaTxModule is BaseModule
         controller = _controller;
     }
 
-    function quotaManager()
+    function quotaStore()
         internal
         view
         virtual
@@ -247,7 +246,7 @@ abstract contract MetaTxModule is BaseModule
         for (uint i = 0; i < data.length; i++) {
             // Check that the wallet is the same for all transactions
             address txWallet = extractWalletAddress(data[i]);
-            require(txWallet == wallet, "INVALID_DATA");
+            require(txWallet == wallet, "INVALID_WALLET");
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
@@ -257,12 +256,13 @@ abstract contract MetaTxModule is BaseModule
                 while (s < signers.length && signers[s] != txSigners[j]) {
                     s++;
                 }
-                require(s < signers.length, "INVALID_INPUT");
+                require(s < signers.length, "MISSING_SIGNER");
             }
 
-            // solium-disable-next-line security/no-call-value
-            (bool success,) = address(this).call(data[i]);
-            require(success, "TX_FAILED");
+            (bool success, bytes memory returnData) = address(this).call(data[i]);
+            if (!success) {
+                assembly { revert(add(returnData, 32), mload(returnData)) }
+            }
         }
     }
 
@@ -469,7 +469,7 @@ abstract contract MetaTxModule is BaseModule
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].metaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
+            require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
             require(nonce == wallets[wallet].nonce + 1, "INVALID_NONCE");
@@ -484,9 +484,9 @@ abstract contract MetaTxModule is BaseModule
         )
         internal
     {
-        if (quotaManager() != address(0)) {
+        if (quotaStore() != address(0)) {
             uint value = controller.priceOracle().tokenPrice(token, amount);
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, value);
+            QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
         }
     }
 
@@ -498,9 +498,9 @@ abstract contract MetaTxModule is BaseModule
         internal
         returns (bool)
     {
-        if (quotaManager() != address(0)) {
+        if (quotaStore() != address(0)) {
             uint value = controller.priceOracle().tokenPrice(token, amount);
-            try QuotaManager(quotaManager()).checkAndAddToSpent(wallet, value) {
+            try QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value) {
                 return true;
             } catch Error(string memory /*reason*/) {
                 return false;

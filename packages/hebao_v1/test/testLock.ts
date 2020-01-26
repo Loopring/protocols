@@ -2,9 +2,9 @@ import {
   Context,
   createContext,
   getContext,
-  executeTransaction
+  executeTransaction,
+  createWallet
 } from "./helpers/TestUtils";
-import { addGuardian } from "./helpers/GuardianUtils";
 import { assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
@@ -17,20 +17,6 @@ contract("LockModule", (accounts: string[]) => {
   let defaultLockPeriod: number;
 
   let useMetaTx: boolean = false;
-
-  const createWallet = async (owner: string, numGuardians: number) => {
-    const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
-    await ctx.walletFactoryModule.createWallet(owner, "", [
-      ctx.lockModule.address
-    ]);
-    // Add the guardians
-    const guardians = ctx.guardians.slice(0, numGuardians);
-    const group = 0;
-    for (const guardian of guardians) {
-      await addGuardian(ctx, owner, wallet, guardian, group, useMetaTx);
-    }
-    return { wallet, guardians };
-  };
 
   const isLocked = async (wallet: string) => {
     return ctx.lockModule.isLocked(wallet);
@@ -109,7 +95,7 @@ contract("LockModule", (accounts: string[]) => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(owner, 2);
+        const { wallet, guardians } = await createWallet(ctx, owner, 2);
 
         // Lock the wallet
         await lockChecked(wallet, guardians[0]);
@@ -129,7 +115,7 @@ contract("LockModule", (accounts: string[]) => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(owner, 2);
+        const { wallet, guardians } = await createWallet(ctx, owner, 2);
 
         // Lock the wallet
         await lockChecked(wallet, guardians[0]);
@@ -153,7 +139,7 @@ contract("LockModule", (accounts: string[]) => {
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(owner, 2);
+        const { wallet, guardians } = await createWallet(ctx, owner, 2);
 
         // Lock the wallet
         await lockChecked(wallet, guardians[0]);

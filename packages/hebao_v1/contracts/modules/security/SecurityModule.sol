@@ -114,13 +114,13 @@ abstract contract SecurityModule is MetaTxModule
 
     // ----- internal methods -----
 
-    function quotaManager()
+    function quotaStore()
         internal
         view
         override
         returns (address)
     {
-        return address(controller.quotaManager());
+        return address(controller.quotaStore());
     }
 
     function lockWallet(address wallet)

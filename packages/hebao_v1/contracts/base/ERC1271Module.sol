@@ -20,6 +20,7 @@ import "../thirdparty/ERC1271.sol";
 
 import "../lib/MathUint.sol";
 import "../lib/SignatureUtil.sol";
+import "../thirdparty/BytesUtil.sol";
 
 import "../iface/Wallet.sol";
 
@@ -28,7 +29,7 @@ import "./BaseModule.sol";
 
 /// @title ERC1271Module
 /// @dev This is the base module for supporting ERC1271.
-abstract contract ERC1271Module is ERC1271, BaseModule
+contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
 
@@ -42,35 +43,23 @@ abstract contract ERC1271Module is ERC1271, BaseModule
         methods[0] = this.isValidSignature.selector;
     }
 
-    function isSignedByWalletOwner(
-        address      _wallet,
+    // Will use msg.sender to detect the wallet, so this function should be called through
+    // the bounded method on the wallet itself, not directly on this module.
+    function isValidSignature(
         bytes memory _data,
-        bytes memory _signature
-        )
-        internal
+        bytes memory _signature)
+        public
         view
-        returns (bool)
+        override
+        returns (bytes4 magicValue)
     {
-        return isSignedBy(Wallet(_wallet).owner(), _data, _signature);
-    }
-
-    function isSignedBy(
-        address      _address,
-        bytes memory _data,
-        bytes memory _signature
-        )
-        internal
-        pure
-        returns (bool)
-    {
-        if (_address == address(0) || _signature.length != 65) {
-            return false;
+        bytes32 hash;
+        if(_data.length == 32) {
+            hash = BytesUtil.toBytes32(_data, 0);
+        } else {
+            hash = keccak256(_data);
         }
-
-        bytes32 signHash = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", keccak256(_data))
-        );
-
-        return signHash.recoverECDSASigner(_signature) == _address;
+        hash.verifySignature(Wallet(msg.sender).owner(), _signature);
+        return MAGICVALUE;
     }
 }

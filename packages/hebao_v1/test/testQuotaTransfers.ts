@@ -188,7 +188,7 @@ contract("Transfers", (accounts: string[]) => {
     );
     assert(
       newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
-      "incorrect available quota"
+      "incorrect spent quota"
     );
     // Check balances
     const newBalanceWallet = await getBalance(ctx, token, wallet);

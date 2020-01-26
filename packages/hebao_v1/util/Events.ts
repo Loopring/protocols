@@ -24,7 +24,10 @@ export async function assertEventsEmitted(
     if (filter !== undefined) {
       assert(
         filter(args),
-        "Event values unexpected: \n" + JSON.stringify(args, null, 4)
+        "Event " +
+          eventName +
+          " values unexpected: \n" +
+          JSON.stringify(args, null, 4)
       );
     }
     return args;

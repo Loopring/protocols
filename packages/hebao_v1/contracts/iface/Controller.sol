@@ -24,7 +24,6 @@ import "../stores/SecurityStore.sol";
 import "../stores/WhitelistStore.sol";
 
 import "../iface/PriceOracle.sol";
-import "../iface/QuotaManager.sol";
 
 import "../base/WalletENSManager.sol";
 
@@ -47,5 +46,4 @@ contract Controller
 
     PriceOracle             public priceOracle;
     WalletENSManager        public ensManager;
-    QuotaManager            public quotaManager;
 }

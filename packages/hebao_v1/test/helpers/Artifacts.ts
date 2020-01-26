@@ -9,9 +9,12 @@ export class Artifacts {
   public INDAToken: any;
   public INDBToken: any;
 
+  public OwnedUpgradabilityProxy: any;
+
   public ControllerImpl: any;
   public BaseWallet: any;
   public WalletFactoryModule: any;
+  public UpgraderModule: any;
   public WalletRegistryImpl: any;
   public ModuleRegistryImpl: any;
   public WalletENSManager: any;
@@ -24,6 +27,7 @@ export class Artifacts {
   public QuotaModule: any;
   public QuotaTransfers: any;
   public ApprovedTransfers: any;
+  public ERC1271Module: any;
 
   public SecurityStore: any;
   public WhitelistStore: any;
@@ -41,9 +45,12 @@ export class Artifacts {
     this.INDAToken = artifacts.require("test/tokens/INDA");
     this.INDBToken = artifacts.require("test/tokens/INDB");
 
+    this.OwnedUpgradabilityProxy = artifacts.require("OwnedUpgradabilityProxy");
+
     this.ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
     this.BaseWallet = artifacts.require("./base/BaseWallet.sol");
     this.WalletFactoryModule = artifacts.require("WalletFactoryModule");
+    this.UpgraderModule = artifacts.require("UpgraderModule");
     this.WalletRegistryImpl = artifacts.require(
       "./base/WalletRegistryImpl.sol"
     );
@@ -60,6 +67,7 @@ export class Artifacts {
     this.QuotaModule = artifacts.require("QuotaModule");
     this.QuotaTransfers = artifacts.require("QuotaTransfers");
     this.ApprovedTransfers = artifacts.require("ApprovedTransfers");
+    this.ERC1271Module = artifacts.require("ERC1271Module");
 
     this.SecurityStore = artifacts.require("SecurityStore");
     this.WhitelistStore = artifacts.require("WhitelistStore");

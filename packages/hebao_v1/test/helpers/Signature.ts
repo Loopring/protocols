@@ -1,4 +1,5 @@
 import { Bitstream } from "../../util/Bitstream";
+import { Context } from "./TestUtils";
 import ethUtil = require("ethereumjs-util");
 import fs = require("fs");
 
@@ -11,36 +12,66 @@ export enum SignatureType {
 }
 
 export async function batchSign(
+  ctx: Context,
   signers: string[],
   message: Buffer,
-  type: SignatureType = SignatureType.EIP_712
+  types: SignatureType[]
 ) {
+  assert.equal(types.length, signers.length, "invalid input arrays");
   let signatures: string[] = [];
-  for (const signer of signers) {
-    signatures.push(await sign(signer, message, type));
+  for (const [i, signer] of signers.entries()) {
+    signatures.push(await sign(ctx, signer, message, types[i]));
   }
   return signatures;
 }
 
 export async function sign(
+  ctx: Context,
   signer: string,
   message: Buffer,
   type: SignatureType = SignatureType.EIP_712
 ) {
-  const privateKey = getPrivateKey(signer);
   let signature: string;
   switch (+type) {
-    case SignatureType.ETH_SIGN:
-      signature = await signEthereum(message, privateKey);
+    case SignatureType.ETH_SIGN: {
+      const privateKey = getPrivateKey(signer);
+      signature = appendType(await signEthereum(message, privateKey), type);
       break;
-    case SignatureType.EIP_712:
-      signature = await signEIP712(message, privateKey);
+    }
+    case SignatureType.EIP_712: {
+      const privateKey = getPrivateKey(signer);
+      signature = appendType(await signEIP712(message, privateKey), type);
       break;
-    default:
-      throw Error("Unsupported signature type: " + +type);
+    }
+    case SignatureType.WALLET: {
+      try {
+        const wallet = await ctx.contracts.BaseWallet.at(signer);
+        const walletOwner = await wallet.owner();
+        const privateKey = getPrivateKey(walletOwner);
+
+        // Sign using the wallet owner
+        signature = appendType(
+          appendType(
+            await signEIP712(message, privateKey),
+            SignatureType.EIP_712
+          ),
+          type
+        );
+      } catch {
+        signature = appendType("", type);
+      }
+      break;
+    }
+    default: {
+      // console.log("Unsupported signature type: " + type);
+      signature = appendType("", type);
+    }
   }
-  // Append the type
-  const data = new Bitstream(signature);
+  return signature;
+}
+
+export function appendType(str: string, type: SignatureType) {
+  const data = new Bitstream(str);
   data.addNumber(type, 1);
   return data.getData();
 }

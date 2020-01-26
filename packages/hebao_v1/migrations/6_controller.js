@@ -26,8 +26,7 @@ module.exports = function(deployer, network, accounts) {
           SecurityStore.address,
           WhitelistStore.address,
           PriceCacheStore.address,
-          WalletENSManager.address,
-          QuotaStore.address
+          WalletENSManager.address
         )
       ]);
     })
