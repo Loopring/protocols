@@ -1,9 +1,12 @@
 {
   "name": "loopring_v3.js",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "description": "loopring_v3.js",
   "main": "build/index.js",
   "types": "build/index.d.ts",
+  "files": [
+    "build/**/*"
+  ],
   "scripts": {
     "start": "tsc -p .; node build/src/main.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -51,6 +54,7 @@
     "bluebird": "^3.5.1",
     "bn.js": "^5.0.0",
     "braces": "^3.0.2",
+    "chalk": "^3.0.0",
     "dotenv": "^8.0.0",
     "es6-iterator": "^2.0.3",
     "es6-map": "^0.1.5",
