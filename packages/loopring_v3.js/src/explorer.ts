@@ -245,7 +245,7 @@ export class Explorer {
     );
     assert.equal(
       exchange.getExchangeId(),
-      this.exchanges.length,
+      this.exchanges.length + 1,
       "unexpected exchange id"
     );
     this.exchanges.push(exchange);

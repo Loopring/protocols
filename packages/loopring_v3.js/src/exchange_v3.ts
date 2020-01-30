@@ -28,6 +28,7 @@ import { RingSettlementProcessor } from "./request_processors/ring_settlement_pr
 import { OffchainWithdrawalProcessor } from "./request_processors/offchain_withdrawal_processor";
 import { OrderCancellationProcessor } from "./request_processors/order_cancellation_processor";
 import { InternalTransferProcessor } from "./request_processors/internal_transfer_processor";
+import * as log from "./logs";
 
 interface Revert {
   blockIdx: number;
@@ -249,6 +250,9 @@ export class ExchangeV3 {
    * @param   ethereumBlockTo   The Ethereum block index to sync to
    */
   public async sync(ethereumBlockTo: number) {
+    log.DEBUG("exchange", this.exchangeAddress, " sync, fromBlock:",
+              this.syncedToEthereumBlockIdx + 1, ", toBlock:", ethereumBlockTo);
+
     if (ethereumBlockTo <= this.syncedToEthereumBlockIdx) {
       return;
     }
