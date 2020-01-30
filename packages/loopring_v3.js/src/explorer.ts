@@ -3,6 +3,7 @@ import Web3 from "web3";
 import { Constants } from "./constants";
 import { ProtocolV3 } from "./protocol_v3";
 import { ExchangeV3 } from "./exchange_v3";
+import * as log from "./logs";
 
 /**
  * Processes all on-chain data from Loopring in an easy to access way.
@@ -56,6 +57,9 @@ export class Explorer {
     if (ethereumBlockTo <= this.syncedToEthereumBlockIdx) {
       return;
     }
+
+    log.DEBUG("sync from block:", this.syncedToEthereumBlockIdx + 1);
+    log.DEBUG("sync to block:", ethereumBlockTo);
 
     // Process the events
     const events = await this.universalRegistry.getPastEvents("allEvents", {
