@@ -6,7 +6,7 @@ import { ExchangeTestUtil } from "./testExchangeUtil";
 
 const LoopringV3Owner = artifacts.require("LoopringV3Owner");
 const ChainlinkTokenPriceOracle = artifacts.require(
-  "ChainlinkTokenPriceOracle"
+  "ChainlinkTokenPriceProvider"
 );
 
 contract("LoopringV3Owner", (accounts: string[]) => {

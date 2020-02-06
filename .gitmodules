@@ -1,4 +1,4 @@
 [submodule "packages/loopring_v3/ethsnarks"]
 	path = packages/loopring_v3/ethsnarks
-	url = https://github.com/LoopringSecondary/ethsnarks
-	branch = mpc
+	url = https://github.com/Loopring/ethsnarks
+	branch = mcl

@@ -175,7 +175,7 @@ export class ExchangeTestUtil {
     await this.explorer.initialize(web3, this.universalRegistry.address);
 
     // Initialize LoopringV3
-    this.protocolFeeVault = this.testContext.deployer;
+    this.protocolFeeVault = this.testContext.ringMatchers[0];
 
     await this.loopringV3.updateSettings(
       this.protocolFeeVault,

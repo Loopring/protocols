@@ -54,6 +54,14 @@ contract("UniversalRegistry", (accounts: string[]) => {
         exchangeCreationCostLRC,
         abi.rawEncode(["uint"], [costLRC])
       );
+      // mock mockProtocol2 protocolFeeVault return some address
+      const protocolFeeVault = web3.utils
+        .sha3("protocolFeeVault()")
+        .slice(0, 10);
+      await mockProtocol2.givenMethodReturn(
+        protocolFeeVault,
+        abi.rawEncode(["address"], [mockLRC.address])
+      );
 
       // mock mockProtocol initializeExchange return true
       const initializeExchange = web3.utils
