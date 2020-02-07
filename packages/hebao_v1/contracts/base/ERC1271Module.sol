@@ -59,7 +59,10 @@ contract ERC1271Module is ERC1271, BaseModule
         } else {
             hash = keccak256(_data);
         }
-        hash.verifySignature(Wallet(msg.sender).owner(), _signature);
-        return MAGICVALUE;
+        if (hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
+            return MAGICVALUE;
+        } else {
+            return 0;
+        }
     }
 }

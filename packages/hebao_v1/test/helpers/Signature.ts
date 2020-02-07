@@ -102,17 +102,23 @@ async function signEIP712(message: Buffer, privateKey: string) {
 }
 
 export async function verifySignatures(
+  ctx: Context,
   signers: string[],
   message: Buffer,
   signatures: string[]
 ) {
   assert(signers.length == signatures.length, "invalid input");
   for (let i = 0; i < signatures.length; i++) {
-    verifySignature(signers[i], message, signatures[i]);
+    await verifySignature(ctx, signers[i], message, signatures[i]);
   }
 }
 
-function verifySignature(signer: string, message: Buffer, signature: string) {
+async function verifySignature(
+  ctx: Context,
+  signer: string,
+  message: Buffer,
+  signature: string
+) {
   const data = new Bitstream(signature);
   const type = data.extractUint8(data.length() - 1);
   if (type === SignatureType.ETH_SIGN) {
@@ -123,6 +129,17 @@ function verifySignature(signer: string, message: Buffer, signature: string) {
     );
   } else if (type === SignatureType.EIP_712) {
     assert(verifyECDSA(message, data, signer), "invalid EIP_712 signature");
+  } else if (type === SignatureType.WALLET) {
+    try {
+      const wallet = await ctx.contracts.BaseWallet.at(signer);
+      const walletOwner = await wallet.owner();
+      assert(signature.length > 0, "invalid WALLET signature");
+      await verifySignature(ctx, walletOwner, message, signature.slice(0, -1));
+    } catch {
+      assert(false, "invalid WALLET signature");
+    }
+  } else {
+    assert(false, "invalid signature type");
   }
 }
 

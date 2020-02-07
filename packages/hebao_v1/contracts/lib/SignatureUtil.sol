@@ -52,14 +52,18 @@ library SignatureUtil
         )
         internal
         view
+        returns (bool)
     {
         require(signers.length == signatures.length, "BAD_SIGNATURE_DATA");
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
-            verifySignature(signHash, signers[i], signatures[i]);
+            if (!verifySignature(signHash, signers[i], signatures[i])) {
+                return false;
+            }
         }
+        return true;
     }
 
     function verifySignature(
@@ -69,6 +73,7 @@ library SignatureUtil
         )
         internal
         view
+        returns (bool)
     {
         uint signatureTypeOffset = signature.length.sub(1);
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
@@ -76,25 +81,16 @@ library SignatureUtil
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
 
         if (signatureType == SignatureType.WALLET) {
-            require(
-                verifyERC1271Signature(signHash, signer, stripped),
-                "INVALID_ERC1271_SIGNATURE"
-            );
+            return verifyERC1271Signature(signHash, signer, stripped);
         } else if (signatureType == SignatureType.EIP_712) {
-            require(
-                recoverECDSASigner(signHash, stripped) == signer,
-                "INVALID_EIP712_SIGNATURE"
-            );
+            return recoverECDSASigner(signHash, stripped) == signer;
         } else if (signatureType == SignatureType.ETH_SIGN) {
             bytes32 hash = keccak256(
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
             );
-            require(
-                recoverECDSASigner(hash, stripped) == signer,
-                "INVALID_ETHSIGN_SIGNATURE"
-            );
+            return recoverECDSASigner(hash, stripped) == signer;
         } else {
-            revert("UNSUPPORTED_SIGNATURE_TYPE");
+            return false;
         }
     }
 

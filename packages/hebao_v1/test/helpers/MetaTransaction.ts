@@ -103,6 +103,8 @@ export async function executeMetaTransaction(
     options.nonce !== undefined
       ? options.nonce
       : +(await contract.methods.lastNonce(wallet).call()) + 1;
+  const checkSignatures =
+    options.checkSignatures !== undefined ? options.checkSignatures : false;
 
   // Create the meta transaction
   const metaTransaction: MetaTransaction = {
@@ -123,7 +125,9 @@ export async function executeMetaTransaction(
   // Sign the meta transaction
   const hash = getHash(metaTransaction);
   const signatures = await batchSign(ctx, signers, hash, signatureTypes);
-  verifySignatures(signers, hash, signatures);
+  if (checkSignatures) {
+    await verifySignatures(ctx, signers, hash, signatures);
+  }
 
   // Execute the meta transaction
   const gasSettings = [
@@ -149,4 +153,5 @@ export interface TransactionOptions {
   feeRecipient?: string;
   signatureTypes?: SignatureType[];
   nonce?: number;
+  checkSignatures?: boolean;
 }

@@ -131,7 +131,7 @@ contract BaseVault is AddressSet, Vault
             hash(VaultTransaction(address(this), target, value, mode, data))
         );
 
-        metaTxHash.verifySignatures(signers, signatures);
+        require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         bool success;
         if (mode == 1) {

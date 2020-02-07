@@ -400,7 +400,7 @@ contract("GuardiansModule", (accounts: string[]) => {
         // The first guardian is added immediately (so cannot be cancelled)
         await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
 
-        // Add the second guardian which is added after a delay
+        // Now remove the guardian
         await executeTransaction(
           ctx.guardianModule.contract.methods.removeGuardian(
             wallet,

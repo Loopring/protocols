@@ -90,7 +90,7 @@ export async function addToWhitelist(
   );
   const blockTime = await getBlockTime(tx.blockNumber);
 
-  // The first guardian can be added immediately
+  // Check for the Whitelisted event
   await assertEventEmitted(ctx.whitelistStore, "Whitelisted", (event: any) => {
     return (
       event.wallet == wallet && event.addr == addr && event.whitelisted == true

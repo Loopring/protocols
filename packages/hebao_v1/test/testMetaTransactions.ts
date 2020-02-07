@@ -119,11 +119,11 @@ contract("MetaTxmodule", () => {
     const owner = ctx.owners[0];
     const { wallet } = await createWallet(ctx, owner);
     const tests = [
-      { type: SignatureType.ILLEGAL, error: "UNSUPPORTED_SIGNATURE_TYPE" },
-      { type: SignatureType.INVALID, error: "UNSUPPORTED_SIGNATURE_TYPE" },
-      { type: SignatureType.EIP_712, error: "INVALID_EIP712_SIGNATURE" },
-      { type: SignatureType.ETH_SIGN, error: "INVALID_ETHSIGN_SIGNATURE" },
-      { type: SignatureType.WALLET, error: "INVALID_ERC1271_SIGNATURE" }
+      { type: SignatureType.ILLEGAL, error: "INVALID_SIGNATURES" },
+      { type: SignatureType.INVALID, error: "INVALID_SIGNATURES" },
+      { type: SignatureType.EIP_712, error: "INVALID_SIGNATURES" },
+      { type: SignatureType.ETH_SIGN, error: "INVALID_SIGNATURES" },
+      { type: SignatureType.WALLET, error: "INVALID_SIGNATURES" }
     ];
     for (let i = 0; i < tests.length; i++) {
       await expectThrow(
@@ -136,7 +136,11 @@ contract("MetaTxmodule", () => {
           true,
           wallet,
           [ctx.miscAddresses[0]],
-          { from: owner, signatureTypes: [tests[i].type] }
+          {
+            from: owner,
+            signatureTypes: [tests[i].type],
+            checkSignatures: false
+          }
         ),
         tests[i].error
       );

@@ -51,7 +51,7 @@ const tests = [
     success: true
   },
   {
-    description: "Group 6 (no majority)",
+    description: "Group 7 (no majority)",
     ownerSigns: true,
     guardians: [
       { group: 7, signs: false },
@@ -62,7 +62,7 @@ const tests = [
     success: false
   },
   {
-    description: "Group 6 (majority)",
+    description: "Group 7 (majority)",
     ownerSigns: true,
     guardians: [
       { group: 7, signs: true },
