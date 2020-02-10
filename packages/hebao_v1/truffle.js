@@ -99,12 +99,7 @@ module.exports = {
       port: 8545,
       network_id: "*",
       gasPrice: 21000000000,
-      gas: 6700000,
-      ens: {
-        registry: {
-          address: "0x1234567890123456789012345678901234567890"
-        }
-      }
+      gas: 6700000
     },
     coverage: {
       host: "localhost",

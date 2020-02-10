@@ -110,11 +110,11 @@ contract BaseVault is AddressSet, Vault
         address   target,
         uint      value,
         uint8     mode,
-        bytes     calldata data,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        bytes     memory data,
+        address[] memory signers,
+        bytes[]   memory signatures
         )
-        external
+        public   // Needs to be public for now: https://github.com/ethereum/solidity/issues/7929
         override
         returns (bytes memory result)
     {
@@ -131,7 +131,7 @@ contract BaseVault is AddressSet, Vault
             hash(VaultTransaction(address(this), target, value, mode, data))
         );
 
-        metaTxHash.verifySignatures(signers, signatures);
+        require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         bool success;
         if (mode == 1) {

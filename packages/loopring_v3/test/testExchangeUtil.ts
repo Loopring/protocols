@@ -791,10 +791,14 @@ export class ExchangeTestUtil {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
 
-    let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
+    let numAvailableSlots = (
+      await this.exchange.getNumAvailableDepositSlots()
+    ).toNumber();
     if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitDeposits(exchangeID);
-      numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
+      numAvailableSlots = (
+        await this.exchange.getNumAvailableDepositSlots()
+      ).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
@@ -1023,10 +1027,14 @@ export class ExchangeTestUtil {
     }
     const tokenID = this.tokenAddressToIDMap.get(token);
 
-    let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
+    let numAvailableSlots = (
+      await this.exchange.getNumAvailableWithdrawalSlots()
+    ).toNumber();
     if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitOnchainWithdrawalRequests(exchangeID);
-      numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
+      numAvailableSlots = (
+        await this.exchange.getNumAvailableWithdrawalSlots()
+      ).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
     const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
@@ -1751,7 +1759,9 @@ export class ExchangeTestUtil {
       assert(deposits.length === blockSize);
       numDepositsDone += blockSize;
 
-      const startIndex = (await this.exchange.getNumDepositRequestsProcessed()).toNumber();
+      const startIndex = (
+        await this.exchange.getNumDepositRequestsProcessed()
+      ).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const firstRequestData = await this.exchange.getDepositRequest(
@@ -2029,7 +2039,9 @@ export class ExchangeTestUtil {
         }
       }
 
-      const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
+      const startIndex = (
+        await this.exchange.getNumWithdrawalRequestsProcessed()
+      ).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const firstRequestData = await this.exchange.getWithdrawRequest(
@@ -2565,8 +2577,14 @@ export class ExchangeTestUtil {
     const ranges: Range[][] = [];
     ranges.push([{ offset: 0, length: 5 }]); // orderA.orderID + orderB.orderID
     ranges.push([{ offset: 5, length: 5 }]); // orderA.accountID + orderB.accountID
-    ranges.push([{ offset: 10, length: 1 }, { offset: 15, length: 1 }]); // orderA.tokenS + orderB.tokenS
-    ranges.push([{ offset: 11, length: 3 }, { offset: 16, length: 3 }]); // orderA.fillS + orderB.fillS
+    ranges.push([
+      { offset: 10, length: 1 },
+      { offset: 15, length: 1 }
+    ]); // orderA.tokenS + orderB.tokenS
+    ranges.push([
+      { offset: 11, length: 3 },
+      { offset: 16, length: 3 }
+    ]); // orderA.fillS + orderB.fillS
     ranges.push([{ offset: 14, length: 1 }]); // orderA.data
     ranges.push([{ offset: 19, length: 1 }]); // orderB.data
     return ranges;
@@ -2875,7 +2893,9 @@ export class ExchangeTestUtil {
     this.exchangeId = exchangeId;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
+    const exchangeCreationTimestamp = (
+      await this.exchange.getExchangeCreationTimestamp()
+    ).toNumber();
 
     const genesisBlock: Block = {
       blockIdx: 0,
@@ -3231,14 +3251,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const previousTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (await web3.eth.getBlock(
-      await web3.eth.getBlockNumber()
-    )).timestamp;
+    const currentTimestamp = (
+      await web3.eth.getBlock(await web3.eth.getBlockNumber())
+    ).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -4376,19 +4396,27 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
-      [
-        null,
-        this.contracts.WETHToken.deployed(),
-        this.contracts.LRCToken.deployed(),
-        this.contracts.GTOToken.deployed(),
-        this.contracts.RDNToken.deployed(),
-        this.contracts.REPToken.deployed(),
-        this.contracts.INDAToken.deployed(),
-        this.contracts.INDBToken.deployed(),
-        this.contracts.TESTToken.deployed()
-      ]
-    );
+    const [
+      eth,
+      weth,
+      lrc,
+      gto,
+      rdn,
+      rep,
+      inda,
+      indb,
+      test
+    ] = await Promise.all([
+      null,
+      this.contracts.WETHToken.deployed(),
+      this.contracts.LRCToken.deployed(),
+      this.contracts.GTOToken.deployed(),
+      this.contracts.RDNToken.deployed(),
+      this.contracts.REPToken.deployed(),
+      this.contracts.INDAToken.deployed(),
+      this.contracts.INDBToken.deployed(),
+      this.contracts.TESTToken.deployed()
+    ]);
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

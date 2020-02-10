@@ -31,8 +31,6 @@ import "../security/GuardianUtils.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract SecurityModule is MetaTxModule
 {
-    SecurityStore internal securityStore;
-
     event WalletLock(
         address indexed wallet,
         uint            lock
@@ -73,7 +71,7 @@ abstract contract SecurityModule is MetaTxModule
     {
         require(msg.sender == address(this), "NOT_FROM_META_TX");
         GuardianUtils.requireMajority(
-            securityStore,
+            controller.securityStore(),
             wallet,
             signers,
             requirement
@@ -116,13 +114,13 @@ abstract contract SecurityModule is MetaTxModule
 
     // ----- internal methods -----
 
-    function quotaManager()
+    function quotaStore()
         internal
         view
         override
         returns (address)
     {
-        return address(controller.quotaManager());
+        return address(controller.quotaStore());
     }
 
     function lockWallet(address wallet)

@@ -64,11 +64,12 @@ contract RecoveryModule is SecurityModule
         )
     {
         Wallet w = Wallet(wallet);
-        require(newOwner != w.owner(), "SAME_ADDRESS");
+        address oldOwner = w.owner();
+        require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
         w.setOwner(newOwner);
-        emit Recovered(wallet, w.owner(), newOwner);
+        emit Recovered(wallet, oldOwner, newOwner);
     }
 
     function extractMetaTxSigners(

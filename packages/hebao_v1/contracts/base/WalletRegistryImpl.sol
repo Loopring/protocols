@@ -37,7 +37,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 
     modifier onlyFactory()
     {
-        require(msg.sender == factory, "UNAUTHORIZED");
+        require(msg.sender == factory, "FACTORY_UNAUTHORIZED");
         _;
     }
 

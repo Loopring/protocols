@@ -23,11 +23,7 @@ import "../base/DataStore.sol";
 
 /// @title QuotaStore
 /// @dev This store maintains daily spending quota for each wallet.
-///      At the end of the day (Beijing time), the daily quota will be
-///      restored.
-///      Changing the quota takes at least 12 hours - if the quota is
-///      changed in the first 12 hours of the day, it will take effect
-///      tomorrow; otherwise it will take effect the day after tomorrow.
+///      A rolling daily limit is used.
 contract QuotaStore is DataStore
 {
     using MathUint for uint;
@@ -83,13 +79,9 @@ contract QuotaStore is DataStore
         )
         public
         onlyManager
-        returns (bool)
     {
-        if (hasEnoughQuota(wallet, amount)) {
-            addToSpent(wallet, amount);
-            return true;
-        }
-        return false;
+        require(hasEnoughQuota(wallet, amount), "QUOTA_EXCEEDED");
+        addToSpent(wallet, amount);
     }
 
     function addToSpent(
@@ -110,7 +102,7 @@ contract QuotaStore is DataStore
         returns (uint)
     {
         Quota storage q = quotas[wallet];
-        uint value = q.pendingUntil >= now ?
+        uint value = q.pendingUntil <= now ?
             q.pendingQuota : q.currentQuota;
 
         return value == 0 ? defaultQuota : value;
@@ -125,7 +117,7 @@ contract QuotaStore is DataStore
         )
     {
         Quota storage q = quotas[wallet];
-        if (q.pendingUntil > 0 && q.pendingUntil < now) {
+        if (q.pendingUntil > 0 && q.pendingUntil > now) {
             _pendingQuota = q.pendingQuota > 0 ? q.pendingQuota : defaultQuota;
             _pendingUntil = q.pendingUntil;
         }
@@ -139,7 +131,7 @@ contract QuotaStore is DataStore
         Quota storage q = quotas[wallet];
         uint timeSinceLastSpent = now.sub(q.spentTimestamp);
         if (timeSinceLastSpent < 1 days) {
-            return q.spentAmount.mul(1 days - timeSinceLastSpent) / 1 days;
+            return q.spentAmount.sub(q.spentAmount.mul(timeSinceLastSpent) / 1 days);
         } else {
             return 0;
         }

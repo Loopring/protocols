@@ -37,14 +37,14 @@ contract ControllerImpl is Claimable, Controller
 
     function init(
         address           _collectTo,
+        uint              _defaultLockPeriod,
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
         PriceOracle       _priceOracle,
-        WalletENSManager  _ensManager,
-        QuotaManager      _quotaManager
+        WalletENSManager  _ensManager
         )
         external
         onlyOwner
@@ -54,6 +54,7 @@ contract ControllerImpl is Claimable, Controller
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;                 // modifiable
+        defaultLockPeriod = _defaultLockPeriod;
 
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;
@@ -64,7 +65,6 @@ contract ControllerImpl is Claimable, Controller
 
         priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
-        quotaManager = _quotaManager;           // modifiable
     }
 
     function setCollectTo(address _collectTo)
@@ -82,13 +82,5 @@ contract ControllerImpl is Claimable, Controller
     {
         priceOracle = _priceOracle;
         emit ValueChanged("PriceOracle", address(priceOracle));
-    }
-
-    function setQuotaManager(QuotaManager _quotaManager)
-        external
-        onlyOwner
-    {
-        quotaManager = _quotaManager;
-        emit ValueChanged("QuotaManager", address(quotaManager));
     }
 }

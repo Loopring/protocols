@@ -112,7 +112,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
         controller = Controller(_controller);
         _owner = initialOwner;
-        controller.walletRegistry().registerWallet(address(this));
 
         emit WalletSetup(_owner);
         addModuleInternal(bootstrapModule);
@@ -132,8 +131,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
-        // solium-disable-next-line
-        _module.call(abi.encode(Module(0).deactivate.selector));
+        try Module(_module).deactivate() {} catch {}
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
     }
@@ -162,8 +160,10 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
-        require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
-        require(isAddressInSet(MODULE, _module), "MODULE_UNAUTHORIZED");
+        if (_module != address(0)) {
+            require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
+            require(isAddressInSet(MODULE, _module), "MODULE_UNAUTHORIZED");
+        }
 
         methodToModule[_method] = _module;
         emit MethodBound(_method, _module);
@@ -248,15 +248,11 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
+        (bool success, bytes memory returnData) = module.call(msg.data);
         assembly {
-            let ptr := mload(0x40)
-            calldatacopy(ptr, 0, calldatasize())
-            let result := call(gas(), module, 0, ptr, calldatasize(), 0, 0)
-            returndatacopy(ptr, 0, returndatasize())
-
-            switch result
-            case 0 { revert(ptr, returndatasize()) }
-            default { return(ptr, returndatasize()) }
+            switch success
+            case 0 { revert(add(returnData, 32), mload(returnData)) }
+            default { return(add(returnData, 32), mload(returnData)) }
         }
     }
 

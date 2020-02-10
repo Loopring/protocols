@@ -56,20 +56,22 @@ contract WalletFactory is ReentrancyGuard
 
     function createWalletInternal(
         Controller _controller,
+        address    _implementation,
         address    _owner,
         address    _bootstrapModule
         )
         internal
         returns (address payable _wallet)
     {
-        // Deploy the wallet address
+        // Deploy the wallet
         _wallet = Create2.deploy(getSalt(_owner), getWalletCode());
 
-        address walletImplementation = _controller.implementationRegistry().defaultImplementation();
-        OwnedUpgradabilityProxy(_wallet).upgradeTo(walletImplementation);
+        OwnedUpgradabilityProxy(_wallet).upgradeTo(_implementation);
         OwnedUpgradabilityProxy(_wallet).transferProxyOwnership(_wallet);
 
         Wallet(_wallet).setup(address(_controller), _owner, _bootstrapModule);
+
+        _controller.walletRegistry().registerWallet(_wallet);
 
         emit WalletCreated(_wallet, _owner);
     }

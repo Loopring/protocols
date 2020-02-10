@@ -27,7 +27,6 @@ import "../thirdparty/BytesUtil.sol";
 import "../thirdparty/ERC1271.sol";
 
 import "../iface/Controller.sol";
-import "../iface/QuotaManager.sol";
 import "../iface/Wallet.sol";
 
 import "./BaseModule.sol";
@@ -68,8 +67,8 @@ abstract contract MetaTxModule is BaseModule
 
     struct MetaTransaction
     {
-        address from;
-        address to;
+        address wallet;
+        address module;
         uint    value;
         bytes   data;
         uint    nonce;
@@ -81,7 +80,7 @@ abstract contract MetaTxModule is BaseModule
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address from,address to,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
+        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -94,7 +93,9 @@ abstract contract MetaTxModule is BaseModule
         address indexed wallet,
         uint    nonce,
         bytes32 metaTxHash,
-        bool    success
+        uint    gasUsed,
+        bool    success,
+        bytes   returnData
     );
 
     modifier onlyFromMetaTx override
@@ -111,7 +112,7 @@ abstract contract MetaTxModule is BaseModule
         controller = _controller;
     }
 
-    function quotaManager()
+    function quotaStore()
         internal
         view
         virtual
@@ -164,12 +165,12 @@ abstract contract MetaTxModule is BaseModule
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
     /// @param signatures Signatures.
     function executeMetaTx(
-        bytes   calldata data,
+        bytes   memory data,
         uint    nonce,
-        uint[5] calldata gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
-        bytes[] calldata signatures
+        uint[5] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
+        bytes[] memory signatures
         )
-        external
+        public
         payable
     {
         GasSettings memory gasSettings = GasSettings(
@@ -202,8 +203,8 @@ abstract contract MetaTxModule is BaseModule
 
         // Get the signers necessary for this meta transaction.
         address[] memory signers = getSigners(wallet, data);
-        require(areAuthorizedMetaTxSigners(wallet, data, signers), "UNAUTHORIZED");
-        metaTxHash.verifySignatures(signers, signatures);
+        require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
+        require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
@@ -217,12 +218,12 @@ abstract contract MetaTxModule is BaseModule
         require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
-        (bool success,) = address(this).call.gas(gasSettings.limit)(data);
+        (bool success, bytes memory returnData) = address(this).call.gas(gasSettings.limit)(data);
         gasUsed = gasUsed - gasleft();
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
         gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
 
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, success);
+        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
             reimburseGasFee(wallet, gasSettings, gasUsed);
@@ -245,7 +246,7 @@ abstract contract MetaTxModule is BaseModule
         for (uint i = 0; i < data.length; i++) {
             // Check that the wallet is the same for all transactions
             address txWallet = extractWalletAddress(data[i]);
-            require(txWallet == wallet, "INVALID_DATA");
+            require(txWallet == wallet, "INVALID_WALLET");
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
@@ -255,12 +256,13 @@ abstract contract MetaTxModule is BaseModule
                 while (s < signers.length && signers[s] != txSigners[j]) {
                     s++;
                 }
-                require(s < signers.length, "INVALID_INPUT");
+                require(s < signers.length, "MISSING_SIGNER");
             }
 
-            // solium-disable-next-line security/no-call-value
-            (bool success,) = address(this).call(data[i]);
-            require(success, "TX_FAILED");
+            (bool success, bytes memory returnData) = address(this).call(data[i]);
+            if (!success) {
+                assembly { revert(add(returnData, 32), mload(returnData)) }
+            }
         }
     }
 
@@ -336,7 +338,7 @@ abstract contract MetaTxModule is BaseModule
         pure
         returns (address addr)
     {
-        addr = data.toAddress(4 + 32 * parameterIdx);
+        addr = data.toAddress(4 + 32 * parameterIdx + 12);
     }
 
     /// @dev Returns a read-only array with the addresses stored in the call data
@@ -372,8 +374,8 @@ abstract contract MetaTxModule is BaseModule
         return keccak256(
             abi.encode(
                 METATRANSACTION_TYPEHASH,
-                _tx.from,
-                _tx.to,
+                _tx.wallet,
+                _tx.module,
                 _tx.value,
                 keccak256(_tx.data),
                 _tx.nonce,
@@ -402,10 +404,7 @@ abstract contract MetaTxModule is BaseModule
         private
     {
         uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
-
-        if (quotaManager() != address(0)) {
-            QuotaManager(quotaManager()).checkAndAddToSpent(wallet, gasSettings.token, gasCost);
-        }
+        updateQuota(wallet, gasSettings.token, gasCost);
 
         address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
         if (gasSettings.token == address(0)) {
@@ -441,7 +440,7 @@ abstract contract MetaTxModule is BaseModule
         }
     }
 
-    function areAuthorizedMetaTxSigners(
+    function areMetaTxSignersAuthorized(
         address   wallet,
         bytes     memory /*data*/,
         address[] memory signers
@@ -470,11 +469,44 @@ abstract contract MetaTxModule is BaseModule
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].metaTxHash[metaTxHash], "DUPLICIATE_SIGN_HASH");
+            require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
             require(nonce == wallets[wallet].nonce + 1, "INVALID_NONCE");
             wallets[wallet].nonce = nonce;
+        }
+    }
+
+    function updateQuota(
+        address wallet,
+        address token,
+        uint    amount
+        )
+        internal
+    {
+        if (quotaStore() != address(0)) {
+            uint value = controller.priceOracle().tokenPrice(token, amount);
+            QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
+        }
+    }
+
+    function tryToUpdateQuota(
+        address wallet,
+        address token,
+        uint    amount
+        )
+        internal
+        returns (bool)
+    {
+        if (quotaStore() != address(0)) {
+            uint value = controller.priceOracle().tokenPrice(token, amount);
+            try QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value) {
+                return true;
+            } catch Error(string memory /*reason*/) {
+                return false;
+            }
+        } else {
+            return true;
         }
     }
 }

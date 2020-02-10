@@ -29,23 +29,22 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
-    uint public pendingExpiry;
+    uint public delayPeriod;
 
-    mapping (address => mapping(bytes32 => uint)) pendingTransactions;
+    mapping (address => mapping(bytes32 => uint)) public pendingTransactions;
 
     event PendingTxCreated   (address indexed wallet, bytes32 indexed txid, uint timestamp);
     event PendingTxExecuted  (address indexed wallet, bytes32 indexed txid, uint timestamp);
     event PendingTxCancelled (address indexed wallet, bytes32 indexed txid);
-    event PriceOracleUpdated (address indexed priceOracle);
 
     constructor(
         Controller  _controller,
-        uint        _pendingExpiry
+        uint        _delayPeriod
         )
         public
         TransferModule(_controller)
     {
-        pendingExpiry = _pendingExpiry;
+        delayPeriod = _delayPeriod;
     }
 
     function boundMethods()
@@ -55,17 +54,7 @@ contract QuotaTransfers is TransferModule
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
-        methods[0] = this.isPendingTxValid.selector;
-    }
-
-    function isPendingTxValid(
-        address wallet,
-        bytes32 pendingTxId)
-        public
-        view
-        returns (bool)
-    {
-        return isPendingTxValidInternal(wallet, pendingTxId);
+        methods[0] = this.isPendingTxUsable.selector;
     }
 
     function transferToken(
@@ -93,33 +82,38 @@ contract QuotaTransfers is TransferModule
             )
         );
 
-        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (!allowed) {
-            controller.quotaManager().checkAndAddToSpent(wallet, token, amount);
-            allowed = true;
+        bool isPendingTx = isPendingTxUsable(wallet, txid);
+        if (isPendingTx) {
+            emit PendingTxExecuted(wallet, txid, now);
+            delete pendingTransactions[wallet][txid];
+            transferInternal(wallet, token, to, amount, logdata);
+            return 0x0;
         }
 
-        if (allowed) {
+        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
+        if (whitelisted) {
             transferInternal(wallet, token, to, amount, logdata);
-            if (foundPendingTx) {
-                delete pendingTransactions[wallet][txid];
-            }
-        } else if (enablePending) {
-            require(!foundPendingTx, "DUPLICATE_PENDING");
-            pendingTxId = txid;
+            return 0x0;
+        }
 
-            pendingTransactions[wallet][txid] = now;
-            emit PendingTxCreated(wallet, txid, now);
+        bool withinQuota = tryToUpdateQuota(wallet, token, amount);
+        if (withinQuota) {
+            transferInternal(wallet, token, to, amount, logdata);
+            return 0x0;
+        }
+
+        if (enablePending) {
+            createPendingTx(wallet, txid);
+            return txid;
         } else {
-            revert("FAILED");
+            revert("QUOTA_EXCEEDED");
         }
     }
 
     function callContract(
         address            wallet,
         address            to,
-        uint               amount,
+        uint               value,
         bytes     calldata data,
         bool               enablePending
         )
@@ -134,36 +128,36 @@ contract QuotaTransfers is TransferModule
                 "__CALL_CONTRACT__",
                 wallet,
                 to,
-                amount,
+                value,
                 keccak256(data)
             )
         );
 
-        bool foundPendingTx = authorizeWalletOwnerAndPendingTx(wallet, txid);
-        require(
-            foundPendingTx || msg.sender == Wallet(wallet).owner(),
-            "UNAUTHORIZED"
-        );
-
-        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (!allowed) {
-            controller.quotaManager().checkAndAddToSpent(wallet, address(0), amount);
-            allowed = true;
+        bool isPendingTx = isPendingTxUsable(wallet, txid);
+        if (isPendingTx) {
+            emit PendingTxExecuted(wallet, txid, now);
+            delete pendingTransactions[wallet][txid];
+            callContractInternal(wallet, to, value, data);
+            return 0x0;
         }
 
-        if (allowed) {
-            callContractInternal(wallet, to, amount, data);
-            if (foundPendingTx) {
-                delete pendingTransactions[wallet][txid];
-            }
-        } else if (enablePending) {
-            require(!foundPendingTx, "DUPLICATE_PENDING");
-            pendingTxId = txid;
+        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
+        if (whitelisted) {
+            callContractInternal(wallet, to, value, data);
+            return 0x0;
+        }
 
-            pendingTransactions[wallet][txid] = now;
-            emit PendingTxCreated(wallet, txid, now);
+        bool withinQuota = tryToUpdateQuota(wallet, address(0), value);
+        if (withinQuota) {
+            callContractInternal(wallet, to, value, data);
+            return 0x0;
+        }
+
+        if (enablePending) {
+            createPendingTx(wallet, txid);
+            return txid;
         } else {
-            revert("FAILED");
+            revert("QUOTA_EXCEEDED");
         }
     }
 
@@ -200,8 +194,8 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (allowed) {
+        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
+        if (whitelisted) {
             approveInternal(wallet, token, to, amount);
             return;
         }
@@ -212,9 +206,8 @@ contract QuotaTransfers is TransferModule
             return;
         }
 
-        allowance = amount - allowance;
-        controller.quotaManager().checkAndAddToSpent(wallet, token, allowance);
-        approveInternal(wallet, token, to, allowance);
+        updateQuota(wallet, token, amount.sub(allowance));
+        approveInternal(wallet, token, to, amount);
     }
 
     function approveThenCallContract(
@@ -243,10 +236,8 @@ contract QuotaTransfers is TransferModule
             return;
         }
 
-        allowance = amount - allowance;
-
-        controller.quotaManager().checkAndAddToSpent(wallet, token, allowance);
-        approveInternal(wallet, token, to, allowance);
+        updateQuota(wallet, token, amount.sub(allowance));
+        approveInternal(wallet, token, to, amount);
         callContractInternal(wallet, to, 0, data);
     }
 
@@ -264,33 +255,16 @@ contract QuotaTransfers is TransferModule
         emit PendingTxCancelled(wallet, pendingTxId);
     }
 
-    function authorizeWalletOwnerAndPendingTx(
+    function isPendingTxUsable(
         address wallet,
         bytes32 pendingTxId
         )
-        private
-        returns (bool foundPendingTx)
-    {
-        if (msg.sender != Wallet(wallet).owner()) {
-            if (isPendingTxValidInternal(wallet, pendingTxId)) {
-                foundPendingTx = true;
-                emit PendingTxExecuted(wallet, pendingTxId, now);
-            } else {
-                revert("UNAUTHORIZED");
-            }
-        }
-    }
-
-    function isPendingTxValidInternal(
-        address wallet,
-        bytes32 pendingTxId
-        )
-        private
+        public
         view
         returns (bool)
     {
         uint timestamp = pendingTransactions[wallet][pendingTxId];
-        return timestamp > 0 && now <= timestamp + pendingExpiry;
+        return timestamp > 0 && now >= timestamp;
     }
 
     function extractMetaTxSigners(
@@ -315,5 +289,17 @@ contract QuotaTransfers is TransferModule
 
         signers = new address[](1);
         signers[0] = Wallet(wallet).owner();
+    }
+
+    function createPendingTx(
+        address wallet,
+        bytes32 txid
+        )
+        private
+    {
+        require(pendingTransactions[wallet][txid] == 0, "DUPLICATE_PENDING_TX");
+        uint timestampUsable = now.add(delayPeriod);
+        pendingTransactions[wallet][txid] = timestampUsable;
+        emit PendingTxCreated(wallet, txid, timestampUsable);
     }
 }

@@ -36,7 +36,7 @@ contract AddressSet
         ) internal
     {
         Set storage set = sets[key];
-        require(set.addressPos[addr] == 0, "ADDRESS_EXIST");
+        require(set.addressPos[addr] == 0, "ALREADY_IN_SET");
         if (maintainList) {
             set.addresses.push(addr);
             set.addressPos[addr] = set.addresses.length;
@@ -55,7 +55,7 @@ contract AddressSet
     {
         Set storage set = sets[key];
         uint pos = set.addressPos[addr];
-        require(pos != 0, "ADDRESS_NOT_EXIST");
+        require(pos != 0, "NOT_IN_SET");
 
         if (set.addresses.length > 0) {
             address lastAddr = set.addresses[set.addresses.length - 1];

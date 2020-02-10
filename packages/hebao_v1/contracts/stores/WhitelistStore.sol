@@ -101,7 +101,7 @@ contract WhitelistStore is DataStore
     }
 
     function walletKey(address addr)
-        private
+        public
         pure
         returns (bytes32)
     {

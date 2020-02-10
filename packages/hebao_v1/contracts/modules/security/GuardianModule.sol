@@ -65,7 +65,6 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        notWalletGuardian(wallet, guardian)
         notWalletOwner(wallet, guardian)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -98,7 +97,7 @@ contract GuardianModule is SecurityModule
     {
         uint confirmStart = pendingAdditions[wallet][guardian][group];
         require(confirmStart != 0, "NOT_PENDING");
-        require(now > confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
+        require(now >= confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
         controller.securityStore().addOrUpdateGuardian(wallet, guardian, group);
         delete pendingAdditions[wallet][guardian][group];
         emit GuardianAdded(wallet, guardian, group);
@@ -147,7 +146,7 @@ contract GuardianModule is SecurityModule
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
-        require(now > confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
+        require(now >= confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
         controller.securityStore().removeGuardian(wallet, guardian);
         delete pendingRemovals[wallet][guardian];
         emit GuardianRemoved(wallet, guardian);
@@ -181,15 +180,13 @@ contract GuardianModule is SecurityModule
         if (method == this.addGuardian.selector ||
             method == this.removeGuardian.selector ||
             method == this.cancelGuardianAddition.selector ||
-            method == this.cancelGuardianRemoval.selector) {
+            method == this.cancelGuardianRemoval.selector ||
+            method == this.confirmGuardianAddition.selector ||
+            method == this.confirmGuardianRemoval.selector) {
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
         } else {
-            require(
-                method == this.confirmGuardianAddition.selector ||
-                method == this.confirmGuardianRemoval.selector,
-                "INVALID_METHOD"
-            );
+            revert("INVALID_METHOD");
         }
     }
 }

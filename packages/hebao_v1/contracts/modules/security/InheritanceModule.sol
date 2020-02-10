@@ -37,7 +37,7 @@ contract InheritanceModule is SecurityModule
     event Inherited(
         address indexed wallet,
         address indexed newOwner,
-        uint            timstamp
+        uint            timestamp
     );
 
     constructor(
@@ -70,8 +70,7 @@ contract InheritanceModule is SecurityModule
     }
 
     function inherit(
-        address wallet,
-        address[] calldata /*signers*/
+        address wallet
         )
         external
         nonReentrant
@@ -80,7 +79,7 @@ contract InheritanceModule is SecurityModule
         require(newOwner != address(0), "NULL_INHERITOR");
 
         require(
-            lastActive > 0 && now > lastActive + waitingPeriod,
+            lastActive > 0 && now >= lastActive + waitingPeriod,
             "NEED_TO_WAIT"
         );
 
@@ -109,7 +108,7 @@ contract InheritanceModule is SecurityModule
     function extractMetaTxSigners(
         address wallet,
         bytes4  method,
-        bytes   memory data
+        bytes   memory /*data*/
         )
         internal
         view
@@ -120,7 +119,30 @@ contract InheritanceModule is SecurityModule
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
         } else if (method == this.inherit.selector) {
-            return extractAddressesFromCallData(data, 1);
+            (address newOwner, ) = controller.securityStore().inheritor(wallet);
+            signers = new address[](1);
+            signers[0] = newOwner;
+        } else {
+            revert("INVALID_METHOD");
+        }
+    }
+
+    function areMetaTxSignersAuthorized(
+        address   wallet,
+        bytes     memory data,
+        address[] memory signers
+        )
+        internal
+        view
+        override
+        returns (bool)
+    {
+        bytes4 method = extractMethod(data);
+        if (method == this.setInheritor.selector) {
+            return (signers[0] == Wallet(wallet).owner());
+        } else if (method == this.inherit.selector) {
+            (address newOwner, ) = controller.securityStore().inheritor(wallet);
+            return (signers[0] == newOwner && newOwner != address(0));
         } else {
             revert("INVALID_METHOD");
         }

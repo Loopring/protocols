@@ -21,6 +21,7 @@ import "../thirdparty/ERC1271.sol";
 import "../thirdparty/BytesUtil.sol";
 
 import "./AddressUtil.sol";
+import "./MathUint.sol";
 
 
 /// @title SignatureUtil
@@ -29,10 +30,10 @@ import "./AddressUtil.sol";
 ///      the signature's type, the second byte indicates the signature's length, therefore,
 ///      each signature will have 2 extra bytes prefix. Mulitple signatures are concatenated
 ///      together.
-
 library SignatureUtil
 {
     using BytesUtil     for bytes;
+    using MathUint      for uint;
 
     enum SignatureType {
         ILLEGAL,
@@ -49,16 +50,20 @@ library SignatureUtil
         address[] memory signers,
         bytes[]   memory signatures
         )
-        public
+        internal
         view
+        returns (bool)
     {
-        require(signers.length == signatures.length, "BAD_DATA");
+        require(signers.length == signatures.length, "BAD_SIGNATURE_DATA");
         address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
-            require(signers[i] > lastSigner, "INVALID_ORDER");
+            require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
-            verifySignature(signHash, signers[i], signatures[i]);
+            if (!verifySignature(signHash, signers[i], signatures[i])) {
+                return false;
+            }
         }
+        return true;
     }
 
     function verifySignature(
@@ -66,46 +71,26 @@ library SignatureUtil
         address signer,
         bytes   memory signature
         )
-        public
+        internal
         view
+        returns (bool)
     {
-        require(signature.length >= 2, "INVALID_DATA");
-        uint  signatureTypeOffset = signature.length - 1;
-        uint8 signatureType;
+        uint signatureTypeOffset = signature.length.sub(1);
+        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
-        assembly {
-            signatureType := mload(add(signature, signatureTypeOffset))
-        }
+        bytes memory stripped = signature.slice(0, signatureTypeOffset);
 
-        require (
-            signatureType == uint8(SignatureType.ILLEGAL) ||
-            signatureType == uint8(SignatureType.INVALID),
-            "UNSUPPORTED_SIGNATURE_TYPES"
-        );
-
-        bytes memory stripped = BytesUtil.slice(signature, 0, signatureTypeOffset);
-
-        if (AddressUtil.isContract(signer)) {
-            require(
-                verifyERC1271Signature(signHash, signer, stripped) ||
-                verifyERC1271Signature(signHash, signer, signature),
-                "INVALID_ERC1271_SIGNATURE"
-            );
-        } else if (signatureType == uint8(SignatureType.EIP_712)) {
-            require(
-                recoverECDSASigner(signHash, stripped) == signer,
-                "INVALID_ECDSA_SIGNATURE"
-            );
-        } else if (signatureType == uint8(SignatureType.ETH_SIGN)) {
+        if (signatureType == SignatureType.WALLET) {
+            return verifyERC1271Signature(signHash, signer, stripped);
+        } else if (signatureType == SignatureType.EIP_712) {
+            return recoverECDSASigner(signHash, stripped) == signer;
+        } else if (signatureType == SignatureType.ETH_SIGN) {
             bytes32 hash = keccak256(
                 abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
             );
-            require(
-                recoverECDSASigner(hash, stripped) == signer,
-                "INVALID_ECDSA_SIGNATURE"
-            );
+            return recoverECDSASigner(hash, stripped) == signer;
         } else {
-            revert("UNSUPPORTED_SIGNATURE_TYPE");
+            return false;
         }
     }
 
@@ -120,7 +105,7 @@ library SignatureUtil
     {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271(0).isValidSignature.selector,
-            signHash,
+            abi.encode(signHash),
             signature
         );
         (bool success, bytes memory result) = signer.staticcall(callData);
@@ -135,7 +120,7 @@ library SignatureUtil
         bytes32      signHash,
         bytes memory signature
         )
-        public
+        internal
         pure
         returns (address)
     {

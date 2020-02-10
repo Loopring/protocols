@@ -15,17 +15,39 @@
   limitations under the License.
 */
 pragma solidity ^0.6.0;
-pragma experimental ABIEncoderV2;
 
 
-interface QuotaManager
+/// @title TestTargetContract
+/// @author Brecht Devos - <brecht@loopring.org>
+contract TestTargetContract
 {
-    /// @dev Check and update quota for spending the additional amount.
-    ///      Must revert in case of error.
-    function checkAndAddToSpent(
-        address wallet,
-        address token,
-        uint    amount
+    uint public value = 12345;
+
+    function functionDefault(
+        uint _value
         )
-        external;
+        external
+        returns (uint)
+    {
+        value = _value;
+        return _value;
+    }
+
+    function functionPayable(
+        uint _value
+        )
+        external
+        payable
+    {
+        value = _value;
+    }
+
+    function functionRevert(
+        uint _value
+        )
+        external
+    {
+        require(false, "IMMEDIATE_REVERT");
+        value = _value;
+    }
 }
