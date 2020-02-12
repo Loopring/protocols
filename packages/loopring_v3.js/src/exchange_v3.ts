@@ -245,13 +245,30 @@ export class ExchangeV3 {
     };
   }
 
+  public async syncWithStep(ethereumBlockTo: number, step: number) {
+    const fromBlock = this.syncedToEthereumBlockIdx + 1;
+    for (let i = fromBlock; i < ethereumBlockTo; i += step) {
+      if (i > ethereumBlockTo) {
+        await this.sync(ethereumBlockTo);
+      } else {
+        await this.sync(i);
+      }
+    }
+  }
+
   /**
    * Syncs the protocol up to (and including) the given Ethereum block index.
    * @param   ethereumBlockTo   The Ethereum block index to sync to
    */
   public async sync(ethereumBlockTo: number) {
-    log.DEBUG("exchange", this.exchangeAddress, " sync, fromBlock:",
-              this.syncedToEthereumBlockIdx + 1, ", toBlock:", ethereumBlockTo);
+    log.DEBUG(
+      "exchange",
+      this.exchangeAddress,
+      " sync, fromBlock:",
+      this.syncedToEthereumBlockIdx + 1,
+      ", toBlock:",
+      ethereumBlockTo
+    );
 
     if (ethereumBlockTo <= this.syncedToEthereumBlockIdx) {
       return;
@@ -805,6 +822,7 @@ export class ExchangeV3 {
     // Make sure the blocks are in the right order
     const blockIdx = parseInt(event.returnValues.blockIdx);
     assert.equal(blockIdx, this.blocks.length, "Unexpected blockIdx");
+    log.DEBUG("processBlockCommitted event, blockIdx:", blockIdx);
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
@@ -1006,6 +1024,8 @@ export class ExchangeV3 {
   private async processBlockVerified(event: any) {
     const blockIdx = parseInt(event.returnValues.blockIdx);
     assert(blockIdx < this.blocks.length, "blockIdx >= this.blocks.length");
+
+    log.DEBUG("processBlockVerified event, blockIdx:", blockIdx);
 
     const block = this.blocks[blockIdx];
     // Make sure the block is in the expected state
