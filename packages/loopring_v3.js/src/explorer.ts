@@ -29,10 +29,14 @@ export class Explorer {
    * @param   web3                       The web3 instance that will be used to get the necessary data from Ethereum
    * @param   universalRegistryAddress   The address of the universal registry address
    */
-  public async initialize(web3: Web3, universalRegistryAddress: string) {
+  public async initialize(
+    web3: Web3,
+    universalRegistryAddress: string,
+    ethereumBlockFrom: number = 0
+  ) {
     this.web3 = web3;
     this.universalRegistryAddress = universalRegistryAddress;
-    this.syncedToEthereumBlockIdx = 0;
+    this.syncedToEthereumBlockIdx = ethereumBlockFrom;
 
     const ABIPath = "ABI/version30/";
     this.universalRegistryAbi = fs.readFileSync(
@@ -85,6 +89,54 @@ export class Explorer {
     // Sync the exchange
     for (const exchange of this.exchanges) {
       await exchange.sync(ethereumBlockTo);
+    }
+
+    // Sync the protocols
+    for (const protocol of this.protocols) {
+      await protocol.sync(ethereumBlockTo);
+    }
+
+    this.syncedToEthereumBlockIdx = ethereumBlockTo;
+  }
+
+  /**
+   * Syncs the explorer up to (and including) the given Ethereum block index.
+   * @param   ethereumBlockTo   The Ethereum block index to sync to
+   * @param   exchangeStep    The Ethereum block numbers to sync each time.
+   */
+  public async syncWithStep(ethereumBlockTo: number, exchangeStep: number) {
+    if (ethereumBlockTo <= this.syncedToEthereumBlockIdx) {
+      return;
+    }
+
+    log.DEBUG("sync from block:", this.syncedToEthereumBlockIdx + 1);
+    log.DEBUG("sync to block:", ethereumBlockTo);
+
+    // Process the events
+    const events = await this.universalRegistry.getPastEvents("allEvents", {
+      fromBlock: this.syncedToEthereumBlockIdx + 1,
+      toBlock: ethereumBlockTo
+    });
+    for (const event of events) {
+      if (event.event === "ProtocolRegistered") {
+        await this.processProtocolRegistered(event);
+      } else if (event.event === "ProtocolEnabled") {
+        await this.processProtocolEnabled(event);
+      } else if (event.event === "ProtocolDisabled") {
+        await this.processProtocolDisabled(event);
+      } else if (event.event === "DefaultProtocolChanged") {
+        await this.processDefaultProtocolChanged(event);
+      } else if (event.event === "ExchangeForged") {
+        await this.processExchangeForged(event);
+      } else if (event.event === "OwnershipTransferred") {
+        await this.processOwnershipTransferred(event);
+      }
+    }
+
+    // Sync the exchange
+    for (const exchange of this.exchanges) {
+      await exchange.sync(this.syncedToEthereumBlockIdx);
+      await exchange.syncWithStep(ethereumBlockTo, exchangeStep);
     }
 
     // Sync the protocols
