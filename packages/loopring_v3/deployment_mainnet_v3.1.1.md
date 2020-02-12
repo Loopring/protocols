@@ -43,13 +43,13 @@
 - ETH: 0x0, tokenId: 0
 - WETH: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, tokenId: 1
 - LRC: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD, tokenId: 2
+- protocol Fees: takerFeeBips: 60, makerFeeBips: 0  (/100000)  
 
 ## WEDEX Exchange-2 Info:
 
 - exchangeID: 1
 - exchangeAddress: 0xD97D09f3bd931a14382ac60f156C1285a56Bb51B
 - exchange stake: 500000 LRC
-- protocol Fees: takerFeeBips: 40, makerFeeBips: 20
 - operator: 0x056C0263E87c2edBF7083620832D25216b1cB05D
 
 ### Supported Tokens In WEDEX Exchange-2:
@@ -61,7 +61,6 @@
 - exchangeID: 2
 - exchangeAddress: 0x944644Ea989Ec64c2Ab9eF341D383cEf586A5777
 - exchange stake: 750000LRC
-- protocol Fees: takerFeeBips: 40, makerFeeBips: 20
 - owner: 0x4374D3d032B3c96785094ec9f384f07077792768
 - operator: 0x4374D3d032B3c96785094ec9f384f07077792768
 
