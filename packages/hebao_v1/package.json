@@ -37,6 +37,7 @@
     "migrate": "npm run transpile && truffle migrate --network live | tee -a mainnet.deployed",
     "migrate-ropsten": "npm run transpile && truffle migrate --network ropsten   | tee -a ropsten.deployed",
     "migrate-rinkeby": "npm run transpile && truffle migrate --network rinkeby   | tee -a rinkeby.deployed",
+    "migrate-goerli": "npm run transpile && truffle migrate --network goerli   | tee -a goerli.deployed",
     "migrate-dev": "npm run transpile && truffle migrate --network development   | tee -a development.deployed",
     "coverage": "npm run transpile && node --max-old-space-size=4096 `which truffle` run coverage",
     "truffle": "truffle",
