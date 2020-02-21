@@ -35,8 +35,7 @@ library EIP712
         pure
         returns (bytes32)
     {
-        uint _chainid;
-        assembly { _chainid := chainid() }
+        uint _chainid = 5;
 
         return keccak256(
             abi.encode(
