@@ -80,7 +80,7 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
      * @param addr The address to hash
      * @return ret The ENS node hash.
      */
-    function node(address addr) public override returns (bytes32 ret) {
+    function node(address addr) public view override returns (bytes32 ret) {
         return keccak256(abi.encodePacked(ADDR_REVERSE_NODE, sha3HexAddress(addr)));
     }
 
@@ -91,7 +91,7 @@ contract ENSReverseRegistrarImpl is ENSReverseRegistrar {
      * @return ret The SHA3 hash of the lower-case hexadecimal encoding of the
      *         input address.
      */
-    function sha3HexAddress(address addr) private returns (bytes32 ret) {
+    function sha3HexAddress(address addr) private view returns (bytes32 ret) {
         assembly {
             let lookup := 0x3031323334353637383961626364656600000000000000000000000000000000
             let i := 40
