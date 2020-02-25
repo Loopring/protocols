@@ -18,6 +18,7 @@ export class Artifacts {
   public WalletRegistryImpl: any;
   public ModuleRegistryImpl: any;
   public WalletENSManager: any;
+  public ENSRegistryImpl: any;
 
   public RecoveryModule: any;
   public GuardianModule: any;
@@ -58,6 +59,7 @@ export class Artifacts {
       "./base/ModuleRegistryImpl.sol"
     );
     this.WalletENSManager = artifacts.require("WalletENSManager.sol");
+    this.ENSRegistryImpl = artifacts.require("ENSRegistryImpl.sol");
 
     this.RecoveryModule = artifacts.require("RecoveryModule");
     this.GuardianModule = artifacts.require("GuardianModule");

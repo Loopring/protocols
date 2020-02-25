@@ -14,6 +14,7 @@ interface IENSManager {
     function changeRootnodeOwner(address _newOwner) external;
     function register(string calldata _label, address _owner) external;
     function isAvailable(bytes32 _subnode) external view returns(bool);
+    function resolveName(address _owner) external view returns (string memory);
 }
 
 /**
@@ -107,6 +108,15 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     }
 
     // *************** Public Functions ********************* //
+
+    /**
+    * @dev Resolves an address to an ENS name
+    * @param _owner The ENS owner address
+    */
+    function resolveName(address _owner) public view override returns (string memory) {
+        bytes32 reverseNode = getENSReverseRegistrar().node(_owner);
+        return ENSResolver(ensResolver).name(reverseNode);
+    }
 
     /**
      * @dev Returns true is a given subnode is available.
