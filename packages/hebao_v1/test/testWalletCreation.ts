@@ -23,8 +23,6 @@ contract("WalletFactoryModule", () => {
   ) => {
     const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
 
-    console.log("wallet:", wallet);
-
     if (useMetaTx) {
       // Transfer 0.1 ETH to the wallet to pay for the wallet creation
       await transferFrom(ctx, owner, wallet, "ETH", toAmount("0.1"));
