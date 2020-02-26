@@ -13,7 +13,7 @@ To understand the overall design for Loopring 3.0, including Ethereum smart cont
 |                           | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
 | :------------------------ | :----------: | :--------------------------------------: | :---------------------------------------: |
 | Trades per Ethereum Block |      26      |                  26300                   |                  216000                   |
-| Trades per Second         |      ~2      |                   2025                   |                   16400                    |
+| Trades per Second         |      ~2      |                   2025                   |                   16400                   |
 | Cost per Trade            | ~300,000 gas |                 375 gas                  |                  47 gas                   |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
@@ -48,7 +48,7 @@ Please use node v10.
 
 ### Circuits
 
-The code of our circuits is currently not open source. If you have access to the private repo `protocol3-circuits` please clone it and update the `circuit_src_folder` variable in `circuit/CMakeLists.txt` so it points to the correct folder.
+Clone the `protocol3-circuits` repo and update the `circuit_src_folder` variable in `circuit/CMakeLists.txt` so it points to the correct folder.
 
 ```
 make
@@ -66,7 +66,7 @@ The circuit tests can be run with `npm run build && npm run testc`. A single tes
 - print info logs in tests: `npm run test -- -i`
 - print more detailed debug logs in tests: `npm run test -- -x`
 
-Running all tests takes around 3 hours on a modern PC with a CPU with 4 cores. Creating proofs is computationaly heavy and takes time even when multi-threading is used. Run individual tests when you can.
+Running all tests takes around 2 hours on a modern PC with a CPU with 4 cores. Creating proofs is computationaly heavy and takes time even when multi-threading is used. Run individual tests when you can.
 
 Verifier/Prover keys are cached in the `keys` folder. When updating the circuits make sure to delete the keys of older circuit versions because this is not automatically detected.
 
