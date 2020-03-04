@@ -38,12 +38,6 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
 {
     using AddressUtil for address;
 
-    event WalletCreated(
-        address indexed wallet,
-        address indexed owner,
-        string  indexed subdomain
-    );
-
     address public walletImplementation;
 
     constructor(
