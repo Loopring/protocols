@@ -22,6 +22,10 @@ contract("Exchange", (accounts: string[]) => {
     exchange = exchangeTestUtil.exchange;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Reentrancy", function() {
     this.timeout(0);
 

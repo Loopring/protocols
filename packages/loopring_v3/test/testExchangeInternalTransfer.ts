@@ -72,6 +72,10 @@ contract("Exchange", (accounts: string[]) => {
     ownerD = exchangeTestUtil.testContext.orderOwners[3];
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("InternalTransfer", function() {
     this.timeout(0);
 

@@ -22,6 +22,10 @@ contract("Operator 1", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   beforeEach(async () => {
     exchangeId = await exchangeTestUtil.createExchange(
       exchangeTestUtil.testContext.stateOwners[0],

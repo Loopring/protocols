@@ -12,6 +12,10 @@ contract("Loopring", (accounts: string[]) => {
     loopring = exchangeTestUtil.loopringV3;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   const calculateProtocolFee = (
     minFee: BN,
     maxFee: BN,

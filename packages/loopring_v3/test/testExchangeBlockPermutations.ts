@@ -123,6 +123,10 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Permutations", function() {
     this.timeout(0);
 

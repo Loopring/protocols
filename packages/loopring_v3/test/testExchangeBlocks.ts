@@ -57,6 +57,10 @@ contract("Exchange", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Blocks", function() {
     this.timeout(0);
 

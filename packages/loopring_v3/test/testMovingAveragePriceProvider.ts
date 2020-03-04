@@ -28,6 +28,10 @@ contract("MovingAveragePriceProvider", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   const doLrcPriceChange = async (
     movingAverageProvider: any,
     mockProvider: any,

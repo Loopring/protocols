@@ -23,6 +23,10 @@ contract("Exchange", (accounts: string[]) => {
     exchangeID = 1;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   beforeEach(async () => {
     // Fresh Exchange for each test
     exchangeID = await exchangeTestUtil.createExchange(
