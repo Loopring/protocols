@@ -1475,6 +1475,8 @@ export class ExchangeTestUtil {
     key |= block.blockSize;
     key <<= 8;
     key |= block.blockVersion;
+    key <<= 1;
+    key |= this.onchainDataAvailability ? 1 : 0;
     return key;
   }
 
@@ -1543,7 +1545,6 @@ export class ExchangeTestUtil {
             // Wait for the prover server to start up
             http
               .get("http://localhost/status", { port }, res => {
-                console.log("prover server started on " + port);
                 connected = true;
                 this.proverPorts.set(key, port);
               })
