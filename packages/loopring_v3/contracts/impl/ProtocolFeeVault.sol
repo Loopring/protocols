@@ -44,6 +44,8 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         lrcAddress = _lrcAddress;
     }
 
+    function() external payable { }
+
     function updateSettings(
         address _userStakingPoolAddress,
         address _tokenSellerAddress,
