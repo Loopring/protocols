@@ -119,6 +119,10 @@ contract("Exchange", (accounts: string[]) => {
     exchangeID = 1;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Maintenance mode", function() {
     this.timeout(0);
 

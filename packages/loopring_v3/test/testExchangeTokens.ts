@@ -92,6 +92,10 @@ contract("Exchange", (accounts: string[]) => {
     exchangeID = 1;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Tokens", function() {
     this.timeout(0);
 

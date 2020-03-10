@@ -123,9 +123,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange.address,
       token
     );
-    const numAvailableSlotsBefore = (
-      await exchange.getNumAvailableDepositSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
 
     const ethAddress = exchangeTestUtil.getTokenAddress("ETH");
     const ethValue = token === ethAddress ? amount.add(depositFee) : depositFee;
@@ -143,9 +141,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange.address,
       token
     );
-    const numAvailableSlotsAfter = (
-      await exchange.getNumAvailableDepositSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
 
     const expectedBalanceDelta =
       token === ethAddress ? amount.add(depositFee) : amount;
@@ -201,9 +197,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange.address,
       token
     );
-    const numAvailableSlotsBefore = (
-      await exchange.getNumAvailableDepositSlots()
-    ).toNumber();
+    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
 
     const ethValue = token === "ETH" ? amount.add(depositFee) : depositFee;
     await exchange.updateAccountAndDeposit(
@@ -223,9 +217,7 @@ contract("Exchange", (accounts: string[]) => {
       exchange.address,
       token
     );
-    const numAvailableSlotsAfter = (
-      await exchange.getNumAvailableDepositSlots()
-    ).toNumber();
+    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
 
     const expectedBalanceDelta =
       token === "ETH" ? amount.add(depositFee) : amount;
@@ -547,6 +539,10 @@ contract("Exchange", (accounts: string[]) => {
     exchange = exchangeTestUtil.exchange;
     loopring = exchangeTestUtil.loopringV3;
     exchangeID = 1;
+  });
+
+  after(async () => {
+    await exchangeTestUtil.stop();
   });
 
   describe("DepositWithdraw", function() {

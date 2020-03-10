@@ -56,6 +56,10 @@ contract("Exchange", (accounts: string[]) => {
     loopring = exchangeTestUtil.loopringV3;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Admin", function() {
     this.timeout(0);
 

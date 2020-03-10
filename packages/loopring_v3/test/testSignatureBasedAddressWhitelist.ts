@@ -31,6 +31,10 @@ contract("Exchange", (accounts: string[]) => {
     );
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   const generatePermissionBytes = async (
     now: any,
     address: any,

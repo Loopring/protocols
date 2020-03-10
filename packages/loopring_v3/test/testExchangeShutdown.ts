@@ -24,6 +24,10 @@ contract("Exchange", (accounts: string[]) => {
     loopringV3 = exchangeTestUtil.loopringV3;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("Shutdown", function() {
     this.timeout(0);
 

@@ -33,6 +33,10 @@ contract("LoopringV3Owner", (accounts: string[]) => {
     );
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   const doLrcPriceChange = async (
     loopringV3Owner: any,
     mockChainlink: any,

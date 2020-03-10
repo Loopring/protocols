@@ -2,6 +2,7 @@ import BN = require("bn.js");
 import childProcess = require("child_process");
 import fs = require("fs");
 import path = require("path");
+import http = require("http");
 import { performance } from "perf_hooks";
 import { SHA256 } from "sha2";
 import util = require("util");
@@ -154,6 +155,8 @@ export class ExchangeTestUtil {
   public commitWrongPublicDataOnce = false;
   public commitWrongProofOnce = false;
 
+  public useProverServer: boolean = true;
+
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
   private pendingInternalTransfers: InternalTransferRequest[][] = [];
@@ -166,6 +169,9 @@ export class ExchangeTestUtil {
   private orderIDGenerator: number = 0;
 
   private MAX_NUM_EXCHANGES: number = 512;
+
+  private proverPorts = new Map<number, number>();
+  private portGenerator = 1234;
 
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
@@ -791,14 +797,10 @@ export class ExchangeTestUtil {
       token = this.testContext.tokenSymbolAddrMap.get(token);
     }
 
-    let numAvailableSlots = (
-      await this.exchange.getNumAvailableDepositSlots()
-    ).toNumber();
+    let numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
     if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitDeposits(exchangeID);
-      numAvailableSlots = (
-        await this.exchange.getNumAvailableDepositSlots()
-      ).toNumber();
+      numAvailableSlots = (await this.exchange.getNumAvailableDepositSlots()).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
 
@@ -1027,14 +1029,10 @@ export class ExchangeTestUtil {
     }
     const tokenID = this.tokenAddressToIDMap.get(token);
 
-    let numAvailableSlots = (
-      await this.exchange.getNumAvailableWithdrawalSlots()
-    ).toNumber();
+    let numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
     if (this.autoCommit && numAvailableSlots === 0) {
       await this.commitOnchainWithdrawalRequests(exchangeID);
-      numAvailableSlots = (
-        await this.exchange.getNumAvailableWithdrawalSlots()
-      ).toNumber();
+      numAvailableSlots = (await this.exchange.getNumAvailableWithdrawalSlots()).toNumber();
       assert(numAvailableSlots > 0, "numAvailableSlots > 0");
     }
     const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
@@ -1470,6 +1468,51 @@ export class ExchangeTestUtil {
     }
   }
 
+  public getKey(block: Block) {
+    let key = 0;
+    key |= block.blockType;
+    key <<= 16;
+    key |= block.blockSize;
+    key <<= 8;
+    key |= block.blockVersion;
+    key <<= 1;
+    key |= this.onchainDataAvailability ? 1 : 0;
+    return key;
+  }
+
+  public sleep(millis: number) {
+    return new Promise(resolve => setTimeout(resolve, millis));
+  }
+
+  // function returns a Promise
+  public async httpGetSync(url: string, port: number) {
+    return new Promise((resolve, reject) => {
+      http.get(url, { port, timeout: 600 }, response => {
+        let chunks_of_data: Buffer[] = [];
+
+        response.on("data", fragments => {
+          chunks_of_data.push(fragments);
+        });
+
+        response.on("end", () => {
+          let response_body = Buffer.concat(chunks_of_data);
+          resolve(response_body.toString());
+        });
+
+        response.on("error", error => {
+          reject(error);
+        });
+      });
+    });
+  }
+
+  public async stop() {
+    // Stop all prover servers
+    for (const port of this.proverPorts.values()) {
+      await this.httpGetSync("http://localhost/stop", port);
+    }
+  }
+
   public async verifyBlocks(blocks: Block[]) {
     if (blocks.length === 0) {
       return;
@@ -1486,12 +1529,53 @@ export class ExchangeTestUtil {
         "_" +
         block.blockIdx +
         "_proof.json";
-      const result = childProcess.spawnSync(
-        "build/circuit/dex_circuit",
-        ["-prove", block.filename, proofFilename],
-        { stdio: doDebugLogging() ? "inherit" : "ignore" }
-      );
-      assert(result.status === 0, "verifyBlock failed: " + block.filename);
+
+      if (this.useProverServer) {
+        const key = this.getKey(block);
+        if (!this.proverPorts.has(key)) {
+          const port = this.portGenerator++;
+          const process = childProcess.spawn(
+            "build/circuit/dex_circuit",
+            ["-server", block.filename, "" + port],
+            { detached: false, stdio: doDebugLogging() ? "inherit" : "ignore" }
+          );
+          let connected = false;
+          let numTries = 0;
+          while (!connected) {
+            // Wait for the prover server to start up
+            http
+              .get("http://localhost/status", { port }, res => {
+                connected = true;
+                this.proverPorts.set(key, port);
+              })
+              .on("error", e => {
+                numTries++;
+                if (numTries > 240) {
+                  assert(false, "prover server failed to start: " + e);
+                }
+              });
+            await this.sleep(1000);
+          }
+        }
+        const port = this.proverPorts.get(key);
+        // Generate the proof
+        let proveQuery =
+          "http://localhost/prove?block_filename=" + block.filename;
+        proveQuery += "&proof_filename=" + proofFilename;
+        proveQuery += "&validate=true";
+        await this.httpGetSync(proveQuery, port);
+      } else {
+        // Generate the proof by starting a dedicated circuit binary app instance
+        const result = childProcess.spawnSync(
+          "build/circuit/dex_circuit",
+          ["-prove", block.filename, proofFilename],
+          { stdio: doDebugLogging() ? "inherit" : "ignore" }
+        );
+        assert(
+          result.status === 0,
+          "Block proof generation failed: " + block.filename
+        );
+      }
 
       // Read the proof
       block.proof = this.flattenProof(
@@ -1655,17 +1739,8 @@ export class ExchangeTestUtil {
     // Sort the blocks for batching
     const blocks: Block[] = this.pendingBlocks[exchangeID].sort(
       (blockA: Block, blockB: Block) => {
-        const getKey = (block: Block) => {
-          let key = 0;
-          key |= block.blockType;
-          key <<= 16;
-          key |= block.blockSize;
-          key <<= 8;
-          key |= block.blockVersion;
-          return key;
-        };
-        const keyA = getKey(blockA);
-        const keyB = getKey(blockB);
+        const keyA = this.getKey(blockA);
+        const keyB = this.getKey(blockB);
         return keyA - keyB;
       }
     );
@@ -1759,9 +1834,7 @@ export class ExchangeTestUtil {
       assert(deposits.length === blockSize);
       numDepositsDone += blockSize;
 
-      const startIndex = (
-        await this.exchange.getNumDepositRequestsProcessed()
-      ).toNumber();
+      const startIndex = (await this.exchange.getNumDepositRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const firstRequestData = await this.exchange.getDepositRequest(
@@ -2039,9 +2112,7 @@ export class ExchangeTestUtil {
         }
       }
 
-      const startIndex = (
-        await this.exchange.getNumWithdrawalRequestsProcessed()
-      ).toNumber();
+      const startIndex = (await this.exchange.getNumWithdrawalRequestsProcessed()).toNumber();
       // console.log("startIndex: " + startIndex);
       // console.log("numRequestsProcessed: " + numRequestsProcessed);
       const firstRequestData = await this.exchange.getWithdrawRequest(
@@ -2577,14 +2648,8 @@ export class ExchangeTestUtil {
     const ranges: Range[][] = [];
     ranges.push([{ offset: 0, length: 5 }]); // orderA.orderID + orderB.orderID
     ranges.push([{ offset: 5, length: 5 }]); // orderA.accountID + orderB.accountID
-    ranges.push([
-      { offset: 10, length: 1 },
-      { offset: 15, length: 1 }
-    ]); // orderA.tokenS + orderB.tokenS
-    ranges.push([
-      { offset: 11, length: 3 },
-      { offset: 16, length: 3 }
-    ]); // orderA.fillS + orderB.fillS
+    ranges.push([{ offset: 10, length: 1 }, { offset: 15, length: 1 }]); // orderA.tokenS + orderB.tokenS
+    ranges.push([{ offset: 11, length: 3 }, { offset: 16, length: 3 }]); // orderA.fillS + orderB.fillS
     ranges.push([{ offset: 14, length: 1 }]); // orderA.data
     ranges.push([{ offset: 19, length: 1 }]); // orderB.data
     return ranges;
@@ -2893,9 +2958,7 @@ export class ExchangeTestUtil {
     this.exchangeId = exchangeId;
     this.onchainDataAvailability = onchainDataAvailability;
 
-    const exchangeCreationTimestamp = (
-      await this.exchange.getExchangeCreationTimestamp()
-    ).toNumber();
+    const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
 
     const genesisBlock: Block = {
       blockIdx: 0,
@@ -3251,14 +3314,14 @@ export class ExchangeTestUtil {
   }
 
   public async advanceBlockTimestamp(seconds: number) {
-    const previousTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const previousTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     await this.evmIncreaseTime(seconds);
     await this.evmMine();
-    const currentTimestamp = (
-      await web3.eth.getBlock(await web3.eth.getBlockNumber())
-    ).timestamp;
+    const currentTimestamp = (await web3.eth.getBlock(
+      await web3.eth.getBlockNumber()
+    )).timestamp;
     assert(
       Math.abs(currentTimestamp - (previousTimestamp + seconds)) < 60,
       "Timestamp should have been increased by roughly the expected value"
@@ -4396,27 +4459,19 @@ export class ExchangeTestUtil {
     const tokenAddrDecimalsMap = new Map<string, number>();
     const tokenAddrInstanceMap = new Map<string, any>();
 
-    const [
-      eth,
-      weth,
-      lrc,
-      gto,
-      rdn,
-      rep,
-      inda,
-      indb,
-      test
-    ] = await Promise.all([
-      null,
-      this.contracts.WETHToken.deployed(),
-      this.contracts.LRCToken.deployed(),
-      this.contracts.GTOToken.deployed(),
-      this.contracts.RDNToken.deployed(),
-      this.contracts.REPToken.deployed(),
-      this.contracts.INDAToken.deployed(),
-      this.contracts.INDBToken.deployed(),
-      this.contracts.TESTToken.deployed()
-    ]);
+    const [eth, weth, lrc, gto, rdn, rep, inda, indb, test] = await Promise.all(
+      [
+        null,
+        this.contracts.WETHToken.deployed(),
+        this.contracts.LRCToken.deployed(),
+        this.contracts.GTOToken.deployed(),
+        this.contracts.RDNToken.deployed(),
+        this.contracts.REPToken.deployed(),
+        this.contracts.INDAToken.deployed(),
+        this.contracts.INDBToken.deployed(),
+        this.contracts.TESTToken.deployed()
+      ]
+    );
 
     const allTokens = [eth, weth, lrc, gto, rdn, rep, inda, indb, test];
 

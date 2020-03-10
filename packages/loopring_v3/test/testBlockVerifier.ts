@@ -222,6 +222,10 @@ contract("BlockVerifier", (accounts: string[]) => {
     await exchangeTestUtil.initialize(accounts);
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   describe("owner", () => {
     beforeEach(async () => {
       blockVerifier = await BlockVerifier.new({ from: owner });

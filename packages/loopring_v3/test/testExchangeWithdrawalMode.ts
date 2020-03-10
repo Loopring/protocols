@@ -35,6 +35,10 @@ contract("Exchange", (accounts: string[]) => {
     exchangeID = 1;
   });
 
+  after(async () => {
+    await exchangeTestUtil.stop();
+  });
+
   const withdrawFromMerkleTreeChecked = async (
     owner: string,
     token: string,
