@@ -176,6 +176,10 @@ export async function getBlockTime(blockNumber: number) {
   return block.timestamp;
 }
 
+export function description(descr: string, metaTx: boolean) {
+  return descr + (metaTx ? " (meta tx)" : "");
+}
+
 export function toAmount(value: string) {
   return new BN(web3.utils.toWei(value, "ether"));
 }
