@@ -24,11 +24,6 @@ contract DummyExchange is IExchangeV3
     mapping (address => Account) accountMap;
     uint24 lastAccountId = 0;
 
-    event AccountCreated(uint24 accountId, address accountAddr);
-    event AccountUpdated(uint24 accountId, address accountAddr);
-    event Deposit(address accountAddr, address token, uint amount);
-    event Withdrawal(address accountAddr, address token, uint amount);
-
     struct Account {
         uint24 accountId;
         uint pubKeyX;
@@ -94,11 +89,10 @@ contract DummyExchange is IExchangeV3
             isAccountUpdated = false;
             accountID = lastAccountId + 1;
             accountMap[msg.sender] = Account(accountID, 0, 0);
-            emit AccountCreated(accountID, msg.sender);
         } else {
             accountID = accountMap[msg.sender].accountId;
-            isAccountNew = true;
-            isAccountUpdated = false;
+            isAccountNew = false;
+            isAccountUpdated = true;
         }
 
     }
@@ -125,10 +119,9 @@ contract DummyExchange is IExchangeV3
             accountMap[msg.sender] = Account(accountID, 0, 0);
         } else {
             accountID = accountMap[msg.sender].accountId;
-            isAccountNew = true;
-            isAccountUpdated = false;
+            isAccountNew = false;
+            isAccountUpdated = true;
         }
-
     }
 
     function deposit(
