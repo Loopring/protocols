@@ -64,12 +64,15 @@ contract("LoopringModule", () => {
         );
 
         await assertEventEmitted(loopringModule, "AccountUpdated");
-        const result = await loopringModule.contract.methods.getDEXAccount(
+        const result = await loopringModule.getDEXAccount(
           wallet,
           dummyExchange.address
         );
-        console.log("result:", result);
-        // assert(accountId > 0, "wallet not registered as an account");
+        // console.log("result:", result);
+        assert(
+          result.accountId.toNumber() > 0,
+          "wallet not registered as an account"
+        );
       }
     );
 
