@@ -21,21 +21,32 @@ contract("LoopringModule", () => {
 
   before(async () => {
     defaultCtx = await getContext();
+    loopringModule = await LoopringModule.new(
+      defaultCtx.controllerImpl.address
+    );
+    dummyExchange = await DummyExchange.new(defaultCtx.controllerImpl.address);
+
+    await defaultCtx.moduleRegistryImpl.registerModule(loopringModule.address);
+    await defaultCtx.securityStore.addManager(loopringModule.address);
   });
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    loopringModule = await LoopringModule.new(ctx.controllerImpl.address);
-    console.log("loopringModule: ", loopringModule.address);
-    dummyExchange = await DummyExchange.new(ctx.controllerImpl.address);
   });
 
   [false, true].forEach(function(metaTx) {
     it(
-      description("wallet should be able to register an account", metaTx),
+      description(
+        "wallet should be able to register or update an account in loopring exchange",
+        true
+      ),
       async () => {
         const owner = ctx.owners[0];
         const { wallet } = await createWallet(ctx, owner);
+        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        await walletContract.addModule(loopringModule.address, {
+          from: owner
+        });
 
         await executeTransaction(
           loopringModule.contract.methods.createOrUpdateDEXAccount(
@@ -46,33 +57,76 @@ contract("LoopringModule", () => {
             []
           ),
           ctx,
-          metaTx,
+          true,
           wallet,
           [owner],
           { from: owner }
         );
+
+        await assertEventEmitted(loopringModule, "AccountUpdated");
       }
     );
 
-    //   it(
-    //     description("wallet should be able to update an account", metaTx),
-    //     async () => {
+    it(
+      description(
+        "wallet should be able to deposit in a loopring exchange",
+        metaTx
+      ),
+      async () => {
+        const owner = ctx.owners[0];
+        const { wallet } = await createWallet(ctx, owner);
+        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        await walletContract.addModule(loopringModule.address, {
+          from: owner
+        });
 
-    //     }
-    //   );
+        await executeTransaction(
+          loopringModule.contract.methods.depositToDEX(
+            wallet,
+            dummyExchange.address,
+            "0x" + "00".repeat(20),
+            "1" + "0".repeat(20)
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        );
 
-    //   it(
-    //     description("wallet should be able to deposit", metaTx),
-    //     async () => {
+        await assertEventEmitted(loopringModule, "Deposit");
+      }
+    );
 
-    //     }
-    //   );
+    it(
+      description(
+        "wallet should be able to do withdrawal in a loopring exchange",
+        metaTx
+      ),
+      async () => {
+        const owner = ctx.owners[0];
+        const { wallet } = await createWallet(ctx, owner);
+        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        await walletContract.addModule(loopringModule.address, {
+          from: owner
+        });
 
-    //   it(
-    //     description("wallet should be able to do withdrawal", metaTx),
-    //     async () => {
+        await executeTransaction(
+          loopringModule.contract.methods.withdrawFromDEX(
+            wallet,
+            dummyExchange.address,
+            "0x" + "00".repeat(20),
+            "1" + "0".repeat(20)
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        );
 
-    //     }
-    //   );
+        await assertEventEmitted(loopringModule, "Withdrawal");
+      }
+    );
   });
 });

@@ -145,6 +145,7 @@ export async function executeTransaction(
       signers,
       options
     );
+
     const event = await assertEventEmitted(contract, "ExecutedMetaTx");
     if (!event.success) {
       // Check if the return data contains the revert reason.
