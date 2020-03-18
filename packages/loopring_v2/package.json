@@ -44,7 +44,7 @@
     "solium": "^1.1.8",
     "tslint": "5.20.1",
     "types-bn": "0.0.1",
-    "typescript": "3.6.4",
+    "typescript": "3.8.3",
     "web3-typescript-typings": "0.10.2",
     "webpack": "^4.0.0"
   },
