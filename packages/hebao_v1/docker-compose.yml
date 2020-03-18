@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+  ganache:
+    build: ./docker
+    ports:
+      - "8545:8545"
+
+  test:
+    build: .
+    command: "npm run test -- "
