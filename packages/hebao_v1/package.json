@@ -49,7 +49,7 @@
   },
   "license": "ISC",
   "devDependencies": {
-    "@types/bluebird": "3.5.29",
+    "@types/bluebird": "3.5.30",
     "@types/lodash": "^4.14.139",
     "@types/node": "13.9.1",
     "@types/request-promise-native": "^1.0.17",
