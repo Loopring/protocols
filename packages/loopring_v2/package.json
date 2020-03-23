@@ -59,7 +59,7 @@
     "es6-map": "^0.1.5",
     "es6-promisify": "^6.0.2",
     "escape-string-regexp": "^2.0.0",
-    "estraverse": "^4.2.0",
+    "estraverse": "^5.0.0",
     "esutils": "^2.0.2",
     "ethereumjs-abi": "^0.6.5",
     "ethereumjs-util": "^6.1.0",
