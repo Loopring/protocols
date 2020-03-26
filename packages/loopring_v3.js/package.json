@@ -73,7 +73,7 @@
     "serialize-javascript": "^3.0.0",
     "sha2": "^1.0.2",
     "sha3": "^2.0.0",
-    "snarkjs": "0.1.20",
+    "snarkjs": "0.1.21",
     "typedarray-to-buffer": "^3.1.5",
     "web3": "^1.2.0"
   }
