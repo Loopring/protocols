@@ -156,6 +156,10 @@ contract LoopringModule is SecurityModule
         require(amount > 0, "ZERO_VALUE");
         (, , uint fee, ) = exchange.getFees();
 
+        if (token == address(0)) {
+            fee = fee.add(amount);
+        }
+
         bytes memory txData = abi.encodeWithSelector(
             exchange.deposit.selector,
             token,
