@@ -15,7 +15,7 @@ contract("OwnerManagable", (accounts: string[]) => {
 
     await ownerManagable.removeManager(address1, {from: owner});
     const isManager2 = await ownerManagable.isManager(address1);
-    assert.equal(false, isManager2, "add manager failed");
+    assert.equal(false, isManager2, "remove manager failed");
   });
 
   it("should not be able to add or delete manager by any other addresses", async () => {
