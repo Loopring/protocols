@@ -63,6 +63,8 @@ contract("AddressSet", () => {
       const addressSetWrapper = await AddressSetWrapper.new();
       const address1 = web3.eth.accounts.create().address;
       const key1 = web3.utils.sha3(address1);
+      await expectThrow(addressSetWrapper.remove(key1, address1), "NOT_IN_SET");
+
       await addressSetWrapper.add(key1, address1, false);
       const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
       assert.equal(isInSet1, true, "address not in set after insertion");
