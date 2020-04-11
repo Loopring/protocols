@@ -56,7 +56,7 @@
     "ethlint": "^1.2.4",
     "husky": "^4.0.4",
     "mocha": "^5.2.0",
-    "prettier": "^1.18.2",
+    "prettier": "^2.0.4",
     "pretty-quick": "^1.11.1",
     "rimraf": "^3.0.2",
     "shelljs": "^0.8.3",
