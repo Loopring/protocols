@@ -93,7 +93,6 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingAdditions[wallet][guardian][group];
         require(confirmStart != 0, "NOT_PENDING");
@@ -142,7 +141,6 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
     {
         uint confirmStart = pendingRemovals[wallet][guardian];
         require(confirmStart != 0, "NOT_PENDING");
