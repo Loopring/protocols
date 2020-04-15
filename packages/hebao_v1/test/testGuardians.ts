@@ -511,7 +511,7 @@ contract("GuardiansModule", (accounts: string[]) => {
           { from: owner }
         );
 
-        // Make sure the expired guardian is not a guardian
+        // Make sure the guardian is not removed
         assert(
           await ctx.securityStore.isGuardian(wallet, ctx.guardians[0]),
           "should be guardian"
@@ -549,7 +549,7 @@ contract("GuardiansModule", (accounts: string[]) => {
         { from: owner }
       );
 
-      // Skip forward `pendingPeriod` + `confirmPeriod` seconds
+      // Skip forward `pendingPeriod` + 1 seconds
       await advanceTimeAndBlockAsync(pendingPeriod + 1);
 
       const user = accounts[10];
@@ -601,7 +601,7 @@ contract("GuardiansModule", (accounts: string[]) => {
         { from: owner }
       );
 
-      // Skip forward `pendingPeriod` + `confirmPeriod` seconds
+      // Skip forward `pendingPeriod` + 1 seconds
       await advanceTimeAndBlockAsync(pendingPeriod + 1);
       const user = accounts[10];
 
@@ -618,7 +618,7 @@ contract("GuardiansModule", (accounts: string[]) => {
         { from: user }
       );
 
-      // Make sure the expired guardian is not a guardian
+      // Make sure the guardian is removed
       assert(
         !(await ctx.securityStore.isGuardian(wallet, ctx.guardians[0])),
         "should not be guardian"
