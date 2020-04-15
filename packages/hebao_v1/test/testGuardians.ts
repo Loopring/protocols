@@ -519,108 +519,111 @@ contract("GuardiansModule", (accounts: string[]) => {
       }
     );
 
-    it(
-      description(
-        "anyone should be able to confirm guardian addition"
-      ),
-      async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const { wallet } = await createWallet(ctx, owner);
-        const group = 0;
-
-        // The first guardian is added immediately (so cannot be cancelled)
-        await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
-
-        // Add the second guardian which is added after a delay
-        await executeTransaction(
-          ctx.guardianModule.contract.methods.addGuardian(
-            wallet,
-            ctx.guardians[1],
-            group
-          ),
-          ctx,
-          useMetaTx,
-          wallet,
-          [owner],
-          { from: owner }
-        );
-
-        // Skip forward `pendingPeriod` + `confirmPeriod` seconds
-        await advanceTimeAndBlockAsync(pendingPeriod + 1);
-
-        const user = accounts[1];
-
-        // Try to confirm
-        await executeTransaction(
-          ctx.guardianModule.contract.methods.confirmGuardianAddition(
-            wallet,
-            ctx.guardians[1],
-            group
-          ),
-          ctx,
-          useMetaTx,
-          wallet,
-          [user],
-          { from: user }
-        );
-
-        assert(
-          await ctx.securityStore.isGuardian(wallet, ctx.guardians[1]),
-          "should be guardian"
-        );
-      }
-    );
-
-    it(
-      description(
-        "anyone should be able to confirm guardian removal before expired"
-      ),
-      async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const { wallet } = await createWallet(ctx, owner);
-        const group = 0;
-
-        // The first guardian is added immediately (so cannot be cancelled)
-        await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
-
-        // Now remove the guardian
-        await executeTransaction(
-          ctx.guardianModule.contract.methods.removeGuardian(
-            wallet,
-            ctx.guardians[0]
-          ),
-          ctx,
-          useMetaTx,
-          wallet,
-          [owner],
-          { from: owner }
-        );
-
-        // Skip forward `pendingPeriod` + `confirmPeriod` seconds
-        await advanceTimeAndBlockAsync(pendingPeriod + 1);
-
-        // Try to confirm
-        await executeTransaction(
-          ctx.guardianModule.contract.methods.confirmGuardianRemoval(
-            wallet,
-            ctx.guardians[0]
-          ),
-          ctx,
-          useMetaTx,
-          wallet,
-          [owner],
-          { from: owner }
-        );
-
-        // Make sure the expired guardian is not a guardian
-        assert(
-          !(await ctx.securityStore.isGuardian(wallet, ctx.guardians[0])),
-          "should not be guardian"
-        );
-      }
-    );
 
   });
+
+  it(
+    description(
+      "anyone should be able to confirm guardian addition"
+    ),
+    async () => {
+      useMetaTx = false;
+      const owner = ctx.owners[0];
+      const { wallet } = await createWallet(ctx, owner);
+      const group = 0;
+
+      // The first guardian is added immediately (so cannot be cancelled)
+      await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
+
+      // Add the second guardian which is added after a delay
+      await executeTransaction(
+        ctx.guardianModule.contract.methods.addGuardian(
+          wallet,
+          ctx.guardians[1],
+          group
+        ),
+        ctx,
+        useMetaTx,
+        wallet,
+        [owner],
+        { from: owner }
+      );
+
+      // Skip forward `pendingPeriod` + `confirmPeriod` seconds
+      await advanceTimeAndBlockAsync(pendingPeriod + 1);
+
+      const user = accounts[10];
+
+      // Try to confirm
+      await executeTransaction(
+        ctx.guardianModule.contract.methods.confirmGuardianAddition(
+          wallet,
+          ctx.guardians[1],
+          group
+        ),
+        ctx,
+        useMetaTx,
+        wallet,
+        [user],
+        { from: user }
+      );
+
+      assert(
+        await ctx.securityStore.isGuardian(wallet, ctx.guardians[1]),
+        "should be guardian"
+      );
+    }
+  );
+
+  it(
+    description(
+      "anyone should be able to confirm guardian removal before expired"
+    ),
+    async () => {
+      useMetaTx = false;
+      const owner = ctx.owners[0];
+      const { wallet } = await createWallet(ctx, owner);
+      const group = 0;
+
+      // The first guardian is added immediately (so cannot be cancelled)
+      await addGuardianChecked(owner, wallet, ctx.guardians[0], group);
+
+      // Now remove the guardian
+      await executeTransaction(
+        ctx.guardianModule.contract.methods.removeGuardian(
+          wallet,
+          ctx.guardians[0]
+        ),
+        ctx,
+        useMetaTx,
+        wallet,
+        [owner],
+        { from: owner }
+      );
+
+      // Skip forward `pendingPeriod` + `confirmPeriod` seconds
+      await advanceTimeAndBlockAsync(pendingPeriod + 1);
+      const user = accounts[10];
+
+      // Try to confirm
+      await executeTransaction(
+        ctx.guardianModule.contract.methods.confirmGuardianRemoval(
+          wallet,
+          ctx.guardians[0]
+        ),
+        ctx,
+        useMetaTx,
+        wallet,
+        [user],
+        { from: user }
+      );
+
+      // Make sure the expired guardian is not a guardian
+      assert(
+        !(await ctx.securityStore.isGuardian(wallet, ctx.guardians[0])),
+        "should not be guardian"
+      );
+    }
+  );
+
 });
