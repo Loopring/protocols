@@ -50,6 +50,8 @@ abstract contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
+    uint   constant public   BLOCK_BOUND = 100;
+
     struct WalletState
     {
         uint nonce;
@@ -472,7 +474,8 @@ abstract contract MetaTxModule is BaseModule
             require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
-            require(nonce == wallets[wallet].nonce + 1, "INVALID_NONCE");
+            require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
         }
     }
