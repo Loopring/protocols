@@ -50,8 +50,6 @@ abstract contract MetaTxModule is BaseModule
     using SignatureUtil for bytes32;
     using BytesUtil     for bytes;
 
-    uint   constant public   BLOCK_BOUND = 100;
-
     struct WalletState
     {
         uint nonce;
@@ -65,6 +63,7 @@ abstract contract MetaTxModule is BaseModule
         uint    limit;
         uint    overhead;
         address recipient;
+        uint    validUntil;
     }
 
     struct MetaTransaction
@@ -79,10 +78,11 @@ abstract contract MetaTxModule is BaseModule
         uint    gasLimit;
         uint    gasOverhead;
         address feeRecipient;
+        uint   validUntil;
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
+        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,uint256 validUntil)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -160,7 +160,7 @@ abstract contract MetaTxModule is BaseModule
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
-    ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
+    ///              wallet, but not by more than `block.number * 2^128`.
     ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
@@ -169,7 +169,7 @@ abstract contract MetaTxModule is BaseModule
     function executeMetaTx(
         bytes   memory data,
         uint    nonce,
-        uint[5] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
+        uint[6] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient][validUntil]
         bytes[] memory signatures
         )
         public
@@ -180,7 +180,8 @@ abstract contract MetaTxModule is BaseModule
             gasSetting[1],
             gasSetting[2],
             gasSetting[3],
-            address(gasSetting[4])
+            address(gasSetting[4]),
+            gasSetting[5]
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
@@ -198,7 +199,8 @@ abstract contract MetaTxModule is BaseModule
                     gasSettings.price,
                     gasSettings.limit,
                     gasSettings.overhead,
-                    gasSettings.recipient
+                    gasSettings.recipient,
+                    gasSettings.validUntil
                 )
             )
         );
@@ -210,7 +212,7 @@ abstract contract MetaTxModule is BaseModule
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(wallet, nonce, metaTxHash);
+        saveExecutedMetaTx(wallet, nonce, metaTxHash, gasSettings.validUntil);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -385,7 +387,8 @@ abstract contract MetaTxModule is BaseModule
                 _tx.gasPrice,
                 _tx.gasLimit,
                 _tx.gasOverhead,
-                _tx.feeRecipient
+                _tx.feeRecipient,
+                _tx.validUntil
             )
         );
     }
@@ -466,16 +469,21 @@ abstract contract MetaTxModule is BaseModule
     function saveExecutedMetaTx(
         address wallet,
         uint    nonce,
-        bytes32 metaTxHash
+        bytes32 metaTxHash,
+        uint    validUntil
         )
         private
     {
+        if (validUntil > 0) {
+            require(now <= validUntil, "TX_EXPIRED");
+        }
+
         if (nonce == 0) {
             require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
             require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
-            require((nonce >> 128) <= (block.number + BLOCK_BOUND), "NONCE_TOO_LARGE");
+            require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
         }
     }
