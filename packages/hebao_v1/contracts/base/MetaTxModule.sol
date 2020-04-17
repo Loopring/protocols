@@ -63,7 +63,6 @@ abstract contract MetaTxModule is BaseModule
         uint    limit;
         uint    overhead;
         address recipient;
-        uint    validUntil;
     }
 
     struct MetaTransaction
@@ -78,11 +77,10 @@ abstract contract MetaTxModule is BaseModule
         uint    gasLimit;
         uint    gasOverhead;
         address feeRecipient;
-        uint   validUntil;
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient,uint256 validUntil)"
+        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -169,7 +167,7 @@ abstract contract MetaTxModule is BaseModule
     function executeMetaTx(
         bytes   memory data,
         uint    nonce,
-        uint[6] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient][validUntil]
+        uint[5] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
         bytes[] memory signatures
         )
         public
@@ -180,8 +178,7 @@ abstract contract MetaTxModule is BaseModule
             gasSetting[1],
             gasSetting[2],
             gasSetting[3],
-            address(gasSetting[4]),
-            gasSetting[5]
+            address(gasSetting[4])
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
@@ -199,8 +196,7 @@ abstract contract MetaTxModule is BaseModule
                     gasSettings.price,
                     gasSettings.limit,
                     gasSettings.overhead,
-                    gasSettings.recipient,
-                    gasSettings.validUntil
+                    gasSettings.recipient
                 )
             )
         );
@@ -212,7 +208,7 @@ abstract contract MetaTxModule is BaseModule
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(wallet, nonce, metaTxHash, gasSettings.validUntil);
+        saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -387,8 +383,7 @@ abstract contract MetaTxModule is BaseModule
                 _tx.gasPrice,
                 _tx.gasLimit,
                 _tx.gasOverhead,
-                _tx.feeRecipient,
-                _tx.validUntil
+                _tx.feeRecipient
             )
         );
     }
@@ -469,15 +464,10 @@ abstract contract MetaTxModule is BaseModule
     function saveExecutedMetaTx(
         address wallet,
         uint    nonce,
-        bytes32 metaTxHash,
-        uint    validUntil
+        bytes32 metaTxHash
         )
         private
     {
-        if (validUntil > 0) {
-            require(now <= validUntil, "TX_EXPIRED");
-        }
-
         if (nonce == 0) {
             require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
