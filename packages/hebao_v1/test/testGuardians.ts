@@ -105,18 +105,7 @@ contract("GuardiansModule", (accounts: string[]) => {
 
         // Try to add another one
         await expectThrow(
-          executeTransaction(
-            ctx.guardianModule.contract.methods.addGuardian(
-              wallet,
-              accounts[i],
-              0
-            ),
-            ctx,
-            useMetaTx,
-            wallet,
-            [owner],
-            { from: owner }
-          ),
+          addGuardianChecked(owner, wallet, accounts[20 + i], 0),
           "TOO_MANY_GUARDIANS"
         );
       }
@@ -518,14 +507,10 @@ contract("GuardiansModule", (accounts: string[]) => {
         );
       }
     );
-
-
   });
 
   it(
-    description(
-      "anyone should be able to confirm guardian addition"
-    ),
+    description("anyone should be able to confirm guardian addition"),
     async () => {
       useMetaTx = false;
       const owner = ctx.owners[0];
@@ -625,5 +610,4 @@ contract("GuardiansModule", (accounts: string[]) => {
       );
     }
   );
-
 });

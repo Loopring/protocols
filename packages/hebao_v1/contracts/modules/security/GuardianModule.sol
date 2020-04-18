@@ -71,9 +71,6 @@ contract GuardianModule is SecurityModule
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS(), "INVALID_GROUP");
 
-        uint count = controller.securityStore().numGuardians(wallet);
-        require(count < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-
         if (controller.securityStore().numGuardians(wallet) == 0) {
             controller.securityStore().addOrUpdateGuardian(wallet, guardian, group);
             emit GuardianAdded(wallet, guardian, group);
@@ -98,6 +95,11 @@ contract GuardianModule is SecurityModule
         require(confirmStart != 0, "NOT_PENDING");
         require(now >= confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
         controller.securityStore().addOrUpdateGuardian(wallet, guardian, group);
+
+        // Now check if we don't have too many guardians active at once
+        uint count = controller.securityStore().numGuardians(wallet);
+        require(count <= MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
+
         delete pendingAdditions[wallet][guardian][group];
         emit GuardianAdded(wallet, guardian, group);
     }
