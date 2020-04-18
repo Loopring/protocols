@@ -112,18 +112,12 @@ contract LoopringModule is SecurityModule
             uint   pubKeyY
         )
     {
-        bytes memory callData = abi.encodeWithSelector(
-            exchange.getAccount.selector,
-            wallet
-        );
-        (bool success, bytes memory result) = address(exchange).staticcall(callData);
-        if (success && result.length == 96) {
-            assembly {
-                accountId := mload(add(result, 32))
-                pubKeyX := mload(add(result, 64))
-                pubKeyY := mload(add(result, 96))
-            }
-        }
+        try exchange.getAccount(wallet)
+            returns (uint24 _accountId, uint _pubKeyX, uint _pubKeyY) {
+            accountId = _accountId;
+            pubKeyX = _pubKeyX;
+            pubKeyY = _pubKeyY;
+        } catch {}
     }
 
     function approveExchange(
