@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../iface/IExchangeV3.sol";
 
@@ -31,49 +32,15 @@ contract Operator {
         exchange = IExchangeV3(_exchangeAddress);
     }
 
-    function commitBlock(
-        uint8  blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
-        bytes calldata data,
-        bytes calldata offchainData
+    function submitBlocks(
+        ExchangeData.Block[] calldata blocks,
+        address payable feeRecipient
         )
         external
     {
-        exchange.commitBlock(blockType, blockSize, blockVersion, data, offchainData);
-    }
-
-    function verifyBlocks(
-        uint[] calldata blockIndices,
-        uint[] calldata proofs
-        )
-        external
-    {
-        exchange.verifyBlocks(blockIndices, proofs);
-    }
-
-    function revertBlock(
-        uint blockIdx
-        )
-        external
-    {
-        exchange.revertBlock(blockIdx);
-    }
-
-    function withdrawBlockFee(
-        uint blockIdx
-        )
-        external
-    {
-        exchange.withdrawBlockFee(blockIdx, msg.sender);
-    }
-
-    function distributeWithdrawals(
-        uint blockIdx,
-        uint maxNumWithdrawals
-        )
-        external
-    {
-        exchange.distributeWithdrawals(blockIdx, maxNumWithdrawals);
+        exchange.submitBlocks(
+            blocks,
+            feeRecipient
+        );
     }
 }

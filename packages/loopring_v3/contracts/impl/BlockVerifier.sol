@@ -22,8 +22,7 @@ import "../thirdparty/BatchVerifier.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IBlockVerifier.sol";
-
-import "../impl/libexchange/ExchangeData.sol";
+import "../iface/ExchangeData.sol";
 
 
 /// @title An Implementation of IBlockVerifier.

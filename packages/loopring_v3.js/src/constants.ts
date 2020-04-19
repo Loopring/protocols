@@ -4,7 +4,7 @@ import { Balance } from "./types";
 
 export class Constants {
   static readonly TREE_DEPTH_TRADING_HISTORY = 14;
-  static readonly TREE_DEPTH_ACCOUNTS = 20;
+  static readonly TREE_DEPTH_ACCOUNTS = 24;
   static readonly TREE_DEPTH_TOKENS = 8;
 
   static readonly NUM_BITS_ACCOUNTID = Constants.TREE_DEPTH_ACCOUNTS;

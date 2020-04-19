@@ -183,7 +183,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Try to deposit
         await expectThrow(
-          exchange.deposit(token, amount, {
+          exchange.deposit(owner, owner, token, amount, {
             from: owner,
             value: fees._depositFeeETH
           }),
@@ -191,7 +191,7 @@ contract("Exchange", (accounts: string[]) => {
         );
         // Try to withdraw
         await expectThrow(
-          exchange.withdraw(token, amount, {
+          exchange.withdraw(owner, token, amount, {
             from: owner,
             value: fees._withdrawalFeeETH
           }),
@@ -207,7 +207,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Try to deposit
         await expectThrow(
-          exchange.deposit(token, amount, {
+          exchange.deposit(owner, owner, token, amount, {
             from: owner,
             value: fees._depositFeeETH
           }),
@@ -230,7 +230,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Try to deposit
         await expectThrow(
-          exchange.deposit(token, amount, {
+          exchange.deposit(owner, owner, token, amount, {
             from: owner,
             value: fees._depositFeeETH
           }),
@@ -246,12 +246,12 @@ contract("Exchange", (accounts: string[]) => {
         await checkMaintenanceMode(false);
 
         // Deposit
-        await exchange.deposit(token, amount, {
+        await exchange.deposit(owner, owner, token, amount, {
           from: owner,
           value: fees._depositFeeETH
         });
         // Withdraw
-        await exchange.withdraw(token, amount, {
+        await exchange.withdraw(owner, token, amount, {
           from: owner,
           value: fees._withdrawalFeeETH
         });
@@ -343,12 +343,12 @@ contract("Exchange", (accounts: string[]) => {
         await stopMaintenanceModeChecked(exchangeTestUtil.exchangeOwner);
 
         // Deposit
-        await exchange.deposit(token, amount, {
+        await exchange.deposit(owner, owner, token, amount, {
           from: owner,
           value: fees._depositFeeETH
         });
         // Withdraw
-        await exchange.withdraw(token, amount, {
+        await exchange.withdraw(owner, token, amount, {
           from: owner,
           value: fees._withdrawalFeeETH
         });
@@ -367,7 +367,7 @@ contract("Exchange", (accounts: string[]) => {
       });
     });
 
-    it("should not be able to commit settlement blocks while in maintenance mode", async () => {
+    it("should not be able to submit settlement blocks while in maintenance mode", async () => {
       await createExchange();
 
       // Setup a ring
@@ -415,8 +415,9 @@ contract("Exchange", (accounts: string[]) => {
       // The operator shouldn't be able to commit any ring settlement blocks
       // while in maitenance mode
       await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.commitRings(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitPendingBlocks(exchangeID),
         "SETTLEMENT_SUSPENDED"
       );
     });

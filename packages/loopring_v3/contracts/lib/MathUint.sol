@@ -58,15 +58,17 @@ library MathUint
     }
 
     function decodeFloat(
-        uint f
+        uint f,
+        uint numBits
         )
         internal
         pure
         returns (uint value)
     {
-        uint numBitsMantissa = 23;
+        uint numBitsMantissa = numBits - 5;
         uint exponent = f >> numBitsMantissa;
         uint mantissa = f & ((1 << numBitsMantissa) - 1);
         value = mantissa * (10 ** exponent);
+        require(value < (2 ** 96), "FLOAT_VALUE_TOO_BIG");
     }
 }

@@ -296,7 +296,12 @@ But if the operator pays the protocol fee, why have different protocol fee rates
 
 ### Labels
 
-All off-chain requests can pay a fee to the operator. Only a single entity receives a fee to limit the cost of the Merkle tree updates in the circuits. To support a fee sharing mechanism (with e.g. wallets or ring-matchers) that is cheap and verifiable using the protocol we allow setting a label on all off-chain requests. The label of all requests are hashed together and this single hash called the `labelHash` is put on-chain. The operator can then share the label data of all requests he used in a block off-chain and all entities can verify that the labels the operator provided are indeed the ones that were used in a block.
+A label is an optional identifier for a request e.g. an identifier for the wallet the request was created in.
+
+In previous fee models we had wallets and ring-matchers that were paid directly as part of the trade. This produces a lot of token transfers which increases the cost in the circuit (constraints) but also increases the amount of data-availability data (all transactions need to be reconstructible using this data). Instead of doing all these costly token transfers we just publish the label on-chain for the order/request that was used by the operator. The operator (who receives all the fees from users) can then make agreements with wallets/etc... outside of the protocol how they get paid for the use of their requests.
+
+The label of all requests are hashed together and this single hash called the `labelHash` is put on-chain. The operator can then share the label data of all requests he used in a block off-chain and all entities can verify that the labels the operator provided are indeed the ones that were used in a block.
+
 Another way fees can be shared is by using a contract owned account for the operator account.
 
 ## Signatures

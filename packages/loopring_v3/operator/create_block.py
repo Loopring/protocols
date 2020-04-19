@@ -45,16 +45,6 @@ class OffchainWithdrawalBlock(object):
         self.blockSize = len(self.withdrawals)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
-
-class OrderCancellationBlock(object):
-    def __init__(self):
-        self.blockType = 4
-        self.cancels = []
-
-    def toJSON(self):
-        self.blockSize = len(self.cancels)
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
 class InternalTransferBlock(object):
     def __init__(self):
         self.blockType = 5
@@ -233,43 +223,6 @@ def createOffchainWithdrawalBlock(state, data):
     block.merkleRootAfter = str(state.getRoot())
     return block
 
-
-def createOrderCancellationBlock(state, data):
-    block = OrderCancellationBlock()
-    block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.exchangeID = state.exchangeID
-    block.merkleRootBefore = str(state.getRoot())
-    block.operatorAccountID = int(data["operatorAccountID"])
-
-    for cancelInfo in data["cancels"]:
-        accountID = int(cancelInfo["accountID"])
-        orderTokenID = int(cancelInfo["orderTokenID"])
-        orderID = int(cancelInfo["orderID"])
-        feeTokenID = int(cancelInfo["feeTokenID"])
-        fee = int(cancelInfo["fee"])
-        label = int(cancelInfo["label"])
-
-        cancel = state.cancelOrder(block.exchangeID, accountID, orderTokenID, orderID,
-                                   block.operatorAccountID, feeTokenID, fee, label)
-
-        cancel.signature = cancelInfo["signature"]
-        block.cancels.append(cancel)
-
-    # Operator payments
-    account = state.getAccount(block.operatorAccountID)
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
-    proof = state._accountsTree.createProof(block.operatorAccountID)
-    for cancel in block.cancels:
-        cancel.balanceUpdateF_O = account.updateBalance(cancel.feeTokenID, int(cancel.feeValue))
-    state.updateAccountTree(block.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
-    rootAfter = state._accountsTree._root
-    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-
-    block.merkleRootAfter = str(state.getRoot())
-    return block
-
 def createInternalTransferBlock(state, data):
     block = InternalTransferBlock()
     block.onchainDataAvailability = data["onchainDataAvailability"]
@@ -285,10 +238,11 @@ def createInternalTransferBlock(state, data):
         feeTokenID = int(transInfo["feeTokenID"])
         fee = int(transInfo["fee"])
         label = int(transInfo["label"])
+        type = int(transInfo["type"])
 
         transfer = state.internalTransfer(block.exchangeID, block.operatorAccountID,
                                         accountFromID, accountToID, transTokenID,
-                                        amount, feeTokenID, fee, label)
+                                        amount, feeTokenID, fee, label, type)
 
         transfer.signature = transInfo["signature"]
         block.transfers.append(transfer)
@@ -329,8 +283,6 @@ def main(exchangeID, blockIdx, blockType, inputFilename, outputFilename):
         block = createOnchainWithdrawalBlock(state, data)
     elif blockType == "3":
         block = createOffchainWithdrawalBlock(state, data)
-    elif blockType == "4":
-        block = createOrderCancellationBlock(state, data)
     elif blockType == "5":
         block = createInternalTransferBlock(state, data)
     else:

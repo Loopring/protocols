@@ -15,13 +15,14 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
+
+import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/BurnableERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 
 import "./ExchangeAccounts.sol";
-import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
 
@@ -66,23 +67,24 @@ library ExchangeDeposits
         timestamp = request.timestamp;
     }
 
-    function depositTo(
+    function deposit(
         ExchangeData.State storage S,
-        address recipient,
+        address from,
+        address to,
         address tokenAddress,
         uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
         external
     {
-        require(recipient != address(0), "ZERO_ADDRESS");
+        require(to != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
-        uint24 accountID = S.getAccountID(recipient);
+        uint24 accountID = S.getAccountID(to);
         ExchangeData.Account storage account = S.accounts[accountID];
 
         // We allow invalid public keys to be set for accounts to
@@ -99,7 +101,8 @@ library ExchangeDeposits
 
         // Transfer the tokens to this contract
         transferDeposit(
-            msg.sender,
+            S,
+            from,
             tokenAddress,
             amount,
             feeETH
@@ -134,8 +137,6 @@ library ExchangeDeposits
         );
         S.deposits.push(_deposit);
 
-        S.tokenBalances[tokenAddress] = S.tokenBalances[tokenAddress].add(amount);
-
         emit DepositRequested(
             uint32(S.depositChain.length - 1),
             accountID,
@@ -153,8 +154,7 @@ library ExchangeDeposits
         view
         returns (uint)
     {
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-        return currentBlock.numDepositRequestsCommitted;
+        return S.numDepositRequestsCommitted;
     }
 
     function getNumAvailableDepositSlots(
@@ -169,7 +169,8 @@ library ExchangeDeposits
     }
 
     function transferDeposit(
-        address source,
+        ExchangeData.State storage S,
+        address from,
         address tokenAddress,
         uint    amount,
         uint    feeETH
@@ -177,8 +178,10 @@ library ExchangeDeposits
         private
     {
         uint totalRequiredETH = feeETH;
+        uint depositValueETH = 0;
         if (tokenAddress == address(0)) {
             totalRequiredETH = totalRequiredETH.add(amount);
+            depositValueETH = amount;
         }
 
         require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
@@ -187,13 +190,7 @@ library ExchangeDeposits
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
-        // Transfer the tokens from the owner into this contract
-        if (amount > 0 && tokenAddress != address(0)) {
-            tokenAddress.safeTransferFromAndVerify(
-                source,
-                address(this),
-                amount
-            );
-        }
+        // Transfer the tokens to the deposit contract (excluding the ETH fee)
+        S.depositContract.deposit.value(depositValueETH)(from, tokenAddress, amount);
     }
 }

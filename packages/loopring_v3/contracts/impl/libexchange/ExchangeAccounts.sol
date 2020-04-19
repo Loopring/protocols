@@ -15,13 +15,14 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 
 import "../../iface/IAddressWhitelist.sol";
+import "../../iface/ExchangeData.sol";
 
 import "./ExchangeBalances.sol";
-import "./ExchangeData.sol";
 
 
 /// @title ExchangeAccounts.
@@ -67,9 +68,10 @@ library ExchangeAccounts
 
     function createOrUpdateAccount(
         ExchangeData.State storage S,
-        uint  pubKeyX,
-        uint  pubKeyY,
-        bytes calldata permission
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY,
+        bytes   calldata permission
         )
         external
         returns (
@@ -78,19 +80,19 @@ library ExchangeAccounts
             bool   isAccountUpdated
         )
     {
-        isAccountNew = (S.ownerToAccountId[msg.sender] == 0);
+        isAccountNew = (S.ownerToAccountId[owner] == 0);
         if (isAccountNew) {
             if (S.addressWhitelist != address(0)) {
                 require(
                     IAddressWhitelist(S.addressWhitelist)
-                        .isAddressWhitelisted(msg.sender, permission),
+                        .isAddressWhitelisted(owner, permission),
                     "ADDRESS_NOT_WHITELISTED"
                 );
             }
-            accountID = createAccount(S, pubKeyX, pubKeyY);
+            accountID = createAccount(S, owner, pubKeyX, pubKeyY);
             isAccountUpdated = false;
         } else {
-            (accountID, isAccountUpdated) = updateAccount(S, pubKeyX, pubKeyY);
+            (accountID, isAccountUpdated) = updateAccount(S, owner, pubKeyX, pubKeyY);
         }
     }
 
@@ -110,27 +112,28 @@ library ExchangeAccounts
 
     function createAccount(
         ExchangeData.State storage S,
-        uint pubKeyX,
-        uint pubKeyY
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY
         )
         private
         returns (uint24 accountID)
     {
         require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
-        require(S.ownerToAccountId[msg.sender] == 0, "ACCOUNT_EXISTS");
+        require(S.ownerToAccountId[owner] == 0, "ACCOUNT_EXISTS");
 
         accountID = uint24(S.accounts.length);
         ExchangeData.Account memory account = ExchangeData.Account(
-            msg.sender,
+            owner,
             pubKeyX,
             pubKeyY
         );
 
         S.accounts.push(account);
-        S.ownerToAccountId[msg.sender] = accountID + 1;
+        S.ownerToAccountId[owner] = accountID + 1;
 
         emit AccountCreated(
-            msg.sender,
+            owner,
             accountID,
             pubKeyX,
             pubKeyY
@@ -139,8 +142,9 @@ library ExchangeAccounts
 
     function updateAccount(
         ExchangeData.State storage S,
-        uint pubKeyX,
-        uint pubKeyY
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY
         )
         private
         returns (
@@ -148,9 +152,9 @@ library ExchangeAccounts
             bool   isAccountUpdated
         )
     {
-        require(S.ownerToAccountId[msg.sender] != 0, "ACCOUNT_NOT_EXIST");
+        require(S.ownerToAccountId[owner] != 0, "ACCOUNT_NOT_EXIST");
 
-        accountID = S.ownerToAccountId[msg.sender] - 1;
+        accountID = S.ownerToAccountId[owner] - 1;
         ExchangeData.Account storage account = S.accounts[accountID];
 
         isAccountUpdated = (account.pubKeyX != pubKeyX || account.pubKeyY != pubKeyY);
@@ -159,7 +163,7 @@ library ExchangeAccounts
             account.pubKeyY = pubKeyY;
 
             emit AccountUpdated(
-                msg.sender,
+                owner,
                 accountID,
                 pubKeyX,
                 pubKeyY

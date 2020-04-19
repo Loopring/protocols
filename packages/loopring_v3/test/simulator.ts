@@ -5,7 +5,6 @@ import { logDebug, logInfo } from "./logs";
 import {
   AccountLeaf,
   Balance,
-  Cancel,
   Deposit,
   DetailedTokenTransfer,
   ExchangeState,
@@ -102,7 +101,7 @@ export class Simulator {
       const amountToWithdraw = shutdown ? balance : amountToWithdrawMin;
       const amountWithdrawn = roundToFloatValue(
         amountToWithdraw,
-        Constants.Float28Encoding
+        Constants.Float24Encoding
       );
 
       let amountToSubtract = amountWithdrawn;
@@ -147,7 +146,7 @@ export class Simulator {
       : withdrawal.amount;
     const amountWithdrawn = roundToFloatValue(
       amountToWithdraw,
-      Constants.Float28Encoding
+      Constants.Float24Encoding
     );
 
     // Update the Merkle tree with the input data
@@ -209,7 +208,8 @@ export class Simulator {
     tokenID: number,
     amountWithdrawn: BN,
     feeTokenID: number,
-    fee: BN
+    fee: BN,
+    type: number
   ) {
     const newExchangeState = this.copyExchangeState(exchangeState);
 
@@ -225,7 +225,9 @@ export class Simulator {
     accountFrom.balances[tokenID].balance = accountFrom.balances[
       tokenID
     ].balance.sub(amountWithdrawn);
-    accountFrom.nonce++;
+    if (type === 0) {
+      accountFrom.nonce++;
+    }
 
     // Update balance to
     accountTo.balances[tokenID].balance = accountTo.balances[
@@ -267,7 +269,8 @@ export class Simulator {
       transfer.transTokenID,
       amountTrans,
       transfer.feeTokenID,
-      fee
+      fee,
+      transfer.type
     );
 
     const paymentsFrom: DetailedTokenTransfer = {
@@ -303,77 +306,6 @@ export class Simulator {
       detailedTransfers: [paymentsFrom]
     };
     return simulatorReport;
-  }
-
-  public cancelOrderFromInputData(
-    cancel: Cancel,
-    exchangeState: ExchangeState,
-    operatorAccountID: number
-  ) {
-    const fee = roundToFloatValue(cancel.fee, Constants.Float16Encoding);
-
-    // Update the Merkle tree with the input data
-    const newExchangeState = this.cancelOrder(
-      exchangeState,
-      operatorAccountID,
-      cancel.accountID,
-      cancel.orderTokenID,
-      cancel.orderID,
-      cancel.feeTokenID,
-      fee
-    );
-
-    const simulatorReport: SimulatorReport = {
-      exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState
-    };
-    return simulatorReport;
-  }
-
-  public cancelOrder(
-    exchangeState: ExchangeState,
-    operatorAccountID: number,
-    accountID: number,
-    orderTokenID: number,
-    orderID: number,
-    feeTokenID: number,
-    fee: BN
-  ) {
-    const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const account = newExchangeState.accounts[accountID];
-    const tradeHistorySlot =
-      orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
-
-    // Update balance
-    account.balances[feeTokenID].balance = account.balances[
-      feeTokenID
-    ].balance.sub(fee);
-    account.nonce++;
-
-    // Update trade history
-    if (!account.balances[orderTokenID].tradeHistory[tradeHistorySlot]) {
-      account.balances[orderTokenID].tradeHistory[tradeHistorySlot] = {
-        filled: new BN(0),
-        cancelled: false,
-        orderID: 0
-      };
-    }
-    const tradeHistory =
-      account.balances[orderTokenID].tradeHistory[tradeHistorySlot];
-    if (tradeHistory.orderID < orderID) {
-      tradeHistory.filled = new BN(0);
-    }
-    tradeHistory.cancelled = true;
-    tradeHistory.orderID = orderID;
-
-    // Update operator
-    const operator = newExchangeState.accounts[operatorAccountID];
-    operator.balances[feeTokenID].balance = operator.balances[
-      feeTokenID
-    ].balance.add(fee);
-
-    return newExchangeState;
   }
 
   public settleRingFromInputData(
@@ -718,8 +650,6 @@ export class Simulator {
       tradeHistoryA.filled = tradeHistoryA.filled.add(
         buyA ? s.fillBA : s.fillSA
       );
-      tradeHistoryA.cancelled =
-        orderIdA > tradeHistoryA.orderID ? false : tradeHistoryA.cancelled;
       tradeHistoryA.orderID =
         orderIdA > tradeHistoryA.orderID ? orderIdA : tradeHistoryA.orderID;
     }
@@ -734,8 +664,6 @@ export class Simulator {
       tradeHistoryB.filled = tradeHistoryB.filled.add(
         buyB ? s.fillBB : s.fillSB
       );
-      tradeHistoryB.cancelled =
-        orderIdB > tradeHistoryB.orderID ? false : tradeHistoryB.cancelled;
       tradeHistoryB.orderID =
         orderIdB > tradeHistoryB.orderID ? orderIdB : tradeHistoryB.orderID;
     }
@@ -816,138 +744,115 @@ export class Simulator {
     );
 
     if (valid) {
-      const tradeHistory = this.getTradeHistory(order, account);
-      if (tradeHistory.cancelled) {
-        assert(
-          fillS.isZero(),
-          "fillS needS to be 0 when the order is cancelled"
-        );
-        assert(
-          fillB.isZero(),
-          "fillB needS to be 0 when the order is cancelled"
-        );
-      } else {
-        if (!fillS.isZero() || !fillB.isZero()) {
-          const multiplier = new BN(web3.utils.toWei("1000", "ether"));
-          const orderRate = order.amountS.mul(multiplier).div(order.amountB);
-          const rate = fillS.mul(multiplier).div(fillB);
-          let targetRate: BN;
-          if (isMakerOrder) {
-            targetRate = makerOrder.amountS
-              .mul(multiplier)
-              .div(makerOrder.amountB);
-          } else {
-            targetRate = makerOrder.amountB
-              .mul(multiplier)
-              .div(makerOrder.amountS);
-          }
-          assert(
-            targetRate
-              .mul(new BN(100))
-              .sub(rate.mul(new BN(100)))
-              .abs()
-              .lte(targetRate),
-            "fill rate needs to match maker order rate"
-          );
-          assert(
-            rate
-              .mul(multiplier)
-              .lte(orderRate.mul(multiplier.add(multiplier.div(new BN(100))))),
-            "fill rate needs to match or be better than the order rate"
-          );
+      const filled = this.getFilled(order, account);
+      if (!fillS.isZero() || !fillB.isZero()) {
+        const multiplier = new BN(web3.utils.toWei("1000", "ether"));
+        const orderRate = order.amountS.mul(multiplier).div(order.amountB);
+        const rate = fillS.mul(multiplier).div(fillB);
+        let targetRate: BN;
+        if (isMakerOrder) {
+          targetRate = makerOrder.amountS
+            .mul(multiplier)
+            .div(makerOrder.amountB);
+        } else {
+          targetRate = makerOrder.amountB
+            .mul(multiplier)
+            .div(makerOrder.amountS);
         }
-        if (order.buy) {
+        assert(
+          targetRate
+            .mul(new BN(100))
+            .sub(rate.mul(new BN(100)))
+            .abs()
+            .lte(targetRate),
+          "fill rate needs to match maker order rate"
+        );
+        assert(
+          rate
+            .mul(multiplier)
+            .lte(orderRate.mul(multiplier.add(multiplier.div(new BN(100))))),
+          "fill rate needs to match or be better than the order rate"
+        );
+      }
+      if (order.buy) {
+        assert(
+          fillB.lte(order.amountB),
+          "can never buy more than specified in the order"
+        );
+        if (filled.lte(order.amountB)) {
           assert(
-            fillB.lte(order.amountB),
+            filled.add(fillB).lte(order.amountB),
             "can never buy more than specified in the order"
           );
-          if (tradeHistory.filled.lte(order.amountB)) {
-            assert(
-              tradeHistory.filled.add(fillB).lte(order.amountB),
-              "can never buy more than specified in the order"
-            );
-          } else {
-            assert(
-              fillS.isZero(),
-              "fillS needS to be 0 when filled target is reached already"
-            );
-            assert(
-              fillB.isZero(),
-              "fillB needS to be 0 when filled target is reached already"
-            );
-          }
         } else {
           assert(
-            fillS.lte(order.amountS),
-            "can never sell more than specified in the order"
+            fillS.isZero(),
+            "fillS needS to be 0 when filled target is reached already"
           );
-          if (tradeHistory.filled.lte(order.amountS)) {
-            assert(
-              tradeHistory.filled.add(fillS).lte(order.amountS),
-              "can never buy more than specified in the order"
-            );
-          } else {
-            assert(
-              fillS.isZero(),
-              "fillS needS to be 0 when filled target is reached already"
-            );
-            assert(
-              fillB.isZero(),
-              "fillB needS to be 0 when filled target is reached already"
-            );
-          }
+          assert(
+            fillB.isZero(),
+            "fillB needS to be 0 when filled target is reached already"
+          );
+        }
+      } else {
+        assert(
+          fillS.lte(order.amountS),
+          "can never sell more than specified in the order"
+        );
+        if (filled.lte(order.amountS)) {
+          assert(
+            filled.add(fillS).lte(order.amountS),
+            "can never buy more than specified in the order"
+          );
+        } else {
+          assert(
+            fillS.isZero(),
+            "fillS needS to be 0 when filled target is reached already"
+          );
+          assert(
+            fillB.isZero(),
+            "fillB needS to be 0 when filled target is reached already"
+          );
         }
       }
-    } else {
-      assert(fillS.isZero(), "fillS needS to be 0 when the trade is invalid");
-      assert(fillB.isZero(), "fillB needS to be 0 when the trade is invalid");
     }
   }
 
-  private getTradeHistory(order: OrderInfo, accountData: any) {
-    const tradeHistorySlot =
-      order.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+  private getFilled(order: OrderInfo, accountData: any) {
+    const numSlots = 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+    const tradeHistorySlot = order.orderID % numSlots;
     let tradeHistory =
       accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     if (!tradeHistory) {
       tradeHistory = {
         filled: new BN(0),
-        cancelled: false,
         orderID: 0
       };
     }
     // Trade history trimming
+    const tradeHistoryOrderID =
+      tradeHistory.orderID === 0 ? tradeHistorySlot : tradeHistory.orderID;
     const filled =
-      tradeHistory.orderID < order.orderID ? new BN(0) : tradeHistory.filled;
-    const cancelled =
-      tradeHistory.orderID === order.orderID
-        ? tradeHistory.cancelled
-        : tradeHistory.orderID < order.orderID
-        ? false
-        : true;
-    return { filled, cancelled };
+      tradeHistoryOrderID === order.orderID ? tradeHistory.filled : new BN(0);
+    return filled;
   }
 
   private getMaxFillAmounts(order: OrderInfo, accountData: any) {
-    const tradeHistory = this.getTradeHistory(order, accountData);
+    const tradeHistoryFilled = this.getFilled(order, accountData);
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
 
     let remainingS = new BN(0);
     if (order.buy) {
-      const filled = order.amountB.lt(tradeHistory.filled)
+      const filled = order.amountB.lt(tradeHistoryFilled)
         ? order.amountB
-        : tradeHistory.filled;
-      const remainingB = tradeHistory.cancelled
-        ? new BN(0)
-        : order.amountB.sub(filled);
+        : tradeHistoryFilled;
+      const remainingB = order.amountB.sub(filled);
       remainingS = remainingB.mul(order.amountS).div(order.amountB);
     } else {
-      const filled = order.amountS.lt(tradeHistory.filled)
+      const filled = order.amountS.lt(tradeHistoryFilled)
         ? order.amountS
-        : tradeHistory.filled;
-      remainingS = tradeHistory.cancelled
-        ? new BN(0)
-        : order.amountS.sub(filled);
+        : tradeHistoryFilled;
+      remainingS = order.amountS.sub(filled);
     }
     const fillAmountS = balanceS.lt(remainingS) ? balanceS : remainingS;
     const fillAmountB = fillAmountS.mul(order.amountB).div(order.amountS);
@@ -1003,8 +908,8 @@ export class Simulator {
   ) {
     return fillAmountS
       .mul(amountB)
-      .mul(new BN(100))
-      .lt(fillAmountB.mul(amountS).mul(new BN(101)));
+      .mul(new BN(1000))
+      .lte(fillAmountB.mul(amountS).mul(new BN(1001)));
   }
 
   private checkValid(
@@ -1059,7 +964,6 @@ export class Simulator {
         const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
         tradeHistory[Number(orderID)] = {
           filled: tradeHistoryValue.filled,
-          cancelled: tradeHistoryValue.cancelled,
           orderID: tradeHistoryValue.orderID
         };
       }

@@ -14,16 +14,6 @@ export enum BlockType {
 }
 
 /**
- * The state of the block.
- */
-export enum BlockState {
-  NEW = 0,
-  COMMITTED,
-  VERIFIED,
-  FINALIZED
-}
-
-/**
  * The method in which an exchange is created.
  */
 export enum ForgeMode {
@@ -58,23 +48,16 @@ export interface Block {
   /** The sender of the block (tx.origin). Can be different from `operator` when an operator contract is used. */
   origin: string;
 
-  /** The state of the block. */
-  blockState: BlockState;
-
-  /** Whether the block fee (for blocks handling on-chain requests) was withdrawn. */
-  blockFeeWithdrawn: boolean;
-  /** The block fee withdrawn for this block (in ETH). */
-  blockFeeAmountWithdrawn: BN;
+  /** The block fee received for this block (in ETH). */
+  blockFeeRewarded: BN;
+  /** The block fee fined for this block (in ETH). */
+  blockFeeFined: BN;
 
   /** The Merkle root of the Merkle tree after doing all requests in the block. */
   merkleRoot: string;
 
-  /** The time the block was committed. */
-  committedTimestamp: number;
-  /** The time the block was verified. */
-  verifiedTimestamp?: number;
-  /** The time the block was finalized. */
-  finalizedTimestamp?: number;
+  /** The time the block was submitted. */
+  timestamp: number;
 
   /** The number of requests processed in this block. For on-chain request blocks this can differ from `blockSize`. */
   numRequestsProcessed: number;
@@ -96,12 +79,6 @@ export interface Block {
 
   /** The Ethereum transaction in which this block was committed. */
   transactionHash: string;
-
-  /**
-   * Whether this block is valid. An invalid block with e.g. invalid on-chain data-availability data cannot be processed correctly.
-   * Is always true for valid blocks, but can be false for invalid blocks.
-   */
-  valid: boolean;
 }
 
 /**
@@ -293,6 +270,8 @@ export interface InternalTransfer {
   feeTokenID: number;
   /** The fee paid to the operator. */
   fee: BN;
+  /** The type of the transfer. */
+  type: number;
 }
 
 /**
@@ -301,8 +280,6 @@ export interface InternalTransfer {
 export interface TradeHistory {
   /** How much the order is filled. */
   filled: BN;
-  /** Wheter the order is cancelled. */
-  cancelled: boolean;
   /** The orderID of the order the trade history is currently stored for. */
   orderID: number;
 }

@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import fs = require("fs");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
-import { ExchangeTestUtil } from "./testExchangeUtil";
+import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -46,7 +46,7 @@ contract("Exchange", (accounts: string[]) => {
     // console.log(externalFunctions);
 
     for (const externalFunction of externalFunctions) {
-      // Do not test the following methods inherited from Clailable.
+      // Do not test the following methods inherited from Claimable.
       if (
         externalFunction.name == "transferOwnership" ||
         externalFunction.name == "renounceOwnership" ||
@@ -88,6 +88,21 @@ contract("Exchange", (accounts: string[]) => {
             values.push(Constants.zeroAddress);
           } else if (input.type === "bytes") {
             values.push(web3.utils.hexToBytes("0x"));
+          } else if (
+            input.internalType.startsWith("struct ExchangeData.Block[]")
+          ) {
+            const block: OnchainBlock = {
+              blockType: 0,
+              blockSize: 1,
+              blockVersion: 0,
+              data: Constants.emptyBytes,
+              proof: [0, 0, 0, 0, 0, 0, 0, 0],
+              offchainData: Constants.emptyBytes,
+              auxiliaryData: Constants.emptyBytes
+            };
+            values.push([block]);
+          } else if (input.type.startsWith("uint256[][]")) {
+            values.push([new Array(1).fill("0")]);
           } else if (input.type.startsWith("uint256[]")) {
             values.push(new Array(1).fill("0"));
           } else if (input.type.startsWith("uint256[8]")) {
@@ -110,6 +125,7 @@ contract("Exchange", (accounts: string[]) => {
         const ethToSend = accountCreationFee.add(depositFee);
         await expectThrow(
           exchange.updateAccountAndDeposit(
+            owner,
             new BN(1),
             new BN(0),
             testTokenAddress,
@@ -123,6 +139,7 @@ contract("Exchange", (accounts: string[]) => {
         // Disable the test and deposit again
         await TestToken.setTestCase(await TestToken.TEST_NOTHING());
         exchange.updateAccountAndDeposit(
+          owner,
           new BN(1),
           new BN(0),
           testTokenAddress,

@@ -18,16 +18,27 @@ pragma solidity ^0.5.11;
 
 import "../iface/IExchangeV3.sol";
 
+import "../lib/AddressUtil.sol";
 import "../lib/MathUint.sol";
 
 
-contract AccountContract {
+contract TestAccountContract {
 
+    using AddressUtil       for address payable;
     using MathUint          for uint;
 
     IExchangeV3 exchange;
 
     uint[16] private dummyStorageVariables;
+
+    modifier refund()
+    {
+        // Send surplus to msg.sender
+        uint balanceBefore = address(this).balance.sub(msg.value);
+        _;
+        uint balanceAfter = address(this).balance;
+        msg.sender.sendETHAndVerify(balanceAfter.sub(balanceBefore), gasleft());
+    }
 
     constructor(
         address _exchangeAddress
@@ -38,6 +49,7 @@ contract AccountContract {
     }
 
     function updateAccountAndDeposit(
+        address owner,
         uint    pubKeyX,
         uint    pubKeyY,
         address token,
@@ -46,23 +58,21 @@ contract AccountContract {
         )
         external
         payable
+        refund
         returns (
             uint24 accountID,
             bool   isAccountNew,
             bool   isAccountUpdated
         )
     {
-        // Send surplus to msg.sender
-        uint balanceBefore = address(this).balance.sub(msg.value);
         (accountID, isAccountNew, isAccountUpdated) = exchange.updateAccountAndDeposit.value(msg.value)(
+            owner,
             pubKeyX,
             pubKeyY,
             token,
             amount,
             permission
         );
-        uint balanceAfter = address(this).balance;
-        msg.sender.transfer(balanceAfter.sub(balanceBefore));
     }
 
     function withdraw(
@@ -71,12 +81,9 @@ contract AccountContract {
         )
         external
         payable
+        refund
     {
-        // Send surplus to msg.sender
-        uint balanceBefore = address(this).balance.sub(msg.value);
-        exchange.withdraw.value(msg.value)(token, amount);
-        uint balanceAfter = address(this).balance;
-        msg.sender.transfer(balanceAfter.sub(balanceBefore));
+        exchange.withdraw.value(msg.value)(address(this), token, amount);
     }
 
     function()

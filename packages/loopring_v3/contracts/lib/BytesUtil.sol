@@ -65,6 +65,50 @@ library BytesUtil
         return uint16(bytesToUintX(b, offset, 2) & 0xFFFF);
     }
 
+    function bytesToUint24(
+        bytes memory b,
+        uint  offset
+        )
+        internal
+        pure
+        returns (uint24)
+    {
+        return uint24(bytesToUintX(b, offset, 3) & 0xFFFFFF);
+    }
+
+    function bytesToUint32(
+        bytes memory b,
+        uint  offset
+        )
+        internal
+        pure
+        returns (uint32)
+    {
+        return uint32(bytesToUintX(b, offset, 4) & 0xFFFFFFFF);
+    }
+
+    function bytesToUint56(
+        bytes memory b,
+        uint  offset
+        )
+        internal
+        pure
+        returns (uint56)
+    {
+        return uint56(bytesToUintX(b, offset, 7) & 0xFFFFFFFFFFFFFF);
+    }
+
+    function bytesToUint64(
+        bytes memory b,
+        uint  offset
+        )
+        internal
+        pure
+        returns (uint64)
+    {
+        return uint64(bytesToUintX(b, offset, 8) & 0xFFFFFFFFFFFFFFFF);
+    }
+
     function bytesToBytes4(
         bytes memory b,
         uint  offset

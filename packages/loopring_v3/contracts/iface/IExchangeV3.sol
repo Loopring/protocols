@@ -15,9 +15,10 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
 import "../iface/IExchange.sol";
-
+import "./ExchangeData.sol";
 
 /// @title IExchangeV3
 /// @dev Note that Claimable and RentrancyGuard are inherited here to
@@ -77,21 +78,9 @@ contract IExchangeV3 is IExchange
         uint            timestamp
     );
 
-    event BlockCommitted(
+    event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32 indexed publicDataHash
-    );
-
-    event BlockVerified(
-        uint    indexed blockIdx
-    );
-
-    event BlockFinalized(
-        uint    indexed blockIdx
-    );
-
-    event Revert(
-        uint    indexed blockIdx
     );
 
     event DepositRequested(
@@ -105,7 +94,8 @@ contract IExchangeV3 is IExchange
 
     event BlockFeeWithdrawn(
         uint    indexed blockIdx,
-        uint            amount
+        uint            amountRewarded,
+        uint            amountFined
     );
 
     event WithdrawalRequested(
@@ -136,12 +126,26 @@ contract IExchangeV3 is IExchange
         uint8 previousMakerFeeBips
     );
 
-    event TokenNotOwnedByUsersWithdrawn(
-        address sender,
-        address token,
-        address feeVault,
-        uint    amount
+    event ConditionalTransferApproved(
+        uint24  indexed from,
+        uint24  indexed to,
+        uint16          token,
+        uint            amount
     );
+
+    event ConditionalTransferConsumed(
+        uint24  indexed from,
+        uint24  indexed to,
+        uint16          token,
+        uint            amount
+    );
+
+    event AgentAuthorized(
+        address indexed owner,
+        address indexed agent,
+        bool            authorized
+    );
+
     // -- Initialization --
     /// @dev Initializes this exchange. This method can only be called once.
     /// @param  owner The owner of this exchange.
@@ -164,11 +168,8 @@ contract IExchangeV3 is IExchange
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants in the following order:
     ///         SNARK_SCALAR_FIELD
-    ///         MAX_PROOF_GENERATION_TIME_IN_SECONDS
-    ///         MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
     ///         MAX_OPEN_DEPOSIT_REQUESTS
     ///         MAX_OPEN_WITHDRAWAL_REQUESTS
-    ///         MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE
     ///         MAX_AGE_REQUEST_UNTIL_FORCED
     ///         MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE
     ///         MAX_TIME_IN_SHUTDOWN_BASE
@@ -176,17 +177,14 @@ contract IExchangeV3 is IExchange
     ///         TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS
     ///         MAX_NUM_TOKENS
     ///         MAX_NUM_ACCOUNTS
-    ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS
-    ///         MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE
     ///         FEE_BLOCK_FINE_START_TIME
     ///         FEE_BLOCK_FINE_MAX_DURATION
-    ///         MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS
     ///         MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
     ///         GAS_LIMIT_SEND_TOKENS
     function getConstants()
         external
         pure
-        returns(uint[20] memory);
+        returns(uint[14] memory);
 
     // -- Mode --
     /// @dev Returns hether the exchange is in withdrawal mode.
@@ -235,7 +233,7 @@ contract IExchangeV3 is IExchange
             uint   pubKeyY
         );
 
-    /// @dev Submits an onchain request to create a new account for msg.sender or
+    /// @dev Submits an onchain request to create a new account for owner or
     ///      update its existing account by replacing its trading public key.
     ///      The total fee in ETH that the user needs to pay is:
     ///          depositFee +
@@ -250,6 +248,9 @@ contract IExchangeV3 is IExchange
     ///      Calling this method with a different trading public key will effectively
     ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
     ///
+    ///      Can only be called by an agent.
+    ///
+    /// @param  owner The owner of the account
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key.
     ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
@@ -259,9 +260,10 @@ contract IExchangeV3 is IExchange
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
     function createOrUpdateAccount(
-        uint  pubKeyX,
-        uint  pubKeyY,
-        bytes calldata permission
+        address owner,
+        uint    pubKeyX,
+        uint    pubKeyY,
+        bytes   calldata permission
         )
         external
         payable
@@ -352,6 +354,9 @@ contract IExchangeV3 is IExchange
 
     /// @dev Disables users to submit onchain deposit requests for a token.
     ///      This function is only callable by the exchange owner.
+    ///
+    ///      Can only be called by the exchange owner.
+    ///
     /// @param  tokenAddress The token's address
     function disableTokenDeposit(
         address tokenAddress
@@ -360,6 +365,9 @@ contract IExchangeV3 is IExchange
 
     /// @dev Enable users to submit onchain deposit requests for a token.
     ///      This function is only callable by the exchange owner.
+    ///
+    ///      Can only be called by the exchange owner.
+    ///
     /// @param  tokenAddress The token's address
     function enableTokenDeposit(
         address tokenAddress
@@ -393,16 +401,6 @@ contract IExchangeV3 is IExchange
         external
         returns (uint);
 
-    /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops, to fee vault.
-    ///
-    /// @param tokenAddress The adderss of the token.
-    /// @return The amount of token withdrawn
-    function withdrawTokenNotOwnedByUsers(
-        address tokenAddress
-        )
-        external
-        returns (uint);
-
     /// @dev Withdraws the amount staked for this exchange.
     ///      This can always be called.
     ///      Can only be called by the exchange owner.
@@ -417,68 +415,39 @@ contract IExchangeV3 is IExchange
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.
     ///
-    ///      Currently this will only burn the stake of the exchange if there are
-    ///      unfinalized blocks and the exchange is in withdrawal mode.
+    ///      Currently this will only burn the stake of the exchange if
+    ///      the exchange is in withdrawal mode.
     function burnExchangeStake()
         external;
 
     // -- Blocks --
+
+    /// @dev Gets the current Merkle root of this exchange's virtual blockchain.
+    /// @return The current Merkle root.
+    function getMerkleRoot()
+        external
+        view
+        returns (bytes32);
+
     /// @dev Gets the height of this exchange's virtual blockchain. The block height for a
-    ///      new exchange is 0.
+    ///      new exchange is 1.
     /// @return The virtual blockchain height which is the index of the last block.
     function getBlockHeight()
         external
         view
         returns (uint);
 
-    /// @dev Gets the number of finalized (i.e. irreversible) blocks.
-    /// @return The number of finalized blocks which is the index of the last finalized block.
-    function getNumBlocksFinalized()
-        external
-        view
-        returns (uint);
-
-    /// @dev Returns the block data for the specified block index.
-    /// @param  blockIdx The block index
-    /// @return merkleRoot The merkle root
-    /// @return publicDataHash The hash of all public data. Used as public input for the ZKP.
-    /// @return blockState The current state of the block
-    /// @return blockType The type of work done in the block
-    /// @return blockSize The number of requests handled in the block
-    /// @return timestamp The time the block was committed on-chain
-    /// @return blockState The current state of the block
-    /// @return numDepositRequestsCommitted The total number of deposit requests committed
-    /// @return numWithdrawalRequestsCommitted The total number of withdrawal requests committed
-    /// @return blockFeeWithdrawn True if the block fee has been withdrawn, else false
-    /// @return numWithdrawalsDistributed The number of withdrawals that have been done for this block
-    function getBlock(
-        uint blockIdx
-        )
-        external
-        view
-        returns (
-            bytes32 merkleRoot,
-            bytes32 publicDataHash,
-            uint8   blockState,
-            uint8   blockType,
-            uint16  blockSize,
-            uint32  timestamp,
-            uint32  numDepositRequestsCommitted,
-            uint32  numWithdrawalRequestsCommitted,
-            bool    blockFeeWithdrawn,
-            uint16  numWithdrawalsDistributed
-        );
-
-    /// @dev Commits a new block to the virtual blockchain without the proof.
-    ///      This function is only callable by the exchange operator.
+    /// @dev Sumbits new blocks to the rollup blockchain.
     ///
-    /// @param blockType The type of the new block
-    /// @param blockSize The number of onchain or offchain requests/settlements
+    ///      This function can only be called by the exchange operator.
+    ///
+    /// @param blocks The blocks being submitted
+    ///      - blockType: The type of the new block
+    ///      - blockSize: The number of onchain or offchain requests/settlements
     ///        that have been processed in this block
-    /// @param blockVersion The circuit version to use for verifying the block
-    /// @param data The data for this block -
+    ///      - blockVersion: The circuit version to use for verifying the block
+    ///      - data: The data for this block -
     ///        For all block types:
-    ///            - Compression type: 1 bytes
     ///            - Exchange ID: 4 bytes
     ///            - Old merkle root: 32 bytes
     ///            - New merkle root: 32 bytes
@@ -499,16 +468,17 @@ contract IExchangeV3 is IExchange
     ///            - Number of withdrawals processed: 4 bytes
     ///            - For every withdrawal:
     ///                - Token ID: 1 bytes
-    ///                - Account ID: 2,5 bytes
-    ///                - Amount: 3,5 bytes
+    ///                - Account ID: 3 bytes
+    ///                - Amount: 3 bytes
     ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
     ///            - For every withdrawal:
     ///                - Token ID: 1 bytes
-    ///                - Account ID: 2,5 bytes
-    ///                - Amount: 3,5 bytes
+    ///                - Account ID: 3 bytes
+    ///                - Amount: 3 bytes
     ///            - Label hash: 32 bytes
-    ///        For ORDER_CANCELLATION blocks add the following data:
+    ///        For INTERNAL_TRANSFER blocks add the following data:
     ///            - Label hash: 32 bytes
+    ///            - Number of conditional transfers: 4 bytes
     ///
     ///        The 'onchain data availability' data (if enabled) is added
     ///        at the end. This allows anyone to recreate the Merkle tree
@@ -517,15 +487,14 @@ contract IExchangeV3 is IExchange
     ///        For RING_SETTLEMENT blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every ring
-    ///                - OrderA.orderID: 2,5 bytes
-    ///                - OrderB.orderID: 2,5 bytes
-    ///                - OrderA.accountID: 2,5 bytes
-    ///                - OrderB.accountID: 2,5 bytes
     ///                - For both Orders:
+    ///                    - accountID: 3 bytes
     ///                    - TokenS: 1 bytes
     ///                    - FillS: 3 bytes
     ///                    - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
     ///                                 feeOrRebateBips (6 bits)
+    ///                    - TradeHistoryData: 0 (1bit) | overwrite (1 bit) |
+    ///                                        tradeHistoryAddress (14 bits)
     ///        For DEPOSIT blocks add the following data:
     ///            - None
     ///        For ONCHAIN_WITHDRAWAL blocks add the following data:
@@ -535,72 +504,35 @@ contract IExchangeV3 is IExchange
     ///            - For every withdrawal:
     ///                - Fee token ID: 1 bytes
     ///                - Fee amount: 2 bytes
-    ///        For ORDER_CANCELLATION blocks add the following data:
+    ///        For INTERNAL_TRANSFER blocks add the following data:
     ///            - Operator account ID: 3 bytes
-    ///            - For every cancel:
-    ///                - Account ID: 2,5 bytes
-    ///                - Order ID: 2,5 bytes
-    ///                - Token ID: 1 bytes
-    ///                - Fee token ID: 1 bytes
-    ///                - Fee amount: 2 bytes
+    ///            - For every transfer:
+    ///                - Type: 1 byte (0: signature available, 1: conditional transfer)
+    ///                - From account ID: 3 bytes
+    ///                - To account ID: 3 bytes
+    ///                - Token ID: 1 byte
+    ///                - Amount: 3 bytes
+    ///                - Fee token ID: 1 byte
+    ///                - Fee: 2 bytes
     ///
     ///        The RING_SETTLEMENT data availability data is further transformed
     ///        to make it more compressible:
     ///        - To group more similar data together we don't store all data
     ///          for a ring next to each other but group them together for all rings.
     ///          For ALL rings, sequentially:
-    ///             - orderA.orderID + orderB.orderID
+    ///             - orderA.tradeHistoryData + orderB.tradeHistoryData
     ///             - orderA.accountID + orderB.accountID
     ///             - orderA.tokenS + orderB.tokenS
     ///             - orderA.fillS + orderB.fillS
     ///             - orderA.orderData
     ///             - orderB.orderData
     ///
-    ///        The data can be sent on-chain compressed. The data will be decompressed respecting the
-    ///        Compression type (the first byte in 'data'):
-    ///            - Mode 0: No compression. The data following the mode byte is used as is.
-    ///            - Mode 1: An IDecompressor address (20 bytes) is stored after the mode byte.
-    ///                      IDecompressor.decompress() will be called to decompress the following data.
-    /// @param offchainData Arbitrary data, mainly for off-chain data-availability, i.e.,
+    ///     - offchainData: Arbitrary data, mainly for off-chain data-availability, i.e.,
     ///        the multihash of the IPFS file that contains the block data.
-    function commitBlock(
-        uint8  blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
-        bytes  calldata data,
-        bytes  calldata offchainData
-        )
-        external;
-
-    /// @dev Submits ZK proofs onchain to verify previously committed blocks. Submitting an
-    ///      invalid proof will not change the state of the exchange. Note that proofs can
-    ///      be submitted in a different order than the blocks themselves.
-    ///
-    ///      Multiple blocks can be verified at once (in any order) IF they use the same circuit.
-    ///      This function will throw if blocks using different circuits need to be verified.
-    ///
-    ///      This method can only be called by the operator.
-    ///
-    /// @param blockIndices The 0-based index of the blocks to be verified with the given proofs
-    /// @param proofs The ZK proof for all blockIndices (proofs.length % 8 == 0).
-    function verifyBlocks(
-        uint[] calldata blockIndices,
-        uint[] calldata proofs
-        )
-        external;
-
-    /// @dev Reverts the exchange's virtual blockchain until a specific block index.
-    ///      Any non-finalized block can be reverted but there will be a fine in LRC.
-    ///
-    ///      This method can only be called by the operator when not in withdrawal mode.
-    ///
-    ///      In withdrawal mode anyone can call burnStake so the exchange still gets punished
-    ///      for committing blocks it does not prove.
-    ///
-    /// @param blockIdx The 0-based index of the block that does not have a valid proof within
-    ///        MAX_PROOF_GENERATION_TIME_IN_SECONDS seconds.
-    function revertBlock(
-        uint blockIdx
+    /// @param feeRecipient The address that will receive the onchain block rewards
+    function submitBlocks(
+        ExchangeData.Block[] calldata blocks,
+        address payable feeRecipient
         )
         external;
 
@@ -637,9 +569,12 @@ contract IExchangeV3 is IExchange
           uint32  timestamp
         );
 
-    /// @dev Deposits Ether or ERC20 tokens to the sender's account.
+    /// @dev Deposits Ether or ERC20 tokens to the owner's account.
+    ///
+    ///      This function is only callable by an agent of the account.
+    ///
     ///      This function will create a new account if no account exists
-    ///      for msg.sender, or update the existing account with the given trading
+    ///      for owner, or update the existing account with the given trading
     ///      public key when the account exists.
     ///
     ///      The total fee in ETH that the user needs to pay is:
@@ -655,6 +590,7 @@ contract IExchangeV3 is IExchange
     ///      Calling this method with a different trading public key will effectively
     ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
     ///
+    /// @param  owner The owner of the account
     /// @param  pubKeyX The first part of the account's trading EdDSA public key
     /// @param  pubKeyY The second part of the account's trading EdDSA public key
     /// @param  permission Data used for checking address whitelisting prior to
@@ -665,6 +601,7 @@ contract IExchangeV3 is IExchange
     /// @return isAccountNew True if this account is newly created, false if the account existed
     /// @return isAccountUpdated True if this account was updated, false otherwise
     function updateAccountAndDeposit(
+        address owner,
         uint    pubKeyX,
         uint    pubKeyY,
         address tokenAddress,
@@ -679,7 +616,9 @@ contract IExchangeV3 is IExchange
             bool   isAccountUpdated
         );
 
-    /// @dev Deposits Ether or ERC20 tokens to the sender's account.
+    /// @dev Deposits Ether or ERC20 tokens to the specified account.
+    ///
+    ///      This function is only callable by an agent of 'from'.
     ///
     ///      The total fee in ETH that the user needs to pay is 'depositFee'.
     ///      If the user sends too much ETH the surplus is sent back immediately.
@@ -692,33 +631,13 @@ contract IExchangeV3 is IExchange
     ///               tokens in total. If that happens, the user may lose token.
     ///               This token balance upper limit, however, is large enough for most scenarios.
     ///
+    /// @param from The address that deposits the funds to the exchange
+    /// @param to The account owner's address receiving the funds
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     function deposit(
-        address tokenAddress,
-        uint96  amount
-        )
-        external
-        payable;
-
-    /// @dev Deposits Ether or ERC20 tokens to a recipient account.
-    ///
-    ///      The total fee in ETH that the user needs to pay is 'depositFee'.
-    ///      If the user sends too much ETH the surplus is sent back immediately.
-    ///
-    ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
-    ///      and create the deposit to the offchain account.
-    ///
-    ///      Warning: the DEX UI should warn their users not to deposit more than 2^96 - 1
-    ///               tokens in total. If that happens, the user may lose token.
-    ///               This token balance upper limit, however, is large enough for most scenarios.
-    ///
-    /// @param recipient The address of the recipient
-    /// @param tokenAddress The adderss of the token, use `0x0` for Ether.
-    /// @param amount The amount of tokens to deposit
-    function depositTo(
-        address recipient,
+        address from,
+        address to,
         address tokenAddress,
         uint96  amount
         )
@@ -761,9 +680,9 @@ contract IExchangeV3 is IExchange
         );
 
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens. To withdraw
-    ///      all the balance, use a very large number for `amount`.
+    ///      the complete balance, use a very large number for `amount`.
     ///
-    ///      Only the owner of the account can request a withdrawal.
+    ///      This function is only callable by an agent of the account.
     ///
     ///      The total fee in ETH that the user needs to pay is 'withdrawalFee'.
     ///      If the user sends too much ETH the surplus is sent back immediately.
@@ -772,9 +691,11 @@ contract IExchangeV3 is IExchange
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
+    /// @param owner The address of the owner.
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
     function withdraw(
+        address owner,
         address tokenAddress,
         uint96  amount
         )
@@ -796,45 +717,6 @@ contract IExchangeV3 is IExchange
         )
         external
         payable;
-
-    /// @dev Allows an account owner to withdraw his funds using the balances stored
-    ///      in the Merkle tree. The funds will be sent to the owner of the account.
-    ///
-    ///      Trading pubKey matching the offchain Merkle tree need to be provided.
-    ///      The pubKey may already be reset to 0 when the exchange is shutdown.
-    ///      The pubKey passed in here is used to calculate the Merkle root, which
-    ///      needs to match perfectly with the offchain Merkle root. The onchain pubKey
-    ///      doesn't matter at all in withdrawal mode.
-    ///
-    ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
-    ///      committing blocks and is not able to commit anymore blocks).
-    ///
-    ///      This will NOT modify the onchain merkle root! The merkle root stored
-    ///      onchain will remain the same after the withdrawal. We store if the user
-    ///      has withdrawn the balance in State.withdrawnInWithdrawMode.
-    ///
-    /// @param  token The address of the token to withdraw the tokens for
-    /// @param  pubKeyX The first part of the public key of the account
-    /// @param  pubKeyY The second part of the public key of the account
-    /// @param  nonce The nonce of the account
-    /// @param  balance The balance of the account for the given token
-    /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
-    /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
-    ///                      The deepest hash in the tree is the 1st element of the array.
-    /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
-    ///                      token for the account. The deepest hash in the tree is the
-    ///                      1st element of the array.
-    function withdrawFromMerkleTree(
-        address  token,
-        uint     pubKeyX,
-        uint     pubKeyY,
-        uint32   nonce,
-        uint96   balance,
-        uint     tradeHistoryRoot,
-        uint[30] calldata accountMerkleProof,
-        uint[12] calldata balanceMerkleProof
-        )
-        external;
 
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
     ///      in the Merkle tree. The funds will be sent to the owner of the acount.
@@ -858,7 +740,7 @@ contract IExchangeV3 is IExchange
     /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
     ///                      token for the account. The deepest hash in the tree is the
     ///                      1st element of the array.
-    function withdrawFromMerkleTreeFor(
+    function withdrawFromMerkleTree(
         address  owner,
         address  token,
         uint     pubKeyX,
@@ -889,84 +771,110 @@ contract IExchangeV3 is IExchange
         external;
 
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
-    ///      or offchain) was committed in a block by the operator.
+    ///      or offchain) was submitted in a block by the operator.
     ///
     ///      Can be called by anyone. The withdrawn tokens will be sent to
     ///      the owner of the account they were withdrawn out.
     ///
     ///      Normally it is should not be needed for users to call this manually.
     ///      Funds from withdrawal requests will be sent to the account owner
-    ///      by the operator in distributeWithdrawals. The user can however
-    ///      choose to withdraw earlier if he wants, or will need to call this
-    ///      manually if nobody calls distributeWithdrawals.
+    ///      immediately by the operator when the block is submitted.
+    ///      The user will however need to call this manually if the transfer failed.
     ///
-    ///      Funds can only be withdrawn from requests processed in a
-    ///      finalized block (i.e. a block that can never be reverted).
-    ///
-    /// @param  blockIdx The block the withdrawal requests were committed in
-    /// @param  slotIdx The index in the list of withdrawals that were processed
-    ///                 by the operator. It is not possible for users to know
-    ///                 what this index will be for their withdrawal request.
+    /// @param  owner The address of the account the withdrawal was done for.
+    /// @param  token The token address
     function withdrawFromApprovedWithdrawal(
-        uint blockIdx,
-        uint slotIdx
+        address owner,
+        address token
         )
         external;
 
-    /// @dev Allows the operator to withdraw the fees he earned by processing the
-    ///      deposit and onchain withdrawal requests.
-    ///
-    ///      This function is only callable by the exchange operator.
-    ///
-    ///      The block fee can only be withdrawn from finalized blocks
-    ///      (i.e. blocks that can never be reverted).
-    ///
-    /// @param  blockIdx The block index to withdraw the funds for
-    /// @param  feeRecipient The address that receives the block fee
-    /// @return feeAmount The amount of ETH earned in the block and sent to the operator
-    function withdrawBlockFee(
-        uint    blockIdx,
-        address payable feeRecipient
+    /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawal`.
+    /// @param  owner The address of the account the withdrawal was done for.
+    /// @param  token The token address
+    /// @return The amount withdrawable
+    function getAmountWithdrawable(
+        address owner,
+        address token
         )
         external
-        returns (uint feeAmount);
+        view
+        returns (uint);
 
-    /// @dev Distributes the funds to the account owners after their withdrawal
-    ///      requests were processed by the operator.
+    // -- Agents --
+
+    /// @dev Authorizes/Deauthorizes agents for an account.
+    ///      An agent is allowed to authorize onchain operations for the account owner.
+    ///      By definition the account owner is an agent for himself.
     ///
-    ///      Needs to be called by the operator after submitting a block processing
-    ///      withdrawal requests (either onchain or offchain requests) after the block
-    ///      is finalized and before the block is MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS seconds old.
+    ///      This function can only be called by an agent.
     ///
-    ///      If the operator fails to do so anyone will be able to call this function
-    ///      and the stake of the exchange will be used to reward the caller of this function.
-    ///      The amount of staked LRC withdrawn is calculated as follows:
+    /// @param owner The account owner.
+    /// @param agents The agents to be authorized/deauthorized.
+    /// @param authorized True to authorize the agent, false to deauthorize
+    function setAgentsAuthorized(
+        address   owner,
+        address[] calldata agents,
+        bool[]    calldata authorized
+        )
+        external;
+
+    /// @dev Returns whether an agent address is an agent of an account owner
+    /// @param owner The account owner.
+    /// @param agent The agent address
+    /// @return True if the agent address is an agent for the account owner, else false
+    function isAgent(address owner, address agent)
+        public
+        view
+        returns (bool);
+
+    /// @dev Approves an internal transfer.
+    ///      Important! This is just an approval, the operator has full control
+    ///      whether the transfer will actally be done!
     ///
-    ///      totalFine = withdrawalFineLRC * numWithdrawalRequestsInBlock
-    ///      The caller of the function will be rewarded half this amount,
-    ///      the other half is burned.
+    ///      This function can only be called by an agent.
     ///
-    ///      Only withdrawals processed in finalized blocks can be distributed.
+    /// @param from The address of the account that sends the tokens.
+    /// @param to The address to which 'amount' tokens are transferred.
+    /// @param token The address of the token to transfer ('0x0' for ETH).
+    /// @param amount The amount of tokens to be transferred.
+    function approveConditionalTransfer(
+        address from,
+        address to,
+        address token,
+        uint    amount
+        )
+        external;
+
+    /// @dev Gets the currently approved amounts to be transferred using internal transfers.
+    /// @param from The address of the account that sends the tokens.
+    /// @param to The address to which 'amount' tokens are transferred.
+    /// @param token The address of the token to transfer ('0x0' for ETH).
+    /// @return The amount approved
+    function getApprovedTransferAmount(
+        address from,
+        address to,
+        address token
+        )
+        external
+        view
+        returns (uint);
+
+    /// @dev Allows an agent to transfer ERC-20 tokens for a user using the allowance
+    ///      the user has set for the exchange. This way the user only needs to approve a single exchange contract
+    ///      for all exchange/agent features, which allows for a more seamless user experience.
     ///
-    ///      The withdrawals can be done in multiple transactions because the token transfers
-    ///      are more expensive than committing and proving a block, so it's possible more
-    ///      withdrawals requests are processed in a block than can be distributed
-    ///      in an Ethereum block.
-    ///      This function will automatically stop distributing the withdrawals when the amount
-    ///      of gas left is less than MIN_GAS_TO_DISTRIBUTE_WITHDRAWALS.
-    ///      So there are 2 ways to  limit the number of withdrawals:
-    ///          - using the maxNumWithdrawals parameter
-    ///          - limiting the amount of gas in the transaction
+    ///      This function can only be called by an agent.
     ///
-    /// @param  blockIdx The block index to distribute the funds from the withdrawal requests for
-    /// @param  maxNumWithdrawals The max number of withdrawals to distribute. Can be lower than the
-    ///         number of withdrawal requests processed in the block. Withdrawals are distributed
-    ///         in the same order the withdrawal requests were processed in the block.
-    ///         If the withdrawals are done in multiple parts we always start from the
-    ///         first withdrawal that was not yet distributed.
-    function distributeWithdrawals(
-        uint blockIdx,
-        uint maxNumWithdrawals
+    /// @param from The address of the account that sends the tokens.
+    /// @param to The address to which 'amount' tokens are transferred.
+    /// @param token The address of the token to transfer (ETH is and cannot be suppported).
+    /// @param amount The amount of tokens transferred.
+    function onchainTransferFrom(
+        address from,
+        address to,
+        address token,
+        uint    amount
         )
         external;
 
@@ -980,6 +888,13 @@ contract IExchangeV3 is IExchange
         )
         external
         returns (address payable oldOperator);
+
+    /// @dev Gets the operator address.
+    /// @return The current operator
+    function getOperator()
+        external
+        view
+        returns (address payable);
 
     /// @dev Sets the address whitelist contract address.
     ///      Can only be called by the exchange owner.

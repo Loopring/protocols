@@ -15,14 +15,15 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
-import "../../lib/BurnableERC20.sol";
+import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
 import "../../iface/IDowntimeCostCalculator.sol";
 
-import "./ExchangeData.sol";
+import "../../iface/ExchangeData.sol";
 import "./ExchangeMode.sol";
 
 
@@ -176,54 +177,20 @@ library ExchangeAdmins
         external
         returns (uint)
     {
-        ExchangeData.Block storage lastBlock = S.blocks[S.blocks.length - 1];
-
         // Exchange needs to be shutdown
         require(S.isShutdown(), "EXCHANGE_NOT_SHUTDOWN");
-        // All blocks needs to be finalized
-        require(S.blocks.length == S.numBlocksFinalized, "BLOCK_NOT_FINALIZED");
         // We also require that all deposit requests are processed
         require(
-            lastBlock.numDepositRequestsCommitted == S.depositChain.length,
+            S.numDepositRequestsCommitted == S.depositChain.length,
             "DEPOSITS_NOT_PROCESSED"
         );
         // Merkle root needs to be reset to the genesis block
         // (i.e. all balances 0 and all other state reset to default values)
         require(S.isInInitialState(), "MERKLE_ROOT_NOT_REVERTED");
 
-        // Another requirement is that the last block needs to be committed
-        // longer than MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS so the exchange can still be fined for not
-        // automatically distributing the withdrawals (the fine is paid from the stake)
-        require(
-            now > lastBlock.timestamp + ExchangeData.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE(),
-            "TOO_EARLY"
-        );
-
         // Withdraw the complete stake
         uint amount = S.loopring.getExchangeStake(S.id);
         return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
-    }
-
-    function withdrawTokenNotOwnedByUsers(
-        ExchangeData.State storage S,
-        address token,
-        address payable recipient
-        )
-        external
-        returns (uint amount)
-    {
-        require(token != address(0), "ZERO_ADDRESS");
-        require(recipient != address(0), "ZERO_VALUE");
-
-        uint totalBalance = ERC20(token).balanceOf(address(this));
-        uint userBalance = S.tokenBalances[token];
-
-        assert(totalBalance >= userBalance);
-        amount = totalBalance - userBalance;
-
-        if (amount > 0) {
-            token.safeTransferAndVerify(recipient, amount);
-        }
     }
 
     function stopMaintenanceMode(

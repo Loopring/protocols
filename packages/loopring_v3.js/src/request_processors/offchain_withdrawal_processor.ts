@@ -24,10 +24,10 @@ export class OffchainWithdrawalProcessor {
         );
 
         const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xff;
-        const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xfffff;
+        const accountID = approvedWitdrawal.shrn(24).toNumber() & 0xffffff;
         const amountWithdrawn = fromFloat(
-          approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(),
-          Constants.Float28Encoding
+          approvedWitdrawal.and(new BN("FFFFFF", 16)).toNumber(),
+          Constants.Float24Encoding
         );
 
         const feeTokenID = data.extractUint8(daOffset + i * 3);
@@ -106,9 +106,5 @@ export class OffchainWithdrawalProcessor {
     ].balance = operator.balances[offchainWithdrawal.feeTokenID].balance.add(
       offchainWithdrawal.fee
     );
-  }
-
-  public static revertBlock(state: ExchangeState, block: Block) {
-    // Nothing to do
   }
 }

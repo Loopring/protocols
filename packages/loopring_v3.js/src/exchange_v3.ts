@@ -8,7 +8,6 @@ import { ProtocolV3 } from "./protocol_v3";
 import { SparseMerkleTree } from "./sparse_merkle_tree";
 import {
   BlockType,
-  BlockState,
   ForgeMode,
   Block,
   Deposit,
@@ -26,7 +25,6 @@ import { DepositProcessor } from "./request_processors/deposit_processor";
 import { OnchainWithdrawalProcessor } from "./request_processors/onchain_withdrawal_processor";
 import { RingSettlementProcessor } from "./request_processors/ring_settlement_processor";
 import { OffchainWithdrawalProcessor } from "./request_processors/offchain_withdrawal_processor";
-import { OrderCancellationProcessor } from "./request_processors/order_cancellation_processor";
 import { InternalTransferProcessor } from "./request_processors/internal_transfer_processor";
 import * as log from "./logs";
 
@@ -75,12 +73,10 @@ export class ExchangeV3 {
   private merkleTree: SparseMerkleTree;
 
   private genesisMerkleRoot =
-    "19576940549163814464655809526001218205804522676808413160044023933932119144961";
+    "8757237825509983996127596712662861212414230359567743441818940291589472626661";
 
   private exchangeFees: ExchangeFees;
   private protocolFees: ProtocolFees;
-
-  private reverts: Revert[] = [];
 
   /**
    * Initializes an Exchange
@@ -161,16 +157,11 @@ export class ExchangeV3 {
       operator: Constants.zeroAddress,
       origin: Constants.zeroAddress,
 
-      blockState: BlockState.FINALIZED,
-
-      blockFeeWithdrawn: true,
-      blockFeeAmountWithdrawn: new BN(0),
+      blockFeeRewarded: new BN(0),
+      blockFeeFined: new BN(0),
 
       merkleRoot: this.genesisMerkleRoot,
-
-      committedTimestamp: this.exchangeCreationTimestamp,
-      verifiedTimestamp: this.exchangeCreationTimestamp,
-      finalizedTimestamp: this.exchangeCreationTimestamp,
+      timestamp: this.exchangeCreationTimestamp,
 
       numRequestsProcessed: 0,
       totalNumRequestsProcessed: 0,
@@ -182,9 +173,7 @@ export class ExchangeV3 {
       totalNumOrderCancellationsProcessed: 0,
       totalNumOrderInternalTransfersProcessed: 0,
 
-      transactionHash: Constants.zeroAddress,
-
-      valid: true
+      transactionHash: Constants.zeroAddress
     };
     this.blocks.push(genesisBlock);
     this.numBlocksFinalized = 1;
@@ -280,8 +269,8 @@ export class ExchangeV3 {
       toBlock: ethereumBlockTo
     });
     for (const event of events) {
-      if (event.event === "BlockCommitted") {
-        await this.processBlockCommitted(event);
+      if (event.event === "BlockSubmitted") {
+        await this.processBlockSubmitted(event);
       } else if (event.event === "AccountCreated") {
         await this.processAccountCreated(event);
       } else if (event.event === "DepositRequested") {
@@ -290,18 +279,12 @@ export class ExchangeV3 {
         await this.processWithdrawalRequested(event);
       } else if (event.event === "TokenRegistered") {
         await this.processTokenRegistered(event);
-      } else if (event.event === "BlockVerified") {
-        await this.processBlockVerified(event);
-      } else if (event.event === "BlockFinalized") {
-        await this.processBlockFinalized(event);
       } else if (event.event === "Shutdown") {
         await this.processShutdown(event);
       } else if (event.event === "OperatorChanged") {
         await this.processOperatorChanged(event);
       } else if (event.event === "BlockFeeWithdrawn") {
         await this.processBlockFeeWithdrawn(event);
-      } else if (event.event === "Revert") {
-        await this.processRevert(event);
       } else if (event.event === "FeesUpdated") {
         await this.processFeesUpdated(event);
       } else if (event.event === "ProtocolFeesUpdated") {
@@ -332,20 +315,16 @@ export class ExchangeV3 {
       // We cannot build the Merkle tree without on-chain data-availability
       return;
     }
-    if (!this.blocks[this.blocks.length - 1].valid) {
-      // Don't even try to build the Merkle tree when we're in an invalid state
-      return;
-    }
     this.hasher = poseidon.createHash(5, 6, 52);
 
     // Make empty trees so we have all necessary default values
     const tradeHistoryMerkleTree = new SparseMerkleTree(7);
-    tradeHistoryMerkleTree.newTree(this.hasher([0, 0, 0]).toString(10));
+    tradeHistoryMerkleTree.newTree(this.hasher([0, 0]).toString(10));
     const balancesMerkleTree = new SparseMerkleTree(4);
     balancesMerkleTree.newTree(
       this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10)
     );
-    this.merkleTree = new SparseMerkleTree(10);
+    this.merkleTree = new SparseMerkleTree(12);
     this.merkleTree.newTree(
       this.hasher([0, 0, 0, balancesMerkleTree.getRoot()]).toString(10)
     );
@@ -359,16 +338,13 @@ export class ExchangeV3 {
       for (const tokenID of Object.keys(account.balances)) {
         const balanceValue = account.balances[Number(tokenID)];
         balanceValue.tradeHistoryTree = new SparseMerkleTree(7);
-        balanceValue.tradeHistoryTree.newTree(
-          this.hasher([0, 0, 0]).toString(10)
-        );
+        balanceValue.tradeHistoryTree.newTree(this.hasher([0, 0]).toString(10));
         for (const orderID of Object.keys(balanceValue.tradeHistory)) {
           const tradeHistoryValue = balanceValue.tradeHistory[Number(orderID)];
           balanceValue.tradeHistoryTree.update(
             Number(orderID),
             this.hasher([
               tradeHistoryValue.filled,
-              tradeHistoryValue.cancelled,
               tradeHistoryValue.orderID
             ]).toString(10)
           );
@@ -404,16 +380,7 @@ export class ExchangeV3 {
    * (on the state of the last finalized block).
    */
   public buildMerkleTreeForWithdrawalMode() {
-    this.revertToBlock(this.numBlocksFinalized - 1);
     this.buildMerkleTree();
-  }
-
-  /**
-   * Reverts to the state of the specified block
-   * @param   blockIdx   The block index to revert the state to
-   */
-  public revertToBlockIdx(blockIdx: number) {
-    this.revertToBlock(blockIdx);
   }
 
   /**
@@ -466,14 +433,6 @@ export class ExchangeV3 {
    */
   public getBlock(blockIdx: number) {
     return this.blocks[blockIdx];
-  }
-
-  /**
-   * The total number of blocks finalized
-   * @return  The number of finalized blocks
-   */
-  public getNumBlocksFinalized() {
-    return this.numBlocksFinalized;
   }
 
   /// Tokens
@@ -806,141 +765,153 @@ export class ExchangeV3 {
     return this.protocolFees;
   }
 
-  /**
-   * Returns the number of times a block was reverted on this exchange
-   * @return  The number of reverts
-   */
-  public getNumReverts() {
-    return this.reverts.length;
-  }
-
   /// Private
 
-  private async processBlockCommitted(event: any) {
-    let valid = true;
-
+  private async processBlockSubmitted(event: any) {
     // Make sure the blocks are in the right order
     const blockIdx = parseInt(event.returnValues.blockIdx);
+    if (blockIdx < this.blocks.length) {
+      // Block was already processed
+      //console.log("skip: " + blockIdx);
+      return;
+    }
     assert.equal(blockIdx, this.blocks.length, "Unexpected blockIdx");
     log.DEBUG("processBlockCommitted event, blockIdx:", blockIdx);
 
     // Get the timestamp from the block
     const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    const committedTimestamp = Number(ethereumBlock.timestamp);
+    const timestamp = Number(ethereumBlock.timestamp);
 
-    let merkleRoot = "0";
+    /*let merkleRoot = "0";
     let blockType = 0;
     let blockSize = 0;
     let blockVersion = 0;
     let onchainData = "0x";
     let offchainData = "0x";
-    let data = "";
+    let data = "";*/
 
     // Get the block data from the transaction data
-    const commitBlockFunctionSignature = "0x39d07df5";
+    const submitBlocksFunctionSignature = "0x65f573a8";
+
     const transaction = await this.web3.eth.getTransaction(
       event.transactionHash
     );
-    if (transaction.input.startsWith(commitBlockFunctionSignature)) {
+    //console.log(transaction.input);
+    if (transaction.input.startsWith(submitBlocksFunctionSignature)) {
       // Get the inputs to commitBlock
       // Note: this will not work if an operator contract is used with a different function signature
       const decodedInputs = this.web3.eth.abi.decodeParameters(
-        ["uint8", "uint16", "uint8", "bytes", "bytes"],
+        [
+          {
+            "struct ExchangeData.Block[]": {
+              blockType: "uint8",
+              blockSize: "uint16",
+              blockVersion: "uint8",
+              data: "bytes",
+              proof: "uint256[8]",
+              auxiliaryData: "bytes",
+              offchainData: "bytes"
+            }
+          },
+          "address"
+        ],
         "0x" + transaction.input.slice(2 + 4 * 2)
       );
-      blockType = parseInt(decodedInputs[0]);
-      blockSize = parseInt(decodedInputs[1]);
-      blockVersion = parseInt(decodedInputs[2]);
-      onchainData = decodedInputs[3];
-      offchainData = decodedInputs[4] === null ? "0x" : decodedInputs[4];
-    } else {
-      // console.log("block " + blockIdx + " was committed with an unsupported function signature");
-      valid = false;
-    }
+      //console.log(decodedInputs);
+      const numBlocks = decodedInputs[0].length;
+      //console.log("numBlocks: " + numBlocks);
+      for (let i = 0; i < numBlocks; i++) {
+        // Get the block data
+        const blockType = parseInt(decodedInputs[0][i].blockType);
+        const blockSize = parseInt(decodedInputs[0][i].blockSize);
+        const blockVersion = parseInt(decodedInputs[0][i].blockVersion);
+        const onchainData = decodedInputs[0][i].data;
+        const offchainData = decodedInputs[0][i].offchainData;
+        const data = decodedInputs[4] === null ? "0x" : onchainData;
 
-    // Get the block data
-    if (onchainData.startsWith("0x00")) {
-      data = "0x" + onchainData.slice(4);
-    } else if (onchainData.startsWith("0x01")) {
-      // Decompress using the decompressor contract
-      // We assume here that the decompressor contract is static, as in it always behaves the same no matter when it is called
-      const decompressorAddress = "0x" + onchainData.slice(4, 4 + 40);
-      const compressedData = "0x" + onchainData.slice(4 + 40);
-      this.decompressor.options.address = decompressorAddress;
-      data = await this.decompressor.methods
-        .decompress(this.web3.utils.hexToBytes(compressedData))
-        .call();
-    } else {
-      // console.log("unsupported data compression mode");
-      valid = false;
-      data = onchainData;
-    }
+        /*if (onchainData.startsWith("0x00")) {
+          data = "0x" + onchainData.slice(4);
+        } else if (onchainData.startsWith("0x01")) {
+          // Decompress using the decompressor contract
+          // We assume here that the decompressor contract is static, as in it always behaves the same no matter when it is called
+          const decompressorAddress = "0x" + onchainData.slice(4, 4 + 40);
+          const compressedData = "0x" + onchainData.slice(4 + 40);
+          this.decompressor.options.address = decompressorAddress;
+          data = await this.decompressor.methods
+            .decompress(this.web3.utils.hexToBytes(compressedData))
+            .call();
+        } else {
+          // console.log("unsupported data compression mode");
+          data = onchainData;
+        }*/
 
-    // Get the new Merkle root
-    const bs = new Bitstream(data);
-    if (bs.length() >= 4 + 32 + 32) {
-      merkleRoot = bs.extractUint(4 + 32).toString(10);
-      // console.log("merkleRoot: " + merkleRoot);
-    } else {
-      valid = false;
-    }
+        // Get the new Merkle root
+        const bs = new Bitstream(data);
+        if (bs.length() < 4 + 32 + 32) {
+          // console.log("Invalid block data: " + data);
+          return;
+        }
 
-    // Get the previous block
-    const lastBlock = this.blocks[this.blocks.length - 1];
+        const merkleRoot = bs.extractUint(4 + 32).toString(10);
+        // console.log("merkleRoot: " + merkleRoot);
 
-    // A block is only valid if it builds on a valid block
-    valid = valid && lastBlock.valid;
+        // Get the previous block
+        const lastBlock = this.blocks[this.blocks.length - 1];
 
-    // Create the block
-    const newBlock: Block = {
-      exchangeId: this.state.exchangeId,
-      blockIdx,
+        // Create the block
+        const newBlock: Block = {
+          exchangeId: this.state.exchangeId,
+          blockIdx: blockIdx + i,
 
-      blockType,
-      blockSize,
-      blockVersion,
-      data,
-      offchainData,
+          blockType,
+          blockSize,
+          blockVersion,
+          data,
+          offchainData,
 
-      operator: this.operator,
-      origin: transaction.from,
+          operator: this.operator,
+          origin: transaction.from,
 
-      blockState: BlockState.COMMITTED,
+          blockFeeRewarded: new BN(0),
+          blockFeeFined: new BN(0),
 
-      blockFeeWithdrawn: false,
-      blockFeeAmountWithdrawn: new BN(0),
+          merkleRoot,
 
-      merkleRoot,
+          timestamp,
 
-      committedTimestamp,
+          numRequestsProcessed: 0,
+          totalNumRequestsProcessed: lastBlock.totalNumRequestsProcessed,
 
-      numRequestsProcessed: 0,
-      totalNumRequestsProcessed: lastBlock.totalNumRequestsProcessed,
+          totalNumTradesProccesed: lastBlock.totalNumTradesProccesed,
+          totalNumDepositsProccesed: lastBlock.totalNumDepositsProccesed,
+          totalNumOnchainWithdrawalsProcessed:
+            lastBlock.totalNumOnchainWithdrawalsProcessed,
+          totalNumOffchainWithdrawalsProcessed:
+            lastBlock.totalNumOffchainWithdrawalsProcessed,
+          totalNumOrderCancellationsProcessed:
+            lastBlock.totalNumOrderCancellationsProcessed,
+          totalNumOrderInternalTransfersProcessed:
+            lastBlock.totalNumOrderInternalTransfersProcessed,
 
-      totalNumTradesProccesed: lastBlock.totalNumTradesProccesed,
-      totalNumDepositsProccesed: lastBlock.totalNumDepositsProccesed,
-      totalNumOnchainWithdrawalsProcessed:
-        lastBlock.totalNumOnchainWithdrawalsProcessed,
-      totalNumOffchainWithdrawalsProcessed:
-        lastBlock.totalNumOffchainWithdrawalsProcessed,
-      totalNumOrderCancellationsProcessed:
-        lastBlock.totalNumOrderCancellationsProcessed,
-      totalNumOrderInternalTransfersProcessed:
-        lastBlock.totalNumOrderInternalTransfersProcessed,
+          transactionHash: event.transactionHash
+        };
+        this.blocks.push(newBlock);
+        this.processBlock(newBlock, false);
 
-      transactionHash: event.transactionHash,
-
-      valid
-    };
-    this.blocks.push(newBlock);
-
-    this.processBlock(newBlock, false);
-    // TODO: remove (Only done here for debugging)
-    if (this.state.onchainDataAvailability) {
-      this.buildMerkleTree();
-      for (let i = 0; i < this.state.accounts.length; i++) {
-        this.merkleTree.createProof(i);
+        // TODO: remove (Only done here for debugging)
+        if (this.state.onchainDataAvailability) {
+          this.buildMerkleTree();
+          for (let a = 0; a < this.state.accounts.length; a++) {
+            this.merkleTree.createProof(a);
+          }
+        }
       }
+    } else {
+      console.log(
+        "block " +
+          blockIdx +
+          " was committed with an unsupported function signature"
+      );
     }
   }
 
@@ -1021,45 +992,6 @@ export class ExchangeV3 {
     this.tokens.push(token);
   }
 
-  private async processBlockVerified(event: any) {
-    const blockIdx = parseInt(event.returnValues.blockIdx);
-    assert(blockIdx < this.blocks.length, "blockIdx >= this.blocks.length");
-
-    log.DEBUG("processBlockVerified event, blockIdx:", blockIdx);
-
-    const block = this.blocks[blockIdx];
-    // Make sure the block is in the expected state
-    assert.equal(
-      block.blockState,
-      BlockState.COMMITTED,
-      "Unexpected block state"
-    );
-    block.blockState = BlockState.VERIFIED;
-
-    // Get the timestamp from the block
-    const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    block.verifiedTimestamp = Number(ethereumBlock.timestamp);
-  }
-
-  private async processBlockFinalized(event: any) {
-    const blockIdx = parseInt(event.returnValues.blockIdx);
-    assert(blockIdx < this.blocks.length, "blockIdx >= this.blocks.length");
-
-    const block = this.blocks[blockIdx];
-    // Make sure the block is in the expected state
-    assert.equal(
-      block.blockState,
-      BlockState.VERIFIED,
-      "Unexpected block state"
-    );
-    block.blockState = BlockState.FINALIZED;
-
-    // Get the timestamp from the block
-    const ethereumBlock = await this.web3.eth.getBlock(event.blockNumber);
-    block.finalizedTimestamp = Number(ethereumBlock.timestamp);
-    this.numBlocksFinalized++;
-  }
-
   private async processShutdown(event: any) {
     this.shutdown = true;
     this.shutdownStartTime = parseInt(event.returnValues.timestamp);
@@ -1075,23 +1007,10 @@ export class ExchangeV3 {
 
   private async processBlockFeeWithdrawn(event: any) {
     const blockIdx = parseInt(event.returnValues.blockIdx);
-    const amount = new BN(event.returnValues.amount, 10);
-
     assert(blockIdx < this.blocks.length, "unexpected blockIdx");
     const block = this.blocks[blockIdx];
-    block.blockFeeWithdrawn = true;
-    block.blockFeeAmountWithdrawn = amount;
-  }
-
-  private async processRevert(event: any) {
-    const blockIdx = parseInt(event.returnValues.blockIdx);
-    const revert: Revert = {
-      blockIdx,
-      numBlocks: this.blocks.length - blockIdx
-    };
-    this.reverts.push(revert);
-
-    this.revertToBlock(blockIdx - 1);
+    block.blockFeeRewarded = new BN(event.returnValues.amountRewarded, 10);
+    block.blockFeeFined = new BN(event.returnValues.amountFined, 10);
   }
 
   private async processFeesUpdated(event: any) {
@@ -1136,94 +1055,40 @@ export class ExchangeV3 {
   // Apply the block changes to the current state
   private processBlock(block: Block, replay: boolean) {
     let requests: any[] = [];
-    if (block.valid) {
-      try {
-        if (block.blockType === BlockType.RING_SETTLEMENT) {
-          requests = RingSettlementProcessor.processBlock(this.state, block);
-          block.totalNumTradesProccesed += replay ? 0 : requests.length;
-        } else if (block.blockType === BlockType.DEPOSIT) {
-          requests = DepositProcessor.processBlock(this.state, block);
-          block.totalNumDepositsProccesed += replay ? 0 : requests.length;
-        } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
-          requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
-          block.totalNumOnchainWithdrawalsProcessed += replay
-            ? 0
-            : requests.length;
-        } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-          requests = OffchainWithdrawalProcessor.processBlock(
-            this.state,
-            block
-          );
-          block.totalNumOffchainWithdrawalsProcessed += replay
-            ? 0
-            : requests.length;
-        } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
-          requests = OrderCancellationProcessor.processBlock(this.state, block);
-          block.totalNumOrderCancellationsProcessed += replay
-            ? 0
-            : requests.length;
-        } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
-          requests = InternalTransferProcessor.processBlock(this.state, block);
-          block.totalNumOrderInternalTransfersProcessed += replay
-            ? 0
-            : requests.length;
-        } else {
-          assert(false, "Unknown block type");
-        }
-      } catch (e) {
-        // console.log("Error detected while processing block: ");
-        // console.log(e);
-        block.valid = false;
+    try {
+      if (block.blockType === BlockType.RING_SETTLEMENT) {
+        requests = RingSettlementProcessor.processBlock(this.state, block);
+        block.totalNumTradesProccesed += replay ? 0 : requests.length;
+      } else if (block.blockType === BlockType.DEPOSIT) {
+        requests = DepositProcessor.processBlock(this.state, block);
+        block.totalNumDepositsProccesed += replay ? 0 : requests.length;
+      } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+        requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
+        block.totalNumOnchainWithdrawalsProcessed += replay
+          ? 0
+          : requests.length;
+      } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
+        requests = OffchainWithdrawalProcessor.processBlock(this.state, block);
+        block.totalNumOffchainWithdrawalsProcessed += replay
+          ? 0
+          : requests.length;
+      } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
+        requests = InternalTransferProcessor.processBlock(this.state, block);
+        block.totalNumOrderInternalTransfersProcessed += replay
+          ? 0
+          : requests.length;
+      } else {
+        assert(false, "Unknown block type");
       }
+    } catch (e) {
+      // console.log("Error detected while processing block: ");
+      // console.log(e);
     }
 
-    if (block.valid && !replay) {
+    if (!replay) {
       block.numRequestsProcessed = requests.length;
       block.totalNumRequestsProcessed += requests.length;
       this.state.processedRequests.push(...requests);
-    }
-  }
-
-  private revertToBlock(blockIdx: number) {
-    if (blockIdx === this.blocks.length - 1) {
-      // Nothing to revert
-      return;
-    }
-
-    // Revert the necessary blocks
-    for (let i = this.blocks.length - 1; i > blockIdx; i--) {
-      const block = this.blocks.pop();
-
-      if (block.valid) {
-        if (block.blockType === BlockType.RING_SETTLEMENT) {
-          RingSettlementProcessor.revertBlock(this.state, block);
-        } else if (block.blockType === BlockType.DEPOSIT) {
-          DepositProcessor.revertBlock(this.state, block);
-        } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
-          OnchainWithdrawalProcessor.revertBlock(this.state, block);
-        } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
-          OffchainWithdrawalProcessor.revertBlock(this.state, block);
-        } else if (block.blockType === BlockType.ORDER_CANCELLATION) {
-          OrderCancellationProcessor.revertBlock(this.state, block);
-        } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
-          InternalTransferProcessor.revertBlock(this.state, block);
-        } else {
-          assert(false, "Unknown block type");
-        }
-
-        // Remove the requests processed by the reverted block from the list
-        const startIdx = this.state.processedRequests.length - 1;
-        const endIdx = startIdx - block.numRequestsProcessed;
-        for (let i = startIdx; i > endIdx; i--) {
-          this.state.processedRequests.pop();
-        }
-      }
-    }
-
-    // Rebuild the state from scratch
-    this.setGenesisState();
-    for (let i = 1; i < this.blocks.length; i++) {
-      this.processBlock(this.blocks[i], true);
     }
   }
 

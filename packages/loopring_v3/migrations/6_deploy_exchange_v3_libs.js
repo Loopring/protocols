@@ -62,7 +62,6 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       return Promise.all([
         deployer.deploy(ExchangeAdmins),
-        deployer.deploy(ExchangeBlocks),
         deployer.deploy(ExchangeTokens)
       ]);
     })
@@ -76,10 +75,18 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
+      return Promise.all([deployer.deploy(ExchangeWithdrawals)]);
+    })
+    .then(() => {
       return Promise.all([
+        deployer.link(ExchangeWithdrawals, [ExchangeBlocks])
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
+        deployer.deploy(ExchangeBlocks),
         deployer.deploy(ExchangeGenesis),
-        deployer.deploy(ExchangeDeposits),
-        deployer.deploy(ExchangeWithdrawals)
+        deployer.deploy(ExchangeDeposits)
       ]);
     })
     .then(() => {

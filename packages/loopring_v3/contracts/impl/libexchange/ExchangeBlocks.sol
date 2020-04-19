@@ -15,15 +15,18 @@
   limitations under the License.
 */
 pragma solidity ^0.5.11;
+pragma experimental ABIEncoderV2;
 
+import "../../lib/AddressUtil.sol";
 import "../../lib/BytesUtil.sol";
 import "../../lib/MathUint.sol";
 
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/IDecompressor.sol";
+import "../../iface/ExchangeData.sol";
 
-import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
+import "./ExchangeWithdrawals.sol";
 
 
 /// @title ExchangeBlocks.
@@ -31,25 +34,23 @@ import "./ExchangeMode.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 library ExchangeBlocks
 {
-    using BytesUtil         for bytes;
-    using MathUint          for uint;
-    using ExchangeMode      for ExchangeData.State;
+    using AddressUtil          for address;
+    using AddressUtil          for address payable;
+    using BytesUtil            for bytes;
+    using MathUint             for uint;
+    using ExchangeMode         for ExchangeData.State;
+    using ExchangeWithdrawals  for ExchangeData.State;
 
-    event BlockCommitted(
+    event BlockSubmitted(
         uint    indexed blockIdx,
         bytes32 indexed publicDataHash
     );
 
-    event BlockFinalized(
-        uint    indexed blockIdx
-    );
-
-    event BlockVerified(
-        uint    indexed blockIdx
-    );
-
-    event Revert(
-        uint    indexed blockIdx
+    event ConditionalTransferConsumed(
+        uint24  indexed from,
+        uint24  indexed to,
+        uint16          token,
+        uint            amount
     );
 
     event ProtocolFeesUpdated(
@@ -59,161 +60,18 @@ library ExchangeBlocks
         uint8 previousMakerFeeBips
     );
 
-    function commitBlock(
+    event BlockFeeWithdrawn(
+        uint    indexed blockIdx,
+        uint            amountRewarded,
+        uint            amountFined
+    );
+
+    function submitBlocks(
         ExchangeData.State storage S,
-        uint8  blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
-        bytes  calldata data,
-        bytes  calldata /*offchainData*/
+        ExchangeData.Block[] memory blocks,
+        address payable feeRecipient
         )
-        external
-    {
-        commitBlockInternal(
-            S,
-            ExchangeData.BlockType(blockType),
-            blockSize,
-            blockVersion,
-            data
-        );
-    }
-
-    function verifyBlocks(
-        ExchangeData.State storage S,
-        uint[] calldata blockIndices,
-        uint[] calldata proofs
-        )
-        external
-    {
-        // Exchange cannot be in withdrawal mode
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-
-        // Check input data
-        require(blockIndices.length > 0, "INVALID_INPUT_ARRAYS");
-        require(proofs.length % 8 == 0, "INVALID_PROOF_ARRAY");
-        require(proofs.length / 8 == blockIndices.length, "INVALID_INPUT_ARRAYS");
-
-        uint[] memory publicInputs = new uint[](blockIndices.length);
-        uint16 blockSize;
-        ExchangeData.BlockType blockType;
-        uint8 blockVersion;
-
-        for (uint i = 0; i < blockIndices.length; i++) {
-            uint blockIdx = blockIndices[i];
-
-            require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-            ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-            require(
-                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
-                "BLOCK_VERIFIED_ALREADY"
-            );
-
-            // Check if the proof for this block is too early
-            // We limit the gap between the last finalized block and the last verified block to limit
-            // the number of blocks that can become finalized when a single block is verified
-            require(
-                blockIdx < S.numBlocksFinalized + ExchangeData.MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS(),
-                "PROOF_TOO_EARLY"
-            );
-
-            // Check if we still accept a proof for this block
-            require(
-                now <= specifiedBlock.timestamp + ExchangeData.MAX_PROOF_GENERATION_TIME_IN_SECONDS(),
-                "PROOF_TOO_LATE"
-            );
-
-            // Strip the 3 least significant bits of the public data hash
-            // so we don't have any overflow in the snark field
-            publicInputs[i] = uint(specifiedBlock.publicDataHash) >> 3;
-            if (i == 0) {
-                blockSize = specifiedBlock.blockSize;
-                blockType = specifiedBlock.blockType;
-                blockVersion = specifiedBlock.blockVersion;
-            } else {
-                // We only support batch verifying blocks that use the same verifying key
-                require(blockType == specifiedBlock.blockType, "INVALID_BATCH_BLOCK_TYPE");
-                require(blockSize == specifiedBlock.blockSize, "INVALID_BATCH_BLOCK_SIZE");
-                require(blockVersion == specifiedBlock.blockVersion, "INVALID_BATCH_BLOCK_VERSION");
-            }
-        }
-
-        // Verify the proofs
-        require(
-            S.blockVerifier.verifyProofs(
-                uint8(blockType),
-                S.onchainDataAvailability,
-                blockSize,
-                blockVersion,
-                publicInputs,
-                proofs
-            ),
-            "INVALID_PROOF"
-        );
-
-        // Mark the blocks as verified
-        for (uint i = 0; i < blockIndices.length; i++) {
-            uint blockIdx = blockIndices[i];
-            ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-            // Check this again to make sure no block is verified twice in a single call to verifyBlocks
-            require(
-                specifiedBlock.state == ExchangeData.BlockState.COMMITTED,
-                "BLOCK_VERIFIED_ALREADY"
-            );
-            specifiedBlock.state = ExchangeData.BlockState.VERIFIED;
-            emit BlockVerified(blockIdx);
-        }
-
-        // Update the number of blocks that are finalized
-        // The number of blocks after the specified block index is limited
-        // by MAX_GAP_BETWEEN_FINALIZED_AND_VERIFIED_BLOCKS
-        // so we don't have to worry about running out of gas in this loop
-        uint idx = S.numBlocksFinalized;
-        while (idx < S.blocks.length &&
-            S.blocks[idx].state == ExchangeData.BlockState.VERIFIED) {
-            emit BlockFinalized(idx);
-            idx++;
-        }
-        S.numBlocksFinalized = idx;
-    }
-
-    function revertBlock(
-        ExchangeData.State storage S,
-        uint blockIdx
-        )
-        external
-    {
-        // Exchange cannot be in withdrawal mode
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-
-        require(blockIdx < S.blocks.length, "INVALID_BLOCK_IDX");
-        ExchangeData.Block storage specifiedBlock = S.blocks[blockIdx];
-        require(specifiedBlock.state == ExchangeData.BlockState.COMMITTED, "INVALID_BLOCK_STATE");
-
-        // The specified block needs to a non-finialized one.
-        require(blockIdx >= S.numBlocksFinalized, "FINALIZED_BLOCK_REVERT_PROHIBITED");
-
-        // Fine the exchange
-        uint fine = S.loopring.revertFineLRC();
-        S.loopring.burnExchangeStake(S.id, fine);
-
-        // Remove all blocks after and including blockIdx
-        S.blocks.length = blockIdx;
-
-        emit Revert(blockIdx);
-    }
-
-    // == Internal Functions ==
-    function commitBlockInternal(
-        ExchangeData.State storage S,
-        ExchangeData.BlockType blockType,
-        uint16 blockSize,
-        uint8  blockVersion,
-        bytes  memory data  // This field already has all the dummy (0-valued) requests padded,
-                            // therefore the size of this field totally depends on
-                            // `blockSize` instead of the actual user requests processed
-                            // in this block. This is fine because 0-bytes consume fewer gas.
-        )
-        private
+        public
     {
         // Exchange cannot be in withdrawal mode
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
@@ -224,16 +82,50 @@ library ExchangeBlocks
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
+        // Commit the blocks
+        bytes32[] memory publicDataHashes = new bytes32[](blocks.length);
+        for (uint i = 0; i < blocks.length; i++) {
+            // Hash all the public data to a single value which is used as the input for the circuit
+            publicDataHashes[i] = blocks[i].data.fastSHA256();
+            // Commit the block
+            commitBlock(
+                S,
+                blocks[i],
+                feeRecipient,
+                publicDataHashes[i]
+            );
+        }
+
+        // Verify the blocks
+        verifyBlocks(
+            S,
+            blocks,
+            publicDataHashes
+        );
+    }
+
+    // == Internal Functions ==
+
+    function commitBlock(
+        ExchangeData.State storage S,
+        ExchangeData.Block memory _block,
+        address payable feeRecipient,
+        bytes32 publicDataHash
+        )
+        private
+    {
         // Check if the block is supported
         require(
             S.blockVerifier.isCircuitEnabled(
-                uint8(blockType),
+                uint8(_block.blockType),
                 S.onchainDataAvailability,
-                blockSize,
-                blockVersion
+                _block.blockSize,
+                _block.blockVersion
             ),
             "CANNOT_VERIFY_BLOCK"
         );
+
+        bytes memory data = _block.data;
 
         // Extract the exchange ID from the data
         uint32 exchangeIdInData = 0;
@@ -242,9 +134,6 @@ library ExchangeBlocks
         }
         require(exchangeIdInData == S.id, "INVALID_EXCHANGE_ID");
 
-        // Get the current block
-        ExchangeData.Block storage prevBlock = S.blocks[S.blocks.length - 1];
-
         // Get the old and new Merkle roots
         bytes32 merkleRootBefore;
         bytes32 merkleRootAfter;
@@ -252,11 +141,11 @@ library ExchangeBlocks
             merkleRootBefore := mload(add(data, 36))
             merkleRootAfter := mload(add(data, 68))
         }
-        require(merkleRootBefore == prevBlock.merkleRoot, "INVALID_MERKLE_ROOT");
+        require(merkleRootBefore == S.merkleRoot, "INVALID_MERKLE_ROOT");
         require(uint256(merkleRootAfter) < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_MERKLE_ROOT");
 
-        uint32 numDepositRequestsCommitted = uint32(prevBlock.numDepositRequestsCommitted);
-        uint32 numWithdrawalRequestsCommitted = uint32(prevBlock.numWithdrawalRequestsCommitted);
+        uint32 numDepositRequestsCommitted = S.numDepositRequestsCommitted;
+        uint32 numWithdrawalRequestsCommitted = S.numWithdrawalRequestsCommitted;
 
         // When the exchange is shutdown:
         // - First force all outstanding deposits to be done
@@ -264,9 +153,9 @@ library ExchangeBlocks
         //   count == 0)
         if (S.isShutdown()) {
             if (numDepositRequestsCommitted < S.depositChain.length) {
-                require(blockType == ExchangeData.BlockType.DEPOSIT, "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
+                require(_block.blockType == ExchangeData.BlockType.DEPOSIT, "SHUTDOWN_DEPOSIT_BLOCK_FORCED");
             } else {
-                require(blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
+                require(_block.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL, "SHUTDOWN_WITHDRAWAL_BLOCK_FORCED");
             }
         }
 
@@ -274,12 +163,12 @@ library ExchangeBlocks
         // We give priority to withdrawals. If a withdraw block is forced it needs to
         // be processed first, even if there is also a deposit block forced.
         if (isWithdrawalRequestForced(S, numWithdrawalRequestsCommitted)) {
-            require(blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL, "WITHDRAWAL_BLOCK_FORCED");
+            require(_block.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL, "WITHDRAWAL_BLOCK_FORCED");
         } else if (isDepositRequestForced(S, numDepositRequestsCommitted)) {
-            require(blockType == ExchangeData.BlockType.DEPOSIT, "DEPOSIT_BLOCK_FORCED");
+            require(_block.blockType == ExchangeData.BlockType.DEPOSIT, "DEPOSIT_BLOCK_FORCED");
         }
 
-        if (blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
+        if (_block.blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
             require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             uint8 protocolTakerFeeBips;
@@ -298,21 +187,21 @@ library ExchangeBlocks
                 validateAndUpdateProtocolFeeValues(S, protocolTakerFeeBips, protocolMakerFeeBips),
                 "INVALID_PROTOCOL_FEES"
             );
-        } else if (blockType == ExchangeData.BlockType.DEPOSIT) {
+        } else if (_block.blockType == ExchangeData.BlockType.DEPOSIT) {
             uint startIdx = 0;
             uint count = 0;
             assembly {
                 startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
-            require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE");
-            require (count <= blockSize, "INVALID_REQUEST_RANGE");
-            require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE");
+            require (startIdx == numDepositRequestsCommitted, "INVALID_REQUEST_RANGE_1");
+            require (count <= _block.blockSize, "INVALID_REQUEST_RANGE_2");
+            require (startIdx + count <= S.depositChain.length, "INVALID_REQUEST_RANGE_3");
 
             bytes32 startingHash = S.depositChain[startIdx - 1].accumulatedHash;
             bytes32 endingHash = S.depositChain[startIdx + count - 1].accumulatedHash;
             // Pad the block so it's full
-            for (uint i = count; i < blockSize; i++) {
+            for (uint i = count; i < _block.blockSize; i++) {
                 endingHash = sha256(
                     abi.encodePacked(
                         endingHash,
@@ -334,16 +223,16 @@ library ExchangeBlocks
             require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
 
             numDepositRequestsCommitted += uint32(count);
-        } else if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
+        } else if (_block.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
             uint startIdx = 0;
             uint count = 0;
             assembly {
                 startIdx := and(mload(add(data, 136)), 0xFFFFFFFF)
                 count := and(mload(add(data, 140)), 0xFFFFFFFF)
             }
-            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE");
-            require (count <= blockSize, "INVALID_REQUEST_RANGE");
-            require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE");
+            require (startIdx == numWithdrawalRequestsCommitted, "INVALID_REQUEST_RANGE_1");
+            require (count <= _block.blockSize, "INVALID_REQUEST_RANGE_2");
+            require (startIdx + count <= S.withdrawalChain.length, "INVALID_REQUEST_RANGE_3");
 
             if (S.isShutdown()) {
                 require (count == 0, "INVALID_WITHDRAWAL_COUNT");
@@ -354,7 +243,7 @@ library ExchangeBlocks
                 bytes32 startingHash = S.withdrawalChain[startIdx - 1].accumulatedHash;
                 bytes32 endingHash = S.withdrawalChain[startIdx + count - 1].accumulatedHash;
                 // Pad the block so it's full
-                for (uint i = count; i < blockSize; i++) {
+                for (uint i = count; i < _block.blockSize; i++) {
                     endingHash = sha256(
                         abi.encodePacked(
                             endingHash,
@@ -374,50 +263,237 @@ library ExchangeBlocks
                 require(inputEndingHash == endingHash, "INVALID_ENDING_HASH");
                 numWithdrawalRequestsCommitted += uint32(count);
             }
-        } else if (
-            blockType != ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL &&
-            blockType != ExchangeData.BlockType.ORDER_CANCELLATION &&
-            blockType != ExchangeData.BlockType.TRANSFER) {
+        } else if (_block.blockType == ExchangeData.BlockType.TRANSFER) {
+            validateConditionalTransfers(
+                S,
+                _block.data,
+                _block.auxiliaryData
+            );
+        } else if (_block.blockType != ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             revert("UNSUPPORTED_BLOCK_TYPE");
         }
 
-        // Hash all the public data to a single value which is used as the input for the circuit
-        bytes32 publicDataHash = data.fastSHA256();
-
-        // Store the approved withdrawal data onchain
-        bytes memory withdrawals = new bytes(0);
-        if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
-            blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
+        // Process withdrawals
+        if (_block.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL ||
+            _block.blockType == ExchangeData.BlockType.OFFCHAIN_WITHDRAWAL) {
             uint start = 4 + 32 + 32;
-            if (blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
+            if (_block.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
                 start += 32 + 32 + 4 + 4;
             }
-            uint length = 7 * blockSize;
+            uint length = 7 * _block.blockSize;
+            bytes memory withdrawals = new bytes(0);
             assembly {
                 withdrawals := add(data, start)
                 mstore(withdrawals, length)
             }
+            S.distributeWithdrawals(withdrawals);
         }
 
-        // Create a new block with the updated merkle roots
-        ExchangeData.Block memory newBlock = ExchangeData.Block(
-            merkleRootAfter,
-            publicDataHash,
-            ExchangeData.BlockState.COMMITTED,
-            blockType,
-            blockSize,
-            blockVersion,
-            uint32(now),
+        // Emit an event
+        emit BlockSubmitted(S.numBlocksSubmitted, publicDataHash);
+
+        // Transfer the block fee to the fee recipient (for block types with fees paid onchain)
+        withdrawBlockFee(
+            S,
+            S.numBlocksSubmitted,
             numDepositRequestsCommitted,
             numWithdrawalRequestsCommitted,
-            false,
-            0,
-            withdrawals
+            feeRecipient
         );
 
-        S.blocks.push(newBlock);
+        // Update the onchain state
+        S.numDepositRequestsCommitted = numDepositRequestsCommitted;
+        S.numWithdrawalRequestsCommitted = numWithdrawalRequestsCommitted;
+        S.merkleRoot = merkleRootAfter;
+        S.numBlocksSubmitted++;
+    }
 
-        emit BlockCommitted(S.blocks.length - 1, publicDataHash);
+    function verifyBlocks(
+        ExchangeData.State storage S,
+        ExchangeData.Block[] memory blocks,
+        bytes32[] memory publicDataHashes
+        )
+        private
+        view
+    {
+        uint numBlocksVerified = 0;
+        bool[] memory blockVerified = new bool[](blocks.length);
+        ExchangeData.Block memory firstBlock;
+        uint[] memory batch = new uint[](blocks.length);
+        while (numBlocksVerified < blocks.length) {
+            // Find all blocks of the same type
+            uint batchLength = 0;
+            for (uint i = 0; i < blocks.length; i++) {
+                if (blockVerified[i] == false) {
+                    if (batchLength == 0) {
+                        firstBlock = blocks[i];
+                        batch[batchLength++] = i;
+                    } else {
+                        ExchangeData.Block memory _block = blocks[i];
+                        if (_block.blockType == firstBlock.blockType &&
+                            _block.blockSize == firstBlock.blockSize &&
+                            _block.blockVersion == firstBlock.blockVersion) {
+                            batch[batchLength++] = i;
+                        }
+                    }
+                }
+            }
+
+            // Prepare the data for batch verification
+            uint[] memory publicInputs = new uint[](batchLength);
+            uint[] memory proofs = new uint[](batchLength * 8);
+            for (uint i = 0; i < batchLength; i++) {
+                uint blockIdx = batch[i];
+                // Mark the block as verified
+                blockVerified[blockIdx] = true;
+                // Strip the 3 least significant bits of the public data hash
+                // so we don't have any overflow in the snark field
+                publicInputs[i] = uint(publicDataHashes[blockIdx]) >> 3;
+                // Copy proof
+                ExchangeData.Block memory _block = blocks[blockIdx];
+                for (uint j = 0; j < 8; j++) {
+                    proofs[i*8 + j] = _block.proof[j];
+                }
+            }
+
+            // Verify the proofs
+            require(
+                S.blockVerifier.verifyProofs(
+                    uint8(firstBlock.blockType),
+                    S.onchainDataAvailability,
+                    firstBlock.blockSize,
+                    firstBlock.blockVersion,
+                    publicInputs,
+                    proofs
+                ),
+                "INVALID_PROOF"
+            );
+
+            numBlocksVerified += batchLength;
+        }
+    }
+
+    function validateConditionalTransfers(
+        ExchangeData.State storage S,
+        bytes  memory data,
+        bytes  memory auxiliaryData
+        )
+        private
+    {
+        uint offset = 4 + 32 + 32 + 32;
+        // The length of the auxiliary data needs to match the number of conditional transfers
+        uint numConditionalTransfers = data.bytesToUint32(offset);
+        require(auxiliaryData.length == numConditionalTransfers * 4, "INVALID_AUXILIARYDATA_LENGTH");
+        offset += 4;
+
+        uint24 operatorAccountID = data.bytesToUint24(offset);
+        offset += 3;
+
+        if (auxiliaryData.length > 0) {
+            require(S.onchainDataAvailability, "CONDITIONAL_TRANSFERS_REQUIRE_OCDA");
+        }
+
+        // Run over all conditional transfers
+        uint previousTransferOffset = 0;
+        for (uint i = 0; i < auxiliaryData.length; i += 4) {
+            // auxiliaryData contains the transfer index (4 bytes) for each conditional transfer
+            // in ascending order.
+            uint transferOffset = offset + auxiliaryData.bytesToUint32(i) * 14 + 14;
+            require(transferOffset > previousTransferOffset, "INVALID_AUXILIARYDATA_DATA");
+
+            // Get the transfer data
+            uint transferData;
+            assembly {
+                transferData := and(mload(add(data, transferOffset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            }
+
+            // Check that this is a conditional transfer
+            require(uint8((transferData >> 104) & 0xFF) == 1, "INVALID_AUXILIARYDATA_DATA");
+
+            // Update the onchain state
+            consumeConditionalTransfer(
+                S,
+                operatorAccountID,
+                transferData
+            );
+
+            previousTransferOffset = transferOffset;
+        }
+    }
+
+    function consumeConditionalTransfer(
+        ExchangeData.State storage S,
+        uint24 operatorAccountID,
+        uint transferData
+        )
+        private
+    {
+        // Extract the transfer data
+        uint24 fromAccountID = uint24((transferData >> 80) & 0xFFFFFF);
+        uint24 toAccountID = uint24((transferData >> 56) & 0xFFFFFF);
+        uint16 tokenID = uint16((transferData >> 48) & 0xFF);
+        uint amount = ((transferData >> 24) & 0xFFFFFF).decodeFloat(24);
+        uint16 feeTokenID = uint16((transferData >> 16) & 0xFF);
+        uint feeAmount = ((transferData >> 0) & 0xFFFF).decodeFloat(16);
+
+        // Update onchain approvals
+        if (amount > 0) {
+            S.approvedTransferAmounts[fromAccountID][toAccountID][tokenID] =
+                S.approvedTransferAmounts[fromAccountID][toAccountID][tokenID].sub(amount);
+            emit ConditionalTransferConsumed(fromAccountID, toAccountID, tokenID, amount);
+        }
+        if (feeAmount > 0) {
+            S.approvedTransferAmounts[fromAccountID][operatorAccountID][feeTokenID] =
+                S.approvedTransferAmounts[fromAccountID][operatorAccountID][feeTokenID].sub(feeAmount);
+            emit ConditionalTransferConsumed(fromAccountID, operatorAccountID, feeTokenID, feeAmount);
+        }
+    }
+
+    function withdrawBlockFee(
+        ExchangeData.State storage S,
+        uint blockIdx,
+        uint numDepositRequestsCommittedAfter,
+        uint numWithdrawalRequestsCommittedAfter,
+        address payable feeRecipient
+        )
+        internal
+    {
+        uint feeAmount = 0;
+        uint32 lastRequestTimestamp = 0;
+        if(numDepositRequestsCommittedAfter > S.numDepositRequestsCommitted) {
+            feeAmount = S.depositChain[numDepositRequestsCommittedAfter - 1].accumulatedFee.sub(
+                S.depositChain[S.numDepositRequestsCommitted - 1].accumulatedFee
+            );
+            lastRequestTimestamp = S.depositChain[numDepositRequestsCommittedAfter - 1].timestamp;
+        } else if(numWithdrawalRequestsCommittedAfter > S.numWithdrawalRequestsCommitted) {
+            feeAmount = S.withdrawalChain[numWithdrawalRequestsCommittedAfter - 1].accumulatedFee.sub(
+                S.withdrawalChain[S.numWithdrawalRequestsCommitted - 1].accumulatedFee
+            );
+            lastRequestTimestamp = S.withdrawalChain[numWithdrawalRequestsCommittedAfter - 1].timestamp;
+        } else {
+            return;
+        }
+
+        // Calculate how much of the fee the operator gets for the block
+        // If there are many requests than lastRequestTimestamp ~= firstRequestTimestamp so
+        // all requests will need to be done in FEE_BLOCK_FINE_START_TIME minutes to get the complete fee.
+        // If there are very few requests than lastRequestTimestamp >> firstRequestTimestamp and we don't want
+        // to fine the operator for waiting until he can fill a complete block.
+        // This is why we use the timestamp of the last request included in the block.
+        uint startTime = lastRequestTimestamp + ExchangeData.FEE_BLOCK_FINE_START_TIME();
+        uint fine = 0;
+        if (now > startTime) {
+            fine = feeAmount.mul(now - startTime) / ExchangeData.FEE_BLOCK_FINE_MAX_DURATION();
+        }
+        uint feeAmountToBurn = (fine > feeAmount) ? feeAmount : fine;
+        uint feeAmountToOperator = feeAmount - feeAmountToBurn;
+
+        // Burn part of the fee by sending it to the protocol fee manager
+        S.loopring.protocolFeeVault().sendETHAndVerify(feeAmountToBurn, gasleft());
+        // Transfer the fee to the operator
+        feeRecipient.sendETHAndVerify(feeAmountToOperator, gasleft());
+
+        emit BlockFeeWithdrawn(blockIdx, feeAmountToOperator, feeAmountToBurn);
     }
 
     function validateAndUpdateProtocolFeeValues(
