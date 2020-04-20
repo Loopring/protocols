@@ -42,7 +42,7 @@ contract("WalletENSManager", () => {
         false,
         wallet,
         [owner],
-        { gasPrice: new BN(1) }
+        { from: owner, gasPrice: new BN(1) }
       );
 
       const ensManager = ctx.walletENSManager;

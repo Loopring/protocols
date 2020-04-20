@@ -58,6 +58,13 @@ contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
+    modifier onlyFromMetaTxOrOwner(address owner) virtual {
+        require(
+            msg.sender == address(this) || msg.sender == owner,
+            "NOT_FROM_METATX_OR_OWNER");
+        _;
+    }
+
     modifier onlyWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() == addr, "NOT_WALLET_OWNER");
         _;
