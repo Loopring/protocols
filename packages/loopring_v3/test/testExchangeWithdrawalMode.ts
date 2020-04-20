@@ -181,7 +181,7 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(true);
     });
 
-    it.skip("ERC20: withdraw from merkle tree", async () => {
+    it("ERC20: withdraw from merkle tree", async () => {
       await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -237,7 +237,7 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawFromMerkleTreeChecked(owner, token, balance);
     });
 
-    it.skip("ETH: withdraw from merkle tree", async () => {
+    it("ETH: withdraw from merkle tree", async () => {
       await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -284,7 +284,7 @@ contract("Exchange", (accounts: string[]) => {
       await withdrawFromMerkleTreeChecked(owner, token, balance);
     });
 
-    it.skip("Withdraw from merkle tree (protocol fee account)", async () => {
+    it("Withdraw from merkle tree (protocol fee account)", async () => {
       await createExchange();
 
       const protocolFees = await exchange.getProtocolFeeValues();

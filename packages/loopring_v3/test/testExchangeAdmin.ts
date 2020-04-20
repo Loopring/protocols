@@ -70,6 +70,9 @@ contract("Exchange", (accounts: string[]) => {
         await exchange.setOperator(newOperator, {
           from: exchangeTestUtil.exchangeOwner
         });
+
+        const operator = await exchange.getOperator();
+        assert.equal(operator, newOperator, "operator unexpected");
       });
 
       it("should be able to set the fees", async () => {

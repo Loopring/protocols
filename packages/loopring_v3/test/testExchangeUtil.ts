@@ -155,9 +155,6 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public commitWrongPublicDataOnce = false;
-  public commitWrongProofOnce = false;
-
   public useProverServer: boolean = false;
 
   private pendingRings: RingInfo[][] = [];
@@ -1202,10 +1199,6 @@ export class ExchangeTestUtil {
     filename: string,
     auxiliaryData: string = "0x"
   ) {
-    if (this.commitWrongPublicDataOnce) {
-      data += "00";
-      this.commitWrongPublicDataOnce = false;
-    }
     const publicDataHashAndInput = this.getPublicDataHashAndInput(data);
     const publicDataHash = publicDataHashAndInput.publicDataHash;
     const publicInput = publicDataHashAndInput.publicInput;
@@ -1372,7 +1365,7 @@ export class ExchangeTestUtil {
     }
   }
 
-  public async submitBlocks(blocks: Block[]) {
+  public async submitBlocks(blocks: Block[], callback?: any) {
     if (blocks.length === 0) {
       return;
     }
@@ -1460,17 +1453,10 @@ export class ExchangeTestUtil {
       onchainBlocks.push(onchainBlock);
     }
 
-    if (this.commitWrongProofOnce) {
-      const proofIdxToModify = this.getRandomInt(8);
-      onchainBlocks[0].proof[proofIdxToModify] =
-        "0x" +
-        new BN(onchainBlocks[0].proof[proofIdxToModify].slice(2), 16)
-          .add(new BN(1))
-          .toString(16);
-      this.commitWrongProofOnce = false;
+    // Callback that allows modifying the blocks
+    if (callback !== undefined) {
+      callback(onchainBlocks);
     }
-
-    //console.log("onchainBlocks.length:" + onchainBlocks.length);
 
     const numBlocksSubmittedBefore = (await this.exchange.getBlockHeight()).toNumber();
 
@@ -1640,8 +1626,8 @@ export class ExchangeTestUtil {
     await this.checkExplorerState();
   }
 
-  public async submitPendingBlocks(exchangeID: number) {
-    await this.submitBlocks(this.pendingBlocks[exchangeID]);
+  public async submitPendingBlocks(exchangeID: number, callback?: any) {
+    await this.submitBlocks(this.pendingBlocks[exchangeID], callback);
     this.pendingBlocks[exchangeID] = [];
   }
 

@@ -64,9 +64,9 @@ contract("Exchange", (accounts: string[]) => {
   describe("Blocks", function() {
     this.timeout(0);
 
-    describe("Operator 3", () => {
-      describe("commitBlock", () => {
-        it("should not be able to commit unsupported blocks", async () => {
+    describe("Operator", () => {
+      describe("submitBlocks", () => {
+        it("should not be able to submit unsupported blocks", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -98,7 +98,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it("should not be able to commit block from different exchanges", async () => {
+        it("should not be able to submit blocks from different exchanges", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -130,7 +130,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it("should not be able to commit blocks starting from a wrong merkle root state", async () => {
+        it("should not be able to submit blocks starting from a wrong merkle root state", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -163,7 +163,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it("should not be able to commit blocks with an invalid new Merkle root", async () => {
+        it("should not be able to submit blocks with an invalid new Merkle root", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -201,7 +201,7 @@ contract("Exchange", (accounts: string[]) => {
           );
         });
 
-        it("should not be able to commit settlement blocks with an invalid timestamp", async () => {
+        it("should not be able to submit settlement blocks with an invalid timestamp", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -275,7 +275,7 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
-        it("should not be able to commit settlement blocks with invalid protocol fees", async () => {
+        it("should not be able to submit settlement blocks with invalid protocol fees", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -350,7 +350,7 @@ contract("Exchange", (accounts: string[]) => {
           }
         });
 
-        it("should not be able to commit deposit/on-chain withdrawal blocks with invalid data", async () => {
+        it("should not be able to submit deposit/on-chain withdrawal blocks with invalid data", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
@@ -674,256 +674,69 @@ contract("Exchange", (accounts: string[]) => {
           // Submit the blocks
           await exchangeTestUtil.submitPendingBlocks(exchangeId);
         });
-      });
 
-      describe.skip("verifyBlocks", () => {
-        it("should be able to verify submitted blocks in any order", async () => {
+        it("should be able to submit blocks of different types", async () => {
           await createExchange();
           // Commit some blocks
           await commitSomeWork();
-          // Store all pending blocks
-          const blocks: Block[] = [];
-          for (const block of exchangeTestUtil.pendingBlocks[exchangeId]) {
-            blocks.push(block);
-          }
-          // Randomize the order in which the blocks are verified
-          exchangeTestUtil.shuffle(blocks);
+          await commitSomeWork();
+          await commitSomeWork();
           // Verify all blocks
-          for (const block of blocks) {
-            await exchangeTestUtil.submitBlocks([block]);
-          }
-          const numBlocks = await exchangeTestUtil.getNumBlocksOnchain();
-          assert.equal(
-            exchangeTestUtil.blocks[exchangeId].length - 1,
-            numBlocks,
-            "all blocks should be submitted"
-          );
+          await exchangeTestUtil.submitPendingBlocks(exchangeId);
         });
 
-        it("should not be able to verify a block more than once", async () => {
+        it("should not be able to submit blocks when one of the proofs is incorrect", async () => {
           await createExchange();
           // Commit some blocks
           await commitSomeWork();
-          // Store all pending blocks
-          const blocks: Block[] = [];
-          for (const block of exchangeTestUtil.pendingBlocks[exchangeId]) {
-            blocks.push(block);
-          }
-          // Verify all blocks
-          for (const block of blocks) {
-            await exchangeTestUtil.submitBlocks([block]);
-          }
-          // Try to verify all blocks agains
-          for (const block of blocks) {
-            await expectThrow(
-              exchangeTestUtil.submitBlocks([block]),
-              "BLOCK_VERIFIED_ALREADY"
-            );
-          }
-        });
-
-        it("should be able to verify multiple blocks using the same circuit", async () => {
-          await createExchange();
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          const count = 11;
-          // Setup several rings
-          const rings: RingInfo[] = [];
-          for (let i = 0; i < count; i++) {
-            const ring = await setupRandomRing(false);
-            rings.push(ring);
-          }
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          // Commit several ring settlement blocks
-          const blocks: Block[] = [];
-          for (const ring of rings) {
-            await exchangeTestUtil.sendRing(exchangeId, ring);
-            const settlementBlocks = await exchangeTestUtil.commitRings(
-              exchangeId
-            );
-            assert(
-              settlementBlocks.length === 1,
-              "unexpected number of blocks committed"
-            );
-            blocks.push(settlementBlocks[0]);
-          }
-
-          // Randomize the order in which the blocks are verified
-          exchangeTestUtil.shuffle(blocks);
-
-          // Verify all blocks at once
-          await exchangeTestUtil.submitBlocks(blocks);
-
-          const numBlocks = await exchangeTestUtil.getNumBlocksOnchain();
-          assert.equal(
-            exchangeTestUtil.blocks[exchangeId].length - 1,
-            numBlocks,
-            "all blocks should be submitted"
-          );
-        });
-
-        it("should not be able to verify multiple blocks when one of the proofs is incorrect", async () => {
-          await createExchange();
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          const count = 7;
-          // Setup several rings
-          const rings: RingInfo[] = [];
-          for (let i = 0; i < count; i++) {
-            const ring = await setupRandomRing(false);
-            rings.push(ring);
-          }
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          // Commit several ring settlement blocks
-          const blocks: Block[] = [];
-          for (const ring of rings) {
-            await exchangeTestUtil.sendRing(exchangeId, ring);
-            const settlementBlocks = await exchangeTestUtil.commitRings(
-              exchangeId
-            );
-            assert(
-              settlementBlocks.length === 1,
-              "unexpected number of blocks committed"
-            );
-            blocks.push(settlementBlocks[0]);
-          }
-
-          // Randomize the order in which the blocks are verified
-          exchangeTestUtil.shuffle(blocks);
-
-          // Verify all blocks at once, but change a single proof element so it's invalid
-          exchangeTestUtil.commitWrongProofOnce = true;
+          await commitSomeWork();
+          await commitSomeWork();
+          // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitBlocks(blocks),
+            exchangeTestUtil.submitPendingBlocks(
+              exchangeId,
+              (blocks: OnchainBlock[]) => {
+                // Change a random proof
+                const blockToModify = exchangeTestUtil.getRandomInt(
+                  blocks.length
+                );
+                const proofIdxToModify = exchangeTestUtil.getRandomInt(8);
+                blocks[blockToModify].proof[proofIdxToModify] =
+                  "0x" +
+                  new BN(
+                    blocks[blockToModify].proof[proofIdxToModify].slice(2),
+                    16
+                  )
+                    .add(new BN(1))
+                    .toString(16);
+              }
+            ),
             "INVALID_PROOF"
           );
         });
 
-        it("should not be able to verify multiple blocks using different circuits", async () => {
-          await createExchange();
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          // This will create and commit deposit and ring settlement blocks
-          await setupRandomRing();
-          await exchangeTestUtil.commitRings(exchangeId);
-
-          const blocks = exchangeTestUtil.pendingBlocks[exchangeId];
-          assert(blocks.length >= 2, "unexpected number of blocks");
-
-          // Randomize the order in which the blocks are verified
-          exchangeTestUtil.shuffle(blocks);
-
-          // Verify all blocks at once
-          await expectThrow(
-            exchangeTestUtil.submitBlocks(blocks),
-            "INVALID_BATCH_BLOCK_TYPE"
-          );
-        });
-
-        it("should not be able to verify the same block twice in a single call", async () => {
-          await createExchange();
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          const ring = await setupRandomRing(false);
-          await exchangeTestUtil.commitDeposits(exchangeId);
-
-          await exchangeTestUtil.sendRing(exchangeId, ring);
-          const blocks = await exchangeTestUtil.commitRings(exchangeId);
-          assert(blocks.length === 1, "unexpected number of blocks");
-
-          // Verify the same block twice
-          await expectThrow(
-            exchangeTestUtil.submitBlocks([blocks[0], blocks[0]]),
-            "BLOCK_VERIFIED_ALREADY"
-          );
-        });
-
-        it("should not be able to verify a block with an invalid proof", async () => {
+        it("should not be able to submit blocks with incorrect public data", async () => {
           await createExchange();
           // Commit some blocks
           await commitSomeWork();
-          // Store all pending blocks
-          const blocks: Block[] = [];
-          for (const block of exchangeTestUtil.pendingBlocks[exchangeId]) {
-            blocks.push(block);
-          }
-          // Try to verify the blocks
-          for (const block of blocks) {
-            await expectThrow(
-              exchange.verifyBlocks(
-                [block.blockIdx],
-                new Array(8).fill(new BN(123)),
-                { from: exchangeTestUtil.exchangeOperator }
-              ),
-              "INVALID_PROOF"
-            );
-          }
-        });
-
-        it("should not be able to verify a block with incorrect public data", async () => {
-          await createExchange();
-          const ring: RingInfo = {
-            orderA: {
-              tokenS: "WETH",
-              tokenB: "GTO",
-              amountS: new BN(web3.utils.toWei("100", "ether")),
-              amountB: new BN(web3.utils.toWei("200", "ether"))
-            },
-            orderB: {
-              tokenS: "GTO",
-              tokenB: "WETH",
-              amountS: new BN(web3.utils.toWei("200", "ether")),
-              amountB: new BN(web3.utils.toWei("100", "ether"))
-            },
-            expected: {
-              orderA: { filledFraction: 1.0, spread: new BN(0) },
-              orderB: { filledFraction: 1.0 }
-            }
-          };
-
-          await exchangeTestUtil.setupRing(ring);
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
-
-          await exchangeTestUtil.sendRing(exchangeId, ring);
-
-          exchangeTestUtil.commitWrongPublicDataOnce = true;
-          await exchangeTestUtil.commitRings(exchangeId);
-
+          await commitSomeWork();
+          await commitSomeWork();
+          // Try so submit blocks with invalid proofs
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(exchangeId),
+            exchangeTestUtil.submitPendingBlocks(
+              exchangeId,
+              (blocks: OnchainBlock[]) => {
+                // Change the data of a random block
+                const blockToModify = exchangeTestUtil.getRandomInt(
+                  blocks.length
+                );
+                blocks[blockToModify].data = [
+                  ...blocks[blockToModify].data,
+                  ...web3.utils.hexToBytes(web3.utils.randomHex(1))
+                ];
+              }
+            ),
             "INVALID_PROOF"
-          );
-        });
-
-        it("should not be able to verify blocks with wrong call input format", async () => {
-          await createExchange();
-
-          await expectThrow(
-            exchange.verifyBlocks([], [], {
-              from: exchangeTestUtil.exchangeOperator
-            }),
-            "INVALID_INPUT_ARRAYS"
-          );
-          await expectThrow(
-            exchange.verifyBlocks([1, 2], new Array(15).fill(123), {
-              from: exchangeTestUtil.exchangeOperator
-            }),
-            "INVALID_PROOF_ARRAY"
-          );
-          await expectThrow(
-            exchange.verifyBlocks([1, 2], new Array(3 * 8).fill(123), {
-              from: exchangeTestUtil.exchangeOperator
-            }),
-            "INVALID_INPUT_ARRAYS"
           );
         });
       });

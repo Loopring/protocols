@@ -20,13 +20,13 @@ contract("Exchange", (accounts: string[]) => {
     exchange = exchangeTestUtil.exchange;
   };
 
-  const setAgentsAuthorizedChecked = async (
+  const authorizeAgentsChecked = async (
     owner: string,
     agents: string[],
     authorized: boolean[],
     from: string
   ) => {
-    await exchange.setAgentsAuthorized(owner, agents, authorized, { from });
+    await exchange.authorizeAgents(owner, agents, authorized, { from });
     const events = await exchangeTestUtil.assertEventsEmitted(
       exchange,
       "AgentAuthorized",
@@ -90,28 +90,28 @@ contract("Exchange", (accounts: string[]) => {
 
       // Only the owner should be able to authorize the first agent
       await expectThrow(
-        setAgentsAuthorizedChecked(ownerA, [ownerB], [true], ownerB),
+        authorizeAgentsChecked(ownerA, [ownerB], [true], ownerB),
         "UNAUTHORIZED"
       );
 
       // Authorize an agent
-      await setAgentsAuthorizedChecked(ownerA, [ownerB], [true], ownerA);
+      await authorizeAgentsChecked(ownerA, [ownerB], [true], ownerA);
 
       // Try to authorize another agent using a non-agent address
       await expectThrow(
-        setAgentsAuthorizedChecked(ownerA, [ownerD], [true], ownerC),
+        authorizeAgentsChecked(ownerA, [ownerD], [true], ownerC),
         "UNAUTHORIZED"
       );
 
       // Authorize a new agent using an agent
-      await setAgentsAuthorizedChecked(ownerA, [ownerC], [true], ownerB);
+      await authorizeAgentsChecked(ownerA, [ownerC], [true], ownerB);
 
       // Deauthorize the old agent with the new agent
-      await setAgentsAuthorizedChecked(ownerA, [ownerB], [false], ownerC);
+      await authorizeAgentsChecked(ownerA, [ownerB], [false], ownerC);
 
       // Make sure the deauthorized agent isn't an agent anymore
       await expectThrow(
-        setAgentsAuthorizedChecked(ownerA, [ownerD], [true], ownerB),
+        authorizeAgentsChecked(ownerA, [ownerD], [true], ownerB),
         "UNAUTHORIZED"
       );
     });
@@ -180,7 +180,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.authorizeAgent(ownerA, agent, true, { from: agent }),
+        exchange.authorizeAgents(ownerA, [agent], [true], { from: agent }),
         "UNAUTHORIZED"
       );
 
@@ -199,7 +199,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Authorize the agent
-      await setAgentsAuthorizedChecked(ownerA, [agent], [true], ownerA);
+      await authorizeAgentsChecked(ownerA, [agent], [true], ownerA);
 
       // Now call the functions successfully
 
@@ -231,7 +231,7 @@ contract("Exchange", (accounts: string[]) => {
         value: withdrawalFee
       });
 
-      await exchange.authorizeAgent(ownerA, agent, true, { from: agent });
+      await exchange.authorizeAgents(ownerA, [agent], [true], { from: agent });
 
       await exchange.approveConditionalTransfer(
         ownerA,
@@ -252,7 +252,7 @@ contract("Exchange", (accounts: string[]) => {
       const amount = new BN(web3.utils.toWei("412.8", "ether"));
 
       // Authorize an agent
-      await setAgentsAuthorizedChecked(ownerA, [ownerD], [true], ownerA);
+      await authorizeAgentsChecked(ownerA, [ownerD], [true], ownerA);
 
       await exchangeTestUtil.setBalanceAndApprove(ownerA, "LRC", amount);
       // Transfer the tokens

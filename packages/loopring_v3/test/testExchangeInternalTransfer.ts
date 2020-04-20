@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
-import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Constants } from "loopringV3.js";
+import { OnchainBlock, ExchangeTestUtil } from "./testExchangeUtil";
+import { Bitstream } from "loopringV3.js";
 
 export interface TransferOptions {
   conditionalTransfer?: boolean;
@@ -109,9 +109,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("InternalTransfer", function() {
     this.timeout(0);
 
-    it("conditional transfers", async () => {
-      await createExchange();
-
+    describe("Conditional transfers", function() {
       const tokenA = "ETH";
       const tokenB = "LRC";
       const amountA = new BN(web3.utils.toWei("1.8", "ether"));
@@ -119,103 +117,196 @@ contract("Exchange", (accounts: string[]) => {
       const amountC = new BN(web3.utils.toWei("0.1", "ether"));
       const amountD = new BN(web3.utils.toWei("0.01", "ether"));
 
-      // Do some transfers
-      await transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC);
-      await transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
-      await transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
-        conditionalTransfer: true
+      it("General transfers (mixed conditional/non-conditional)", async () => {
+        await createExchange();
+        // Do some transfers
+        await transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC);
+        await transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
+        await transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
+          conditionalTransfer: true
+        });
+        await transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
+        // Submit the transfers
+        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitPendingBlocks(exchangeID);
       });
-      await transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
-      // Submit the transfers
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
-      // Do some transfers with the same (from, to, token) values
-      await transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-        conditionalTransfer: true
+      it("Conditional transfers with same (from, to, token) values", async () => {
+        await createExchange();
+        // Do some transfers with the same (from, to, token) values
+        await transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
+          conditionalTransfer: true
+        });
+        await transfer(ownerB, ownerA, tokenA, amountA, tokenB, amountC, {
+          conditionalTransfer: true
+        });
+        await transfer(ownerB, ownerA, tokenA, amountB, tokenB, amountD, {
+          conditionalTransfer: true
+        });
+        await transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
+          conditionalTransfer: true
+        });
+        // Submit the transfers
+        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitPendingBlocks(exchangeID);
       });
-      await transfer(ownerB, ownerA, tokenA, amountA, tokenB, amountC, {
-        conditionalTransfer: true
-      });
-      await transfer(ownerB, ownerA, tokenA, amountB, tokenB, amountD, {
-        conditionalTransfer: true
-      });
-      await transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-        conditionalTransfer: true
-      });
-      // Submit the transfers
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
-      // Do some transfers with insufficient approval
-      await transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
-        conditionalTransfer: true,
-        autoApprove: false
+      it("Conditional transfers with insufficient approval", async () => {
+        await createExchange();
+        // Do some transfers with insufficient approval
+        await transfer(ownerA, ownerB, tokenA, amountA, tokenB, amountC, {
+          conditionalTransfer: true,
+          autoApprove: false
+        });
+        await transfer(ownerB, ownerA, tokenB, amountB, tokenB, amountD, {
+          conditionalTransfer: true
+        });
+        // Submit the transfers
+        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await expectThrow(
+          exchangeTestUtil.submitPendingBlocks(exchangeID),
+          "SUB_UNDERFLOW"
+        );
+        // Aprove the main transfer, but not yet the fee
+        await exchangeTestUtil.approveConditionalTransfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountA
+        );
+        await expectThrow(
+          exchangeTestUtil.submitPendingBlocks(exchangeID),
+          "SUB_UNDERFLOW"
+        );
+        // Now also approve the fee payment
+        await exchangeTestUtil.approveConditionalTransfer(
+          ownerA,
+          operator,
+          tokenB,
+          amountC
+        );
+        await exchangeTestUtil.submitPendingBlocks(exchangeID);
       });
-      await transfer(ownerB, ownerA, tokenB, amountB, tokenB, amountD, {
-        conditionalTransfer: true
-      });
-      // Submit the transfers
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      await expectThrow(
-        exchangeTestUtil.submitPendingBlocks(exchangeID),
-        "SUB_UNDERFLOW"
-      );
-      // Aprove the main transfer, but not yet the fee
-      await exchangeTestUtil.approveConditionalTransfer(
-        ownerA,
-        ownerB,
-        tokenA,
-        amountA
-      );
-      await expectThrow(
-        exchangeTestUtil.submitPendingBlocks(exchangeID),
-        "SUB_UNDERFLOW"
-      );
-      // Now also approve the fee payment
-      await exchangeTestUtil.approveConditionalTransfer(
-        ownerA,
-        operator,
-        tokenB,
-        amountC
-      );
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
-      // Should be able to do multiple approvals that result in a single transfer
-      await exchangeTestUtil.approveConditionalTransfer(
-        ownerA,
-        ownerB,
-        tokenA,
-        amountA
-      );
-      await exchangeTestUtil.approveConditionalTransfer(
-        ownerA,
-        ownerB,
-        tokenA,
-        amountB
-      );
-      await exchangeTestUtil.approveConditionalTransfer(
-        ownerA,
-        ownerB,
-        tokenA,
-        amountC
-      );
-      await transfer(
-        ownerA,
-        ownerB,
-        tokenA,
-        amountA.add(amountB).add(amountC),
-        tokenB,
-        new BN(0),
-        { conditionalTransfer: true, autoApprove: false }
-      );
-      // Submit the single transfer
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      it("Combine multiple approvals into a single transfer", async () => {
+        // Should be able to do multiple approvals that result in a single transfer
+        await exchangeTestUtil.approveConditionalTransfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountA
+        );
+        await exchangeTestUtil.approveConditionalTransfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountB
+        );
+        await exchangeTestUtil.approveConditionalTransfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountC
+        );
+        await transfer(
+          ownerA,
+          ownerB,
+          tokenA,
+          amountA.add(amountB).add(amountC),
+          tokenB,
+          new BN(0),
+          { conditionalTransfer: true, autoApprove: false }
+        );
+        // Submit the single transfer
+        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      });
+
+      it("Invalid auxiliary data", async () => {
+        await createExchange();
+        // Do some transfers
+        await transfer(ownerA, ownerD, tokenA, amountA, tokenB, amountC, {
+          conditionalTransfer: true
+        });
+        await transfer(ownerB, ownerC, tokenA, amountB, tokenA, amountD);
+        await transfer(ownerA, ownerB, tokenA, amountC, tokenB, amountD, {
+          conditionalTransfer: true
+        });
+        await transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
+        // Submit the deposits
+        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.submitPendingBlocks(exchangeID);
+        // Commmit the transfers
+        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+
+        // Submit the transfers: invalid length
+        await expectThrow(
+          exchangeTestUtil.submitPendingBlocks(
+            exchangeID,
+            (blocks: OnchainBlock[]) => {
+              assert(blocks.length === 1, "unexpected number of blocks");
+              const auxiliaryData = new Bitstream();
+              auxiliaryData.addNumber(0, 4);
+              blocks[0].auxiliaryData = web3.utils.hexToBytes(
+                auxiliaryData.getData()
+              );
+            }
+          ),
+          "INVALID_AUXILIARYDATA_LENGTH"
+        );
+
+        // Submit the transfers: duplicated index
+        await expectThrow(
+          exchangeTestUtil.submitPendingBlocks(
+            exchangeID,
+            (blocks: OnchainBlock[]) => {
+              assert(blocks.length === 1, "unexpected number of blocks");
+              const auxiliaryData = new Bitstream();
+              auxiliaryData.addNumber(2, 4);
+              auxiliaryData.addNumber(2, 4);
+              blocks[0].auxiliaryData = web3.utils.hexToBytes(
+                auxiliaryData.getData()
+              );
+            }
+          ),
+          "INVALID_AUXILIARYDATA_DATA"
+        );
+
+        // Submit the transfers: index points to a normal transfer
+        await expectThrow(
+          exchangeTestUtil.submitPendingBlocks(
+            exchangeID,
+            (blocks: OnchainBlock[]) => {
+              assert(blocks.length === 1, "unexpected number of blocks");
+              const auxiliaryData = new Bitstream();
+              auxiliaryData.addNumber(0, 4);
+              auxiliaryData.addNumber(1, 4);
+              blocks[0].auxiliaryData = web3.utils.hexToBytes(
+                auxiliaryData.getData()
+              );
+            }
+          ),
+          "INVALID_AUXILIARYDATA_DATA"
+        );
+
+        // Submit the transfers: everything alright
+        await exchangeTestUtil.submitPendingBlocks(
+          exchangeID,
+          (blocks: OnchainBlock[]) => {
+            assert(blocks.length === 1, "unexpected number of blocks");
+            const auxiliaryData = new Bitstream();
+            auxiliaryData.addNumber(0, 4);
+            auxiliaryData.addNumber(2, 4);
+            blocks[0].auxiliaryData = web3.utils.hexToBytes(
+              auxiliaryData.getData()
+            );
+          }
+        );
+      });
     });
 
     it("transfer (from != to, token == feeToken)", async () => {

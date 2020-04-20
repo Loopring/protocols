@@ -389,7 +389,7 @@ library ExchangeBlocks
         uint24 operatorAccountID = data.bytesToUint24(offset);
         offset += 3;
 
-        if (auxiliaryData.length > 0) {
+        if (numConditionalTransfers > 0) {
             require(S.onchainDataAvailability, "CONDITIONAL_TRANSFERS_REQUIRE_OCDA");
         }
 
@@ -408,7 +408,8 @@ library ExchangeBlocks
             }
 
             // Check that this is a conditional transfer
-            require(uint8((transferData >> 104) & 0xFF) == 1, "INVALID_AUXILIARYDATA_DATA");
+            uint transferType = (transferData >> 104) & 0xFF;
+            require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
 
             // Update the onchain state
             consumeConditionalTransfer(

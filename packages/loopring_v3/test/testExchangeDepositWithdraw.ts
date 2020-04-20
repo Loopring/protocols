@@ -516,9 +516,29 @@ contract("Exchange", (accounts: string[]) => {
       "owner"
     );
 
+    // Check how much will be withdrawn
+    const onchainAmountWithdrawableBefore = await exchange.getAmountWithdrawable(
+      owner,
+      token
+    );
+    assert(
+      onchainAmountWithdrawableBefore.eq(expectedAmount),
+      "unexpected withdrawable amount"
+    );
+
     await exchange.withdrawFromApprovedWithdrawal(owner, token, {
       from: exchangeTestUtil.testContext.feeRecipients[0]
     });
+
+    // Complete amount needs to be withdrawn
+    const onchainAmountWithdrawableAfter = await exchange.getAmountWithdrawable(
+      owner,
+      token
+    );
+    assert(
+      onchainAmountWithdrawableAfter.eq(new BN(0)),
+      "unexpected withdrawable amount"
+    );
 
     // Verify balances
     await snapshot.verifyBalances();

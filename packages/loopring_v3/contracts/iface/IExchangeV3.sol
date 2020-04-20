@@ -299,7 +299,7 @@ contract IExchangeV3 is IExchange
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] calldata accountMerkleProof,
+        uint[36] calldata accountMerkleProof,
         uint[12] calldata balanceMerkleProof
         )
         external
@@ -748,7 +748,7 @@ contract IExchangeV3 is IExchange
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] calldata accountMerkleProof,
+        uint[36] calldata accountMerkleProof,
         uint[12] calldata balanceMerkleProof
         )
         external;
@@ -812,7 +812,7 @@ contract IExchangeV3 is IExchange
     /// @param owner The account owner.
     /// @param agents The agents to be authorized/deauthorized.
     /// @param authorized True to authorize the agent, false to deauthorize
-    function setAgentsAuthorized(
+    function authorizeAgents(
         address   owner,
         address[] calldata agents,
         bool[]    calldata authorized

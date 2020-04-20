@@ -218,7 +218,7 @@ contract ExchangeV3 is IExchangeV3
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] calldata accountPath,
+        uint[36] calldata accountPath,
         uint[12] calldata balancePath
         )
         external
@@ -511,7 +511,7 @@ contract ExchangeV3 is IExchangeV3
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] calldata accountPath,
+        uint[36] calldata accountPath,
         uint[12] calldata balancePath
         )
         external
@@ -566,7 +566,7 @@ contract ExchangeV3 is IExchangeV3
     }
 
     // -- Agents --
-    function setAgentsAuthorized(
+    function authorizeAgents(
         address   owner,
         address[] calldata agents,
         bool[]    calldata authorized
