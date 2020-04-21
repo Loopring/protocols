@@ -1169,6 +1169,49 @@ contract("Transfers", (accounts: string[]) => {
           });
         }
       );
+
+      it(
+        description(
+          "owner should not be able to call a token contract",
+          metaTx
+        ),
+        async () => {
+          useMetaTx = metaTx;
+          const owner = ctx.owners[0];
+          const to = await getTokenAddress(ctx, "LRC");
+          const { wallet } = await createWallet(ctx, owner);
+
+          // Set a price for the token
+          await setOraclePrice(to, toAmount("1"), toAmount("1"));
+
+          // Do a call to a token contract
+          await expectThrow(
+            callContractChecked(owner, wallet, to, new BN(0), 1, {
+              assetValue: new BN(1)
+            }),
+            "CALL_DISALLOWED"
+          );
+        }
+      );
+
+      it(
+        description(
+          "owner should not be able to call the wallet itself",
+          metaTx
+        ),
+        async () => {
+          useMetaTx = metaTx;
+          const owner = ctx.owners[0];
+          const to = await getTokenAddress(ctx, "LRC");
+          const { wallet } = await createWallet(ctx, owner);
+
+          // Do a call to a token contract
+          await expectThrow(
+            callContractChecked(owner, wallet, wallet, new BN(0), 1),
+            "CALL_DISALLOWED"
+          );
+        }
+      );
     });
 
     describe(description("approveToken", metaTx), () => {
@@ -1701,6 +1744,19 @@ contract("Transfers", (accounts: string[]) => {
           await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
         }
       }
+    });
+
+    it("owner should not be able to call the wallet itself", async () => {
+      useMetaTx = true;
+      const owner = ctx.owners[0];
+      const { wallet, guardians } = await createWallet(ctx, owner, 2);
+      const signers = [owner, ...guardians].sort();
+
+      // Do a call to a token contract
+      await expectThrow(
+        callContractChecked(owner, wallet, wallet, new BN(0), 1, { signers }),
+        "CALL_DISALLOWED"
+      );
     });
   });
 });

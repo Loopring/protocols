@@ -116,7 +116,9 @@ export async function createWallet(
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
   const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
-  await ctx.walletFactoryModule.createWallet(owner, "", modules);
+  await ctx.walletFactoryModule.createWallet(owner, "", modules, {
+    from: owner
+  });
   // Add the guardians
   const guardians = ctx.guardians.slice(0, numGuardians);
   const group = 0;
