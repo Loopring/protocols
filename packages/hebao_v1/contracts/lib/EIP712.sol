@@ -37,8 +37,7 @@ library EIP712
         returns (bytes32)
     {
         uint _chainid;
-        //assembly { _chainid := chainid() }
-        _chainid = 1;
+        assembly { _chainid := chainid() }
 
         return keccak256(
             abi.encode(
