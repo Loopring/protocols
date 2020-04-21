@@ -108,7 +108,7 @@ abstract contract MetaTxModule is BaseModule
         public
         BaseModule()
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxModule", "1.0"));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Wallet MetaTxModule", "1.0", address(this)));
         controller = _controller;
     }
 
