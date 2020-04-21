@@ -2758,6 +2758,13 @@ export class ExchangeTestUtil {
     await this.exchange.setDepositContract(this.depositContract.address, {
       from: owner
     });
+    // Check the deposit contract
+    const onchainDepositContract = await this.exchange.getDepositContract();
+    assert.equal(
+      onchainDepositContract,
+      this.depositContract.address,
+      "unexpected deposit contract"
+    );
 
     // Set the operator
     await this.exchange.setOperator(operator, { from: owner });

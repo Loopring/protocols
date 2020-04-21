@@ -23,6 +23,7 @@ import "../lib/AddressUtil.sol";
 import "../lib/ERC20.sol";
 import "../lib/ERC20SafeTransfer.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
 /// @title Basic implementation of IDepositContract that just stores
@@ -33,7 +34,7 @@ import "../lib/MathUint.sol";
 ///        when necessary.
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
-contract BasicDepositContract is IDepositContract
+contract BasicDepositContract is IDepositContract, ReentrancyGuard
 {
     using AddressUtil       for address;
     using ERC20SafeTransfer for address;
@@ -49,8 +50,8 @@ contract BasicDepositContract is IDepositContract
     address public exchange;
     ILoopringV3 public loopring;
 
-    // A map from token address to their accumulated balances
-    mapping (address => uint) public tokenBalances;
+    // A map from token address to the total exchange balances
+    mapping (address => uint) public exchangeBalance;
 
     modifier onlyWhenUninitialized()
     {
@@ -69,6 +70,7 @@ contract BasicDepositContract is IDepositContract
         address loopringAddress
         )
         external
+        nonReentrant
         onlyWhenUninitialized
     {
         exchange = exchangeAddress;
@@ -82,10 +84,11 @@ contract BasicDepositContract is IDepositContract
         )
         external
         payable
+        nonReentrant
         onlyExchange
     {
         // Keep track how many tokens are deposited in the exchange
-        tokenBalances[token] = tokenBalances[token].add(amount);
+        exchangeBalance[token] = exchangeBalance[token].add(amount);
 
         // Check msg.value
         if (token == address(0)) {
@@ -110,10 +113,11 @@ contract BasicDepositContract is IDepositContract
         uint amount
         )
         external
+        nonReentrant
         onlyExchange
     {
         // Keep track how many tokens are deposited in the exchange
-        tokenBalances[token] = tokenBalances[token].sub(amount);
+        exchangeBalance[token] = exchangeBalance[token].sub(amount);
 
         // Transfer the tokens from the contract to the recipient
         transferOut(to, token, amount);
@@ -126,6 +130,7 @@ contract BasicDepositContract is IDepositContract
         uint    amount
         )
         external
+        nonReentrant
         onlyExchange
     {
         require(token.safeTransferFrom(from, to, amount), "TRANSFER_FAILED");
@@ -138,6 +143,7 @@ contract BasicDepositContract is IDepositContract
         address token
         )
         external
+        nonReentrant
         returns(uint amount)
     {
         address payable feeVault = loopring.protocolFeeVault();
@@ -152,7 +158,7 @@ contract BasicDepositContract is IDepositContract
         }
 
         // Calculate the extra amount
-        amount = totalBalance.sub(tokenBalances[token]);
+        amount = totalBalance.sub(exchangeBalance[token]);
 
         // Transfer the extra tokens to the feeVault
         transferOut(feeVault, token, amount);

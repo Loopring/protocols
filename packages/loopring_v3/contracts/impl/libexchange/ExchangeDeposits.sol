@@ -99,15 +99,6 @@ library ExchangeDeposits
         // Total fee to be paid by the user
         uint feeETH = additionalFeeETH.add(S.depositFeeETH);
 
-        // Transfer the tokens to this contract
-        transferDeposit(
-            S,
-            from,
-            tokenAddress,
-            amount,
-            feeETH
-        );
-
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
         ExchangeData.Request memory request = ExchangeData.Request(
@@ -136,6 +127,15 @@ library ExchangeDeposits
             amount
         );
         S.deposits.push(_deposit);
+
+        // Transfer the tokens to this contract
+        transferDeposit(
+            S,
+            from,
+            tokenAddress,
+            amount,
+            feeETH
+        );
 
         emit DepositRequested(
             uint32(S.depositChain.length - 1),

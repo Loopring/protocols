@@ -164,6 +164,13 @@ contract IExchangeV3 is IExchange
         )
         external;
 
+    /// @dev Gets the deposit contract used by this exchange
+    /// @return the deposit contract
+    function getDepositContract()
+        external
+        view
+        returns (IDepositContract);
+
     // -- Constants --
     /// @dev Returns a list of constants used by the exchange.
     /// @return constants The list of constants in the following order:

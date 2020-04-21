@@ -105,9 +105,18 @@ contract ExchangeV3 is IExchangeV3
         external
         onlyOwner
     {
+        require(_depositContract != address(0), "ZERO_ADDRESS");
         // Only used for initialization
         require(state.depositContract == IDepositContract(0), "ALREADY_SET");
         state.depositContract = IDepositContract(_depositContract);
+    }
+
+    function getDepositContract()
+        external
+        view
+        returns (IDepositContract)
+    {
+        return state.depositContract;
     }
 
     // -- Constants --

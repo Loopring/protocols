@@ -29,11 +29,11 @@ import "../../lib/EIP712.sol";
 
 /// @title Fast withdrawal agent implementation.
 ///
-///        Any mediator/cookie jar/... (whoever provides the funds immediately) can call
+///        A mediator/liquidity provider (whoever provides the funds immediately) can call
 ///        `executeFastWithdrawals` to provide users immediately with funds onchain.
 ///        This allows the security of the funds to be handled by any EOA or smart contract.
 ///
-///        Users that want to make use of this functinality have to
+///        Users that want to make use of this functionality have to
 ///        authorize this contract as their agent.
 ///
 ///        TODO: generalize this (here or another agent) with any function call
@@ -148,7 +148,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
         IExchangeV3 exchange = IExchangeV3(fastWithdrawal.exchange);
 
-        // Approve the offchain transfer from the recipient back to the mediator (msg.sender)
+        // Approve the offchain transfer from the withdrawing account back to the mediator (msg.sender)
         exchange.approveConditionalTransfer(
             fastWithdrawal.from,
             msg.sender,
@@ -160,7 +160,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         if (fastWithdrawal.fee > 0) {
             if (fastWithdrawal.onchainFeePayment) {
                 // Do fee payment directly from the user's wallet if requested
-                // (using the approval on the exchange contract)
+                // (using the approval for the exchange)
                 exchange.onchainTransferFrom(
                     fastWithdrawal.from,
                     msg.sender,
@@ -168,6 +168,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                     fastWithdrawal.fee
                 );
             } else {
+                // Do the fee payment with an internal transfer as well
                 // Approve the fee transfer
                 exchange.approveConditionalTransfer(
                     fastWithdrawal.from,
