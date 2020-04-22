@@ -22,10 +22,11 @@ library EIP712
     struct Domain {
         string  name;
         string  version;
+        address verifyingContract;
     }
 
     bytes32 constant internal EIP712_DOMAIN_TYPEHASH = keccak256(
-        "EIP712Domain(string name,string version,uint256 chainId)"
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
     );
 
     string constant internal EIP191_HEADER = "\x19\x01";
@@ -43,7 +44,8 @@ library EIP712
                 EIP712_DOMAIN_TYPEHASH,
                 keccak256(bytes(domain.name)),
                 keccak256(bytes(domain.version)),
-                _chainid
+                _chainid,
+                domain.verifyingContract
             )
         );
     }
