@@ -192,6 +192,8 @@ contract SecurityStore is DataStore
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
         w.guardianRemovalEffectiveTime[guardian] = removalEffectiveTime;
+
+        cleanRemovedGuardians(wallet);
     }
 
     function cancelGuardianRemoval(
@@ -214,13 +216,13 @@ contract SecurityStore is DataStore
         delete w.guardianRemovalEffectiveTime[guardian];
     }
 
-    function cleanRemovedGuardians(address wallet, uint from, uint to)
+    function cleanRemovedGuardians(address wallet)
         public
         onlyManager
     {
         Wallet storage w = wallets[wallet];
 
-        for (uint i = from; i < to; i ++) {
+        for (uint i = 0; i < w.guardians.length; i ++) {
             if (i >= w.guardians.length) {
                 break;
             }
@@ -229,7 +231,7 @@ contract SecurityStore is DataStore
 
             if (guardian.addr != lastGuardian.addr) {
                 w.guardians[i] = lastGuardian;
-                w.guardianIdx[lastGuardian.addr] = i;
+                w.guardianIdx[lastGuardian.addr] = i + 1;
             }
             w.guardians.pop();
             delete w.guardianIdx[guardian.addr];

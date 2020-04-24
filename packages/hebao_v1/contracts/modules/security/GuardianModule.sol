@@ -66,7 +66,7 @@ contract GuardianModule is SecurityModule
             effectiveTime = now + pendingPeriod;
         }
         controller.securityStore().addOrUpdateGuardian(wallet, guardian, group, effectiveTime);
-        emit GuardianAdded(wallet, guardian, group, now);
+        emit GuardianAdded(wallet, guardian, group, effectiveTime);
     }
 
     function cancelGuardianAddition(
@@ -107,19 +107,6 @@ contract GuardianModule is SecurityModule
     {
         controller.securityStore().cancelGuardianRemoval(wallet, guardian);
         emit GuardianRemovalCancelled(wallet, guardian);
-    }
-
-    function cleanRemovedGuardians(
-        address wallet,
-        uint from,
-        uint to
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
-    {
-        controller.securityStore().cleanRemovedGuardians(wallet, from, to);
     }
 
     function extractMetaTxSigners(
