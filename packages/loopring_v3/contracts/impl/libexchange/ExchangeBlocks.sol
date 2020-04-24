@@ -168,7 +168,7 @@ library ExchangeBlocks
             require(_block.blockType == ExchangeData.BlockType.DEPOSIT, "DEPOSIT_BLOCK_FORCED");
         }
 
-        if (_block.blockType == ExchangeData.BlockType.RING_SETTLEMENT) {
+        if (_block.blockType == ExchangeData.BlockType.SETTLEMENT) {
             require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             uint8 protocolTakerFeeBips;
@@ -383,15 +383,14 @@ library ExchangeBlocks
         uint offset = 4 + 32 + 32 + 32;
         // The length of the auxiliary data needs to match the number of conditional transfers
         uint numConditionalTransfers = data.bytesToUint32(offset);
+        if (numConditionalTransfers > 0) {
+            require(S.onchainDataAvailability, "CONDITIONAL_TRANSFERS_REQUIRE_OCDA");
+        }
         require(auxiliaryData.length == numConditionalTransfers * 4, "INVALID_AUXILIARYDATA_LENGTH");
         offset += 4;
 
         uint24 operatorAccountID = data.bytesToUint24(offset);
         offset += 3;
-
-        if (numConditionalTransfers > 0) {
-            require(S.onchainDataAvailability, "CONDITIONAL_TRANSFERS_REQUIRE_OCDA");
-        }
 
         // Run over all conditional transfers
         uint previousTransferOffset = 0;

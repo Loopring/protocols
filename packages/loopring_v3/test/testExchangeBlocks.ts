@@ -167,7 +167,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT,
+            BlockType.SETTLEMENT,
             true,
             2,
             blockVersion,
@@ -185,7 +185,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
           const block: OnchainBlock = {
-            blockType: BlockType.RING_SETTLEMENT,
+            blockType: BlockType.SETTLEMENT,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
@@ -205,7 +205,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT,
+            BlockType.SETTLEMENT,
             true,
             2,
             blockVersion,
@@ -225,7 +225,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.RING_SETTLEMENT,
+              blockType: BlockType.SETTLEMENT,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -256,7 +256,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.RING_SETTLEMENT,
+              blockType: BlockType.SETTLEMENT,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -279,7 +279,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.RING_SETTLEMENT,
+            BlockType.SETTLEMENT,
             true,
             2,
             blockVersion,
@@ -303,7 +303,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
             const block: OnchainBlock = {
-              blockType: BlockType.RING_SETTLEMENT,
+              blockType: BlockType.SETTLEMENT,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -331,7 +331,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
             const block: OnchainBlock = {
-              blockType: BlockType.RING_SETTLEMENT,
+              blockType: BlockType.SETTLEMENT,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -629,7 +629,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(merkleRoot.add(new BN(1)), 32);
           bs.addNumber(0, 4);
           const tradeBlock: OnchainBlock = {
-            blockType: BlockType.RING_SETTLEMENT,
+            blockType: BlockType.SETTLEMENT,
             blockSize: exchangeTestUtil.ringSettlementBlockSizes[0],
             blockVersion: 0,
             data: web3.utils.hexToBytes(bs.getData()),

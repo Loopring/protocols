@@ -598,7 +598,7 @@ contract ExchangeV3 is IExchangeV3
         return owner == agent || state.agent[owner][agent];
     }
 
-    function approveConditionalTransfer(
+    function approveOffchainTransfer(
         address from,
         address to,
         address token,

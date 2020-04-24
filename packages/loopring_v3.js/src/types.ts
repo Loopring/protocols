@@ -5,7 +5,7 @@ import { SparseMerkleTree } from "./sparse_merkle_tree";
  * The type of requests handled in a block.
  */
 export enum BlockType {
-  RING_SETTLEMENT = 0,
+  SETTLEMENT = 0,
   DEPOSIT,
   ONCHAIN_WITHDRAWAL,
   OFFCHAIN_WITHDRAWAL,

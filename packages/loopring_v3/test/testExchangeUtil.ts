@@ -1291,7 +1291,7 @@ export class ExchangeTestUtil {
       assert(result.status === 0, "generateKeys failed: " + blockFilename);
 
       let verificationKeyFilename = "keys/";
-      if (block.blockType === BlockType.RING_SETTLEMENT) {
+      if (block.blockType === BlockType.SETTLEMENT) {
         verificationKeyFilename += "trade";
       } else if (block.blockType === BlockType.DEPOSIT) {
         verificationKeyFilename += "deposit";
@@ -2469,7 +2469,7 @@ export class ExchangeTestUtil {
       // Commit the block
       const blockInfo = await this.commitBlock(
         operator,
-        BlockType.RING_SETTLEMENT,
+        BlockType.SETTLEMENT,
         blockSize,
         bs.getData(),
         blockFilename
@@ -2608,7 +2608,7 @@ export class ExchangeTestUtil {
     // console.log(this.tokenIDMap);
   }
 
-  public async approveConditionalTransfer(
+  public async approveOffchainTransfer(
     from: string,
     to: string,
     token: string,
@@ -2625,7 +2625,7 @@ export class ExchangeTestUtil {
       token
     );
 
-    await this.exchange.approveConditionalTransfer(from, to, token, amount, {
+    await this.exchange.approveOffchainTransfer(from, to, token, amount, {
       from
     });
 
@@ -2783,7 +2783,7 @@ export class ExchangeTestUtil {
     const genesisBlock: Block = {
       blockIdx: 0,
       filename: null,
-      blockType: BlockType.RING_SETTLEMENT,
+      blockType: BlockType.SETTLEMENT,
       blockSize: 0,
       blockVersion: 0,
       operator: Constants.zeroAddress,

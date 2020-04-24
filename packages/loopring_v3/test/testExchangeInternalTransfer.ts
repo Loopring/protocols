@@ -63,13 +63,8 @@ contract("Exchange", (accounts: string[]) => {
       new BN(0)
     );
     if (conditionalTransfer && autoApprove) {
-      await exchangeTestUtil.approveConditionalTransfer(
-        from,
-        to,
-        token,
-        amount
-      );
-      await exchangeTestUtil.approveConditionalTransfer(
+      await exchangeTestUtil.approveOffchainTransfer(from, to, token, amount);
+      await exchangeTestUtil.approveOffchainTransfer(
         from,
         operator,
         feeToken,
@@ -171,7 +166,7 @@ contract("Exchange", (accounts: string[]) => {
           "SUB_UNDERFLOW"
         );
         // Aprove the main transfer, but not yet the fee
-        await exchangeTestUtil.approveConditionalTransfer(
+        await exchangeTestUtil.approveOffchainTransfer(
           ownerA,
           ownerB,
           tokenA,
@@ -182,7 +177,7 @@ contract("Exchange", (accounts: string[]) => {
           "SUB_UNDERFLOW"
         );
         // Now also approve the fee payment
-        await exchangeTestUtil.approveConditionalTransfer(
+        await exchangeTestUtil.approveOffchainTransfer(
           ownerA,
           operator,
           tokenB,
@@ -193,19 +188,19 @@ contract("Exchange", (accounts: string[]) => {
 
       it("Combine multiple approvals into a single transfer", async () => {
         // Should be able to do multiple approvals that result in a single transfer
-        await exchangeTestUtil.approveConditionalTransfer(
+        await exchangeTestUtil.approveOffchainTransfer(
           ownerA,
           ownerB,
           tokenA,
           amountA
         );
-        await exchangeTestUtil.approveConditionalTransfer(
+        await exchangeTestUtil.approveOffchainTransfer(
           ownerA,
           ownerB,
           tokenA,
           amountB
         );
-        await exchangeTestUtil.approveConditionalTransfer(
+        await exchangeTestUtil.approveOffchainTransfer(
           ownerA,
           ownerB,
           tokenA,

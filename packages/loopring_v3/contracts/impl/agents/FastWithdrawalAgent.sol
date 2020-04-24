@@ -52,14 +52,14 @@ contract FastWithdrawalAgent is ReentrancyGuard
     struct FastWithdrawal
     {
         address exchange;
-        address from;
-        address to;
+        address from;                   // The owner of the account
+        address to;                     // The address that will receive the tokens withdrawn
         address token;
         uint    amount;
         address feeToken;
         uint    fee;
-        uint    validUntil;
         bool    onchainFeePayment;
+        uint    validUntil;
         bytes   signature;
     }
 
@@ -78,6 +78,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         //DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
 
+    // This method is expected to be called by a mediator to facilitate fast withdrawals.
     function executeFastWithdrawals(FastWithdrawal[] memory fastWithdrawals)
         public
         payable
@@ -149,7 +150,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         IExchangeV3 exchange = IExchangeV3(fastWithdrawal.exchange);
 
         // Approve the offchain transfer from the withdrawing account back to the mediator (msg.sender)
-        exchange.approveConditionalTransfer(
+        exchange.approveOffchainTransfer(
             fastWithdrawal.from,
             msg.sender,
             fastWithdrawal.token,
@@ -170,7 +171,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
             } else {
                 // Do the fee payment with an internal transfer as well
                 // Approve the fee transfer
-                exchange.approveConditionalTransfer(
+                exchange.approveOffchainTransfer(
                     fastWithdrawal.from,
                     msg.sender,
                     fastWithdrawal.feeToken,

@@ -148,7 +148,7 @@ export class ExchangeV3 {
       exchangeId,
       blockIdx: 0,
 
-      blockType: BlockType.RING_SETTLEMENT,
+      blockType: BlockType.SETTLEMENT,
       blockSize: 0,
       blockVersion: 0,
       data: "0x",
@@ -1056,7 +1056,7 @@ export class ExchangeV3 {
   private processBlock(block: Block, replay: boolean) {
     let requests: any[] = [];
     try {
-      if (block.blockType === BlockType.RING_SETTLEMENT) {
+      if (block.blockType === BlockType.SETTLEMENT) {
         requests = RingSettlementProcessor.processBlock(this.state, block);
         block.totalNumTradesProccesed += replay ? 0 : requests.length;
       } else if (block.blockType === BlockType.DEPOSIT) {

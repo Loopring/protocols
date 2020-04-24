@@ -32,7 +32,7 @@ library ExchangeData
     // -- Enums --
     enum BlockType
     {
-        RING_SETTLEMENT,
+        SETTLEMENT,
         DEPOSIT,
         ONCHAIN_WITHDRAWAL,
         OFFCHAIN_WITHDRAWAL,

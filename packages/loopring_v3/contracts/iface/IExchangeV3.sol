@@ -835,7 +835,7 @@ contract IExchangeV3 is IExchange
         view
         returns (bool);
 
-    /// @dev Approves an internal transfer.
+    /// @dev Approves an offchain transfer.
     ///      Important! This is just an approval, the operator has full control
     ///      whether the transfer will actally be done!
     ///
@@ -845,7 +845,7 @@ contract IExchangeV3 is IExchange
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer ('0x0' for ETH).
     /// @param amount The amount of tokens to be transferred.
-    function approveConditionalTransfer(
+    function approveOffchainTransfer(
         address from,
         address to,
         address token,

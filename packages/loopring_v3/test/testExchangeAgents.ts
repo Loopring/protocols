@@ -185,7 +185,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await expectThrow(
-        exchange.approveConditionalTransfer(ownerA, ownerB, token, new BN(0), {
+        exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), {
           from: agent
         }),
         "UNAUTHORIZED"
@@ -233,13 +233,9 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchange.authorizeAgents(ownerA, [agent], [true], { from: agent });
 
-      await exchange.approveConditionalTransfer(
-        ownerA,
-        ownerB,
-        token,
-        new BN(0),
-        { from: agent }
-      );
+      await exchange.approveOffchainTransfer(ownerA, ownerB, token, new BN(0), {
+        from: agent
+      });
 
       await exchange.onchainTransferFrom(ownerA, ownerB, token, new BN(0), {
         from: agent
