@@ -50,7 +50,7 @@
     "es6-iterator": "^2.0.3",
     "es6-map": "^0.1.5",
     "es6-promisify": "^6.0.2",
-    "escape-string-regexp": "^2.0.0",
+    "escape-string-regexp": "^4.0.0",
     "estraverse": "^4.2.0",
     "esutils": "^2.0.2",
     "ethereum-tx-decoder": "^3.0.0",
