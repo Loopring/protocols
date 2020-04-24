@@ -39,6 +39,8 @@ contract SecurityStore is DataStore
         Data.Guardian[] guardians;
 
         mapping    (address => uint) guardianIdx;
+        mapping    (address => uint) guardianEffectiveTime;
+        mapping    (address => uint) guardianRemovalEffectiveTime;
     }
 
     mapping (address => Wallet) public wallets;
@@ -53,28 +55,46 @@ contract SecurityStore is DataStore
         view
         returns (bool)
     {
-        return wallets[wallet].guardianIdx[guardian] > 0;
+        return wallets[wallet].guardianIdx[guardian] > 0 &&
+            wallets[wallet].guardianEffectiveTime[guardian] >= now &&
+            wallets[wallet].guardianRemovalEffectiveTime[guardian] < now;
     }
 
     function getGuardian(
         address wallet,
-        address _guardian
+        address guardian
         )
         public
         view
-        returns (Data.Guardian memory guardian)
+        returns (Data.Guardian memory)
     {
-        uint index = wallets[wallet].guardianIdx[_guardian];
+        Wallet storage w = wallets[wallet];
+        uint index = w.guardianIdx[guardian];
         require(index > 0, "NOT_A_GUARDIAN");
-        guardian = wallets[wallet].guardians[index-1];
+        require(
+            w.guardianEffectiveTime[guardian] >= now &&
+            w.guardianRemovalEffectiveTime[guardian] < now,
+            "NOT_A_EFFECTIVE_GUARDIAN"
+        );
+        return wallets[wallet].guardians[index-1];
     }
 
     function guardians(address wallet)
         public
         view
-        returns (Data.Guardian[] memory)
+        returns (Data.Guardian[] memory effectiveGuardians)
     {
-        return wallets[wallet].guardians;
+        Wallet storage w = wallets[wallet];
+        effectiveGuardians = new Data.Guardian[](w.guardians.length);
+        uint index = 0;
+        for (uint i = 0; i < w.guardians.length; i++) {
+            Data.Guardian memory g = w.guardians[i];
+            if (w.guardianEffectiveTime[g.addr] >= now &&
+                w.guardianRemovalEffectiveTime[g.addr] < now) {
+                effectiveGuardians[index] = g;
+                index ++;
+            }
+        }
     }
 
     function numGuardians(address wallet)
@@ -82,13 +102,23 @@ contract SecurityStore is DataStore
         view
         returns (uint)
     {
-        return wallets[wallet].guardians.length;
+        Wallet storage w = wallets[wallet];
+        uint num = 0;
+        for (uint i = 0; i < w.guardians.length; i++) {
+            Data.Guardian memory g = w.guardians[i];
+            if (w.guardianEffectiveTime[g.addr] >= now &&
+                w.guardianRemovalEffectiveTime[g.addr] < now) {
+                num ++;
+            }
+        }
+        return num;
     }
 
     function addOrUpdateGuardian(
         address wallet,
         address guardian,
-        uint    group
+        uint    group,
+        uint    effectiveTime
         )
         public
         onlyManager
@@ -105,13 +135,66 @@ contract SecurityStore is DataStore
             );
             w.guardians.push(g);
             w.guardianIdx[guardian] = w.guardians.length;
+            w.guardianEffectiveTime[guardian] = effectiveTime;
         } else {
+            // you're not be able to add a pending removal guardian,
+            // use cancelGuardianRemoval instead.
+            require(
+                 w.guardianRemovalEffectiveTime[guardian] == 0 ||
+                 w.guardianRemovalEffectiveTime[guardian] >= now,
+                 "PENDING_REMOVAL_GUARDIAN"
+            );
+
             // Update the guardian
             w.guardians[pos-1].group = group;
+            w.guardianEffectiveTime[guardian] = effectiveTime;
+            delete w.guardianRemovalEffectiveTime[guardian];
         }
     }
 
+    function cancelGuardianAddition(
+        address wallet,
+        address guardian
+        )
+        public
+        onlyManager
+    {
+        Wallet storage w = wallets[wallet];
+        uint idx = w.guardianIdx[guardian];
+        require(idx > 0, "GUARDIAN_NOT_EXISTS");
+        require(
+            w.guardianEffectiveTime[guardian] > 0 &&
+            w.guardianEffectiveTime[guardian] < now,
+            "NOT_PENDING_ADDITION"
+        );
+
+        Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+
+        if (guardian != lastGuardian.addr) {
+            w.guardians[idx - 1] = lastGuardian;
+            w.guardianIdx[lastGuardian.addr] = idx;
+        }
+        w.guardians.pop();
+        delete w.guardianIdx[guardian];
+        delete w.guardianRemovalEffectiveTime[guardian];
+    }
+
     function removeGuardian(
+        address wallet,
+        address guardian,
+        uint    removalEffectiveTime
+        )
+        public
+        onlyManager
+    {
+        Wallet storage w = wallets[wallet];
+        uint idx = w.guardianIdx[guardian];
+        require(idx > 0, "GUARDIAN_NOT_EXISTS");
+
+        w.guardianRemovalEffectiveTime[guardian] = removalEffectiveTime;
+    }
+
+    function cancelGuardianRemoval(
         address wallet,
         address guardian
         )
@@ -122,14 +205,37 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardian];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+        require(
+            w.guardianRemovalEffectiveTime[guardian] > 0 &&
+            w.guardianRemovalEffectiveTime[guardian] < now,
+            "NOT_PENDING_REMOVAL"
+         );
 
-        if (guardian != lastGuardian.addr) {
-            w.guardians[idx - 1] = lastGuardian;
-            w.guardianIdx[lastGuardian.addr] = idx;
+        delete w.guardianRemovalEffectiveTime[guardian];
+    }
+
+    function cleanRemovedGuardians(address wallet, uint from, uint to)
+        public
+        onlyManager
+    {
+        Wallet storage w = wallets[wallet];
+
+        for (uint i = from; i < to; i ++) {
+            if (i >= w.guardians.length) {
+                break;
+            }
+            Data.Guardian memory guardian = w.guardians[i];
+            Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
+
+            if (guardian.addr != lastGuardian.addr) {
+                w.guardians[i] = lastGuardian;
+                w.guardianIdx[lastGuardian.addr] = i;
+            }
+            w.guardians.pop();
+            delete w.guardianIdx[guardian.addr];
+            delete w.guardianRemovalEffectiveTime[guardian.addr];
         }
-        w.guardians.pop();
-        delete w.guardianIdx[guardian];
+
     }
 
     function getLock(address wallet)
@@ -182,4 +288,5 @@ contract SecurityStore is DataStore
         wallets[wallet].inheritor = who;
         wallets[wallet].lastActive = uint128(now);
     }
+
 }

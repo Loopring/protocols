@@ -31,30 +31,21 @@ contract GuardianModule is SecurityModule
 {
     uint constant public MAX_GUARDIANS = 20;
     uint public pendingPeriod;
-    uint public confirmPeriod;
 
-    mapping (address => mapping(address => mapping(uint => uint))) public pendingAdditions;
-    mapping (address => mapping(address => uint)) public pendingRemovals;
-
-    event GuardianAdditionPending   (address indexed wallet, address indexed guardian, uint group, uint confirmAfter);
-    event GuardianAdded             (address indexed wallet, address indexed guardian, uint group);
+    event GuardianAdded             (address indexed wallet, address indexed guardian, uint group, uint effectiveTime);
     event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
-
-    event GuardianRemovalPending    (address indexed wallet, address indexed guardian, uint confirmAfter);
-    event GuardianRemoved           (address indexed wallet, address indexed guardian);
+    event GuardianRemoved           (address indexed wallet, address indexed guardian, uint removalEffectiveTime);
     event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
 
     constructor(
         Controller _controller,
-        uint       _pendingPeriod,
-        uint       _confirmPeriod
+        uint       _pendingPeriod
         )
         public
         SecurityModule(_controller)
     {
-        require(_pendingPeriod > 0 && _confirmPeriod > 0, "INVALID_DELAY");
+        require(_pendingPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;
-        confirmPeriod = _confirmPeriod;
     }
 
     function addGuardian(
@@ -70,53 +61,24 @@ contract GuardianModule is SecurityModule
     {
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS(), "INVALID_GROUP");
-
-        if (controller.securityStore().numGuardians(wallet) == 0) {
-            controller.securityStore().addOrUpdateGuardian(wallet, guardian, group);
-            emit GuardianAdded(wallet, guardian, group);
-        } else {
-            uint confirmStart = pendingAdditions[wallet][guardian][group];
-            require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
-            pendingAdditions[wallet][guardian][group] = now + pendingPeriod;
-            emit GuardianAdditionPending(wallet, guardian, group, now + pendingPeriod);
+        uint effectiveTime = now;
+        if (controller.securityStore().numGuardians(wallet) > 0) {
+            effectiveTime = now + pendingPeriod;
         }
-    }
-
-    function confirmGuardianAddition(
-        address wallet,
-        address guardian,
-        uint    group
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-    {
-        uint confirmStart = pendingAdditions[wallet][guardian][group];
-        require(confirmStart != 0, "NOT_PENDING");
-        require(now >= confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
-        controller.securityStore().addOrUpdateGuardian(wallet, guardian, group);
-
-        // Now check if we don't have too many guardians active at once
-        uint count = controller.securityStore().numGuardians(wallet);
-        require(count <= MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
-
-        delete pendingAdditions[wallet][guardian][group];
-        emit GuardianAdded(wallet, guardian, group);
+        controller.securityStore().addOrUpdateGuardian(wallet, guardian, group, effectiveTime);
+        emit GuardianAdded(wallet, guardian, group, now);
     }
 
     function cancelGuardianAddition(
         address wallet,
-        address guardian,
-        uint    group
+        address guardian
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        uint confirmStart = pendingAdditions[wallet][guardian][group];
-        require(confirmStart > 0, "INVALID_GUARDIAN");
-        delete pendingAdditions[wallet][guardian][group];
+        controller.securityStore().cancelGuardianAddition(wallet, guardian);
         emit GuardianAdditionCancelled(wallet, guardian);
     }
 
@@ -130,26 +92,8 @@ contract GuardianModule is SecurityModule
         onlyWalletGuardian(wallet, guardian)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        uint confirmStart = pendingRemovals[wallet][guardian];
-        require(confirmStart == 0 || now > confirmStart + confirmPeriod, "ALREADY_PENDING");
-        pendingRemovals[wallet][guardian] = now + pendingPeriod;
-        emit GuardianRemovalPending(wallet, guardian, now + pendingPeriod);
-    }
-
-    function confirmGuardianRemoval(
-        address wallet,
-        address guardian
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-    {
-        uint confirmStart = pendingRemovals[wallet][guardian];
-        require(confirmStart != 0, "NOT_PENDING");
-        require(now >= confirmStart && now < confirmStart + confirmPeriod, "TOO_EARLY_OR_EXPIRED");
-        controller.securityStore().removeGuardian(wallet, guardian);
-        delete pendingRemovals[wallet][guardian];
-        emit GuardianRemoved(wallet, guardian);
+        controller.securityStore().removeGuardian(wallet, guardian, now + pendingPeriod);
+        emit GuardianRemoved(wallet, guardian, now + pendingPeriod);
     }
 
     function cancelGuardianRemoval(
@@ -161,10 +105,21 @@ contract GuardianModule is SecurityModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        uint confirmStart = pendingRemovals[wallet][guardian];
-        require(confirmStart > 0, "INVALID_GUARDIAN");
-        delete pendingRemovals[wallet][guardian];
+        controller.securityStore().cancelGuardianRemoval(wallet, guardian);
         emit GuardianRemovalCancelled(wallet, guardian);
+    }
+
+    function cleanRemovedGuardians(
+        address wallet,
+        uint from,
+        uint to
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+        controller.securityStore().cleanRemovedGuardians(wallet, from, to);
     }
 
     function extractMetaTxSigners(
@@ -180,9 +135,7 @@ contract GuardianModule is SecurityModule
         if (method == this.addGuardian.selector ||
             method == this.removeGuardian.selector ||
             method == this.cancelGuardianAddition.selector ||
-            method == this.cancelGuardianRemoval.selector ||
-            method == this.confirmGuardianAddition.selector ||
-            method == this.confirmGuardianRemoval.selector) {
+            method == this.cancelGuardianRemoval.selector) {
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
         } else {
