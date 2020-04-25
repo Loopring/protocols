@@ -36,7 +36,7 @@ library ExchangeData
         DEPOSIT,
         ONCHAIN_WITHDRAWAL,
         OFFCHAIN_WITHDRAWAL,
-        ORDER_CANCELLATION,
+        ORDER_CANCELLATION, // deprecated
         TRANSFER
     }
 
