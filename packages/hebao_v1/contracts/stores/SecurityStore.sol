@@ -162,7 +162,7 @@ contract SecurityStore is DataStore
         }
         w.guardians.pop();
         delete w.guardianIdx[guardian];
-        delete w.guardianValidUntil[guardian];
+        delete w.guardianValidSince[guardian];
     }
 
     function removeGuardian(
