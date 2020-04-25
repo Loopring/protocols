@@ -39,8 +39,8 @@ contract SecurityStore is DataStore
         Data.Guardian[] guardians;
 
         mapping    (address => uint) guardianIdx;
-        mapping    (address => uint) guardianEffectiveTime;
-        mapping    (address => uint) guardianRemovalEffectiveTime;
+        mapping    (address => uint) guardianValidSince;
+        mapping    (address => uint) guardianValidUntil;
     }
 
     mapping (address => Wallet) public wallets;
@@ -56,8 +56,7 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         return wallets[wallet].guardianIdx[guardian] > 0 &&
-            wallets[wallet].guardianEffectiveTime[guardian] >= now &&
-            wallets[wallet].guardianRemovalEffectiveTime[guardian] < now;
+            isGuardianValid(wallet, guardian);
     }
 
     function getGuardian(
@@ -68,33 +67,26 @@ contract SecurityStore is DataStore
         view
         returns (Data.Guardian memory)
     {
-        Wallet storage w = wallets[wallet];
-        uint index = w.guardianIdx[guardian];
-        require(index > 0, "NOT_A_GUARDIAN");
-        require(
-            w.guardianEffectiveTime[guardian] >= now &&
-            w.guardianRemovalEffectiveTime[guardian] < now,
-            "NOT_A_EFFECTIVE_GUARDIAN"
-        );
+        uint index = wallets[wallet].guardianIdx[guardian];
         return wallets[wallet].guardians[index-1];
     }
 
     function guardians(address wallet)
         public
         view
-        returns (Data.Guardian[] memory effectiveGuardians)
+        returns (Data.Guardian[] memory validGuardians)
     {
         Wallet storage w = wallets[wallet];
-        effectiveGuardians = new Data.Guardian[](w.guardians.length);
+        validGuardians = new Data.Guardian[](w.guardians.length);
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (w.guardianEffectiveTime[g.addr] >= now &&
-                w.guardianRemovalEffectiveTime[g.addr] < now) {
-                effectiveGuardians[index] = g;
+            if (isGuardianValid(wallet, g.addr)) {
+                validGuardians[index] = g;
                 index ++;
             }
         }
+        assembly { mstore(validGuardians, index) }
     }
 
     function numGuardians(address wallet)
@@ -102,16 +94,7 @@ contract SecurityStore is DataStore
         view
         returns (uint)
     {
-        Wallet storage w = wallets[wallet];
-        uint num = 0;
-        for (uint i = 0; i < w.guardians.length; i++) {
-            Data.Guardian memory g = w.guardians[i];
-            if (w.guardianEffectiveTime[g.addr] >= now &&
-                w.guardianRemovalEffectiveTime[g.addr] < now) {
-                num ++;
-            }
-        }
-        return num;
+        return guardians(wallet).length;
     }
 
     function numGuardiansWithPending(address wallet)
@@ -123,19 +106,19 @@ contract SecurityStore is DataStore
         uint num = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (w.guardianEffectiveTime[g.addr] > 0 &&
-                w.guardianRemovalEffectiveTime[g.addr] < now) {
+            if (w.guardianValidSince[g.addr] > 0 &&
+                w.guardianValidUntil[g.addr] < now) {
                 num ++;
             }
         }
         return num;
     }
 
-    function addOrUpdateGuardian(
+    function addGuardian(
         address wallet,
         address guardian,
         uint    group,
-        uint    effectiveTime
+        uint    validSince
         )
         public
         onlyManager
@@ -146,29 +129,13 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
 
         uint pos = w.guardianIdx[guardian];
-        if (pos == 0) {
-            // Add the new guardian
-            Data.Guardian memory g = Data.Guardian(
-                guardian,
-                group
-            );
-            w.guardians.push(g);
-            w.guardianIdx[guardian] = w.guardians.length;
-            w.guardianEffectiveTime[guardian] = effectiveTime;
-        } else {
-            // you're not be able to add a pending removal guardian,
-            // use cancelGuardianRemoval instead.
-            require(
-                 w.guardianRemovalEffectiveTime[guardian] == 0 ||
-                 w.guardianRemovalEffectiveTime[guardian] >= now,
-                 "PENDING_REMOVAL_GUARDIAN"
-            );
+        require(pos == 0, "GUARDIAN_EXISTS");
 
-            // Update the guardian
-            w.guardians[pos-1].group = group;
-            w.guardianEffectiveTime[guardian] = effectiveTime;
-            delete w.guardianRemovalEffectiveTime[guardian];
-        }
+        // Add the new guardian
+        Data.Guardian memory g = Data.Guardian(guardian, group);
+        w.guardians.push(g);
+        w.guardianIdx[guardian] = w.guardians.length;
+        w.guardianValidSince[guardian] = validSince;
     }
 
     function cancelGuardianAddition(
@@ -184,26 +151,24 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardian];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
         require(
-            w.guardianEffectiveTime[guardian] > 0 &&
-            w.guardianEffectiveTime[guardian] < now,
+            isGuardianPendingAddition(wallet, guardian),
             "NOT_PENDING_ADDITION"
         );
 
         Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
-
         if (guardian != lastGuardian.addr) {
             w.guardians[idx - 1] = lastGuardian;
             w.guardianIdx[lastGuardian.addr] = idx;
         }
         w.guardians.pop();
         delete w.guardianIdx[guardian];
-        delete w.guardianRemovalEffectiveTime[guardian];
+        delete w.guardianValidUntil[guardian];
     }
 
     function removeGuardian(
         address wallet,
         address guardian,
-        uint    removalEffectiveTime
+        uint    validUntil
         )
         public
         onlyManager
@@ -214,7 +179,7 @@ contract SecurityStore is DataStore
         uint idx = w.guardianIdx[guardian];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardianRemovalEffectiveTime[guardian] = removalEffectiveTime;
+        w.guardianValidUntil[guardian] = validUntil;
     }
 
     function cancelGuardianRemoval(
@@ -231,12 +196,11 @@ contract SecurityStore is DataStore
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
         require(
-            w.guardianRemovalEffectiveTime[guardian] > 0 &&
-            w.guardianRemovalEffectiveTime[guardian] < now,
+            isGuardianPendingRemoval(wallet, guardian),
             "NOT_PENDING_REMOVAL"
          );
 
-        delete w.guardianRemovalEffectiveTime[guardian];
+        delete w.guardianValidUntil[guardian];
     }
 
     function getLock(address wallet)
@@ -296,11 +260,8 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
 
         for (uint i = 0; i < w.guardians.length; i ++) {
-            if (i >= w.guardians.length) {
-                break;
-            }
             Data.Guardian memory guardian = w.guardians[i];
-            if (w.guardianRemovalEffectiveTime[guardian.addr] >= now) {
+            if (w.guardianValidUntil[guardian.addr] >= now) {
                 Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
 
                 if (guardian.addr != lastGuardian.addr) {
@@ -309,10 +270,37 @@ contract SecurityStore is DataStore
                 }
                 w.guardians.pop();
                 delete w.guardianIdx[guardian.addr];
-                delete w.guardianRemovalEffectiveTime[guardian.addr];
+                delete w.guardianValidSince[guardian.addr];
+                delete w.guardianValidUntil[guardian.addr];
             }
         }
+    }
+
+    function isGuardianValid(address wallet, address guardian)
+        view
+        private
+        returns (bool)
+    {
+        return wallets[wallet].guardianValidSince[guardian] >= now &&
+            wallets[wallet].guardianValidUntil[guardian] < now;
 
     }
 
+    function isGuardianPendingAddition(address wallet, address guardian)
+        view
+        private
+        returns (bool)
+    {
+        return wallets[wallet].guardianValidSince[guardian] > 0 &&
+            wallets[wallet].guardianValidSince[guardian] < now;
+    }
+
+    function isGuardianPendingRemoval(address wallet, address guardian)
+        view
+        private
+        returns (bool)
+    {
+        return wallets[wallet].guardianValidUntil[guardian] > 0 &&
+            wallets[wallet].guardianValidUntil[guardian] < now;
+    }
 }

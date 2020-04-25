@@ -68,7 +68,7 @@ contract GuardianModule is SecurityModule
         if (controller.securityStore().numGuardians(wallet) > 0) {
             effectiveTime = now + pendingPeriod;
         }
-        controller.securityStore().addOrUpdateGuardian(wallet, guardian, group, effectiveTime);
+        controller.securityStore().addGuardian(wallet, guardian, group, effectiveTime);
         emit GuardianAdded(wallet, guardian, group, effectiveTime);
     }
 
