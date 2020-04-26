@@ -47,51 +47,6 @@ export async function addGuardian(
     // Subsequent guardians can be added with a delay
     await assertEventEmitted(
       ctx.guardianModule,
-      "GuardianAdditionPending",
-      (event: any) => {
-        return (
-          event.wallet == wallet &&
-          event.guardian == guardian &&
-          event.group == group
-        );
-      }
-    );
-
-    // Try to confirm immediately
-    await expectThrow(
-      executeTransaction(
-        ctx.guardianModule.contract.methods.confirmGuardianAddition(
-          wallet,
-          guardian,
-          group
-        ),
-        ctx,
-        useMetaTx,
-        wallet,
-        [owner],
-        { from: owner }
-      ),
-      "TOO_EARLY_OR_EXPIRED"
-    );
-
-    // Skip forward `pendingPeriod` seconds
-    await advanceTimeAndBlockAsync(pendingPeriod);
-
-    // Confirm guardian addition
-    await executeTransaction(
-      ctx.guardianModule.contract.methods.confirmGuardianAddition(
-        wallet,
-        guardian,
-        group
-      ),
-      ctx,
-      useMetaTx,
-      wallet,
-      [owner],
-      { from: owner }
-    );
-    await assertEventEmitted(
-      ctx.guardianModule,
       "GuardianAdded",
       (event: any) => {
         return (
@@ -101,6 +56,9 @@ export async function addGuardian(
         );
       }
     );
+
+    // Skip forward `pendingPeriod + 1` seconds
+    await advanceTimeAndBlockAsync(pendingPeriod + 1);
   }
 
   // Check if now guardian
@@ -166,45 +124,7 @@ export async function removeGuardian(
     [owner],
     { from: owner }
   );
-  await assertEventEmitted(
-    ctx.guardianModule,
-    "GuardianRemovalPending",
-    (event: any) => {
-      return event.wallet == wallet && event.guardian == guardian;
-    }
-  );
 
-  // Try to confirm immediately
-  await expectThrow(
-    executeTransaction(
-      ctx.guardianModule.contract.methods.confirmGuardianRemoval(
-        wallet,
-        guardian
-      ),
-      ctx,
-      useMetaTx,
-      wallet,
-      [owner],
-      { from: owner }
-    ),
-    "TOO_EARLY_OR_EXPIRED"
-  );
-
-  // Skip forward `pendingPeriod` seconds
-  await advanceTimeAndBlockAsync(pendingPeriod);
-
-  // Confirm guardian removal
-  await executeTransaction(
-    ctx.guardianModule.contract.methods.confirmGuardianRemoval(
-      wallet,
-      guardian
-    ),
-    ctx,
-    useMetaTx,
-    wallet,
-    [owner],
-    { from: owner }
-  );
   await assertEventEmitted(
     ctx.guardianModule,
     "GuardianRemoved",
@@ -212,6 +132,9 @@ export async function removeGuardian(
       return event.wallet == wallet && event.guardian == guardian;
     }
   );
+
+  // Skip forward `pendingPeriod + 1` seconds
+  await advanceTimeAndBlockAsync(pendingPeriod + 1);
 
   // Check if not guardian anymore
   assert(

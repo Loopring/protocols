@@ -59,6 +59,19 @@ contract SecurityStore is DataStore
             isGuardianValid(wallet, guardian);
     }
 
+    function getGuardianValidTs(
+        address wallet,
+        address guardian
+        )
+        public
+        view
+        returns (uint, uint)
+    {
+        return (wallets[wallet].guardianValidSince[guardian],
+                wallets[wallet].guardianValidUntil[guardian]);
+    }
+
+
     function getGuardian(
         address wallet,
         address guardian
@@ -261,7 +274,7 @@ contract SecurityStore is DataStore
 
         for (uint i = 0; i < w.guardians.length; i ++) {
             Data.Guardian memory guardian = w.guardians[i];
-            if (w.guardianValidUntil[guardian.addr] >= now) {
+            if (w.guardianValidUntil[guardian.addr] < now) {
                 Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
 
                 if (guardian.addr != lastGuardian.addr) {
@@ -281,9 +294,11 @@ contract SecurityStore is DataStore
         private
         returns (bool)
     {
-        return wallets[wallet].guardianValidSince[guardian] >= now &&
-            wallets[wallet].guardianValidUntil[guardian] < now;
-
+        return wallets[wallet].guardianValidSince[guardian] > 0 &&
+            wallets[wallet].guardianValidSince[guardian] <= now &&
+            (wallets[wallet].guardianValidUntil[guardian] == 0 ||
+             wallets[wallet].guardianValidUntil[guardian] >= now
+             );
     }
 
     function isGuardianPendingAddition(address wallet, address guardian)
@@ -291,8 +306,7 @@ contract SecurityStore is DataStore
         private
         returns (bool)
     {
-        return wallets[wallet].guardianValidSince[guardian] > 0 &&
-            wallets[wallet].guardianValidSince[guardian] < now;
+        return wallets[wallet].guardianValidSince[guardian] > now;
     }
 
     function isGuardianPendingRemoval(address wallet, address guardian)
@@ -300,7 +314,6 @@ contract SecurityStore is DataStore
         private
         returns (bool)
     {
-        return wallets[wallet].guardianValidUntil[guardian] > 0 &&
-            wallets[wallet].guardianValidUntil[guardian] < now;
+        return wallets[wallet].guardianValidUntil[guardian] > now;
     }
 }
