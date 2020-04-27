@@ -42,7 +42,7 @@
     "npm": "^6.11.3",
     "solidity-coverage": "^0.7.0",
     "solium": "^1.1.8",
-    "tslint": "5.20.1",
+    "tslint": "6.1.2",
     "types-bn": "0.0.1",
     "typescript": "3.8.3",
     "web3-typescript-typings": "0.10.2",
