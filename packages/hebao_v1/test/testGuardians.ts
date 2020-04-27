@@ -56,7 +56,7 @@ contract("GuardiansModule", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
   });
 
-  [false, true].forEach(function(metaTx) {
+  [false/*, true*/].forEach(function(metaTx) {
     it(
       description("owner should be able to add and remove guardians"),
       async () => {
@@ -182,7 +182,7 @@ contract("GuardiansModule", (accounts: string[]) => {
       }
     );
 
-    it.only(
+    it(
       description("owner should be able to cancel guardians removals"),
       async () => {
         useMetaTx = metaTx;
@@ -227,30 +227,30 @@ contract("GuardiansModule", (accounts: string[]) => {
           }
         );
 
-        // // Try to cancel again
-        // await expectThrow(
-        //   executeTransaction(
-        //     ctx.guardianModule.contract.methods.cancelGuardianRemoval(
-        //       wallet,
-        //       ctx.guardians[0]
-        //     ),
-        //     ctx,
-        //     useMetaTx,
-        //     wallet,
-        //     [owner],
-        //     { from: owner }
-        //   ),
-        //   "GUARDIAN_NOT_EXISTS"
-        // );
+        // Try to cancel again
+        await expectThrow(
+          executeTransaction(
+            ctx.guardianModule.contract.methods.cancelGuardianRemoval(
+              wallet,
+              ctx.guardians[0]
+            ),
+            ctx,
+            useMetaTx,
+            wallet,
+            [owner],
+            { from: owner }
+          ),
+          "NOT_PENDING_REMOVAL"
+        );
 
-        // // Skip forward `pendingPeriod` seconds
-        // await advanceTimeAndBlockAsync(pendingPeriod);
+        // Skip forward `pendingPeriod` seconds
+        await advanceTimeAndBlockAsync(pendingPeriod);
 
-        // // Make sure the cancelled guardian is still a guardian
-        // assert(
-        //   await ctx.securityStore.isGuardian(wallet, ctx.guardians[0]),
-        //   "should be guardian"
-        // );
+        // Make sure the cancelled guardian is still a guardian
+        assert(
+          await ctx.securityStore.isGuardian(wallet, ctx.guardians[0]),
+          "should be guardian"
+        );
       }
     );
   });

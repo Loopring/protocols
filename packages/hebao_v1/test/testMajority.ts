@@ -167,10 +167,11 @@ contract("GuardianUtils", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
   });
 
+
   tests.forEach(function(test) {
     it(test.description, async () => {
       const owner = ctx.owners[0];
-      const { wallet } = await createWallet(ctx, owner, 3);
+      const { wallet } = await createWallet(ctx, owner, 0);
 
       let signers: string[] = test.ownerSigns ? [owner] : [];
       for (const [i, guardian] of test.guardians.entries()) {

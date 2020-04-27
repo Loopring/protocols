@@ -30,33 +30,22 @@ export async function addGuardian(
     [owner],
     { from: owner }
   );
+
+  await assertEventEmitted(
+    ctx.guardianModule,
+    "GuardianAdded",
+    (event: any) => {
+      return (
+        event.wallet == wallet &&
+          event.guardian == guardian &&
+          event.group == group
+      );
+    }
+  );
   if (guardiansBefore.length === 0) {
     // The first guardian can be added immediately
-    await assertEventEmitted(
-      ctx.guardianModule,
-      "GuardianAdded",
-      (event: any) => {
-        return (
-          event.wallet == wallet &&
-          event.guardian == guardian &&
-          event.group == group
-        );
-      }
-    );
   } else {
     // Subsequent guardians can be added with a delay
-    await assertEventEmitted(
-      ctx.guardianModule,
-      "GuardianAdded",
-      (event: any) => {
-        return (
-          event.wallet == wallet &&
-          event.guardian == guardian &&
-          event.group == group
-        );
-      }
-    );
-
     // Skip forward `pendingPeriod + 1` seconds
     await advanceTimeAndBlockAsync(pendingPeriod + 1);
   }

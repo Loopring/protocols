@@ -273,18 +273,18 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
 
         for (uint i = 0; i < w.guardians.length; i ++) {
-            Data.Guardian memory guardian = w.guardians[i];
-            if (w.guardianValidUntil[guardian.addr] < now) {
+            Data.Guardian memory g = w.guardians[i];
+            if (isGuardianRemoved(wallet, g.addr)) {
                 Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
 
-                if (guardian.addr != lastGuardian.addr) {
+                if (g.addr != lastGuardian.addr) {
                     w.guardians[i] = lastGuardian;
                     w.guardianIdx[lastGuardian.addr] = i + 1;
                 }
                 w.guardians.pop();
-                delete w.guardianIdx[guardian.addr];
-                delete w.guardianValidSince[guardian.addr];
-                delete w.guardianValidUntil[guardian.addr];
+                delete w.guardianIdx[g.addr];
+                delete w.guardianValidSince[g.addr];
+                delete w.guardianValidUntil[g.addr];
             }
         }
     }
@@ -296,9 +296,7 @@ contract SecurityStore is DataStore
     {
         return wallets[wallet].guardianValidSince[guardian] > 0 &&
             wallets[wallet].guardianValidSince[guardian] <= now &&
-            (wallets[wallet].guardianValidUntil[guardian] == 0 ||
-             wallets[wallet].guardianValidUntil[guardian] >= now
-             );
+            !isGuardianRemoved(wallet, guardian);
     }
 
     function isGuardianPendingAddition(address wallet, address guardian)
@@ -316,4 +314,14 @@ contract SecurityStore is DataStore
     {
         return wallets[wallet].guardianValidUntil[guardian] > now;
     }
+
+    function isGuardianRemoved(address wallet, address guardian)
+        view
+        private
+        returns (bool)
+    {
+        return wallets[wallet].guardianValidUntil[guardian] > 0 &&
+            wallets[wallet].guardianValidUntil[guardian] <= now;
+    }
+
 }
