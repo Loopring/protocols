@@ -47,6 +47,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         uint    amount
     );
 
+    // Max total amount that can be stored per token
+    uint constant public MAX_TOTAL_TOKEN_BALANCE = 2 ** 96 - 1;
+
     address public exchange;
     ILoopringV3 public loopring;
 
@@ -89,6 +92,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     {
         // Keep track how many tokens are deposited in the exchange
         exchangeBalance[token] = exchangeBalance[token].add(amount);
+        // Make sure the total max amount per token in the exchange is capped
+        require(exchangeBalance[token] <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
 
         // Check msg.value
         if (token == address(0)) {

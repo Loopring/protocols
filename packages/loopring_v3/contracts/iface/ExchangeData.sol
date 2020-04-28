@@ -127,7 +127,6 @@ library ExchangeData
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 6 hours; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 80000; }
-    function MAX_TOTAL_TOKEN_BALANCE() internal pure returns (uint) { return 2 ** 96 - 1; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State
