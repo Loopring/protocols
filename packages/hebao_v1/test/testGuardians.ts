@@ -56,7 +56,7 @@ contract("GuardiansModule", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
   });
 
-  [false/*, true*/].forEach(function(metaTx) {
+  [false, true].forEach(function(metaTx) {
     it(
       description("owner should be able to add and remove guardians"),
       async () => {

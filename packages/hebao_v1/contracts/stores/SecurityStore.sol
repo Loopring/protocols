@@ -36,11 +36,8 @@ contract SecurityStore is DataStore
         uint128    lock;
         address    lockedBy;   // the module that locked the wallet.
 
-        Data.Guardian[] guardians;
-
-        mapping    (address => uint) guardianIdx;
-        mapping    (address => uint) guardianValidSince;
-        mapping    (address => uint) guardianValidUntil;
+        Data.Guardian[]            guardians;
+        mapping (address => uint)  guardianIdx;
     }
 
     mapping (address => Wallet) public wallets;
@@ -49,39 +46,28 @@ contract SecurityStore is DataStore
 
     function isGuardian(
         address wallet,
-        address guardian
+        address guardianAddr
         )
         public
         view
         returns (bool)
     {
-        return wallets[wallet].guardianIdx[guardian] > 0 &&
-            isGuardianValid(wallet, guardian);
+        Data.Guardian memory guardian = getGuardian(wallet, guardianAddr);
+        return guardian.addr != address(0) && isGuardianValid(guardian);
     }
-
-    function getGuardianValidTs(
-        address wallet,
-        address guardian
-        )
-        public
-        view
-        returns (uint, uint)
-    {
-        return (wallets[wallet].guardianValidSince[guardian],
-                wallets[wallet].guardianValidUntil[guardian]);
-    }
-
 
     function getGuardian(
         address wallet,
-        address guardian
+        address guardianAddr
         )
         public
         view
         returns (Data.Guardian memory)
     {
-        uint index = wallets[wallet].guardianIdx[guardian];
-        return wallets[wallet].guardians[index-1];
+        uint index = wallets[wallet].guardianIdx[guardianAddr];
+        if(index > 0) {
+            return wallets[wallet].guardians[index-1];
+        }
     }
 
     function guardians(address wallet)
@@ -94,7 +80,7 @@ contract SecurityStore is DataStore
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (isGuardianValid(wallet, g.addr)) {
+            if (isGuardianValid(g)) {
                 validGuardians[index] = g;
                 index ++;
             }
@@ -119,8 +105,7 @@ contract SecurityStore is DataStore
         uint num = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (w.guardianValidSince[g.addr] > 0 &&
-                w.guardianValidUntil[g.addr] < now) {
+            if (isGuardianValid(g) || isGuardianPendingAddition(g)) {
                 num ++;
             }
         }
@@ -129,7 +114,7 @@ contract SecurityStore is DataStore
 
     function addGuardian(
         address wallet,
-        address guardian,
+        address guardianAddr,
         uint    group,
         uint    validSince
         )
@@ -138,22 +123,21 @@ contract SecurityStore is DataStore
     {
         cleanRemovedGuardians(wallet);
 
-        require(guardian != address(0), "ZERO_ADDRESS");
+        require(guardianAddr != address(0), "ZERO_ADDRESS");
         Wallet storage w = wallets[wallet];
 
-        uint pos = w.guardianIdx[guardian];
+        uint pos = w.guardianIdx[guardianAddr];
         require(pos == 0, "GUARDIAN_EXISTS");
 
         // Add the new guardian
-        Data.Guardian memory g = Data.Guardian(guardian, group);
+        Data.Guardian memory g = Data.Guardian(guardianAddr, group, validSince, 0);
         w.guardians.push(g);
-        w.guardianIdx[guardian] = w.guardians.length;
-        w.guardianValidSince[guardian] = validSince;
+        w.guardianIdx[guardianAddr] = w.guardians.length;
     }
 
     function cancelGuardianAddition(
         address wallet,
-        address guardian
+        address guardianAddr
         )
         public
         onlyManager
@@ -161,26 +145,25 @@ contract SecurityStore is DataStore
         cleanRemovedGuardians(wallet);
 
         Wallet storage w = wallets[wallet];
-        uint idx = w.guardianIdx[guardian];
+        uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
         require(
-            isGuardianPendingAddition(wallet, guardian),
+            isGuardianPendingAddition(w.guardians[idx - 1]),
             "NOT_PENDING_ADDITION"
         );
 
         Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
-        if (guardian != lastGuardian.addr) {
+        if (guardianAddr != lastGuardian.addr) {
             w.guardians[idx - 1] = lastGuardian;
             w.guardianIdx[lastGuardian.addr] = idx;
         }
         w.guardians.pop();
-        delete w.guardianIdx[guardian];
-        delete w.guardianValidSince[guardian];
+        delete w.guardianIdx[guardianAddr];
     }
 
     function removeGuardian(
         address wallet,
-        address guardian,
+        address guardianAddr,
         uint    validUntil
         )
         public
@@ -189,15 +172,15 @@ contract SecurityStore is DataStore
         cleanRemovedGuardians(wallet);
 
         Wallet storage w = wallets[wallet];
-        uint idx = w.guardianIdx[guardian];
+        uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
-        w.guardianValidUntil[guardian] = validUntil;
+        w.guardians[idx - 1].validUntil = validUntil;
     }
 
     function cancelGuardianRemoval(
         address wallet,
-        address guardian
+        address guardianAddr
         )
         public
         onlyManager
@@ -205,15 +188,15 @@ contract SecurityStore is DataStore
         cleanRemovedGuardians(wallet);
 
         Wallet storage w = wallets[wallet];
-        uint idx = w.guardianIdx[guardian];
+        uint idx = w.guardianIdx[guardianAddr];
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
         require(
-            isGuardianPendingRemoval(wallet, guardian),
+            isGuardianPendingRemoval(w.guardians[idx - 1]),
             "NOT_PENDING_REMOVAL"
          );
 
-        delete w.guardianValidUntil[guardian];
+        w.guardians[idx - 1].validUntil = 0;
     }
 
     function getLock(address wallet)
@@ -272,56 +255,53 @@ contract SecurityStore is DataStore
     {
         Wallet storage w = wallets[wallet];
 
-        for (uint i = 0; i < w.guardians.length; i ++) {
-            Data.Guardian memory g = w.guardians[i];
-            if (isGuardianRemoved(wallet, g.addr)) {
+        for (int i = int(w.guardians.length) - 1; i >= 0; i--) {
+            Data.Guardian memory g = w.guardians[uint(i)];
+            if (isGuardianExpired(g)) {
                 Data.Guardian memory lastGuardian = w.guardians[w.guardians.length - 1];
 
                 if (g.addr != lastGuardian.addr) {
-                    w.guardians[i] = lastGuardian;
-                    w.guardianIdx[lastGuardian.addr] = i + 1;
+                    w.guardians[uint(i)] = lastGuardian;
+                    w.guardianIdx[lastGuardian.addr] = uint(i) + 1;
                 }
                 w.guardians.pop();
                 delete w.guardianIdx[g.addr];
-                delete w.guardianValidSince[g.addr];
-                delete w.guardianValidUntil[g.addr];
             }
         }
     }
 
-    function isGuardianValid(address wallet, address guardian)
-        view
+    function isGuardianValid(Data.Guardian memory guardian)
         private
+        view
         returns (bool)
     {
-        return wallets[wallet].guardianValidSince[guardian] > 0 &&
-            wallets[wallet].guardianValidSince[guardian] <= now &&
-            !isGuardianRemoved(wallet, guardian);
+        return guardian.validSince > 0 && guardian.validSince <= now &&
+            !isGuardianExpired(guardian);
     }
 
-    function isGuardianPendingAddition(address wallet, address guardian)
-        view
+    function isGuardianPendingAddition(Data.Guardian memory guardian)
         private
+        view
         returns (bool)
     {
-        return wallets[wallet].guardianValidSince[guardian] > now;
+        return guardian.validSince > now;
     }
 
-    function isGuardianPendingRemoval(address wallet, address guardian)
-        view
+    function isGuardianPendingRemoval(Data.Guardian memory guardian)
         private
+        view
         returns (bool)
     {
-        return wallets[wallet].guardianValidUntil[guardian] > now;
+        return guardian.validUntil > now;
     }
 
-    function isGuardianRemoved(address wallet, address guardian)
-        view
+    function isGuardianExpired(Data.Guardian memory guardian)
         private
+        view
         returns (bool)
     {
-        return wallets[wallet].guardianValidUntil[guardian] > 0 &&
-            wallets[wallet].guardianValidUntil[guardian] <= now;
+        return guardian.validUntil > 0 &&
+            guardian.validUntil <= now;
     }
 
 }
