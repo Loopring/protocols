@@ -80,7 +80,6 @@ contract("Exchange", (accounts: string[]) => {
       amount,
       feeToken,
       fee,
-      exchangeTestUtil.getRandomInt(1000),
       conditionalTransfer
     );
     return request;

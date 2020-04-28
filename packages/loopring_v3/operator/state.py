@@ -286,8 +286,7 @@ class Order(object):
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
-                 maxFeeBips, feeBips, rebateBips,
-                 label):
+                 maxFeeBips, feeBips, rebateBips):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
@@ -306,7 +305,6 @@ class Order(object):
         self.validUntil = validUntil
         self.buy = bool(buy)
         self.maxFeeBips = maxFeeBips
-        self.label = str(label)
 
         self.feeBips = feeBips
         self.rebateBips = rebateBips
@@ -381,7 +379,7 @@ class OffchainWithdrawal(object):
     def __init__(self,
                  exchangeID,
                  accountID, tokenID, amountRequested, fAmountWithdrawn,
-                 feeTokenID, fee, label,
+                 feeTokenID, fee,
                  feeValue,
                  balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                  balanceUpdateF_O,
@@ -395,7 +393,6 @@ class OffchainWithdrawal(object):
 
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
-        self.label = str(label)
 
         self.feeValue = feeValue
 
@@ -412,7 +409,7 @@ class InternalTransfer(object):
                  exchangeID,
                  accountFromID, accountToID,
                  transTokenID, amountRequested, fAmountTrans,
-                 feeTokenID, fee, label, type,
+                 feeTokenID, fee, type,
                  nonceFrom, nonceTo,
                  feeValue,
                  balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
@@ -427,7 +424,6 @@ class InternalTransfer(object):
         self.fAmountTrans = str(fAmountTrans)
         self.feeTokenID = feeTokenID
         self.fee = str(fee)
-        self.label = int(label)
         self.type = int(type)
         self.nonceFrom = nonceFrom
         self.nonceTo = nonceTo
@@ -752,7 +748,7 @@ class State(object):
 
     def offchainWithdraw(self,
                          exchangeID, accountID, tokenID, amountRequested,
-                         operatorAccountID, feeTokenID, fee, label):
+                         operatorAccountID, feeTokenID, fee):
         feeValue = roundToFloatValue(fee, Float16Encoding)
 
         # Update account
@@ -783,7 +779,7 @@ class State(object):
 
         withdrawal = OffchainWithdrawal(exchangeID,
                                         accountID, tokenID, amountRequested, fAmountWithdrawn,
-                                        feeTokenID, fee, label,
+                                        feeTokenID, fee,
                                         feeValue,
                                         balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
                                         None,
@@ -792,7 +788,7 @@ class State(object):
 
     def internalTransfer(self,
                     exchangeID, operatorAccountID, accountFromID, accountToID,
-                    transTokenID, amountRequested, feeTokenID, fee, label, type):
+                    transTokenID, amountRequested, feeTokenID, fee, type):
 
         feeValue = roundToFloatValue(fee, Float16Encoding)
 
@@ -836,7 +832,7 @@ class State(object):
         internalTrans = InternalTransfer(exchangeID,
                                          accountFromID, accountToID,
                                          transTokenID, amountRequested, fAmountTrans,
-                                         feeTokenID, fee, label, type,
+                                         feeTokenID, fee, type,
                                          nonce, nonceTo,
                                          feeValue,
                                          balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,

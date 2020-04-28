@@ -10,8 +10,8 @@ import { Account, Block, InternalTransfer, ExchangeState } from "../types";
 export class InternalTransferProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     const data = new Bitstream(block.data);
-    // Skip before and after merkle root + label + numConditionalTransfers
-    let offset = 4 + 32 + 32 + 32 + 4;
+    // Skip before and after merkle root + numConditionalTransfers
+    let offset = 4 + 32 + 32 + 4;
 
     const transfers: InternalTransfer[] = [];
     if (state.onchainDataAvailability) {

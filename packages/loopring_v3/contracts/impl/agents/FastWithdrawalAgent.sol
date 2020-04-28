@@ -29,9 +29,29 @@ import "../../lib/EIP712.sol";
 
 /// @title Fast withdrawal agent implementation.
 ///
-///        A mediator/liquidity provider (whoever provides the funds immediately) can call
-///        `executeFastWithdrawals` to provide users immediately with funds onchain.
-///        This allows the security of the funds to be handled by any EOA or smart contract.
+///        Fast withdrawals are a way for an operator to provide instant withdrawals for
+///        users with the help of a liquidity provider and conditional transfers.
+///
+///        A fast withdrawal requires the non-trustless cooperation of 2 parties:
+///        - A liquidity provider which provides funds to users immediately onchain
+///        - The operator which will make sure the user has sufficient funds offchain
+///          so that the liquidity provider can be paid back offchain using a conditional transfer.
+///          The operator also needs to process those conditional transfers so that the
+///          liquidity provider receives its funds back in its own account where it
+///          again has full custody over it.
+///
+///        We require the fast withdrawals to be executed by the liquidity provider (as msg.sender)
+///        so that the liquidity provider can impose its own rules how its funds are spent. This will
+///        inevitably need to be done in close cooperation with the operator, or by the operator
+///        itself using a smart contract where the liquidity provider enforces who, how
+///        and even if their funds can be used to faciliate the fast withdrawals. This is not
+///        a risk free or trustless operation for the liquidity provider as the operator needs
+///        to both make sure the user has sufficient funds and actuall execute the conditional transfer
+///        done for the fast withdrawal that returns its funds offchain with an additional fee.
+///
+///        The liquidity provider can call `executeFastWithdrawals` to provide users
+///        immediately with funds onchain. This allows the security of the funds to be handled
+///        by any EOA or smart contract.
 ///
 ///        Users that want to make use of this functionality have to
 ///        authorize this contract as their agent.
@@ -78,7 +98,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         //DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
 
-    // This method is expected to be called by a mediator to facilitate fast withdrawals.
+    // This method needs to be called by the liquidity provider
     function executeFastWithdrawals(FastWithdrawal[] memory fastWithdrawals)
         public
         payable
@@ -132,9 +152,13 @@ contract FastWithdrawalAgent is ReentrancyGuard
         // Check the time limit
         require(now <= fastWithdrawal.validUntil, "TX_EXPIRED");
 
-        // Transfer the tokens to the requested address
-        // using funds from `msg.sender`.
+        // The liquidity provider always authorizes the fast withdrawal by being the direct caller
+        address payable liquidityProvider = msg.sender;
+
+        // Transfer the tokens immediately to the requested address
+        // using funds from the liquidity provider (`msg.sender`).
         transfer(
+            liquidityProvider,
             fastWithdrawal.to,
             fastWithdrawal.token,
             fastWithdrawal.amount
@@ -149,22 +173,22 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
         IExchangeV3 exchange = IExchangeV3(fastWithdrawal.exchange);
 
-        // Approve the offchain transfer from the withdrawing account back to the mediator (msg.sender)
+        // Approve the offchain transfer from the withdrawing account back to the liquidity provider
         exchange.approveOffchainTransfer(
             fastWithdrawal.from,
-            msg.sender,
+            liquidityProvider,
             fastWithdrawal.token,
             fastWithdrawal.amount
         );
 
-        // Fee payment to the mediator (msg.sender)
+        // Fee payment to the liquidity provider
         if (fastWithdrawal.fee > 0) {
             if (fastWithdrawal.onchainFeePayment) {
                 // Do fee payment directly from the user's wallet if requested
                 // (using the approval for the exchange)
                 exchange.onchainTransferFrom(
                     fastWithdrawal.from,
-                    msg.sender,
+                    liquidityProvider,
                     fastWithdrawal.feeToken,
                     fastWithdrawal.fee
                 );
@@ -173,7 +197,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 // Approve the fee transfer
                 exchange.approveOffchainTransfer(
                     fastWithdrawal.from,
-                    msg.sender,
+                    liquidityProvider,
                     fastWithdrawal.feeToken,
                     fastWithdrawal.fee
                 );
@@ -182,6 +206,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
     }
 
     function transfer(
+        address from,
         address to,
         address token,
         uint    amount
@@ -195,7 +220,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 success = to.sendETH(amount, gasleft());
             } else {
                 // ERC20 token
-                success = token.safeTransferFrom(msg.sender, to, amount);
+                success = token.safeTransferFrom(from, to, amount);
             }
         }
         require(success, "TRANSFER_FAILED");

@@ -67,7 +67,6 @@ def orderFromJSON(jOrder, state):
     validUntil = int(jOrder["validUntil"])
     buy = int(jOrder["buy"])
     maxFeeBips = int(jOrder["maxFeeBips"])
-    label = int(jOrder["label"])
 
     feeBips = int(jOrder["feeBips"])
     rebateBips = int(jOrder["rebateBips"])
@@ -79,8 +78,7 @@ def orderFromJSON(jOrder, state):
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,
-                  maxFeeBips, feeBips, rebateBips,
-                  label)
+                  maxFeeBips, feeBips, rebateBips)
 
     order.signature = jOrder["signature"]
 
@@ -201,10 +199,9 @@ def createOffchainWithdrawalBlock(state, data):
         amount = int(withdrawalInfo["amount"])
         feeTokenID = int(withdrawalInfo["feeTokenID"])
         fee = int(withdrawalInfo["fee"])
-        label = int(withdrawalInfo["label"])
 
         withdrawal = state.offchainWithdraw(block.exchangeID, accountID, tokenID, amount,
-                                            block.operatorAccountID, feeTokenID, fee, label)
+                                            block.operatorAccountID, feeTokenID, fee)
         withdrawal.signature = withdrawalInfo["signature"]
         block.withdrawals.append(withdrawal)
 
@@ -237,12 +234,11 @@ def createInternalTransferBlock(state, data):
         amount = int(transInfo["amount"])
         feeTokenID = int(transInfo["feeTokenID"])
         fee = int(transInfo["fee"])
-        label = int(transInfo["label"])
         type = int(transInfo["type"])
 
         transfer = state.internalTransfer(block.exchangeID, block.operatorAccountID,
                                         accountFromID, accountToID, transTokenID,
-                                        amount, feeTokenID, fee, label, type)
+                                        amount, feeTokenID, fee, type)
 
         transfer.signature = transInfo["signature"]
         block.transfers.append(transfer)

@@ -13,7 +13,7 @@ export class OffchainWithdrawalProcessor {
     if (state.onchainDataAvailability) {
       const data = new Bitstream(block.data);
       const approvedWithdrawalOffset = 4 + 32 + 32;
-      let daOffset = approvedWithdrawalOffset + block.blockSize * 7 + 32;
+      let daOffset = approvedWithdrawalOffset + block.blockSize * 7;
 
       const operatorAccountID = data.extractUint24(daOffset);
       daOffset += 3;

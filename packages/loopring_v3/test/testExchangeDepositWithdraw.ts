@@ -1154,8 +1154,7 @@ contract("Exchange", (accounts: string[]) => {
         token,
         toWithdraw,
         feeToken,
-        fee,
-        20
+        fee
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
 
@@ -1205,8 +1204,7 @@ contract("Exchange", (accounts: string[]) => {
         token,
         toWithdraw,
         feeToken,
-        fee,
-        40
+        fee
       );
       await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
 
@@ -1244,8 +1242,7 @@ contract("Exchange", (accounts: string[]) => {
         token,
         toWithdraw,
         feeToken,
-        fee,
-        20
+        fee
       );
 
       exchangeTestUtil.setActiveOperator(accountID);
@@ -1521,8 +1518,7 @@ contract("Exchange", (accounts: string[]) => {
           deposit.token,
           deposit.amount,
           "LRC",
-          new BN(0),
-          0
+          new BN(0)
         );
       }
 

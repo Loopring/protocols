@@ -70,8 +70,7 @@ contract("Exchange", (accounts: string[]) => {
       depositInfo.token,
       exchangeTestUtil.getRandomAmount(),
       "LRC",
-      new BN(0),
-      exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
+      new BN(0)
     );
   };
 
@@ -86,8 +85,7 @@ contract("Exchange", (accounts: string[]) => {
       depositInfoA.token,
       depositInfoA.amount.div(new BN(10)),
       depositInfoA.token,
-      depositInfoA.amount.div(new BN(100)),
-      exchangeTestUtil.getRandomInt(1000)
+      depositInfoA.amount.div(new BN(100))
     );
   };
 

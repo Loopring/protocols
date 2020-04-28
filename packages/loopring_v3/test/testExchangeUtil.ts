@@ -54,8 +54,7 @@ function replacer(name: any, val: any) {
     name === "amountB" ||
     name === "amount" ||
     name === "fee" ||
-    name === "startHash" ||
-    name === "label"
+    name === "startHash"
   ) {
     return new BN(val, 16).toString(10);
   } else {
@@ -295,7 +294,6 @@ export class ExchangeTestUtil {
         validUntil: 2 ** 32 - 1,
         maxFeeBips: 0,
         buy: false,
-        label: 1,
 
         feeBips: 0,
         rebateBips: 0,
@@ -314,7 +312,6 @@ export class ExchangeTestUtil {
         validUntil: 2 ** 32 - 1,
         maxFeeBips: 0,
         buy: false,
-        label: 2,
 
         feeBips: 0,
         rebateBips: 0,
@@ -466,13 +463,9 @@ export class ExchangeTestUtil {
     order.tokenIdS = this.tokenAddressToIDMap.get(order.tokenS);
     order.tokenIdB = this.tokenAddressToIDMap.get(order.tokenB);
 
-    order.label =
-      order.label !== undefined ? order.label : this.getRandomInt(2 ** 16);
-
     assert(order.maxFeeBips < 64, "maxFeeBips >= 64");
     assert(order.feeBips < 64, "feeBips >= 64");
     assert(order.rebateBips < 64, "rebateBips >= 64");
-    assert(order.label < 2 ** 16, "order.label >= 2**16");
 
     // setup initial balances:
     await this.setOrderBalances(order);
@@ -486,7 +479,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = Poseidon.createHash(14, 6, 53);
+    const hasher = Poseidon.createHash(13, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
     // Calculate hash
@@ -503,8 +496,7 @@ export class ExchangeTestUtil {
       order.validSince,
       order.validUntil,
       order.maxFeeBips,
-      order.buy ? 1 : 0,
-      order.label
+      order.buy ? 1 : 0
     ];
     order.hash = hasher(inputs).toString(10);
     const endHash = performance.now();
@@ -555,7 +547,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = Poseidon.createHash(9, 6, 53);
+    const hasher = Poseidon.createHash(8, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
 
     // Calculate hash
@@ -566,7 +558,6 @@ export class ExchangeTestUtil {
       withdrawal.amount,
       withdrawal.feeTokenID,
       withdrawal.fee,
-      withdrawal.label,
       account.nonce++
     ];
     const hash = hasher(inputs).toString(10);
@@ -587,7 +578,7 @@ export class ExchangeTestUtil {
       return;
     }
 
-    const hasher = Poseidon.createHash(10, 6, 53);
+    const hasher = Poseidon.createHash(9, 6, 53);
     const account = this.accounts[this.exchangeId][trans.accountFromID];
 
     // Calculate hash
@@ -599,7 +590,6 @@ export class ExchangeTestUtil {
       trans.amount,
       trans.feeTokenID,
       trans.fee,
-      trans.label,
       account.nonce++
     ];
     const hash = hasher(inputs).toString(10);
@@ -906,7 +896,6 @@ export class ExchangeTestUtil {
     amount: BN,
     feeToken: string,
     fee: BN,
-    label: number,
     conditionalTransfer: boolean = false
   ) {
     if (!token.startsWith("0x")) {
@@ -925,7 +914,6 @@ export class ExchangeTestUtil {
       amount,
       feeTokenID,
       fee,
-      label,
       type: conditionalTransfer ? 1 : 0
     });
 
@@ -940,8 +928,7 @@ export class ExchangeTestUtil {
     token: string,
     amount: BN,
     feeToken: string,
-    fee: BN,
-    label: number
+    fee: BN
   ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -957,8 +944,7 @@ export class ExchangeTestUtil {
       tokenID,
       amount,
       feeTokenID,
-      fee,
-      label
+      fee
     );
     return this.pendingOffchainWithdrawalRequests[exchangeID][
       this.pendingOffchainWithdrawalRequests[exchangeID].length - 1
@@ -1039,7 +1025,6 @@ export class ExchangeTestUtil {
       amount,
       tokenID,
       new BN(0),
-      0,
       event.withdrawalIdx.toNumber(),
       withdrawalFee
     );
@@ -1103,7 +1088,6 @@ export class ExchangeTestUtil {
     amount: BN,
     feeTokenID: number,
     fee: BN,
-    label: number,
     withdrawalIdx?: number,
     withdrawalFee?: BN
   ) {
@@ -1114,7 +1098,6 @@ export class ExchangeTestUtil {
       amount,
       feeTokenID,
       fee,
-      label,
       withdrawalIdx,
       withdrawalFee
     };
@@ -1937,21 +1920,13 @@ export class ExchangeTestUtil {
             tokenID: 0,
             amount: new BN(0),
             feeTokenID: 1,
-            fee: new BN(0),
-            label: 0
+            fee: new BN(0)
           };
           withdrawals.push(dummyWithdrawalRequest);
         }
       }
       assert(withdrawals.length === blockSize);
       numWithdrawalsDone += blockSize;
-
-      // Hash the labels
-      const labels: number[] = [];
-      for (const withdrawal of withdrawals) {
-        labels.push(withdrawal.label);
-      }
-      const labelHash = this.hashLabels(labels);
 
       let startIndex = 0;
       let startingHash = "";
@@ -2040,7 +2015,6 @@ export class ExchangeTestUtil {
         bs.addNumber(withdrawal.fAmountWithdrawn, 3);
       }
       if (!onchain) {
-        bs.addBN(new BN(labelHash, 10), 32);
         if (block.onchainDataAvailability) {
           bs.addNumber(block.operatorAccountID, 3);
           for (const withdrawal of block.withdrawals) {
@@ -2131,7 +2105,6 @@ export class ExchangeTestUtil {
             amount: new BN(0),
             feeTokenID: 0,
             fee: new BN(0),
-            label: 0,
             type: 0
           };
           transfers.push(dummyInternalTransferRequest);
@@ -2139,13 +2112,6 @@ export class ExchangeTestUtil {
       }
       assert(transfers.length === blockSize);
       numTransferDone += blockSize;
-
-      // Hash the labels
-      const labels: number[] = [];
-      for (const transfer of transfers) {
-        labels.push(transfer.label);
-      }
-      const labelHash = this.hashLabels(labels);
 
       // Sign the offchain withdrawals
       for (const transfer of transfers) {
@@ -2209,7 +2175,6 @@ export class ExchangeTestUtil {
       bs.addNumber(block.exchangeID, 4);
       bs.addBN(new BN(block.merkleRootBefore, 10), 32);
       bs.addBN(new BN(block.merkleRootAfter, 10), 32);
-      bs.addBN(new BN(labelHash, 10), 32);
       bs.addNumber(numConditionalTransfers, 4);
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
@@ -2287,27 +2252,6 @@ export class ExchangeTestUtil {
     this.pendingWithdrawals = [];
   }
 
-  public hashLabels(labels: number[]) {
-    const hasher = Poseidon.createHash(66, 6, 56);
-    const numInputs = 64;
-
-    const numStages = Math.floor((labels.length + numInputs - 1) / numInputs);
-    const stageHashes: any[] = [];
-    for (let i = 0; i < numStages; i++) {
-      const inputs: number[] = [];
-      inputs.push(i == 0 ? 0 : stageHashes[stageHashes.length - 1]);
-      for (let j = 0; j < numInputs; j++) {
-        const labelIdx = i * numInputs + j;
-        inputs.push(labelIdx < labels.length ? labels[labelIdx] : 0);
-      }
-      stageHashes.push(hasher(inputs));
-    }
-
-    const hash = stageHashes[stageHashes.length - 1];
-    logDebug("[JS] labels hash: " + hash.toString(10));
-    return hash;
-  }
-
   public async commitRings(exchangeID: number, forcedBlockSize?: number) {
     const pendingRings = this.pendingRings[exchangeID];
     if (pendingRings.length === 0) {
@@ -2338,14 +2282,6 @@ export class ExchangeTestUtil {
       }
       assert(rings.length === blockSize);
       numRingsDone += blockSize;
-
-      // Hash the labels
-      const labels: number[] = [];
-      for (const ring of rings) {
-        labels.push(ring.orderA.label);
-        labels.push(ring.orderB.label);
-      }
-      const labelHash = this.hashLabels(labels);
 
       const currentBlockIdx = this.blocks[exchangeID].length - 1;
 
@@ -2390,7 +2326,6 @@ export class ExchangeTestUtil {
       bs.addNumber(ringBlock.timestamp, 4);
       bs.addNumber(ringBlock.protocolTakerFeeBips, 1);
       bs.addNumber(ringBlock.protocolMakerFeeBips, 1);
-      bs.addBN(new BN(labelHash, 10), 32);
       const da = new Bitstream();
       if (block.onchainDataAvailability) {
         bs.addNumber(block.operatorAccountID, 3);
@@ -3111,8 +3046,7 @@ export class ExchangeTestUtil {
       depositInfo.token,
       this.getRandomAmount(),
       "LRC",
-      new BN(0),
-      0
+      new BN(0)
     );
   }
 

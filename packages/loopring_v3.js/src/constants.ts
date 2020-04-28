@@ -9,7 +9,6 @@ export class Constants {
 
   static readonly NUM_BITS_ACCOUNTID = Constants.TREE_DEPTH_ACCOUNTS;
   static readonly NUM_BITS_ORDERID = 20;
-  static readonly NUM_BITS_LABEL = 32;
 
   static readonly MAX_NUM_TOKENS = 2 ** 8;
 

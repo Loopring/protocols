@@ -380,7 +380,7 @@ library ExchangeBlocks
         )
         private
     {
-        uint offset = 4 + 32 + 32 + 32;
+        uint offset = 4 + 32 + 32;
         // The length of the auxiliary data needs to match the number of conditional transfers
         uint numConditionalTransfers = data.bytesToUint32(offset);
         if (numConditionalTransfers > 0) {

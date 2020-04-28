@@ -294,16 +294,6 @@ Note that the operator normally receives fees from both orders which he can use 
 
 But if the operator pays the protocol fee, why have different protocol fee rates? You could argue that a 0.05% taker fee and a 0.01% maker fee is the same as a fixed 0.03% rate because the same entity pays the fee. That is true, but in general the operator will get a larger fee for the taker order than for the maker order so he will receive more tokens in `takerOrder.amountB` than in `makerOrder.amountB`. By having different rates it's more likely that the operator can pay the complete protocol fee just by using the tokens he receives as fee.
 
-### Labels
-
-A label is an optional identifier for a request e.g. an identifier for the wallet the request was created in.
-
-In previous fee models we had wallets and ring-matchers that were paid directly as part of the trade. This produces a lot of token transfers which increases the cost in the circuit (constraints) but also increases the amount of data-availability data (all transactions need to be reconstructible using this data). Instead of doing all these costly token transfers we just publish the label on-chain for the order/request that was used by the operator. The operator (who receives all the fees from users) can then make agreements with wallets/etc... outside of the protocol how they get paid for the use of their requests.
-
-The label of all requests are hashed together and this single hash called the `labelHash` is put on-chain. The operator can then share the label data of all requests he used in a block off-chain and all entities can verify that the labels the operator provided are indeed the ones that were used in a block.
-
-Another way fees can be shared is by using a contract owned account for the operator account.
-
 ## Signatures
 
 Currently, we use EdDSA keys (5,000 constraints to verify a signature), which is a bit cheaper than ECDSA signatures (estimated to be ~12,000 constraints). We may switch to ECDSA signatures if possible because users would not need to create (and store) a separate trading keypair.
@@ -373,7 +363,6 @@ OffchainWithdrawal {
   amount (96bit)
   feeTokenID (8bit)
   fee (96bit)
-  label (254bit)
   nonce (32bit)
 }
 ```
@@ -440,7 +429,6 @@ Order {
   validUntil (32bit)
   maxFeeBips (6bit)
   buy (1bit)
-  label (254bit)
 }
 ```
 
@@ -505,7 +493,6 @@ CancelRequest {
   orderID (20bit)
   feeTokenID (8bit)
   fee (96bit)
-  label (254bit)
   nonce (32bit)
 }
 ```
@@ -605,7 +592,7 @@ Users can withdraw their funds using the state of the last finalized block:
 
 ## Wallets
 
-Wallets are where users create orders. The wallet can work together with DEXs and operators to get part of the trading fees. Either direclty by using a contract as an intermediate fee-recipient so fees can be shared using a smart contract logic, or by using labels which allows verifying which off-chain requests were used by the operator.
+Wallets are where users create orders. The wallet can work together with DEXs and operators to get part of the trading fees. Either direclty by using a contract as an intermediate fee-recipient so fees can be shared using a smart contract logic.
 
 ## Brokers
 

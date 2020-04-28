@@ -462,7 +462,6 @@ contract IExchangeV3 is IExchange
     ///            - timestamp used in the block: 4 bytes
     ///            - protocolTakerFeeBips: 1 bytes
     ///            - protocolMakerFeeBips: 1 bytes
-    ///            - Label hash: 32 bytes
     ///        For DEPOSIT blocks add the following data:
     ///            - Starting hash: 32 bytes
     ///            - Ending hash: 32 bytes
@@ -482,9 +481,7 @@ contract IExchangeV3 is IExchange
     ///                - Token ID: 1 bytes
     ///                - Account ID: 3 bytes
     ///                - Amount: 3 bytes
-    ///            - Label hash: 32 bytes
     ///        For INTERNAL_TRANSFER blocks add the following data:
-    ///            - Label hash: 32 bytes
     ///            - Number of conditional transfers: 4 bytes
     ///
     ///        The 'onchain data availability' data (if enabled) is added
@@ -500,7 +497,7 @@ contract IExchangeV3 is IExchange
     ///                    - FillS: 3 bytes
     ///                    - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
     ///                                 feeOrRebateBips (6 bits)
-    ///                    - TradeHistoryData: 0 (1bit) | overwrite (1 bit) |
+    ///                    - TradeHistoryData: 0 (1 bit) | overwrite (1 bit) |
     ///                                        tradeHistoryAddress (14 bits)
     ///        For DEPOSIT blocks add the following data:
     ///            - None

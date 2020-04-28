@@ -31,7 +31,7 @@ export class RingSettlementProcessor {
     let data: Bitstream;
     if (state.onchainDataAvailability) {
       // Reverse circuit transform
-      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 32 + 3;
+      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
       const ringData = this.inverseTransformRingSettlementsData(
         "0x" + block.data.slice(2 + 2 * ringDataStart)
       );
@@ -50,8 +50,6 @@ export class RingSettlementProcessor {
     offset += 1;
     const protocolFeeMakerBips = data.extractUint8(offset);
     offset += 1;
-    // LabelHash
-    offset += 32;
 
     const trades: Trade[] = [];
     if (state.onchainDataAvailability) {

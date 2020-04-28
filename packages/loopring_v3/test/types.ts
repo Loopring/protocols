@@ -12,8 +12,6 @@ export interface OrderInfo {
   accountID?: number;
   orderID?: number;
 
-  label?: number;
-
   tokenIdS?: number;
   tokenIdB?: number;
 
@@ -101,8 +99,6 @@ export interface InternalTransferRequest {
   feeTokenID: number;
   fee: BN;
 
-  label: number;
-
   signature?: Signature;
 }
 
@@ -122,7 +118,6 @@ export interface WithdrawalRequest {
 
   feeTokenID?: number;
   fee?: BN;
-  label?: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
