@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -22,10 +22,8 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title ILoopring
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopring is Claimable, ReentrancyGuard
+abstract contract ILoopring is Claimable, ReentrancyGuard
 {
-    string  constant public version = ""; // must override this
-
     uint    public exchangeCreationCostLRC;
     address public universalRegistry;
     address public lrcAddress;
@@ -38,6 +36,14 @@ contract ILoopring is Claimable, ReentrancyGuard
         bool            onchainDataAvailability
     );
 
+    /// @dev Returns the exchange version
+    /// @return The exchange version
+    function version()
+        public
+        view
+        virtual
+        returns (string memory);
+
     /// @dev Initializes and registers an exchange.
     ///      This function should only be callable by the UniversalRegistry contract.
     ///      Also note that this function can only be called once per exchange instance.
@@ -47,7 +53,6 @@ contract ILoopring is Claimable, ReentrancyGuard
     /// @param  operator The operator of the exchange.
     /// @param  onchainDataAvailability True if "Data Availability" is turned on for this
     ///         exchange. Note that this value can not be changed once the exchange is initialized.
-    /// @return exchangeId The id of the exchange.
     function initializeExchange(
         address exchangeAddress,
         uint    exchangeId,
@@ -55,5 +60,6 @@ contract ILoopring is Claimable, ReentrancyGuard
         address payable operator,
         bool    onchainDataAvailability
         )
-        external;
+        external
+        virtual;
 }

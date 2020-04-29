@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../iface/IExchangeV3.sol";
 
@@ -65,7 +65,7 @@ contract TestAccountContract {
             bool   isAccountUpdated
         )
     {
-        (accountID, isAccountNew, isAccountUpdated) = exchange.updateAccountAndDeposit.value(msg.value)(
+        (accountID, isAccountNew, isAccountUpdated) = exchange.updateAccountAndDeposit{value: msg.value}(
             owner,
             pubKeyX,
             pubKeyY,
@@ -83,10 +83,10 @@ contract TestAccountContract {
         payable
         refund
     {
-        exchange.withdraw.value(msg.value)(address(this), token, amount);
+        exchange.withdraw{value: msg.value}(address(this), token, amount);
     }
 
-    function()
+    receive()
         external
         payable
     {

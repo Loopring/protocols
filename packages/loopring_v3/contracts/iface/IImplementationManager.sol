@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -28,7 +28,7 @@ import "../lib/ReentrancyGuard.sol";
 ///      ILoopring contracts.
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IImplementationManager is Claimable, ReentrancyGuard
+abstract contract IImplementationManager is Claimable, ReentrancyGuard
 {
     /// === Events ===
 
@@ -66,28 +66,32 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     function register(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Sets the default implemenation.
     /// @param implementation The new default implementation.
     function setDefault(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Enables an implemenation.
     /// @param implementation The implementation to be enabled.
     function enable(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Disables an implemenation.
     /// @param implementation The implementation to be disabled.
     function disable(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Returns version information.
     /// @return protocolVersion The protocol's version.
@@ -95,6 +99,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     function version()
         public
         view
+        virtual
         returns (
             string  memory protocolVersion,
             string  memory defaultImplVersion
@@ -105,6 +110,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     function latest()
         public
         view
+        virtual
         returns (address implementation);
 
     /// @dev Returns if an implementation has been registered.
@@ -114,6 +120,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
         )
         public
         view
+        virtual
         returns (bool registered);
 
     /// @dev Returns if an implementation has been registered and enabled.
@@ -123,5 +130,6 @@ contract IImplementationManager is Claimable, ReentrancyGuard
         )
         public
         view
+        virtual
         returns (bool enabled);
 }

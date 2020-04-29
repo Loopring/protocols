@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../iface/IDepositContract.sol";
 import "../iface/ILoopringV3.sol";
@@ -87,6 +87,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         external
         payable
+        override
         nonReentrant
         onlyExchange
     {
@@ -118,6 +119,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         uint amount
         )
         external
+        override
         nonReentrant
         onlyExchange
     {
@@ -135,6 +137,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         uint    amount
         )
         external
+        override
         nonReentrant
         onlyExchange
     {
@@ -143,7 +146,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
 
     /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops, to fee vault.
     /// @param token The address of the token.
-    /// @return The amount of token withdrawn
+    /// @return amount The amount of tokens withdrawn
     function withdrawTokenNotOwnedByUsers(
         address token
         )

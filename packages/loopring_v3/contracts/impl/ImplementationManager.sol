@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../iface/IExchange.sol";
 import "../iface/ILoopring.sol";
@@ -57,6 +57,7 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -67,6 +68,7 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -86,6 +88,7 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -100,6 +103,7 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -113,6 +117,7 @@ contract ImplementationManager is IImplementationManager
     function version()
         public
         view
+        override
         returns (
             string  memory protocolVersion,
             string  memory defaultImplVersion
@@ -125,6 +130,7 @@ contract ImplementationManager is IImplementationManager
     function latest()
         public
         view
+        override
         returns (address)
     {
         return implementations[implementations.length - 1];
@@ -135,6 +141,7 @@ contract ImplementationManager is IImplementationManager
         )
         public
         view
+        override
         returns (bool)
     {
         return statusMap[implementation].registered;
@@ -145,6 +152,7 @@ contract ImplementationManager is IImplementationManager
         )
         public
         view
+        override
         returns (bool)
     {
         return statusMap[implementation].enabled;

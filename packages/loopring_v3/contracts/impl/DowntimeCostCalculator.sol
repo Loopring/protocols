@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/MathUint.sol";
@@ -50,6 +50,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         )
         external
         view
+        override
         returns (uint)
     {
         return durationToPurchaseMinutes.mul(pricePerMinute);

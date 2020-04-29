@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../../iface/ITokenPriceProvider.sol";
 
@@ -45,6 +45,7 @@ contract ChainlinkTokenPriceProvider is ITokenPriceProvider
     function usd2lrc(uint usd)
         external
         view
+        override
         returns (uint)
     {
         uint EthUsd = uint(Eth2Usd.currentAnswer());

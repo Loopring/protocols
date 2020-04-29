@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -78,6 +78,7 @@ contract LoopringV3 is ILoopringV3
         bool    onchainDataAvailability
         )
         external
+        override
         nonReentrant
         onlyUniversalRegistry
     {
@@ -124,6 +125,7 @@ contract LoopringV3 is ILoopringV3
         uint    _withdrawalFineLRC
         )
         external
+        override
         onlyOwner
     {
         updateSettingsInternal(
@@ -150,6 +152,7 @@ contract LoopringV3 is ILoopringV3
         uint  _targetProtocolMakerFeeStake
         )
         external
+        override
         onlyOwner
     {
         minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
@@ -168,6 +171,7 @@ contract LoopringV3 is ILoopringV3
         )
         external
         view
+        override
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
@@ -183,6 +187,7 @@ contract LoopringV3 is ILoopringV3
         )
         public
         view
+        override
         returns (uint)
     {
         Exchange storage exchange = exchanges[exchangeId];
@@ -195,6 +200,7 @@ contract LoopringV3 is ILoopringV3
         uint amount
         )
         external
+        override
         nonReentrant
         returns (uint burnedLRC)
     {
@@ -222,6 +228,7 @@ contract LoopringV3 is ILoopringV3
         uint amountLRC
         )
         external
+        override
         nonReentrant
         returns (uint stakedLRC)
     {
@@ -245,6 +252,7 @@ contract LoopringV3 is ILoopringV3
         uint    requestedAmount
         )
         external
+        override
         nonReentrant
         returns (uint amountLRC)
     {
@@ -269,6 +277,7 @@ contract LoopringV3 is ILoopringV3
         uint amountLRC
         )
         external
+        override
         nonReentrant
         returns (uint stakedLRC)
     {
@@ -292,6 +301,7 @@ contract LoopringV3 is ILoopringV3
         uint    amountLRC
         )
         external
+        override
         nonReentrant
     {
         Exchange storage exchange = exchanges[exchangeId];
@@ -313,6 +323,7 @@ contract LoopringV3 is ILoopringV3
         )
         external
         view
+        override
         returns (
             uint8 takerFeeBips,
             uint8 makerFeeBips
@@ -346,6 +357,7 @@ contract LoopringV3 is ILoopringV3
         )
         external
         view
+        override
         returns (uint)
     {
         Exchange storage exchange = exchanges[exchangeId];

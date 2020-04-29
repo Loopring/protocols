@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IExchange.sol";
@@ -30,7 +30,7 @@ import "./ExchangeData.sol";
 ///
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchangeV3 is IExchange
+abstract contract IExchangeV3 is IExchange
 {
     // -- Events --
     // We need to make sure all events defined in exchange/*.sol
@@ -162,13 +162,22 @@ contract IExchangeV3 is IExchange
         address payable operator,
         bool    onchainDataAvailability
         )
-        external;
+        external
+        virtual;
 
-    /// @dev Gets the deposit contract used by this exchange
+    /// @dev Initialized the deposit contract used by the exchange.
+    ///      Can only be called by the exchange owner once.
+    /// @param depositContract The deposit contract to be used
+    function setDepositContract(address depositContract)
+        external
+        virtual;
+
+    /// @dev Gets the deposit contract used by the exchange.
     /// @return the deposit contract
     function getDepositContract()
         external
         view
+        virtual
         returns (IDepositContract);
 
     // -- Constants --
@@ -191,6 +200,7 @@ contract IExchangeV3 is IExchange
     function getConstants()
         external
         pure
+        virtual
         returns(uint[14] memory);
 
     // -- Mode --
@@ -199,6 +209,7 @@ contract IExchangeV3 is IExchange
     function isInWithdrawalMode()
         external
         view
+        virtual
         returns (bool);
 
     /// @dev Returns whether the exchange is shutdown.
@@ -206,6 +217,7 @@ contract IExchangeV3 is IExchange
     function isShutdown()
         external
         view
+        virtual
         returns (bool);
 
     /// @dev Returns whether the exchange is in maintenance.
@@ -213,6 +225,7 @@ contract IExchangeV3 is IExchange
     function isInMaintenance()
         external
         view
+        virtual
         returns (bool);
 
     // -- Accounts --
@@ -222,6 +235,7 @@ contract IExchangeV3 is IExchange
     function getNumAccounts()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Gets the account information for a given address.
@@ -234,6 +248,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (
             uint24 accountID,
             uint   pubKeyX,
@@ -274,6 +289,7 @@ contract IExchangeV3 is IExchange
         )
         external
         payable
+        virtual
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -311,6 +327,7 @@ contract IExchangeV3 is IExchange
         )
         external
         pure
+        virtual
         returns (bool);
 
     // -- Tokens --
@@ -320,6 +337,7 @@ contract IExchangeV3 is IExchange
     function getLRCFeeForRegisteringOneMoreToken()
         external
         view
+        virtual
         returns (uint feeLRC);
 
     /// @dev Registers an ERC20 token for a token id. Note that different exchanges may have
@@ -332,11 +350,11 @@ contract IExchangeV3 is IExchange
     ///
     /// @param  tokenAddress The token's address
     /// @return tokenID The token's ID in this exchanges.
-    /// @return isAccountNew True if this account is newly created, false if the account existes.
     function registerToken(
         address tokenAddress
         )
         external
+        virtual
         returns (uint16 tokenID);
 
     /// @dev Returns the id of a registered token.
@@ -347,6 +365,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (uint16 tokenID);
 
     /// @dev Returns the address of a registered token.
@@ -357,6 +376,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (address tokenAddress);
 
     /// @dev Disables users to submit onchain deposit requests for a token.
@@ -368,7 +388,8 @@ contract IExchangeV3 is IExchange
     function disableTokenDeposit(
         address tokenAddress
         )
-        external;
+        external
+        virtual;
 
     /// @dev Enable users to submit onchain deposit requests for a token.
     ///      This function is only callable by the exchange owner.
@@ -379,7 +400,8 @@ contract IExchangeV3 is IExchange
     function enableTokenDeposit(
         address tokenAddress
         )
-        external;
+        external
+        virtual;
 
     // -- Stakes --
     /// @dev Gets the amount of LRC the owner has staked onchain for this exchange.
@@ -391,6 +413,7 @@ contract IExchangeV3 is IExchange
     function getExchangeStake()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Withdraws the amount staked for this exchange.
@@ -406,6 +429,7 @@ contract IExchangeV3 is IExchange
         address recipient
         )
         external
+        virtual
         returns (uint);
 
     /// @dev Withdraws the amount staked for this exchange.
@@ -417,7 +441,8 @@ contract IExchangeV3 is IExchange
         address recipient,
         uint    amount
         )
-        external;
+        external
+        virtual;
 
     /// @dev Can by called by anyone to burn the stake of the exchange when certain
     ///      conditions are fulfilled.
@@ -425,7 +450,8 @@ contract IExchangeV3 is IExchange
     ///      Currently this will only burn the stake of the exchange if
     ///      the exchange is in withdrawal mode.
     function burnExchangeStake()
-        external;
+        external
+        virtual;
 
     // -- Blocks --
 
@@ -434,6 +460,7 @@ contract IExchangeV3 is IExchange
     function getMerkleRoot()
         external
         view
+        virtual
         returns (bytes32);
 
     /// @dev Gets the height of this exchange's virtual blockchain. The block height for a
@@ -442,6 +469,7 @@ contract IExchangeV3 is IExchange
     function getBlockHeight()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Sumbits new blocks to the rollup blockchain.
@@ -538,7 +566,8 @@ contract IExchangeV3 is IExchange
         ExchangeData.Block[] calldata blocks,
         address payable feeRecipient
         )
-        external;
+        external
+        virtual;
 
     // -- Deposits --
     /// @dev Returns the index of the first deposit request that wasn't yet included
@@ -548,6 +577,7 @@ contract IExchangeV3 is IExchange
     function getNumDepositRequestsProcessed()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Gets the number of available onchain deposit slots.
@@ -555,6 +585,7 @@ contract IExchangeV3 is IExchange
     function getNumAvailableDepositSlots()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Gets an item from deposit request-chain.
@@ -567,6 +598,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (
           bytes32 accumulatedHash,
           uint    accumulatedFee,
@@ -614,6 +646,7 @@ contract IExchangeV3 is IExchange
         )
         external
         payable
+        virtual
         returns (
             uint24 accountID,
             bool   isAccountNew,
@@ -646,7 +679,8 @@ contract IExchangeV3 is IExchange
         uint96  amount
         )
         external
-        payable;
+        payable
+        virtual;
 
     // -- Withdrawals --
 
@@ -657,6 +691,7 @@ contract IExchangeV3 is IExchange
     function getNumWithdrawalRequestsProcessed()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Gets the number of available onchain withdrawal slots.
@@ -665,6 +700,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Gets an item from withdrawal request-chain.
@@ -677,6 +713,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (
             bytes32 accumulatedHash,
             uint    accumulatedFee,
@@ -704,7 +741,8 @@ contract IExchangeV3 is IExchange
         uint96  amount
         )
         external
-        payable;
+        payable
+        virtual;
 
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens from the
     ///      protocol fees account. The complete balance is always withdrawn.
@@ -720,7 +758,8 @@ contract IExchangeV3 is IExchange
         address tokenAddress
         )
         external
-        payable;
+        payable
+        virtual;
 
     /// @dev Allows anyone to withdraw funds for a specified user using the balances stored
     ///      in the Merkle tree. The funds will be sent to the owner of the acount.
@@ -755,7 +794,8 @@ contract IExchangeV3 is IExchange
         uint[36] calldata accountMerkleProof,
         uint[12] calldata balanceMerkleProof
         )
-        external;
+        external
+        virtual;
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
     ///      it was never committed in a block (so the balance in the Merkle tree was
@@ -772,7 +812,8 @@ contract IExchangeV3 is IExchange
     function withdrawFromDepositRequest(
         uint depositIdx
         )
-        external;
+        external
+        virtual;
 
     /// @dev Allows withdrawing funds after a withdrawal request (either onchain
     ///      or offchain) was submitted in a block by the operator.
@@ -791,7 +832,8 @@ contract IExchangeV3 is IExchange
         address owner,
         address token
         )
-        external;
+        external
+        virtual;
 
     /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawal`.
     /// @param  owner The address of the account the withdrawal was done for.
@@ -803,6 +845,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (uint);
 
     // -- Agents --
@@ -821,7 +864,8 @@ contract IExchangeV3 is IExchange
         address[] calldata agents,
         bool[]    calldata authorized
         )
-        external;
+        external
+        virtual;
 
     /// @dev Returns whether an agent address is an agent of an account owner
     /// @param owner The account owner.
@@ -830,6 +874,7 @@ contract IExchangeV3 is IExchange
     function isAgent(address owner, address agent)
         public
         view
+        virtual
         returns (bool);
 
     /// @dev Approves an offchain transfer.
@@ -848,7 +893,8 @@ contract IExchangeV3 is IExchange
         address token,
         uint    amount
         )
-        external;
+        external
+        virtual;
 
     /// @dev Gets the currently approved amounts to be transferred using internal transfers.
     /// @param from The address of the account that sends the tokens.
@@ -862,6 +908,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Allows an agent to transfer ERC-20 tokens for a user using the allowance
@@ -880,7 +927,8 @@ contract IExchangeV3 is IExchange
         address token,
         uint    amount
         )
-        external;
+        external
+        virtual;
 
     // -- Admins --
 
@@ -891,6 +939,7 @@ contract IExchangeV3 is IExchange
         address payable _operator
         )
         external
+        virtual
         returns (address payable oldOperator);
 
     /// @dev Gets the operator address.
@@ -898,6 +947,7 @@ contract IExchangeV3 is IExchange
     function getOperator()
         external
         view
+        virtual
         returns (address payable);
 
     /// @dev Sets the address whitelist contract address.
@@ -908,6 +958,7 @@ contract IExchangeV3 is IExchange
         address _addressWhitelist
         )
         external
+        virtual
         returns (address oldAddressWhitelist);
 
     /// @dev Updates fee settings.
@@ -922,7 +973,8 @@ contract IExchangeV3 is IExchange
         uint _depositFeeETH,
         uint _withdrawalFeeETH
         )
-        external;
+        external
+        virtual;
 
     /// @dev Gets current fee settings.
     /// @return _accountCreationFeeETH The fee in ETH for account creation
@@ -932,6 +984,7 @@ contract IExchangeV3 is IExchange
     function getFees()
         external
         view
+        virtual
         returns (
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
@@ -966,19 +1019,22 @@ contract IExchangeV3 is IExchange
     function startOrContinueMaintenanceMode(
         uint durationMinutes
         )
-        external;
+        external
+        virtual;
 
     /// @dev Gets the exchange out of maintenance mode.
     ///
     ///      This function is only callable by the exchange owner.
     function stopMaintenanceMode()
-        external;
+        external
+        virtual;
 
     /// @dev Gets the remaining downtime.
-    /// @return durationSeconds Remaining downtime in second.
+    /// @return durationMinutes Remaining downtime in minutes.
     function getRemainingDowntime()
         external
         view
+        virtual
         returns (uint durationMinutes);
 
     /// @dev Gets the amount of LRC to burn for buying the downtime.
@@ -988,6 +1044,7 @@ contract IExchangeV3 is IExchange
         )
         external
         view
+        virtual
         returns (uint costLRC);
 
     /// @dev Gets the total amount of time in seconds the exchange has ever been in maintenance.
@@ -995,6 +1052,7 @@ contract IExchangeV3 is IExchange
     function getTotalTimeInMaintenanceSeconds()
         external
         view
+        virtual
         returns (uint timeInSeconds);
 
     /// @dev Gets the time the exchange was created.
@@ -1002,6 +1060,7 @@ contract IExchangeV3 is IExchange
     function getExchangeCreationTimestamp()
         external
         view
+        virtual
         returns (uint timestamp);
 
     /// @dev Shuts down the exchange.
@@ -1020,6 +1079,7 @@ contract IExchangeV3 is IExchange
     /// @return success True if the exchange is shutdown, else False
     function shutdown()
         external
+        virtual
         returns (bool success);
 
     /// @dev Gets number of available/processed deposits/withdrawals.
@@ -1030,6 +1090,7 @@ contract IExchangeV3 is IExchange
     function getRequestStats()
         external
         view
+        virtual
         returns(
             uint numDepositRequestsProcessed,
             uint numAvailableDepositSlots,
@@ -1046,6 +1107,7 @@ contract IExchangeV3 is IExchange
     function getProtocolFeeValues()
         external
         view
+        virtual
         returns (
             uint32 timestamp,
             uint8 takerFeeBips,

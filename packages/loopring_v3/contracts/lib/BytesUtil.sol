@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 /// @title Utility Functions for bytes
@@ -175,7 +175,7 @@ library BytesUtil
         bool success;
         assembly {
              let ptr := add(data, 32)
-             success := staticcall(sub(gas, 2000), 2, ptr, mload(data), add(result, 32), 32)
+             success := staticcall(sub(gas(), 2000), 2, ptr, mload(data), add(result, 32), 32)
         }
         require(success, "SHA256_FAILED");
         return result[0];

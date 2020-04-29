@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/SimpleProxy.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -67,6 +67,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address implementation
         )
         external
+        override
         nonReentrant
         onlyOwner
         returns (address manager)
@@ -100,6 +101,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address protocol
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -115,6 +117,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address protocol
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -129,6 +132,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address protocol
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -145,6 +149,7 @@ contract UniversalRegistry is IUniversalRegistry {
         address   implementation
         )
         external
+        override
         nonReentrant
         returns (
             address exchangeAddress,
@@ -198,6 +203,7 @@ contract UniversalRegistry is IUniversalRegistry {
     function defaultProtocol()
         public
         view
+        override
         returns (
             address protocol,
             address manager,
@@ -220,6 +226,7 @@ contract UniversalRegistry is IUniversalRegistry {
         )
         public
         view
+        override
         returns (bool)
     {
         return protocolMap[protocol].registered;
@@ -230,6 +237,7 @@ contract UniversalRegistry is IUniversalRegistry {
         )
         public
         view
+        override
         returns (bool)
     {
         return protocolMap[protocol].enabled;
@@ -240,6 +248,7 @@ contract UniversalRegistry is IUniversalRegistry {
         )
         public
         view
+        override
         returns (bool)
     {
         return exchangeMap[exchange] != address(0);
@@ -251,6 +260,7 @@ contract UniversalRegistry is IUniversalRegistry {
         )
         public
         view
+        override
         returns (bool enabled)
     {
         if (!isProtocolEnabled(protocol)) {
@@ -267,6 +277,7 @@ contract UniversalRegistry is IUniversalRegistry {
         )
         public
         view
+        override
         returns (
             address protocol,
             address manager

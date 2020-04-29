@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "./ILoopring.sol";
 
@@ -22,7 +22,7 @@ import "./ILoopring.sol";
 /// @title ILoopringV3
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ILoopringV3 is ILoopring
+abstract contract ILoopringV3 is ILoopring
 {
     // == Events ==
 
@@ -65,8 +65,6 @@ contract ILoopringV3 is ILoopring
 
     mapping (uint => Exchange) internal exchanges;
 
-    string  constant public version = "3.1";
-
     address public wethAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
@@ -88,6 +86,15 @@ contract ILoopringV3 is ILoopring
     address payable public protocolFeeVault;
 
     // == Public Functions ==
+    function version()
+        public
+        view
+        override
+        returns (string memory)
+    {
+        return "3.1";
+    }
+
     /// @dev Updates the global exchange settings.
     ///      This function can only be called by the owner of this contract.
     ///
@@ -106,7 +113,8 @@ contract ILoopringV3 is ILoopring
         uint    _revertFineLRC,
         uint    _withdrawalFineLRC
         )
-        external;
+        external
+        virtual;
 
     /// @dev Updates the global protocol fee settings.
     ///      This function can only be called by the owner of this contract.
@@ -121,7 +129,8 @@ contract ILoopringV3 is ILoopring
         uint  _targetProtocolTakerFeeStake,
         uint  _targetProtocolMakerFeeStake
         )
-        external;
+        external
+        virtual;
 
     /// @dev Returns whether the Exchange has staked enough to commit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
@@ -138,6 +147,7 @@ contract ILoopringV3 is ILoopring
         )
         external
         view
+        virtual
         returns (bool);
 
     /// @dev Gets the amount of staked LRC for an exchange.
@@ -148,6 +158,7 @@ contract ILoopringV3 is ILoopring
         )
         public
         view
+        virtual
         returns (uint stakedLRC);
 
     /// @dev Burns a certain amount of staked LRC for a specific exchange.
@@ -160,6 +171,7 @@ contract ILoopringV3 is ILoopring
         uint amount
         )
         external
+        virtual
         returns (uint burnedLRC);
 
     /// @dev Stakes more LRC for an exchange.
@@ -171,6 +183,7 @@ contract ILoopringV3 is ILoopring
         uint amountLRC
         )
         external
+        virtual
         returns (uint stakedLRC);
 
     /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
@@ -178,13 +191,14 @@ contract ILoopringV3 is ILoopring
     /// @param  exchangeId The id of the exchange
     /// @param  recipient The address to receive LRC
     /// @param  requestedAmount The amount of LRC to withdraw
-    /// @return stakedLRC The amount of LRC withdrawn
+    /// @return amount The amount of LRC withdrawn
     function withdrawExchangeStake(
         uint    exchangeId,
         address recipient,
         uint    requestedAmount
         )
         external
+        virtual
         returns (uint amount);
 
     /// @dev Stakes more LRC for an exchange.
@@ -196,6 +210,7 @@ contract ILoopringV3 is ILoopring
         uint amountLRC
         )
         external
+        virtual
         returns (uint stakedLRC);
 
     /// @dev Withdraws a certain amount of staked LRC for an exchange to the given address.
@@ -208,7 +223,8 @@ contract ILoopringV3 is ILoopring
         address recipient,
         uint    amount
         )
-        external;
+        external
+        virtual;
 
     /// @dev Gets the protocol fee values for an exchange.
     /// @param exchangeId The id of the exchange
@@ -222,6 +238,7 @@ contract ILoopringV3 is ILoopring
         )
         external
         view
+        virtual
         returns (
             uint8 takerFeeBips,
             uint8 makerFeeBips
@@ -235,5 +252,6 @@ contract ILoopringV3 is ILoopring
         )
         external
         view
+        virtual
         returns (uint protocolFeeStake);
 }

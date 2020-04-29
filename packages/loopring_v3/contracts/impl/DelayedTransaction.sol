@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../iface/IDelayedTransaction.sol";
 
@@ -27,7 +27,7 @@ import "../lib/MathUint.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Base class for an Owner contract where certain functions have
 ///      a mandatory delay for security purposes.
-contract DelayedTransaction is IDelayedTransaction
+abstract contract DelayedTransaction is IDelayedTransaction
 {
     using AddressUtil for address payable;
     using BytesUtil   for bytes;
@@ -65,6 +65,7 @@ contract DelayedTransaction is IDelayedTransaction
         )
         external
         payable
+        override
         onlyAuthorized
     {
         transactInternal(to, msg.value, data);
@@ -74,6 +75,7 @@ contract DelayedTransaction is IDelayedTransaction
         uint transactionId
         )
         external
+        override
         onlyAuthorized
     {
         Transaction memory transaction = getTransaction(transactionId);
@@ -111,6 +113,7 @@ contract DelayedTransaction is IDelayedTransaction
         uint transactionId
         )
         external
+        override
         onlyAuthorized
     {
         cancelTransactionInternal(transactionId);
@@ -118,6 +121,7 @@ contract DelayedTransaction is IDelayedTransaction
 
     function cancelAllTransactions()
         external
+        override
         onlyAuthorized
     {
         // First cache all transactions ids of the transactions we will remove
@@ -137,6 +141,7 @@ contract DelayedTransaction is IDelayedTransaction
         )
         public
         view
+        override
         returns (uint)
     {
         uint pos = delayedFunctionMap[to][functionSelector];
@@ -150,6 +155,7 @@ contract DelayedTransaction is IDelayedTransaction
     function getNumPendingTransactions()
         external
         view
+        override
         returns (uint)
     {
         return pendingTransactions.length;
@@ -158,6 +164,7 @@ contract DelayedTransaction is IDelayedTransaction
     function getNumDelayedFunctions()
         external
         view
+        override
         returns (uint)
     {
         return delayedFunctions.length;
@@ -233,7 +240,7 @@ contract DelayedTransaction is IDelayedTransaction
                     delayedFunctions[pos - 1] = lastOne;
                     delayedFunctionMap[lastOne.to][lastOne.functionSelector] = pos;
                 }
-                delayedFunctions.length -= 1;
+                delayedFunctions.pop();
                 delete delayedFunctionMap[to][functionSelector];
             }
         } else if (delay > 0) {
@@ -255,7 +262,7 @@ contract DelayedTransaction is IDelayedTransaction
         returns (bool success, bytes memory returnData)
     {
         // solium-disable-next-line security/no-call-value
-        (success, returnData) = transaction.to.call.value(transaction.value)(transaction.data);
+        (success, returnData) = transaction.to.call{value: transaction.value}(transaction.data);
     }
 
     function cancelTransactionInternal(
@@ -310,12 +317,13 @@ contract DelayedTransaction is IDelayedTransaction
             pendingTransactionMap[lastOne.id] = pos;
         }
 
-        pendingTransactions.length -= 1;
+        pendingTransactions.pop();
         delete pendingTransactionMap[transactionId];
     }
 
     function isAuthorizedForTransactions(address sender)
         internal
         view
+        virtual
         returns (bool);
 }

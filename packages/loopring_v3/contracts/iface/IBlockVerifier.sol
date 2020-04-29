@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../lib/Claimable.sol";
@@ -22,7 +22,7 @@ import "../lib/Claimable.sol";
 
 /// @title IBlockVerifier
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IBlockVerifier is Claimable
+abstract contract IBlockVerifier is Claimable
 {
     // -- Events --
 
@@ -59,7 +59,8 @@ contract IBlockVerifier is Claimable
         uint8    blockVersion,
         uint[18] calldata vk
         )
-        external;
+        external
+        virtual;
 
     /// @dev Disables the use of the specified circuit.
     ///      This will stop NEW blocks from using the given circuit, blocks that were already committed
@@ -75,7 +76,8 @@ contract IBlockVerifier is Claimable
         uint16 blockSize,
         uint8  blockVersion
         )
-        external;
+        external
+        virtual;
 
     /// @dev Verifies blocks with the given public data and proofs.
     ///      Verifying a block makes sure all requests handled in the block
@@ -98,6 +100,7 @@ contract IBlockVerifier is Claimable
         )
         external
         view
+        virtual
         returns (bool);
 
     /// @dev Checks if a circuit with the specified parameters is registered.
@@ -115,6 +118,7 @@ contract IBlockVerifier is Claimable
         )
         external
         view
+        virtual
         returns (bool);
 
     /// @dev Checks if a circuit can still be used to commit new blocks.
@@ -132,5 +136,6 @@ contract IBlockVerifier is Claimable
         )
         external
         view
+        virtual
         returns (bool);
 }

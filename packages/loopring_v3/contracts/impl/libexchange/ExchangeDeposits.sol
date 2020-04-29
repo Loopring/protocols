@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -191,6 +191,6 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        S.depositContract.deposit.value(depositValueETH)(from, tokenAddress, amount);
+        S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
     }
 }

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../../lib/Ownable.sol";
 
@@ -54,6 +54,7 @@ contract ManualUpgradabilityProxy is IExchangeProxy
     function implementation()
         public
         view
+        override
         returns (address impl)
     {
         bytes32 position = implementationPosition;

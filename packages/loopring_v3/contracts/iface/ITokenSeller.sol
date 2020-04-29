@@ -14,12 +14,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 /// @title ITokenSeller
 /// @dev Use this contract to sell tokenS for as many tokenB.
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract ITokenSeller
+interface ITokenSeller
 {
     /// @dev Sells all tokenS for tokenB
     /// @param tokenS The token or Ether (0x0) to sell.

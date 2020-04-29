@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../../iface/IExchangeProxy.sol";
 import "../../iface/IImplementationManager.sol";
@@ -31,6 +31,7 @@ contract AutoUpgradabilityProxy is IExchangeProxy
     function implementation()
         public
         view
+        override
         returns (address)
     {
         IUniversalRegistry r = IUniversalRegistry(registry());

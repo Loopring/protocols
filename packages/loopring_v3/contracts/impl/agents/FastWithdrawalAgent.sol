@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/IExchangeV3.sol";
@@ -95,7 +95,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
     constructor()
         public
     {
-        //DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
 
     // This method needs to be called by the liquidity provider
@@ -118,11 +118,6 @@ contract FastWithdrawalAgent is ReentrancyGuard
     function executeFastWithdrawal(FastWithdrawal memory fastWithdrawal)
         internal
     {
-        // Currently here because the compiler hangs when doing this in the constructor
-        if (DOMAIN_SEPARATOR == bytes32(0)) {
-            DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
-        }
-
         // Compute the hash
         bytes32 hash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
@@ -194,7 +189,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
             // Do the onchain withdrawal request
             (,,, uint withdrawalFeeETH) = exchange.getFees();
-            exchange.withdraw.value(withdrawalFeeETH)(
+            exchange.withdraw{value: withdrawalFeeETH}(
                 fastWithdrawal.from,
                 fastWithdrawal.token,
                 uint96(fastWithdrawal.amount)

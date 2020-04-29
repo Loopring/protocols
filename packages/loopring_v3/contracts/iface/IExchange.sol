@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../thirdparty/Cloneable.sol";
@@ -25,11 +25,17 @@ import "../lib/ReentrancyGuard.sol";
 
 /// @title IExchange
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchange is Claimable, ReentrancyGuard
+abstract contract IExchange is Claimable, ReentrancyGuard
 {
-    string constant public version = ""; // must override this
-
     event Cloned (address indexed clone);
+
+    /// @dev Returns the exchange version
+    /// @return The exchange version
+    function version()
+        public
+        view
+        virtual
+        returns (string memory);
 
     /// @dev Clones an exchange without any initialization
     /// @return cloneAddress The address of the new exchange.

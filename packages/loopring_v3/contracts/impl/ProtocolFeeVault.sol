@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/AddressUtil.sol";
 import "../lib/BurnableERC20.sol";
@@ -44,7 +44,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         lrcAddress = _lrcAddress;
     }
 
-    function() external payable { }
+    receive() external payable { }
 
     function updateSettings(
         address _userStakingPoolAddress,
@@ -52,6 +52,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         address _daoAddress
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -72,6 +73,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         uint amount
         )
         external
+        override
         nonReentrant
     {
         require(amount > 0, "ZERO_VALUE");
@@ -83,6 +85,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
     function fundDAO()
         external
+        override
         nonReentrant
     {
         uint amountDAO;
@@ -110,6 +113,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
         uint    amount
         )
         external
+        override
         nonReentrant
     {
         require(amount > 0, "ZERO_AMOUNT");
@@ -135,6 +139,7 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
     function getProtocolFeeStats()
         public
         view
+        override
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,

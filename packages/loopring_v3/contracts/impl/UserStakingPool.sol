@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
@@ -52,6 +52,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function setProtocolFeeVault(address _protocolFeeVaultAddress)
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -63,6 +64,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     function getTotalStaking()
         public
         view
+        override
         returns (uint)
     {
         return total.balance;
@@ -71,6 +73,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
     function getUserStaking(address user)
         public
         view
+        override
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,
@@ -86,6 +89,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function stake(uint amount)
         external
+        override
         nonReentrant
     {
         require(amount > 0, "ZERO_VALUE");
@@ -132,6 +136,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function withdraw(uint amount)
         external
+        override
         nonReentrant
     {
         require(getUserWithdrawalWaitTime(msg.sender) == 0, "NEED_TO_WAIT");
@@ -163,6 +168,7 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function claim()
         external
+        override
         nonReentrant
         returns (uint claimedAmount)
     {

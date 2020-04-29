@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "./libexchange/ExchangeAccounts.sol";
@@ -39,7 +39,6 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    string  constant public version = "3.5.0";
     bytes32 constant public genesisBlockHash = 0x135c6bc40ddc3b5871bad0abb280177d2b65f5ec7859dd6fab6f67113df5a7e5;
 
     using MathUint              for uint;
@@ -77,6 +76,15 @@ contract ExchangeV3 is IExchangeV3
     /// @dev The constructor must do NOTHING to support proxy.
     constructor() public {}
 
+    function version()
+        public
+        view
+        override
+        returns (string memory)
+    {
+        return "3.5.0";
+    }
+
     // -- Initialization --
     function initialize(
         address _loopringAddress,
@@ -86,6 +94,7 @@ contract ExchangeV3 is IExchangeV3
         bool    _onchainDataAvailability
         )
         external
+        override
         nonReentrant
         onlyWhenUninitialized
     {
@@ -103,6 +112,7 @@ contract ExchangeV3 is IExchangeV3
 
     function setDepositContract(address _depositContract)
         external
+        override
         onlyOwner
     {
         require(_depositContract != address(0), "ZERO_ADDRESS");
@@ -114,6 +124,7 @@ contract ExchangeV3 is IExchangeV3
     function getDepositContract()
         external
         view
+        override
         returns (IDepositContract)
     {
         return state.depositContract;
@@ -123,6 +134,7 @@ contract ExchangeV3 is IExchangeV3
     function getConstants()
         external
         pure
+        override
         returns(uint[14] memory)
     {
         return [
@@ -147,6 +159,7 @@ contract ExchangeV3 is IExchangeV3
     function isInWithdrawalMode()
         external
         view
+        override
         returns (bool)
     {
         return state.isInWithdrawalMode();
@@ -155,6 +168,7 @@ contract ExchangeV3 is IExchangeV3
     function isShutdown()
         external
         view
+        override
         returns (bool)
     {
         return state.isShutdown();
@@ -163,6 +177,7 @@ contract ExchangeV3 is IExchangeV3
     function isInMaintenance()
         external
         view
+        override
         returns (bool)
     {
         return state.isInMaintenance();
@@ -172,6 +187,7 @@ contract ExchangeV3 is IExchangeV3
     function getNumAccounts()
         external
         view
+        override
         returns (uint)
     {
         return state.accounts.length;
@@ -182,6 +198,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (
             uint24 accountID,
             uint   pubKeyX,
@@ -199,6 +216,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         payable
+        override
         nonReentrant
         onlyAgentFor(owner)
         returns (
@@ -232,6 +250,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         pure
+        override
         returns (bool)
     {
         return ExchangeBalances.isAccountBalanceCorrect(
@@ -252,6 +271,7 @@ contract ExchangeV3 is IExchangeV3
     function getLRCFeeForRegisteringOneMoreToken()
         external
         view
+        override
         returns (uint)
     {
         return state.getLRCFeeForRegisteringOneMoreToken();
@@ -261,6 +281,7 @@ contract ExchangeV3 is IExchangeV3
         address tokenAddress
         )
         external
+        override
         nonReentrant
         onlyOwner
         returns (uint16)
@@ -273,6 +294,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (uint16)
     {
         return state.getTokenID(tokenAddress);
@@ -283,6 +305,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (address)
     {
         return state.getTokenAddress(tokenID);
@@ -292,6 +315,7 @@ contract ExchangeV3 is IExchangeV3
         address tokenAddress
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -302,6 +326,7 @@ contract ExchangeV3 is IExchangeV3
         address tokenAddress
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -312,6 +337,7 @@ contract ExchangeV3 is IExchangeV3
     function getExchangeStake()
         external
         view
+        override
         returns (uint)
     {
         return state.loopring.getExchangeStake(state.id);
@@ -321,6 +347,7 @@ contract ExchangeV3 is IExchangeV3
         address recipient
         )
         external
+        override
         nonReentrant
         onlyOwner
         returns (uint)
@@ -333,6 +360,7 @@ contract ExchangeV3 is IExchangeV3
         uint amount
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -341,6 +369,7 @@ contract ExchangeV3 is IExchangeV3
 
     function burnExchangeStake()
         external
+        override
         nonReentrant
     {
         // Allow burning the complete exchange stake when the exchange gets into withdrawal mode
@@ -355,6 +384,7 @@ contract ExchangeV3 is IExchangeV3
     function getMerkleRoot()
         external
         view
+        override
         returns (bytes32)
     {
         return state.merkleRoot;
@@ -363,6 +393,7 @@ contract ExchangeV3 is IExchangeV3
     function getBlockHeight()
         external
         view
+        override
         returns (uint)
     {
         return state.numBlocksSubmitted;
@@ -373,6 +404,7 @@ contract ExchangeV3 is IExchangeV3
         address payable feeRecipient
         )
         external
+        override
         nonReentrant
         onlyOperator
     {
@@ -386,6 +418,7 @@ contract ExchangeV3 is IExchangeV3
     function getNumDepositRequestsProcessed()
         external
         view
+        override
         returns (uint)
     {
         return state.getNumDepositRequestsProcessed();
@@ -394,6 +427,7 @@ contract ExchangeV3 is IExchangeV3
     function getNumAvailableDepositSlots()
         external
         view
+        override
         returns (uint)
     {
         return state.getNumAvailableDepositSlots();
@@ -404,6 +438,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (
           bytes32 accumulatedHash,
           uint    accumulatedFee,
@@ -423,6 +458,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         payable
+        override
         nonReentrant
         onlyAgentFor(owner)
         returns (
@@ -449,6 +485,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         payable
+        override
         nonReentrant
         onlyAgentFor(from)
     {
@@ -459,6 +496,7 @@ contract ExchangeV3 is IExchangeV3
     function getNumWithdrawalRequestsProcessed()
         external
         view
+        override
         returns (uint)
     {
         return state.getNumWithdrawalRequestsProcessed();
@@ -467,6 +505,7 @@ contract ExchangeV3 is IExchangeV3
     function getNumAvailableWithdrawalSlots()
         external
         view
+        override
         returns (uint)
     {
         return state.getNumAvailableWithdrawalSlots();
@@ -477,6 +516,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (
             bytes32 accumulatedHash,
             uint    accumulatedFee,
@@ -493,6 +533,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         payable
+        override
         nonReentrant
         onlyAgentFor(owner)
     {
@@ -505,6 +546,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         payable
+        override
         nonReentrant
     {
         // Always request the maximum amount so the complete balance is withdrawn
@@ -524,6 +566,7 @@ contract ExchangeV3 is IExchangeV3
         uint[12] calldata balancePath
         )
         external
+        override
         nonReentrant
     {
         state.withdrawFromMerkleTree(
@@ -543,6 +586,7 @@ contract ExchangeV3 is IExchangeV3
         uint depositIdx
         )
         external
+        override
         nonReentrant
     {
         state.withdrawFromDepositRequest(depositIdx);
@@ -553,6 +597,7 @@ contract ExchangeV3 is IExchangeV3
         address token
         )
         external
+        override
         nonReentrant
     {
         state.withdrawFromApprovedWithdrawal(
@@ -567,6 +612,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (uint)
     {
         uint24 accountID = (owner != address(0)) ? state.getAccountID(owner) : 0;
@@ -581,6 +627,7 @@ contract ExchangeV3 is IExchangeV3
         bool[]    calldata authorized
         )
         external
+        override
         onlyAgentFor(owner)
     {
         require(agents.length == authorized.length, "INVALID_DATA");
@@ -593,6 +640,7 @@ contract ExchangeV3 is IExchangeV3
     function isAgent(address owner, address agent)
         public
         view
+        override
         returns (bool)
     {
         return owner == agent || state.agent[owner][agent];
@@ -605,6 +653,7 @@ contract ExchangeV3 is IExchangeV3
         uint    amount
         )
         external
+        override
         nonReentrant
         onlyAgentFor(from)
     {
@@ -630,6 +679,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (uint)
     {
         uint24 fromAccountID = state.getAccountID(from);
@@ -645,6 +695,7 @@ contract ExchangeV3 is IExchangeV3
         uint    amount
         )
         external
+        override
         nonReentrant
         onlyAgentFor(from)
     {
@@ -656,6 +707,7 @@ contract ExchangeV3 is IExchangeV3
         address payable _operator
         )
         external
+        override
         nonReentrant
         onlyOwner
         returns (address payable)
@@ -666,6 +718,7 @@ contract ExchangeV3 is IExchangeV3
     function getOperator()
         external
         view
+        override
         returns (address payable)
     {
         return state.operator;
@@ -675,6 +728,7 @@ contract ExchangeV3 is IExchangeV3
         address _addressWhitelist
         )
         external
+        override
         nonReentrant
         onlyOwner
         returns (address)
@@ -689,6 +743,7 @@ contract ExchangeV3 is IExchangeV3
         uint _withdrawalFeeETH
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -703,6 +758,7 @@ contract ExchangeV3 is IExchangeV3
     function getFees()
         external
         view
+        override
         returns (
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
@@ -720,6 +776,7 @@ contract ExchangeV3 is IExchangeV3
         uint durationMinutes
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -728,6 +785,7 @@ contract ExchangeV3 is IExchangeV3
 
     function stopMaintenanceMode()
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -737,6 +795,7 @@ contract ExchangeV3 is IExchangeV3
     function getRemainingDowntime()
         external
         view
+        override
         returns (uint)
     {
         return state.getRemainingDowntime();
@@ -747,6 +806,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         view
+        override
         returns (uint costLRC)
     {
         return state.getDowntimeCostLRC(durationMinutes);
@@ -755,6 +815,7 @@ contract ExchangeV3 is IExchangeV3
     function getTotalTimeInMaintenanceSeconds()
         external
         view
+        override
         returns (uint)
     {
         return state.getTotalTimeInMaintenanceSeconds();
@@ -763,6 +824,7 @@ contract ExchangeV3 is IExchangeV3
     function getExchangeCreationTimestamp()
         external
         view
+        override
         returns (uint)
     {
         return state.exchangeCreationTimestamp;
@@ -770,6 +832,7 @@ contract ExchangeV3 is IExchangeV3
 
     function shutdown()
         external
+        override
         nonReentrant
         onlyOwner
         returns (bool success)
@@ -784,6 +847,7 @@ contract ExchangeV3 is IExchangeV3
     function getRequestStats()
         external
         view
+        override
         returns(
             uint numDepositRequestsProcessed,
             uint numAvailableDepositSlots,
@@ -800,6 +864,7 @@ contract ExchangeV3 is IExchangeV3
     function getProtocolFeeValues()
         external
         view
+        override
         returns (
             uint32 timestamp,
             uint8  takerFeeBips,

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/ERC20.sol";
@@ -70,6 +70,7 @@ contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
         )
         public
         view
+        override
         returns (bool)
     {
         return addr.balance >= minETHRequired && hasEnoughLRC(addr);

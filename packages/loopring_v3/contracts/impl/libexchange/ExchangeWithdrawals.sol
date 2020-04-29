@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -325,13 +325,11 @@ library ExchangeWithdrawals
 
         // Transfer the tokens from the deposit contract to the owner
         if (amount > 0) {
-            bytes memory txData = abi.encodeWithSelector(
-                S.depositContract.withdraw.selector,
-                to,
-                token,
-                amount
-            );
-            (success, ) = address(S.depositContract).call.gas(gasLimit)(txData);
+            try S.depositContract.withdraw{gas: gasLimit}(to, token, amount) {
+                success = true;
+            } catch Error(string memory /*reason*/) {
+                success = false;
+            }
         } else {
             success = true;
         }

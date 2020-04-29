@@ -14,13 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 /// @title IDepositContract.
 ///        Contract storing and transferring funds for an exchange.
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IDepositContract
+interface IDepositContract
 {
     /// @dev Transfers tokens from a user to the exchange. This function will
     ///      be called when a user deposits funds to the exchange.

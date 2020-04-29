@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 library EIP712
@@ -37,8 +37,7 @@ library EIP712
         returns (bytes32)
     {
         uint _chainid;
-        //assembly { _chainid := chainid() }
-        _chainid = 1;
+        assembly { _chainid := chainid() }
 
         return keccak256(
             abi.encode(

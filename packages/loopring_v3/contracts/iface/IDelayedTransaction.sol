@@ -14,13 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 
 /// @title IDelayedTransaction
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IDelayedTransaction
+abstract contract IDelayedTransaction
 {
     event TransactionDelayed(
         uint    id,
@@ -90,25 +90,29 @@ contract IDelayedTransaction
         bytes   calldata data
         )
         external
-        payable;
+        payable
+        virtual;
 
     /// @dev Executes a pending transaction.
     /// @param transactionId The id of the pending transaction.
     function executeTransaction(
         uint transactionId
         )
-        external;
+        external
+        virtual;
 
     /// @dev Cancels a pending transaction.
     /// @param transactionId The id of the pending transaction.
     function cancelTransaction(
         uint transactionId
         )
-        external;
+        external
+        virtual;
 
     /// @dev Cancels all pending transactions.
     function cancelAllTransactions()
-        external;
+        external
+        virtual;
 
     /// @dev Gets the delay for the given function
     /// @param functionSelector The function selector.
@@ -119,6 +123,7 @@ contract IDelayedTransaction
         )
         public
         view
+        virtual
         returns (uint);
 
     /// @dev Gets the number of pending transactions.
@@ -126,6 +131,7 @@ contract IDelayedTransaction
     function getNumPendingTransactions()
         external
         view
+        virtual
         returns (uint);
 
     /// @dev Gets the number of functions that have a delay.
@@ -133,5 +139,6 @@ contract IDelayedTransaction
     function getNumDelayedFunctions()
         external
         view
+        virtual
         returns (uint);
 }

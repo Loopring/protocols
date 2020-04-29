@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../thirdparty/Proxy.sol";
 
@@ -37,6 +37,7 @@ contract SimpleProxy is Proxy
     function implementation()
         public
         view
+        override
         returns (address impl)
     {
         bytes32 position = implementationPosition;
