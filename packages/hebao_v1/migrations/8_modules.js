@@ -48,7 +48,6 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(
           GuardianModule,
           ControllerImpl.address,
-          1 * 24 * 3600,
           1 * 24 * 3600
         ),
         deployer.deploy(RecoveryModule, ControllerImpl.address),
