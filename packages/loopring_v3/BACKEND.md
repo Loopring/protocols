@@ -84,8 +84,8 @@ The data is stored in the following format for the different block types.
 ### General data formats
 
 ```
-TREE_DEPTH_ACCOUNTS = 10
-TREE_DEPTH_BALANCES = 4
+TREE_DEPTH_ACCOUNTS = 12
+TREE_DEPTH_BALANCES = 5
 TREE_DEPTH_TRADEHISTORY = 7
 
 Proof(length)

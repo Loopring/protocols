@@ -1402,7 +1402,7 @@ contract("Exchange", (accounts: string[]) => {
       await submitWithdrawalBlockChecked([depositInfoA, depositInfoB]);
     });
 
-    it("Deposits totalling the balance more than MAX_AMOUNT should be capped to MAX_AMOUNT", async () => {
+    it("Deposits should not total more than MAX_AMOUNT", async () => {
       await createExchange();
 
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -1421,43 +1421,18 @@ contract("Exchange", (accounts: string[]) => {
         amount
       );
       // Deposit again. This time the amount will be capped to 2**96
-      await exchangeTestUtil.deposit(
-        exchangeID,
-        owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
-        token,
-        amount
+      await expectThrow(
+        exchangeTestUtil.deposit(
+          exchangeID,
+          owner,
+          keyPair.secretKey,
+          keyPair.publicKeyX,
+          keyPair.publicKeyY,
+          token,
+          amount
+        ),
+        "MAX_AMOUNT_REACHED"
       );
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
-
-      const tokenID = exchangeTestUtil.getTokenIdFromNameOrAddress(token);
-      const accountID = await exchangeTestUtil.getAccountID(owner);
-      const account = (await exchangeTestUtil.loadExchangeState(exchangeID))
-        .accounts[accountID];
-      assert(
-        account.balances[tokenID].balance.eq(Constants.MAX_AMOUNT),
-        "Balance should be MAX_AMOUNT"
-      );
-
-      // Do a withdrawal request
-      await exchangeTestUtil.requestWithdrawalOnchain(
-        exchangeID,
-        accountID,
-        token,
-        Constants.MAX_AMOUNT,
-        owner
-      );
-
-      // Commit the withdrawal
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
-
-      // Submit the block
-      depositInfo.amount = Constants.MAX_AMOUNT;
-      await submitWithdrawalBlockChecked([depositInfo]);
     });
 
     it("Manual withdrawal", async () => {
