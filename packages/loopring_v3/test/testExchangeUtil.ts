@@ -1696,7 +1696,7 @@ export class ExchangeTestUtil {
         hashData.addNumber(deposit.accountID, 3);
         hashData.addBN(new BN(deposit.publicKeyX, 10), 32);
         hashData.addBN(new BN(deposit.publicKeyY, 10), 32);
-        hashData.addNumber(deposit.tokenID, 1);
+        hashData.addNumber(deposit.tokenID, 2);
         hashData.addBN(deposit.amount, 12);
         endingHash =
           "0x" +
@@ -1949,7 +1949,7 @@ export class ExchangeTestUtil {
           const hashData = new Bitstream();
           hashData.addHex(endingHash);
           hashData.addNumber(withdrawal.accountID, 3);
-          hashData.addNumber(withdrawal.tokenID, 1);
+          hashData.addNumber(withdrawal.tokenID, 2);
           hashData.addBN(withdrawal.amount, 12);
           logInfo("withdrawal.accountID: " + withdrawal.accountID);
           logInfo("withdrawal.tokenID: " + withdrawal.tokenID);
@@ -2010,7 +2010,7 @@ export class ExchangeTestUtil {
         bs.addNumber(block.count, 4);
       }
       for (const withdrawal of block.withdrawals) {
-        bs.addNumber(withdrawal.tokenID, 1);
+        bs.addNumber(withdrawal.tokenID, 2);
         bs.addNumber(withdrawal.accountID, 3);
         bs.addNumber(withdrawal.fAmountWithdrawn, 3);
       }
@@ -2018,7 +2018,7 @@ export class ExchangeTestUtil {
         if (block.onchainDataAvailability) {
           bs.addNumber(block.operatorAccountID, 3);
           for (const withdrawal of block.withdrawals) {
-            bs.addNumber(withdrawal.feeTokenID, 1);
+            bs.addNumber(withdrawal.feeTokenID, 2);
             bs.addNumber(
               toFloat(new BN(withdrawal.fee), Constants.Float16Encoding),
               2
@@ -2182,9 +2182,11 @@ export class ExchangeTestUtil {
           bs.addNumber(transfer.type, 1);
           bs.addNumber(transfer.accountFromID, 3);
           bs.addNumber(transfer.accountToID, 3);
-          bs.addNumber(transfer.transTokenID, 1);
+          bs.addNumber(
+            transfer.transTokenID * 2 ** 12 + transfer.feeTokenID,
+            3
+          );
           bs.addNumber(transfer.fAmountTrans, 3);
-          bs.addNumber(transfer.feeTokenID, 1);
           bs.addNumber(
             toFloat(new BN(transfer.fee), Constants.Float16Encoding),
             2
@@ -2347,8 +2349,10 @@ export class ExchangeTestUtil {
           );
           da.addNumber(orderA.accountID, 3);
           da.addNumber(orderB.accountID, 3);
-          da.addNumber(orderA.tokenS, 1);
+          da.addNumber(orderA.tokenS * 2 ** 12 + orderB.tokenS, 3);
           da.addNumber(ring.fFillS_A, 3);
+          da.addNumber(ring.fFillS_B, 3);
+
           let buyMask = orderA.buy ? 0b10000000 : 0;
           let rebateMask = orderA.rebateBips > 0 ? 0b01000000 : 0;
           da.addNumber(
@@ -2356,8 +2360,6 @@ export class ExchangeTestUtil {
             1
           );
 
-          da.addNumber(orderB.tokenS, 1);
-          da.addNumber(ring.fFillS_B, 3);
           buyMask = orderB.buy ? 0b10000000 : 0;
           rebateMask = orderB.rebateBips > 0 ? 0b01000000 : 0;
           da.addNumber(
@@ -2420,10 +2422,10 @@ export class ExchangeTestUtil {
     const ranges: Range[][] = [];
     ranges.push([{ offset: 0, length: 4 }]); // orderA.orderID + orderB.orderID
     ranges.push([{ offset: 4, length: 6 }]); // orderA.accountID + orderB.accountID
-    ranges.push([{ offset: 10, length: 1 }, { offset: 15, length: 1 }]); // orderA.tokenS + orderB.tokenS
-    ranges.push([{ offset: 11, length: 3 }, { offset: 16, length: 3 }]); // orderA.fillS + orderB.fillS
-    ranges.push([{ offset: 14, length: 1 }]); // orderA.data
-    ranges.push([{ offset: 19, length: 1 }]); // orderB.data
+    ranges.push([{ offset: 10, length: 3 }]); // orderA.tokenS + orderB.tokenS
+    ranges.push([{ offset: 13, length: 6 }]); // orderA.fillS + orderB.fillS
+    ranges.push([{ offset: 19, length: 1 }]); // orderA.data
+    ranges.push([{ offset: 20, length: 1 }]); // orderB.data
     return ranges;
   }
 
@@ -2431,7 +2433,7 @@ export class ExchangeTestUtil {
     // Compress
     const bs = new Bitstream(input);
     const compressed = new Bitstream();
-    const ringSize = 20;
+    const ringSize = 21;
     compressed.addHex(bs.extractData(0, bs.length()));
     /*for (let offset = ringSize; offset < bs.length(); offset += ringSize) {
       for (let i = 0; i < 5; i++) {

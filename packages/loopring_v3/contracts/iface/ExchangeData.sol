@@ -121,7 +121,7 @@ library ExchangeData
     function MAX_TIME_IN_SHUTDOWN_BASE() internal pure returns (uint32) { return 30 days; }
     function MAX_TIME_IN_SHUTDOWN_DELTA() internal pure returns (uint32) { return 1 seconds; }
     function TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS() internal pure returns (uint32) { return 7 days; }
-    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 8; }
+    function MAX_NUM_TOKENS() internal pure returns (uint) { return 2 ** 10; }
     function MAX_NUM_ACCOUNTS() internal pure returns (uint) { return 2 ** 24 - 1; }
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 6 hours; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 6 hours; }

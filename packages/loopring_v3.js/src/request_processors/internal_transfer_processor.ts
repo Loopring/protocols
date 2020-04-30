@@ -20,7 +20,7 @@ export class InternalTransferProcessor {
       offset += 3;
 
       // Jump to the specified transfer
-      const onchainDataSize = 14;
+      const onchainDataSize = 15;
 
       const startOffset = offset;
       for (let i = 0; i < block.blockSize; i++) {
@@ -33,14 +33,15 @@ export class InternalTransferProcessor {
         offset += 3;
         const accountToID = data.extractUint24(offset);
         offset += 3;
-        const tokenID = data.extractUint8(offset);
-        offset += 1;
+        const tokenIDs = data.extractUint24(offset);
+        offset += 3;
         const fAmount = data.extractUint24(offset);
         offset += 3;
-        const feeTokenID = data.extractUint8(offset);
-        offset += 1;
         const fFee = data.extractUint16(offset);
         offset += 2;
+
+        const tokenID = tokenIDs >> 12;
+        const feeTokenID = tokenIDs & 0b1111111111;
 
         // Decode the float values
         const fee = fromFloat(fFee, Constants.Float16Encoding);

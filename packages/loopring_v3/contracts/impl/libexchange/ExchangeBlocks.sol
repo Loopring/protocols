@@ -208,7 +208,7 @@ library ExchangeBlocks
                         uint24(0),
                         uint(0),
                         uint(0),
-                        uint8(0),
+                        uint16(0),
                         uint96(0)
                     )
                 );
@@ -248,7 +248,7 @@ library ExchangeBlocks
                         abi.encodePacked(
                             endingHash,
                             uint24(0),
-                            uint8(0),
+                            uint16(0),
                             uint96(0)
                         )
                     );
@@ -280,7 +280,7 @@ library ExchangeBlocks
             if (_block.blockType == ExchangeData.BlockType.ONCHAIN_WITHDRAWAL) {
                 start += 32 + 32 + 4 + 4;
             }
-            uint length = 7 * _block.blockSize;
+            uint length = 8 * _block.blockSize;
             bytes memory withdrawals = new bytes(0);
             assembly {
                 withdrawals := add(data, start)
@@ -397,17 +397,17 @@ library ExchangeBlocks
         for (uint i = 0; i < auxiliaryData.length; i += 4) {
             // auxiliaryData contains the transfer index (4 bytes) for each conditional transfer
             // in ascending order.
-            uint transferOffset = offset + auxiliaryData.bytesToUint32(i) * 14 + 14;
+            uint transferOffset = offset + auxiliaryData.bytesToUint32(i) * 15 + 15;
             require(transferOffset > previousTransferOffset, "INVALID_AUXILIARYDATA_DATA");
 
             // Get the transfer data
             uint transferData;
             assembly {
-                transferData := and(mload(add(data, transferOffset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                transferData := and(mload(add(data, transferOffset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
             }
 
             // Check that this is a conditional transfer
-            uint transferType = (transferData >> 104) & 0xFF;
+            uint transferType = (transferData >> 112) & 0xFF;
             require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
 
             // Update the onchain state
@@ -429,11 +429,11 @@ library ExchangeBlocks
         private
     {
         // Extract the transfer data
-        uint24 fromAccountID = uint24((transferData >> 80) & 0xFFFFFF);
-        uint24 toAccountID = uint24((transferData >> 56) & 0xFFFFFF);
-        uint16 tokenID = uint16((transferData >> 48) & 0xFF);
-        uint amount = ((transferData >> 24) & 0xFFFFFF).decodeFloat(24);
-        uint16 feeTokenID = uint16((transferData >> 16) & 0xFF);
+        uint24 fromAccountID = uint24((transferData >> 88) & 0xFFFFFF);
+        uint24 toAccountID = uint24((transferData >> 64) & 0xFFFFFF);
+        uint16 tokenID = uint16((transferData >> 52) & 0xFFF);
+        uint16 feeTokenID = uint16((transferData >> 40) & 0xFFF);
+        uint amount = ((transferData >> 16) & 0xFFFFFF).decodeFloat(24);
         uint feeAmount = ((transferData >> 0) & 0xFFFF).decodeFloat(16);
 
         // Update onchain approvals

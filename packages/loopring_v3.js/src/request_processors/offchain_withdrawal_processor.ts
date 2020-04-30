@@ -13,26 +13,26 @@ export class OffchainWithdrawalProcessor {
     if (state.onchainDataAvailability) {
       const data = new Bitstream(block.data);
       const approvedWithdrawalOffset = 4 + 32 + 32;
-      let daOffset = approvedWithdrawalOffset + block.blockSize * 7;
+      let daOffset = approvedWithdrawalOffset + block.blockSize * 8;
 
       const operatorAccountID = data.extractUint24(daOffset);
       daOffset += 3;
 
       for (let i = 0; i < block.blockSize; i++) {
-        const approvedWitdrawal = data.extractUint56(
-          approvedWithdrawalOffset + i * 7
+        const approvedWitdrawal = data.extractUint64(
+          approvedWithdrawalOffset + i * 8
         );
 
-        const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xff;
+        const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xffff;
         const accountID = approvedWitdrawal.shrn(24).toNumber() & 0xffffff;
         const amountWithdrawn = fromFloat(
           approvedWitdrawal.and(new BN("FFFFFF", 16)).toNumber(),
           Constants.Float24Encoding
         );
 
-        const feeTokenID = data.extractUint8(daOffset + i * 3);
+        const feeTokenID = data.extractUint16(daOffset + i * 4);
         const fee = fromFloat(
-          data.extractUint16(daOffset + i * 3 + 1),
+          data.extractUint16(daOffset + i * 4 + 2),
           Constants.Float16Encoding
         );
 

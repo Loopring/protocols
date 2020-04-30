@@ -501,12 +501,12 @@ abstract contract IExchangeV3 is IExchange
     ///            - Start index (in withdrawal chain): 4 bytes
     ///            - Number of withdrawals processed: 4 bytes
     ///            - For every withdrawal:
-    ///                - Token ID: 1 bytes
+    ///                - Token ID: 2 bytes
     ///                - Account ID: 3 bytes
     ///                - Amount: 3 bytes
     ///        For OFFCHAIN_WITHDRAWAL blocks add the following data:
     ///            - For every withdrawal:
-    ///                - Token ID: 1 bytes
+    ///                - Token ID: 2 bytes
     ///                - Account ID: 3 bytes
     ///                - Amount: 3 bytes
     ///        For INTERNAL_TRANSFER blocks add the following data:
@@ -521,7 +521,7 @@ abstract contract IExchangeV3 is IExchange
     ///            - For every ring
     ///                - For both Orders:
     ///                    - accountID: 3 bytes
-    ///                    - TokenS: 1 bytes
+    ///                    - TokenS: 1,5 bytes
     ///                    - FillS: 3 bytes
     ///                    - OrderData: isBuyOrder (1 bit) | isRebate (1 bit) |
     ///                                 feeOrRebateBips (6 bits)
@@ -534,7 +534,7 @@ abstract contract IExchangeV3 is IExchange
     ///        For OFFCHAIN_WITHDRAWALAL blocks add the following data:
     ///            - Operator account ID: 3 bytes
     ///            - For every withdrawal:
-    ///                - Fee token ID: 1 bytes
+    ///                - Fee token ID: 2 bytes
     ///                - Fee amount: 2 bytes
     ///        For INTERNAL_TRANSFER blocks add the following data:
     ///            - Operator account ID: 3 bytes
@@ -542,9 +542,9 @@ abstract contract IExchangeV3 is IExchange
     ///                - Type: 1 byte (0: signature available, 1: conditional transfer)
     ///                - From account ID: 3 bytes
     ///                - To account ID: 3 bytes
-    ///                - Token ID: 1 byte
+    ///                - Token ID: 1,5 byte
+    ///                - Fee token ID: 1,5 byte
     ///                - Amount: 3 bytes
-    ///                - Fee token ID: 1 byte
     ///                - Fee: 2 bytes
     ///
     ///        The RING_SETTLEMENT data availability data is further transformed

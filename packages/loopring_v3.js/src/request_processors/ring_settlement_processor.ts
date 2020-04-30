@@ -69,19 +69,21 @@ export class RingSettlementProcessor {
         const accountIdB = data.extractUint24(offset);
         offset += 3;
 
-        // Order A
-        const tokenA = data.extractUint8(offset);
-        offset += 1;
+        // Tokens
+        const tokenIds = data.extractUint24(offset);
+        offset += 3;
+        const tokenA = tokenIds >> 12;
+        const tokenB = tokenIds & 0xfff;
+
+        // Fills
         const fFillSA = data.extractUint24(offset);
         offset += 3;
-        const orderDataA = data.extractUint8(offset);
-        offset += 1;
-
-        // Order B
-        const tokenB = data.extractUint8(offset);
-        offset += 1;
         const fFillSB = data.extractUint24(offset);
         offset += 3;
+
+        // Order data
+        const orderDataA = data.extractUint8(offset);
+        offset += 1;
         const orderDataB = data.extractUint8(offset);
         offset += 1;
 
@@ -378,7 +380,7 @@ export class RingSettlementProcessor {
   private static inverseTransformRingSettlementsData(input: string) {
     // Inverse Transform
     const transformed = new Bitstream(input);
-    const ringSize = 20;
+    const ringSize = 21;
     const numRings = transformed.length() / ringSize;
     const ranges = this.getRingTransformations();
     const compressed = new Bitstream();
@@ -410,10 +412,10 @@ export class RingSettlementProcessor {
     const ranges: Range[][] = [];
     ranges.push([{ offset: 0, length: 4 }]); // orderA.orderID + orderB.orderID
     ranges.push([{ offset: 4, length: 6 }]); // orderA.accountID + orderB.accountID
-    ranges.push([{ offset: 10, length: 1 }, { offset: 15, length: 1 }]); // orderA.tokenS + orderB.tokenS
-    ranges.push([{ offset: 11, length: 3 }, { offset: 16, length: 3 }]); // orderA.fillS + orderB.fillS
-    ranges.push([{ offset: 14, length: 1 }]); // orderA.data
-    ranges.push([{ offset: 19, length: 1 }]); // orderB.data
+    ranges.push([{ offset: 10, length: 3 }]); // orderA.tokenS + orderB.tokenS
+    ranges.push([{ offset: 13, length: 6 }]); // orderA.fillS + orderB.fillS
+    ranges.push([{ offset: 19, length: 1 }]); // orderA.data
+    ranges.push([{ offset: 20, length: 1 }]); // orderB.data
     return ranges;
   }
 

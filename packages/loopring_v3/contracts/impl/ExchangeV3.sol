@@ -39,7 +39,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisBlockHash = 0x135c6bc40ddc3b5871bad0abb280177d2b65f5ec7859dd6fab6f67113df5a7e5;
+    bytes32 constant public genesisBlockHash = 0x107018ff4240423a154c81e966fe3216d239fe33f5c30911c2d04799df603c81;
 
     using MathUint              for uint;
     using ERC20SafeTransfer     for address;

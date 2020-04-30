@@ -20,9 +20,9 @@ export class OnchainWithdrawalProcessor {
 
     const withdrawals: OnchainWithdrawal[] = [];
     for (let i = 0; i < (shutdown ? block.blockSize : length); i++) {
-      const approvedWitdrawal = data.extractUint56(offset + i * 7);
+      const approvedWitdrawal = data.extractUint64(offset + i * 8);
 
-      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xff;
+      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xfff;
       const accountID = approvedWitdrawal.shrn(24).toNumber() & 0xffffff;
       const amountWithdrawn = fromFloat(
         approvedWitdrawal.and(new BN("FFFFFF", 16)).toNumber(),

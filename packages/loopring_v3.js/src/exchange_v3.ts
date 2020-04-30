@@ -73,7 +73,7 @@ export class ExchangeV3 {
   private merkleTree: SparseMerkleTree;
 
   private genesisMerkleRoot =
-    "8757237825509983996127596712662861212414230359567743441818940291589472626661";
+    "7435064972263210101377543783176472512844143561398145902634322592905325198465";
 
   private exchangeFees: ExchangeFees;
   private protocolFees: ProtocolFees;
@@ -320,7 +320,7 @@ export class ExchangeV3 {
     // Make empty trees so we have all necessary default values
     const tradeHistoryMerkleTree = new SparseMerkleTree(7);
     tradeHistoryMerkleTree.newTree(this.hasher([0, 0]).toString(10));
-    const balancesMerkleTree = new SparseMerkleTree(4);
+    const balancesMerkleTree = new SparseMerkleTree(5);
     balancesMerkleTree.newTree(
       this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10)
     );
@@ -331,7 +331,7 @@ export class ExchangeV3 {
 
     // Run over all account data and build the Merkle tree
     for (const account of this.state.accounts) {
-      account.balancesMerkleTree = new SparseMerkleTree(4);
+      account.balancesMerkleTree = new SparseMerkleTree(5);
       account.balancesMerkleTree.newTree(
         this.hasher([0, tradeHistoryMerkleTree.getRoot()]).toString(10)
       );

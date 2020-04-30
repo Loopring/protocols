@@ -115,7 +115,7 @@ library ExchangeWithdrawals
                 abi.encodePacked(
                     prevRequest.accumulatedHash,
                     accountID,
-                    uint8(tokenID),
+                    uint16(tokenID),
                     amount
                 )
             ),
@@ -259,11 +259,11 @@ library ExchangeWithdrawals
         )
         public
     {
-        for (uint i = 0; i < withdrawals.length; i += 7) {
-            uint data = uint(withdrawals.bytesToUint56(i));
+        for (uint i = 0; i < withdrawals.length; i += 8) {
+            uint data = uint(withdrawals.bytesToUint64(i));
 
             // Extract the withdrawal data
-            uint16 tokenID = uint16((data >> 48) & 0xFF);
+            uint16 tokenID = uint16((data >> 48) & 0xFFFF);
             uint24 accountID = uint24((data >> 24) & 0xFFFFFF);
             uint amount = (data & 0xFFFFFF).decodeFloat(24);
 
