@@ -6,7 +6,6 @@ import { RingInfo } from "./types";
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
-  let loopring: any;
   let exchangeID = 0;
 
   const getDowntimeCost = async (duration: number) => {
@@ -115,7 +114,6 @@ contract("Exchange", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
-    loopring = exchangeTestUtil.loopringV3;
     exchangeID = 1;
   });
 
@@ -169,7 +167,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
-          maintenanceCost.mul(new BN(10))
+          maintenanceCost.mul(new BN(10)),
+          exchange.address
         );
 
         // Start maintenance
@@ -312,7 +311,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
-          maintenanceCost.mul(new BN(10))
+          maintenanceCost.mul(new BN(10)),
+          exchange.address
         );
 
         // Purchase the downtime
@@ -402,7 +402,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setBalanceAndApprove(
         exchangeTestUtil.exchangeOwner,
         "LRC",
-        maintenanceCost.mul(new BN(10))
+        maintenanceCost.mul(new BN(10)),
+        exchange.address
       );
 
       // Purchase the downtime

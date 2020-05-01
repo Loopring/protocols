@@ -2710,6 +2710,7 @@ export class ExchangeTestUtil {
     this.exchangeOperator = operator;
     this.exchangeId = exchangeId;
     this.onchainDataAvailability = onchainDataAvailability;
+    this.activeOperator = undefined;
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
     this.GENESIS_MERKLE_ROOT = new BN(

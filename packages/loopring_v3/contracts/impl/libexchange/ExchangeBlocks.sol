@@ -385,39 +385,40 @@ library ExchangeBlocks
         uint numConditionalTransfers = data.bytesToUint32(offset);
         if (numConditionalTransfers > 0) {
             require(S.onchainDataAvailability, "CONDITIONAL_TRANSFERS_REQUIRE_OCDA");
-        }
-        require(auxiliaryData.length == numConditionalTransfers * 4, "INVALID_AUXILIARYDATA_LENGTH");
-        offset += 4;
 
-        uint24 operatorAccountID = data.bytesToUint24(offset);
-        offset += 3;
+            require(auxiliaryData.length == numConditionalTransfers * 4, "INVALID_AUXILIARYDATA_LENGTH");
+            offset += 4;
 
-        // Run over all conditional transfers
-        uint previousTransferOffset = 0;
-        for (uint i = 0; i < auxiliaryData.length; i += 4) {
-            // auxiliaryData contains the transfer index (4 bytes) for each conditional transfer
-            // in ascending order.
-            uint transferOffset = offset + auxiliaryData.bytesToUint32(i) * 15 + 15;
-            require(transferOffset > previousTransferOffset, "INVALID_AUXILIARYDATA_DATA");
+            uint24 operatorAccountID = data.bytesToUint24(offset);
+            offset += 3;
 
-            // Get the transfer data
-            uint transferData;
-            assembly {
-                transferData := and(mload(add(data, transferOffset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+            // Run over all conditional transfers
+            uint previousTransferOffset = 0;
+            for (uint i = 0; i < auxiliaryData.length; i += 4) {
+                // auxiliaryData contains the transfer index (4 bytes) for each conditional transfer
+                // in ascending order.
+                uint transferOffset = offset + auxiliaryData.bytesToUint32(i) * 15 + 15;
+                require(transferOffset > previousTransferOffset, "INVALID_AUXILIARYDATA_DATA");
+
+                // Get the transfer data
+                uint transferData;
+                assembly {
+                    transferData := and(mload(add(data, transferOffset)), 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF)
+                }
+
+                // Check that this is a conditional transfer
+                uint transferType = (transferData >> 112) & 0xFF;
+                require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
+
+                // Update the onchain state
+                consumeConditionalTransfer(
+                    S,
+                    operatorAccountID,
+                    transferData
+                );
+
+                previousTransferOffset = transferOffset;
             }
-
-            // Check that this is a conditional transfer
-            uint transferType = (transferData >> 112) & 0xFF;
-            require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
-
-            // Update the onchain state
-            consumeConditionalTransfer(
-                S,
-                operatorAccountID,
-                transferData
-            );
-
-            previousTransferOffset = transferOffset;
         }
     }
 
