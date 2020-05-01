@@ -339,7 +339,7 @@ contract("MetaTxmodule", () => {
         signers,
         { from: owner, nonce }
       ),
-      "INVALID_NONCE"
+      "NONCE_TOO_SMALL"
     );
   });
 

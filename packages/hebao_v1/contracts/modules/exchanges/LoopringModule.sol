@@ -18,6 +18,7 @@ pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
+import "../../lib/ERC20.sol";
 
 import "../../iface/Wallet.sol";
 
@@ -30,6 +31,14 @@ import "../security/SecurityModule.sol";
 contract LoopringModule is SecurityModule
 {
     using MathUint for uint;
+
+    event Approval(
+        address indexed exchange,
+        address indexed wallet,
+        address         token,
+        uint            amount
+    );
+
     event AccountUpdated(
         address indexed exchange,
         address indexed wallet,
@@ -103,18 +112,33 @@ contract LoopringModule is SecurityModule
             uint   pubKeyY
         )
     {
-        bytes memory callData = abi.encodeWithSelector(
-            exchange.getAccount.selector,
-            wallet
+        try exchange.getAccount(wallet)
+            returns (uint24 _accountId, uint _pubKeyX, uint _pubKeyY) {
+            accountId = _accountId;
+            pubKeyX = _pubKeyX;
+            pubKeyY = _pubKeyY;
+        } catch {}
+    }
+
+    function approveExchange(
+        address payable wallet,
+        IExchangeV3     exchange,
+        ERC20           token,
+        uint            amount
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+        bytes memory txData = abi.encodeWithSelector(
+            token.approve.selector,
+            address(exchange),
+            amount
         );
-        (bool success, bytes memory result) = address(exchange).staticcall(callData);
-        if (success && result.length == 96) {
-            assembly {
-                accountId := mload(add(result, 32))
-                pubKeyX := mload(add(result, 64))
-                pubKeyY := mload(add(result, 96))
-            }
-        }
+
+        transactCall(wallet, address(token), 0, txData);
+        emit Approval(address(exchange), wallet, address(token), amount);
     }
 
     function createOrUpdateDEXAccount(
@@ -155,6 +179,10 @@ contract LoopringModule is SecurityModule
     {
         require(amount > 0, "ZERO_VALUE");
         (, , uint fee, ) = exchange.getFees();
+
+        if (token == address(0)) {
+            fee = fee.add(amount);
+        }
 
         bytes memory txData = abi.encodeWithSelector(
             exchange.deposit.selector,
@@ -217,6 +245,7 @@ contract LoopringModule is SecurityModule
         returns (address[] memory signers)
     {
         require (
+            method == this.approveExchange.selector ||
             method == this.createOrUpdateDEXAccount.selector ||
             method == this.depositToDEX.selector ||
             method == this.withdrawFromDEX.selector,

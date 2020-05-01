@@ -108,7 +108,7 @@ abstract contract MetaTxModule is BaseModule
         public
         BaseModule()
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxModule", "1.0"));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Wallet MetaTxModule", "1.0", address(this)));
         controller = _controller;
     }
 
@@ -158,7 +158,7 @@ abstract contract MetaTxModule is BaseModule
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
-    ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
+    ///              wallet, but not by more than `block.number * 2^128`.
     ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
@@ -472,7 +472,8 @@ abstract contract MetaTxModule is BaseModule
             require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
-            require(nonce == wallets[wallet].nonce + 1, "INVALID_NONCE");
+            require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
         }
     }

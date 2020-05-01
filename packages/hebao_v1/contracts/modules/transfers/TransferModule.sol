@@ -99,14 +99,11 @@ abstract contract TransferModule is SecurityModule
         bytes   memory txData
         )
         internal
+        virtual
     {
-        bytes4 method = extractMethod(txData);
-        require(
-            method != ERC20(0).transfer.selector &&
-            method != ERC20(0).approve.selector,
-            "INVALID_METHOD"
-        );
-
+        // Calls from the wallet to itself are deemed special
+        // (e.g. this is used for updating the wallet implementation)
+        require(wallet != to, "CALL_DISALLOWED");
         transactCall(wallet, to, value, txData);
         emit ContractCalled(wallet, to, value, txData);
     }

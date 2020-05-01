@@ -116,7 +116,9 @@ export async function createWallet(
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
   const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
-  await ctx.walletFactoryModule.createWallet(owner, "", modules);
+  await ctx.walletFactoryModule.createWallet(owner, "", modules, {
+    from: owner
+  });
   // Add the guardians
   const guardians = ctx.guardians.slice(0, numGuardians);
   const group = 0;
@@ -145,6 +147,7 @@ export async function executeTransaction(
       signers,
       options
     );
+
     const event = await assertEventEmitted(contract, "ExecutedMetaTx");
     if (!event.success) {
       // Check if the return data contains the revert reason.
@@ -174,6 +177,10 @@ export async function executeTransaction(
 export async function getBlockTime(blockNumber: number) {
   const block = await web3.eth.getBlock(blockNumber);
   return block.timestamp;
+}
+
+export function description(descr: string, metaTx: boolean) {
+  return descr + (metaTx ? " (meta tx)" : "");
 }
 
 export function toAmount(value: string) {

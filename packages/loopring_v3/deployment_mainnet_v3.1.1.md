@@ -9,10 +9,10 @@
 
 - LRCAddress: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD [lrctoken.eth](https://etherscan.io/address/lrctoken.eth)
 - WETHAddress: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2
-- ProtocolFeeVaultAddress: 0x5BB8EF8efD18C6034EC9277DaCA9a5E29B1f1Cb1 [feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)
+- ProtocolFeeVaultAddress: 0x4b89f8996892d137c3dE1312d1dD4E4F4fFcA171 [feevault.lrctoken.eth](https://etherscan.io/address/feevault.lrctoken.eth)
 - BlockVerifier: 0x40598B41cc17a7E56dd72F415E8223aaCCA94cF7 [blockverifier.lrctoken.eth](https://etherscan.io/address/blockverifier.lrctoken.eth)
 - DowntimeCostCalculator: 0x873685f032c6Aa1572766401f3198a1f09A5C221
-- UniswapTokenSellerAddress: 0xaf92B83231a78978A236CA9D682CEBbAe97E62cB
+- UniswapTokenSellerAddress: 0xdd5102f902b0892D1bbf2D2d0fCBE11ccEA1D537
 - UserStakingPoolAddress: 0xF4662bB1C4831fD411a95b8050B3A5998d8A4A5b [stakingpool.lrctoken.eth](https://etherscan.io/address/stakingpool.lrctoken.eth)
 
 ### New deployed:
@@ -43,7 +43,7 @@
 - ETH: 0x0, tokenId: 0
 - WETH: 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2, tokenId: 1
 - LRC: 0xBBbbCA6A901c926F240b89EacB641d8Aec7AEafD, tokenId: 2
-- protocol Fees: takerFeeBips: 60, makerFeeBips: 0  (/100000)  
+- protocol Fees: takerFeeBips: 60, makerFeeBips: 0 (/100000)
 
 ## WEDEX Exchange-2 Info:
 
@@ -68,13 +68,13 @@
 
 - USDT: 0xdac17f958d2ee523a2206206994597c13d831ec7, tokenId: 3
 - WBTC: 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599, tokenId: 4
-- DAI:  0x6B175474E89094C44Da98b954EedeAC495271d0F, tokenId: 5
+- DAI: 0x6B175474E89094C44Da98b954EedeAC495271d0F, tokenId: 5
 - USDC: 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48, tokenId: 6
-- MKR:  0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2, tokenId: 7
-- KNC:  0xdd974D5C2e2928deA5F71b9825b8b646686BD200, tokenId: 8
+- MKR: 0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2, tokenId: 7
+- KNC: 0xdd974D5C2e2928deA5F71b9825b8b646686BD200, tokenId: 8
 - LINK: 0x514910771AF9Ca656af840dff83E8264EcF986CA, tokenId: 9
-- BAT:  0x0D8775F648430679A709E98d2b0Cb6250d2887EF, tokenId: 10
-- ZRX:  0xE41d2489571d322189246DaFA5ebDe1F4699F498, tokenId: 11
-- HT:   0x6f259637dcD74C767781E37Bc6133cd6A68aa161, tokenId: 12
-- OKB:  0x75231F58b43240C9718Dd58B4967c5114342a86c, tokenId: 13
-- BNB:  0xB8c77482e45F1F44dE1745F52C74426C631bDD52, tokenId: 14
+- BAT: 0x0D8775F648430679A709E98d2b0Cb6250d2887EF, tokenId: 10
+- ZRX: 0xE41d2489571d322189246DaFA5ebDe1F4699F498, tokenId: 11
+- HT: 0x6f259637dcD74C767781E37Bc6133cd6A68aa161, tokenId: 12
+- OKB: 0x75231F58b43240C9718Dd58B4967c5114342a86c, tokenId: 13
+- BNB: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52, tokenId: 14

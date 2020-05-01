@@ -63,6 +63,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         external
         payable
         nonReentrant
+        onlyFromMetaTxOrOwner(_owner)
         returns (address _wallet)
     {
         _wallet = createWalletInternal(

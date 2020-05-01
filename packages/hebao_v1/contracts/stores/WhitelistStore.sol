@@ -31,7 +31,8 @@ contract WhitelistStore is DataStore
     event Whitelisted(
         address indexed wallet,
         address indexed addr,
-        bool            whitelisted
+        bool            whitelisted,
+        uint            effectiveTime
     );
 
     constructor() public DataStore() {}
@@ -47,7 +48,7 @@ contract WhitelistStore is DataStore
         addAddressToSet(walletKey(wallet), addr, true);
         uint effective = effectiveTime >= now ? effectiveTime : now;
         effectiveTimeMap[wallet][addr] = effective;
-        emit Whitelisted(wallet, addr, true);
+        emit Whitelisted(wallet, addr, true, effective);
     }
 
     function removeFromWhitelist(
@@ -59,7 +60,7 @@ contract WhitelistStore is DataStore
     {
         removeAddressFromSet(walletKey(wallet), addr);
         delete effectiveTimeMap[wallet][addr];
-        emit Whitelisted(wallet, addr, false);
+        emit Whitelisted(wallet, addr, false, 0);
     }
 
     function whitelist(address wallet)

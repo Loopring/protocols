@@ -439,6 +439,16 @@ While this was done for performance reasons (so we don't have to have a trading 
 
 The account owner can choose to reuse the same orderID in multiple orders. We call this Order Aliasing.
 
+#### Efficiently using orderIDs
+
+The easiest way to make sure a new order has a fresh trade history slot (i.e. the filled amount for the order is 0) is to simply increase the orderID each time a new order is created. As there are up to 2^20 available orderIDs this is practical for normal accounts as this limit is sufficiently large to not run out of available orderIDs. For automatic trading however the number of available orderIDs could be too small when doing this.
+
+There are ways to limit the number of orderIDs used by orders:
+1. The orderID of an order that was not filled can simply be reused by a completely new order because the fill amount in the trading history is still 0. This makes sure that only orders that are actually used in trades use up orderIDs. Orders that are never used in a trade settlement are as if they never existed from the protocol's point of view. The limit is thus actually 2^20 unique orders that are actually used in trades. A bot will likely create many more orders than are actually used in trades so just doing this will be a massive improvement.
+2. A more advanced method that is usable for automatic trading is to reuse orderIDs even of orders that were already filled. It's possible to reuse orderIDs used by other orders simply by changing the amountS/amountB of the new order. For example if there was a sell order of 1ETH/10LRC that was completely filled (trade history slot equals 1ETH), you can reuse the same orderID for another 1ETH/10LRC order simply by changing it to a 2ETH/20LRC order (which can only be filled for 1ETH, so this order is effectively the same as the 1ETH/10LRC order with a new orderID). This is a simple example, but this would work for all orders. This allows reusing orderIDs many, many times even without having to increase the orderID at all.
+
+As you can see there is almost no practical limit to the number of orders even a single account can create. But it can get quite complicated to be as efficient as possible with orderIDs (especially when using method 2.). In the next version of the protocol there won't be any limit on the number of orderIDs, but the protocol will enforce orders to use an orderID that either reuses the slot or overwrites the slot (i.e. resetting the fill amount to 0) by setting the orderID to `orderID = oldOrderID + numSlots`.
+
 #### Safely updating the validUntil time of an order
 
 For safety the order owner can limit the time an order is valid, and increase the time whenever he wants safely by creating a new order with a new validUntil value, without having to worry if both orders can be filled separately. This is done just by letting both orders use the same orderID.
