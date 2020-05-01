@@ -8,7 +8,6 @@ contract("BasicDepositContract", (accounts: string[]) => {
 
   const exchange1 = accounts[0];
   const exchange2 = accounts[1];
-  const exchange3 = accounts[2];
 
   const owner1 = accounts[10];
   const owner2 = accounts[11];
@@ -43,6 +42,26 @@ contract("BasicDepositContract", (accounts: string[]) => {
         from: exchange
       });
     });
+
+    it("should not be to send a wrong amount of ETH in a deposit", async () => {
+      const exchange = exchange1;
+      await depositContract.initialize(exchange1, loopringContract.address);
+
+      await expectThrow(
+        depositContract.deposit(owner1, Constants.zeroAddress, new BN(2), {
+          from: exchange,
+          value: new BN(1)
+        }),
+        "INVALID_ETH_DEPOSIT"
+      );
+      await expectThrow(
+        depositContract.deposit(owner1, token.address, new BN(1), {
+          from: exchange,
+          value: new BN(1)
+        }),
+        "INVALID_TOKEN_DEPOSIT"
+      );
+    });
   });
 
   describe("anyone", () => {
@@ -67,8 +86,6 @@ contract("BasicDepositContract", (accounts: string[]) => {
         const vaultBalanceAfter = new BN(
           await web3.eth.getBalance(vaultAddress)
         );
-        console.log("vaultBalanceBefore: " + vaultBalanceBefore.toString(10));
-        console.log("vaultBalanceAfter: " + vaultBalanceAfter.toString(10));
         assert(
           vaultBalanceAfter.eq(vaultBalanceBefore),
           "unexpected vault balance"
@@ -90,13 +107,19 @@ contract("BasicDepositContract", (accounts: string[]) => {
         const vaultBalanceBefore = await token.balanceOf(vaultAddress);
         await depositContract.withdrawTokenNotOwnedByUsers(token.address);
         const vaultBalanceAfter = await token.balanceOf(vaultAddress);
-        console.log("vaultBalanceBefore: " + vaultBalanceBefore.toString(10));
-        console.log("vaultBalanceAfter: " + vaultBalanceAfter.toString(10));
         assert(
           vaultBalanceAfter.eq(vaultBalanceBefore.add(new BN(456))),
           "unexpected vault balance"
         );
       }
+    });
+
+    it("should be able to check if an address is used for ETH", async () => {
+      assert(await depositContract.isETH(Constants.zeroAddress), "0x0 is ETH");
+      assert(
+        !(await depositContract.isETH(token.address)),
+        "should not be ETH"
+      );
     });
 
     it("should not be able to initialize again", async () => {

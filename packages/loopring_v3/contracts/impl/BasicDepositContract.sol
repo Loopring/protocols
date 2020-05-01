@@ -97,14 +97,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         require(exchangeBalance[token] <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
 
         // Check msg.value
-        if (token == address(0)) {
+        if (isETHInternal(token)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
         }
 
         // Transfer the tokens from the owner into this contract
-        if (amount > 0 && token != address(0)) {
+        if (amount > 0 && !isETHInternal(token)) {
             token.safeTransferFromAndVerify(
                 from,
                 address(this),
@@ -144,6 +144,15 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         require(token.safeTransferFrom(from, to, amount), "TRANSFER_FAILED");
     }
 
+    function isETH(address addr)
+        external
+        view
+        override
+        returns (bool)
+    {
+        return isETHInternal(addr);
+    }
+
     /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops, to fee vault.
     /// @param token The address of the token.
     /// @return amount The amount of tokens withdrawn
@@ -159,7 +168,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
 
         // Total balance in this contract
         uint totalBalance;
-        if (token == address(0)) {
+        if (isETHInternal(token)) {
             totalBalance = address(this).balance;
         } else {
             totalBalance = ERC20(token).balanceOf(address(this));
@@ -175,6 +184,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     }
 
     // -- Internal --
+
+    function isETHInternal(address addr)
+        internal
+        pure
+        returns (bool)
+    {
+        return addr == address(0);
+    }
 
     function transferOut(
         address to,

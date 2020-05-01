@@ -1364,7 +1364,7 @@ export class ExchangeTestUtil {
         (block.blockIdx + 1) +
         "_proof.json";
 
-      console.log("Generating proof: " + proofFilename);
+      //console.log("Generating proof: " + proofFilename);
 
       if (this.useProverServer) {
         const key = this.getKey(block);

@@ -90,4 +90,18 @@ interface IDepositContract
         uint    amount
         )
         external;
+
+    /// @dev Checks if the given address is used for depositing ETH or not.
+    ///      Is used while depositing to send the correct ETH amount to the deposit contract.
+    ///
+    ///      Note that 0x0 is always registered for deposting ETH when the exchange is created!
+    ///      This function allows additional addresses to be used for depositing ETH, the deposit
+    ///      contract can implement different behaviour based on the address value.
+    ///
+    /// @param addr The address to check
+    /// @return True if the address is used for depositing ETH, else false.
+    function isETH(address addr)
+        external
+        view
+        returns (bool);
 }

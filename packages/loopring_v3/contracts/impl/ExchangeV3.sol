@@ -27,7 +27,6 @@ import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
 import "../lib/MathUint.sol";
-import "../lib/ERC20SafeTransfer.sol";
 
 import "../iface/IExchangeV3.sol";
 
@@ -42,7 +41,6 @@ contract ExchangeV3 is IExchangeV3
     bytes32 constant public genesisBlockHash = 0x107018ff4240423a154c81e966fe3216d239fe33f5c30911c2d04799df603c81;
 
     using MathUint              for uint;
-    using ERC20SafeTransfer     for address;
     using ExchangeAdmins        for ExchangeData.State;
     using ExchangeAccounts      for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;

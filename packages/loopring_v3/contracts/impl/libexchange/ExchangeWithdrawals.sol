@@ -21,7 +21,6 @@ import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
 import "../../lib/BytesUtil.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 
 import "./ExchangeAccounts.sol";
 import "./ExchangeBalances.sol";
@@ -38,7 +37,6 @@ library ExchangeWithdrawals
     using AddressUtil       for address payable;
     using BytesUtil         for bytes;
     using MathUint          for uint;
-    using ERC20SafeTransfer for address;
     using ExchangeAccounts  for ExchangeData.State;
     using ExchangeBalances  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;

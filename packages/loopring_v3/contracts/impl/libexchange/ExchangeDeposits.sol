@@ -20,7 +20,6 @@ pragma experimental ABIEncoderV2;
 import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 
 import "./ExchangeAccounts.sol";
 import "./ExchangeMode.sol";
@@ -34,7 +33,6 @@ library ExchangeDeposits
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
-    using ERC20SafeTransfer for address;
     using ExchangeAccounts  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
@@ -179,7 +177,7 @@ library ExchangeDeposits
     {
         uint totalRequiredETH = feeETH;
         uint depositValueETH = 0;
-        if (tokenAddress == address(0)) {
+        if (S.depositContract.isETH(tokenAddress)) {
             totalRequiredETH = totalRequiredETH.add(amount);
             depositValueETH = amount;
         }
