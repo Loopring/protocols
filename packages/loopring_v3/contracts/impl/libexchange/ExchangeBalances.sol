@@ -38,7 +38,7 @@ library ExchangeBalances
         uint96   balance,
         uint     tradeHistoryRoot,
         uint[36] calldata accountMerkleProof,
-        uint[12] calldata balanceMerkleProof
+        uint[15] calldata balanceMerkleProof
         )
         external
         pure
@@ -68,7 +68,7 @@ library ExchangeBalances
         uint96   balance,
         uint     tradeHistoryRoot,
         uint[36] memory accountMerkleProof,
-        uint[12] memory balanceMerkleProof
+        uint[15] memory balanceMerkleProof
         )
         public
         pure
@@ -96,7 +96,7 @@ library ExchangeBalances
         uint16   tokenID,
         uint     balance,
         uint     tradeHistoryRoot,
-        uint[12] memory balanceMerkleProof
+        uint[15] memory balanceMerkleProof
         )
         private
         pure
@@ -104,7 +104,7 @@ library ExchangeBalances
     {
         uint balanceItem = hashImpl(balance, tradeHistoryRoot, 0, 0);
         uint _id = tokenID;
-        for (uint depth = 0; depth < 4; depth++) {
+        for (uint depth = 0; depth < 5; depth++) {
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(
                     balanceItem,

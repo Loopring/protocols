@@ -246,7 +246,7 @@ contract ExchangeV3 is IExchangeV3
         uint96   balance,
         uint     tradeHistoryRoot,
         uint[36] calldata accountPath,
-        uint[12] calldata balancePath
+        uint[15] calldata balancePath
         )
         external
         pure
@@ -563,7 +563,7 @@ contract ExchangeV3 is IExchangeV3
         uint96   balance,
         uint     tradeHistoryRoot,
         uint[36] calldata accountPath,
-        uint[12] calldata balancePath
+        uint[15] calldata balancePath
         )
         external
         override

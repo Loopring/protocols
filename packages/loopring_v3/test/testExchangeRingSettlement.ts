@@ -1323,44 +1323,6 @@ contract("Exchange", (accounts: string[]) => {
       );
     });
 
-    it("should not be able to increase a balance to > MAX_AMOUNT", async () => {
-      const ring: RingInfo = {
-        orderA: {
-          tokenS: "GTO",
-          tokenB: "TEST",
-          amountS: new BN(web3.utils.toWei("100", "ether")),
-          amountB: new BN(web3.utils.toWei("200", "ether"))
-        },
-        orderB: {
-          tokenS: "TEST",
-          tokenB: "GTO",
-          amountS: new BN(web3.utils.toWei("200", "ether")),
-          amountB: new BN(web3.utils.toWei("100", "ether"))
-        },
-        expected: {
-          orderA: { filledFraction: 0.0, spread: new BN(0) },
-          orderB: { filledFraction: 0.0 }
-        }
-      };
-
-      await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
-
-      // Set the balance or orderA.owner already at almost MAX_AMOUNT so that
-      // the balance after the trade would be > MAX_AMOUNT
-      await exchangeTestUtil.depositTo(
-        ring.orderA.accountID,
-        "TEST",
-        Constants.MAX_AMOUNT.sub(ring.orderA.amountB).add(new BN(1))
-      );
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
-        "invalid block"
-      );
-    });
-
     it("validUntil < now", async () => {
       const ring: RingInfo = {
         orderA: {

@@ -143,7 +143,7 @@ library ExchangeWithdrawals
         uint96   balance,
         uint     tradeHistoryRoot,
         uint[36] calldata accountMerkleProof,
-        uint[12] calldata balanceMerkleProof
+        uint[15] calldata balanceMerkleProof
         )
         external
     {

@@ -154,7 +154,7 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public useProverServer: boolean = false;
+  public useProverServer: boolean = true;
 
   private pendingRings: RingInfo[][] = [];
   private pendingDeposits: Deposit[][] = [];
@@ -2470,7 +2470,7 @@ export class ExchangeTestUtil {
   public inverseTransformRingSettlementsData(input: string) {
     // Inverse Transform
     const transformed = new Bitstream(input);
-    const ringSize = 20;
+    const ringSize = 21;
     const numRings = transformed.length() / ringSize;
     const ranges = this.getRingTransformations();
     const compressed = new Bitstream();
@@ -3325,7 +3325,7 @@ export class ExchangeTestUtil {
     let bs: Bitstream;
     if (ringBlock.onchainDataAvailability) {
       // Reverse circuit transform
-      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 32 + 3;
+      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
       const ringData = this.inverseTransformRingSettlementsData(
         "0x" + onchainData.slice(2 + 2 * ringDataStart)
       );
