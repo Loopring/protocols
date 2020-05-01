@@ -227,6 +227,7 @@ def createInternalTransferBlock(state, data):
     block.merkleRootBefore = str(state.getRoot())
     block.operatorAccountID = int(data["operatorAccountID"])
 
+    numConditionalTransfers = 0
     for transInfo in data["transfers"]:
         accountFromID = int(transInfo["accountFromID"])
         accountToID = int(transInfo["accountToID"])
@@ -240,7 +241,11 @@ def createInternalTransferBlock(state, data):
                                         accountFromID, accountToID, transTokenID,
                                         amount, feeTokenID, fee, type)
 
+        if type > 0:
+            numConditionalTransfers += 1
+
         transfer.signature = transInfo["signature"]
+        transfer.numConditionalTransfersAfter = numConditionalTransfers
         block.transfers.append(transfer)
 
     # Operator payments
