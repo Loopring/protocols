@@ -82,6 +82,9 @@ library ExchangeBlocks
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
+        // Cache if user requests are enabled for efficiency
+        bool areUserRequestsEnabled = S.areUserRequestsEnabled();
+
         // Commit the blocks
         bytes32[] memory publicDataHashes = new bytes32[](blocks.length);
         for (uint i = 0; i < blocks.length; i++) {
@@ -92,7 +95,8 @@ library ExchangeBlocks
                 S,
                 blocks[i],
                 feeRecipient,
-                publicDataHashes[i]
+                publicDataHashes[i],
+                areUserRequestsEnabled
             );
         }
 
@@ -110,21 +114,11 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         ExchangeData.Block memory _block,
         address payable feeRecipient,
-        bytes32 publicDataHash
+        bytes32 publicDataHash,
+        bool areUserRequestsEnabled
         )
         private
     {
-        // Check if the block is supported
-        require(
-            S.blockVerifier.isCircuitEnabled(
-                uint8(_block.blockType),
-                S.onchainDataAvailability,
-                _block.blockSize,
-                _block.blockVersion
-            ),
-            "CANNOT_VERIFY_BLOCK"
-        );
-
         bytes memory data = _block.data;
 
         // Extract the exchange ID from the data
@@ -169,7 +163,7 @@ library ExchangeBlocks
         }
 
         if (_block.blockType == ExchangeData.BlockType.SETTLEMENT) {
-            require(S.areUserRequestsEnabled(), "SETTLEMENT_SUSPENDED");
+            require(areUserRequestsEnabled, "SETTLEMENT_SUSPENDED");
             uint32 inputTimestamp;
             uint8 protocolTakerFeeBips;
             uint8 protocolMakerFeeBips;

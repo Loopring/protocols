@@ -608,8 +608,8 @@ The gas limit in an Ethereum block is 10,000,000 gas. An Ethereum block is gener
 
 ### On-chain Data-availability Limit
 
-- Submitting a block (batched): ~200,000 gas (fixed cost) + ~40,000 gas/block
-- => Using 27 blocks of 1024 trades/block: (10,000,000 - 240,000) / 320 = **30500 trades/Ethereum block = ~2050 trades/second**)
+- Submitting a block (batched): ~220,000 gas (fixed cost) + ~80,000 gas/block
+- => Using 27 blocks of 1024 trades/block: (10,000,000 - 300,000) / 336 = **29000 trades/Ethereum block = ~2200 trades/second**)
 
 ### Constraints Limit
 
@@ -629,12 +629,12 @@ In a single block, we are currently limited by the number of constraints used in
 
 Using 7 blocks with on-chain data-availability (so that we are limited by the cost of data-availability):
 
-- => (10,000,000 - (200,000 + 7 \* 40,000) / 336 = ~28500 trades/Ethereum block = **~2200 trades/second**
+- => (10,000,000 - (220,000 + 7 \* 80,000) / 336 = ~27500 trades/Ethereum block = **~2100 trades/second**
 
 Without data-availability we are limited by how many blocks (and thus by how many trades/block) we can submit in a single Ethereum block:
 
-- => (10,000,000 - 200,000) / 40,000 = ~250 blocks/Ethereum block
-- = ~4250 trades/block \* 250 blocks/Ethereum block = ~1062500 trades/Ethereum block = **~82,000 trades/second**
+- => (10,000,000 - 220,000) / 80,000 = ~125 blocks/Ethereum block
+- = ~4250 trades/block \* 125 blocks/Ethereum block = ~531,250 trades/Ethereum block = **~41,000 trades/second**
 
 For comparison, let's calculate the achievable throughput of the previous Loopring protocols that did the ring settlements completely on-chain.
 
@@ -643,9 +643,9 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 |                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
 | :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
-| Trades per Ethereum Block              |      33      |                  28,500                  |                 1,062,500                 |
-| Trades per Second                      |     2-3      |                   2200                   |                  82,000                   |
-| Cost per Trade                         | 300,000 gas  |                 350 gas                  |                  10 gas                   |
+| Trades per Ethereum Block              |      33      |                  27,500                  |                 531,250                 |
+| Trades per Second                      |     2-3      |                   2100                   |                  41,000                   |
+| Cost per Trade                         | 300,000 gas  |                 365 gas                  |                  19 gas                   |
 | Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.

@@ -1481,11 +1481,7 @@ export class ExchangeTestUtil {
       this.exchangeOperator,
       { from: this.exchangeOperator, gasPrice: 0 }
     );
-    /*logInfo(
-      "\x1b[46m%s\x1b[0m",
-      "[submitBlocks] Gas used: " + tx.receipt.gasUsed
-    );*/
-    console.log(
+    logInfo(
       "\x1b[46m%s\x1b[0m",
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
     );

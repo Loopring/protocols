@@ -66,38 +66,6 @@ contract("Exchange", (accounts: string[]) => {
 
     describe("Operator", () => {
       describe("submitBlocks", () => {
-        it("should not be able to submit unsupported blocks", async () => {
-          await createExchange(false);
-          const blockVersion = blockVersionGenerator++;
-          await exchangeTestUtil.blockVerifier.registerCircuit(
-            0,
-            true,
-            2,
-            blockVersion,
-            new Array(18).fill(1)
-          );
-          const bs = new Bitstream();
-          //bs.addNumber(0, 1);
-          bs.addNumber(exchangeId, 4);
-          bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT, 32);
-          bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
-          const block: OnchainBlock = {
-            blockType: 0,
-            blockSize: 1,
-            blockVersion: blockVersion + 1,
-            data: web3.utils.hexToBytes(bs.getData()),
-            proof: [0, 0, 0, 0, 0, 0, 0, 0],
-            offchainData: Constants.emptyBytes,
-            auxiliaryData: Constants.emptyBytes
-          };
-          await expectThrow(
-            exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
-              from: exchangeTestUtil.exchangeOperator
-            }),
-            "CANNOT_VERIFY_BLOCK"
-          );
-        });
-
         it("should not be able to submit blocks from different exchanges", async () => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
@@ -140,7 +108,6 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          console.log(exchangeId);
           const bs = new Bitstream();
           //bs.addNumber(0, 1);
           bs.addNumber(exchangeId, 4);
