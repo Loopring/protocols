@@ -92,7 +92,7 @@ abstract contract ILoopringV3 is ILoopring
         override
         returns (string memory)
     {
-        return "3.1";
+        return "3.5";
     }
 
     /// @dev Updates the global exchange settings.
