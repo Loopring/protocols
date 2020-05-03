@@ -111,6 +111,7 @@ contract ExchangeV3 is IExchangeV3
     function setDepositContract(address _depositContract)
         external
         override
+        nonReentrant
         onlyOwner
     {
         require(_depositContract != address(0), "ZERO_ADDRESS");
@@ -626,6 +627,7 @@ contract ExchangeV3 is IExchangeV3
         )
         external
         override
+        nonReentrant
         onlyAgentFor(owner)
     {
         require(agents.length == authorized.length, "INVALID_DATA");
