@@ -61,7 +61,11 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         recipient = _recipient;
     }
 
-    receive() external payable { }
+    receive()
+        external
+        payable
+    {
+    }
 
     function sellToken(
         address tokenS,
