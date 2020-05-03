@@ -26,6 +26,7 @@ import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
+
 import "../lib/MathUint.sol";
 
 import "../iface/IExchangeV3.sol";
@@ -614,7 +615,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        uint24 accountID = (owner != address(0)) ? state.getAccountID(owner) : 0;
+        uint24 accountID = (owner == address(0)) 0 : ? state.getAccountID(owner);
         uint16 tokenID = state.getTokenID(token);
         return state.amountWithdrawable[accountID][tokenID];
     }
