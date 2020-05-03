@@ -201,7 +201,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         internal
     {
         if (amount > 0) {
-            if (token == address(0)) {
+            if (isETHInternal(token)) {
                 // ETH
                 to.sendETHAndVerify(amount, gasleft());
             } else {

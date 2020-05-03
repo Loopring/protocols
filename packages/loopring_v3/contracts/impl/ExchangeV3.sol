@@ -133,9 +133,9 @@ contract ExchangeV3 is IExchangeV3
         external
         pure
         override
-        returns(uint[14] memory)
+        returns(ExchangeData.Constants memory)
     {
-        return [
+        return ExchangeData.Constants(
             uint(ExchangeData.SNARK_SCALAR_FIELD()),
             uint(ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS()),
             uint(ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS()),
@@ -150,7 +150,7 @@ contract ExchangeV3 is IExchangeV3
             uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
             uint(ExchangeData.GAS_LIMIT_SEND_TOKENS())
-        ];
+        );
     }
 
     // -- Mode --

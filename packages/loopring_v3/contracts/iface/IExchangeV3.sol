@@ -201,7 +201,7 @@ abstract contract IExchangeV3 is IExchange
         external
         pure
         virtual
-        returns(uint[14] memory);
+        returns(ExchangeData.Constants memory);
 
     // -- Mode --
     /// @dev Returns hether the exchange is in withdrawal mode.

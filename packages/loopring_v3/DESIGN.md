@@ -11,6 +11,7 @@
     - [Circuit Permutations](#circuit-permutations)
   - [Operators](#operators)
   - [Exchanges](#exchanges)
+    - [Deposit Contract](#deposit-contract)
     - [Exchange Creation](#exchange-creation)
     - [Exchange Staking](#exchange-staking)
     - [Exchange Shutdown](#exchange-shutdown)
@@ -37,6 +38,8 @@
     - [Order Aliasing](#order-aliasing)
   - [On-chain Deposit/Withdraw Request Handling](#on-chain-depositwithdraw-request-handling)
   - [Withdrawal Mode](#withdrawal-mode)
+  - [Conditional Transfers](#conditional-transfers)
+  - [Agents](#agents)
   - [Wallets](#wallets)
   - [Brokers](#brokers)
   - [Timestamp in Circuits](#timestamp-in-circuits)
@@ -140,6 +143,16 @@ Block submission needs to be done sequentially so the Merkle tree can be updated
 Note that user accounts and orders cannot be shared over different exchanges. Exchanges can decide to use the same Exchange contract so orders and users accounts can be shared if they desire.
 
 The Loopring contract is the creator of all exchanges built on top of the Loopring protocol. This contract contains data and functionality shared over all exchanges (like the token tiers for the burn rate) and also enforces some very limited restrictions on exchanges (like a maximum withdrawal fee).
+
+### Deposit Contract
+
+The deposit contract is the contract that stores all the user funds and contains all the logic to transfer funds from and to a certain exchange. We allow exchanges to write their own custom deposit contract to allow exchanges the full freedom how this is handled. In the most basic case the deposit contract simply stores all user funds directly in the deposit contract and supports transferring ETH and ERC20 tokens. This is the most secure way to handle user funds, but it is inefficient because all the value locked up into the exchange is unused.
+
+For example, a productive use of the funds would be to store the funds in a DeFi dApp that allows borrowing and lending. The exchange would earn interest on this which it could for example pass on to users directly or even indirectly by having lower fees. However, this is likely to never be completely safe so some extra precautions should be built into the contract to make sure users can withdraw all their funds. This is a delicate balance, and there is no single best solution, so we allow exchanges to decide for themselves how they want to handle this.
+
+Another interesting possibility of the deposit contract is to support more token standards. All interaction with token contracts are done in the deposit contract, so that's the only place that needs to know how to interact with a certain token. No changes are necessary to the exchange implementation.
+
+It's also possible to use the token addresses as seen by the exchange as a key value. Because the deposit contract handles all interaction with the token contract, the token address value seen by the exchange may differ from the actual token address. The deposit contract can simply map to the actual token address just before the interaction with the token contract. This allows, for example, the same token to be registered multiple times, but the deposit contract can store the funds in different ways. Or it can even be used to support trading multiple tranches of a single security token.
 
 ### Exchange Creation
 
@@ -394,7 +407,7 @@ Ring {
 }
 ```
 
-An operator can lower the fee of an order or optionally give the order owner a rebate. These can be decided freely by the operator.
+An operator can decide how a trade is settlement, as long as all requirements specified in the orders is fulfilled. An operator can lower the fee of an order or optionally give the order owner a rebate. These can be decided freely by the operator.
 
 The operator needs to sign a ring settlement block with the following data so he authorizes potential rebate and protocol fee payments from his account:
 
@@ -431,23 +444,13 @@ If the order never left the DEX and the user trusts the DEX then the order can s
 
 ## Trading History
 
-Every account has a trading history tree with 2^14 leafs **for every token**. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 64-bit value. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID > tradeHistory.orderID + 2^14`. If `order.orderID < tradeHistory.orderID` the order is automatically canceled. If `order.orderID == tradeHistory.orderID` we use the trading history stored in the leaf. This allows the account to create 2^64 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
+Every account has a trading history tree with 2^14 leafs **for every token**. Which leaf is used for storing the trading history for an order is completely left up to the user, and we call this the **orderID**. The orderID is stored in a 64-bit value and works like a 2D nonce. We allow the user to overwrite the existing trading history stored at `orderID % 2^14` if `order.orderID == tradeHistory.orderID + 2^14`. If `order.orderID < tradeHistory.orderID` the order is automatically canceled. If `order.orderID == tradeHistory.orderID` we use the trading history stored in the leaf. If `order.orderID > tradeHistory.orderID + 2^14` the order cannot be used yet as the orderID can only be incremented by `2^14`. This allows the account to create 2^64 unique orders for every token, the only limitation is that only 2^14 of these orders selling a certain token can be active at the same time.
 
 While this was done for performance reasons (so we don't have to have a trading history tree with a large depth using the order hash as an address) this does open up some interesting possibilities.
 
 ### Order Aliasing
 
 The account owner can choose to reuse the same orderID in multiple orders. We call this Order Aliasing.
-
-#### Efficiently using orderIDs
-
-The easiest way to make sure a new order has a fresh trade history slot (i.e. the filled amount for the order is 0) is to simply increase the orderID each time a new order is created. As there are up to 2^20 available orderIDs this is practical for normal accounts as this limit is sufficiently large to not run out of available orderIDs. For automatic trading however the number of available orderIDs could be too small when doing this.
-
-There are ways to limit the number of orderIDs used by orders:
-1. The orderID of an order that was not filled can simply be reused by a completely new order because the fill amount in the trading history is still 0. This makes sure that only orders that are actually used in trades use up orderIDs. Orders that are never used in a trade settlement are as if they never existed from the protocol's point of view. The limit is thus actually 2^20 unique orders that are actually used in trades. A bot will likely create many more orders than are actually used in trades so just doing this will be a massive improvement.
-2. A more advanced method that is usable for automatic trading is to reuse orderIDs even of orders that were already filled. It's possible to reuse orderIDs used by other orders simply by changing the amountS/amountB of the new order. For example if there was a sell order of 1ETH/10LRC that was completely filled (trade history slot equals 1ETH), you can reuse the same orderID for another 1ETH/10LRC order simply by changing it to a 2ETH/20LRC order (which can only be filled for 1ETH, so this order is effectively the same as the 1ETH/10LRC order with a new orderID). This is a simple example, but this would work for all orders. This allows reusing orderIDs many, many times even without having to increase the orderID at all.
-
-As you can see there is almost no practical limit to the number of orders even a single account can create. But it can get quite complicated to be as efficient as possible with orderIDs (especially when using method 2.). In the next version of the protocol there won't be any limit on the number of orderIDs, but the protocol will enforce orders to use an orderID that either reuses the slot or overwrites the slot (i.e. resetting the fill amount to 0) by setting the orderID to `orderID = oldOrderID + numSlots`.
 
 #### Safely updating the validUntil time of an order
 
@@ -505,6 +508,22 @@ Users can withdraw their funds using the state of the last block that was submit
 - Balances still stored in the Merkle tree can be withdrawn with a Merkle proof by calling `withdrawFromMerkleTree` or `withdrawFromMerkleTreeFor`.
 - Deposits not yet included in a sumbitted block can be withdrawn using `withdrawFromDepositRequest`
 - Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
+
+
+## Conditional Transfers
+
+Conditional transfers are transfers that are approved on-chain by the account owner or an [agent](#Agents) of the account owner by calling `approveOffchainTransfer`. No signature or other authorization is needed for the operator to do an off-chain transfer that was approved like this. This allows any on-chain mechanism (done by the account owner himself or by an [agent](#Agents)) to decide if a transfer can happen or not.
+
+
+## Agents
+
+An agent is an address that is allowed to authorize on-chain operations for the account owner. By definition the account owner is an agent for himself. `authorizeAgents` can be used by an agent to authorize or de-authorize other agents.
+
+Agents can be simple EOAs or other smart contracts. Smart contracts are the most interesting case. This allows extending the exchange functionality by implementing extra logic on top of the basic exchange functionality that's built into the exchange contract. There's a lot functionality that can be added this way for users. Some examples:
+  - [Layer 1 composability](https://medium.com/loopring-protocol/composability-between-ethereum-layer-1-and-2-10650b7411e5)
+  - Fast withdrawals (by using a [conditional transfer](#Conditional-Transfers))
+  - Support for any 3rd party meta-transactions
+  - ...
 
 ## Wallets
 
