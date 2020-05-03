@@ -963,6 +963,14 @@ abstract contract IExchangeV3 is IExchange
         virtual
         returns (address oldAddressWhitelist);
 
+    /// @dev Gets the address whitelist contract address.
+    /// @return The whitelist contract
+    function getAddressWhitelist()
+        external
+        virtual
+        view
+        returns (address);
+
     /// @dev Updates fee settings.
     ///      This function is only callable by the exchange owner.
     /// @param _accountCreationFeeETH The fee in ETH for account creation

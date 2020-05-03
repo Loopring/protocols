@@ -615,7 +615,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        uint24 accountID = (owner == address(0)) 0 : ? state.getAccountID(owner);
+        uint24 accountID = (owner == address(0)) ? 0 : state.getAccountID(owner);
         uint16 tokenID = state.getTokenID(token);
         return state.amountWithdrawable[accountID][tokenID];
     }
@@ -735,6 +735,16 @@ contract ExchangeV3 is IExchangeV3
         returns (address)
     {
         return state.setAddressWhitelist(_addressWhitelist);
+    }
+
+
+    function getAddressWhitelist()
+        external
+        override
+        view
+        returns (address)
+    {
+        return state.addressWhitelist;
     }
 
     function setFees(
