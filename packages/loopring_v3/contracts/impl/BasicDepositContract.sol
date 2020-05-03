@@ -101,15 +101,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
         } else {
             require(msg.value == 0, "INVALID_TOKEN_DEPOSIT");
-        }
-
-        // Transfer the tokens from the owner into this contract
-        if (amount > 0 && !isETHInternal(token)) {
-            token.safeTransferFromAndVerify(
-                from,
-                address(this),
-                amount
-            );
+             // Transfer the tokens from the owner into this contract
+            if (amount > 0) {
+                token.safeTransferFromAndVerify(
+                    from,
+                    address(this),
+                    amount
+                );
+            }
         }
     }
 

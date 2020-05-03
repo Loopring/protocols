@@ -18,7 +18,9 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IExchange.sol";
+
 import "./ExchangeData.sol";
+
 
 /// @title IExchangeV3
 /// @dev Note that Claimable and RentrancyGuard are inherited here to
