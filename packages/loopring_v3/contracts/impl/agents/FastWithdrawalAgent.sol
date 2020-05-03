@@ -98,7 +98,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("FastWithdrawalAgent", "1.0", address(this)));
     }
 
-    // This method needs to be called by the liquidity provider
+    // This method needs to be called by any liquidity provider
     function executeFastWithdrawals(FastWithdrawal[] memory fastWithdrawals)
         public
         nonReentrant
@@ -231,16 +231,12 @@ contract FastWithdrawalAgent is ReentrancyGuard
         )
         internal
     {
-        bool success;
-        if (amount > 0) {
-            if (token == address(0)) {
-                // ETH
-                success = to.sendETH(amount, gasleft());
-            } else {
-                // ERC20 token
-                success = token.safeTransferFrom(from, to, amount);
-            }
-        }
+        if (amount == 0) return;
+       
+        bool success = token == address(0) ? 
+            to.sendETH(amount, gasleft()) :
+            token.safeTransferFrom(from, to, amount);
+
         require(success, "TRANSFER_FAILED");
     }
 
