@@ -167,7 +167,7 @@ contract LoopringV3 is ILoopringV3
         emit SettingsUpdated(now);
     }
 
-    function canExchangeCommitBlocks(
+    function canExchangeSubmitBlocks(
         uint exchangeId,
         bool onchainDataAvailability
         )

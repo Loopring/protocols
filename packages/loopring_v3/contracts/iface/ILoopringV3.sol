@@ -132,7 +132,7 @@ abstract contract ILoopringV3 is ILoopring
         external
         virtual;
 
-    /// @dev Returns whether the Exchange has staked enough to commit blocks
+    /// @dev Returns whether the Exchange has staked enough to submit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
     ///      minExchangeStakeWithDataAvailability, exchanges without
     ///      data-availability need to stake at least
@@ -141,7 +141,7 @@ abstract contract ILoopringV3 is ILoopring
     /// @param onchainDataAvailability True if the exchange has on-chain
     ///        data-availability, else false
     /// @return True if the exchange has staked enough, else false
-    function canExchangeCommitBlocks(
+    function canExchangeSubmitBlocks(
         uint exchangeId,
         bool onchainDataAvailability
         )
