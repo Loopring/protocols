@@ -93,8 +93,8 @@ abstract contract IProtocolFeeVault
     /// @return remainingReward The remaining amount of LRC as staking reward.
     function getProtocolFeeStats()
         public
-        view
         virtual
+        view
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,

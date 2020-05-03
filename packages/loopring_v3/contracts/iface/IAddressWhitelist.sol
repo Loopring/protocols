@@ -31,7 +31,7 @@ abstract contract IAddressWhitelist
         bytes   memory permission
         )
         public
-        view
         virtual
+        view
         returns (bool);
 }

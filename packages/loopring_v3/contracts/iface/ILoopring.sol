@@ -40,8 +40,8 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
     /// @return The exchange version
     function version()
         public
-        view
         virtual
+        view
         returns (string memory);
 
     /// @dev Initializes and registers an exchange.

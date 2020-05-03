@@ -99,8 +99,8 @@ abstract contract IBlockVerifier is Claimable
         uint[] calldata proofs
         )
         external
-        view
         virtual
+        view
         returns (bool);
 
     /// @dev Checks if a circuit with the specified parameters is registered.
@@ -117,8 +117,8 @@ abstract contract IBlockVerifier is Claimable
         uint8  blockVersion
         )
         external
-        view
         virtual
+        view
         returns (bool);
 
     /// @dev Checks if a circuit can still be used to commit new blocks.
@@ -135,7 +135,7 @@ abstract contract IBlockVerifier is Claimable
         uint8  blockVersion
         )
         external
-        view
         virtual
+        view
         returns (bool);
 }

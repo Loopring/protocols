@@ -21,13 +21,14 @@ import "../iface/IDelayedTransaction.sol";
 import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
 /// @title DelayedOwner
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Base class for an Owner contract where certain functions have
 ///      a mandatory delay for security purposes.
-abstract contract DelayedTransaction is IDelayedTransaction
+abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 {
     using AddressUtil for address payable;
     using BytesUtil   for bytes;
@@ -64,8 +65,9 @@ abstract contract DelayedTransaction is IDelayedTransaction
         bytes   calldata data
         )
         external
-        payable
         override
+        nonReentrant
+        payable
         onlyAuthorized
     {
         transactInternal(to, msg.value, data);
@@ -76,6 +78,7 @@ abstract contract DelayedTransaction is IDelayedTransaction
         )
         external
         override
+        nonReentrant
         onlyAuthorized
     {
         Transaction memory transaction = getTransaction(transactionId);
@@ -114,6 +117,7 @@ abstract contract DelayedTransaction is IDelayedTransaction
         )
         external
         override
+        nonReentrant
         onlyAuthorized
     {
         cancelTransactionInternal(transactionId);
@@ -122,6 +126,7 @@ abstract contract DelayedTransaction is IDelayedTransaction
     function cancelAllTransactions()
         external
         override
+        nonReentrant
         onlyAuthorized
     {
         // First cache all transactions ids of the transactions we will remove
@@ -140,8 +145,8 @@ abstract contract DelayedTransaction is IDelayedTransaction
         bytes4  functionSelector
         )
         public
-        view
         override
+        view
         returns (uint)
     {
         uint pos = delayedFunctionMap[to][functionSelector];
@@ -154,8 +159,8 @@ abstract contract DelayedTransaction is IDelayedTransaction
 
     function getNumPendingTransactions()
         external
-        view
         override
+        view
         returns (uint)
     {
         return pendingTransactions.length;
@@ -163,8 +168,8 @@ abstract contract DelayedTransaction is IDelayedTransaction
 
     function getNumDelayedFunctions()
         external
-        view
         override
+        view
         returns (uint)
     {
         return delayedFunctions.length;
@@ -323,7 +328,7 @@ abstract contract DelayedTransaction is IDelayedTransaction
 
     function isAuthorizedForTransactions(address sender)
         internal
-        view
         virtual
+        view
         returns (bool);
 }

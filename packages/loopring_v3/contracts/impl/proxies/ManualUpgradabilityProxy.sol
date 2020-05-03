@@ -53,8 +53,8 @@ contract ManualUpgradabilityProxy is IExchangeProxy
 
     function implementation()
         public
-        view
         override
+        view
         returns (address impl)
     {
         bytes32 position = implementationPosition;

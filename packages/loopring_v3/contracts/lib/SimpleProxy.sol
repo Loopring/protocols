@@ -36,8 +36,8 @@ contract SimpleProxy is Proxy
 
     function implementation()
         public
-        view
         override
+        view
         returns (address impl)
     {
         bytes32 position = implementationPosition;

@@ -101,8 +101,8 @@ contract FastWithdrawalAgent is ReentrancyGuard
     // This method needs to be called by the liquidity provider
     function executeFastWithdrawals(FastWithdrawal[] memory fastWithdrawals)
         public
-        payable
         nonReentrant
+        payable
     {
         // Do all fast withdrawals
         for (uint i = 0; i < fastWithdrawals.length; i++) {

@@ -37,8 +37,8 @@ contract LzDecompressor is IDecompressor
         bytes calldata /*data*/
         )
         external
-        pure
         override
+        pure
         returns (bytes memory)
     {
         assembly {

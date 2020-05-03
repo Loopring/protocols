@@ -57,6 +57,7 @@ contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
         uint _minETHRequired
         )
         external
+        // nonReentrant
         onlyOwner
     {
         minLRCRequired = _minLRCRequired;
@@ -69,8 +70,8 @@ contract LRCBalanceBasedAddressWhitelist is Claimable, IAddressWhitelist
         bytes   memory // not used
         )
         public
-        view
         override
+        view
         returns (bool)
     {
         return addr.balance >= minETHRequired && hasEnoughLRC(addr);

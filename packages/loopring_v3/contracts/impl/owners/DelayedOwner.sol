@@ -39,6 +39,7 @@ contract DelayedOwner is DelayedTransaction, Claimable
 
     receive()
         external
+        // nonReentrant
         payable
     {
         // Don't do anything when receiving ETH
@@ -46,6 +47,7 @@ contract DelayedOwner is DelayedTransaction, Claimable
 
     fallback()
         external
+        nonReentrant
         payable
     {
         // Don't do anything if msg.sender isn't the owner
@@ -57,8 +59,8 @@ contract DelayedOwner is DelayedTransaction, Claimable
 
     function isAuthorizedForTransactions(address sender)
         internal
-        view
         override
+        view
         returns (bool)
     {
         return sender == owner;

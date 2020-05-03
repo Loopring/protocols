@@ -72,8 +72,8 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
 
     function usd2lrc(uint usd)
         external
-        view
         override
+        view
         returns (uint)
     {
         return usd.mul(movingAverage) / defaultValue;

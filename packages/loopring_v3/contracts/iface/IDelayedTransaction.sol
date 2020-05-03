@@ -90,8 +90,8 @@ abstract contract IDelayedTransaction
         bytes   calldata data
         )
         external
-        payable
-        virtual;
+        virtual
+        payable;
 
     /// @dev Executes a pending transaction.
     /// @param transactionId The id of the pending transaction.
@@ -122,23 +122,23 @@ abstract contract IDelayedTransaction
         bytes4  functionSelector
         )
         public
-        view
         virtual
+        view
         returns (uint);
 
     /// @dev Gets the number of pending transactions.
     /// @return The number of pending transactions.
     function getNumPendingTransactions()
         external
-        view
         virtual
+        view
         returns (uint);
 
     /// @dev Gets the number of functions that have a delay.
     /// @return The number of delayed functions.
     function getNumDelayedFunctions()
         external
-        view
         virtual
+        view
         returns (uint);
 }

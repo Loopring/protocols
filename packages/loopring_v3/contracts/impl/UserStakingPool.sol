@@ -63,8 +63,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function getTotalStaking()
         public
-        view
         override
+        view
         returns (uint)
     {
         return total.balance;
@@ -72,8 +72,8 @@ contract UserStakingPool is Claimable, ReentrancyGuard, IUserStakingPool
 
     function getUserStaking(address user)
         public
-        view
         override
+        view
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,

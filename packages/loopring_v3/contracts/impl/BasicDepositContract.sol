@@ -86,9 +86,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         uint amount
         )
         external
-        payable
         override
         nonReentrant
+        payable
         onlyExchange
     {
         // Keep track how many tokens are deposited in the exchange
@@ -146,8 +146,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
 
     function isETH(address addr)
         external
-        view
         override
+        view
         returns (bool)
     {
         return isETHInternal(addr);
