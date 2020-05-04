@@ -146,11 +146,11 @@ The Loopring contract is the creator of all exchanges built on top of the Loopri
 
 ### Deposit Contract
 
-The deposit contract is the contract that stores all the user funds and contains all the logic to transfer funds from and to a certain exchange. We allow exchanges to write their own custom deposit contract to allow exchanges the full freedom how this is handled. In the most basic case the deposit contract simply stores all user funds directly in the deposit contract and supports transferring ETH and ERC20 tokens. This is the most secure way to handle user funds, but it is inefficient because all the value locked up into the exchange is unused.
+The deposit contract is the contract that stores all the user funds and contains all the logic to transfer funds from and to a certain exchange. We now allow exchanges to write their own custom deposit contract which provides them the flexibility to decide how exactly this is handled. In the most basic case the deposit contract simply stores all user funds directly in the deposit contract and only supports transferring ETH and ERC20 tokens. This is the most secure way to handle user funds, but it is inefficient because all the value locked up into the exchange is unused.
 
-For example, a productive use of the funds would be to store the funds in a DeFi dApp that allows borrowing and lending. The exchange would earn interest on this which it could for example pass on to users directly or even indirectly by having lower fees. However, this is likely to never be completely safe so some extra precautions should be built into the contract to make sure users can withdraw all their funds. This is a delicate balance, and there is no single best solution, so we allow exchanges to decide for themselves how they want to handle this.
+A productive use of the funds would be to store the funds in a DeFi dApp that allows borrowing and lending for example. The exchange would earn interest on this which it could pass on to users directly or even indirectly by having lower fees. However, this is likely to never be 100% safe so some extra precautions should be built into the contract to make sure users can withdraw all their funds. This is a delicate balance, and there is no single best solution, so we allow exchanges to decide for themselves how they want to handle this.
 
-Another interesting possibility of the deposit contract is to support more token standards. All interaction with token contracts are done in the deposit contract, so that's the only place that needs to know how to interact with a certain token. No changes are necessary to the exchange implementation.
+Another interesting possibility of the deposit contract is to support more token standards. All interactions with token contracts are done in the deposit contract, so that's the only place that needs to know how to interact with a certain token. No changes are necessary to the exchange contract implementation.
 
 It's also possible to use the token addresses as seen by the exchange as a key value. Because the deposit contract handles all interaction with the token contract, the token address value seen by the exchange may differ from the actual token address. The deposit contract can simply map to the actual token address just before the interaction with the token contract. This allows, for example, the same token to be registered multiple times, but the deposit contract can store the funds in different ways. Or it can even be used to support trading multiple tranches of a single security token.
 
@@ -512,14 +512,14 @@ Users can withdraw their funds using the state of the last block that was submit
 
 ## Conditional Transfers
 
-Conditional transfers are transfers that are approved on-chain by the account owner or an [agent](#Agents) of the account owner by calling `approveOffchainTransfer`. No signature or other authorization is needed for the operator to do an off-chain transfer that was approved like this. This allows any on-chain mechanism (done by the account owner himself or by an [agent](#Agents)) to decide if a transfer can happen or not.
+Conditional transfers are transfers that are approved on-chain by the account owner or an [agent](#Agents) of the account owner by calling `approveOffchainTransfer`. No signature or other authorization is needed for the operator to do an off-chain transfer that was approved like this. This allows any on-chain mechanism (done by the account owner himself or by an [agent](#Agents)) to decide if a transfer can executed or not.
 
 
 ## Agents
 
 An agent is an address that is allowed to authorize on-chain operations for the account owner. By definition the account owner is an agent for himself. `authorizeAgents` can be used by an agent to authorize or de-authorize other agents.
 
-Agents can be simple EOAs or other smart contracts. Smart contracts are the most interesting case. This allows extending the exchange functionality by implementing extra logic on top of the basic exchange functionality that's built into the exchange contract. There's a lot functionality that can be added this way for users. Some examples:
+Agents can be simple EOAs or smart contracts. Smart contracts are the most interesting case. This allows extending the exchange functionality by implementing extra logic on top of the basic exchange functionality that's built into the exchange contract. There's a lot functionality that can be added this way for users. Some examples:
   - [Layer 1 composability](https://medium.com/loopring-protocol/composability-between-ethereum-layer-1-and-2-10650b7411e5)
   - Fast withdrawals (by using a [conditional transfer](#Conditional-Transfers))
   - Support for any 3rd party meta-transactions
