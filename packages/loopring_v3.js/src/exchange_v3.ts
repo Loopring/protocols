@@ -72,8 +72,10 @@ export class ExchangeV3 {
   private hasher: any;
   private merkleTree: SparseMerkleTree;
 
+  // decimal representation of `0x107018ff4240423a154c81e966fe3216d239fe33f5c30911c2d04799df603c81`
   private genesisMerkleRoot =
     "7435064972263210101377543783176472512844143561398145902634322592905325198465";
+
 
   private exchangeFees: ExchangeFees;
   private protocolFees: ProtocolFees;
