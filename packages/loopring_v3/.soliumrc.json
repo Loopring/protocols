@@ -9,6 +9,8 @@
     "security/no-low-level-calls": "off",
     "value-in-payable": "off",
     "no-empty-blocks": "off",
+    "visibility-first": "error",
+    "function-order": "error",
     "quotes": [
       "error",
       "double"
