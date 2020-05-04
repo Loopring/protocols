@@ -216,7 +216,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 exchange.approveOffchainTransfer(
                     fastWithdrawal.from,
                     liquidityProvider,
-                    fastWithdrawal.feeToken,
+                    fastWithdrawal.feeToken, 
                     fee
                 );
             }
@@ -231,13 +231,12 @@ contract FastWithdrawalAgent is ReentrancyGuard
         )
         internal
     {
-        if (amount == 0) return;
-       
-        bool success = token == address(0) ? 
-            to.sendETH(amount, gasleft()) :
-            token.safeTransferFrom(from, to, amount);
-
-        require(success, "TRANSFER_FAILED");
+        if (amount > 0) {
+            if (token == address(0)) {
+                to.sendETHAndVerify(amount, gasleft()); // ETH
+            } else {
+                token.safeTransferFromAndVerify(from, to, amount);  // ERC20 token
+            }
+        }
     }
-
 }

@@ -78,7 +78,7 @@ library ExchangeBlocks
 
         // Check if this exchange has a minimal amount of LRC staked
         require(
-            S.loopring.canExchangeSubmitBlocks(S.id, S.onchainDataAvailability),
+            S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 

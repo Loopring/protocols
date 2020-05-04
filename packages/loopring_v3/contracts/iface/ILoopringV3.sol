@@ -141,7 +141,7 @@ abstract contract ILoopringV3 is ILoopring
     /// @param onchainDataAvailability True if the exchange has on-chain
     ///        data-availability, else false
     /// @return True if the exchange has staked enough, else false
-    function canExchangeSubmitBlocks(
+    function canExchangeCommitBlocks(
         uint exchangeId,
         bool onchainDataAvailability
         )
