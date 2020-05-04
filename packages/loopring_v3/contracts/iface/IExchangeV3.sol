@@ -311,9 +311,12 @@ abstract contract IExchangeV3 is IExchange
     /// @param  tradeHistoryRoot The merkle root of the trade history of the given token
     /// @param  accountMerkleProof The merkle proof (side node hashes) for the account.
     ///                      The deepest hash in the tree is the 1st element of the array.
+    ///                      Note: Account tree (quad tree) depth is 12, and each node
+    ///                      has 3 siblings so 12*3 = 36.
     /// @param  balanceMerkleProof he merkle proof (side node hashes) for the balance of the
     ///                      token for the account. The deepest hash in the tree is the
     ///                      1st element of the array.
+    ///                      Note: Balance tree (quad tree) depth is 5, so 5*3 = 15.
     /// @return True if the given information is stored in the Merkle tree, false otherwise
     function isAccountBalanceCorrect(
         uint     merkleRoot,
