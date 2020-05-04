@@ -9,6 +9,7 @@
     "security/no-low-level-calls": "off",
     "value-in-payable": "off",
     "no-empty-blocks": "off",
+    "visibility-first": "error",
     "quotes": [
       "error",
       "double"

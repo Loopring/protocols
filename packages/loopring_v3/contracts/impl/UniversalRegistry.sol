@@ -202,8 +202,8 @@ contract UniversalRegistry is IUniversalRegistry {
 
     function defaultProtocol()
         public
-        view
         override
+        view
         returns (
             address protocol,
             address manager,
@@ -225,8 +225,8 @@ contract UniversalRegistry is IUniversalRegistry {
         address protocol
         )
         public
-        view
         override
+        view
         returns (bool)
     {
         return protocolMap[protocol].registered;
@@ -236,8 +236,8 @@ contract UniversalRegistry is IUniversalRegistry {
         address protocol
         )
         public
-        view
         override
+        view
         returns (bool)
     {
         return protocolMap[protocol].enabled;
@@ -247,8 +247,8 @@ contract UniversalRegistry is IUniversalRegistry {
         address exchange
         )
         public
-        view
         override
+        view
         returns (bool)
     {
         return exchangeMap[exchange] != address(0);
@@ -259,8 +259,8 @@ contract UniversalRegistry is IUniversalRegistry {
         address implementation
         )
         public
-        view
         override
+        view
         returns (bool enabled)
     {
         if (!isProtocolEnabled(protocol)) {
@@ -276,8 +276,8 @@ contract UniversalRegistry is IUniversalRegistry {
         address exchangeAddress
         )
         public
-        view
         override
+        view
         returns (
             address protocol,
             address manager

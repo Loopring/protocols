@@ -88,8 +88,8 @@ abstract contract ILoopringV3 is ILoopring
     // == Public Functions ==
     function version()
         public
-        view
         override
+        view
         returns (string memory)
     {
         return "3.5";
@@ -132,7 +132,7 @@ abstract contract ILoopringV3 is ILoopring
         external
         virtual;
 
-    /// @dev Returns whether the Exchange has staked enough to commit blocks
+    /// @dev Returns whether the Exchange has staked enough to submit blocks
     ///      Exchanges with on-chain data-availaiblity need to stake at least
     ///      minExchangeStakeWithDataAvailability, exchanges without
     ///      data-availability need to stake at least
@@ -146,8 +146,8 @@ abstract contract ILoopringV3 is ILoopring
         bool onchainDataAvailability
         )
         external
-        view
         virtual
+        view
         returns (bool);
 
     /// @dev Gets the amount of staked LRC for an exchange.
@@ -157,8 +157,8 @@ abstract contract ILoopringV3 is ILoopring
         uint exchangeId
         )
         public
-        view
         virtual
+        view
         returns (uint stakedLRC);
 
     /// @dev Burns a certain amount of staked LRC for a specific exchange.
@@ -237,8 +237,8 @@ abstract contract ILoopringV3 is ILoopring
         bool onchainDataAvailability
         )
         external
-        view
         virtual
+        view
         returns (
             uint8 takerFeeBips,
             uint8 makerFeeBips
@@ -251,7 +251,7 @@ abstract contract ILoopringV3 is ILoopring
         uint exchangeId
         )
         external
-        view
         virtual
+        view
         returns (uint protocolFeeStake);
 }

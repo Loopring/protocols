@@ -105,8 +105,8 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint[] calldata proofs
         )
         external
-        view
         override
+        view
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
@@ -140,8 +140,8 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint8  blockVersion
         )
         external
-        view
         override
+        view
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
@@ -155,8 +155,8 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint8  blockVersion
         )
         external
-        view
         override
+        view
         returns (bool)
     {
         bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);

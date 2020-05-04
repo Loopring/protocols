@@ -17,6 +17,7 @@
 pragma solidity ^0.6.6;
 
 import "./DelayedOwner.sol";
+
 import "../../iface/ILoopringV3.sol";
 import "../../iface/ITokenPriceProvider.sol";
 
@@ -68,6 +69,7 @@ contract LoopringV3Owner is DelayedOwner
     ///      Can be called by anyone.
     function updateValuesInLRC()
         external
+        nonReentrant
     {
         // Get the current costs in LRC
         Costs memory lrcCosts = Costs(

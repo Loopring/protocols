@@ -26,6 +26,7 @@ import "./libexchange/ExchangeGenesis.sol";
 import "./libexchange/ExchangeMode.sol";
 import "./libexchange/ExchangeTokens.sol";
 import "./libexchange/ExchangeWithdrawals.sol";
+
 import "../lib/MathUint.sol";
 
 import "../iface/IExchangeV3.sol";
@@ -76,8 +77,8 @@ contract ExchangeV3 is IExchangeV3
 
     function version()
         public
-        view
         override
+        view
         returns (string memory)
     {
         return "3.5.0";
@@ -122,8 +123,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getDepositContract()
         external
-        view
         override
+        view
         returns (IDepositContract)
     {
         return state.depositContract;
@@ -132,8 +133,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Constants --
     function getConstants()
         external
-        pure
         override
+        pure
         returns(ExchangeData.Constants memory)
     {
         return ExchangeData.Constants(
@@ -157,8 +158,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Mode --
     function isInWithdrawalMode()
         external
-        view
         override
+        view
         returns (bool)
     {
         return state.isInWithdrawalMode();
@@ -166,8 +167,8 @@ contract ExchangeV3 is IExchangeV3
 
     function isShutdown()
         external
-        view
         override
+        view
         returns (bool)
     {
         return state.isShutdown();
@@ -175,8 +176,8 @@ contract ExchangeV3 is IExchangeV3
 
     function isInMaintenance()
         external
-        view
         override
+        view
         returns (bool)
     {
         return state.isInMaintenance();
@@ -185,8 +186,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Accounts --
     function getNumAccounts()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.accounts.length;
@@ -196,8 +197,8 @@ contract ExchangeV3 is IExchangeV3
         address owner
         )
         external
-        view
         override
+        view
         returns (
             uint24 accountID,
             uint   pubKeyX,
@@ -214,9 +215,9 @@ contract ExchangeV3 is IExchangeV3
         bytes   calldata permission
         )
         external
-        payable
         override
         nonReentrant
+        payable
         onlyAgentFor(owner)
         returns (
             uint24 accountID,
@@ -248,8 +249,8 @@ contract ExchangeV3 is IExchangeV3
         uint[15] calldata balancePath
         )
         external
-        pure
         override
+        pure
         returns (bool)
     {
         return ExchangeBalances.isAccountBalanceCorrect(
@@ -269,8 +270,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Tokens --
     function getLRCFeeForRegisteringOneMoreToken()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getLRCFeeForRegisteringOneMoreToken();
@@ -292,8 +293,8 @@ contract ExchangeV3 is IExchangeV3
         address tokenAddress
         )
         external
-        view
         override
+        view
         returns (uint16)
     {
         return state.getTokenID(tokenAddress);
@@ -303,8 +304,8 @@ contract ExchangeV3 is IExchangeV3
         uint16 tokenID
         )
         external
-        view
         override
+        view
         returns (address)
     {
         return state.getTokenAddress(tokenID);
@@ -335,8 +336,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Stakes --
     function getExchangeStake()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.loopring.getExchangeStake(state.id);
@@ -382,8 +383,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Blocks --
     function getMerkleRoot()
         external
-        view
         override
+        view
         returns (bytes32)
     {
         return state.merkleRoot;
@@ -391,8 +392,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getBlockHeight()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.numBlocksSubmitted;
@@ -416,8 +417,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Deposits --
     function getNumDepositRequestsProcessed()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getNumDepositRequestsProcessed();
@@ -425,8 +426,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getNumAvailableDepositSlots()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getNumAvailableDepositSlots();
@@ -436,8 +437,8 @@ contract ExchangeV3 is IExchangeV3
         uint index
         )
         external
-        view
         override
+        view
         returns (
           bytes32 accumulatedHash,
           uint    accumulatedFee,
@@ -456,9 +457,9 @@ contract ExchangeV3 is IExchangeV3
         bytes   calldata permission
         )
         external
-        payable
         override
         nonReentrant
+        payable
         onlyAgentFor(owner)
         returns (
             uint24 accountID,
@@ -494,8 +495,8 @@ contract ExchangeV3 is IExchangeV3
     // -- Withdrawals --
     function getNumWithdrawalRequestsProcessed()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getNumWithdrawalRequestsProcessed();
@@ -503,8 +504,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getNumAvailableWithdrawalSlots()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getNumAvailableWithdrawalSlots();
@@ -514,8 +515,8 @@ contract ExchangeV3 is IExchangeV3
         uint index
         )
         external
-        view
         override
+        view
         returns (
             bytes32 accumulatedHash,
             uint    accumulatedFee,
@@ -531,9 +532,9 @@ contract ExchangeV3 is IExchangeV3
         uint96 amount
         )
         external
-        payable
         override
         nonReentrant
+        payable
         onlyAgentFor(owner)
     {
         uint24 accountID = state.getAccountID(owner);
@@ -544,9 +545,9 @@ contract ExchangeV3 is IExchangeV3
         address token
         )
         external
-        payable
         override
         nonReentrant
+        payable
     {
         // Always request the maximum amount so the complete balance is withdrawn
         state.withdraw(0, token, ~uint96(0));
@@ -610,11 +611,11 @@ contract ExchangeV3 is IExchangeV3
         address token
         )
         external
-        view
         override
+        view
         returns (uint)
     {
-        uint24 accountID = (owner != address(0)) ? state.getAccountID(owner) : 0;
+        uint24 accountID = (owner == address(0)) ? 0 : state.getAccountID(owner);
         uint16 tokenID = state.getTokenID(token);
         return state.amountWithdrawable[accountID][tokenID];
     }
@@ -639,8 +640,8 @@ contract ExchangeV3 is IExchangeV3
 
     function isAgent(address owner, address agent)
         public
-        view
         override
+        view
         returns (bool)
     {
         return owner == agent || state.agent[owner][agent];
@@ -678,8 +679,8 @@ contract ExchangeV3 is IExchangeV3
         address token
         )
         external
-        view
         override
+        view
         returns (uint)
     {
         uint24 fromAccountID = state.getAccountID(from);
@@ -717,8 +718,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getOperator()
         external
-        view
         override
+        view
         returns (address payable)
     {
         return state.operator;
@@ -734,6 +735,16 @@ contract ExchangeV3 is IExchangeV3
         returns (address)
     {
         return state.setAddressWhitelist(_addressWhitelist);
+    }
+
+
+    function getAddressWhitelist()
+        external
+        override
+        view
+        returns (address)
+    {
+        return state.addressWhitelist;
     }
 
     function setFees(
@@ -757,8 +768,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getFees()
         external
-        view
         override
+        view
         returns (
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
@@ -794,8 +805,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getRemainingDowntime()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getRemainingDowntime();
@@ -805,8 +816,8 @@ contract ExchangeV3 is IExchangeV3
         uint durationMinutes
         )
         external
-        view
         override
+        view
         returns (uint costLRC)
     {
         return state.getDowntimeCostLRC(durationMinutes);
@@ -814,8 +825,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getTotalTimeInMaintenanceSeconds()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.getTotalTimeInMaintenanceSeconds();
@@ -823,8 +834,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getExchangeCreationTimestamp()
         external
-        view
         override
+        view
         returns (uint)
     {
         return state.exchangeCreationTimestamp;
@@ -846,8 +857,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getRequestStats()
         external
-        view
         override
+        view
         returns(
             uint numDepositRequestsProcessed,
             uint numAvailableDepositSlots,
@@ -863,8 +874,8 @@ contract ExchangeV3 is IExchangeV3
 
     function getProtocolFeeValues()
         external
-        view
         override
+        view
         returns (
             uint32 timestamp,
             uint8  takerFeeBips,

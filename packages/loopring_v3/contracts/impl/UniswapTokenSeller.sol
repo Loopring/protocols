@@ -68,9 +68,9 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         address tokenB
         )
         external
-        payable
         override
         nonReentrant
+        payable
         returns (bool success)
     {
         require(tokenS != tokenB, "SAME_TOKEN");

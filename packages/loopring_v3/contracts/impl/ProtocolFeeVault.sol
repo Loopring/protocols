@@ -138,8 +138,8 @@ contract ProtocolFeeVault is Claimable, ReentrancyGuard, IProtocolFeeVault
 
     function getProtocolFeeStats()
         public
-        view
         override
+        view
         returns (
             uint accumulatedFees,
             uint accumulatedBurn,

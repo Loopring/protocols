@@ -98,8 +98,8 @@ abstract contract IImplementationManager is Claimable, ReentrancyGuard
     /// @return defaultImplVersion The default implementation's version.
     function version()
         public
-        view
         virtual
+        view
         returns (
             string  memory protocolVersion,
             string  memory defaultImplVersion
@@ -109,8 +109,8 @@ abstract contract IImplementationManager is Claimable, ReentrancyGuard
     /// @param implementation The latest implemenation added.
     function latest()
         public
-        view
         virtual
+        view
         returns (address implementation);
 
     /// @dev Returns if an implementation has been registered.
@@ -119,8 +119,8 @@ abstract contract IImplementationManager is Claimable, ReentrancyGuard
         address implementation
         )
         public
-        view
         virtual
+        view
         returns (bool registered);
 
     /// @dev Returns if an implementation has been registered and enabled.
@@ -129,7 +129,7 @@ abstract contract IImplementationManager is Claimable, ReentrancyGuard
         address implementation
         )
         public
-        view
         virtual
+        view
         returns (bool enabled);
 }

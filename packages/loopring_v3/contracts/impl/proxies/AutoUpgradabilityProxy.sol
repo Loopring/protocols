@@ -30,8 +30,8 @@ contract AutoUpgradabilityProxy is IExchangeProxy
 
     function implementation()
         public
-        view
         override
+        view
         returns (address)
     {
         IUniversalRegistry r = IUniversalRegistry(registry());

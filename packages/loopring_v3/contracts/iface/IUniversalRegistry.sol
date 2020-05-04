@@ -142,8 +142,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @return defaultImplVersion The version of the default implementation.
     function defaultProtocol()
         public
-        view
         virtual
+        view
         returns (
             address protocol,
             address versionmanager,
@@ -159,8 +159,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address protocol
         )
         public
-        view
         virtual
+        view
         returns (bool registered);
 
     /// @dev Checks if a protocol has been enabled.
@@ -170,8 +170,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address protocol
         )
         public
-        view
         virtual
+        view
         returns (bool enabled);
 
     /// @dev Checks if the addres is a registered Loopring exchange.
@@ -180,8 +180,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address exchange
         )
         public
-        view
         virtual
+        view
         returns (bool registered);
 
     /// @dev Checks if the given protocol and implementation are both registered and enabled.
@@ -193,8 +193,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address implementation
         )
         public
-        view
         virtual
+        view
         returns (bool enabled);
 
     /// @dev Returns the protocol associated with an exchange.
@@ -205,8 +205,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         address exchangeAddress
         )
         public
-        view
         virtual
+        view
         returns (
             address protocol,
             address manager

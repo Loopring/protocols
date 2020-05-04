@@ -35,6 +35,7 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
 
     function setPrice(uint _pricePerMinute)
         external
+        // nonReentrant
         onlyOwner
     {
         pricePerMinute = _pricePerMinute;
@@ -49,8 +50,8 @@ contract DowntimeCostCalculator is Claimable, IDowntimeCostCalculator
         uint  durationToPurchaseMinutes
         )
         external
-        view
         override
+        view
         returns (uint)
     {
         return durationToPurchaseMinutes.mul(pricePerMinute);

@@ -33,8 +33,8 @@ abstract contract IExchange is Claimable, ReentrancyGuard
     /// @return The exchange version
     function version()
         public
-        view
         virtual
+        view
         returns (string memory);
 
     /// @dev Clones an exchange without any initialization

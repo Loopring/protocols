@@ -73,8 +73,8 @@ contract ERC20Token is ERC20
     */
     function totalSupply()
         public
-        view
         override
+        view
         returns (uint)
     {
         return totalSupply_;
@@ -112,8 +112,8 @@ contract ERC20Token is ERC20
         address _owner
         )
         public
-        view
         override
+        view
         returns (uint balance)
     {
         return balances[_owner];
@@ -179,8 +179,8 @@ contract ERC20Token is ERC20
         address _spender
         )
         public
-        view
         override
+        view
         returns (uint)
     {
         return allowed[_owner][_spender];

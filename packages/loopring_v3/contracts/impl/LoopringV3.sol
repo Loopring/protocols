@@ -126,6 +126,7 @@ contract LoopringV3 is ILoopringV3
         )
         external
         override
+        nonReentrant
         onlyOwner
     {
         updateSettingsInternal(
@@ -153,6 +154,7 @@ contract LoopringV3 is ILoopringV3
         )
         external
         override
+        nonReentrant
         onlyOwner
     {
         minProtocolTakerFeeBips = _minProtocolTakerFeeBips;
@@ -170,8 +172,8 @@ contract LoopringV3 is ILoopringV3
         bool onchainDataAvailability
         )
         external
-        view
         override
+        view
         returns (bool)
     {
         uint amountStaked = getExchangeStake(exchangeId);
@@ -186,8 +188,8 @@ contract LoopringV3 is ILoopringV3
         uint exchangeId
         )
         public
-        view
         override
+        view
         returns (uint)
     {
         Exchange storage exchange = exchanges[exchangeId];
@@ -322,8 +324,8 @@ contract LoopringV3 is ILoopringV3
         bool onchainDataAvailability
         )
         external
-        view
         override
+        view
         returns (
             uint8 takerFeeBips,
             uint8 makerFeeBips
@@ -356,8 +358,8 @@ contract LoopringV3 is ILoopringV3
         uint exchangeId
         )
         external
-        view
         override
+        view
         returns (uint)
     {
         Exchange storage exchange = exchanges[exchangeId];

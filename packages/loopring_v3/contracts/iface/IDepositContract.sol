@@ -26,7 +26,7 @@ interface IDepositContract
     ///      be called when a user deposits funds to the exchange.
     ///      In a simple implementation the funds are simply stored inside the
     ///      deposit contract directly. More advanced implementations may store the funds
-    ///      in some defi application to earn interest, so this function could directly
+    ///      in some DeFi application to earn interest, so this function could directly
     ///      call the necessary functions to store the funds there.
     ///
     ///      This function needs to throw when an error occurred!
@@ -49,8 +49,8 @@ interface IDepositContract
     ///      In the simplest implementation the funds are simply stored inside the
     ///      deposit contract directly so this simply transfers the requested tokens back
     ///      to the user. More advanced implementations may store the funds
-    ///      in some defi application to earn interest so the function would
-    ///      need to get those tokens back from the defi application first before they
+    ///      in some DeFi application to earn interest so the function would
+    ///      need to get those tokens back from the DeFi application first before they
     ///      can be transferred to the user.
     ///
     ///      This function needs to throw when an error occurred!

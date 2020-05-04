@@ -64,8 +64,8 @@ contract ExchangeProxy is Proxy
 
     function implementation()
         public
-        view
         override
+        view
         returns (address impl)
     {
         IUniversalRegistry r = IUniversalRegistry(registry());

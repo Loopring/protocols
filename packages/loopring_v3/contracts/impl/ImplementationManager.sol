@@ -116,8 +116,8 @@ contract ImplementationManager is IImplementationManager
 
     function version()
         public
-        view
         override
+        view
         returns (
             string  memory protocolVersion,
             string  memory defaultImplVersion
@@ -129,8 +129,8 @@ contract ImplementationManager is IImplementationManager
 
     function latest()
         public
-        view
         override
+        view
         returns (address)
     {
         return implementations[implementations.length - 1];
@@ -140,8 +140,8 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         public
-        view
         override
+        view
         returns (bool)
     {
         return statusMap[implementation].registered;
@@ -151,8 +151,8 @@ contract ImplementationManager is IImplementationManager
         address implementation
         )
         public
-        view
         override
+        view
         returns (bool)
     {
         return statusMap[implementation].enabled;

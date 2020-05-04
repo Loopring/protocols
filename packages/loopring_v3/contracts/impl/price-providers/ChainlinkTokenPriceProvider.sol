@@ -43,8 +43,8 @@ contract ChainlinkTokenPriceProvider is ITokenPriceProvider
 
     function usd2lrc(uint usd)
         external
-        view
         override
+        view
         returns (uint)
     {
         uint EthUsd = uint(Eth2Usd.latestAnswer());
