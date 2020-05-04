@@ -94,6 +94,9 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 
         // Exectute the transaction
         (bool success, bytes memory returnData) = exectuteTransaction(transaction);
+        if (!success) {
+            assembly { revert(add(returnData, 32), mload(returnData)) }
+        }
 
         emit PendingTransactionExecuted(
             transaction.id,
@@ -102,14 +105,6 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
             transaction.value,
             transaction.data
         );
-
-        // Return the same data the original transaction would
-        // (this will return the data even though this function doesn't have a return value in solidity)
-        assembly {
-            switch success
-            case 0 { revert(add(returnData, 32), mload(returnData)) }
-            default { return(add(returnData, 32), mload(returnData)) }
-        }
     }
 
     function cancelTransaction(
@@ -196,19 +191,15 @@ abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
         uint delay = getFunctionDelay(transaction.to, functionSelector);
         if (delay == 0) {
             (bool success, bytes memory returnData) = exectuteTransaction(transaction);
+            if (!success) {
+                assembly { revert(add(returnData, 32), mload(returnData)) }
+            }
             emit TransactionExecuted(
                 transaction.timestamp,
                 transaction.to,
                 transaction.value,
                 transaction.data
             );
-            // Return the same data the original transaction would
-            // (this will return the data even though this function doesn't have a return value in solidity)
-            assembly {
-                switch success
-                case 0 { revert(add(returnData, 32), mload(returnData)) }
-                default { return(add(returnData, 32), mload(returnData)) }
-            }
         } else {
             pendingTransactions.push(transaction);
             pendingTransactionMap[transaction.id] = pendingTransactions.length;
