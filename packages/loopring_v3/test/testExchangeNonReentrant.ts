@@ -39,11 +39,12 @@ contract("Exchange", (accounts: string[]) => {
     // Get all exeternal functions
     const externalFunctions: any[] = [];
     for (const entry of exchangeABI) {
-      if (entry.type === "function" && entry.constant === false) {
+      if (entry.type === "function" && entry.stateMutability !== "view" && entry.stateMutability !== "pure") {
         externalFunctions.push(entry);
       }
     }
     // console.log(externalFunctions);
+    assert(externalFunctions.length > 0, "Solidity ABI was updated!");
 
     for (const externalFunction of externalFunctions) {
       // Do not test the following methods inherited from Claimable.
@@ -86,6 +87,10 @@ contract("Exchange", (accounts: string[]) => {
         for (const input of externalFunction.inputs) {
           if (input.type === "address") {
             values.push(Constants.zeroAddress);
+          } else if (input.type.startsWith("address[]")) {
+            values.push([Constants.zeroAddress]);
+          } else if (input.type.startsWith("bool[]")) {
+            values.push([false]);
           } else if (input.type === "bytes") {
             values.push(web3.utils.hexToBytes("0x"));
           } else if (
@@ -107,10 +112,10 @@ contract("Exchange", (accounts: string[]) => {
             values.push(new Array(1).fill("0"));
           } else if (input.type.startsWith("uint256[8]")) {
             values.push(new Array(8).fill("0"));
-          } else if (input.type.startsWith("uint256[12]")) {
-            values.push(new Array(12).fill("0"));
-          } else if (input.type.startsWith("uint256[30]")) {
-            values.push(new Array(30).fill("0"));
+          } else if (input.type.startsWith("uint256[15]")) {
+            values.push(new Array(15).fill("0"));
+          } else if (input.type.startsWith("uint256[36]")) {
+            values.push(new Array(36).fill("0"));
           } else {
             values.push("0");
           }

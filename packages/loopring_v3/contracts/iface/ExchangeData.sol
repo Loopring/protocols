@@ -109,6 +109,24 @@ library ExchangeData
         uint96 amount;
     }
 
+    struct Constants
+    {
+        uint SNARK_SCALAR_FIELD;
+        uint MAX_OPEN_DEPOSIT_REQUESTS;
+        uint MAX_OPEN_WITHDRAWAL_REQUESTS;
+        uint MAX_AGE_REQUEST_UNTIL_FORCED;
+        uint MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE;
+        uint MAX_TIME_IN_SHUTDOWN_BASE;
+        uint MAX_TIME_IN_SHUTDOWN_DELTA;
+        uint TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS;
+        uint MAX_NUM_TOKENS;
+        uint MAX_NUM_ACCOUNTS;
+        uint FEE_BLOCK_FINE_START_TIME;
+        uint FEE_BLOCK_FINE_MAX_DURATION;
+        uint MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED;
+        uint GAS_LIMIT_SEND_TOKENS;
+    }
+
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
         // This is the prime number that is used for the alt_bn128 elliptic curve, see EIP-196.
         return 21888242871839275222246405745257275088548364400416034343698204186575808495617;

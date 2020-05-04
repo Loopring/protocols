@@ -199,14 +199,14 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         internal
     {
-        if (amount == 0) {
-            return;
-        }
-        
-        if (isETHInternal(token)) {
-            to.sendETHAndVerify(amount, gasleft());
-        } else {
-            token.safeTransferAndVerify(to, amount);
+        if (amount > 0) {
+            if (isETHInternal(token)) {
+                // ETH
+                to.sendETHAndVerify(amount, gasleft());
+            } else {
+                // ERC20 token
+                token.safeTransferAndVerify(to, amount);
+            }
         }
     }
 }
