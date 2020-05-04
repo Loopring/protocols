@@ -17,9 +17,9 @@ poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
-TREE_DEPTH_TRADING_HISTORY = 14
-TREE_DEPTH_ACCOUNTS = 24
-TREE_DEPTH_TOKENS = 10
+BINARY_TREE_DEPTH_TRADING_HISTORY = 14
+BINARY_TREE_DEPTH_ACCOUNTS = 24
+BINARY_TREE_DEPTH_TOKENS = 10
 
 MAX_AMOUNT = 2 ** 96 - 1
 
@@ -67,7 +67,7 @@ class BalanceLeaf(object):
     def __init__(self, balance = 0):
         self.balance = str(balance)
         # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // 2, 4)
+        self._tradingHistoryTree = SparseMerkleTree(BINARY_TREE_DEPTH_TRADING_HISTORY // 2, 4)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
         # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
@@ -85,7 +85,7 @@ class BalanceLeaf(object):
         self._tradingHistoryTree._db.kv = jBalance["_tradingHistoryTree"]["_db"]["kv"]
 
     def getTradeHistory(self, orderID):
-        address = int(orderID) % (2 ** TREE_DEPTH_TRADING_HISTORY)
+        address = int(orderID) % (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
             return TradeHistoryLeaf()
@@ -93,7 +93,7 @@ class BalanceLeaf(object):
             return self._tradeHistoryLeafs[str(address)]
 
     def updateTradeHistory(self, orderID, filled):
-        address = int(orderID) % (2 ** TREE_DEPTH_TRADING_HISTORY)
+        address = int(orderID) % (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
         # Make sure the leaf exist in our map
         if not(str(address) in self._tradeHistoryLeafs):
             self._tradeHistoryLeafs[str(address)] = TradeHistoryLeaf(0, 0)
@@ -115,7 +115,7 @@ class BalanceLeaf(object):
 
     def resetTradeHistory(self):
         # Trading history
-        self._tradingHistoryTree = SparseMerkleTree(TREE_DEPTH_TRADING_HISTORY // 2, 4)
+        self._tradingHistoryTree = SparseMerkleTree(BINARY_TREE_DEPTH_TRADING_HISTORY // 2, 4)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
         self._tradeHistoryLeafs = {}
 
@@ -139,7 +139,7 @@ class Account(object):
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
         # Balances
-        self._balancesTree = SparseMerkleTree(TREE_DEPTH_TOKENS // 2, 4)
+        self._balancesTree = SparseMerkleTree(BINARY_TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
         self._balancesLeafs = {}
         #print("Empty balances tree: " + str(self._balancesTree._root))
@@ -443,7 +443,7 @@ class State(object):
     def __init__(self, exchangeID):
         self.exchangeID = int(exchangeID)
         # Accounts
-        self._accountsTree = SparseMerkleTree(TREE_DEPTH_ACCOUNTS // 2, 4)
+        self._accountsTree = SparseMerkleTree(BINARY_TREE_DEPTH_ACCOUNTS // 2, 4)
         self._accountsTree.newTree(getDefaultAccount().hash())
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
@@ -483,7 +483,7 @@ class State(object):
         tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
 
         # Trade history trimming
-        numSlots = (2 ** TREE_DEPTH_TRADING_HISTORY)
+        numSlots = (2 ** BINARY_TREE_DEPTH_TRADING_HISTORY)
         tradeHistoryOrderId = tradeHistory.orderID if int(tradeHistory.orderID) > 0 else int(order.orderID) % numSlots
         filled = int(tradeHistory.filled) if (int(order.orderID) == int(tradeHistoryOrderId)) else 0
         overwrite = 1 if (int(order.orderID) == int(tradeHistoryOrderId) + numSlots) else 0

@@ -2332,7 +2332,7 @@ export class ExchangeTestUtil {
           const orderA = ringSettlement.ring.orderA;
           const orderB = ringSettlement.ring.orderB;
 
-          const numSlots = 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+          const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
           da.addNumber(
             ring.overwriteTradeHistorySlotA * numSlots +
               (orderA.orderID % numSlots),
@@ -3616,7 +3616,7 @@ export class ExchangeTestUtil {
     for (const order of orders) {
       // Make sure the trading history for the orders exists
       const tradeHistorySlot =
-        order.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+        order.orderID % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
       if (
         !state.accounts[order.accountID].balances[order.tokenIdS].tradeHistory[
           tradeHistorySlot
@@ -4050,7 +4050,7 @@ export class ExchangeTestUtil {
     order: OrderInfo
   ) {
     const tradeHistorySlot =
-      order.orderID % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+      order.orderID % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     const before =
       accountBefore.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];
     const after =

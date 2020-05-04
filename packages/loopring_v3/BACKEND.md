@@ -84,9 +84,9 @@ The data is stored in the following format for the different block types.
 ### General data formats
 
 ```
-TREE_DEPTH_ACCOUNTS = 12
-TREE_DEPTH_BALANCES = 5
-TREE_DEPTH_TRADEHISTORY = 7
+QUAD_TREE_DEPTH_ACCOUNTS = 12
+QUAD_TREE_DEPTH_BALANCES = 5
+QUAD_TREE_DEPTH_TRADEHISTORY = 7
 
 Proof(length)
 {
@@ -118,7 +118,7 @@ Account
 BalanceUpdate
 {
     tokenID: number,
-    proof: Proof(TREE_DEPTH_BALANCES * 3),
+    proof: Proof(QUAD_TREE_DEPTH_BALANCES * 3),
     rootBefore: string,
     rootAfter: string,
     before: BalanceLeaf,
@@ -128,7 +128,7 @@ BalanceUpdate
 TradeHistoryUpdate
 {
     orderID: number,
-    proof: Proof(TREE_DEPTH_TRADEHISTORY * 3),
+    proof: Proof(QUAD_TREE_DEPTH_TRADEHISTORY * 3),
     rootBefore: string,
     rootAfter: string,
     before: TradeHistoryLeaf,
@@ -138,7 +138,7 @@ TradeHistoryUpdate
 AccountUpdate
 {
     accountID: number,
-    proof: Proof(TREE_DEPTH_ACCOUNTS * 3),
+    proof: Proof(QUAD_TREE_DEPTH_ACCOUNTS * 3),
     rootBefore: string,
     rootAfter: string,
     before: Account,

@@ -642,7 +642,7 @@ export class Simulator {
     // Update trade history A
     {
       const tradeHistorySlotA =
-        orderIdA % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+        orderIdA % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
       const tradeHistoryA =
         accountA.balances[tokenA].tradeHistory[tradeHistorySlotA];
       tradeHistoryA.filled =
@@ -656,7 +656,7 @@ export class Simulator {
     // Update trade history B
     {
       const tradeHistorySlotB =
-        orderIdB % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+        orderIdB % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
       const tradeHistoryB =
         accountB.balances[tokenB].tradeHistory[tradeHistorySlotB];
       tradeHistoryB.filled =
@@ -819,7 +819,7 @@ export class Simulator {
   }
 
   private getFilled(order: OrderInfo, accountData: any) {
-    const numSlots = 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     const tradeHistorySlot = order.orderID % numSlots;
     let tradeHistory =
       accountData.balances[order.tokenIdS].tradeHistory[tradeHistorySlot];

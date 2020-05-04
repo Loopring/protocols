@@ -3,11 +3,11 @@ import { FloatEncoding } from "./float";
 import { Balance } from "./types";
 
 export class Constants {
-  static readonly TREE_DEPTH_TRADING_HISTORY = 14;
-  static readonly TREE_DEPTH_ACCOUNTS = 24;
-  static readonly TREE_DEPTH_TOKENS = 10;
+  static readonly BINARY_TREE_DEPTH_TRADING_HISTORY = 14;
+  static readonly BINARY_TREE_DEPTH_ACCOUNTS = 24;
+  static readonly BINARY_TREE_DEPTH_TOKENS = 10;
 
-  static readonly NUM_BITS_ACCOUNTID = Constants.TREE_DEPTH_ACCOUNTS;
+  static readonly NUM_BITS_ACCOUNTID = Constants.BINARY_TREE_DEPTH_ACCOUNTS;
   static readonly NUM_BITS_ORDERID = 20;
 
   static readonly MAX_NUM_TOKENS = 2 ** 10;

@@ -235,7 +235,7 @@ export class RingSettlementProcessor {
     ].balance.add(trade.fillSA.sub(trade.feeB).add(trade.rebateB));
 
     // Update trade history A
-    const numSlots = 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     {
       const tradeHistorySlotA = trade.orderIdA % numSlots;
       accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] = accountA
