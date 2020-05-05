@@ -1,6 +1,6 @@
 ## Table of Contents
 
-- [Loopring 3](#loopring-30)
+- [Loopring 3](#loopring-3)
   - [Introduction](#introduction)
   - [Trading with Off-chain Balances](#trading-with-off-chain-balances)
     - [Apparent Immediate Finality](#apparent-immediate-finality)
