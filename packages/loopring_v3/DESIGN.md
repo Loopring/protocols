@@ -58,7 +58,7 @@
 
 # Loopring 3
 
-> The most recent minor version is Loopring 3.5.
+Loopring 3 is an orderbook based, spot trading exchange protocol built on top of Ethereum with zkRollup. The most recent version is Loopring 3.5.
 
 ## Introduction
 
