@@ -1,6 +1,6 @@
 ## Table of Contents
 
-- [Loopring 3.0](#loopring-30)
+- [Loopring 3](#loopring-3)
   - [Introduction](#introduction)
   - [Trading with Off-chain Balances](#trading-with-off-chain-balances)
     - [Apparent Immediate Finality](#apparent-immediate-finality)
@@ -56,7 +56,9 @@
     - [Trading](#trading)
   - [Deposit and Withdrawal Process](#deposit-and-withdrawal-process)
 
-# Loopring 3.0
+# Loopring 3
+
+Loopring 3 is an orderbook based, spot trading exchange protocol built on top of Ethereum with zkRollup. The most recent version is Loopring 3.5.
 
 ## Introduction
 
@@ -89,7 +91,7 @@ An off-chain token transfer takes only a minimal cost for generating the proof f
 
 A Merkle tree is used to store all the permanent data needed in the circuits.
 
-![Merkle Tree](https://i.imgur.com/RcoayPR.png)
+![Merkle Tree](https://i.imgur.com/JeuH5bs.png)
 
 There are a lot of ways the Merkle tree can be structured (or can be even split up in multiple trees, like a separate tree for the trading history, or a separate tree for the fees). The Merkle tree above has a good balance between complexity, proving times and user-friendliness.
 
@@ -509,21 +511,20 @@ Users can withdraw their funds using the state of the last block that was submit
 - Deposits not yet included in a sumbitted block can be withdrawn using `withdrawFromDepositRequest`
 - Approved withdrawals can manually be withdrawn (even when not in withdrawal mode) using `withdrawFromApprovedWithdrawal`
 
-
 ## Conditional Transfers
 
 Conditional transfers are transfers that are approved on-chain by the account owner or an [agent](#Agents) of the account owner by calling `approveOffchainTransfer`. No signature or other authorization is needed for the operator to do an off-chain transfer that was approved like this. This allows any on-chain mechanism (done by the account owner himself or by an [agent](#Agents)) to decide if a transfer can executed or not.
-
 
 ## Agents
 
 An agent is an address that is allowed to authorize on-chain operations for the account owner. By definition the account owner is an agent for himself. `authorizeAgents` can be used by an agent to authorize or de-authorize other agents.
 
 Agents can be simple EOAs or smart contracts. Smart contracts are the most interesting case. This allows extending the exchange functionality by implementing extra logic on top of the basic exchange functionality that's built into the exchange contract. There's a lot functionality that can be added this way for users. Some examples:
-  - [Layer 1 composability](https://medium.com/loopring-protocol/composability-between-ethereum-layer-1-and-2-10650b7411e5)
-  - Fast withdrawals (by using a [conditional transfer](#Conditional-Transfers))
-  - Support for any 3rd party meta-transactions
-  - ...
+
+- [Layer 1 composability](https://medium.com/loopring-protocol/composability-between-ethereum-layer-1-and-2-10650b7411e5)
+- Fast withdrawals (by using a [conditional transfer](#Conditional-Transfers))
+- Support for any 3rd party meta-transactions
+- ...
 
 ## Wallets
 
@@ -660,12 +661,12 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 - Gas cost/ring settlement: ~300,000 gas
 - => 10,000,000 / 300,000 = 33 trades/Ethereum block = **2-3 trades/second**.
 
-|                                        | Loopring 2.x | Loopring 3.0 <br> (w/ Data Availability) | Loopring 3.0 <br> (w/o Data Availability) |
-| :------------------------------------- | :----------: | :--------------------------------------: | :---------------------------------------: |
-| Trades per Ethereum Block              |      33      |                  27,500                  |                 531,250                 |
-| Trades per Second                      |     2-3      |                   2100                   |                  41,000                   |
-| Cost per Trade                         | 300,000 gas  |                 365 gas                  |                  19 gas                   |
-| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1      |                   X\*                    |                    X\*                    |
+|                                        | Loopring 2  | Loopring 3 <br> (w/ Data Availability) | Loopring 3 <br> (w/o Data Availability) |
+| :------------------------------------- | :---------: | :------------------------------------: | :-------------------------------------: |
+| Trades per Ethereum Block              |     33      |                 27,500                 |                 531,250                 |
+| Trades per Second                      |     2-3     |                  2100                  |                 41,000                  |
+| Cost per Trade                         | 300,000 gas |                365 gas                 |                 19 gas                  |
+| Cost in USD per Trade <br> (1ETH=XUSD) |     0.1     |                  X\*                   |                   X\*                   |
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 
