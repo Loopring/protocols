@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
-import { ExchangeTestUtil } from "./testExchangeUtil";
+import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
 import { RingInfo } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
@@ -118,14 +118,14 @@ contract("Exchange", (accounts: string[]) => {
     it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
       await createExchange(true);
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Commit the deposits
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
         exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
@@ -146,47 +146,17 @@ contract("Exchange", (accounts: string[]) => {
       await checkWithdrawalMode(true);
     });
 
-    it("should go into withdrawal mode when a block stays unverified (and is not reverted)", async () => {
-      await createExchange(false);
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2
-      );
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Do a deposit
-      const deposit = await exchangeTestUtil.doRandomDeposit();
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE - 10
-      );
-      // We shouldn't be in withdrawal mode yet
-      await checkWithdrawalMode(false);
-      // Wait
-      await exchangeTestUtil.advanceBlockTimestamp(20);
-      // We should be in withdrawal mode
-      await checkWithdrawalMode(true);
-    });
-
     it("should go into withdrawal mode when shutdown without reverting to initial state", async () => {
       await createExchange(false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE * 2
+        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED * 2
       );
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -231,7 +201,7 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(owner, token),
@@ -284,10 +254,9 @@ contract("Exchange", (accounts: string[]) => {
         token,
         balance
       );
-      const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(owner, token),
@@ -304,15 +273,14 @@ contract("Exchange", (accounts: string[]) => {
         token,
         balance
       );
-      await exchangeTestUtil.commitDeposits(exchangeID);
 
       // Operator doesn't do anything for a long time
       await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE + 1
+        exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
       // We should be in withdrawal mode and able to withdraw directly from the merkle tree
-      // (Only the first deposit was finalized, so only that amount can be withdrawn from the Merkle tree)
+      // (Only the first deposit was submitted, so only that amount can be withdrawn from the Merkle tree)
       await withdrawFromMerkleTreeChecked(owner, token, balance);
     });
 
@@ -342,7 +310,7 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.commitDeposits(exchangeID);
       await exchangeTestUtil.commitRings(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       // Expected protocol fees earned
       const protocolFeeA = ring.orderA.amountB
@@ -413,10 +381,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
-
-      const finalizedBlockIdx =
-        (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       const depositInfoB = await exchangeTestUtil.deposit(
         exchangeID,
@@ -465,7 +430,7 @@ contract("Exchange", (accounts: string[]) => {
       // Cannot withdraw from deposit blocks that are included in a block
       await expectThrow(
         exchangeTestUtil.withdrawFromDepositRequest(depositInfoA.depositIdx),
-        "REQUEST_INCLUDED_IN_FINALIZED_BLOCK"
+        "REQUEST_INCLUDED_IN_BLOCK"
       );
       // We should be in withdrawal mode and able to withdraw from the pending deposits
       await withdrawFromDepositRequestChecked(
@@ -514,7 +479,7 @@ contract("Exchange", (accounts: string[]) => {
       const accountID = depositInfo.accountID;
 
       await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.verifyPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       // Request withdrawal onchain
       await exchangeTestUtil.requestWithdrawalOnchain(
@@ -536,30 +501,21 @@ contract("Exchange", (accounts: string[]) => {
         "INVALID_MODE"
       );
 
-      // Try to commit a block
+      // Try to submit a block
+      const block: OnchainBlock = {
+        blockType: 0,
+        blockSize: 1,
+        blockVersion: 0,
+        data: Constants.emptyBytes,
+        proof: [0, 0, 0, 0, 0, 0, 0, 0],
+        offchainData: Constants.emptyBytes,
+        auxiliaryData: Constants.emptyBytes
+      };
+      // Try to submit a block
       await expectThrow(
-        exchange.commitBlock(
-          0,
-          2,
-          0,
-          web3.utils.hexToBytes("0x0"),
-          web3.utils.hexToBytes("0x"),
-          { from: exchangeTestUtil.exchangeOperator }
-        ),
-        "INVALID_MODE"
-      );
-
-      // Try to verify a block
-      await expectThrow(
-        exchange.verifyBlocks([1], [0, 0, 0, 0, 0, 0, 0, 0], {
+        exchange.submitBlocks([block], exchangeTestUtil.exchangeOperator, {
           from: exchangeTestUtil.exchangeOperator
         }),
-        "INVALID_MODE"
-      );
-
-      // Try to revert a block
-      await expectThrow(
-        exchange.revertBlock(1, { from: exchangeTestUtil.exchangeOperator }),
         "INVALID_MODE"
       );
     });

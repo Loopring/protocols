@@ -14,12 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 
 /// @title IDowntimeCostCalculator
 /// @author Daniel Wang - <daniel@loopring.org>
-contract IDowntimeCostCalculator
+interface IDowntimeCostCalculator
 {
     /// @dev Returns the amount LRC required to purchase the given downtime.
     /// @param totalTimeInMaintenanceSeconds The total time a DEX has been in maintain mode.

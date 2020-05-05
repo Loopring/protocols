@@ -31,7 +31,7 @@ export class RingSettlementProcessor {
     let data: Bitstream;
     if (state.onchainDataAvailability) {
       // Reverse circuit transform
-      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 32 + 3;
+      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
       const ringData = this.inverseTransformRingSettlementsData(
         "0x" + block.data.slice(2 + 2 * ringDataStart)
       );
@@ -50,8 +50,6 @@ export class RingSettlementProcessor {
     offset += 1;
     const protocolFeeMakerBips = data.extractUint8(offset);
     offset += 1;
-    // LabelHash
-    offset += 32;
 
     const trades: Trade[] = [];
     if (state.onchainDataAvailability) {
@@ -60,36 +58,39 @@ export class RingSettlementProcessor {
 
       for (let i = 0; i < block.blockSize; i++) {
         // Order IDs
-        const orderIds = data.extractUint40(offset);
-        offset += 5;
+        const tradeHistoryDataA = data.extractUint16(offset);
+        offset += 2;
+        const tradeHistoryDataB = data.extractUint16(offset);
+        offset += 2;
 
         // Accounts
-        const accounts = data.extractUint40(offset);
-        offset += 5;
+        const accountIdA = data.extractUint24(offset);
+        offset += 3;
+        const accountIdB = data.extractUint24(offset);
+        offset += 3;
 
-        // Order A
-        const tokenA = data.extractUint8(offset);
-        offset += 1;
+        // Tokens
+        const tokenIds = data.extractUint24(offset);
+        offset += 3;
+        const tokenA = tokenIds >> 12;
+        const tokenB = tokenIds & 0xfff;
+
+        // Fills
         const fFillSA = data.extractUint24(offset);
         offset += 3;
-        const orderDataA = data.extractUint8(offset);
-        offset += 1;
-
-        // Order B
-        const tokenB = data.extractUint8(offset);
-        offset += 1;
         const fFillSB = data.extractUint24(offset);
         offset += 3;
+
+        // Order data
+        const orderDataA = data.extractUint8(offset);
+        offset += 1;
         const orderDataB = data.extractUint8(offset);
         offset += 1;
 
         // Further extraction of packed data
-        const orderIdA = Math.floor(orderIds / 2 ** 20);
-        const orderIdB = orderIds & 0xfffff;
-
-        const accountIdA = Math.floor(accounts / 2 ** 20);
-        const accountIdB = accounts & 0xfffff;
-
+        const tradeHistorySlotA = tradeHistoryDataA & 0b0011111111111111;
+        const overwriteTradeHistorySlotA =
+          (tradeHistoryDataA & 0b0100000000000000) !== 0;
         const buyMaskA = orderDataA & 0b10000000;
         const rebateMaskA = orderDataA & 0b01000000;
         const feeOrRebateA = orderDataA & 0b00111111;
@@ -97,6 +98,9 @@ export class RingSettlementProcessor {
         const feeBipsA = rebateMaskA > 0 ? 0 : feeOrRebateA;
         const rebateBipsA = rebateMaskA > 0 ? feeOrRebateA : 0;
 
+        const tradeHistorySlotB = tradeHistoryDataB & 0b0011111111111111;
+        const overwriteTradeHistorySlotB =
+          (tradeHistoryDataB & 0b0100000000000000) !== 0;
         const buyMaskB = orderDataB & 0b10000000;
         const rebateMaskB = orderDataB & 0b01000000;
         const feeOrRebateB = orderDataB & 0b00111111;
@@ -125,7 +129,7 @@ export class RingSettlementProcessor {
           blockIdx: block.blockIdx,
 
           accountIdA,
-          orderIdA,
+          orderIdA: tradeHistorySlotA, // Will be updated in processRingSettlement if necessary
           buyA,
           tokenA,
           fillSA: settlementValues.fillSA,
@@ -134,7 +138,7 @@ export class RingSettlementProcessor {
           rebateA: settlementValues.rebateA,
 
           accountIdB,
-          orderIdB,
+          orderIdB: tradeHistorySlotB, // Will be updated in processRingSettlement if necessary
           buyB,
           tokenB,
           fillSB: settlementValues.fillSB,
@@ -144,7 +148,13 @@ export class RingSettlementProcessor {
         };
         trades.push(trade);
 
-        this.processRingSettlement(state, operatorAccountID, trade);
+        this.processRingSettlement(
+          state,
+          operatorAccountID,
+          trade,
+          overwriteTradeHistorySlotA,
+          overwriteTradeHistorySlotB
+        );
       }
 
       // Update operator nonce
@@ -184,7 +194,9 @@ export class RingSettlementProcessor {
   private static processRingSettlement(
     state: ExchangeState,
     operatorId: number,
-    trade: Trade
+    trade: Trade,
+    overwriteOrderIdA: boolean,
+    overwriteOrderIdB: boolean
   ) {
     // Update accountA
     const accountA = state.accounts[trade.accountIdA];
@@ -223,60 +235,45 @@ export class RingSettlementProcessor {
     ].balance.add(trade.fillSA.sub(trade.feeB).add(trade.rebateB));
 
     // Update trade history A
+    const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     {
-      const tradeHistorySlotA =
-        trade.orderIdA % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+      const tradeHistorySlotA = trade.orderIdA % numSlots;
       accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA] = accountA
         .balances[trade.tokenA].tradeHistory[tradeHistorySlotA] || {
         filled: new BN(0),
-        cancelled: false,
-        orderID: 0
+        orderID: tradeHistorySlotA
       };
       const tradeHistoryA =
         accountA.balances[trade.tokenA].tradeHistory[tradeHistorySlotA];
-      tradeHistoryA.filled =
-        trade.orderIdA > tradeHistoryA.orderID
-          ? new BN(0)
-          : tradeHistoryA.filled;
+      if (overwriteOrderIdA) {
+        tradeHistoryA.orderID += numSlots;
+        tradeHistoryA.filled = new BN(0);
+      }
       tradeHistoryA.filled = tradeHistoryA.filled.add(
         trade.buyA ? trade.fillSB : trade.fillSA
       );
-      tradeHistoryA.cancelled =
-        trade.orderIdA > tradeHistoryA.orderID
-          ? false
-          : tradeHistoryA.cancelled;
-      tradeHistoryA.orderID =
-        trade.orderIdA > tradeHistoryA.orderID
-          ? trade.orderIdA
-          : tradeHistoryA.orderID;
+      // Set the actual orderID
+      trade.orderIdA = tradeHistoryA.orderID;
     }
     // Update trade history B
     {
-      const tradeHistorySlotB =
-        trade.orderIdB % 2 ** Constants.TREE_DEPTH_TRADING_HISTORY;
+      const tradeHistorySlotB = trade.orderIdB % numSlots;
       accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB] = accountB
         .balances[trade.tokenB].tradeHistory[tradeHistorySlotB] || {
         filled: new BN(0),
-        cancelled: false,
-        orderID: 0
+        orderID: tradeHistorySlotB
       };
       const tradeHistoryB =
         accountB.balances[trade.tokenB].tradeHistory[tradeHistorySlotB];
-      tradeHistoryB.filled =
-        trade.orderIdB > tradeHistoryB.orderID
-          ? new BN(0)
-          : tradeHistoryB.filled;
+      if (overwriteOrderIdB) {
+        tradeHistoryB.orderID += numSlots;
+        tradeHistoryB.filled = new BN(0);
+      }
       tradeHistoryB.filled = tradeHistoryB.filled.add(
         trade.buyB ? trade.fillSA : trade.fillSB
       );
-      tradeHistoryB.cancelled =
-        trade.orderIdB > tradeHistoryB.orderID
-          ? false
-          : tradeHistoryB.cancelled;
-      tradeHistoryB.orderID =
-        trade.orderIdB > tradeHistoryB.orderID
-          ? trade.orderIdB
-          : tradeHistoryB.orderID;
+      // Set the actual orderID
+      trade.orderIdB = tradeHistoryB.orderID;
     }
 
     // Update protocol fee recipient
@@ -324,10 +321,6 @@ export class RingSettlementProcessor {
       .add(trade.feeB)
       .sub(trade.protocolFeeB)
       .sub(trade.rebateB);
-  }
-
-  public static revertBlock(state: ExchangeState, block: Block) {
-    // Nothing to do
   }
 
   private static calculateSettlementValues(
@@ -387,7 +380,7 @@ export class RingSettlementProcessor {
   private static inverseTransformRingSettlementsData(input: string) {
     // Inverse Transform
     const transformed = new Bitstream(input);
-    const ringSize = 20;
+    const ringSize = 21;
     const numRings = transformed.length() / ringSize;
     const ranges = this.getRingTransformations();
     const compressed = new Bitstream();
@@ -417,12 +410,12 @@ export class RingSettlementProcessor {
 
   private static getRingTransformations() {
     const ranges: Range[][] = [];
-    ranges.push([{ offset: 0, length: 5 }]); // orderA.orderID + orderB.orderID
-    ranges.push([{ offset: 5, length: 5 }]); // orderA.accountID + orderB.accountID
-    ranges.push([{ offset: 10, length: 1 }, { offset: 15, length: 1 }]); // orderA.tokenS + orderB.tokenS
-    ranges.push([{ offset: 11, length: 3 }, { offset: 16, length: 3 }]); // orderA.fillS + orderB.fillS
-    ranges.push([{ offset: 14, length: 1 }]); // orderA.data
-    ranges.push([{ offset: 19, length: 1 }]); // orderB.data
+    ranges.push([{ offset: 0, length: 4 }]); // orderA.orderID + orderB.orderID
+    ranges.push([{ offset: 4, length: 6 }]); // orderA.accountID + orderB.accountID
+    ranges.push([{ offset: 10, length: 3 }]); // orderA.tokenS + orderB.tokenS
+    ranges.push([{ offset: 13, length: 6 }]); // orderA.fillS + orderB.fillS
+    ranges.push([{ offset: 19, length: 1 }]); // orderA.data
+    ranges.push([{ offset: 20, length: 1 }]); // orderB.data
     return ranges;
   }
 

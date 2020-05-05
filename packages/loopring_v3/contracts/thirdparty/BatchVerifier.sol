@@ -2,7 +2,7 @@
 // This code is taken from https://github.com/matter-labs/Groth16BatchVerifier/blob/master/BatchedSnarkVerifier/contracts/BatchVerifier.sol
 // Thanks Harry from ETHSNARKS for base code
 
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 library BatchVerifier {
@@ -89,7 +89,7 @@ library BatchVerifier {
             assembly {
                 // ECMUL, output proofsA[i]
                 // success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add(proofsAandC, 0x20), mul(proofNumber, 0x40)), 0x40)
-                success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, mul_input, 0x40)
+                success := staticcall(sub(gas(), 2000), 7, mul_input, 0x60, mul_input, 0x40)
             }
             if (!success) {
                 return (false, proofsAandC, inputAccumulators);
@@ -111,7 +111,7 @@ library BatchVerifier {
             mul_input[2] = entropy[proofNumber];
             assembly {
                 // ECMUL, output proofsA
-                success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
+                success := staticcall(sub(gas(), 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
             }
             if (!success) {
                 return (false, proofsAandC, inputAccumulators);
@@ -119,7 +119,7 @@ library BatchVerifier {
 
             assembly {
                 // ECADD from two elements that are in add_input and output into first two elements of add_input
-                success := staticcall(sub(gas, 2000), 6, add_input, 0x80, add_input, 0x40)
+                success := staticcall(sub(gas(), 2000), 6, add_input, 0x80, add_input, 0x40)
             }
             if (!success) {
                 return (false, proofsAandC, inputAccumulators);
@@ -151,7 +151,7 @@ library BatchVerifier {
 
             assembly {
                 // ECMUL, output to the last 2 elements of `add_input`
-                success := staticcall(sub(gas, 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
+                success := staticcall(sub(gas(), 2000), 7, mul_input, 0x60, add(add_input, 0x40), 0x40)
             }
             if (!success) {
                 return (false, finalVksAlphaX);
@@ -159,7 +159,7 @@ library BatchVerifier {
 
             assembly {
                 // ECADD from four elements that are in add_input and output into first two elements of add_input
-                success := staticcall(sub(gas, 2000), 6, add_input, 0x80, add_input, 0x40)
+                success := staticcall(sub(gas(), 2000), 6, add_input, 0x80, add_input, 0x40)
             }
             if (!success) {
                 return (false, finalVksAlphaX);
@@ -177,7 +177,7 @@ library BatchVerifier {
 
         assembly {
             // ECMUL, output to first 2 elements of finalVKalpha
-            success := staticcall(sub(gas, 2000), 7, finalVKalpha, 0x60, finalVKalpha, 0x40)
+            success := staticcall(sub(gas(), 2000), 7, finalVKalpha, 0x60, finalVKalpha, 0x40)
         }
         if (!success) {
             return (false, finalVksAlphaX);
@@ -267,7 +267,7 @@ library BatchVerifier {
         require(inputsLength % 192 == 0, "Inputs length should be multiple of 192 bytes");
 
         assembly {
-            success := staticcall(sub(gas, 2000), 8, add(inputs, 0x20), inputsLength, out, 0x20)
+            success := staticcall(sub(gas(), 2000), 8, add(inputs, 0x20), inputsLength, out, 0x20)
         }
         return success && out[0] == 1;
     }

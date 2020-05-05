@@ -70,20 +70,7 @@ contract("Exchange", (accounts: string[]) => {
       depositInfo.token,
       exchangeTestUtil.getRandomAmount(),
       "LRC",
-      new BN(0),
-      exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
-    );
-  };
-
-  const doRandomOrderCancellation = (depositInfo: DepositInfo) => {
-    exchangeTestUtil.cancelOrderID(
-      exchangeId,
-      depositInfo.accountID,
-      exchangeTestUtil.getRandomInt(exchangeTestUtil.MAX_NUM_TOKENS),
-      exchangeTestUtil.getRandomInt(2 ** Constants.TREE_DEPTH_TRADING_HISTORY),
-      1,
-      new BN(0),
-      exchangeTestUtil.getRandomInt(2 ** Constants.NUM_BITS_LABEL)
+      new BN(0)
     );
   };
 
@@ -98,8 +85,7 @@ contract("Exchange", (accounts: string[]) => {
       depositInfoA.token,
       depositInfoA.amount.div(new BN(10)),
       depositInfoA.token,
-      depositInfoA.amount.div(new BN(100)),
-      exchangeTestUtil.getRandomInt(1000)
+      depositInfoA.amount.div(new BN(100))
     );
   };
 
@@ -114,7 +100,7 @@ contract("Exchange", (accounts: string[]) => {
   const bVerify = true;
   const verify = async () => {
     if (bVerify) {
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks(exchangeId);
     }
   };
 
@@ -226,32 +212,6 @@ contract("Exchange", (accounts: string[]) => {
             await doRandomOffchainWithdrawal(randomDeposit);
           }
           await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);
-        }
-        await verify();
-      }
-    });
-
-    it("Order Cancellation", async () => {
-      const bDataAvailabilities = [true, false];
-      for (const bDataAvailability of bDataAvailabilities) {
-        await createExchange(bDataAvailability);
-
-        // Do some deposits
-        const numDeposits = 8;
-        const deposits: DepositInfo[] = [];
-        for (let i = 0; i < numDeposits; i++) {
-          deposits.push(await doRandomDeposit());
-        }
-        await exchangeTestUtil.commitDeposits(exchangeId);
-
-        const blockSizes = exchangeTestUtil.orderCancellationBlockSizes;
-        for (const blockSize of blockSizes) {
-          for (let i = 0; i < blockSize; i++) {
-            const randomDeposit =
-              deposits[exchangeTestUtil.getRandomInt(numDeposits)];
-            await doRandomOrderCancellation(randomDeposit);
-          }
-          await exchangeTestUtil.commitCancels(exchangeId);
         }
         await verify();
       }

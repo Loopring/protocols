@@ -14,12 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 
 /// @title IDecompressor
 /// @author Brecht Devos - <brecht@loopring.org>
-contract IDecompressor
+interface IDecompressor
 {
     /// @dev Decompresses the data
     /// @param data The compressed data

@@ -14,14 +14,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
+
+import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
-import "../../lib/BurnableERC20.sol";
-import "../../lib/ERC20SafeTransfer.sol";
 
 import "./ExchangeAccounts.sol";
-import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
 
@@ -33,7 +33,6 @@ library ExchangeDeposits
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
-    using ERC20SafeTransfer for address;
     using ExchangeAccounts  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
@@ -66,23 +65,24 @@ library ExchangeDeposits
         timestamp = request.timestamp;
     }
 
-    function depositTo(
+    function deposit(
         ExchangeData.State storage S,
-        address recipient,
+        address from,
+        address to,
         address tokenAddress,
         uint96  amount,  // can be zero
         uint    additionalFeeETH
         )
         external
     {
-        require(recipient != address(0), "ZERO_ADDRESS");
+        require(to != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
-        uint24 accountID = S.getAccountID(recipient);
+        uint24 accountID = S.getAccountID(to);
         ExchangeData.Account storage account = S.accounts[accountID];
 
         // We allow invalid public keys to be set for accounts to
@@ -97,14 +97,6 @@ library ExchangeDeposits
         // Total fee to be paid by the user
         uint feeETH = additionalFeeETH.add(S.depositFeeETH);
 
-        // Transfer the tokens to this contract
-        transferDeposit(
-            msg.sender,
-            tokenAddress,
-            amount,
-            feeETH
-        );
-
         // Add the request to the deposit chain
         ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
         ExchangeData.Request memory request = ExchangeData.Request(
@@ -117,7 +109,7 @@ library ExchangeDeposits
                                       // In the circuit we always overwrite the public keys in
                                       // the Account leaf with the data given onchain.
                     account.pubKeyY,
-                    uint8(tokenID),
+                    uint16(tokenID),
                     amount
                 )
             ),
@@ -134,7 +126,14 @@ library ExchangeDeposits
         );
         S.deposits.push(_deposit);
 
-        S.tokenBalances[tokenAddress] = S.tokenBalances[tokenAddress].add(amount);
+        // Transfer the tokens to this contract
+        transferDeposit(
+            S,
+            from,
+            tokenAddress,
+            amount,
+            feeETH
+        );
 
         emit DepositRequested(
             uint32(S.depositChain.length - 1),
@@ -153,8 +152,7 @@ library ExchangeDeposits
         view
         returns (uint)
     {
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-        return currentBlock.numDepositRequestsCommitted;
+        return S.numDepositRequestsCommitted;
     }
 
     function getNumAvailableDepositSlots(
@@ -169,7 +167,8 @@ library ExchangeDeposits
     }
 
     function transferDeposit(
-        address source,
+        ExchangeData.State storage S,
+        address from,
         address tokenAddress,
         uint    amount,
         uint    feeETH
@@ -177,8 +176,10 @@ library ExchangeDeposits
         private
     {
         uint totalRequiredETH = feeETH;
-        if (tokenAddress == address(0)) {
+        uint depositValueETH = 0;
+        if (S.depositContract.isETH(tokenAddress)) {
             totalRequiredETH = totalRequiredETH.add(amount);
+            depositValueETH = amount;
         }
 
         require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
@@ -187,13 +188,7 @@ library ExchangeDeposits
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
-        // Transfer the tokens from the owner into this contract
-        if (amount > 0 && tokenAddress != address(0)) {
-            tokenAddress.safeTransferFromAndVerify(
-                source,
-                address(this),
-                amount
-            );
-        }
+        // Transfer the tokens to the deposit contract (excluding the ETH fee)
+        S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
     }
 }

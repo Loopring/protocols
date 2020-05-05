@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 /// @title Utility Functions for uint
@@ -58,15 +58,17 @@ library MathUint
     }
 
     function decodeFloat(
-        uint f
+        uint f,
+        uint numBits
         )
         internal
         pure
         returns (uint value)
     {
-        uint numBitsMantissa = 23;
+        uint numBitsMantissa = numBits - 5;
         uint exponent = f >> numBitsMantissa;
         uint mantissa = f & ((1 << numBitsMantissa) - 1);
         value = mantissa * (10 ** exponent);
+        require(value < (2 ** 96), "FLOAT_VALUE_TOO_BIG");
     }
 }

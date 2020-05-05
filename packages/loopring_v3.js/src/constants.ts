@@ -3,15 +3,14 @@ import { FloatEncoding } from "./float";
 import { Balance } from "./types";
 
 export class Constants {
-  static readonly TREE_DEPTH_TRADING_HISTORY = 14;
-  static readonly TREE_DEPTH_ACCOUNTS = 20;
-  static readonly TREE_DEPTH_TOKENS = 8;
+  static readonly BINARY_TREE_DEPTH_TRADING_HISTORY = 14;
+  static readonly BINARY_TREE_DEPTH_ACCOUNTS = 24;
+  static readonly BINARY_TREE_DEPTH_TOKENS = 10;
 
-  static readonly NUM_BITS_ACCOUNTID = Constants.TREE_DEPTH_ACCOUNTS;
+  static readonly NUM_BITS_ACCOUNTID = Constants.BINARY_TREE_DEPTH_ACCOUNTS;
   static readonly NUM_BITS_ORDERID = 20;
-  static readonly NUM_BITS_LABEL = 32;
 
-  static readonly MAX_NUM_TOKENS = 2 ** 8;
+  static readonly MAX_NUM_TOKENS = 2 ** 10;
 
   static readonly MAX_AMOUNT = new BN(2).pow(new BN(96)).sub(new BN(1));
 

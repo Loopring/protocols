@@ -16,7 +16,7 @@ export class Artifacts {
   public INDBToken: any;
   public TESTToken: any;
   public Operator: any;
-  public AccountContract: any;
+  public TestAccountContract: any;
   public LzDecompressor: any;
   public TransferContract: any;
   public PoseidonContract: any;
@@ -26,6 +26,8 @@ export class Artifacts {
   public AddressWhitelist: any;
   public DelayedOwnerContract: any;
   public DelayedTargetContract: any;
+  public BasicDepositContract: any;
+  public OwnedUpgradeabilityProxy: any;
 
   constructor(artifacts: any) {
     this.MockContract = artifacts.require("thirdparty/MockContract.sol");
@@ -47,7 +49,7 @@ export class Artifacts {
     this.INDBToken = artifacts.require("test/tokens/INDB");
     this.TESTToken = artifacts.require("test/tokens/TEST");
     this.Operator = artifacts.require("test/Operator");
-    this.AccountContract = artifacts.require("test/AccountContract");
+    this.TestAccountContract = artifacts.require("test/TestAccountContract");
     this.LzDecompressor = artifacts.require("test/LzDecompressor");
     this.TransferContract = artifacts.require("test/TransferContract");
     this.PoseidonContract = artifacts.require("test/PoseidonContract");
@@ -59,6 +61,12 @@ export class Artifacts {
     this.DelayedOwnerContract = artifacts.require("test/DelayedOwnerContract");
     this.DelayedTargetContract = artifacts.require(
       "test/DelayedTargetContract"
+    );
+    this.BasicDepositContract = artifacts.require(
+      "./impl/BasicDepositContract"
+    );
+    this.OwnedUpgradeabilityProxy = artifacts.require(
+      "./impl/OwnedUpgradeabilityProxy"
     );
   }
 }

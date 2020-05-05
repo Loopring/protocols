@@ -6,7 +6,6 @@ import { RingInfo } from "./types";
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
   let exchange: any;
-  let loopring: any;
   let exchangeID = 0;
 
   const getDowntimeCost = async (duration: number) => {
@@ -115,7 +114,6 @@ contract("Exchange", (accounts: string[]) => {
     exchangeTestUtil = new ExchangeTestUtil();
     await exchangeTestUtil.initialize(accounts);
     exchange = exchangeTestUtil.exchange;
-    loopring = exchangeTestUtil.loopringV3;
     exchangeID = 1;
   });
 
@@ -169,7 +167,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
-          maintenanceCost.mul(new BN(10))
+          maintenanceCost.mul(new BN(10)),
+          exchange.address
         );
 
         // Start maintenance
@@ -183,7 +182,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Try to deposit
         await expectThrow(
-          exchange.deposit(token, amount, {
+          exchange.deposit(owner, owner, token, amount, {
             from: owner,
             value: fees._depositFeeETH
           }),
@@ -191,7 +190,7 @@ contract("Exchange", (accounts: string[]) => {
         );
         // Try to withdraw
         await expectThrow(
-          exchange.withdraw(token, amount, {
+          exchange.withdraw(owner, token, amount, {
             from: owner,
             value: fees._withdrawalFeeETH
           }),
@@ -207,7 +206,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Try to deposit
         await expectThrow(
-          exchange.deposit(token, amount, {
+          exchange.deposit(owner, owner, token, amount, {
             from: owner,
             value: fees._depositFeeETH
           }),
@@ -230,7 +229,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Try to deposit
         await expectThrow(
-          exchange.deposit(token, amount, {
+          exchange.deposit(owner, owner, token, amount, {
             from: owner,
             value: fees._depositFeeETH
           }),
@@ -246,12 +245,12 @@ contract("Exchange", (accounts: string[]) => {
         await checkMaintenanceMode(false);
 
         // Deposit
-        await exchange.deposit(token, amount, {
+        await exchange.deposit(owner, owner, token, amount, {
           from: owner,
           value: fees._depositFeeETH
         });
         // Withdraw
-        await exchange.withdraw(token, amount, {
+        await exchange.withdraw(owner, token, amount, {
           from: owner,
           value: fees._withdrawalFeeETH
         });
@@ -312,7 +311,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
-          maintenanceCost.mul(new BN(10))
+          maintenanceCost.mul(new BN(10)),
+          exchange.address
         );
 
         // Purchase the downtime
@@ -343,12 +343,12 @@ contract("Exchange", (accounts: string[]) => {
         await stopMaintenanceModeChecked(exchangeTestUtil.exchangeOwner);
 
         // Deposit
-        await exchange.deposit(token, amount, {
+        await exchange.deposit(owner, owner, token, amount, {
           from: owner,
           value: fees._depositFeeETH
         });
         // Withdraw
-        await exchange.withdraw(token, amount, {
+        await exchange.withdraw(owner, token, amount, {
           from: owner,
           value: fees._withdrawalFeeETH
         });
@@ -367,7 +367,7 @@ contract("Exchange", (accounts: string[]) => {
       });
     });
 
-    it("should not be able to commit settlement blocks while in maintenance mode", async () => {
+    it("should not be able to submit settlement blocks while in maintenance mode", async () => {
       await createExchange();
 
       // Setup a ring
@@ -402,7 +402,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setBalanceAndApprove(
         exchangeTestUtil.exchangeOwner,
         "LRC",
-        maintenanceCost.mul(new BN(10))
+        maintenanceCost.mul(new BN(10)),
+        exchange.address
       );
 
       // Purchase the downtime
@@ -415,8 +416,9 @@ contract("Exchange", (accounts: string[]) => {
       // The operator shouldn't be able to commit any ring settlement blocks
       // while in maitenance mode
       await exchangeTestUtil.sendRing(exchangeID, ring);
+      await exchangeTestUtil.commitRings(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitPendingBlocks(exchangeID),
         "SETTLEMENT_SUSPENDED"
       );
     });

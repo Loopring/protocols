@@ -1,7 +1,7 @@
 // This code is taken from https://github.com/HarryR/ethsnarks/blob/master/contracts/Verifier.sol
 // this code is taken from https://github.com/JacobEberhardt/ZoKrates
 
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 library Verifier
@@ -98,7 +98,7 @@ library Verifier
 
             assembly {
                 // ECMUL, output to last 2 elements of `add_input`
-                success := staticcall(sub(gas, 2000), 7, mul_input, 0x80, add(add_input, 0x40), 0x60)
+                success := staticcall(sub(gas(), 2000), 7, mul_input, 0x80, add(add_input, 0x40), 0x60)
             }
             if (!success) {
                 return false;
@@ -106,7 +106,7 @@ library Verifier
 
             assembly {
                 // ECADD
-                success := staticcall(sub(gas, 2000), 6, add_input, 0xc0, add_input, 0x60)
+                success := staticcall(sub(gas(), 2000), 6, add_input, 0xc0, add_input, 0x60)
             }
             if (!success) {
                 return false;
@@ -133,7 +133,7 @@ library Verifier
 
         uint[1] memory out;
         assembly {
-            success := staticcall(sub(gas, 2000), 8, input, 768, out, 0x20)
+            success := staticcall(sub(gas(), 2000), 8, input, 768, out, 0x20)
         }
         return success && out[0] != 0;
     }

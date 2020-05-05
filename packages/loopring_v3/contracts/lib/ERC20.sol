@@ -14,16 +14,17 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 /// @title ERC20 Token Interface
 /// @dev see https://github.com/ethereum/EIPs/issues/20
 /// @author Daniel Wang - <daniel@loopring.org>
-contract ERC20
+abstract contract ERC20
 {
     function totalSupply()
         public
+        virtual
         view
         returns (uint);
 
@@ -31,6 +32,7 @@ contract ERC20
         address who
         )
         public
+        virtual
         view
         returns (uint);
 
@@ -39,6 +41,7 @@ contract ERC20
         address spender
         )
         public
+        virtual
         view
         returns (uint);
 
@@ -47,6 +50,7 @@ contract ERC20
         uint value
         )
         public
+        virtual
         returns (bool);
 
     function transferFrom(
@@ -55,6 +59,7 @@ contract ERC20
         uint    value
         )
         public
+        virtual
         returns (bool);
 
     function approve(
@@ -62,5 +67,6 @@ contract ERC20
         uint    value
         )
         public
+        virtual
         returns (bool);
 }

@@ -84,9 +84,9 @@ The data is stored in the following format for the different block types.
 ### General data formats
 
 ```
-TREE_DEPTH_ACCOUNTS = 10
-TREE_DEPTH_BALANCES = 4
-TREE_DEPTH_TRADEHISTORY = 7
+QUAD_TREE_DEPTH_ACCOUNTS = 12
+QUAD_TREE_DEPTH_BALANCES = 5
+QUAD_TREE_DEPTH_TRADEHISTORY = 7
 
 Proof(length)
 {
@@ -118,7 +118,7 @@ Account
 BalanceUpdate
 {
     tokenID: number,
-    proof: Proof(TREE_DEPTH_BALANCES * 3),
+    proof: Proof(QUAD_TREE_DEPTH_BALANCES * 3),
     rootBefore: string,
     rootAfter: string,
     before: BalanceLeaf,
@@ -128,7 +128,7 @@ BalanceUpdate
 TradeHistoryUpdate
 {
     orderID: number,
-    proof: Proof(TREE_DEPTH_TRADEHISTORY * 3),
+    proof: Proof(QUAD_TREE_DEPTH_TRADEHISTORY * 3),
     rootBefore: string,
     rootAfter: string,
     before: TradeHistoryLeaf,
@@ -138,7 +138,7 @@ TradeHistoryUpdate
 AccountUpdate
 {
     accountID: number,
-    proof: Proof(TREE_DEPTH_ACCOUNTS * 3),
+    proof: Proof(QUAD_TREE_DEPTH_ACCOUNTS * 3),
     rootBefore: string,
     rootAfter: string,
     before: Account,
@@ -171,7 +171,6 @@ Order
     validUntil: number,
     maxFeeBips: number,
     buy: number,
-    label: string,
 
     feeBips: number,
     rebateBips: number,
@@ -314,7 +313,6 @@ OffchainWithdrawal
     # Offchain request data
     amountRequested: string,
     fee: string,
-    label: string,
     signature: Signature,
 
     # User:
@@ -342,46 +340,6 @@ OffchainWithdrawalBlock
     accountUpdate_O: AccountUpdate,
 
     withdrawals: OffchainWithdrawal[],
-}
-```
-
-### Cancellation
-
-```
-Cancellation
-{
-    # Offchain request data
-    fee: string,
-    label: string,
-    signature: Signature,
-
-    # User:
-    # Trade history update data
-    # Balance update data for tokenF and token withdrawn
-    # Account update data
-    tradeHistoryUpdate_A: TradeHistoryUpdate;
-    balanceUpdateT_A: BalanceUpdate,
-    balanceUpdateF_A: BalanceUpdate;
-    accountUpdate_A: AccountUpdate;
-
-    # Operator:
-    # Balance update data for tokenF
-    balanceUpdateF_O: BalanceUpdate,
-}
-
-CancellationBlock
-{
-    exchangeID: number,
-
-    merkleRootBefore: string,
-    merkleRootAfter: string,
-
-    # Operator:
-    # Account update data
-    operatorAccountID: number,
-    accountUpdate_O: AccountUpdate,
-
-    cancels: Cancellation[],
 }
 ```
 

@@ -175,20 +175,6 @@ contract("DelayedOwner", (accounts: string[]) => {
     );
   });
 
-  it("Immediate function (view)", async () => {
-    // Check function delay
-    await checkFunctionDelay(
-      targetContract.address,
-      getFunctionSelector(
-        targetContract.contract.methods.immediateFunctionView()
-      ),
-      0
-    );
-
-    const returnValue = await targetInterface.immediateFunctionView();
-    assert(returnValue.eq(MAGIC_VALUE), "return value incorrect");
-  });
-
   it("Immediate function (revert)", async () => {
     // Check function delay
     await checkFunctionDelay(
