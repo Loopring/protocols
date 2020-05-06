@@ -28,7 +28,7 @@ fi
 
 solc \
     -o ABI/ --overwrite \
-    --abi contracts/iface/*.sol
+    --abi contracts/iface/*.sol \
     --allow-paths contracts/thirdparty/*.sol contracts/lib/*.sol \
     contracts/base/*.sol contracts/stores/*.sol
 
