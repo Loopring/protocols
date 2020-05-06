@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 ABI_PATH="./ABI"
 rm -rf $ABI_PATH
