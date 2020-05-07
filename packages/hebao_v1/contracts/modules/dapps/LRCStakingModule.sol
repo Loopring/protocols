@@ -37,12 +37,20 @@ contract LRCStakingModule is SubAccountDAppModule
     address public lrcTokenAddress;
 
     constructor(
-        Controller       _controller,
-        IUserStakingPool _stakingPool,
-        address          _lrcTokenAddress
+        Controller       _controller
         )
         public
         SecurityModule(_controller)
+    {
+    }
+
+    function init(
+        address wallet,
+        IUserStakingPool _stakingPool,
+        address          _lrcTokenAddress
+        )
+        external
+        onlyFromWalletOwner(wallet)
     {
         require(_lrcTokenAddress != address(0), "ZERO_ADDRESS");
 

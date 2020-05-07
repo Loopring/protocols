@@ -1,3 +1,5 @@
+require("dotenv").config({ path: require("find-config")(".env") });
+
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
 const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
@@ -8,6 +10,12 @@ const PriceCacheStore = artifacts.require("./stores/PriceCacheStore.sol");
 const WalletENSManager = artifacts.require("./base/WalletENSManager.sol");
 
 module.exports = function(deployer, network, accounts) {
+  let deployedEnsManagerAddr = process.env.ENSManager || "";
+  if (!web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
+    deployedEnsManagerAddr = WalletENSManager.address;
+  }
+  const lockPeriod = Number(process.env.controllerLockPeriod) || 5 * 24 * 3600;
+
   deployer
     .then(() => {
       return Promise.all([deployer.deploy(ControllerImpl)]);
@@ -19,14 +27,14 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         controllerImpl.init(
           ModuleRegistryImpl.address,
-          5 * 24 * 3600,
+          lockPeriod,
           ModuleRegistryImpl.address,
           WalletRegistryImpl.address,
           QuotaStore.address,
           SecurityStore.address,
           WhitelistStore.address,
           PriceCacheStore.address,
-          WalletENSManager.address
+          deployedEnsManagerAddr
         )
       ]);
     })
