@@ -1,8 +1,6 @@
 // Taken and modified from
 // https://github.com/iden3/circomlib
-import { Bitstream } from "./bitstream";
 import { KeyPair, Signature } from "../../model/types";
-import * as fm from "../wallet/common/formatter";
 
 const createBlakeHash = require("blake-hash");
 const bigInt = require("snarkjs").bigInt;
@@ -10,10 +8,8 @@ const babyJub = require("./babyjub");
 const poseidon = require("./poseidon");
 
 export class EdDSA {
-  public static generateKeyPair(seed: string) {
-    const randomNumber = Bitstream.hashCode(seed);
-    const entropy = fm.zeroPad(randomNumber, 32);
-    const secretKey = bigInt.leBuff2int(entropy).mod(babyJub.subOrder);
+  public static generateKeyPair(seed: Buffer) {
+    const secretKey = bigInt.leBuff2int(seed).mod(babyJub.subOrder);
     const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
     const keyPair: KeyPair = {
       publicKeyX: publicKey[0].toString(10),
