@@ -26,7 +26,8 @@ contract("RecoveryModule", (accounts: string[]) => {
       ctx,
       true,
       wallet,
-      [owner]
+      [owner],
+      { from: owner }
     );
 
     const newOwner = ctx.owners[1];

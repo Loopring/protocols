@@ -74,7 +74,7 @@ contract BaseVault is AddressSet, Vault
         require(owners.length > 0, "NULL_OWNERS");
         require(owners.length <= MAX_OWNERS, "TOO_MANY_OWNERS");
 
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("BaseVault", "1.0"));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Wallet Vault", "1.0", address(this)));
 
         for (uint i = 0; i < owners.length; i++) {
             address owner = owners[i];

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -28,7 +28,7 @@ import "../lib/ReentrancyGuard.sol";
 ///      ILoopring contracts.
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IImplementationManager is Claimable, ReentrancyGuard
+abstract contract IImplementationManager is Claimable, ReentrancyGuard
 {
     /// === Events ===
 
@@ -66,34 +66,39 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     function register(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Sets the default implemenation.
     /// @param implementation The new default implementation.
     function setDefault(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Enables an implemenation.
     /// @param implementation The implementation to be enabled.
     function enable(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Disables an implemenation.
     /// @param implementation The implementation to be disabled.
     function disable(
         address implementation
         )
-        external;
+        external
+        virtual;
 
     /// @dev Returns version information.
     /// @return protocolVersion The protocol's version.
     /// @return defaultImplVersion The default implementation's version.
     function version()
         public
+        virtual
         view
         returns (
             string  memory protocolVersion,
@@ -104,6 +109,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
     /// @param implementation The latest implemenation added.
     function latest()
         public
+        virtual
         view
         returns (address implementation);
 
@@ -113,6 +119,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
         address implementation
         )
         public
+        virtual
         view
         returns (bool registered);
 
@@ -122,6 +129,7 @@ contract IImplementationManager is Claimable, ReentrancyGuard
         address implementation
         )
         public
+        virtual
         view
         returns (bool enabled);
 }

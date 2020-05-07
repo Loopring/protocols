@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../../lib/Claimable.sol";
 
@@ -37,11 +37,20 @@ contract DelayedOwner is DelayedTransaction, Claimable
         defaultContract = _defaultContract;
     }
 
-    function()
+    receive()
         external
+        // nonReentrant
         payable
     {
-        // Don't do anything if msg.sender isn't the owner (e.g. when receiving ETH)
+        // Don't do anything when receiving ETH
+    }
+
+    fallback()
+        external
+        nonReentrant
+        payable
+    {
+        // Don't do anything if msg.sender isn't the owner
         if (msg.sender != owner) {
             return;
         }
@@ -50,6 +59,7 @@ contract DelayedOwner is DelayedTransaction, Claimable
 
     function isAuthorizedForTransactions(address sender)
         internal
+        override
         view
         returns (bool)
     {

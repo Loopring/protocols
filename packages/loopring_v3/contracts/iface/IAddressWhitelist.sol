@@ -14,12 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 
 /// @title IAddressWhitelist
 /// @author Daniel Wang - <daniel@loopring.org>
-contract IAddressWhitelist
+abstract contract IAddressWhitelist
 {
     /// @dev Checks if an address has been whitelisted.
     /// @param addr The address to check against the whitelist.
@@ -30,6 +31,7 @@ contract IAddressWhitelist
         bytes   memory permission
         )
         public
+        virtual
         view
         returns (bool);
 }

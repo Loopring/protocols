@@ -38,7 +38,7 @@ contract("WalletFactoryModule", () => {
       useMetaTx,
       wallet,
       [owner],
-      { gasPrice: new BN(1) }
+      { from: owner, gasPrice: new BN(1) }
     );
     await assertEventEmitted(
       ctx.walletFactoryModule,
@@ -76,7 +76,7 @@ contract("WalletFactoryModule", () => {
         useMetaTx,
         wallet,
         [owner],
-        { gasPrice: new BN(1) }
+        { from: owner, gasPrice: new BN(1) }
       ),
       useMetaTx ? "UNAUTHORIZED" : "CREATE2_FAILED"
     );
@@ -113,5 +113,27 @@ contract("WalletFactoryModule", () => {
         );
       }
     );
+  });
+
+  describe("anyone", () => {
+    it("should not be able to create a wallet for the owner", async () => {
+      const owner = ctx.owners[0];
+      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      await expectThrow(
+        executeTransaction(
+          ctx.walletFactoryModule.contract.methods.createWallet(
+            owner,
+            "MyWallet",
+            []
+          ),
+          ctx,
+          false,
+          wallet,
+          [owner],
+          { from: ctx.owners[1] }
+        ),
+        "NOT_FROM_METATX_OR_OWNER"
+      );
+    });
   });
 });

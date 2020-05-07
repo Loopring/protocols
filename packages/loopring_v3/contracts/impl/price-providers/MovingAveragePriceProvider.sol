@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../../iface/ITokenPriceProvider.sol";
 
@@ -72,6 +72,7 @@ contract MovingAveragePriceProvider is ITokenPriceProvider
 
     function usd2lrc(uint usd)
         external
+        override
         view
         returns (uint)
     {

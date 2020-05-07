@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 /// @title IProtocolFeeVault
@@ -25,7 +25,7 @@ pragma solidity ^0.5.11;
 ///     For LRC token, 70% of them can be withdrawn to the UserStakingPool contract
 ///     to reward LRC stakers; 20% of them can be withdrawn to the Loopring DAO,
 ///     and the remaining 10% can be burned to reduce LRC's total supply.
-contract IProtocolFeeVault
+abstract contract IProtocolFeeVault
 {
     uint public constant REWARD_PERCENTAGE      = 70;
     uint public constant DAO_PERDENTAGE         = 20;
@@ -53,18 +53,23 @@ contract IProtocolFeeVault
         address _tokenSellerAddress,
         address _daoAddress
         )
-        external;
+        external
+        virtual;
 
     /// @dev Claims LRC as staking reward to the IUserStakingPool contract.
     ///      Note that this function can only be called by
     ///      the IUserStakingPool contract.
     ///
     /// @param amount The amount of LRC to be claimed.
-    function claimStakingReward(uint amount) external;
+    function claimStakingReward(uint amount)
+        external
+        virtual;
 
     /// @dev Withdraws LRC to DAO and in the meanwhile burn some LRC according to
     ///      the predefined percentages.
-    function fundDAO() external;
+    function fundDAO()
+        external
+        virtual;
 
     /// @dev Sells a non-LRC token or Ether to LRC. If no TokenSeller is set,
     ///      the tokens or Ether will be sent to the owner.
@@ -74,7 +79,8 @@ contract IProtocolFeeVault
         address token,
         uint    amount
         )
-        external;
+        external
+        virtual;
 
     /// @dev Returns some global stats regarding fees.
     /// @return accumulatedFees The accumulated amount of LRC protocol fees.
@@ -87,6 +93,7 @@ contract IProtocolFeeVault
     /// @return remainingReward The remaining amount of LRC as staking reward.
     function getProtocolFeeStats()
         public
+        virtual
         view
         returns (
             uint accumulatedFees,

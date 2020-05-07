@@ -23,6 +23,7 @@ library Data
     {
         address  addr;
         uint     group;
+        uint     validSince;
+        uint     validUntil;
     }
 }
-

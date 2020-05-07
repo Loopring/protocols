@@ -14,13 +14,14 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
-import "../../lib/BurnableERC20.sol";
+import "../../iface/ExchangeData.sol";
+
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
-import "./ExchangeData.sol";
 import "./ExchangeMode.sol";
 
 

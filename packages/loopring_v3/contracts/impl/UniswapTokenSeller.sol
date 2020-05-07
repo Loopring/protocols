@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../iface/ITokenSeller.sol";
 
@@ -61,15 +61,16 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
         recipient = _recipient;
     }
 
-    function() external payable { }
+    receive() external payable { }
 
     function sellToken(
         address tokenS,
         address tokenB
         )
         external
-        payable
+        override
         nonReentrant
+        payable
         returns (bool success)
     {
         require(tokenS != tokenB, "SAME_TOKEN");
@@ -92,7 +93,7 @@ contract UniswapTokenSeller is ReentrancyGuard, ITokenSeller {
                 exchange.getEthToTokenInputPrice(amountS.mul(2))
             );
 
-            amountB = exchange.ethToTokenTransferInput.value(amountS)(
+            amountB = exchange.ethToTokenTransferInput{value: amountS}(
                 1,  // min_tokens_bought
                 MAX_UINT,
                 _recipient

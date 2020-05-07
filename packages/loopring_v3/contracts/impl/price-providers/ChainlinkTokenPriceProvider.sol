@@ -14,12 +14,11 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../../iface/ITokenPriceProvider.sol";
 
-import "../../thirdparty/chainlink/AggregatorInterfaceV1.sol";
-import "../../thirdparty/chainlink/AggregatorInterfaceV2.sol";
+import "../../thirdparty/chainlink/AggregatorInterface.sol";
 
 import "../../lib/MathUint.sol";
 
@@ -29,12 +28,12 @@ contract ChainlinkTokenPriceProvider is ITokenPriceProvider
 {
     using MathUint    for uint;
 
-    AggregatorInterfaceV1 public Eth2Usd;
-    AggregatorInterfaceV2 public Lrc2Eth;
+    AggregatorInterface public Eth2Usd;
+    AggregatorInterface public Lrc2Eth;
 
     constructor(
-        AggregatorInterfaceV1 _Eth2Usd,
-        AggregatorInterfaceV2 _Lrc2Eth
+        AggregatorInterface _Eth2Usd,
+        AggregatorInterface _Lrc2Eth
         )
         public
     {
@@ -44,10 +43,11 @@ contract ChainlinkTokenPriceProvider is ITokenPriceProvider
 
     function usd2lrc(uint usd)
         external
+        override
         view
         returns (uint)
     {
-        uint EthUsd = uint(Eth2Usd.currentAnswer());
+        uint EthUsd = uint(Eth2Usd.latestAnswer());
         uint LrcEth = uint(Lrc2Eth.latestAnswer());
         // https://docs.chain.link/docs/using-chainlink-reference-contracts#section-live-reference-data-contracts-ethereum-mainnet
         // EthUsd is scaled by 100000000

@@ -103,36 +103,18 @@ contract("BlockVerifier", (accounts: string[]) => {
     assert.equal(isEnabledAfter, true, "circuit should be enabled");
 
     // Get the CircuitRegistered event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+    const event = await exchangeTestUtil.assertEventEmitted(
       blockVerifier,
-      "CircuitRegistered",
-      web3.eth.blockNumber
+      "CircuitRegistered"
     );
-    const items = eventArr.map((eventObj: any) => {
-      return {
-        blockType: eventObj.args.blockType,
-        onchainDataAvailability: eventObj.args.onchainDataAvailability,
-        blockSize: eventObj.args.blockSize,
-        blockVersion: eventObj.args.blockVersion
-      };
-    });
+    assert.equal(event.blockType, blockType, "blockType should match");
     assert.equal(
-      items.length,
-      1,
-      "A single CircuitRegistered event should have been emitted"
-    );
-    assert.equal(items[0].blockType, blockType, "blockType should match");
-    assert.equal(
-      items[0].onchainDataAvailability,
+      event.onchainDataAvailability,
       onchainDataAvailability,
       "onchainDataAvailability should match"
     );
-    assert.equal(items[0].blockSize, blockSize, "blockSize should match");
-    assert.equal(
-      items[0].blockVersion,
-      blockVersion,
-      "blockVersion should match"
-    );
+    assert.equal(event.blockSize, blockSize, "blockSize should match");
+    assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
   };
 
   const disableCircuitChecked = async (
@@ -185,36 +167,18 @@ contract("BlockVerifier", (accounts: string[]) => {
     assert.equal(isEnabledAfter, false, "circuit should be disabled");
 
     // Get the CircuitDisabled event
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+    const event = await exchangeTestUtil.assertEventEmitted(
       blockVerifier,
-      "CircuitDisabled",
-      web3.eth.blockNumber
+      "CircuitDisabled"
     );
-    const items = eventArr.map((eventObj: any) => {
-      return {
-        blockType: eventObj.args.blockType,
-        onchainDataAvailability: eventObj.args.onchainDataAvailability,
-        blockSize: eventObj.args.blockSize,
-        blockVersion: eventObj.args.blockVersion
-      };
-    });
+    assert.equal(event.blockType, blockType, "blockType should match");
     assert.equal(
-      items.length,
-      1,
-      "A single CircuitDisabled event should have been emitted"
-    );
-    assert.equal(items[0].blockType, blockType, "blockType should match");
-    assert.equal(
-      items[0].onchainDataAvailability,
+      event.onchainDataAvailability,
       onchainDataAvailability,
       "onchainDataAvailability should match"
     );
-    assert.equal(items[0].blockSize, blockSize, "blockSize should match");
-    assert.equal(
-      items[0].blockVersion,
-      blockVersion,
-      "blockVersion should match"
-    );
+    assert.equal(event.blockSize, blockSize, "blockSize should match");
+    assert.equal(event.blockVersion, blockVersion, "blockVersion should match");
   };
 
   before(async () => {
@@ -400,7 +364,7 @@ contract("BlockVerifier", (accounts: string[]) => {
       );
 
       // Generate the proofs
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks(exchangeId);
     });
 
     it("should be able to verify a single block with a valid proof", async () => {

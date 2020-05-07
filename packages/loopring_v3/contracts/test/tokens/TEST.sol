@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../DummyToken.sol";
 import "../../iface/IExchangeV3.sol";
@@ -53,6 +53,7 @@ contract TEST is DummyToken {
         uint _value
         )
         public
+        override
         returns (bool)
     {
         // require(_to != address(0), "ZERO_ADDRESS");
@@ -70,6 +71,7 @@ contract TEST is DummyToken {
         uint _value
         )
         public
+        override
         returns (bool)
     {
         // require(_to != address(0), "ZERO_ADDRESS");

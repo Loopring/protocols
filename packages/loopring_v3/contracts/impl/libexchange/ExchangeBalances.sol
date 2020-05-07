@@ -14,7 +14,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 import "../../lib/Poseidon.sol";
@@ -36,8 +37,8 @@ library ExchangeBalances
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] calldata accountMerkleProof,
-        uint[12] calldata balanceMerkleProof
+        uint[36] calldata accountMerkleProof,
+        uint[15] calldata balanceMerkleProof
         )
         external
         pure
@@ -66,8 +67,8 @@ library ExchangeBalances
         uint32   nonce,
         uint96   balance,
         uint     tradeHistoryRoot,
-        uint[30] memory accountMerkleProof,
-        uint[12] memory balanceMerkleProof
+        uint[36] memory accountMerkleProof,
+        uint[15] memory balanceMerkleProof
         )
         public
         pure
@@ -95,7 +96,7 @@ library ExchangeBalances
         uint16   tokenID,
         uint     balance,
         uint     tradeHistoryRoot,
-        uint[12] memory balanceMerkleProof
+        uint[15] memory balanceMerkleProof
         )
         private
         pure
@@ -103,7 +104,7 @@ library ExchangeBalances
     {
         uint balanceItem = hashImpl(balance, tradeHistoryRoot, 0, 0);
         uint _id = tokenID;
-        for (uint depth = 0; depth < 4; depth++) {
+        for (uint depth = 0; depth < 5; depth++) {
             if (_id & 3 == 0) {
                 balanceItem = hashImpl(
                     balanceItem,
@@ -144,7 +145,7 @@ library ExchangeBalances
         uint     pubKeyY,
         uint     nonce,
         uint     balancesRoot,
-        uint[30] memory accountMerkleProof
+        uint[36] memory accountMerkleProof
         )
         private
         pure
@@ -152,7 +153,7 @@ library ExchangeBalances
     {
         uint accountItem = hashImpl(pubKeyX, pubKeyY, nonce, balancesRoot);
         uint _id = accountID;
-        for (uint depth = 0; depth < 10; depth++) {
+        for (uint depth = 0; depth < 12; depth++) {
             if (_id & 3 == 0) {
                 accountItem = hashImpl(
                     accountItem,

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 
 /// @title IUserStakingPool
@@ -22,7 +22,7 @@ pragma solidity ^0.5.11;
 ///      WARNING: sending tokens directly to this contract will result in all
 ///      tokens to be lost.
 /// @author Daniel Wang - <daniel@loopring.org>
-contract IUserStakingPool
+abstract contract IUserStakingPool
 {
     uint public constant MIN_CLAIM_DELAY        = 90 days;
     uint public constant MIN_WITHDRAW_DELAY     = 90 days;
@@ -41,11 +41,13 @@ contract IUserStakingPool
     /// @dev Sets a new IProtocolFeeVault address, only callable by the owner.
     /// @param _protocolFeeVaultAddress The new IProtocolFeeVault address.
     function setProtocolFeeVault(address _protocolFeeVaultAddress)
-        external;
+        external
+        virtual;
 
     /// @dev Returns the total number of LRC staked.
     function getTotalStaking()
         public
+        virtual
         view
         returns (uint);
 
@@ -57,6 +59,7 @@ contract IUserStakingPool
     /// @return pendingReward The amount of LRC reward claimable.
     function getUserStaking(address user)
         public
+        virtual
         view
         returns (
             uint withdrawalWaitTime,
@@ -69,17 +72,20 @@ contract IUserStakingPool
     ///      Note that transfering LRC directly to this contract will lost those LRC!!!
     /// @param amount The amount of LRC to stake.
     function stake(uint amount)
-        external;
+        external
+        virtual;
 
     /// @dev Users call this funciton to withdraw staked LRC.
     /// @param amount The amount of LRC to withdraw.
     function withdraw(uint amount)
-        external;
+        external
+        virtual;
 
     /// @dev Users call this funciton to claim all his/her LRC reward. The claimed LRC
     ///      will be staked again automatically.
     /// @param claimedAmount The amount of LRC claimed.
     function claim()
         external
+        virtual
         returns (uint claimedAmount);
 }

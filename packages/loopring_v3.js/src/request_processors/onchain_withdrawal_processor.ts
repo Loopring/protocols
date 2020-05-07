@@ -20,13 +20,13 @@ export class OnchainWithdrawalProcessor {
 
     const withdrawals: OnchainWithdrawal[] = [];
     for (let i = 0; i < (shutdown ? block.blockSize : length); i++) {
-      const approvedWitdrawal = data.extractUint56(offset + i * 7);
+      const approvedWitdrawal = data.extractUint64(offset + i * 8);
 
-      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xff;
-      const accountID = approvedWitdrawal.shrn(28).toNumber() & 0xfffff;
+      const tokenID = approvedWitdrawal.shrn(48).toNumber() & 0xfff;
+      const accountID = approvedWitdrawal.shrn(24).toNumber() & 0xffffff;
       const amountWithdrawn = fromFloat(
-        approvedWitdrawal.and(new BN("FFFFFFF", 16)).toNumber(),
-        Constants.Float28Encoding
+        approvedWitdrawal.and(new BN("FFFFFF", 16)).toNumber(),
+        Constants.Float24Encoding
       );
 
       if (!shutdown) {
@@ -90,17 +90,6 @@ export class OnchainWithdrawalProcessor {
         account.nonce = 0;
         account.balances[onchainWithdrawal.tokenID].tradeHistory = {};
       }
-    }
-  }
-
-  public static revertBlock(state: ExchangeState, block: Block) {
-    // Remove the data in the requests that they were processed in a block
-    const startIdx = block.totalNumRequestsProcessed - 1;
-    const endIdx = startIdx - block.numRequestsProcessed;
-    for (let i = startIdx; i > endIdx; i--) {
-      delete state.processedRequests[i].blockIdx;
-      delete state.processedRequests[i].requestIdx;
-      delete state.processedRequests[i].amountWithdrawn;
     }
   }
 }

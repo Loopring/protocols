@@ -10,8 +10,8 @@ import { Account, Block, InternalTransfer, ExchangeState } from "../types";
 export class InternalTransferProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
     const data = new Bitstream(block.data);
-    // Skip before and after merkle root + label
-    let offset = 4 + 32 + 32 + 32;
+    // Skip before and after merkle root + numConditionalTransfers
+    let offset = 4 + 32 + 32 + 4;
 
     const transfers: InternalTransfer[] = [];
     if (state.onchainDataAvailability) {
@@ -20,29 +20,28 @@ export class InternalTransferProcessor {
       offset += 3;
 
       // Jump to the specified transfer
-      const onchainDataSize = 12;
+      const onchainDataSize = 15;
 
       const startOffset = offset;
       for (let i = 0; i < block.blockSize; i++) {
         offset = startOffset + i * onchainDataSize;
 
         // Extract onchain data
-        const combinedAccountIDs = data.extractUint40(offset);
-        offset += 5;
-        const tokenID = data.extractUint8(offset);
+        const type = data.extractUint8(offset);
         offset += 1;
+        const accountFromID = data.extractUint24(offset);
+        offset += 3;
+        const accountToID = data.extractUint24(offset);
+        offset += 3;
+        const tokenIDs = data.extractUint24(offset);
+        offset += 3;
         const fAmount = data.extractUint24(offset);
         offset += 3;
-        const feeTokenID = data.extractUint8(offset);
-        offset += 1;
         const fFee = data.extractUint16(offset);
         offset += 2;
 
-        // Further extraction of packed data
-        const accountFromID = Math.floor(
-          combinedAccountIDs / 2 ** Constants.NUM_BITS_ACCOUNTID
-        );
-        const accountToID = combinedAccountIDs & 0xfffff;
+        const tokenID = tokenIDs >> 12;
+        const feeTokenID = tokenIDs & 0b1111111111;
 
         // Decode the float values
         const fee = fromFloat(fFee, Constants.Float16Encoding);
@@ -57,7 +56,8 @@ export class InternalTransferProcessor {
           tokenID,
           amount,
           feeTokenID,
-          fee
+          fee,
+          type
         };
         transfers.push(transfer);
 
@@ -74,7 +74,8 @@ export class InternalTransferProcessor {
           tokenID: 0,
           amount: new BN(0),
           feeTokenID: 0,
-          fee: new BN(0)
+          fee: new BN(0),
+          type: 0
         };
         transfers.push(transfer);
       }
@@ -107,7 +108,9 @@ export class InternalTransferProcessor {
     accountFrom.balances[transfer.tokenID].balance = accountFrom.balances[
       transfer.tokenID
     ].balance.sub(transfer.amount);
-    accountFrom.nonce++;
+    if (transfer.type === 0) {
+      accountFrom.nonce++;
+    }
 
     // Update balance To
     accountTo.balances[transfer.tokenID].balance = accountTo.balances[
@@ -122,9 +125,5 @@ export class InternalTransferProcessor {
     operator.balances[transfer.feeTokenID].balance = operator.balances[
       transfer.feeTokenID
     ].balance.add(transfer.fee);
-  }
-
-  public static revertBlock(state: ExchangeState, block: Block) {
-    // Nothing to do
   }
 }

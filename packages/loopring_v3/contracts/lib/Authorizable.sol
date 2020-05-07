@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 
@@ -34,7 +34,7 @@ contract Authorizable is Claimable
     );
 
     // The list of all authorized addresses
-    address[] authorizedAddresses;
+    address[] public authorizedAddresses;
 
     mapping (address => uint) private positionMap;
 
@@ -82,7 +82,7 @@ contract Authorizable is Claimable
             positionMap[lastOne] = pos;
         }
 
-        authorizedAddresses.length -= 1;
+        authorizedAddresses.pop();
         delete positionMap[addr];
 
         emit AddressDeauthorized(addr);

@@ -1,6 +1,6 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
-import { ExchangeTestUtil } from "./testExchangeUtil";
+import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -19,59 +19,47 @@ contract("Exchange", (accounts: string[]) => {
 
   const registerTokenChecked = async (token: string, user: string) => {
     const tokenAddress = exchangeTestUtil.getTokenAddress(token);
-    const LRC = await exchangeTestUtil.getTokenContract("LRC");
-
-    // Total amount needed to uregister a token
+    // LRC cost to register a token
     const registrationCost = await exchange.getLRCFeeForRegisteringOneMoreToken();
 
-    const lrcBalanceBefore = await exchangeTestUtil.getOnchainBalance(
-      user,
-      "LRC"
+    const lrc = (await exchangeTestUtil.contracts.LRCToken.deployed()).address;
+    const snapshot = new BalanceSnapshot(exchangeTestUtil);
+    await snapshot.watchBalance(exchange.address, lrc, "exchange");
+    await snapshot.watchBalance(
+      exchangeTestUtil.depositContract.address,
+      lrc,
+      "depositContract"
     );
-    const lrcSupplyBefore = await LRC.totalSupply();
+    await snapshot.transfer(
+      user,
+      exchangeTestUtil.protocolFeeVault,
+      lrc,
+      registrationCost,
+      "user",
+      "protocolFeeVault"
+    );
 
     await exchange.registerToken(tokenAddress, { from: user });
 
-    const eventArr: any = await exchangeTestUtil.getEventsFromContract(
+    // Verify balances
+    await snapshot.verifyBalances();
+
+    // Check the TokenRegistered event
+    const event = await exchangeTestUtil.assertEventEmitted(
       exchange,
-      "TokenRegistered",
-      web3.eth.blockNumber
+      "TokenRegistered"
     );
-    const items = eventArr.map((eventObj: any) => {
-      return [eventObj.args.token, eventObj.args.tokenId];
-    });
-    const tokenAddressEvent = items[0][0];
-    const tokenIdEvent = items[0][1].toNumber();
-
-    const lrcBalanceAfter = await exchangeTestUtil.getOnchainBalance(
-      user,
-      "LRC"
-    );
-    const lrcSupplyAfter = await LRC.totalSupply();
-
-    assert(
-      lrcBalanceAfter.eq(lrcBalanceBefore.sub(registrationCost)),
-      "LRC balance of exchange owner needs to be reduced by registration cost"
-    );
-
-    // Transfer LRC to FeeVault instead of burn, so totalSupply will not change.
-    // assert(
-    //   lrcSupplyAfter.eq(lrcSupplyBefore.sub(registrationCost)),
-    //   "LRC supply needs to be reduced by registration cost"
-    // );
-
     const tokenIdContract = await exchange.getTokenID(tokenAddress);
-    const tokenAddressContract = await exchange.getTokenAddress(tokenIdEvent);
-
-    assert.equal(tokenIdEvent, tokenIdContract, "Token ID does not match");
+    const tokenAddressContract = await exchange.getTokenAddress(event.tokenId);
     assert.equal(
-      tokenAddressEvent,
-      tokenAddress,
-      "Token adress does not match"
+      event.tokenId.toNumber(),
+      tokenIdContract,
+      "Token ID does not match"
     );
+    assert.equal(event.token, tokenAddress, "Token adress does not match");
     assert.equal(
+      event.token,
       tokenAddressContract,
-      tokenAddress,
       "Token adress does not match"
     );
   };
@@ -108,7 +96,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
-          registrationCost
+          registrationCost,
+          exchangeTestUtil.exchange.address
         );
 
         // Register the token
@@ -123,7 +112,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.setBalanceAndApprove(
           exchangeTestUtil.exchangeOwner,
           "LRC",
-          registrationCost
+          registrationCost,
+          exchangeTestUtil.exchange.address
         );
 
         // Register the token
@@ -178,7 +168,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setBalanceAndApprove(
         exchangeTestUtil.exchangeOwner,
         "LRC",
-        registrationCost
+        registrationCost,
+        exchangeTestUtil.exchange.address
       );
       await registerTokenChecked("GTO", exchangeTestUtil.exchangeOwner);
       numTokens++;
@@ -199,7 +190,8 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setBalanceAndApprove(
         exchangeTestUtil.exchangeOwner,
         "LRC",
-        registrationCost
+        registrationCost,
+        exchangeTestUtil.exchange.address
       );
 
       // Try to register LRC
