@@ -63,22 +63,6 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
-    modifier onlyFromMetaTxWithMajority(
-        address                      wallet,
-        address[] memory             signers,
-        GuardianUtils.SigRequirement requirement
-        )
-    {
-        require(msg.sender == address(this), "NOT_FROM_META_TX");
-        GuardianUtils.requireMajority(
-            controller.securityStore(),
-            wallet,
-            signers,
-            requirement
-        );
-        _;
-    }
-
     modifier onlyWhenWalletLocked(address wallet)
     {
         require(isWalletLocked(wallet), "NOT_LOCKED");

@@ -164,11 +164,13 @@ abstract contract MetaTxModule is BaseModule
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
     /// @param signatures Signatures.
+    /// @param txSigners The signers needed for the transaction if they can't be extracted from the call data.
     function executeMetaTx(
-        bytes   memory data,
-        uint    nonce,
-        uint[5] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
-        bytes[] memory signatures
+        bytes     memory data,
+        uint      nonce,
+        uint[5]   memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
+        bytes[]   memory signatures,
+        address[] memory txSigners
         )
         public
         payable
@@ -202,7 +204,7 @@ abstract contract MetaTxModule is BaseModule
         );
 
         // Get the signers necessary for this meta transaction.
-        address[] memory signers = getSigners(wallet, data);
+        address[] memory signers = getSigners(wallet, data, txSigners);
         require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
@@ -250,7 +252,7 @@ abstract contract MetaTxModule is BaseModule
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
-            address[] memory txSigners = getSigners(wallet, data[i]);
+            address[] memory txSigners = getSigners(wallet, data[i], signers);
             for (uint j = 0; j < txSigners.length; j++) {
                 uint s = 0;
                 while (s < signers.length && signers[s] != txSigners[j]) {
@@ -258,6 +260,7 @@ abstract contract MetaTxModule is BaseModule
                 }
                 require(s < signers.length, "MISSING_SIGNER");
             }
+            require(areMetaTxSignersAuthorized(wallet, data[i], txSigners), "TX_UNAUTHORIZED");
 
             (bool success, bytes memory returnData) = address(this).call(data[i]);
             if (!success) {
@@ -307,9 +310,10 @@ abstract contract MetaTxModule is BaseModule
     /// @return signers A list of signers that should have signed this meta transaction.
     ///                  The list can be empty.
     function extractMetaTxSigners(
-        address wallet,
-        bytes4  method,
-        bytes   memory data
+        address   wallet,
+        bytes4    method,
+        bytes     memory data,
+        address[] memory txSigners
         )
         internal
         view
@@ -422,8 +426,9 @@ abstract contract MetaTxModule is BaseModule
     // ---- private functions -----
 
     function getSigners(
-        address wallet,
-        bytes   memory data
+        address   wallet,
+        bytes     memory data,
+        address[] memory txSigners
         )
         private
         view
@@ -436,7 +441,7 @@ abstract contract MetaTxModule is BaseModule
             signers = new address[](1);
             signers[0] = Wallet(wallet).owner();
         } else {
-            signers = extractMetaTxSigners(wallet, method, data);
+            signers = extractMetaTxSigners(wallet, method, data, txSigners);
         }
     }
 

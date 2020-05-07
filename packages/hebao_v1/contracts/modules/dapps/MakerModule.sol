@@ -30,9 +30,10 @@ contract MakerModule is SecurityModule
     }
 
     function extractMetaTxSigners(
-        address /*wallet*/,
-        bytes4  /*method*/,
-        bytes   memory /*data*/
+        address   /*wallet*/,
+        bytes4    /*method*/,
+        bytes     memory /*data*/,
+        address[] memory txSigners
         )
         internal
         view
