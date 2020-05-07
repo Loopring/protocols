@@ -43,8 +43,8 @@ const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
 const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
 
 const ENSManager = artifacts.require("./WalletENSManager.sol");
-const LRCToken = artifacts.require("./test/tokens/LRC.sol");
 
+// const LRCToken = artifacts.require("./test/tokens/LRC.sol");
 // const lrcTokenAddress = process.env.lrcTokenAddress || LRCToken.address;
 // const stakingPoolAddress = process.env.stakingPoolAddress || `0x${"0".repeat(40)}`;
 
