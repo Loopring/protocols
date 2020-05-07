@@ -8,8 +8,8 @@ const babyJub = require("./babyjub");
 const poseidon = require("./poseidon");
 
 export class EdDSA {
-  public static generateKeyPair(seed: Buffer) {
-    const secretKey = bigInt.leBuff2int(seed).mod(babyJub.subOrder);
+  public static generateKeyPair(seed: string) {
+    const secretKey = bigInt.leBuff2int(Buffer.from(seed)).mod(babyJub.subOrder);
     const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
     const keyPair: KeyPair = {
       publicKeyX: publicKey[0].toString(10),
