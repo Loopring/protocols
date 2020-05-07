@@ -155,18 +155,4 @@ module.exports = function(deployer, network, accounts) {
         ]);
       });
     });
-    // .then(() => {
-    //   console.log(">>>>>>>> contracts deployed by modules:");
-    //   console.log("WalletFactoryModule:", WalletFactoryModule.address);
-    //   console.log("GuardianModule:", GuardianModule.address);
-    //   console.log("RecoveryModule:", RecoveryModule.address);
-    //   console.log("LockModule:", LockModule.address);
-    //   console.log("InheritanceModule:", InheritanceModule.address);
-    //   console.log("WhitelistModule:", WhitelistModule.address);
-    //   console.log("QuotaModule:", QuotaModule.address);
-    //   console.log("QuotaTransfers:", QuotaTransfers.address);
-    //   console.log("ApprovedTransfers:", ApprovedTransfers.address);
-    //   console.log("ERC1271Module:", ERC1271Module.address);
-    //   console.log("");
-    // });
 };
