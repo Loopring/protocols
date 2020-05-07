@@ -99,22 +99,29 @@ contract LockModule is SecurityModule
         return isWalletLocked(wallet);
     }
 
-    function extractMetaTxSigners(
-        address   /*wallet*/,
+    function verifySigners(
+        address   wallet,
         bytes4    method,
         bytes     memory data,
-        address[] memory txSigners
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         require(
             method == this.lock.selector || method == this.unlock.selector,
             "INVALID_METHOD"
         );
-        signers = new address[](1);
-        signers[0] = extractAddressFromCallData(data, 1);
+
+        address expectedSigner = extractAddressFromCallData(data, 1);
+
+        // Check here already if the address is a guardian.
+        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
+        // (even a call that fails will reimburse the gas costs).
+        require(isWalletOwnerOrGuardian(wallet, expectedSigner), "UNAUTHORIZED");
+
+        return isOnlySigner(expectedSigner, signers);
     }
 }

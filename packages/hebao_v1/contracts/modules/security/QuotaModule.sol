@@ -88,30 +88,10 @@ contract QuotaModule is SecurityModule
         methods[0] = this.getDailyQuota.selector;
     }
 
-    function extractMetaTxSigners(
+    function verifySigners(
         address   wallet,
         bytes4    method,
         bytes     memory /*data*/,
-        address[] memory txSigners
-        )
-        internal
-        view
-        override
-        returns (address[] memory signers)
-    {
-        if (method == this.changeDailyQuota.selector) {
-            signers = new address[](1);
-            signers[0] = Wallet(wallet).owner();
-        } else if(method == this.changeDailyQuotaImmediately.selector) {
-            return txSigners;
-        } else {
-            revert("INVALID_METHOD");
-        }
-    }
-
-    function areMetaTxSignersAuthorized(
-        address   wallet,
-        bytes     memory data,
         address[] memory signers
         )
         internal
@@ -119,19 +99,17 @@ contract QuotaModule is SecurityModule
         override
         returns (bool)
     {
-        // First validate that all signers are the owner or a guardian
-        if (!super.areMetaTxSignersAuthorized(wallet, data, signers)) {
-            return false;
-        }
-
-        bytes4 method = extractMethod(data);
-        if(method == this.changeDailyQuotaImmediately.selector) {
+        if (method == this.changeDailyQuota.selector) {
+            return isOnlySigner(Wallet(wallet).owner(), signers);
+        } else if(method == this.changeDailyQuotaImmediately.selector) {
             GuardianUtils.requireMajority(
                 controller.securityStore(),
                 wallet,
                 signers,
                 GuardianUtils.SigRequirement.OwnerRequired
             );
+        } else {
+            revert("INVALID_METHOD");
         }
     }
 }

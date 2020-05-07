@@ -26,18 +26,17 @@ import "../../security/SecurityModule.sol";
 /// @dev SubAccountDAppModule only allows wallet owners to use meta-transactions.
 abstract contract SubAccountDAppModule is BaseSubAccount, SecurityModule
 {
-    function extractMetaTxSigners(
+    function verifySigners(
         address   wallet,
         bytes4    /* method */,
         bytes     memory /* data */,
-        address[] memory txSigners
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
-        signers = new address[](1);
-        signers[0] = Wallet(wallet).owner();
+        return isOnlySigner(Wallet(wallet).owner(), signers);
     }
 }

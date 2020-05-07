@@ -29,16 +29,16 @@ contract PoolTogetherModule is SecurityModule
     {
     }
 
-    function extractMetaTxSigners(
+    function verifySigners(
         address   /*wallet*/,
         bytes4    /*method*/,
         bytes     memory /*data*/,
-        address[] memory txSigners
+        address[] memory /*signers*/
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
     }
 }

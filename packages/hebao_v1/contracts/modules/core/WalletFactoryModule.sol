@@ -84,20 +84,22 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         //w.removeModule(address(this));
     }
 
-    function extractMetaTxSigners(
-        address   /*wallet*/,
+    function verifySigners(
+        address   wallet,
         bytes4    method,
         bytes     memory data,
-        address[] memory /*txSigners*/
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         if (method == this.createWallet.selector) {
-            signers = new address[](1);
-            signers[0] = extractAddressFromCallData(data, 0);
+            // The wallet doesn't exist yet, so the owner of the wallet (or any guardians) has not yet been set.
+            // Only allow the future wallet owner to sign the meta tx if the wallet hasn't been created yet.
+            address futureOwner = extractAddressFromCallData(data, 0);
+            return isOnlySigner(futureOwner, signers) && !wallet.isContract();
         } else {
             revert("INVALID_METHOD");
         }
@@ -112,20 +114,5 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
         address owner = extractAddressFromCallData(data, 0);
         wallet = computeWalletAddress(owner);
-    }
-
-    function areMetaTxSignersAuthorized(
-        address   wallet,
-        bytes     memory /*data*/,
-        address[] memory /*signers*/
-        )
-        internal
-        view
-        override
-        returns (bool)
-    {
-        // The wallet doesn't exist yet, so the owner of the wallet (or any guardians) has not yet been set.
-        // Only allow the future wallet owner to sign the meta tx if the wallet hasn't been created yet.
-        return !wallet.isContract();
     }
 }

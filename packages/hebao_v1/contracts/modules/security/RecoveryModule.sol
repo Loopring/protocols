@@ -66,24 +66,10 @@ contract RecoveryModule is SecurityModule
         emit Recovered(wallet, oldOwner, newOwner);
     }
 
-    function extractMetaTxSigners(
-        address   /*wallet*/,
-        bytes4    method,
-        bytes     memory data,
-        address[] memory txSigners
-        )
-        internal
-        view
-        override
-        returns (address[] memory signers)
-    {
-        require (method == this.recover.selector, "INVALID_METHOD");
-        signers = txSigners;
-    }
-
-    function areMetaTxSignersAuthorized(
+    function verifySigners(
         address   wallet,
-        bytes     memory data,
+        bytes4    method,
+        bytes     memory /*data*/,
         address[] memory signers
         )
         internal
@@ -91,14 +77,7 @@ contract RecoveryModule is SecurityModule
         override
         returns (bool)
     {
-        // First validate that all signers are the owner or a guardian
-        if (!super.areMetaTxSignersAuthorized(wallet, data, signers)) {
-            return false;
-        }
-
-        bytes4 method = extractMethod(data);
         require (method == this.recover.selector, "INVALID_METHOD");
-
         GuardianUtils.requireMajority(
             controller.securityStore(),
             wallet,

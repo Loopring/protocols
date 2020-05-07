@@ -206,16 +206,16 @@ contract LoopringModule is SecurityModule
         newAccount = accountId == 0;
     }
 
-    function extractMetaTxSigners(
+    function verifySigners(
         address   wallet,
         bytes4    method,
-        bytes     memory /* data */,
-        address[] memory txSigners
+        bytes     memory /*data*/,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         require (
             method == this.createOrUpdateDEXAccount.selector ||
@@ -223,8 +223,6 @@ contract LoopringModule is SecurityModule
             method == this.withdrawFromDEX.selector,
             "INVALID_METHOD"
         );
-
-        signers = new address[](1);
-        signers[0] = Wallet(wallet).owner();
+        return isOnlySigner(Wallet(wallet).owner(), signers);
     }
 }

@@ -105,32 +105,10 @@ contract InheritanceModule is SecurityModule
         controller.securityStore().setInheritor(wallet, who);
     }
 
-    function extractMetaTxSigners(
+    function verifySigners(
         address   wallet,
         bytes4    method,
         bytes     memory /*data*/,
-        address[] memory /*txSigners*/
-        )
-        internal
-        view
-        override
-        returns (address[] memory signers)
-    {
-        if (method == this.setInheritor.selector) {
-            signers = new address[](1);
-            signers[0] = Wallet(wallet).owner();
-        } else if (method == this.inherit.selector) {
-            (address newOwner, ) = controller.securityStore().inheritor(wallet);
-            signers = new address[](1);
-            signers[0] = newOwner;
-        } else {
-            revert("INVALID_METHOD");
-        }
-    }
-
-    function areMetaTxSignersAuthorized(
-        address   wallet,
-        bytes     memory data,
         address[] memory signers
         )
         internal
@@ -138,12 +116,11 @@ contract InheritanceModule is SecurityModule
         override
         returns (bool)
     {
-        bytes4 method = extractMethod(data);
         if (method == this.setInheritor.selector) {
-            return (signers[0] == Wallet(wallet).owner());
+            return isOnlySigner(Wallet(wallet).owner(), signers);
         } else if (method == this.inherit.selector) {
             (address newOwner, ) = controller.securityStore().inheritor(wallet);
-            return (signers[0] == newOwner && newOwner != address(0));
+            return isOnlySigner(newOwner, signers);
         } else {
             revert("INVALID_METHOD");
         }

@@ -55,6 +55,7 @@ library GuardianUtils
             if (signers[i] == walletOwner) {
                 walletOwnerSigned = true;
             } else {
+                require(securityStore.isGuardian(wallet, signers[i]), "SIGNER_NOT_GUARDIAN");
                 signingGuardians[numGuardians++] = securityStore.getGuardian(wallet, signers[i]);
             }
         }

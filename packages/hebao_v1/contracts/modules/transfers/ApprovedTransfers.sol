@@ -113,16 +113,16 @@ contract ApprovedTransfers is TransferModule
         callContractInternal(wallet, to, 0, data);
     }
 
-    function extractMetaTxSigners(
-        address   /*wallet*/,
+    function verifySigners(
+        address   wallet,
         bytes4    method,
         bytes     memory /*data*/,
-        address[] memory txSigners
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         require (
             method == this.transferToken.selector ||
@@ -132,24 +132,6 @@ contract ApprovedTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-        signers = txSigners;
-    }
-
-    function areMetaTxSignersAuthorized(
-        address   wallet,
-        bytes     memory data,
-        address[] memory signers
-        )
-        internal
-        view
-        override
-        returns (bool)
-    {
-        // First validate that all signers are the owner or a guardian
-        if (!super.areMetaTxSignersAuthorized(wallet, data, signers)) {
-            return false;
-        }
-
         GuardianUtils.requireMajority(
             controller.securityStore(),
             wallet,
