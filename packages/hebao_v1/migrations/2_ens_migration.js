@@ -7,7 +7,7 @@ var ENSManager = artifacts.require("./WalletENSManager.sol");
 var ENSRegistry = artifacts.require("./ENSRegistryImpl.sol");
 var ENSReverseRegistrar = artifacts.require("./ENSReverseRegistrarImpl.sol");
 
-var root = "io";
+var root = "eth";
 var subName = "loopring";
 var fullName = subName + "." + root;
 var rootNode = ethers.utils.namehash(fullName);
