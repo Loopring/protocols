@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/Ownable.sol";
 
 import "../../thirdparty/loopring/IProtocolFeeVault.sol";
 import "../../thirdparty/loopring/IUserStakingPool.sol";
@@ -27,7 +28,7 @@ import "./base/SubAccountDAppModule.sol";
 
 
 /// @title LRCStakingModule
-contract LRCStakingModule is Claimable, SubAccountDAppModule
+contract LRCStakingModule is Ownable, SubAccountDAppModule
 {
     using MathUint for uint;
 
@@ -39,7 +40,7 @@ contract LRCStakingModule is Claimable, SubAccountDAppModule
         Controller       _controller
         )
         public
-        Claimable()
+        Ownable()
         SecurityModule(_controller)
     {
     }
