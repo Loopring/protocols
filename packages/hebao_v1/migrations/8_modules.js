@@ -145,14 +145,16 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       let deployedEnsManagerAddr = process.env.ENSManager || "";
-      if (!web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
-        deployedEnsManagerAddr = ENSManager.address;
+      if (web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
+        // should be done manually.
+        console.log("You will have to do ensManager.addManager(WalletFactoryModule.address) manually");
+      } else {
+        console.log("add manager for ENSManager:", WalletFactoryModule.address);
+        ENSManager.deployed().then(ensManager => {
+          return Promise.all([
+            ensManager.addManager(WalletFactoryModule.address)
+          ]);
+        });
       }
-
-      ENSManager.at(deployedEnsManagerAddr).then(ensManager => {
-        return Promise.all([
-          ensManager.addManager(WalletFactoryModule.address)
-        ]);
-      });
     });
 };

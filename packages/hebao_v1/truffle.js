@@ -99,7 +99,7 @@ module.exports = {
       provider: function() {
         return getWalletProvider("goerli");
       },
-      gasPrice: 22000000000,
+      gasPrice: "22000000000",
       gas: 8000000
     },
     development: {
