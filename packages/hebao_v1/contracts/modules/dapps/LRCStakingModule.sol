@@ -27,19 +27,19 @@ import "./base/SubAccountDAppModule.sol";
 
 
 /// @title LRCStakingModule
-contract LRCStakingModule is SubAccountDAppModule
+contract LRCStakingModule is Claimable, SubAccountDAppModule
 {
     using MathUint for uint;
 
     IUserStakingPool  public stakingPool;
     IProtocolFeeVault public feeVault;
-
-    address public lrcTokenAddress;
+    address           public lrcTokenAddress;
 
     constructor(
         Controller       _controller
         )
         public
+        Claimable()
         SecurityModule(_controller)
     {
     }
@@ -50,8 +50,9 @@ contract LRCStakingModule is SubAccountDAppModule
         address          _lrcTokenAddress
         )
         external
-        onlyFromWalletOwner(wallet)
+        onlyOwner
     {
+        require(lrcTokenAddress == address(0), "INITIALIZED_ALREADY");
         require(_lrcTokenAddress != address(0), "ZERO_ADDRESS");
 
         stakingPool = _stakingPool;
