@@ -93,7 +93,9 @@ module.exports = function(deployer, network, accounts) {
           securityStore.addManager(WhitelistModule.address),
           securityStore.addManager(QuotaModule.address),
           securityStore.addManager(QuotaTransfers.address),
-          securityStore.addManager(ApprovedTransfers.address)
+          securityStore.addManager(ApprovedTransfers.address),
+          securityStore.addManager(LoopringModule.address),
+          securityStore.addManager(LRCStakingModule.address)
         ]);
       });
     })

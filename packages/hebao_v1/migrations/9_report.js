@@ -75,5 +75,5 @@ module.exports = function(deployer, network, accounts) {
   report += `- LoopringModule: ${LoopringModule.address}  \n`;
   report += `- LRCStakingModule: ${LRCStakingModule.address}  \n`;
 
-  console.log("report:\n", report);
+  console.log("report:\n" + report);
 };
