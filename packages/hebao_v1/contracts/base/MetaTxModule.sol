@@ -154,12 +154,12 @@ abstract contract MetaTxModule is BaseModule
     ///      Important! This function needs to be safe against re-entrancy by using
     ///      the 'Checks Effects Interactions' pattern! We do not use `nonReentrant`
     ///      because this function is used to call into the same contract.
+    ///
     /// @param data The raw transaction to be performed on this module.
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
     ///              wallet, but not by more than `block.number * 2^128`.
-    ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
