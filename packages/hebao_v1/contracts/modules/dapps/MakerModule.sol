@@ -35,8 +35,8 @@ contract MakerModule is SecurityModule
         bytes   memory /*data*/
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
     }

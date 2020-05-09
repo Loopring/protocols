@@ -126,8 +126,8 @@ contract WhitelistModule is SecurityModule
         bytes   memory data
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.addToWhitelist.selector ||

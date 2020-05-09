@@ -99,8 +99,8 @@ contract QuotaModule is SecurityModule
         bytes   memory data
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.changeDailyQuota.selector) {

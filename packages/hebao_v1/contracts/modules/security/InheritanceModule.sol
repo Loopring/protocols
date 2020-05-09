@@ -111,8 +111,8 @@ contract InheritanceModule is SecurityModule
         bytes   memory /*data*/
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.setInheritor.selector) {
@@ -133,8 +133,8 @@ contract InheritanceModule is SecurityModule
         address[] memory signers
         )
         internal
-        override
         view
+        override
         returns (bool)
     {
         bytes4 method = extractMethod(data);

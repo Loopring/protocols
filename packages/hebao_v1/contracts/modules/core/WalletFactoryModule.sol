@@ -91,8 +91,8 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         bytes   memory data
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.createWallet.selector) {
@@ -105,8 +105,8 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
 
     function extractWalletAddress(bytes memory data)
         internal
-        override
         view
+        override
         returns (address wallet)
     {
         require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
@@ -120,8 +120,8 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         address[] memory /*signers*/
         )
         internal
-        override
         view
+        override
         returns (bool)
     {
         // The wallet doesn't exist yet, so the owner of the wallet (or any guardians) has not yet been set.

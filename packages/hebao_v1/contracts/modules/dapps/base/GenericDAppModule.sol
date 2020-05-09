@@ -110,8 +110,8 @@ contract GenericDAppModule is SecurityModule
         bytes   memory /* data */
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         signers = new address[](1);

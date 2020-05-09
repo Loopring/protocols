@@ -78,8 +78,8 @@ contract RecoveryModule is SecurityModule
         bytes   memory data
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         require (method == this.recover.selector, "INVALID_METHOD");

@@ -273,8 +273,8 @@ contract QuotaTransfers is TransferModule
         bytes   memory  /* data */
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         require (

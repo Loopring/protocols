@@ -118,8 +118,8 @@ contract GuardianModule is SecurityModule
         bytes   memory
         )
         internal
-        override
         view
+        override
         returns (address[] memory signers)
     {
         if (method == this.addGuardian.selector ||
