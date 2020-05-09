@@ -114,8 +114,8 @@ abstract contract MetaTxModule is BaseModule
 
     function quotaStore()
         internal
-        virtual
         view
+        virtual
         returns (address)
     {
         return address(0);
@@ -316,15 +316,15 @@ abstract contract MetaTxModule is BaseModule
         bytes   memory data
         )
         internal
-        virtual
         view
+        virtual
         returns (address[] memory signers);
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
         internal
-        virtual
         view
+        virtual
         returns (address wallet)
     {
         wallet = extractAddressFromCallData(data, 0);
@@ -450,8 +450,8 @@ abstract contract MetaTxModule is BaseModule
         address[] memory signers
         )
         internal
-        virtual
         view
+        virtual
         returns (bool)
     {
         // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
