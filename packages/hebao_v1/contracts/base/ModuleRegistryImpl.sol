@@ -55,8 +55,8 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 
     function isModuleRegistered(address module)
         external
-        view
         override
+        view
         returns (bool)
     {
         return isAddressInSet(MODULE, module);
@@ -64,8 +64,8 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 
     function modules()
         external
-        view
         override
+        view
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
@@ -73,8 +73,8 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
 
     function numOfModules()
         external
-        view
         override
+        view
         returns (uint)
     {
         return numAddressesInSet(MODULE);

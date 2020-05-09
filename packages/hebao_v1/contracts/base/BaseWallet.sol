@@ -85,6 +85,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function setOwner(address newOwner)
         external
         override
+        nonReentrant
         onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
@@ -120,15 +121,16 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function addModule(address _module)
         external
         override
+        // allowReentrant (bindMethod)
         onlyOwnerOrModule
     {
-        require(!isAddressInSet(MODULE, _module), "MODULE_ADDED_ALREADY");
         addModuleInternal(_module);
     }
 
     function removeModule(address _module)
         external
         override
+        // allowReentrant (bindMethod)
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
@@ -140,8 +142,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function modules()
         external
-        view
         override
+        view
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
@@ -149,8 +151,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function hasModule(address _module)
         external
-        view
         override
+        view
         returns (bool)
     {
         return isAddressInSet(MODULE, _module);
@@ -159,6 +161,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function bindMethod(bytes4 _method, address _module)
         external
         override
+        nonReentrant
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
@@ -173,8 +176,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function boundMethodModule(bytes4 _method)
         external
-        view
         override
+        view
         returns (address)
     {
         return methodToModule[_method];
@@ -224,6 +227,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         internal
     {
         require(_module != address(0), "NULL_MODULE");
+        require(!isAddressInSet(MODULE, _module), "MODULE_ADDED_ALREADY");
         require(
             controller.moduleRegistry().isModuleRegistered(_module),
             "INVALID_MODULE"
@@ -234,10 +238,13 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         emit ModuleAdded(_module);
     }
 
+    receive() external payable { }
+
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.
     fallback()
         external
+        nonReentrant
         payable
     {
         if (msg.data.length == 0 || msg.value > 0) {

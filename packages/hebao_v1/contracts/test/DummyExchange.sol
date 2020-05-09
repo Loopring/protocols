@@ -32,24 +32,24 @@ contract DummyExchange is IExchangeV3
 
     function isInWithdrawalMode()
         external
-        view
         override
+        view
         returns (bool) {
         return false;
     }
 
     function isShutdown()
         external
-        view
         override
+        view
         returns (bool) {
         return false;
     }
 
     function isInMaintenance()
         external
-        view
         override
+        view
         returns (bool) {
         return false;
     }
@@ -58,8 +58,8 @@ contract DummyExchange is IExchangeV3
         address owner
         )
         external
-        view
         override
+        view
         returns (
             uint24 accountID,
             uint   pubKeyX,
@@ -148,8 +148,8 @@ contract DummyExchange is IExchangeV3
 
     function getFees()
         external
-        view
         override
+        view
         returns (
             uint _accountCreationFeeETH,
             uint _accountUpdateFeeETH,
@@ -161,8 +161,8 @@ contract DummyExchange is IExchangeV3
 
     function getRequestStats()
         external
-        view
         override
+        view
         returns (
             uint numDepositRequestsProcessed,
             uint numAvailableDepositSlots,
