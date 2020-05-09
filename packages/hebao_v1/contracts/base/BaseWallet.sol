@@ -141,8 +141,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function modules()
         external
-        override
         view
+        override
         returns (address[] memory)
     {
         return addressesInSet(MODULE);
@@ -150,8 +150,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function hasModule(address _module)
         external
-        override
         view
+        override
         returns (bool)
     {
         return isAddressInSet(MODULE, _module);
@@ -175,8 +175,8 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     function boundMethodModule(bytes4 _method)
         external
-        override
         view
+        override
         returns (address)
     {
         return methodToModule[_method];
