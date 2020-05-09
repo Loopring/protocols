@@ -554,10 +554,19 @@ contract("Transfers", (accounts: string[]) => {
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
     const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
+    console.log('oldAvailableQuota', oldAvailableQuota.toString(10));
+    console.log('newAvailableQuota', newAvailableQuota.toString(10));
+    console.log('quotaDelta', quotaDelta.toString(10));
+    console.log("-".repeat(64));
     assert(
       oldAvailableQuota.eq(newAvailableQuota.add(quotaDelta)),
       "incorrect available quota"
     );
+
+    console.log("newSpentQuota", newSpentQuota.toString(10));
+    console.log("oldSpentQuota", oldSpentQuota.toString(10));
+    console.log('quotaDelta', quotaDelta.toString(10));
+    console.log("-".repeat(64));
     assert(
       newSpentQuota.eq(oldSpentQuota.add(quotaDelta)),
       "incorrect available quota"
@@ -698,7 +707,7 @@ contract("Transfers", (accounts: string[]) => {
     delayPeriod = (await ctx.quotaModule.delayPeriod()).toNumber();
   });
 
-  [false, true].forEach(function(metaTx) {
+  [false/*, true*/].forEach(function(metaTx) {
     describe(description("TransferToken", metaTx), () => {
       it(
         description(
@@ -1342,7 +1351,7 @@ contract("Transfers", (accounts: string[]) => {
     });
 
     describe(description("approveThenCallContract", metaTx), () => {
-      it(
+      it.only(
         description(
           "owner should be able to approve an address and call a function using daily quota",
           metaTx
