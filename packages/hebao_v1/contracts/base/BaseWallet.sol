@@ -215,7 +215,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         internal
     {
         require(_module != address(0), "NULL_MODULE");
-        require(!isAddressInSet(MODULE, _module), "MODULE_ADDED_ALREADY");
         require(
             controller.moduleRegistry().isModuleRegistered(_module),
             "INVALID_MODULE"
