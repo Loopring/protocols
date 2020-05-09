@@ -203,12 +203,12 @@ abstract contract MetaTxModule is BaseModule
 
         // Get the signers necessary for this meta transaction.
         address[] memory signers = getSigners(wallet, data);
-        require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-
 
         // We check if all signers are authorized, but not if the number of signatures required
         // for the method is suffcient, which should be done inside the specific method.
         require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
+
+        require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
