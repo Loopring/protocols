@@ -7,7 +7,7 @@ module.exports = function(deployer, network, accounts) {
   deployer
     .then(() => {
       return Promise.all([
-        deployer.deploy(QuotaStore, 10),
+        deployer.deploy(QuotaStore, `10${"0".repeat(18)}`), // 10 ether
         deployer.deploy(SecurityStore),
         deployer.deploy(WhitelistStore),
         deployer.deploy(PriceCacheStore, accounts[0], 14 * 24 * 3600)
