@@ -47,8 +47,8 @@ abstract contract IUserStakingPool
     /// @dev Returns the total number of LRC staked.
     function getTotalStaking()
         public
-        view
         virtual
+        view
         returns (uint);
 
     /// @dev Returns information related to a specific user.
@@ -59,8 +59,8 @@ abstract contract IUserStakingPool
     /// @return pendingReward The amount of LRC reward claimable.
     function getUserStaking(address user)
         public
-        view
         virtual
+        view
         returns (
             uint withdrawalWaitTime,
             uint rewardWaitTime,

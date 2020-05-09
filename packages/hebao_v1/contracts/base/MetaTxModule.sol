@@ -114,8 +114,8 @@ abstract contract MetaTxModule is BaseModule
 
     function quotaStore()
         internal
-        view
         virtual
+        view
         returns (address)
     {
         return address(0);
@@ -203,8 +203,12 @@ abstract contract MetaTxModule is BaseModule
 
         // Get the signers necessary for this meta transaction.
         address[] memory signers = getSigners(wallet, data);
-        require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
+
+
+        // We check if all signers are authorized, but not if the number of signatures required
+        // for the method is suffcient, which should be done inside the specific method.
+        require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
@@ -312,15 +316,15 @@ abstract contract MetaTxModule is BaseModule
         bytes   memory data
         )
         internal
-        view
         virtual
+        view
         returns (address[] memory signers);
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
         internal
-        view
         virtual
+        view
         returns (address wallet)
     {
         wallet = extractAddressFromCallData(data, 0);
@@ -446,8 +450,8 @@ abstract contract MetaTxModule is BaseModule
         address[] memory signers
         )
         internal
-        view
         virtual
+        view
         returns (bool)
     {
         // We need at least one signer, and all signers need to be either the wallet owner or a guardian.

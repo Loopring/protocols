@@ -35,8 +35,8 @@ contract DyDxModule is SecurityModule
         bytes   memory /*data*/
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
     }

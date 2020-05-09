@@ -85,8 +85,8 @@ contract QuotaModule is SecurityModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -99,8 +99,8 @@ contract QuotaModule is SecurityModule
         bytes   memory data
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         if (method == this.changeDailyQuota.selector) {

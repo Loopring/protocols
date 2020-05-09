@@ -28,8 +28,8 @@ abstract contract KyberNetworkProxy {
         uint srcQty
         )
         public
-        view
         virtual
+        view
         returns (
             uint expectedRate,
             uint slippageRate
@@ -51,8 +51,8 @@ contract KyberNetworkPriceOracle is PriceOracle
 
     function tokenPrice(address token, uint amount)
         public
-        view
         override
+        view
         returns (uint value)
     {
         if (amount == 0) return 0;

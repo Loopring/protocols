@@ -88,8 +88,8 @@ contract CompoundModule is SubAccountDAppModule
         address token
         )
         public
-        view
         override
+        view
         returns (int)
     {
         address cToken = compoundRegistry.getCToken(token);
@@ -110,8 +110,8 @@ contract CompoundModule is SubAccountDAppModule
         bool    borrow
         )
         public
-        view
         override
+        view
         returns (int)
     {
         address cToken = compoundRegistry.getCToken(token);

@@ -39,8 +39,8 @@ contract AggregationalPriceOracle is PriceOracle
 
     function tokenPrice(address token, uint amount)
         public
-        view
         override
+        view
         returns (uint)
     {
         uint total;

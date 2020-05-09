@@ -49,8 +49,8 @@ contract QuotaTransfers is TransferModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -273,8 +273,8 @@ contract QuotaTransfers is TransferModule
         bytes   memory  /* data */
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         require (

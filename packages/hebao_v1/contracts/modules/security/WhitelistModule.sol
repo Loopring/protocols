@@ -111,8 +111,8 @@ contract WhitelistModule is SecurityModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
@@ -126,8 +126,8 @@ contract WhitelistModule is SecurityModule
         bytes   memory data
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         if (method == this.addToWhitelist.selector ||

@@ -53,8 +53,8 @@ contract InheritanceModule is SecurityModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -111,8 +111,8 @@ contract InheritanceModule is SecurityModule
         bytes   memory /*data*/
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         if (method == this.setInheritor.selector) {
@@ -133,8 +133,8 @@ contract InheritanceModule is SecurityModule
         address[] memory signers
         )
         internal
-        view
         override
+        view
         returns (bool)
     {
         bytes4 method = extractMethod(data);

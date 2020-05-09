@@ -35,8 +35,8 @@ contract ERC1271Module is ERC1271, BaseModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);
@@ -49,8 +49,8 @@ contract ERC1271Module is ERC1271, BaseModule
         bytes memory _data,
         bytes memory _signature)
         public
-        view
         override
+        view
         returns (bytes4 magicValue)
     {
         bytes32 hash;

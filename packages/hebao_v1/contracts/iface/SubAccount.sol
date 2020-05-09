@@ -56,8 +56,8 @@ abstract contract SubAccount
         address token
         )
         public
-        view
         virtual
+        view
         returns (int balance);
 
     /// @dev Returns the amount of token a wallet can withdraw from the sub-account
@@ -73,8 +73,8 @@ abstract contract SubAccount
         address token
         )
         public
-        view
         virtual
+        view
         returns (bool unsupported, uint withdrawable);
 
     /// @dev Returns the amount of token a wallet can deposit from the wallet into
@@ -88,8 +88,8 @@ abstract contract SubAccount
         address token
         )
         public
-        view
         virtual
+        view
         returns (bool unsupported, uint depositable);
 
     /// @dev Checks if a certain amount of withdrawal is allowed.
@@ -103,8 +103,8 @@ abstract contract SubAccount
         uint    amount
         )
         public
-        view
         virtual
+        view
         returns (bool);
 
     /// @dev Checks if a certain amount of deposit is allowed.
@@ -118,8 +118,8 @@ abstract contract SubAccount
         uint    amount
         )
         public
-        view
         virtual
+        view
         returns (bool);
 
     /// @dev Returns the current interest rate in BIPs (0.01%).
@@ -136,8 +136,8 @@ abstract contract SubAccount
         bool    borrow
         )
         public
-        view
         virtual
+        view
         returns (int interestRate);
 
     /// @dev Returns the ROI in BIPs (0.01%).
@@ -149,7 +149,7 @@ abstract contract SubAccount
         address token
         )
         public
-        view
         virtual
+        view
         returns (int roi);
 }

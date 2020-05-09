@@ -63,8 +63,8 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 
     function isWalletRegistered(address addr)
         public
-        view
         override
+        view
         returns (bool)
     {
         return isAddressInSet(WALLET, addr);
@@ -72,8 +72,8 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
 
     function numOfWallets()
         public
-        view
         override
+        view
         returns (uint)
     {
         return numAddressesInSet(WALLET);

@@ -32,8 +32,8 @@ abstract contract SubAccountDAppModule is BaseSubAccount, SecurityModule
         bytes   memory /* data */
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         signers = new address[](1);

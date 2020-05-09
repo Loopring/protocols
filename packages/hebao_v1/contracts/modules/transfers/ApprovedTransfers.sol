@@ -139,8 +139,8 @@ contract ApprovedTransfers is TransferModule
         bytes   memory data
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         require (

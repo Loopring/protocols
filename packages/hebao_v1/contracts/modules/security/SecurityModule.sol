@@ -116,8 +116,8 @@ abstract contract SecurityModule is MetaTxModule
 
     function quotaStore()
         internal
-        view
         override
+        view
         returns (address)
     {
         return address(controller.quotaStore());

@@ -28,8 +28,8 @@ contract TokenBalances is BaseSubAccount, BaseModule
 {
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
@@ -42,8 +42,8 @@ contract TokenBalances is BaseSubAccount, BaseModule
         address token
         )
         public
-        view
         override
+        view
         returns (int balance)
     {
         if (token == address(0)) {

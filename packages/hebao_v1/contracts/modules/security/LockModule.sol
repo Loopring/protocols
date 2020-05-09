@@ -48,8 +48,8 @@ contract LockModule is SecurityModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](2);
@@ -105,8 +105,8 @@ contract LockModule is SecurityModule
         bytes   memory data
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         require(

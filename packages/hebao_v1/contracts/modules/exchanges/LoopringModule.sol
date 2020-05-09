@@ -67,8 +67,8 @@ contract LoopringModule is SecurityModule
 
     function bindableMethods()
         public
-        pure
         override
+        pure
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](3);
@@ -240,8 +240,8 @@ contract LoopringModule is SecurityModule
         bytes   memory /* data */
         )
         internal
-        view
         override
+        view
         returns (address[] memory signers)
     {
         require (

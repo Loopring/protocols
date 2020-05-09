@@ -192,8 +192,8 @@ contract BaseVault is AddressSet, Vault
 
     function requirement()
         public
-        view
         override
+        view
         returns (uint)
     {
         return _requirement;
@@ -201,8 +201,8 @@ contract BaseVault is AddressSet, Vault
 
     function owners()
         public
-        view
         override
+        view
         returns (address[] memory)
     {
         return addressesInSet(OWNERS);
@@ -210,8 +210,8 @@ contract BaseVault is AddressSet, Vault
 
     function isOwner(address _addr)
         public
-        view
         override
+        view
         returns (bool)
     {
         return isAddressInSet(OWNERS, _addr);
