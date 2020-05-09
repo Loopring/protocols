@@ -11,6 +11,7 @@ blocks/
 .DS_Store
 .node-*
 *.log
+*_flat.sol
 state_*.json
 withdraw_proof.json
 .env
