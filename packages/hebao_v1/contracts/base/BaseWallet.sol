@@ -85,7 +85,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function setOwner(address newOwner)
         external
         override
-        nonReentrant
         onlyModule
     {
         require(newOwner != address(0), "ZERO_ADDRESS");
