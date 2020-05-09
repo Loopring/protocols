@@ -28,8 +28,8 @@ abstract contract KyberNetworkProxy {
         uint srcQty
         )
         public
-        virtual
         view
+        virtual
         returns (
             uint expectedRate,
             uint slippageRate

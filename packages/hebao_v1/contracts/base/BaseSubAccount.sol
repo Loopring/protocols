@@ -100,8 +100,8 @@ abstract contract BaseSubAccount is SubAccount
         address token
         )
         public
-        virtual
         view
+        virtual
         returns (int)
     {
         int totalDeposit = stats[wallet][token].totalDeposit;

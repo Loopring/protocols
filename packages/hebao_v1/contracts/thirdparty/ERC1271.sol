@@ -20,7 +20,7 @@ abstract contract ERC1271 {
         bytes memory _data,
         bytes memory _signature)
         public
-        virtual
         view
+        virtual
         returns (bytes4 magicValue);
 }

@@ -24,16 +24,16 @@ abstract contract ERC20
 {
     function totalSupply()
         public
-        virtual
         view
+        virtual
         returns (uint);
 
     function balanceOf(
         address who
         )
         public
-        virtual
         view
+        virtual
         returns (uint);
 
     function allowance(
@@ -41,8 +41,8 @@ abstract contract ERC20
         address spender
         )
         public
-        virtual
         view
+        virtual
         returns (uint);
 
     function transfer(

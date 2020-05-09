@@ -22,7 +22,7 @@ abstract contract PriceOracle
 {
     function tokenPrice(address token, uint amount)
         public
-        virtual
         view
+        virtual
         returns (uint value);
 }
