@@ -134,7 +134,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
-        require(isAddressInSet(MODULE, _module), "MODULE_ADDED_ALREADY");
+        require(isAddressInSet(MODULE, _module), "MODULE_NOT_ADDED");
         try Module(_module).deactivate() {} catch {}
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
@@ -192,7 +192,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         external
         override
         onlyModule
-        returns (bytes memory result)
+        returns (bytes memory returnData)
     {
         require(
             !controller.moduleRegistry().isModuleRegistered(to),
@@ -200,19 +200,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         );
 
         bool success;
-        if (mode == 1) {
-            // solium-disable-next-line security/no-call-value
-            (success, result) = to.call{value: value}(data);
-        } else if (mode == 2) {
-            // solium-disable-next-line security/no-call-value
-            (success, result) = to.delegatecall(data);
-        } else if (mode == 3) {
-            require(value == 0, "INVALID_VALUE");
-            // solium-disable-next-line security/no-call-value
-            (success, result) = to.staticcall(data);
-        } else {
-            revert("UNSUPPORTED_MODE");
-        }
+        (success, returnData) = nonReentrantCall(mode, to, value, data);
 
         if (!success) {
             assembly {
@@ -249,7 +237,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
-        (bool success, bytes memory returnData) = callExternalContract(module, msg.data);
+        (bool success, bytes memory returnData) = nonReentrantCall(1, module, msg.value, msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }
@@ -259,7 +247,12 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     // This call is introduced to support reentrany check.
     // The caller shall NOT have the nonReentrant modifier.
-    function callExternalContract(address target, bytes memory data)
+    function nonReentrantCall(
+        uint         mode,
+        address      target,
+        uint         value,
+        bytes memory data
+        )
         private
         nonReentrant
         returns (
@@ -267,7 +260,19 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
             bytes memory returnData
         )
     {
-        (success, returnData) = target.call(data);
+        if (mode == 1) {
+            // solium-disable-next-line security/no-call-value
+            (success, returnData) = target.call{value: value}(data);
+        } else if (mode == 2) {
+            // solium-disable-next-line security/no-call-value
+            (success, returnData) = target.delegatecall(data);
+        } else if (mode == 3) {
+            require(value == 0, "INVALID_VALUE");
+            // solium-disable-next-line security/no-call-value
+            (success, returnData) = target.staticcall(data);
+        } else {
+            revert("UNSUPPORTED_MODE");
+        }
     }
 
     function isLocalMethod(bytes4 _method)

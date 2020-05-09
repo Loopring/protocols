@@ -96,7 +96,7 @@ interface Wallet
     /// @param to The desitination address.
     /// @param value The amount of Ether to transfer.
     /// @param data The data to send over using `to.call{value: value}(data)`
-    /// @return result The transaction's return value.
+    /// @return returnData The transaction's return value.
     function transact(
         uint8    mode,
         address  to,
@@ -104,5 +104,5 @@ interface Wallet
         bytes    calldata data
         )
         external
-        returns (bytes memory result);
+        returns (bytes memory returnData);
 }
