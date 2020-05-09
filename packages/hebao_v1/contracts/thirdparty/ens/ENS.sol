@@ -1,7 +1,7 @@
 // Taken from Argent's code base - https://github.com/argentlabs/argent-contracts/blob/develop/contracts/ens/ENS.sol
 // with few modifications.
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 /**
  * ENS Registry interface.

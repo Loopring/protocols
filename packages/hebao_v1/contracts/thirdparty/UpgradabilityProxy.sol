@@ -1,7 +1,7 @@
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import './Proxy.sol';
 

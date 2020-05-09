@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
@@ -65,7 +65,7 @@ contract LoopringModule is SecurityModule
     {
     }
 
-    function boundMethods()
+    function bindableMethods()
         public
         pure
         override

@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 
 /// @title Wallet
@@ -35,7 +35,7 @@ interface Wallet
     /// @dev Set a new owner.
     function setOwner(address newOwner) external;
 
-    /// @dev Set up this wallet by assigning an original order and a
+    /// @dev Set up this wallet by assigning an original owner and a
     ///      list of initial modules. For each module, its `init` method
     ///      will be called with `address(this)` as the parameter.
     ///
@@ -89,13 +89,13 @@ interface Wallet
     ///      This method will emit `Transacted` event if it doesn't throw.
     ///
     ///      Note: this method must ONLY allow invocations from a module that has
-    ///      beeen added to this wallet. The wallet owner shall NOT be permitted
+    ///      been added to this wallet. The wallet owner shall NOT be permitted
     ///      to call this method directly.
     ///
     /// @param mode The transaction mode, 1 for CALL, 2 for DELEGATECALL.
     /// @param to The desitination address.
     /// @param value The amount of Ether to transfer.
-    /// @param data The data to send over using `to.call.value(value)(data)`
+    /// @param data The data to send over using `to.call{value: value}(data)`
     /// @return result The transaction's return value.
     function transact(
         uint8    mode,

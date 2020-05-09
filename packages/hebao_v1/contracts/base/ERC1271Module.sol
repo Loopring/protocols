@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import "../thirdparty/ERC1271.sol";
 
@@ -33,7 +33,7 @@ contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
 
-    function boundMethods()
+    function bindableMethods()
         public
         pure
         override

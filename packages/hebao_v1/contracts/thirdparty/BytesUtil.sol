@@ -1,5 +1,5 @@
 //Mainly taken from https://github.com/GNSPS/solidity-bytes-utils/blob/master/contracts/BytesLib.sol
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 library BytesUtil {
     function concat(

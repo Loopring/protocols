@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import "../lib/ERC20.sol";
 import "../lib/AddressSet.sol";
@@ -122,6 +122,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         override
         onlyOwnerOrModule
     {
+        require(!isAddressInSet(MODULE, _module), "MODULE_ADDED_ALREADY");
         addModuleInternal(_module);
     }
 
@@ -131,6 +132,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
+        require(isAddressInSet(MODULE, _module), "MODULE_ADDED_ALREADY");
         try Module(_module).deactivate() {} catch {}
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
@@ -197,7 +199,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         bool success;
         if (mode == 1) {
             // solium-disable-next-line security/no-call-value
-            (success, result) = to.call.value(value)(data);
+            (success, result) = to.call{value: value}(data);
         } else if (mode == 2) {
             // solium-disable-next-line security/no-call-value
             (success, result) = to.delegatecall(data);

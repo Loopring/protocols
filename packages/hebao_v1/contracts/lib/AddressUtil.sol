@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 
 /// @title Utility Functions for addresses
@@ -61,7 +61,7 @@ library AddressUtil
         }
         address payable recipient = to.toPayable();
         /* solium-disable-next-line */
-        (success, ) = recipient.call.value(amount).gas(gasLimit)("");
+        (success, ) = recipient.call{value: amount, gas: gasLimit}("");
     }
 
     // Works like address.transfer but with a customizable gas limit

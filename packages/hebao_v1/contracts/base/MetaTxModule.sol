@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
@@ -218,7 +218,7 @@ abstract contract MetaTxModule is BaseModule
         require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = address(this).call.gas(gasSettings.limit)(data);
+        (bool success, bytes memory returnData) = address(this).call{gas: gasSettings.limit}(data);
         gasUsed = gasUsed - gasleft();
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
         gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
