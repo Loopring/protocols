@@ -237,7 +237,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
-        (bool success, bytes memory returnData) = nonReentrantCall(1, module, msg.value, msg.data);
+        (bool success, bytes memory returnData) = nonReentrantCall(uint8(1), module, msg.value, msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }
@@ -248,7 +248,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     // This call is introduced to support reentrany check.
     // The caller shall NOT have the nonReentrant modifier.
     function nonReentrantCall(
-        uint         mode,
+        uint8        mode,
         address      target,
         uint         value,
         bytes memory data
