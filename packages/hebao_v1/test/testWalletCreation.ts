@@ -15,7 +15,7 @@ contract("WalletFactoryModule", () => {
   let ctx: Context;
 
   let useMetaTx: boolean = false;
-  const walletDomain = ".loopring.io";
+  const walletDomain = ".loopring.eth";
 
   const createWalletChecked = async (
     owner: string,

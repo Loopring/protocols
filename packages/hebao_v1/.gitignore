@@ -14,7 +14,7 @@ blocks/
 *_flat.sol
 state_*.json
 withdraw_proof.json
-.env
+.env*
 ganache_account_keys.txt
 __pycache__
 *.pyc
