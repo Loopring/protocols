@@ -244,25 +244,30 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     ///      using bound methods.
     fallback()
         external
-        nonReentrant
         payable
     {
-        if (msg.data.length == 0 || msg.value > 0) {
-            // Note: don't do anything here so send/transfer still works
-            // -- the 2300 gas limit for send/transfer may case out-of-gas
-            // issue after Istanbul.
-            return;
-        }
-
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
-        (bool success, bytes memory returnData) = module.call(msg.data);
+        (bool success, bytes memory returnData) = callExternalContract(module, msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }
             default { return(add(returnData, 32), mload(returnData)) }
         }
+    }
+
+    // This call is introduced to support reentrany check.
+    // The caller shall NOT have the nonReentrant modifier.
+    function callExternalContract(address target, bytes memory data)
+        private
+        nonReentrant
+        returns (
+            bool success,
+            bytes memory returnData
+        )
+    {
+        (success, returnData) = target.call(data);
     }
 
     function isLocalMethod(bytes4 _method)
