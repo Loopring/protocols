@@ -60,8 +60,8 @@ contract PriceCacheStore is DataStore, PriceOracle
 
     function tokenPrice(address token, uint amount)
         public
-        override
         view
+        override
         returns (uint)
     {
         TokenPrice storage tp = prices[token];

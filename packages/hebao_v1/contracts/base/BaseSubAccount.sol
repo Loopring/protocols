@@ -80,8 +80,8 @@ abstract contract BaseSubAccount is SubAccount
         address token
         )
         public
-        override
         view
+        override
         virtual
         returns (int)
     {
@@ -119,8 +119,8 @@ abstract contract BaseSubAccount is SubAccount
         address token
         )
         public
-        override
         view
+        override
         virtual
         returns (bool, uint balance)
     {
@@ -134,8 +134,8 @@ abstract contract BaseSubAccount is SubAccount
         address token
         )
         public
-        override
         view
+        override
         virtual
         returns (bool, uint withdrawalable)
     {
@@ -152,8 +152,8 @@ abstract contract BaseSubAccount is SubAccount
         uint    amount
         )
         public
-        override
         view
+        override
         virtual
         returns (bool)
     {
@@ -167,8 +167,8 @@ abstract contract BaseSubAccount is SubAccount
         uint    amount
         )
         public
-        override
         view
+        override
         virtual
         returns (bool)
     {
@@ -183,8 +183,8 @@ abstract contract BaseSubAccount is SubAccount
         bool
         )
         public
-        override
         view
+        override
         virtual
         returns (int)
     {

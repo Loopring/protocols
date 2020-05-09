@@ -36,8 +36,8 @@ contract UniswapPriceOracle is PriceOracle
 
     function tokenPrice(address token, uint amount)
         public
-        override
         view
+        override
         returns (uint value)
     {
         if (amount == 0) return 0;

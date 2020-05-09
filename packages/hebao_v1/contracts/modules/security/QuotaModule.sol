@@ -85,8 +85,8 @@ contract QuotaModule is SecurityModule
 
     function bindableMethods()
         public
-        override
         pure
+        override
         returns (bytes4[] memory methods)
     {
         methods = new bytes4[](1);

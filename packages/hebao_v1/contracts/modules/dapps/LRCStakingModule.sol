@@ -143,8 +143,8 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
         address token
         )
         public
-        override
         view
+        override
         returns (int balance)
     {
         if (token != lrcTokenAddress) return 0;
@@ -160,8 +160,8 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
         address token
         )
         public
-        override
         view
+        override
         returns (bool unsupported, uint withdrawalable)
     {
         if (token != lrcTokenAddress) {
@@ -177,8 +177,8 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
         address token
         )
         public
-        override
         view
+        override
         returns (bool unsupported, uint depositable)
     {
         if (token != lrcTokenAddress) {
@@ -196,8 +196,8 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
         bool    borrow
         )
         public
-        override
         view
+        override
         returns (int interestRate)
     {
         if (token != lrcTokenAddress || borrow) return 0;

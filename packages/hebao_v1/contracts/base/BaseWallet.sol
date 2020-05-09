@@ -134,7 +134,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
-        require(isAddressInSet(MODULE, _module), "MODULE_NOT_ADDED");
         try Module(_module).deactivate() {} catch {}
         removeAddressFromSet(MODULE, _module);
         emit ModuleRemoved(_module);
