@@ -212,7 +212,7 @@ abstract contract MetaTxModule is BaseModule
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveMetaTxExecuted(wallet, nonce, metaTxHash);
+        saveExecutedMetaTx(wallet, nonce, metaTxHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -465,7 +465,7 @@ abstract contract MetaTxModule is BaseModule
     /// @param wallet The target wallet.
     /// @param nonce The nonce
     /// @param metaTxHash The signed hash of the transaction
-    function saveMetaTxExecuted(
+    function saveExecutedMetaTx(
         address wallet,
         uint    nonce,
         bytes32 metaTxHash
