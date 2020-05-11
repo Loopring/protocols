@@ -44,7 +44,7 @@ contract("RecoveryModule", (accounts: string[]) => {
     for (let i = 1; i <= numSignersRequired; i++) {
       const signers = guardians.slice(0, i).sort();
       const transaction = executeTransaction(
-        ctx.recoveryModule.contract.methods.recover(wallet, signers, newOwner),
+        ctx.recoveryModule.contract.methods.recover(wallet, newOwner),
         ctx,
         true,
         wallet,

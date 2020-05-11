@@ -132,7 +132,7 @@ contract ApprovedTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-        GuardianUtils.requireMajority(
+        return GuardianUtils.requireMajority(
             controller.securityStore(),
             wallet,
             signers,

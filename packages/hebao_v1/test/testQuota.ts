@@ -144,7 +144,6 @@ contract("QuotaModule", (accounts: string[]) => {
         const transaction = executeTransaction(
           ctx.quotaModule.contract.methods.changeDailyQuotaImmediately(
             wallet,
-            signers,
             newQuota.toString(10)
           ),
           ctx,

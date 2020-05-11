@@ -117,11 +117,10 @@ contract LockModule is SecurityModule
 
         address expectedSigner = extractAddressFromCallData(data, 1);
 
-        // Check here already if the address is a guardian.
-        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
-        // (even a call that fails will reimburse the gas costs).
-        require(isWalletOwnerOrGuardian(wallet, expectedSigner), "UNAUTHORIZED");
-
-        return isOnlySigner(expectedSigner, signers);
+        // Check here already if the signer is the expected guardian.
+        // The signer needs to be a guardian, otherwise anyone could create meta transaction for a
+        // wallet and spend the gas costs (even a call that fails will reimburse the gas costs).
+        return isOnlySigner(expectedSigner, signers) &&
+            controller.securityStore().isGuardian(wallet, expectedSigner);
     }
 }

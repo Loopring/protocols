@@ -78,7 +78,7 @@ contract RecoveryModule is SecurityModule
         returns (bool)
     {
         require (method == this.recover.selector, "INVALID_METHOD");
-        GuardianUtils.requireMajority(
+        return GuardianUtils.requireMajority(
             controller.securityStore(),
             wallet,
             signers,
