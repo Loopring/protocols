@@ -148,7 +148,7 @@ export async function executeTransaction(
       options
     );
 
-    const event = await assertEventEmitted(contract, "ExecutedMetaTx");
+    const event = await assertEventEmitted(contract, "MetaTxExecuted");
     if (!event.success) {
       // Check if the return data contains the revert reason.
       // If it does we can easily re-throw the actual revert reason of the function call done in the meta tx

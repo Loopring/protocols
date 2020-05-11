@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
@@ -88,7 +88,7 @@ abstract contract MetaTxModule is BaseModule
 
     mapping (address => WalletState) public wallets;
 
-    event ExecutedMetaTx(
+    event MetaTxExecuted(
         address indexed transactor,
         address indexed wallet,
         uint    nonce,
@@ -154,12 +154,12 @@ abstract contract MetaTxModule is BaseModule
     ///      Important! This function needs to be safe against re-entrancy by using
     ///      the 'Checks Effects Interactions' pattern! We do not use `nonReentrant`
     ///      because this function is used to call into the same contract.
+    ///
     /// @param data The raw transaction to be performed on this module.
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
     ///              wallet, but not by more than `block.number * 2^128`.
-    ///
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
@@ -203,7 +203,11 @@ abstract contract MetaTxModule is BaseModule
 
         // Get the signers necessary for this meta transaction.
         address[] memory signers = getSigners(wallet, data);
+
+        // We check if all signers are authorized, but not if the number of signatures required
+        // for the method is suffcient, which should be done inside the specific method.
         require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
+
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -218,12 +222,12 @@ abstract contract MetaTxModule is BaseModule
         require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = address(this).call.gas(gasSettings.limit)(data);
+        (bool success, bytes memory returnData) = address(this).call{gas: gasSettings.limit}(data);
         gasUsed = gasUsed - gasleft();
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
         gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
 
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
+        emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
             reimburseGasFee(wallet, gasSettings, gasUsed);

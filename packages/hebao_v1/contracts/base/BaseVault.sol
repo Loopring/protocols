@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressSet.sol";
@@ -89,6 +89,8 @@ contract BaseVault is AddressSet, Vault
         _requirement = initialRequirement;
     }
 
+    receive() external payable { }
+
     function hash(VaultTransaction memory _tx)
         internal
         pure
@@ -136,7 +138,7 @@ contract BaseVault is AddressSet, Vault
         bool success;
         if (mode == 1) {
             // solium-disable-next-line security/no-call-value
-            (success, result) = target.call.value(value)(data);
+            (success, result) = target.call{value: value}(data);
         } else {
             // solium-disable-next-line security/no-call-value
             (success, result) = target.delegatecall(data);
