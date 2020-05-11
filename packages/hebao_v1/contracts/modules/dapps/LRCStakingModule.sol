@@ -14,11 +14,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
+import "../../lib/Ownable.sol";
 
 import "../../thirdparty/loopring/IProtocolFeeVault.sol";
 import "../../thirdparty/loopring/IUserStakingPool.sol";
@@ -27,23 +28,32 @@ import "./base/SubAccountDAppModule.sol";
 
 
 /// @title LRCStakingModule
-contract LRCStakingModule is SubAccountDAppModule
+contract LRCStakingModule is Ownable, SubAccountDAppModule
 {
     using MathUint for uint;
 
     IUserStakingPool  public stakingPool;
     IProtocolFeeVault public feeVault;
-
-    address public lrcTokenAddress;
+    address           public lrcTokenAddress;
 
     constructor(
-        Controller       _controller,
+        Controller       _controller
+        )
+        public
+        Ownable()
+        SecurityModule(_controller)
+    {
+    }
+
+    function init(
+        address wallet,
         IUserStakingPool _stakingPool,
         address          _lrcTokenAddress
         )
-        public
-        SecurityModule(_controller)
+        external
+        onlyOwner
     {
+        require(lrcTokenAddress == address(0), "INITIALIZED_ALREADY");
         require(_lrcTokenAddress != address(0), "ZERO_ADDRESS");
 
         stakingPool = _stakingPool;

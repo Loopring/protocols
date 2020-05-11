@@ -14,11 +14,12 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 
-import "./ExchangeData.sol";
+import "../../iface/ExchangeData.sol";
 
 
 /// @title ExchangeMode.
@@ -38,23 +39,16 @@ library ExchangeMode
         returns (bool result)
     {
         result = false;
-        ExchangeData.Block storage currentBlock = S.blocks[S.blocks.length - 1];
-
         // Check if there's a deposit request that's too old
-        if (currentBlock.numDepositRequestsCommitted < S.depositChain.length) {
-            uint32 requestTimestamp = S.depositChain[currentBlock.numDepositRequestsCommitted].timestamp;
+        if (S.numDepositRequestsCommitted < S.depositChain.length) {
+            uint32 requestTimestamp = S.depositChain[S.numDepositRequestsCommitted].timestamp;
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
         }
 
         // Check if there's a withdrawal request that's too old
-        if (result == false && currentBlock.numWithdrawalRequestsCommitted < S.withdrawalChain.length) {
-            uint32 requestTimestamp = S.withdrawalChain[currentBlock.numWithdrawalRequestsCommitted].timestamp;
+        if (result == false && S.numWithdrawalRequestsCommitted < S.withdrawalChain.length) {
+            uint32 requestTimestamp = S.withdrawalChain[S.numWithdrawalRequestsCommitted].timestamp;
             result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
-        }
-
-        // Check if there's an unfinalized block that's too old
-        if (result == false) {
-            result = isAnyUnfinalizedBlockTooOld(S);
         }
 
         // Check if we're longer in a non-initial state while shutdown than allowed
@@ -94,11 +88,8 @@ library ExchangeMode
         view
         returns (bool)
     {
-        ExchangeData.Block storage firstBlock = S.blocks[0];
-        ExchangeData.Block storage lastBlock = S.blocks[S.blocks.length - 1];
-        return (S.blocks.length == S.numBlocksFinalized) &&
-            (lastBlock.numDepositRequestsCommitted == S.depositChain.length) &&
-            (lastBlock.merkleRoot == firstBlock.merkleRoot);
+        return (S.numDepositRequestsCommitted == S.depositChain.length) &&
+            (S.merkleRoot == S.genesisMerkleRoot);
     }
 
     function areUserRequestsEnabled(
@@ -111,21 +102,6 @@ library ExchangeMode
         // User requests are possible when the exchange is not in maintenance mode,
         // the exchange hasn't been shutdown, and the exchange isn't in withdrawal mode
         return !isInMaintenance(S) && !isShutdown(S) && !isInWithdrawalMode(S);
-    }
-
-    function isAnyUnfinalizedBlockTooOld(
-        ExchangeData.State storage S
-        )
-        internal // inline call
-        view
-        returns (bool)
-    {
-        if (S.numBlocksFinalized < S.blocks.length) {
-            uint32 blockTimestamp = S.blocks[S.numBlocksFinalized].timestamp;
-            return blockTimestamp < now.sub(ExchangeData.MAX_AGE_UNFINALIZED_BLOCK_UNTIL_WITHDRAW_MODE());
-        } else {
-            return false;
-        }
     }
 
     function getNumDowntimeMinutesLeft(

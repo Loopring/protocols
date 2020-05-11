@@ -22,10 +22,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const getFunctionDelay = async (to: string, functionSelector: string) => {
-    return (await delayedContract.getFunctionDelay(
-      to,
-      functionSelector
-    )).toNumber();
+    return (
+      await delayedContract.getFunctionDelay(to, functionSelector)
+    ).toNumber();
   };
 
   const checkFunctionDelay = async (
@@ -62,7 +61,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumDelayedFunctions = async (numExpected: number) => {
-    const numDelayedFunctions = (await delayedContract.getNumDelayedFunctions()).toNumber();
+    const numDelayedFunctions = (
+      await delayedContract.getNumDelayedFunctions()
+    ).toNumber();
     assert.equal(
       numDelayedFunctions,
       numExpected,
@@ -71,7 +72,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumPendingTransactions = async (numExpected: number) => {
-    const numPendingTransactions = (await delayedContract.getNumPendingTransactions()).toNumber();
+    const numPendingTransactions = (
+      await delayedContract.getNumPendingTransactions()
+    ).toNumber();
     assert.equal(
       numPendingTransactions,
       numExpected,
@@ -173,20 +176,6 @@ contract("DelayedOwner", (accounts: string[]) => {
       balanceAfter.eq(balanceBefore.add(ethToTransfer)),
       "ETH balance target contract incorrect"
     );
-  });
-
-  it("Immediate function (view)", async () => {
-    // Check function delay
-    await checkFunctionDelay(
-      targetContract.address,
-      getFunctionSelector(
-        targetContract.contract.methods.immediateFunctionView()
-      ),
-      0
-    );
-
-    const returnValue = await targetInterface.immediateFunctionView();
-    assert(returnValue.eq(MAGIC_VALUE), "return value incorrect");
   });
 
   it("Immediate function (revert)", async () => {

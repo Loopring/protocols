@@ -1,7 +1,7 @@
 // This code is taken from https://github.com/OpenZeppelin/openzeppelin-labs
 // with minor modifications.
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import './UpgradabilityProxy.sol';
 
@@ -84,7 +84,7 @@ contract OwnedUpgradabilityProxy is UpgradeabilityProxy {
    */
   function upgradeToAndCall(address implementation, bytes memory data) payable public onlyProxyOwner {
     upgradeTo(implementation);
-    (bool success, ) = address(this).call.value(msg.value)(data);
+    (bool success, ) = address(this).call{value:msg.value}(data);
     require(success);
   }
 }

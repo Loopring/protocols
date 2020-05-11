@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -25,7 +25,7 @@ import "../lib/ReentrancyGuard.sol";
 ///      based exchanges.
 ///
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IUniversalRegistry is Claimable, ReentrancyGuard
+abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
 {
     enum ForgeMode {
         AUTO_UPGRADABLE,
@@ -86,6 +86,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address implementation
         )
         external
+        virtual
         returns (address implManager);
 
     /// @dev Sets the default protocol.
@@ -93,21 +94,24 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
     function setDefaultProtocol(
         address protocol
         )
-        external;
+        external
+        virtual;
 
     /// @dev Enables a protocol.
     /// @param protocol The address of the protocol.
     function enableProtocol(
         address protocol
         )
-        external;
+        external
+        virtual;
 
     /// @dev Disables a protocol.
     /// @param protocol The address of the protocol.
     function disableProtocol(
         address protocol
         )
-        external;
+        external
+        virtual;
 
     /// @dev Creates a new exchange using a specific protocol with msg.sender
     ///      as owner and operator.
@@ -124,6 +128,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address   implementation
         )
         external
+        virtual
         returns (
             address exchangeAddress,
             uint    exchangeId
@@ -131,11 +136,13 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
 
     /// @dev Returns information regarding the default protocol.
     /// @return protocol The address of the default protocol.
-    /// @return implManager The address of the default protocol's implementation manager.
-    /// @return defaultImpl The default protocol's default implementation address.
+    /// @return versionmanager The address of the version manager
+    /// @return defaultImpl The address of the default protocol's implementation manager.
+    /// @return protocolVersion The version of the default protocol.
     /// @return defaultImplVersion The version of the default implementation.
     function defaultProtocol()
         public
+        virtual
         view
         returns (
             address protocol,
@@ -152,6 +159,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address protocol
         )
         public
+        virtual
         view
         returns (bool registered);
 
@@ -162,6 +170,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address protocol
         )
         public
+        virtual
         view
         returns (bool enabled);
 
@@ -171,6 +180,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address exchange
         )
         public
+        virtual
         view
         returns (bool registered);
 
@@ -183,6 +193,7 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
         address implementation
         )
         public
+        virtual
         view
         returns (bool enabled);
 
@@ -190,11 +201,11 @@ contract IUniversalRegistry is Claimable, ReentrancyGuard
     /// @param exchangeAddress The address of the exchange.
     /// @return protocol The protocol address.
     /// @return manager The protocol's implementation manager.
-    /// @return enabled Whether the protocol is enabled.
     function getExchangeProtocol(
         address exchangeAddress
         )
         public
+        virtual
         view
         returns (
             address protocol,

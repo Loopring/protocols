@@ -339,7 +339,7 @@ contract("MetaTxmodule", () => {
         signers,
         { from: owner, nonce }
       ),
-      "INVALID_NONCE"
+      "NONCE_TOO_SMALL"
     );
   });
 
@@ -471,7 +471,7 @@ contract("MetaTxmodule", () => {
         );
         const event = await assertEventEmitted(
           ctx.whitelistModule,
-          "ExecutedMetaTx"
+          "MetaTxExecuted"
         );
         const gasCost = event.gasUsed.add(new BN(gasOverhead)).mul(gasPrice);
 

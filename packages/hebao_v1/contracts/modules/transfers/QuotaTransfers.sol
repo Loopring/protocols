@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/Claimable.sol";
@@ -47,7 +47,7 @@ contract QuotaTransfers is TransferModule
         delayPeriod = _delayPeriod;
     }
 
-    function boundMethods()
+    function bindableMethods()
         public
         pure
         override
@@ -300,5 +300,20 @@ contract QuotaTransfers is TransferModule
         uint timestampUsable = now.add(delayPeriod);
         pendingTransactions[wallet][txid] = timestampUsable;
         emit PendingTxCreated(wallet, txid, timestampUsable);
+    }
+
+    function callContractInternal(
+        address wallet,
+        address to,
+        uint    value,
+        bytes   memory txData
+        )
+        internal
+        override
+    {
+        // Disallow general calls to token contracts (for tokens that have price data
+        // so the quota is actually used).
+        require(controller.priceOracle().tokenPrice(to, 1e18) == 0, "CALL_DISALLOWED");
+        super.callContractInternal(wallet, to, value, txData);
     }
 }

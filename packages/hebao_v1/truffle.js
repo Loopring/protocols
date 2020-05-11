@@ -51,7 +51,7 @@ module.exports = {
         },
         evmVersion: "istanbul"
       },
-      version: "0.6.0"
+      version: "0.6.6"
     }
   },
   ens: {
@@ -93,6 +93,14 @@ module.exports = {
       },
       gasPrice: 1000000000,
       gas: 6700000
+    },
+    goerli: {
+      network_id: "5",
+      provider: function() {
+        return getWalletProvider("goerli");
+      },
+      gasPrice: "22000000000",
+      gas: 8000000
     },
     development: {
       host: "localhost",

@@ -14,20 +14,21 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../iface/IDelayedTransaction.sol";
 
 import "../lib/AddressUtil.sol";
 import "../lib/BytesUtil.sol";
 import "../lib/MathUint.sol";
+import "../lib/ReentrancyGuard.sol";
 
 
 /// @title DelayedOwner
 /// @author Brecht Devos - <brecht@loopring.org>
 /// @dev Base class for an Owner contract where certain functions have
 ///      a mandatory delay for security purposes.
-contract DelayedTransaction is IDelayedTransaction
+abstract contract DelayedTransaction is IDelayedTransaction, ReentrancyGuard
 {
     using AddressUtil for address payable;
     using BytesUtil   for bytes;
@@ -64,6 +65,8 @@ contract DelayedTransaction is IDelayedTransaction
         bytes   calldata data
         )
         external
+        override
+        nonReentrant
         payable
         onlyAuthorized
     {
@@ -74,6 +77,8 @@ contract DelayedTransaction is IDelayedTransaction
         uint transactionId
         )
         external
+        override
+        nonReentrant
         onlyAuthorized
     {
         Transaction memory transaction = getTransaction(transactionId);
@@ -89,6 +94,9 @@ contract DelayedTransaction is IDelayedTransaction
 
         // Exectute the transaction
         (bool success, bytes memory returnData) = exectuteTransaction(transaction);
+        if (!success) {
+            assembly { revert(add(returnData, 32), mload(returnData)) }
+        }
 
         emit PendingTransactionExecuted(
             transaction.id,
@@ -97,20 +105,14 @@ contract DelayedTransaction is IDelayedTransaction
             transaction.value,
             transaction.data
         );
-
-        // Return the same data the original transaction would
-        // (this will return the data even though this function doesn't have a return value in solidity)
-        assembly {
-            switch success
-            case 0 { revert(add(returnData, 32), mload(returnData)) }
-            default { return(add(returnData, 32), mload(returnData)) }
-        }
     }
 
     function cancelTransaction(
         uint transactionId
         )
         external
+        override
+        nonReentrant
         onlyAuthorized
     {
         cancelTransactionInternal(transactionId);
@@ -118,6 +120,8 @@ contract DelayedTransaction is IDelayedTransaction
 
     function cancelAllTransactions()
         external
+        override
+        nonReentrant
         onlyAuthorized
     {
         // First cache all transactions ids of the transactions we will remove
@@ -136,6 +140,7 @@ contract DelayedTransaction is IDelayedTransaction
         bytes4  functionSelector
         )
         public
+        override
         view
         returns (uint)
     {
@@ -149,6 +154,7 @@ contract DelayedTransaction is IDelayedTransaction
 
     function getNumPendingTransactions()
         external
+        override
         view
         returns (uint)
     {
@@ -157,6 +163,7 @@ contract DelayedTransaction is IDelayedTransaction
 
     function getNumDelayedFunctions()
         external
+        override
         view
         returns (uint)
     {
@@ -184,19 +191,15 @@ contract DelayedTransaction is IDelayedTransaction
         uint delay = getFunctionDelay(transaction.to, functionSelector);
         if (delay == 0) {
             (bool success, bytes memory returnData) = exectuteTransaction(transaction);
+            if (!success) {
+                assembly { revert(add(returnData, 32), mload(returnData)) }
+            }
             emit TransactionExecuted(
                 transaction.timestamp,
                 transaction.to,
                 transaction.value,
                 transaction.data
             );
-            // Return the same data the original transaction would
-            // (this will return the data even though this function doesn't have a return value in solidity)
-            assembly {
-                switch success
-                case 0 { revert(add(returnData, 32), mload(returnData)) }
-                default { return(add(returnData, 32), mload(returnData)) }
-            }
         } else {
             pendingTransactions.push(transaction);
             pendingTransactionMap[transaction.id] = pendingTransactions.length;
@@ -233,7 +236,7 @@ contract DelayedTransaction is IDelayedTransaction
                     delayedFunctions[pos - 1] = lastOne;
                     delayedFunctionMap[lastOne.to][lastOne.functionSelector] = pos;
                 }
-                delayedFunctions.length -= 1;
+                delayedFunctions.pop();
                 delete delayedFunctionMap[to][functionSelector];
             }
         } else if (delay > 0) {
@@ -255,7 +258,7 @@ contract DelayedTransaction is IDelayedTransaction
         returns (bool success, bytes memory returnData)
     {
         // solium-disable-next-line security/no-call-value
-        (success, returnData) = transaction.to.call.value(transaction.value)(transaction.data);
+        (success, returnData) = transaction.to.call{value: transaction.value}(transaction.data);
     }
 
     function cancelTransactionInternal(
@@ -310,12 +313,13 @@ contract DelayedTransaction is IDelayedTransaction
             pendingTransactionMap[lastOne.id] = pos;
         }
 
-        pendingTransactions.length -= 1;
+        pendingTransactions.pop();
         delete pendingTransactionMap[transactionId];
     }
 
     function isAuthorizedForTransactions(address sender)
         internal
+        virtual
         view
         returns (bool);
 }

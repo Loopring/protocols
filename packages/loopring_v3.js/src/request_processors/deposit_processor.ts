@@ -58,14 +58,4 @@ export class DepositProcessor {
     account.publicKeyX = deposit.publicKeyX;
     account.publicKeyY = deposit.publicKeyY;
   }
-
-  public static revertBlock(state: ExchangeState, block: Block) {
-    // Remove the data in the requests that they were processed in a block
-    const startIdx = block.totalNumRequestsProcessed - 1;
-    const endIdx = startIdx - block.numRequestsProcessed;
-    for (let i = startIdx; i > endIdx; i--) {
-      delete state.processedRequests[i].blockIdx;
-      delete state.processedRequests[i].requestIdx;
-    }
-  }
 }

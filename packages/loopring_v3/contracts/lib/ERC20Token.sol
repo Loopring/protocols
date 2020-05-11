@@ -14,7 +14,7 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "./ERC20.sol";
 import "./MathUint.sol";
@@ -68,18 +68,12 @@ contract ERC20Token is ERC20
         balances[_firstHolder] = totalSupply_;
     }
 
-    function ()
-        external
-        payable
-    {
-        revert("UNSUPPORTED");
-    }
-
     /**
     * @dev total number of tokens in existence
     */
     function totalSupply()
         public
+        override
         view
         returns (uint)
     {
@@ -96,6 +90,7 @@ contract ERC20Token is ERC20
         uint    _value
         )
         public
+        override
         returns (bool)
     {
         require(_to != address(0), "ZERO_ADDRESS");
@@ -111,12 +106,13 @@ contract ERC20Token is ERC20
     /**
     * @dev Gets the balance of the specified address.
     * @param _owner The address to query the the balance of.
-    * @return An uint representing the amount owned by the passed address.
+    * @return balance An uint representing the amount owned by the passed address.
     */
     function balanceOf(
         address _owner
         )
         public
+        override
         view
         returns (uint balance)
     {
@@ -135,6 +131,7 @@ contract ERC20Token is ERC20
         uint    _value
         )
         public
+        override
         returns (bool)
     {
         require(_to != address(0), "ZERO_ADDRESS");
@@ -163,6 +160,7 @@ contract ERC20Token is ERC20
         uint    _value
         )
         public
+        override
         returns (bool)
     {
         allowed[msg.sender][_spender] = _value;
@@ -181,6 +179,7 @@ contract ERC20Token is ERC20
         address _spender
         )
         public
+        override
         view
         returns (uint)
     {

@@ -89,6 +89,11 @@ contract("LoopringModule", () => {
           from: owner
         });
 
+        await web3.eth.sendTransaction({
+          from: owner,
+          to: wallet,
+          value: "1" + "0".repeat(20)
+        });
         await executeTransaction(
           loopringModule.contract.methods.depositToDEX(
             wallet,
@@ -135,6 +140,37 @@ contract("LoopringModule", () => {
         );
 
         await assertEventEmitted(loopringModule, "Withdrawal");
+      }
+    );
+
+    it(
+      description(
+        "wallet should be able to approve token to an exchange",
+        metaTx
+      ),
+      async () => {
+        const owner = ctx.owners[0];
+        const { wallet } = await createWallet(ctx, owner);
+        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
+        await walletContract.addModule(loopringModule.address, {
+          from: owner
+        });
+
+        await executeTransaction(
+          loopringModule.contract.methods.approveExchange(
+            wallet,
+            dummyExchange.address,
+            ctx.contracts.LRCToken.address,
+            "1" + "0".repeat(20)
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        );
+
+        await assertEventEmitted(loopringModule, "Approval");
       }
     );
   });

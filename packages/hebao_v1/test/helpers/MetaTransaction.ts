@@ -33,7 +33,8 @@ function toTypedData(metaTransaction: MetaTransaction) {
       EIP712Domain: [
         { name: "name", type: "string" },
         { name: "version", type: "string" },
-        { name: "chainId", type: "uint256" }
+        { name: "chainId", type: "uint256" },
+        { name: "verifyingContract", type: "address" }
       ],
       MetaTransaction: [
         { name: "wallet", type: "address" },
@@ -50,9 +51,10 @@ function toTypedData(metaTransaction: MetaTransaction) {
     },
     primaryType: "MetaTransaction",
     domain: {
-      name: "MetaTxModule",
+      name: "Loopring Wallet MetaTxModule",
       version: "1.0",
-      chainId: new BN(metaTransaction.chainId)
+      chainId: new BN(metaTransaction.chainId),
+      verifyingContract: metaTransaction.module
     },
     message: {
       wallet: metaTransaction.wallet,

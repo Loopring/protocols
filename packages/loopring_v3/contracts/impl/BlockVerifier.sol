@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../thirdparty/Verifier.sol";
 import "../thirdparty/BatchVerifier.sol";
@@ -22,8 +22,7 @@ import "../thirdparty/BatchVerifier.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/IBlockVerifier.sol";
-
-import "../impl/libexchange/ExchangeData.sol";
+import "../iface/ExchangeData.sol";
 
 
 /// @title An Implementation of IBlockVerifier.
@@ -49,6 +48,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint[18] calldata vk
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -78,6 +78,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint8  blockVersion
         )
         external
+        override
         nonReentrant
         onlyOwner
     {
@@ -104,6 +105,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint[] calldata proofs
         )
         external
+        override
         view
         returns (bool)
     {
@@ -138,6 +140,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint8  blockVersion
         )
         external
+        override
         view
         returns (bool)
     {
@@ -152,6 +155,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         uint8  blockVersion
         )
         external
+        override
         view
         returns (bool)
     {

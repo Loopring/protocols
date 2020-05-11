@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 
 library Data
@@ -23,6 +23,7 @@ library Data
     {
         address  addr;
         uint     group;
+        uint     validSince;
+        uint     validUntil;
     }
 }
-

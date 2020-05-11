@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../base/MetaTxModule.sol";
@@ -63,6 +63,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         external
         payable
         nonReentrant
+        onlyFromMetaTxOrOwner(_owner)
         returns (address _wallet)
     {
         _wallet = createWalletInternal(

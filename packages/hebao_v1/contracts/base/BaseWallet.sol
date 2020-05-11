@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import "../lib/ERC20.sol";
 import "../lib/AddressSet.sol";
@@ -120,6 +120,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function addModule(address _module)
         external
         override
+        // allowReentrant (bindMethod)
         onlyOwnerOrModule
     {
         addModuleInternal(_module);
@@ -128,6 +129,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function removeModule(address _module)
         external
         override
+        // allowReentrant (bindMethod)
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
@@ -157,6 +159,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function bindMethod(bytes4 _method, address _module)
         external
         override
+        nonReentrant
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
@@ -187,7 +190,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         external
         override
         onlyModule
-        returns (bytes memory result)
+        returns (bytes memory returnData)
     {
         require(
             !controller.moduleRegistry().isModuleRegistered(to),
@@ -195,19 +198,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         );
 
         bool success;
-        if (mode == 1) {
-            // solium-disable-next-line security/no-call-value
-            (success, result) = to.call.value(value)(data);
-        } else if (mode == 2) {
-            // solium-disable-next-line security/no-call-value
-            (success, result) = to.delegatecall(data);
-        } else if (mode == 3) {
-            require(value == 0, "INVALID_VALUE");
-            // solium-disable-next-line security/no-call-value
-            (success, result) = to.staticcall(data);
-        } else {
-            revert("UNSUPPORTED_MODE");
-        }
+        (success, returnData) = nonReentrantCall(mode, to, value, data);
 
         if (!success) {
             assembly {
@@ -232,27 +223,52 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         emit ModuleAdded(_module);
     }
 
+    receive() external payable { }
+
     /// @dev This default function can receive Ether or perform queries to modules
     ///      using bound methods.
     fallback()
         external
         payable
     {
-        if (msg.data.length == 0 || msg.value > 0) {
-            // Note: don't do anything here so send/transfer still works
-            // -- the 2300 gas limit for send/transfer may case out-of-gas
-            // issue after Istanbul.
-            return;
-        }
-
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
-        (bool success, bytes memory returnData) = module.call(msg.data);
+        (bool success, bytes memory returnData) = module.call{value: msg.value}(msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }
             default { return(add(returnData, 32), mload(returnData)) }
+        }
+    }
+
+    // This call is introduced to support reentrany check.
+    // The caller shall NOT have the nonReentrant modifier.
+    function nonReentrantCall(
+        uint8        mode,
+        address      target,
+        uint         value,
+        bytes memory data
+        )
+        private
+        nonReentrant
+        returns (
+            bool success,
+            bytes memory returnData
+        )
+    {
+        if (mode == 1) {
+            // solium-disable-next-line security/no-call-value
+            (success, returnData) = target.call{value: value}(data);
+        } else if (mode == 2) {
+            // solium-disable-next-line security/no-call-value
+            (success, returnData) = target.delegatecall(data);
+        } else if (mode == 3) {
+            require(value == 0, "INVALID_VALUE");
+            // solium-disable-next-line security/no-call-value
+            (success, returnData) = target.staticcall(data);
+        } else {
+            revert("UNSUPPORTED_MODE");
         }
     }
 

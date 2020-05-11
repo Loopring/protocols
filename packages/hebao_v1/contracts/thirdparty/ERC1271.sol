@@ -1,6 +1,6 @@
 // Copied from https://eips.ethereum.org/EIPS/eip-1271.
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 abstract contract ERC1271 {
 

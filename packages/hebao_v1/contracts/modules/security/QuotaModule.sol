@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
@@ -78,7 +78,7 @@ contract QuotaModule is SecurityModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-    function boundMethods()
+    function bindableMethods()
         public
         pure
         override

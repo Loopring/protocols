@@ -14,15 +14,16 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
 
+import "../../iface/ExchangeData.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
 import "./ExchangeAccounts.sol";
-import "./ExchangeData.sol";
 import "./ExchangeTokens.sol";
 
 
@@ -55,27 +56,16 @@ library ExchangeGenesis
         S.loopring = ILoopringV3(_loopringAddress);
         S.operator = _operator;
         S.onchainDataAvailability = _onchainDataAvailability;
+        S.genesisMerkleRoot = _genesisBlockHash;
 
         ILoopringV3 loopring = ILoopringV3(_loopringAddress);
         S.blockVerifier = IBlockVerifier(loopring.blockVerifierAddress());
         S.lrcAddress = loopring.lrcAddress();
 
-        ExchangeData.Block memory genesisBlock = ExchangeData.Block(
-            _genesisBlockHash,
-            0x0,
-            ExchangeData.BlockState.VERIFIED,
-            ExchangeData.BlockType(0),
-            0,
-            0,
-            uint32(now),
-            1,
-            1,
-            true,
-            0,
-            new bytes(0)
-        );
-        S.blocks.push(genesisBlock);
-        S.numBlocksFinalized = 1;
+        S.merkleRoot = S.genesisMerkleRoot;
+        S.numBlocksSubmitted = 1;
+        S.numDepositRequestsCommitted = 1;
+        S.numWithdrawalRequestsCommitted = 1;
 
         ExchangeData.Request memory genesisRequest = ExchangeData.Request(
             0,

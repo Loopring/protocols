@@ -12,7 +12,7 @@ export enum CompressionSpeed {
 }
 
 const GAS_COST_ZERO_BYTE = 4;
-const GAS_COST_NONZERO_BYTE = 68;
+const GAS_COST_NONZERO_BYTE = 16;
 
 export const calculateCalldataCost = (data: string) => {
   assert(data.length % 2 === 0, "data needs to be an integer number of bytes");

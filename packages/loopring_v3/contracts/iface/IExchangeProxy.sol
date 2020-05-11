@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.5.11;
+pragma solidity ^0.6.6;
 
 import "../thirdparty/Proxy.sol";
 
@@ -24,7 +24,7 @@ import "../iface/IUniversalRegistry.sol";
 
 /// @title IExchangeProxy
 /// @author Daniel Wang  - <daniel@loopring.org>
-contract IExchangeProxy is Proxy
+abstract contract IExchangeProxy is Proxy
 {
     bytes32 private constant registryPosition = keccak256(
         "org.loopring.protocol.v3.registry"

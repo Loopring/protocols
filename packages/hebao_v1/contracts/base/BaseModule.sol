@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 import "../lib/ReentrancyGuard.sol";
 
@@ -58,6 +58,13 @@ contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
+    modifier onlyFromMetaTxOrOwner(address owner) virtual {
+        require(
+            msg.sender == address(this) || msg.sender == owner,
+            "NOT_FROM_METATX_OR_OWNER");
+        _;
+    }
+
     modifier onlyWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() == addr, "NOT_WALLET_OWNER");
         _;
@@ -85,8 +92,9 @@ contract BaseModule is ReentrancyGuard, Module
         override
         virtual
     {
-        bindMethods(msg.sender);
-        emit Activated(msg.sender);
+        address wallet = msg.sender;
+        bindMethods(wallet);
+        emit Activated(wallet);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.
@@ -95,8 +103,9 @@ contract BaseModule is ReentrancyGuard, Module
         override
         virtual
     {
-        unbindMethods(msg.sender);
-        emit Deactivated(msg.sender);
+        address wallet = msg.sender;
+        unbindMethods(wallet);
+        emit Deactivated(wallet);
     }
 
     ///.@dev Gets the list of methods for binding to wallets.
@@ -104,7 +113,7 @@ contract BaseModule is ReentrancyGuard, Module
     ///      wallet binding.
     /// @return methods A list of method selectors for binding to the wallet
     ///         when this module is activated for the wallet.
-    function boundMethods()
+    function bindableMethods()
         public
         pure
         virtual
@@ -119,7 +128,7 @@ contract BaseModule is ReentrancyGuard, Module
         internal
     {
         Wallet w = Wallet(wallet);
-        bytes4[] memory methods = boundMethods();
+        bytes4[] memory methods = bindableMethods();
         for (uint i = 0; i < methods.length; i++) {
             w.bindMethod(methods[i], address(this));
         }
@@ -130,7 +139,7 @@ contract BaseModule is ReentrancyGuard, Module
         internal
     {
         Wallet w = Wallet(wallet);
-        bytes4[] memory methods = boundMethods();
+        bytes4[] memory methods = bindableMethods();
         for (uint i = 0; i < methods.length; i++) {
             w.bindMethod(methods[i], address(0));
         }

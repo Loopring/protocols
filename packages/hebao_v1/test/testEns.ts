@@ -12,7 +12,7 @@ import { getEventsFromContract, assertEventEmitted } from "../util/Events";
 contract("WalletENSManager", () => {
   let defaultCtx: Context;
   let ctx: Context;
-  const walletDomain = ".loopring.io";
+  const walletDomain = ".loopring.eth";
   const walletName = "mywalleta" + new Date().getTime();
 
   before(async () => {
@@ -42,7 +42,7 @@ contract("WalletENSManager", () => {
         false,
         wallet,
         [owner],
-        { gasPrice: new BN(1) }
+        { from: owner, gasPrice: new BN(1) }
       );
 
       const ensManager = ctx.walletENSManager;

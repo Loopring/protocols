@@ -99,11 +99,11 @@ contract("Exchange", (accounts: string[]) => {
         "EXCHANGE_NOT_SHUTDOWN"
       );
 
+      // Verify all blocks until shutdown
+      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+
       // Shut down the exchange
       await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
-
-      // Verify all blocks until shutdown
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
 
       // Try to withdraw before all deposits are processed
       await expectThrow(
@@ -115,11 +115,11 @@ contract("Exchange", (accounts: string[]) => {
 
       // Make sure all deposits are done
       await exchangeTestUtil.commitDeposits(exchangeId);
-
       // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks(exchangeId);
 
-      // Try to withdraw before the block is finalized
+      // Try to withdraw before the exchange is completely reverted to the
+      // initial state.
       await expectThrow(
         exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {
           from: exchangeTestUtil.exchangeOwner
@@ -127,11 +127,8 @@ contract("Exchange", (accounts: string[]) => {
         "MERKLE_ROOT_NOT_REVERTED"
       );
 
-      const currentBlockIdx =
-        (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
       const exchangeState = await exchangeTestUtil.loadExchangeState(
-        exchangeId,
-        currentBlockIdx
+        exchangeId
       );
 
       // Do all withdrawal requests to completely reset the merkle tree
@@ -184,51 +181,13 @@ contract("Exchange", (accounts: string[]) => {
       }
 
       await exchangeTestUtil.commitShutdownWithdrawalRequests(exchangeId);
-
-      // Try to withdraw before the block is finalized
-      await expectThrow(
-        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {
-          from: exchangeTestUtil.exchangeOwner
-        }),
-        "BLOCK_NOT_FINALIZED"
-      );
-
-      // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
-
-      // Try to withdraw too early
-      await expectThrow(
-        exchange.withdrawExchangeStake(exchangeTestUtil.exchangeOwner, {
-          from: exchangeTestUtil.exchangeOwner
-        }),
-        "TOO_EARLY"
-      );
-
-      // Wait a bit until MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE seconds have passed
-      await exchangeTestUtil.advanceBlockTimestamp(
-        exchangeTestUtil.MAX_TIME_TO_DISTRIBUTE_WITHDRAWALS_SHUTDOWN_MODE + 1
-      );
+      await exchangeTestUtil.submitPendingBlocks(exchangeId);
 
       // Withdraw the exchange stake
       await exchangeTestUtil.withdrawExchangeStakeChecked(
         exchangeTestUtil.exchangeOwner,
         currentStakeAmount.add(stakeAmount)
       );
-
-      // Blocks with shutdown withdrawals should not receive any block fee
-      const lastBlockIdx = (await exchangeTestUtil.getNumBlocksOnchain()) - 1;
-      for (let b = currentBlockIdx + 1; b <= lastBlockIdx; b++) {
-        await expectThrow(
-          exchangeTestUtil.withdrawBlockFeeChecked(
-            b,
-            exchangeTestUtil.exchangeOperator,
-            new BN(0),
-            new BN(0),
-            new BN(0)
-          ),
-          "BLOCK_HAS_NO_OPERATOR_FEE"
-        );
-      }
     });
 
     it("Incomplete shutdown", async () => {
@@ -257,7 +216,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
 
       // Verify the block
-      await exchangeTestUtil.verifyPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks(exchangeId);
 
       // Wait for 2 days
       await exchangeTestUtil.advanceBlockTimestamp(2 * 24 * 3600);

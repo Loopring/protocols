@@ -30,11 +30,11 @@
   "license": "ISC",
   "dependencies": {
     "@types/ethereumjs-abi": "^0.6.3",
-    "async-validator": "3.2.0",
+    "async-validator": "3.3.0",
     "axios": "^0.19.0",
     "bignumber.js": "^9.0.0",
     "bip39": "3.0.2",
-    "blake-hash": "^1.1.0",
+    "blake-hash": "^2.0.0",
     "@types/bn.js": "4.11.6",
     "ethereumjs-abi": "0.6.8",
     "ethereumjs-tx": "2.1.1",
@@ -44,7 +44,7 @@
     "hdkey": "1.1.1",
     "isomorphic-fetch": "2.2.1",
     "nodeunit": "^0.11.3",
-    "snarkjs": "0.1.20"
+    "snarkjs": "0.1.31"
   },
   "devDependencies": {
     "@types/chai": "^4.1.7",
@@ -54,7 +54,7 @@
     "@typescript-eslint/parser": "^2.3.2",
     "blake2b": "^2.1.3",
     "browserify": "^16.2.2",
-    "eslint": "^6.5.1",
+    "eslint": "^7.0.0",
     "eslint-config-google": "^0.14.0",
     "eslint-config-prettier": "^6.0.0",
     "eslint-plugin-prettier": "^3.1.0",

@@ -27,7 +27,7 @@
     "@types/bignumber.js": "^5.0.0",
     "@types/bluebird": "^3.5.20",
     "@types/lodash": "^4.14.136",
-    "@types/node": "13.9.1",
+    "@types/node": "13.13.5",
     "@types/request-promise-native": "^1.0.14",
     "ajv": "^6.0.0",
     "chai": "^2.2.1",
@@ -35,7 +35,7 @@
     "dirty-chai": "^2.0.0",
     "ganache-cli": "^6.1.0",
     "solium": "^1.1.6",
-    "truffle": "5.1.19",
+    "truffle": "5.1.24",
     "tslint": "5.20.1",
     "typescript": "^3.6.3",
     "web3-typescript-typings": "^0.10.2",
@@ -61,6 +61,6 @@
     "js-sha3": "^0.7.0",
     "lodash": "^4.17.14",
     "npm": "^6.11.3",
-    "web3": "1.2.6"
+    "web3": "1.2.7"
   }
 }

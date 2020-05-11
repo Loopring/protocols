@@ -1,5 +1,5 @@
 import BN = require("bn.js");
-import { BlockState, BlockType, Signature } from "loopringV3.js";
+import { BlockType, Signature } from "loopringV3.js";
 
 export interface OrderInfo {
   owner?: string;
@@ -11,8 +11,6 @@ export interface OrderInfo {
   exchangeID?: number;
   accountID?: number;
   orderID?: number;
-
-  label?: number;
 
   tokenIdS?: number;
   tokenIdB?: number;
@@ -90,6 +88,8 @@ export interface DepositBlock {
 }
 
 export interface InternalTransferRequest {
+  type: number;
+
   accountFromID: number;
   accountToID: number;
 
@@ -98,8 +98,6 @@ export interface InternalTransferRequest {
 
   feeTokenID: number;
   fee: BN;
-
-  label: number;
 
   signature?: Signature;
 }
@@ -120,7 +118,6 @@ export interface WithdrawalRequest {
 
   feeTokenID?: number;
   fee?: BN;
-  label?: number;
 
   withdrawalIdx?: number;
   slotIdx?: number;
@@ -150,47 +147,29 @@ export interface WithdrawBlock {
   count: number;
 }
 
-export interface Cancel {
-  accountID: number;
-  orderTokenID: number;
-  orderID: number;
-  feeTokenID: number;
-  fee: BN;
-  label?: number;
-
-  signature?: Signature;
-}
-
-export interface CancelBlock {
-  cancels: Cancel[];
-
-  onchainDataAvailability?: boolean;
-
-  operatorAccountID?: number;
-}
-
 export interface Block {
   blockIdx: number;
   filename: string;
   blockType: BlockType;
   blockSize: number;
   blockVersion: number;
-  blockState: BlockState;
   operator: string;
   origin: string;
   operatorId: number;
+  merkleRoot: string;
   data: string;
+  auxiliaryData: string;
   offchainData: string;
   compressedData: string;
   publicDataHash: string;
   publicInput: string;
   proof?: string[];
-  blockFeeWithdrawn: boolean;
-  blockFeeAmountWithdrawn?: BN;
-  committedTimestamp: number;
-  verifiedTimestamp?: number;
-  finalizedTimestamp?: number;
+  blockFeeRewarded?: BN;
+  blockFeeFined?: BN;
+  timestamp: number;
   transactionHash: string;
+  shutdown?: boolean;
+  internalBlock?: any;
 }
 
 export interface Account {
@@ -204,7 +183,6 @@ export interface Account {
 
 export interface TradeHistory {
   filled: BN;
-  cancelled: boolean;
   orderID: number;
 }
 

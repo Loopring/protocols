@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../lib/AddressUtil.sol";
@@ -88,7 +88,7 @@ abstract contract MetaTxModule is BaseModule
 
     mapping (address => WalletState) public wallets;
 
-    event ExecutedMetaTx(
+    event MetaTxExecuted(
         address indexed transactor,
         address indexed wallet,
         uint    nonce,
@@ -108,7 +108,7 @@ abstract contract MetaTxModule is BaseModule
         public
         BaseModule()
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxModule", "1.0"));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Wallet MetaTxModule", "1.0", address(this)));
         controller = _controller;
     }
 
@@ -154,12 +154,12 @@ abstract contract MetaTxModule is BaseModule
     ///      Important! This function needs to be safe against re-entrancy by using
     ///      the 'Checks Effects Interactions' pattern! We do not use `nonReentrant`
     ///      because this function is used to call into the same contract.
+    ///
     /// @param data The raw transaction to be performed on this module.
     /// @param nonce The nonce of this meta transaction. When nonce is 0, this module will
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
-    ///              wallet, but not by more than `BLOCK_BOUND * 2^128`.
-    ///
+    ///              wallet, but not by more than `block.number * 2^128`.
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
@@ -219,12 +219,12 @@ abstract contract MetaTxModule is BaseModule
         require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
-        (bool success, bytes memory returnData) = address(this).call.gas(gasSettings.limit)(data);
+        (bool success, bytes memory returnData) = address(this).call{gas: gasSettings.limit}(data);
         gasUsed = gasUsed - gasleft();
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
         gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
 
-        emit ExecutedMetaTx(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
+        emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
             reimburseGasFee(wallet, gasSettings, gasUsed);
@@ -234,7 +234,8 @@ abstract contract MetaTxModule is BaseModule
     /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
     ///      This method can only be called by a meta transaction.
     /// @param wallet The wallet used in all transactions.
-    /// @param signers The signers needed for all transactions.
+    /// @param signers The signers needed for all transactions whose signatures have been verified
+    ///                successfully by executeMetaTx and contains no duplicates.
     /// @param data The raw transaction data used for each transaction.
     /// @param txSigners The signers needed for the sub transaction
     function executeTransactions(
@@ -484,7 +485,8 @@ abstract contract MetaTxModule is BaseModule
             require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
             wallets[wallet].metaTxHash[metaTxHash] = true;
         } else {
-            require(nonce == wallets[wallet].nonce + 1, "INVALID_NONCE");
+            require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
             wallets[wallet].nonce = nonce;
         }
     }

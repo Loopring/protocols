@@ -1,6 +1,6 @@
 // Solidity Interface
 
-pragma solidity ^0.6.0;
+pragma solidity ^0.6.6;
 
 abstract contract UniswapFactoryInterface {
     // Public Variables
