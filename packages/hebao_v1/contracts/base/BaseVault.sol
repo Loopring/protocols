@@ -89,6 +89,8 @@ contract BaseVault is AddressSet, Vault
         _requirement = initialRequirement;
     }
 
+    receive() external payable { }
+
     function hash(VaultTransaction memory _tx)
         internal
         pure
