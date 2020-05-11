@@ -234,7 +234,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
 
-        (bool success, bytes memory returnData) = nonReentrantCall(uint8(1), module, msg.value, msg.data);
+        (bool success, bytes memory returnData) = module.call{value: msg.value}(msg.data);
         assembly {
             switch success
             case 0 { revert(add(returnData, 32), mload(returnData)) }

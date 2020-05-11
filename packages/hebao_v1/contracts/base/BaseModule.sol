@@ -75,11 +75,6 @@ contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    receive() external payable
-    {
-        revert("UNSUPPORTED");
-    }
-
     function addModule(
         address wallet,
         address module
