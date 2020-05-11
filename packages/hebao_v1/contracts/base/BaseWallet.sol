@@ -254,7 +254,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         bytes memory data
         )
         private
-        nonReentrantInternal()
+        nonReentrantInternal
         returns (
             bool success,
             bytes memory returnData
