@@ -39,12 +39,11 @@ contract ReentrancyGuard
         _callstack.pop();
     }
 
-    modifier reentrantWhitelist(bytes4 _selector, bytes4 whitelistSelectors)
+    modifier reentrantWhitelist(bytes4 _selector, bytes4 selectorWhitelist)
     {
         require(_selector != bytes4(0));
-        uint len = _callstack.length;
         require(
-            len == 0 || itemInSet(_callstack[len - 1], whitelistSelectors),
+            _callstack.length == 0 || isLastSelectorIn(selectorWhitelist),
             "WHITELISTE_REENTRANCY"
         );
 
@@ -54,12 +53,11 @@ contract ReentrancyGuard
     }
 
 
-    modifier reentrantBlacklist(bytes4 _selector, bytes4 blacklistSelectors)
+    modifier reentrantBlacklist(bytes4 _selector, bytes4 selectorBlacklist)
     {
         require(_selector != bytes4(0));
-        uint len = _callstack.length;
         require(
-            len == 0 || !itemInSet(_callstack[len - 1], blacklistSelectors),
+            _callstack.length == 0 || !isLastSelectorIn(selectorBlacklist),
             "BLACKLISTE_REENTRANCY"
         );
 
@@ -68,11 +66,12 @@ contract ReentrancyGuard
         _callstack.pop();
     }
 
-    function itemInSet(bytes4 item, bytes4 set)
+    function isLastSelectorIn(bytes4 list)
         private
         returns (bool)
     {
-        return item & set == item;
+        bytes4 lastSelector =_callstack[_callstack.length - 1] ;
+        return lastSelector & list == lastSelector;
     }
 
 }

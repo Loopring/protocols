@@ -90,7 +90,10 @@ contract BaseModule is ReentrancyGuard, Module
         external
         override
         virtual
-        reentrantWhitelist(this.activate.selector, this.addModule.selector)
+        reentrantWhitelist(
+            this.activate.selector,
+            this.addModule.selector
+        )
     {
         address wallet = msg.sender;
         bindMethods(wallet);
