@@ -49,7 +49,7 @@ contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
+        nonReentrant(this.addToWhitelist.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -62,7 +62,7 @@ contract WhitelistModule is SecurityModule
         address            addr
         )
         external
-        nonReentrant
+        nonReentrant(this.addToWhitelistImmediately.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,
@@ -78,7 +78,7 @@ contract WhitelistModule is SecurityModule
         address addr
         )
         external
-        nonReentrant
+        nonReentrant(this.removeFromWhitelist.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {

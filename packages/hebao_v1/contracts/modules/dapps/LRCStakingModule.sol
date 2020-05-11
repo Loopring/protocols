@@ -68,7 +68,7 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
         )
         external
         override
-        nonReentrant
+        nonReentrant(this.deposit.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -100,7 +100,7 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
         )
         external
         override
-        nonReentrant
+        nonReentrant(this.withdraw.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -127,7 +127,7 @@ contract LRCStakingModule is Ownable, SubAccountDAppModule
 
     function claimReward(address wallet)
         external
-        nonReentrant
+        nonReentrant(this.claimReward.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {

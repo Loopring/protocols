@@ -80,28 +80,28 @@ contract BaseModule is ReentrancyGuard, Module
         address module
         )
         external
-        nonReentrant
+        nonReentrant(this.addModule.selector)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         Wallet(wallet).addModule(module);
     }
 
-    /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external
         override
         virtual
+        reentrantWhitelist(this.activate.selector, this.addModule.selector)
     {
         address wallet = msg.sender;
         bindMethods(wallet);
         emit Activated(wallet);
     }
 
-    /// @dev This method will cause an re-entry to the same module contract.
     function deactivate()
         external
         override
         virtual
+        nonReentrant(this.deactivate.selector)
     {
         address wallet = msg.sender;
         unbindMethods(wallet);

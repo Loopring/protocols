@@ -66,7 +66,7 @@ contract QuotaTransfers is TransferModule
         bool           enablePending
         )
         external
-        nonReentrant
+        nonReentrant(this.transferToken.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes32 pendingTxId)
@@ -118,7 +118,7 @@ contract QuotaTransfers is TransferModule
         bool               enablePending
         )
         external
-        nonReentrant
+        nonReentrant(this.callContract.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes32 pendingTxId)
@@ -168,7 +168,7 @@ contract QuotaTransfers is TransferModule
         bytes calldata     logdata
         )
         external
-        nonReentrant
+        nonReentrant(this.transferTokensFullBalance.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -190,7 +190,7 @@ contract QuotaTransfers is TransferModule
         uint               amount
         )
         external
-        nonReentrant
+        nonReentrant(this.approveToken.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -218,7 +218,7 @@ contract QuotaTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrant
+        nonReentrant(this.approveThenCallContract.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -246,7 +246,7 @@ contract QuotaTransfers is TransferModule
         bytes32 pendingTxId
         )
         external
-        nonReentrant
+        nonReentrant(this.cancelPendingTx.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {

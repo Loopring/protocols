@@ -101,7 +101,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         )
         external
         override
-        nonReentrant
+        nonReentrant(this.setup.selector)
     {
         require(
             _owner == address(0) && numAddressesInSet(MODULE) == 0,
@@ -120,7 +120,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function addModule(address _module)
         external
         override
-        // allowReentrant (bindMethod)
+        nonReentrant(this.addModule.selector)
         onlyOwnerOrModule
     {
         addModuleInternal(_module);
@@ -129,7 +129,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function removeModule(address _module)
         external
         override
-        // allowReentrant (bindMethod)
+        nonReentrant(this.removeModule.selector)
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
@@ -159,7 +159,10 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     function bindMethod(bytes4 _method, address _module)
         external
         override
-        nonReentrant
+        reentrantWhitelist(
+            this.bindMethod.selector,
+            this.setup.selector | this.addModule.selector | this.removeModule.selector
+        )
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
@@ -251,7 +254,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         bytes memory data
         )
         private
-        nonReentrant
+        nonReentrantInternal()
         returns (
             bool success,
             bytes memory returnData

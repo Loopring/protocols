@@ -26,13 +26,62 @@ pragma solidity ^0.6.6;
 contract ReentrancyGuard
 {
     //The default value must be 0 in order to work behind a proxy.
-    uint private _guardValue;
+    bytes4[] private _callstack;
 
-    modifier nonReentrant()
+    // It will great if we have a way to get the current selector
+
+    modifier nonReentrantInternal()
     {
-        require(_guardValue == 0, "REENTRANCY");
-        _guardValue = 1;
+        require(_callstack.length == 0, "REENTRANCY");
+        _callstack.push(bytes4(0));
         _;
-        _guardValue = 0;
+        _callstack.pop();
     }
+
+    modifier nonReentrant(bytes4 _selector)
+    {
+        require(_selector != bytes4(0));
+        require(_callstack.length == 0, "REENTRANCY");
+
+        _callstack.push(_selector);
+        _;
+        _callstack.pop();
+    }
+
+    modifier reentrantWhitelist(bytes4 _selector, bytes4 whitelistSelectors)
+    {
+        require(_selector != bytes4(0));
+        uint len = _callstack.length;
+        require(
+            len == 0 || itemInSet(_callstack[len - 1], whitelistSelectors),
+            "WHITELISTE_REENTRANCY"
+        );
+
+        _callstack.push(_selector);
+        _;
+        _callstack.pop();
+    }
+
+
+    modifier reentrantBlacklist(bytes4 _selector, bytes4 blacklistSelectors)
+    {
+        require(_selector != bytes4(0));
+        uint len = _callstack.length;
+        require(
+            len == 0 || !itemInSet(_callstack[len - 1], blacklistSelectors),
+            "BLACKLISTE_REENTRANCY"
+        );
+
+        _callstack.push(_selector);
+        _;
+        _callstack.pop();
+    }
+
+    function itemInSet(bytes4 item, bytes4 set)
+        private
+        returns (bool)
+    {
+        return item & set == item;
+    }
+
 }

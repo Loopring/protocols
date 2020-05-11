@@ -55,7 +55,7 @@ contract RecoveryModule is SecurityModule
         address            newOwner
         )
         external
-        nonReentrant
+        nonReentrant(this.recover.selector)
         notWalletOwner(wallet, newOwner)
         onlyFromMetaTxWithMajority(
             wallet,

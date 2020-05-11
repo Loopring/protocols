@@ -127,7 +127,7 @@ contract LoopringModule is SecurityModule
         uint            amount
         )
         external
-        nonReentrant
+        nonReentrant(this.approveExchange.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -149,7 +149,7 @@ contract LoopringModule is SecurityModule
         bytes calldata  permission
         )
         external
-        nonReentrant
+        nonReentrant(this.createOrUpdateDEXAccount.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -173,7 +173,7 @@ contract LoopringModule is SecurityModule
         uint96          amount
         )
         external
-        nonReentrant
+        nonReentrant(this.depositToDEX.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -201,7 +201,7 @@ contract LoopringModule is SecurityModule
         uint96          amount
         )
         external
-        nonReentrant
+        nonReentrant(this.withdrawFromDEX.selector)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
