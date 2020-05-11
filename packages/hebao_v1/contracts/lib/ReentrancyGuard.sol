@@ -34,7 +34,6 @@ contract ReentrancyGuard
     modifier nonReentrant(bytes4 _selector)
     {
         require(_callstack.length == 0, "REENTRANCY");
-
         _callstack.push(_selector);
         _;
         _callstack.pop();
