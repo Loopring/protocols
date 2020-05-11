@@ -163,8 +163,8 @@ abstract contract MetaTxModule is BaseModule
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
-    /// @param signatures Signatures.
-    /// @param signers The signers needed for the transaction if they can't be extracted from the call data.
+    /// @param signatures The signatures of the signers.
+    /// @param signers The signers needed for the transaction.
     function executeMetaTx(
         bytes     memory data,
         uint      nonce,
