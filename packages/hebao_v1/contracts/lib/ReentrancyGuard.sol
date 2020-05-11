@@ -28,19 +28,11 @@ contract ReentrancyGuard
     //The default value must be 0 in order to work behind a proxy.
     bytes4[] private _callstack;
 
-    // It will great if we have a way to get the current selector
+    //TODO: It will great if we have a way to get the current selector
 
-    modifier nonReentrantInternal()
-    {
-        require(_callstack.length == 0, "REENTRANCY");
-        _callstack.push(bytes4(0));
-        _;
-        _callstack.pop();
-    }
-
+    // use 0 to represent an internal method selector.
     modifier nonReentrant(bytes4 _selector)
     {
-        require(_selector != bytes4(0));
         require(_callstack.length == 0, "REENTRANCY");
 
         _callstack.push(_selector);
