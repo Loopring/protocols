@@ -27,6 +27,7 @@ test: build/circuit/dex_circuit
 build/circuit/dex_circuit: $(CMAKE_TYPE)
 	make -C build
 	mkdir -p keys
+	rm -rf ./keys/*
 
 cmake-debug:
 	mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Debug ..
