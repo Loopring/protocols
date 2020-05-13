@@ -35,10 +35,7 @@ contract UpgraderModule is BaseModule {
     function activate()
         external
         override
-        reentrantWhitelist(
-            this.activate.selector,
-            this.addModule.selector
-        )
+        reentrantWhitelist(this.addModule.selector)
     {
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {

@@ -40,7 +40,7 @@ contract ApprovedTransfers is TransferModule
         bytes     calldata logdata
         )
         external
-        nonReentrant(this.transferToken.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,
@@ -60,7 +60,7 @@ contract ApprovedTransfers is TransferModule
         )
         external
       // TODO
-        // nonReentrant(this.transferTokensFullBalance.selector)
+        // nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,
@@ -83,7 +83,7 @@ contract ApprovedTransfers is TransferModule
         uint               amount
         )
         external
-        nonReentrant(this.approveToken.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,
@@ -102,7 +102,7 @@ contract ApprovedTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrant(this.callContract.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,
@@ -122,7 +122,7 @@ contract ApprovedTransfers is TransferModule
         bytes     calldata data
         )
         external
-        nonReentrant(this.approveThenCallContract.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,

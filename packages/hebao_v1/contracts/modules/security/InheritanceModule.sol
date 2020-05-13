@@ -73,7 +73,7 @@ contract InheritanceModule is SecurityModule
         address wallet
         )
         external
-        nonReentrant(this.inheritor.selector)
+        nonReentrant
     {
         (address newOwner, uint lastActive) = controller.securityStore().inheritor(wallet);
         require(newOwner != address(0), "NULL_INHERITOR");
@@ -99,7 +99,7 @@ contract InheritanceModule is SecurityModule
         address who
         )
         external
-        nonReentrant(this.setInheritor.selector)
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.securityStore().setInheritor(wallet, who);

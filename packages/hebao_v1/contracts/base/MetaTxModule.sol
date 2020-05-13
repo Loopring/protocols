@@ -285,7 +285,7 @@ abstract contract MetaTxModule is BaseModule
     /// @param tokens The list of tokens and ether to collect.
     function collectTokens(address[] calldata tokens)
         external
-        nonReentrant(this.collectTokens.selector)
+        nonReentrant
     {
         address to = controller.collectTo();
 

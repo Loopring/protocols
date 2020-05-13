@@ -53,7 +53,7 @@ contract GenericDAppModule is SecurityModule
         bytes   calldata data
         )
         external
-        nonReentrant(this.callDApp.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -66,7 +66,7 @@ contract GenericDAppModule is SecurityModule
         uint    amount
         )
         external
-        nonReentrant(this.approveDApp.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -81,7 +81,7 @@ contract GenericDAppModule is SecurityModule
         bytes   calldata data
         )
         external
-        nonReentrant(this.approveAndCallDApp.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {

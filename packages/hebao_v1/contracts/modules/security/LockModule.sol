@@ -62,7 +62,7 @@ contract LockModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant(this.lock.selector)
+        nonReentrant
         // onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)
@@ -75,7 +75,7 @@ contract LockModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant(this.unlock.selector)
+        nonReentrant
         // onlyWhenWalletLocked(wallet)
         onlyFromMetaTxOr(guardian)
         onlyWalletGuardian(wallet, guardian)

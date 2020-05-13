@@ -45,7 +45,7 @@ contract QuotaModule is SecurityModule
         uint    newQuota
         )
         external
-        nonReentrant(this.changeDailyQuota.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -58,7 +58,7 @@ contract QuotaModule is SecurityModule
         uint               newQuota
         )
         external
-        nonReentrant(this.changeDailyQuotaImmediately.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxWithMajority(
             wallet,

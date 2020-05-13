@@ -50,7 +50,7 @@ contract CompoundModule is SubAccountDAppModule
         )
         external
         override
-        nonReentrant(this.deposit.selector)
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(amount > 0, "ZERO_AMOUNT");
@@ -71,7 +71,7 @@ contract CompoundModule is SubAccountDAppModule
         )
         external
         override
-        nonReentrant(this.withdraw.selector)
+        nonReentrant
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         address cToken = compoundRegistry.getCToken(token);

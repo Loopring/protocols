@@ -54,7 +54,7 @@ contract GuardianModule is SecurityModule
         uint    group
         )
         external
-        nonReentrant(this.addGuardian.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         notWalletOwner(wallet, guardian)
         onlyFromMetaTxOrWalletOwner(wallet)
@@ -77,7 +77,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant(this.cancelGuardianAddition.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
@@ -90,7 +90,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant(this.removeGuardian.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyWalletGuardian(wallet, guardian)
         onlyFromMetaTxOrWalletOwner(wallet)
@@ -104,7 +104,7 @@ contract GuardianModule is SecurityModule
         address guardian
         )
         external
-        nonReentrant(this.cancelGuardianRemoval.selector)
+        nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
