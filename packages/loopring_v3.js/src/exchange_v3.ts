@@ -76,7 +76,6 @@ export class ExchangeV3 {
   private genesisMerkleRoot =
     "7435064972263210101377543783176472512844143561398145902634322592905325198465";
 
-
   private exchangeFees: ExchangeFees;
   private protocolFees: ProtocolFees;
 

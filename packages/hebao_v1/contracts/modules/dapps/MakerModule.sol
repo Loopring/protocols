@@ -29,15 +29,16 @@ contract MakerModule is SecurityModule
     {
     }
 
-    function extractMetaTxSigners(
-        address /*wallet*/,
-        bytes4  /*method*/,
-        bytes   memory /*data*/
+    function verifySigners(
+        address   /*wallet*/,
+        bytes4    /*method*/,
+        bytes     memory /*data*/,
+        address[] memory /*signers*/
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
     }
 }

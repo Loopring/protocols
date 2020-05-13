@@ -104,17 +104,17 @@ contract GenericDAppModule is SecurityModule
         transactCall(wallet, token, 0, txData);
     }
 
-    function extractMetaTxSigners(
-        address wallet,
-        bytes4  /* method */,
-        bytes   memory /* data */
+    function verifySigners(
+        address   wallet,
+        bytes4    /* method */,
+        bytes     memory /* data */,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
-        signers = new address[](1);
-        signers[0] = Wallet(wallet).owner();
+        return isOnlySigner(Wallet(wallet).owner(), signers);
     }
 }

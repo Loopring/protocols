@@ -42,11 +42,7 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         transferInternal(wallet, token, to, amount, logdata);
     }
@@ -61,11 +57,7 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         for (uint i = 0; i < tokens.length; i++) {
             uint amount = (tokens[i] == address(0)) ?
@@ -84,11 +76,7 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         approveInternal(wallet, token, to, amount);
     }
@@ -103,11 +91,7 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         callContractInternal(wallet, to, value, data);
     }
@@ -123,25 +107,22 @@ contract ApprovedTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         approveInternal(wallet, token, to, amount);
         callContractInternal(wallet, to, 0, data);
     }
 
-    function extractMetaTxSigners(
-        address /*wallet*/,
-        bytes4  method,
-        bytes   memory data
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         require (
             method == this.transferToken.selector ||
@@ -151,6 +132,11 @@ contract ApprovedTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-        return extractAddressesFromCallData(data, 1);
+        return GuardianUtils.requireMajority(
+            controller.securityStore(),
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerRequired
+        );
     }
 }

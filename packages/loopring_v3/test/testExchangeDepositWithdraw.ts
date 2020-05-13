@@ -116,7 +116,9 @@ contract("Exchange", (accounts: string[]) => {
       "exchange"
     );
 
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
+    const numAvailableSlotsBefore = (
+      await exchange.getNumAvailableDepositSlots()
+    ).toNumber();
 
     const ethAddress = exchangeTestUtil.getTokenAddress("ETH");
     const ethValue = token === ethAddress ? amount.add(depositFee) : depositFee;
@@ -130,7 +132,9 @@ contract("Exchange", (accounts: string[]) => {
     // Verify balances
     await snapshot.verifyBalances();
 
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
+    const numAvailableSlotsAfter = (
+      await exchange.getNumAvailableDepositSlots()
+    ).toNumber();
     assert.equal(
       numAvailableSlotsBefore,
       numAvailableSlotsAfter + 1,
@@ -178,7 +182,9 @@ contract("Exchange", (accounts: string[]) => {
       "exchange"
     );
 
-    const numAvailableSlotsBefore = (await exchange.getNumAvailableDepositSlots()).toNumber();
+    const numAvailableSlotsBefore = (
+      await exchange.getNumAvailableDepositSlots()
+    ).toNumber();
 
     const ethValue = token === "ETH" ? amount.add(depositFee) : depositFee;
     await exchange.updateAccountAndDeposit(
@@ -194,7 +200,9 @@ contract("Exchange", (accounts: string[]) => {
     // Verify balances
     await snapshot.verifyBalances();
 
-    const numAvailableSlotsAfter = (await exchange.getNumAvailableDepositSlots()).toNumber();
+    const numAvailableSlotsAfter = (
+      await exchange.getNumAvailableDepositSlots()
+    ).toNumber();
     assert.equal(
       numAvailableSlotsBefore,
       numAvailableSlotsAfter + 1,

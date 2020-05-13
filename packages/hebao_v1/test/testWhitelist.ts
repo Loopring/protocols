@@ -84,7 +84,6 @@ contract("WhitelistModule", (accounts: string[]) => {
       const tx = await executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           addr
         ),
         ctx,

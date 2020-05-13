@@ -37,8 +37,8 @@ export async function addGuardian(
     (event: any) => {
       return (
         event.wallet == wallet &&
-          event.guardian == guardian &&
-          event.group == group
+        event.guardian == guardian &&
+        event.group == group
       );
     }
   );

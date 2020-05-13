@@ -58,17 +58,12 @@ contract WhitelistModule is SecurityModule
 
     function addToWhitelistImmediately(
         address            wallet,
-        address[] calldata signers,
         address            addr
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now);
     }
@@ -120,22 +115,27 @@ contract WhitelistModule is SecurityModule
         methods[1] = this.isWhitelisted.selector;
     }
 
-    function extractMetaTxSigners(
-        address wallet,
-        bytes4  method,
-        bytes   memory data
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         if (method == this.addToWhitelist.selector ||
             method == this.removeFromWhitelist.selector) {
-            signers = new address[](1);
-            signers[0] = Wallet(wallet).owner();
+            return isOnlySigner(Wallet(wallet).owner(), signers);
         } else if(method == this.addToWhitelistImmediately.selector) {
-            return extractAddressesFromCallData(data, 1);
+            return GuardianUtils.requireMajority(
+                controller.securityStore(),
+                wallet,
+                signers,
+                GuardianUtils.SigRequirement.OwnerRequired
+            );
         } else {
             revert("INVALID_METHOD");
         }

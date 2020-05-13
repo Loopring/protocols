@@ -47,21 +47,15 @@ contract RecoveryModule is SecurityModule
     /// @dev Recover a wallet by setting a new owner.
     /// @param wallet The wallet for which the recovery shall be cancelled.
     /// @param newOwner The new owner address to set.
-    /// @param signers A list of addresses that signed the meta transaction.
     ///        The addresses must be sorted ascendently.
     function recover(
         address            wallet,
-        address[] calldata signers,
         address            newOwner
         )
         external
         nonReentrant
         notWalletOwner(wallet, newOwner)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerNotAllowed
-        )
+        onlyFromMetaTx
     {
         Wallet w = Wallet(wallet);
         address oldOwner = w.owner();
@@ -72,17 +66,23 @@ contract RecoveryModule is SecurityModule
         emit Recovered(wallet, oldOwner, newOwner);
     }
 
-    function extractMetaTxSigners(
-        address /*wallet*/,
-        bytes4  method,
-        bytes   memory data
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         require (method == this.recover.selector, "INVALID_METHOD");
-        return extractAddressesFromCallData(data, 1);
+        return GuardianUtils.requireMajority(
+            controller.securityStore(),
+            wallet,
+            signers,
+            GuardianUtils.SigRequirement.OwnerNotAllowed
+        );
     }
 }

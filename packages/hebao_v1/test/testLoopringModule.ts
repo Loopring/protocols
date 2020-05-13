@@ -89,7 +89,11 @@ contract("LoopringModule", () => {
           from: owner
         });
 
-        await web3.eth.sendTransaction({from: owner, to: wallet, value: "1" + "0".repeat(20)});
+        await web3.eth.sendTransaction({
+          from: owner,
+          to: wallet,
+          value: "1" + "0".repeat(20)
+        });
         await executeTransaction(
           loopringModule.contract.methods.depositToDEX(
             wallet,
@@ -169,6 +173,5 @@ contract("LoopringModule", () => {
         await assertEventEmitted(loopringModule, "Approval");
       }
     );
-
   });
 });

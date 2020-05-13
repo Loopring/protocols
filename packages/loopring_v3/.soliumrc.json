@@ -1,8 +1,6 @@
 {
   "extends": "solium:recommended",
-  "plugins": [
-    "security"
-  ],
+  "plugins": ["security"],
   "rules": {
     "security/no-inline-assembly": "off",
     "security/no-block-members": "off",
@@ -10,17 +8,8 @@
     "value-in-payable": "off",
     "no-empty-blocks": "off",
     "visibility-first": "error",
-    "quotes": [
-      "error",
-      "double"
-    ],
-    "indentation": [
-      "error",
-      4
-    ],
-    "linebreak-style": [
-      "error",
-      "unix"
-    ]
+    "quotes": ["error", "double"],
+    "indentation": ["error", 4],
+    "linebreak-style": ["error", "unix"]
   }
 }

@@ -42,7 +42,7 @@ contract("MetaTxmodule", () => {
     // Different wallets
     {
       const callA = ctx.whitelistModule.contract.methods
-        .addToWhitelistImmediately(wallet, signers, ctx.miscAddresses[0])
+        .addToWhitelistImmediately(wallet, ctx.miscAddresses[0])
         .encodeABI();
       const callB = ctx.whitelistModule.contract.methods
         .addToWhitelist(ctx.miscAddresses[0], ctx.miscAddresses[1])
@@ -52,7 +52,8 @@ contract("MetaTxmodule", () => {
           ctx.whitelistModule.contract.methods.executeTransactions(
             wallet,
             signers,
-            [callA, callB]
+            [callA, callB],
+            [signers, [owner]]
           ),
           ctx,
           true,
@@ -64,10 +65,10 @@ contract("MetaTxmodule", () => {
       );
     }
 
-    // Not all signatures of all signers needed
+    // Different signers of the meta tx than passed to executeTransactions
     {
       const callA = ctx.whitelistModule.contract.methods
-        .addToWhitelistImmediately(wallet, signers, ctx.miscAddresses[0])
+        .addToWhitelistImmediately(wallet, ctx.miscAddresses[0])
         .encodeABI();
       const callB = ctx.whitelistModule.contract.methods
         .addToWhitelist(ctx.miscAddresses[0], ctx.miscAddresses[1])
@@ -78,7 +79,62 @@ contract("MetaTxmodule", () => {
           ctx.whitelistModule.contract.methods.executeTransactions(
             wallet,
             signersB,
-            [callA, callB]
+            [callA, callB],
+            [signers, [owner]]
+          ),
+          ctx,
+          true,
+          wallet,
+          signersB.splice(-1),
+          { from: owner }
+        ),
+        "METATX_UNAUTHORIZED"
+      );
+    }
+
+    // Signed by someone that isn't the owner or a guardian
+    {
+      const callA = ctx.whitelistModule.contract.methods
+        .addToWhitelistImmediately(wallet, ctx.miscAddresses[0])
+        .encodeABI();
+      const callB = ctx.whitelistModule.contract.methods
+        .addToWhitelist(ctx.miscAddresses[0], ctx.miscAddresses[1])
+        .encodeABI();
+      const signersB = [...guardians].sort();
+      await expectThrow(
+        executeTransaction(
+          ctx.whitelistModule.contract.methods.executeTransactions(
+            wallet,
+            signersB,
+            [callA, callB],
+            [signers, [owner]]
+          ),
+          ctx,
+          true,
+          wallet,
+          [ctx.miscAddresses[0]],
+          { from: owner }
+        ),
+        "METATX_UNAUTHORIZED"
+      );
+    }
+
+    // Not all signatures of all signers needed
+    {
+      const callA = ctx.whitelistModule.contract.methods
+        .addToWhitelistImmediately(wallet, ctx.miscAddresses[0])
+        .encodeABI();
+      const callB = ctx.whitelistModule.contract.methods
+        .addToWhitelist(ctx.miscAddresses[0], ctx.miscAddresses[1])
+        .encodeABI();
+      const signersB = [...guardians].sort();
+      await expectThrow(
+        executeTransaction(
+          ctx.whitelistModule.contract.methods.executeTransactions(
+            wallet,
+            signersB,
+            [callA, callB],
+            [signers, [owner]]
           ),
           ctx,
           true,
@@ -93,7 +149,7 @@ contract("MetaTxmodule", () => {
     // Valid
     {
       const callA = ctx.whitelistModule.contract.methods
-        .addToWhitelistImmediately(wallet, signers, ctx.miscAddresses[0])
+        .addToWhitelistImmediately(wallet, ctx.miscAddresses[0])
         .encodeABI();
       const callB = ctx.whitelistModule.contract.methods
         .addToWhitelist(wallet, ctx.miscAddresses[1])
@@ -102,7 +158,8 @@ contract("MetaTxmodule", () => {
         ctx.whitelistModule.contract.methods.executeTransactions(
           wallet,
           signers,
-          [callA, callB]
+          [callA, callB],
+          [signers, [owner]]
         ),
         ctx,
         true,
@@ -135,9 +192,10 @@ contract("MetaTxmodule", () => {
           ctx,
           true,
           wallet,
-          [ctx.miscAddresses[0]],
+          [owner],
           {
             from: owner,
+            actualSigners: [ctx.miscAddresses[0]],
             signatureTypes: [tests[i].type],
             checkSignatures: false
           }
@@ -147,39 +205,11 @@ contract("MetaTxmodule", () => {
     }
   });
 
-  it("a meta tx can only be created by the owner or guardian", async () => {
-    const owner = ctx.owners[0];
-    const { wallet, guardians } = await createWallet(ctx, owner, 3);
-    const tests = [
-      [],
-      [ctx.miscAddresses[0]],
-      [...guardians, ctx.miscAddresses[0], owner]
-    ];
-    for (const test of tests) {
-      const signers = test.sort();
-      await expectThrow(
-        executeTransaction(
-          ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-            wallet,
-            signers,
-            ctx.miscAddresses[0]
-          ),
-          ctx,
-          true,
-          wallet,
-          signers,
-          { from: owner }
-        ),
-        "METATX_UNAUTHORIZED"
-      );
-    }
-  });
-
   it("should not be able to have duplicate meta tx signers", async () => {
     const owner = ctx.owners[0];
     const { wallet, guardians } = await createWallet(ctx, owner, 3);
     const tests = [
-      [owner, owner],
+      [owner, ...guardians, owner],
       [...guardians, owner, guardians[0]]
     ];
     for (const test of tests) {
@@ -188,7 +218,6 @@ contract("MetaTxmodule", () => {
         executeTransaction(
           ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
             wallet,
-            signers,
             ctx.miscAddresses[0]
           ),
           ctx,
@@ -210,14 +239,17 @@ contract("MetaTxmodule", () => {
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers.slice(-1),
           ctx.miscAddresses[0]
         ),
         ctx,
         true,
         wallet,
         signers,
-        { from: owner }
+        {
+          from: owner,
+          actualSigners: signers.slice(-1),
+          checkSignatures: false
+        }
       ),
       "BAD_SIGNATURE_DATA"
     );
@@ -225,14 +257,13 @@ contract("MetaTxmodule", () => {
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           ctx.miscAddresses[0]
         ),
         ctx,
         true,
         wallet,
-        [],
-        { from: owner }
+        signers,
+        { from: owner, actualSigners: [], checkSignatures: false }
       ),
       "BAD_SIGNATURE_DATA"
     );
@@ -248,7 +279,6 @@ contract("MetaTxmodule", () => {
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
         wallet,
-        signers,
         ctx.miscAddresses[0]
       ),
       ctx,
@@ -269,7 +299,6 @@ contract("MetaTxmodule", () => {
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
         wallet,
-        signers,
         ctx.miscAddresses[0]
       ),
       ctx,
@@ -297,7 +326,6 @@ contract("MetaTxmodule", () => {
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
         walletA,
-        signers,
         ctx.miscAddresses[0]
       ),
       ctx,
@@ -317,7 +345,6 @@ contract("MetaTxmodule", () => {
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
         wallet,
-        signers,
         ctx.miscAddresses[0]
       ),
       ctx,
@@ -330,7 +357,6 @@ contract("MetaTxmodule", () => {
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           ctx.miscAddresses[0]
         ),
         ctx,
@@ -352,7 +378,6 @@ contract("MetaTxmodule", () => {
     await executeTransaction(
       ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
         wallet,
-        signers,
         ctx.miscAddresses[0]
       ),
       ctx,
@@ -365,7 +390,6 @@ contract("MetaTxmodule", () => {
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           ctx.miscAddresses[0]
         ),
         ctx,
@@ -386,7 +410,6 @@ contract("MetaTxmodule", () => {
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           ctx.miscAddresses[0]
         ),
         ctx,
@@ -407,7 +430,6 @@ contract("MetaTxmodule", () => {
       executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           ctx.miscAddresses[0]
         ),
         ctx,
@@ -454,7 +476,6 @@ contract("MetaTxmodule", () => {
         await executeTransaction(
           ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
             wallet,
-            signers,
             ctx.miscAddresses[0]
           ),
           ctx,

@@ -163,12 +163,14 @@ abstract contract MetaTxModule is BaseModule
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
-    /// @param signatures Signatures.
+    /// @param signatures The signatures of the signers.
+    /// @param signers The signers needed for the transaction.
     function executeMetaTx(
-        bytes   memory data,
-        uint    nonce,
-        uint[5] memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
-        bytes[] memory signatures
+        bytes     memory data,
+        uint      nonce,
+        uint[5]   memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
+        bytes[]   memory signatures,
+        address[] memory signers
         )
         public
         payable
@@ -202,12 +204,7 @@ abstract contract MetaTxModule is BaseModule
         );
 
         // Get the signers necessary for this meta transaction.
-        address[] memory signers = getSigners(wallet, data);
-
-        // We check if all signers are authorized, but not if the number of signatures required
-        // for the method is suffcient, which should be done inside the specific method.
-        require(areMetaTxSignersAuthorized(wallet, data, signers), "METATX_UNAUTHORIZED");
-
+        require(checkSigners(wallet, data, signers), "METATX_UNAUTHORIZED");
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -237,12 +234,15 @@ abstract contract MetaTxModule is BaseModule
     /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
     ///      This method can only be called by a meta transaction.
     /// @param wallet The wallet used in all transactions.
-    /// @param signers The signers needed for all transactions.
+    /// @param signers The signers needed for all transactions whose signatures have been verified
+    ///                successfully by executeMetaTx and contains no duplicates.
     /// @param data The raw transaction data used for each transaction.
+    /// @param txSigners The signers needed for the sub transaction
     function executeTransactions(
-        address            wallet,
-        address[] calldata signers,
-        bytes[]   calldata data
+        address              wallet,
+        address[]   calldata signers,
+        bytes[]     calldata data,
+        address[][] calldata txSigners
         )
         external
         onlyFromMetaTx
@@ -254,10 +254,10 @@ abstract contract MetaTxModule is BaseModule
 
             // Make sure the signers needed for the transacaction are given in `signers`.
             // This allows us to check the needed signatures a single time.
-            address[] memory txSigners = getSigners(wallet, data[i]);
-            for (uint j = 0; j < txSigners.length; j++) {
+            require(checkSigners(wallet, data[i], txSigners[i]), "TX_UNAUTHORIZED");
+            for (uint j = 0; j < txSigners[i].length; j++) {
                 uint s = 0;
-                while (s < signers.length && signers[s] != txSigners[j]) {
+                while (s < signers.length && signers[s] != txSigners[i][j]) {
                     s++;
                 }
                 require(s < signers.length, "MISSING_SIGNER");
@@ -303,22 +303,33 @@ abstract contract MetaTxModule is BaseModule
 
     // ---- internal functions -----
 
-    /// @dev Extracts and returns a list of signers for the given meta transaction.
+    /// @dev Validate the list of signers for the given meta transaction.
     ///      Additional validation of the signers can also be done inside this function.
     /// @param wallet The wallet address.
     /// @param method The method selector.
     /// @param data The call data.
-    /// @return signers A list of signers that should have signed this meta transaction.
-    ///                  The list can be empty.
-    function extractMetaTxSigners(
-        address wallet,
-        bytes4  method,
-        bytes   memory data
+    /// @param signers The list of addresses which have signed the meta transaction
+    /// @return True if the list of signers are as expected, else False
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory data,
+        address[] memory signers
         )
         internal
         view
         virtual
-        returns (address[] memory signers);
+        returns (bool);
+
+    /// @dev Check if the specified signer is the only signer
+    function isOnlySigner(address signer, address[] memory signers)
+        internal
+        pure
+        virtual
+        returns (bool)
+    {
+        return (signers.length == 1 && signers[0] == signer);
+    }
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
     function extractWalletAddress(bytes memory data)
@@ -425,39 +436,37 @@ abstract contract MetaTxModule is BaseModule
 
     // ---- private functions -----
 
-    function getSigners(
-        address wallet,
-        bytes   memory data
+    function checkSigners(
+        address   wallet,
+        bytes     memory data,
+        address[] memory signers
         )
         private
         view
-        returns (address[] memory signers)
+        returns (bool)
     {
         bytes4 method = extractMethod(data);
         if (method == this.executeTransactions.selector) {
-            return extractAddressesFromCallData(data, 1);
+            address[] memory addresses = extractAddressesFromCallData(data, 1);
+            // Check if it matches the list of signers
+            if (addresses.length == signers.length) {
+                for (uint i = 0; i < signers.length; i++) {
+                    if (addresses[i] != signers[i]) {
+                        return false;
+                    }
+                }
+            } else {
+                return false;
+            }
+            // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
+            // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
+            // (even a call that fails will reimburse the gas costs).
+            return isWalletOwnerOrGuardian(wallet, signers);
         } else if (method == this.addModule.selector) {
-            signers = new address[](1);
-            signers[0] = Wallet(wallet).owner();
+            return isOnlySigner(Wallet(wallet).owner(), signers);
         } else {
-            signers = extractMetaTxSigners(wallet, method, data);
+            return verifySigners(wallet, method, data, signers);
         }
-    }
-
-    function areMetaTxSignersAuthorized(
-        address   wallet,
-        bytes     memory /*data*/,
-        address[] memory signers
-        )
-        internal
-        view
-        virtual
-        returns (bool)
-    {
-        // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
-        // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
-        // (even a call that fails will reimburse the gas costs).
-        return isWalletOwnerOrGuardian(wallet, signers);
     }
 
     /// @dev Save the meta-transaction to history.

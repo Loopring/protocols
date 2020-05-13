@@ -107,6 +107,8 @@ export async function executeMetaTransaction(
       : +(await contract.methods.lastNonce(wallet).call()) + 1;
   const checkSignatures =
     options.checkSignatures !== undefined ? options.checkSignatures : false;
+  const actualSigners =
+    options.actualSigners !== undefined ? options.actualSigners : signers;
 
   // Create the meta transaction
   const metaTransaction: MetaTransaction = {
@@ -126,7 +128,7 @@ export async function executeMetaTransaction(
 
   // Sign the meta transaction
   const hash = getHash(metaTransaction);
-  const signatures = await batchSign(ctx, signers, hash, signatureTypes);
+  const signatures = await batchSign(ctx, actualSigners, hash, signatureTypes);
   if (checkSignatures) {
     await verifySignatures(ctx, signers, hash, signatures);
   }
@@ -140,7 +142,13 @@ export async function executeMetaTransaction(
     new BN(metaTransaction.feeRecipient.slice(2), 16).toString(10)
   ];
   return contract.methods
-    .executeMetaTx(metaTransaction.data, nonce, gasSettings, signatures)
+    .executeMetaTx(
+      metaTransaction.data,
+      nonce,
+      gasSettings,
+      signatures,
+      signers
+    )
     .send({ from, gas, gasPrice: 0 });
 }
 
@@ -156,4 +164,5 @@ export interface TransactionOptions {
   signatureTypes?: SignatureType[];
   nonce?: number;
   checkSignatures?: boolean;
+  actualSigners?: string[];
 }

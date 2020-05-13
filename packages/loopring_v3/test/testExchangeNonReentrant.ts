@@ -39,7 +39,11 @@ contract("Exchange", (accounts: string[]) => {
     // Get all exeternal functions
     const externalFunctions: any[] = [];
     for (const entry of exchangeABI) {
-      if (entry.type === "function" && entry.stateMutability !== "view" && entry.stateMutability !== "pure") {
+      if (
+        entry.type === "function" &&
+        entry.stateMutability !== "view" &&
+        entry.stateMutability !== "pure"
+      ) {
         externalFunctions.push(entry);
       }
     }

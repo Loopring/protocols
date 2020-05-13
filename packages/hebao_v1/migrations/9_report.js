@@ -50,7 +50,7 @@ module.exports = function(deployer, network, accounts) {
     deployedEnsManagerAddr = ENSManager.address;
   }
 
-  const date = new Date().toISOString().replace(/T.+/, '');
+  const date = new Date().toISOString().replace(/T.+/, "");
   let report = `### Contract addresses (${date})  \n`;
   report += `- deployer: ${accounts[0]}  \n`;
   report += `- ENSManager: ${deployedEnsManagerAddr}  \n`;

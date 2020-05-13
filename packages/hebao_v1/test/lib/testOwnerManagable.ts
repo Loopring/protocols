@@ -9,11 +9,11 @@ contract("OwnerManagable", (accounts: string[]) => {
     const ownerManagable = await OwnerManagable.new();
     const owner = accounts[0];
     const address1 = web3.eth.accounts.create().address;
-    await ownerManagable.addManager(address1, {from: owner});
+    await ownerManagable.addManager(address1, { from: owner });
     const isManager = await ownerManagable.isManager(address1);
     assert.equal(true, isManager, "add manager failed");
 
-    await ownerManagable.removeManager(address1, {from: owner});
+    await ownerManagable.removeManager(address1, { from: owner });
     const isManager2 = await ownerManagable.isManager(address1);
     assert.equal(false, isManager2, "remove manager failed");
   });
@@ -23,10 +23,15 @@ contract("OwnerManagable", (accounts: string[]) => {
     const owner = accounts[0];
     const other = accounts[1];
     const address1 = web3.eth.accounts.create().address;
-    await expectThrow(ownerManagable.addManager(address1, {from: other}), "UNAUTHORIZED");
-    await ownerManagable.addManager(address1, {from: owner});
+    await expectThrow(
+      ownerManagable.addManager(address1, { from: other }),
+      "UNAUTHORIZED"
+    );
+    await ownerManagable.addManager(address1, { from: owner });
 
-    await expectThrow(ownerManagable.removeManager(address1, {from: other}), "UNAUTHORIZED");
+    await expectThrow(
+      ownerManagable.removeManager(address1, { from: other }),
+      "UNAUTHORIZED"
+    );
   });
-
 });

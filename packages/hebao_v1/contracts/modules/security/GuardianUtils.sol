@@ -41,6 +41,7 @@ library GuardianUtils
         )
         internal
         view
+        returns (bool)
     {
         // Calculate total group sizes
         Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
@@ -55,6 +56,7 @@ library GuardianUtils
             if (signers[i] == walletOwner) {
                 walletOwnerSigned = true;
             } else {
+                require(securityStore.isGuardian(wallet, signers[i]), "SIGNER_NOT_GUARDIAN");
                 signingGuardians[numGuardians++] = securityStore.getGuardian(wallet, signers[i]);
             }
         }
@@ -101,6 +103,8 @@ library GuardianUtils
 
         // We need a majority of votes
         require(hasMajority(numVotes, totalNumVotes), "NOT_ENOUGH_SIGNERS");
+
+        return true;
     }
 
     function hasHalf(

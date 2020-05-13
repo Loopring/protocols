@@ -140,9 +140,9 @@ contract("Exchange", (accounts: string[]) => {
             blockVersion,
             new Array(18).fill(1)
           );
-          let timestamp = (await web3.eth.getBlock(
-            await web3.eth.getBlockNumber()
-          )).timestamp;
+          let timestamp = (
+            await web3.eth.getBlock(await web3.eth.getBlockNumber())
+          ).timestamp;
           timestamp -=
             exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
           const bs = new Bitstream();
@@ -180,9 +180,9 @@ contract("Exchange", (accounts: string[]) => {
           );
           // Timestamp too early
           {
-            let timestamp = (await web3.eth.getBlock(
-              await web3.eth.getBlockNumber()
-            )).timestamp;
+            let timestamp = (
+              await web3.eth.getBlock(await web3.eth.getBlockNumber())
+            ).timestamp;
             timestamp -=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 1;
             const bs = new Bitstream();
@@ -211,9 +211,9 @@ contract("Exchange", (accounts: string[]) => {
           }
           // Timestamp too late
           {
-            let timestamp = (await web3.eth.getBlock(
-              await web3.eth.getBlockNumber()
-            )).timestamp;
+            let timestamp = (
+              await web3.eth.getBlock(await web3.eth.getBlockNumber())
+            ).timestamp;
             timestamp +=
               exchangeTestUtil.TIMESTAMP_HALF_WINDOW_SIZE_IN_SECONDS + 15;
             const bs = new Bitstream();
@@ -256,9 +256,9 @@ contract("Exchange", (accounts: string[]) => {
             exchangeTestUtil.exchangeId,
             exchangeTestUtil.onchainDataAvailability
           );
-          const timestamp = (await web3.eth.getBlock(
-            await web3.eth.getBlockNumber()
-          )).timestamp;
+          const timestamp = (
+            await web3.eth.getBlock(await web3.eth.getBlockNumber())
+          ).timestamp;
           // Invalid taker protocol fee
           {
             const bs = new Bitstream();
@@ -380,13 +380,17 @@ contract("Exchange", (accounts: string[]) => {
             let startIndex = 0;
             let startingHash = "0x0";
             if (blockType === BlockType.DEPOSIT) {
-              startIndex = (await exchange.getNumDepositRequestsProcessed()).toNumber();
+              startIndex = (
+                await exchange.getNumDepositRequestsProcessed()
+              ).toNumber();
               const firstRequestData = await exchange.getDepositRequest(
                 startIndex - 1
               );
               startingHash = firstRequestData.accumulatedHash;
             } else {
-              startIndex = (await exchange.getNumDepositRequestsProcessed()).toNumber();
+              startIndex = (
+                await exchange.getNumDepositRequestsProcessed()
+              ).toNumber();
               const firstRequestData = await exchange.getWithdrawRequest(
                 startIndex - 1
               );

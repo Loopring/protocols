@@ -17,7 +17,7 @@ export async function batchSign(
   message: Buffer,
   types: SignatureType[]
 ) {
-  assert.equal(types.length, signers.length, "invalid input arrays");
+  assert(types.length >= signers.length, "invalid input arrays");
   let signatures: string[] = [];
   for (const [i, signer] of signers.entries()) {
     signatures.push(await sign(ctx, signer, message, types[i]));

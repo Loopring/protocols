@@ -49,11 +49,16 @@ const ENSManager = artifacts.require("./WalletENSManager.sol");
 // const stakingPoolAddress = process.env.stakingPoolAddress || `0x${"0".repeat(40)}`;
 
 module.exports = function(deployer, network, accounts) {
-  const guardianPendingPeriod = Number(process.env.guardianPendingPeriod) || 1 * 24 * 3600;
-  const inheritanceWaitingPeriod = Number(process.env.inheritanceWaitingPeriod) || 30 * 24 * 3600;
-  const whitelistDelayPeriod = Number(process.env.whitelistDelayPeriod) || 1 * 24 * 3600;
-  const quotaDelayPeriod = Number(process.env.quotaDelayPeriod) || 1 * 24 * 3600;
-  const quotaTransDelayPeriod = Number(process.env.quotaTransDelayPeriod) || 1 * 24 * 3600;
+  const guardianPendingPeriod =
+    Number(process.env.guardianPendingPeriod) || 1 * 24 * 3600;
+  const inheritanceWaitingPeriod =
+    Number(process.env.inheritanceWaitingPeriod) || 30 * 24 * 3600;
+  const whitelistDelayPeriod =
+    Number(process.env.whitelistDelayPeriod) || 1 * 24 * 3600;
+  const quotaDelayPeriod =
+    Number(process.env.quotaDelayPeriod) || 1 * 24 * 3600;
+  const quotaTransDelayPeriod =
+    Number(process.env.quotaTransDelayPeriod) || 1 * 24 * 3600;
 
   deployer
     .then(() => {
@@ -75,9 +80,17 @@ module.exports = function(deployer, network, accounts) {
           ControllerImpl.address,
           inheritanceWaitingPeriod
         ),
-        deployer.deploy(WhitelistModule, ControllerImpl.address, whitelistDelayPeriod),
+        deployer.deploy(
+          WhitelistModule,
+          ControllerImpl.address,
+          whitelistDelayPeriod
+        ),
         deployer.deploy(QuotaModule, ControllerImpl.address, quotaDelayPeriod),
-        deployer.deploy(QuotaTransfers, ControllerImpl.address, quotaTransDelayPeriod),
+        deployer.deploy(
+          QuotaTransfers,
+          ControllerImpl.address,
+          quotaTransDelayPeriod
+        ),
         deployer.deploy(ApprovedTransfers, ControllerImpl.address),
         deployer.deploy(ERC1271Module),
         deployer.deploy(LoopringModule, ControllerImpl.address),
@@ -149,7 +162,9 @@ module.exports = function(deployer, network, accounts) {
       let deployedEnsManagerAddr = process.env.ENSManager || "";
       if (web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
         // should be done manually.
-        console.log("You will have to do ensManager.addManager(WalletFactoryModule.address) manually");
+        console.log(
+          "You will have to do ensManager.addManager(WalletFactoryModule.address) manually"
+        );
       } else {
         console.log("add manager for ENSManager:", WalletFactoryModule.address);
         ENSManager.deployed().then(ensManager => {

@@ -670,17 +670,15 @@ For comparison, let's calculate the achievable throughput of the previous Loopri
 
 - _Cost in USD per Trade_ in the table does not cover off-chain proof generation.
 
-
 The results given above are for the biggest circuits of size `2**28`. However, doing the trusted setup for circuits this big is challenging so it's important we can efficiently support submitting many smaller blocks at once. Here we show how the effect of the circuit size on the efficiency of the protocol for trades with data availability.
 
-|  Circuit size  | Trades/block  | Trades/Ethereum block                                 | Trades/second | Gas/Trade |
-| :------------: | :-----------: | :---------------------------------------------------- | :-----------: | :--------:|
-| 2**28          | 3800          | (10,000,000 - (220,000 +  7 \* 80,000)) / 336 = 27500 | 2100          | 365       |
-| 2**27          | 1900          | (10,000,000 - (220,000 + 14 \* 80,000)) / 336 = 25800 | 2000          | 385       |
-| 2**26          |  950          | (10,000,000 - (220,000 + 25 \* 80,000)) / 336 = 23200 | 1800          | 430       |
-| 2**25          |  475          | (10,000,000 - (220,000 + 41 \* 80,000)) / 336 = 19350 | 1500          | 515       |
-| 2**24          |  235          | (10,000,000 - (220,000 + 62 \* 80,000)) / 336 = 14350 | 1100          | 695       |
-
+| Circuit size | Trades/block | Trades/Ethereum block                                 | Trades/second | Gas/Trade |
+| :----------: | :----------: | :---------------------------------------------------- | :-----------: | :-------: |
+|   2\*\*28    |     3800     | (10,000,000 - (220,000 + 7 \* 80,000)) / 336 = 27500  |     2100      |    365    |
+|   2\*\*27    |     1900     | (10,000,000 - (220,000 + 14 \* 80,000)) / 336 = 25800 |     2000      |    385    |
+|   2\*\*26    |     950      | (10,000,000 - (220,000 + 25 \* 80,000)) / 336 = 23200 |     1800      |    430    |
+|   2\*\*25    |     475      | (10,000,000 - (220,000 + 41 \* 80,000)) / 336 = 19350 |     1500      |    515    |
+|   2\*\*24    |     235      | (10,000,000 - (220,000 + 62 \* 80,000)) / 336 = 14350 |     1100      |    695    |
 
 ### Future Improvements
 

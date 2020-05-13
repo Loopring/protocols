@@ -112,22 +112,22 @@ contract GuardianModule is SecurityModule
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
-    function extractMetaTxSigners(
-        address wallet,
-        bytes4  method,
-        bytes   memory
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         if (method == this.addGuardian.selector ||
             method == this.removeGuardian.selector ||
             method == this.cancelGuardianAddition.selector ||
             method == this.cancelGuardianRemoval.selector) {
-            signers = new address[](1);
-            signers[0] = Wallet(wallet).owner();
+            return isOnlySigner(Wallet(wallet).owner(), signers);
         } else {
             revert("INVALID_METHOD");
         }

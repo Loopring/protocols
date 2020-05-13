@@ -167,6 +167,27 @@ contract("GuardianUtils", (accounts: string[]) => {
     ctx = await createContext(defaultCtx);
   });
 
+  it("should only be able to use the wallet owner and guardians for majority", async () => {
+    const owner = ctx.owners[0];
+    const { wallet, guardians } = await createWallet(ctx, owner, 3);
+
+    // Add to the whitelist
+    const addr = ctx.guardians[10];
+    const signers = [owner, ...guardians, ctx.miscAddresses[0]].sort();
+    await expectThrow(
+      executeTransaction(
+        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
+          wallet,
+          addr
+        ),
+        ctx,
+        true,
+        wallet,
+        signers
+      ),
+      "SIGNER_NOT_GUARDIAN"
+    );
+  });
 
   tests.forEach(function(test) {
     it(test.description, async () => {
@@ -185,7 +206,6 @@ contract("GuardianUtils", (accounts: string[]) => {
       const transaction = executeTransaction(
         ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
           wallet,
-          signers,
           ctx.miscAddresses[0]
         ),
         ctx,

@@ -54,17 +54,12 @@ contract QuotaModule is SecurityModule
 
     function changeDailyQuotaImmediately(
         address            wallet,
-        address[] calldata signers,
         uint               newQuota
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxWithMajority(
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        )
+        onlyFromMetaTx
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now);
     }
@@ -93,21 +88,26 @@ contract QuotaModule is SecurityModule
         methods[0] = this.getDailyQuota.selector;
     }
 
-    function extractMetaTxSigners(
-        address wallet,
-        bytes4  method,
-        bytes   memory data
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
         )
         internal
         view
         override
-        returns (address[] memory signers)
+        returns (bool)
     {
         if (method == this.changeDailyQuota.selector) {
-            signers = new address[](1);
-            signers[0] = Wallet(wallet).owner();
+            return isOnlySigner(Wallet(wallet).owner(), signers);
         } else if(method == this.changeDailyQuotaImmediately.selector) {
-            return extractAddressesFromCallData(data, 1);
+            return GuardianUtils.requireMajority(
+                controller.securityStore(),
+                wallet,
+                signers,
+                GuardianUtils.SigRequirement.OwnerRequired
+            );
         } else {
             revert("INVALID_METHOD");
         }

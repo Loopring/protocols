@@ -22,10 +22,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const getFunctionDelay = async (to: string, functionSelector: string) => {
-    return (await delayedContract.getFunctionDelay(
-      to,
-      functionSelector
-    )).toNumber();
+    return (
+      await delayedContract.getFunctionDelay(to, functionSelector)
+    ).toNumber();
   };
 
   const checkFunctionDelay = async (
@@ -62,7 +61,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumDelayedFunctions = async (numExpected: number) => {
-    const numDelayedFunctions = (await delayedContract.getNumDelayedFunctions()).toNumber();
+    const numDelayedFunctions = (
+      await delayedContract.getNumDelayedFunctions()
+    ).toNumber();
     assert.equal(
       numDelayedFunctions,
       numExpected,
@@ -71,7 +72,9 @@ contract("DelayedOwner", (accounts: string[]) => {
   };
 
   const checkNumPendingTransactions = async (numExpected: number) => {
-    const numPendingTransactions = (await delayedContract.getNumPendingTransactions()).toNumber();
+    const numPendingTransactions = (
+      await delayedContract.getNumPendingTransactions()
+    ).toNumber();
     assert.equal(
       numPendingTransactions,
       numExpected,

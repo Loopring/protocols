@@ -22,15 +22,21 @@ contract("LockModule", (accounts: string[]) => {
     return ctx.lockModule.isLocked(wallet);
   };
 
-  const lockChecked = async (wallet: string, guardian: string) => {
+  const lockChecked = async (
+    wallet: string,
+    guardian: string,
+    from?: string
+  ) => {
+    from = from === undefined ? guardian : from;
+
     // Lock the wallet
     await executeTransaction(
       ctx.lockModule.contract.methods.lock(wallet, guardian),
       ctx,
       useMetaTx,
       wallet,
-      [guardian],
-      { from: guardian }
+      [from],
+      { from }
     );
     await assertEventEmitted(ctx.lockModule, "WalletLock", (event: any) => {
       return event.wallet == wallet;
@@ -48,8 +54,10 @@ contract("LockModule", (accounts: string[]) => {
   const unlockChecked = async (
     wallet: string,
     guardian: string,
-    lockModule: any = ctx.lockModule
+    lockModule: any = ctx.lockModule,
+    from?: string
   ) => {
+    from = from === undefined ? guardian : from;
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
     await executeTransaction(
@@ -57,8 +65,8 @@ contract("LockModule", (accounts: string[]) => {
       ctx,
       useMetaTx,
       wallet,
-      [guardian],
-      { from: guardian }
+      [from],
+      { from }
     );
     if (wasLocked) {
       await assertEventEmitted(lockModule, "WalletLock", (event: any) => {
@@ -90,12 +98,45 @@ contract("LockModule", (accounts: string[]) => {
   });
 
   [false, true].forEach(function(metaTx) {
+    useMetaTx = metaTx;
     it(
       description("guardians should be able to lock/unlock the wallet"),
       async () => {
         useMetaTx = metaTx;
         const owner = ctx.owners[0];
         const { wallet, guardians } = await createWallet(ctx, owner, 2);
+
+        // Try to lock/unlock from an address that is not a guardian while pretending
+        // to be a guardian
+        await expectThrow(
+          lockChecked(wallet, guardians[1], ctx.miscAddresses[0]),
+          useMetaTx ? "METATX_UNAUTHORIZED" : "UNAUTHORIZED"
+        );
+        await expectThrow(
+          unlockChecked(
+            wallet,
+            guardians[1],
+            ctx.lockModule,
+            ctx.miscAddresses[0]
+          ),
+          useMetaTx ? "METATX_UNAUTHORIZED" : "UNAUTHORIZED"
+        );
+
+        // Mismatch signer and guardian
+        await expectThrow(
+          unlockChecked(wallet, guardians[0], ctx.lockModule, guardians[1]),
+          useMetaTx ? "METATX_UNAUTHORIZED" : "UNAUTHORIZED"
+        );
+
+        // Try to lock/unlock from an address that is not a guardian
+        await expectThrow(
+          lockChecked(wallet, owner, owner),
+          useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_GUARDIAN"
+        );
+        await expectThrow(
+          unlockChecked(wallet, owner, ctx.lockModule, owner),
+          useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_GUARDIAN"
+        );
 
         // Lock the wallet
         await lockChecked(wallet, guardians[0]);

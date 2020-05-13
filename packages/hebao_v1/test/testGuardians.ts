@@ -49,7 +49,6 @@ contract("GuardiansModule", (accounts: string[]) => {
     pendingPeriod = (
       await defaultCtx.guardianModule.pendingPeriod()
     ).toNumber();
-
   });
 
   beforeEach(async () => {

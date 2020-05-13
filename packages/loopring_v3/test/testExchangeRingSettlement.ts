@@ -1646,7 +1646,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID: orderIDB + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          orderID:
+            orderIDB + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
         },
         expected: {
           orderA: { filledFraction: 0.0, spread: new BN(0) },
@@ -1660,7 +1661,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: ownerA,
-          orderID: orderIDA + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          orderID:
+            orderIDA + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
         },
         orderB: {
           tokenS: "GTO",
@@ -1668,7 +1670,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("200", "ether")),
           amountB: new BN(web3.utils.toWei("100", "ether")),
           owner: ownerB,
-          orderID: orderIDB + 3 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          orderID:
+            orderIDB + 3 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
         },
         expected: {
           orderA: { filledFraction: 1.0, spread: new BN(0) },
@@ -1723,7 +1726,8 @@ contract("Exchange", (accounts: string[]) => {
           amountS: new BN(web3.utils.toWei("100", "ether")),
           amountB: new BN(web3.utils.toWei("200", "ether")),
           owner: exchangeTestUtil.testContext.orderOwners[0],
-          orderID: orderID + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
+          orderID:
+            orderID + 2 * 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY
         },
         orderB: {
           tokenS: "GTO",

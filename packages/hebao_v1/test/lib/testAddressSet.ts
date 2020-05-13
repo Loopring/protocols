@@ -43,7 +43,10 @@ contract("AddressSet", () => {
       assert.equal(isInSet1, true, "address not in set after insertion");
 
       const address2 = web3.eth.accounts.create().address;
-      await expectThrow(addressSetWrapper.add(key1, address2, false), "MUST_MAINTAIN_LIST");
+      await expectThrow(
+        addressSetWrapper.add(key1, address2, false),
+        "MUST_MAINTAIN_LIST"
+      );
     });
 
     it("should not be able to add the same address twice ", async () => {
@@ -53,9 +56,11 @@ contract("AddressSet", () => {
       await addressSetWrapper.add(key1, address1, false);
       const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
       assert.equal(isInSet1, true, "address not in set after insertion");
-      await expectThrow(addressSetWrapper.add(key1, address1, false), "ALREADY_IN_SET");
+      await expectThrow(
+        addressSetWrapper.add(key1, address1, false),
+        "ALREADY_IN_SET"
+      );
     });
-
   });
 
   describe("removeAddressFromSet", () => {
@@ -89,12 +94,19 @@ contract("AddressSet", () => {
       const key1 = web3.utils.sha3(address1);
       await addressSetWrapper.add(key1, address1, false);
       const numAddressesInSet = await addressSetWrapper.numInSet(key1);
-      assert.equal(1, numAddressesInSet.toNumber(), "incorrect address number in set");
+      assert.equal(
+        1,
+        numAddressesInSet.toNumber(),
+        "incorrect address number in set"
+      );
 
       await addressSetWrapper.removeAll(key1);
       const numAddressesInSet2 = await addressSetWrapper.numInSet(key1);
-      assert.equal(0, numAddressesInSet2.toNumber(), "incorrect address number in set");
+      assert.equal(
+        0,
+        numAddressesInSet2.toNumber(),
+        "incorrect address number in set"
+      );
     });
   });
-
 });
