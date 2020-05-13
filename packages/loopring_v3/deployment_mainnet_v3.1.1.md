@@ -37,6 +37,8 @@
 - trade: 1, 2, 4, 8, 14, 31, 63, 128, 256, 512, 1024
 - deposit: 1, 2, 4, 8, 15, 31, 64, 128, 256
 - onchainWithdrawal: 1, 2, 4, 8, 16, 32, 64, 128, 256
+- offchainWithdrawal: 1, 2, 4, 8, 16, 32, 64, 128, 256
+- internalTransfer: 1, 2, 4, 8, 28, 58, 120, 243
 
 ## These tokens are supported by all exchanges:
 
@@ -78,3 +80,4 @@
 - HT: 0x6f259637dcD74C767781E37Bc6133cd6A68aa161, tokenId: 12
 - OKB: 0x75231F58b43240C9718Dd58B4967c5114342a86c, tokenId: 13
 - BNB: 0xB8c77482e45F1F44dE1745F52C74426C631bDD52, tokenId: 14
+- KEEP: 0x85Eee30c52B0b379b046Fb0F85F4f3Dc3009aFEC, tokenId: 15
