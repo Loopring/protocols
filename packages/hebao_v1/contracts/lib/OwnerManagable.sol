@@ -51,6 +51,16 @@ contract OwnerManagable is Claimable, AddressSet
         return addressesInSet(MANAGER);
     }
 
+    /// @dev Gets the number of managers.
+    /// @return The numer of managers.
+    function numManagers()
+        public
+        view
+        returns (uint)
+    {
+        return numAddressesInSet(MANAGER);
+    }
+
     /// @dev Checks if an address is a manger.
     /// @param addr The address to check.
     /// @return True if the address is a manager, False otherwise.
