@@ -54,11 +54,12 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     /// @param _owner The wallet's owner.
     /// @param _modules The wallet's modules.
     /// @param _subdomain The ENS subdomain to register, use "" to skip.
+    /// @param _subdomainApproval The signature for ENS subdomain approval.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
         address            _owner,
         string    calldata _subdomain,
-        bytes     calldata _signature,
+        bytes     calldata _subdomainApproval,
         address[] calldata _modules
         )
         external
@@ -80,7 +81,11 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         }
 
         if (bytes(_subdomain).length > 0) {
-            controller.ensManager().register(_subdomain, _wallet, _signature);
+            controller.ensManager().register(
+                _wallet,
+                _subdomain,
+                _subdomainApproval
+            );
         }
         // Don't remove this module so it is still authorized for reimbursing meta tx's
         //w.removeModule(address(this));
