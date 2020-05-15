@@ -58,7 +58,6 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     function createWallet(
         address            _owner,
         string    calldata _subdomain,
-        address            _signer,
         bytes     calldata _signature,
         address[] calldata _modules
         )
@@ -81,7 +80,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         }
 
         if (bytes(_subdomain).length > 0) {
-            controller.ensManager().register(_subdomain, _wallet, _signer, _signature);
+            controller.ensManager().register(_subdomain, _wallet, _signature);
         }
         // Don't remove this module so it is still authorized for reimbursing meta tx's
         //w.removeModule(address(this));

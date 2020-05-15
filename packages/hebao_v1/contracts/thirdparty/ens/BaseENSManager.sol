@@ -16,7 +16,6 @@ interface IENSManager {
     function register(
         string calldata _label,
         address _owner,
-        address _signer,
         bytes calldata _signature
         ) external;
     function isAvailable(bytes32 _subnode) external view returns(bool);
@@ -93,7 +92,6 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     function register(
         string calldata _label,
         address _owner,
-        address _signer,
         bytes   calldata _signature
         )
         external
@@ -101,9 +99,7 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         onlyManager
     {
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
-        (bool checkEnsRes, string memory errorMsg) =
-            checkEnsSigner(labelNode, _signer, _signature);
-        require(checkEnsRes, errorMsg);
+        require(checkEnsSigner(labelNode, _signature), "INVALID_ENS_SIGNER");
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
         address currentOwner = getENSRegistry().owner(node);
         require(currentOwner == address(0), "AEM: _label is alrealdy owned");
@@ -151,23 +147,15 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     }
 
     function checkEnsSigner(
-        bytes32 labelNode,
-        address _signer,
+        bytes32 _labelNode,
         bytes memory _signature
         )
         internal
         view
-        returns (bool, string memory)
+        returns (bool)
     {
-        if (_signer == owner || isManager(_signer)) {
-            if(SignatureUtil.verifySignature(labelNode, _signer, _signature)) {
-                return (true, "");
-            } else {
-                return (false, "INVALID_SIGNATURE");
-            }
-        } else {
-            return (false, "INVALID_ENS_SIGNER");
-        }
+        address signer = SignatureUtil.recoverECDSASigner(_labelNode, _signature);
+        return isManager(signer);
     }
 
 }

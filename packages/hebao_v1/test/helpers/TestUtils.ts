@@ -121,7 +121,6 @@ export async function createWallet(
     owner,
     "",
     modules,
-    Constants.zeroAddress,
     Constants.emptyBytes,
     {
       from: owner

@@ -34,14 +34,13 @@ contract("WalletFactoryModule", () => {
     let signature = Constants.emptyBytes;
     if (walletName) {
       const hashBuf = Buffer.from(web3.utils.sha3(walletName).slice(2), "hex");
-      signer = web3.eth.defaultAccount;
+      signer = ctx.owners[0];
       signature = await sign(undefined, signer, hashBuf);
     }
     await executeTransaction(
       ctx.walletFactoryModule.contract.methods.createWallet(
         owner,
         walletName,
-        signer,
         signature,
         []
       ),
@@ -81,7 +80,6 @@ contract("WalletFactoryModule", () => {
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
           "",
-          Constants.zeroAddress,
           Constants.emptyBytes,
           []
         ),
@@ -137,7 +135,6 @@ contract("WalletFactoryModule", () => {
           ctx.walletFactoryModule.contract.methods.createWallet(
             owner,
             "",
-            Constants.zeroAddress,
             Constants.emptyBytes,
             []
           ),

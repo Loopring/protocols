@@ -38,7 +38,6 @@ contract("WalletENSManager", () => {
           ctx.walletFactoryModule.contract.methods.createWallet(
             owner,
             walletName,
-            signer,
             signature,
             []
           ),
@@ -51,32 +50,12 @@ contract("WalletENSManager", () => {
         "INVALID_ENS_SIGNER"
       );
 
-      signer = web3.eth.defaultAccount;
-      signature = await sign(undefined, ctx.miscAddresses[1], hashBuf); // wrong signature.
-      await expectThrow(
-        executeTransaction(
-          ctx.walletFactoryModule.contract.methods.createWallet(
-            owner,
-            walletName,
-            signer,
-            signature,
-            []
-          ),
-          ctx,
-          false,
-          wallet,
-          [owner],
-          { from: owner, gasPrice: new BN(1) }
-        ),
-        "INVALID_SIGNATURE"
-      );
-
+      signer = ctx.owners[0];
       signature = await sign(undefined, signer, hashBuf);
       await executeTransaction(
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
           walletName,
-          signer,
           signature,
           []
         ),
@@ -93,12 +72,12 @@ contract("WalletENSManager", () => {
       // ethers.utils.namehash only support the characters [a-z0-9.-],
       // so only there characters are allowed in our walletName.
       // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash
-      const owner = ctx.owners[0];
+      const owner = ctx.miscAddresses[0];
       const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
       // console.log("wallet address:", wallet);
       const walletName = "mywalleta" + new Date().getTime();
 
-      const signer = web3.eth.defaultAccount;
+      const signer = ctx.owners[0];
       const hashBuf = Buffer.from(web3.utils.sha3(walletName).slice(2), "hex");
       const signature = await sign(undefined, signer, hashBuf);
 
@@ -106,7 +85,6 @@ contract("WalletENSManager", () => {
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
           walletName,
-          signer,
           signature,
           []
         ),
