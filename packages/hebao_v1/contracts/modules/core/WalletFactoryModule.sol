@@ -52,9 +52,9 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
 
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
-    /// @param _modules The wallet's modules.
     /// @param _label The ENS subdomain to register, use "" to skip.
     /// @param _labelApproval The signature for ENS subdomain approval.
+    /// @param _modules The wallet's modules.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
         address            _owner,
