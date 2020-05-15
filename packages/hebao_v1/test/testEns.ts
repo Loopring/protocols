@@ -8,23 +8,87 @@ import {
 import BN = require("bn.js");
 import { ethers } from "ethers";
 import { getEventsFromContract, assertEventEmitted } from "../util/Events";
+import { expectThrow } from "../util/expectThrow";
+import { Constants } from "./helpers/Constants";
+import { sign } from "./helpers/Signature";
 
 contract("WalletENSManager", () => {
   let defaultCtx: Context;
   let ctx: Context;
   const walletDomain = ".loopring.eth";
-  const walletName = "mywalleta" + new Date().getTime();
 
   before(async () => {
     defaultCtx = await getContext();
     ctx = await createContext(defaultCtx);
   });
 
-  // beforeEach(async () => {
-
-  // });
-
   describe("WalletENSManager", () => {
+    it("should only be able to register ENS by manager", async () => {
+      const owner = ctx.miscAddresses[0];
+      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+      const walletName = "mywalleta" + new Date().getTime();
+
+      const hashBuf = Buffer.from(web3.utils.sha3(walletName).slice(2), "hex");
+
+      // sign with non-manager address:
+      let signer = ctx.miscAddresses[1];
+      let signature = await sign(undefined, signer, hashBuf);
+      await expectThrow(
+        executeTransaction(
+          ctx.walletFactoryModule.contract.methods.createWallet(
+            owner,
+            walletName,
+            signer,
+            signature,
+            []
+          ),
+          ctx,
+          false,
+          wallet,
+          [owner],
+          { from: owner, gasPrice: new BN(1) }
+        ),
+        "INVALID_ENS_SIGNER"
+      );
+
+      signer = web3.eth.defaultAccount;
+      signature = await sign(undefined, ctx.miscAddresses[1], hashBuf); // wrong signature.
+      await expectThrow(
+        executeTransaction(
+          ctx.walletFactoryModule.contract.methods.createWallet(
+            owner,
+            walletName,
+            signer,
+            signature,
+            []
+          ),
+          ctx,
+          false,
+          wallet,
+          [owner],
+          { from: owner, gasPrice: new BN(1) }
+        ),
+        "INVALID_SIGNATURE"
+      );
+
+      signature = await sign(undefined, signer, hashBuf);
+      await executeTransaction(
+        ctx.walletFactoryModule.contract.methods.createWallet(
+          owner,
+          walletName,
+          signer,
+          signature,
+          []
+        ),
+        ctx,
+        false,
+        wallet,
+        [owner],
+        { from: owner, gasPrice: new BN(1) }
+      );
+
+    });
+
     it("will be able get address by ens subdomain ans vice versa", async () => {
       // ethers.utils.namehash only support the characters [a-z0-9.-],
       // so only there characters are allowed in our walletName.
@@ -32,10 +96,18 @@ contract("WalletENSManager", () => {
       const owner = ctx.owners[0];
       const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
       // console.log("wallet address:", wallet);
+      const walletName = "mywalleta" + new Date().getTime();
+
+      const signer = web3.eth.defaultAccount;
+      const hashBuf = Buffer.from(web3.utils.sha3(walletName).slice(2), "hex");
+      const signature = await sign(undefined, signer, hashBuf);
+
       await executeTransaction(
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
           walletName,
+          signer,
+          signature,
           []
         ),
         ctx,

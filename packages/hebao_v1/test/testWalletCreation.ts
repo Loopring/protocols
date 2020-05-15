@@ -9,6 +9,8 @@ import { transferFrom } from "./helpers/TokenUtils";
 import { assertEventEmitted, assertNoEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
+import { Constants } from "./helpers/Constants";
+import { sign } from "./helpers/Signature";
 
 contract("WalletFactoryModule", () => {
   let defaultCtx: Context;
@@ -28,10 +30,19 @@ contract("WalletFactoryModule", () => {
       await transferFrom(ctx, owner, wallet, "ETH", toAmount("0.1"));
     }
 
+    let signer = Constants.zeroAddress;
+    let signature = Constants.emptyBytes;
+    if (walletName) {
+      const hashBuf = Buffer.from(web3.utils.sha3(walletName).slice(2), "hex");
+      signer = web3.eth.defaultAccount;
+      signature = await sign(undefined, signer, hashBuf);
+    }
     await executeTransaction(
       ctx.walletFactoryModule.contract.methods.createWallet(
         owner,
         walletName,
+        signer,
+        signature,
         []
       ),
       ctx,
@@ -69,7 +80,9 @@ contract("WalletFactoryModule", () => {
       executeTransaction(
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
-          walletName,
+          "",
+          Constants.zeroAddress,
+          Constants.emptyBytes,
           []
         ),
         ctx,
@@ -123,7 +136,9 @@ contract("WalletFactoryModule", () => {
         executeTransaction(
           ctx.walletFactoryModule.contract.methods.createWallet(
             owner,
-            "MyWallet",
+            "",
+            Constants.zeroAddress,
+            Constants.emptyBytes,
             []
           ),
           ctx,

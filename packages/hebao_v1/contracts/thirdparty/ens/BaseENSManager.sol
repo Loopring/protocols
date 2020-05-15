@@ -6,13 +6,19 @@ import "../strings.sol";
 import "./ENS.sol";
 import "./ENSConsumer.sol";
 import "../../lib/OwnerManagable.sol";
+import "../../lib/SignatureUtil.sol";
 
 /**
  * @dev Interface for an ENS Mananger.
  */
 interface IENSManager {
     function changeRootnodeOwner(address _newOwner) external;
-    function register(string calldata _label, address _owner) external;
+    function register(
+        string calldata _label,
+        address _owner,
+        address _signer,
+        bytes calldata _signature
+        ) external;
     function isAvailable(bytes32 _subnode) external view returns(bool);
     function resolveName(address _owner) external view returns (string memory);
 }
@@ -84,8 +90,20 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     * @param _owner The owner of the subdomain.
     * @param _label The subdomain label.
     */
-    function register(string calldata _label, address _owner) external override onlyManager {
+    function register(
+        string calldata _label,
+        address _owner,
+        address _signer,
+        bytes   calldata _signature
+        )
+        external
+        override
+        onlyManager
+    {
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
+        (bool checkEnsRes, string memory errorMsg) =
+            checkEnsSigner(labelNode, _signer, _signature);
+        require(checkEnsRes, errorMsg);
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
         address currentOwner = getENSRegistry().owner(node);
         require(currentOwner == address(0), "AEM: _label is alrealdy owned");
@@ -131,4 +149,25 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         }
         return false;
     }
+
+    function checkEnsSigner(
+        bytes32 labelNode,
+        address _signer,
+        bytes memory _signature
+        )
+        internal
+        view
+        returns (bool, string memory)
+    {
+        if (_signer == owner || isManager(_signer)) {
+            if(SignatureUtil.verifySignature(labelNode, _signer, _signature)) {
+                return (true, "");
+            } else {
+                return (false, "INVALID_SIGNATURE");
+            }
+        } else {
+            return (false, "INVALID_ENS_SIGNER");
+        }
+    }
+
 }
