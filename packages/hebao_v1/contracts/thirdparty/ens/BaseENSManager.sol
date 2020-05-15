@@ -160,7 +160,11 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         view
     {
         bytes32 hash = keccak256(
-           abi.encodePacked("\x19Ethereum Signed Message:\n32", _owner, _label)
+           abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                // _owner,
+                _label
+            )
         );
 
         address signer = SignatureUtil.recoverECDSASigner(hash, _approval);
