@@ -13,13 +13,16 @@ import "../../lib/SignatureUtil.sol";
  */
 interface IENSManager {
     function changeRootnodeOwner(address _newOwner) external;
-    function register(
-        string calldata _label,
-        address _owner,
-        bytes calldata _signature
-        ) external;
+
     function isAvailable(bytes32 _subnode) external view returns(bool);
+
     function resolveName(address _owner) external view returns (string memory);
+
+    function register(
+        address _owner,
+        string  calldata _label,
+        bytes   calldata _approval
+    ) external;
 }
 
 /**
@@ -33,6 +36,8 @@ interface IENSManager {
 contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
 
     using strings for *;
+    using BytesUtil     for bytes;
+    using MathUint      for uint;
 
     // The managed root name
     string public rootName;
@@ -88,18 +93,20 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
     * Registers both the forward and reverse ENS.
     * @param _owner The owner of the subdomain.
     * @param _label The subdomain label.
+    * @param _approval The signature of _owner and _label by a manager.
     */
     function register(
-        string calldata _label,
         address _owner,
-        bytes   calldata _signature
+        string  calldata _label,
+        bytes   calldata _approval
         )
         external
         override
         onlyManager
     {
+        verifyApproval(_owner, _label, _approval);
+
         bytes32 labelNode = keccak256(abi.encodePacked(_label));
-        require(checkEnsSigner(labelNode, _signature), "INVALID_ENS_SIGNER");
         bytes32 node = keccak256(abi.encodePacked(rootNode, labelNode));
         address currentOwner = getENSRegistry().owner(node);
         require(currentOwner == address(0), "AEM: _label is alrealdy owned");
@@ -146,16 +153,28 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         return false;
     }
 
-    function checkEnsSigner(
-        bytes32 _labelNode,
-        bytes memory _signature
+    function verifyApproval(
+        address _owner,
+        string  memory _label,
+        bytes   memory _approval
         )
         internal
         view
-        returns (bool)
     {
-        address signer = SignatureUtil.recoverECDSASigner(_labelNode, _signature);
-        return isManager(signer);
+        if (numManagers() == 1) {
+            return;
+        }
+
+        bytes32 hash = keccak256(
+            abi.encodePacked(
+                "\x19Ethereum Signed Message:\n32",
+                _owner,
+                _label
+            )
+        );
+
+        address signer = SignatureUtil.recoverECDSASigner(hash, _approval);
+        require(isManager(signer), "UNAUTHORIZED");
     }
 
 }
