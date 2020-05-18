@@ -23,7 +23,6 @@ contract("RecoveryModule", (accounts: string[]) => {
       ctx.walletFactoryModule.contract.methods.createWallet(
         owner,
         "",
-        Constants.zeroAddress,
         Constants.emptyBytes,
         [
           ctx.guardianModule.address,

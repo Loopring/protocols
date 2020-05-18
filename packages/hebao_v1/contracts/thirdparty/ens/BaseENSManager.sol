@@ -36,6 +36,8 @@ interface IENSManager {
 contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
 
     using strings for *;
+    using BytesUtil     for bytes;
+    using MathUint      for uint;
 
     // The managed root name
     string public rootName;
@@ -159,12 +161,12 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
         internal
         view
     {
-        if (numManagers() == 0) {
+        if (numManagers() == 1) {
             return;
         }
-        
+
         bytes32 hash = keccak256(
-           abi.encodePacked(
+            abi.encodePacked(
                 "\x19Ethereum Signed Message:\n32",
                 _owner,
                 _label

@@ -3,7 +3,8 @@ import {
   getContext,
   createContext,
   executeTransaction,
-  toAmount
+  toAmount,
+  getEnsApproval
 } from "./helpers/TestUtils";
 import { transferFrom } from "./helpers/TokenUtils";
 import { assertEventEmitted, assertNoEventEmitted } from "../util/Events";
@@ -33,9 +34,8 @@ contract("WalletFactoryModule", () => {
     let signer = Constants.zeroAddress;
     let signature = Constants.emptyBytes;
     if (walletName) {
-      const hashBuf = Buffer.from(web3.utils.sha3(walletName).slice(2), "hex");
       signer = ctx.owners[0];
-      signature = await sign(undefined, signer, hashBuf);
+      signature = await getEnsApproval(wallet, walletName, signer);
     }
     await executeTransaction(
       ctx.walletFactoryModule.contract.methods.createWallet(
