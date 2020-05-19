@@ -98,7 +98,6 @@ contract("Transfers", (accounts: string[]) => {
       tx = await executeTransaction(
         ctx.approvedTransfers.contract.methods.transferToken(
           wallet,
-          options.signers,
           token,
           to,
           amount.toString(10),
@@ -246,7 +245,6 @@ contract("Transfers", (accounts: string[]) => {
       tx = await executeTransaction(
         ctx.approvedTransfers.contract.methods.callContract(
           wallet,
-          options.signers,
           to,
           value.toString(10),
           data
@@ -395,7 +393,6 @@ contract("Transfers", (accounts: string[]) => {
       await executeTransaction(
         ctx.approvedTransfers.contract.methods.approveToken(
           wallet,
-          options.signers,
           token,
           to,
           amount.toString(10)
@@ -497,7 +494,6 @@ contract("Transfers", (accounts: string[]) => {
       await executeTransaction(
         ctx.approvedTransfers.contract.methods.approveThenCallContract(
           wallet,
-          options.signers,
           token,
           to,
           amount.toString(10),
@@ -596,7 +592,6 @@ contract("Transfers", (accounts: string[]) => {
       await executeTransaction(
         ctx.approvedTransfers.contract.methods.transferTokensFullBalance(
           wallet,
-          options.signers,
           tokens,
           to,
           logdata
