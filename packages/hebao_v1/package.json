@@ -27,7 +27,7 @@
   "scripts": {
     "watch": "npm-watch compile",
     "transpile": "rm -rf ./transpiled; copyfiles ./build/**/* ./transpiled && tsc && npm run genabi",
-    "test": "npm run transpile && node --max-old-space-size=4096 `which truffle` test --network development",
+    "test": "npm run transpile && truffle test --network development",
     "docker": "docker-compose up --build --abort-on-container-exit; docker-compose logs -f test",
     "testdocker": "npm run transpile && truffle test --network docker",
     "compile": "truffle compile && npm run genabi",
@@ -75,7 +75,7 @@
     "solc": "^0.6.6",
     "solidity-coverage": "^0.7.1",
     "solium": "^1.2.5",
-    "truffle": "^5.1.24",
+    "truffle": "^5.1.25",
     "truffle-assertions": "^0.9.1",
     "truffle-flattener": "^1.4.4",
     "types-bn": "0.0.1",

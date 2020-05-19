@@ -3,6 +3,8 @@ import { Artifacts } from "./Artifacts";
 import { addGuardian } from "./GuardianUtils";
 import { assertEventEmitted } from "../../util/Events";
 import BN = require("bn.js");
+import { Constants } from "./Constants";
+import { sign, SignatureType } from "./Signature";
 
 export interface Context {
   contracts: any;
@@ -116,9 +118,15 @@ export async function createWallet(
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
   const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
-  await ctx.walletFactoryModule.createWallet(owner, "", modules, {
-    from: owner
-  });
+  await ctx.walletFactoryModule.createWallet(
+    owner,
+    "",
+    Constants.emptyBytes,
+    modules,
+    {
+      from: owner
+    }
+  );
   // Add the guardians
   const guardians = ctx.guardians.slice(0, numGuardians);
   const group = 0;
@@ -191,4 +199,17 @@ export function sortAddresses(addresses: string[]) {
   return addresses.sort((a: string, b: string) => {
     return a.toLowerCase().localeCompare(b.toLowerCase());
   });
+}
+
+export async function getEnsApproval(wallet: string, walletName: string, signer: string) {
+  const messageBuf =  Buffer.concat(
+    [
+      Buffer.from(wallet.slice(2), "hex"),
+      Buffer.from(walletName, "utf8")
+    ]
+  );
+
+  let signature = await sign(undefined, signer, messageBuf, SignatureType.ETH_SIGN);
+  signature = signature.slice(0, -2);
+  return signature;
 }

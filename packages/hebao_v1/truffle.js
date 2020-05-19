@@ -54,9 +54,9 @@ module.exports = {
       version: "0.6.6"
     }
   },
-  ens: {
-    enabled: true
-  },
+  // ens: {
+  //   enabled: true
+  // },
   plugins: ["truffle-plugin-verify", "solidity-coverage"],
   api_keys: {
     etherscan: process.env.ETHERSCAN_API_KEY
