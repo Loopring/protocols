@@ -6,6 +6,7 @@ import {
 import { addGuardian } from "./helpers/GuardianUtils";
 import { assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
+import { Constants } from "./helpers/Constants";
 
 contract("RecoveryModule", (accounts: string[]) => {
   let ctx: Context;
@@ -19,10 +20,15 @@ contract("RecoveryModule", (accounts: string[]) => {
     const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
 
     await executeTransaction(
-      ctx.walletFactoryModule.contract.methods.createWallet(owner, "", [
-        ctx.guardianModule.address,
-        ctx.recoveryModule.address
-      ]),
+      ctx.walletFactoryModule.contract.methods.createWallet(
+        owner,
+        "",
+        Constants.emptyBytes,
+        [
+          ctx.guardianModule.address,
+          ctx.recoveryModule.address
+        ]
+      ),
       ctx,
       true,
       wallet,

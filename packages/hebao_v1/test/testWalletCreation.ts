@@ -3,12 +3,15 @@ import {
   getContext,
   createContext,
   executeTransaction,
-  toAmount
+  toAmount,
+  getEnsApproval
 } from "./helpers/TestUtils";
 import { transferFrom } from "./helpers/TokenUtils";
 import { assertEventEmitted, assertNoEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import BN = require("bn.js");
+import { Constants } from "./helpers/Constants";
+import { sign } from "./helpers/Signature";
 
 contract("WalletFactoryModule", () => {
   let defaultCtx: Context;
@@ -28,10 +31,17 @@ contract("WalletFactoryModule", () => {
       await transferFrom(ctx, owner, wallet, "ETH", toAmount("0.1"));
     }
 
+    let signer = Constants.zeroAddress;
+    let signature = Constants.emptyBytes;
+    if (walletName) {
+      signer = ctx.owners[0];
+      signature = await getEnsApproval(wallet, walletName, signer);
+    }
     await executeTransaction(
       ctx.walletFactoryModule.contract.methods.createWallet(
         owner,
         walletName,
+        signature,
         []
       ),
       ctx,
@@ -69,7 +79,8 @@ contract("WalletFactoryModule", () => {
       executeTransaction(
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
-          walletName,
+          "",
+          Constants.emptyBytes,
           []
         ),
         ctx,
@@ -123,7 +134,8 @@ contract("WalletFactoryModule", () => {
         executeTransaction(
           ctx.walletFactoryModule.contract.methods.createWallet(
             owner,
-            "MyWallet",
+            "",
+            Constants.emptyBytes,
             []
           ),
           ctx,
