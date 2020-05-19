@@ -88,10 +88,10 @@ contract InheritanceModule is SecurityModule
             "NOT_ALLOWED"
         );
 
+        unlockWallet(wallet, true /*force*/);
+        controller.securityStore().removeAllGuardians(wallet);
         controller.securityStore().setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
-
-        // clean guardian?
 
         emit Inherited(wallet, newOwner, now);
     }
