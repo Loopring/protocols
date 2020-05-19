@@ -121,8 +121,8 @@ export async function createWallet(
   await ctx.walletFactoryModule.createWallet(
     owner,
     "",
-    modules,
     Constants.emptyBytes,
+    modules,
     {
       from: owner
     }
