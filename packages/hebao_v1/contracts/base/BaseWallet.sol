@@ -229,7 +229,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     ///      using bound methods.
     fallback()
         external
-        payable
     {
         address module = methodToModule[msg.sig];
         require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
