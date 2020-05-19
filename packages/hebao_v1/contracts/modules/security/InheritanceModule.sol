@@ -91,6 +91,8 @@ contract InheritanceModule is SecurityModule
         controller.securityStore().setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
 
+        // clean guardian?
+
         emit Inherited(wallet, newOwner, now);
     }
 

@@ -178,6 +178,17 @@ contract SecurityStore is DataStore
         w.guardians[idx - 1].validUntil = validUntil;
     }
 
+    function removeAllGuardians(address wallet)
+        public
+        onlyManager
+    {
+         Wallet storage w = wallets[wallet];
+         for (uint i = 0; i < w.guardians.length; i++) {
+            delete w.guardianIdx[w.guardians[i]];
+         }
+         w.guardians.length = 0;
+    }
+
     function cancelGuardianRemoval(
         address wallet,
         address guardianAddr

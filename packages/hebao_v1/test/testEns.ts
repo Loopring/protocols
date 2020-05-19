@@ -32,6 +32,7 @@ contract("WalletENSManager", () => {
       const owner = ctx.owners[0];
       const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
       // console.log("wallet address:", wallet);
+
       await executeTransaction(
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,

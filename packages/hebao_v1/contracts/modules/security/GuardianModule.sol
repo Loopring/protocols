@@ -36,6 +36,7 @@ contract GuardianModule is SecurityModule
     event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
     event GuardianRemoved           (address indexed wallet, address indexed guardian, uint removalEffectiveTime);
     event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
+    event AllGuardiansRemoved       (address idnexed wallet)
 
     constructor(
         Controller _controller,
@@ -97,6 +98,17 @@ contract GuardianModule is SecurityModule
     {
         controller.securityStore().removeGuardian(wallet, guardian, now + pendingPeriod);
         emit GuardianRemoved(wallet, guardian, now + pendingPeriod);
+    }
+
+    function removeAllGuardians(address wallet)
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+        unlockWallet(wallet, true);
+        controller.securityStore().removeAllGuardians(wallet);
+        emit AllGuardiansRemoved(wallet);
     }
 
     function cancelGuardianRemoval(
