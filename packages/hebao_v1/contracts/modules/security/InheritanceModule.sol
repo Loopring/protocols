@@ -70,7 +70,8 @@ contract InheritanceModule is SecurityModule
     }
 
     function inherit(
-        address wallet
+        address wallet,
+        bool    removeAllGuardians
         )
         external
         nonReentrant
@@ -88,9 +89,12 @@ contract InheritanceModule is SecurityModule
             "NOT_ALLOWED"
         );
 
+        SecurityStore securityStore = controller.securityStore();
+        if (removeAllGuardians) {
+            securityStore.removeAllGuardians(wallet);
+        }
+        securityStore.setInheritor(wallet, address(0));
         unlockWallet(wallet, true /*force*/);
-        controller.securityStore().removeAllGuardians(wallet);
-        controller.securityStore().setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
 
         emit Inherited(wallet, newOwner, now);

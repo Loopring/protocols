@@ -33,7 +33,6 @@ contract ApprovedTransfers is TransferModule
 
     function transferToken(
         address            wallet,
-        address[] calldata signers,
         address            token,
         address            to,
         uint               amount,
@@ -49,7 +48,6 @@ contract ApprovedTransfers is TransferModule
 
     function transferTokensFullBalance(
         address            wallet,
-        address[] calldata signers,
         address[] calldata tokens,
         address            to,
         bytes     calldata logdata
@@ -68,7 +66,6 @@ contract ApprovedTransfers is TransferModule
 
     function approveToken(
         address            wallet,
-        address[] calldata signers,
         address            token,
         address            to,
         uint               amount
@@ -83,7 +80,6 @@ contract ApprovedTransfers is TransferModule
 
     function callContract(
         address            wallet,
-        address[] calldata signers,
         address            to,
         uint               value,
         bytes     calldata data
@@ -98,7 +94,6 @@ contract ApprovedTransfers is TransferModule
 
     function approveThenCallContract(
         address            wallet,
-        address[] calldata signers,
         address            token,
         address            to,
         uint               amount,
