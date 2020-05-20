@@ -82,7 +82,7 @@
     "truffle-assertions": "^0.9.1",
     "truffle-flattener": "^1.4.0",
     "types-bn": "0.0.1",
-    "typescript": "3.9.2",
+    "typescript": "3.9.3",
     "webpack": "^4.41.0"
   },
   "dependencies": {
