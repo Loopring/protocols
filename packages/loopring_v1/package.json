@@ -27,7 +27,7 @@
     "@types/bignumber.js": "^5.0.0",
     "@types/bluebird": "^3.5.20",
     "@types/lodash": "^4.14.136",
-    "@types/node": "14.0.3",
+    "@types/node": "14.0.4",
     "@types/request-promise-native": "^1.0.14",
     "ajv": "^6.0.0",
     "chai": "^2.2.1",
