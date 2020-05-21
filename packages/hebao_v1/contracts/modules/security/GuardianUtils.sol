@@ -24,7 +24,7 @@ import "../../iface/Wallet.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library GuardianUtils
 {
-    function MAX_NUM_GROUPS() internal pure returns (uint) { return 16; }
+    uint constant public MAX_NUM_GROUPS = 16;
 
     enum SigRequirement
     {
@@ -45,7 +45,7 @@ library GuardianUtils
     {
         // Calculate total group sizes
         Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
-        uint[16] memory total = countGuardians(allGuardians);
+        uint[MAX_NUM_GROUPS] memory total = countGuardians(allGuardians);
 
         // Calculate how many signers are in each group
         bool walletOwnerSigned = false;
@@ -71,7 +71,7 @@ library GuardianUtils
         // Update the signingGuardians array with the actual number of guardians that have signed
         // (could be 1 less than the length if the owner signed as well)
         assembly { mstore(signingGuardians, numGuardians) }
-        uint[16] memory signed = countGuardians(signingGuardians);
+        uint[MAX_NUM_GROUPS] memory signed = countGuardians(signingGuardians);
 
         // Count the number of votes
         uint totalNumVotes = 0;
@@ -85,7 +85,7 @@ library GuardianUtils
             totalNumVotes += total[0];
             numVotes += signed[0];
         }
-        for (uint i = 1; i < MAX_NUM_GROUPS(); i++) {
+        for (uint i = 1; i < MAX_NUM_GROUPS; i++) {
             if (total[i] > 0) {
                 totalNumVotes += 1;
                 if (i < 6) {
@@ -134,11 +134,10 @@ library GuardianUtils
         )
         internal
         pure
-        returns (uint[16] memory total)
+        returns (uint[MAX_NUM_GROUPS] memory total)
     {
         for (uint i = 0; i < guardians.length; i++) {
             total[guardians[i].group]++;
         }
     }
 }
-

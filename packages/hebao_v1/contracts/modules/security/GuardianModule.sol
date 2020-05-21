@@ -60,7 +60,7 @@ contract GuardianModule is SecurityModule
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         require(guardian != address(0), "ZERO_ADDRESS");
-        require(group < GuardianUtils.MAX_NUM_GROUPS(), "INVALID_GROUP");
+        require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
         uint numGuardians = controller.securityStore().numGuardiansWithPending(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
