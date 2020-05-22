@@ -209,7 +209,10 @@ export async function getEnsApproval(wallet: string, walletName: string, signer:
     ]
   );
 
-  let signature = await sign(undefined, signer, messageBuf, SignatureType.ETH_SIGN);
+  const messageHash = web3.utils.sha3(messageBuf);
+  const hashBuf = Buffer.from(messageHash.slice(2), "hex");
+
+  let signature = await sign(undefined, signer, hashBuf, SignatureType.ETH_SIGN);
   signature = signature.slice(0, -2);
   return signature;
 }

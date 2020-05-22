@@ -165,11 +165,17 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
             return;
         }
 
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(
+                _owner,
+                _label
+            )
+        );
+
         bytes32 hash = keccak256(
             abi.encodePacked(
                 "\x19Ethereum Signed Message:\n32",
-                _owner,
-                _label
+                messageHash
             )
         );
 
