@@ -56,17 +56,4 @@ library MathUint
         c = a + b;
         require(c >= a, "ADD_OVERFLOW");
     }
-
-    function decodeFloat(
-        uint f
-        )
-        internal
-        pure
-        returns (uint value)
-    {
-        uint numBitsMantissa = 23;
-        uint exponent = f >> numBitsMantissa;
-        uint mantissa = f & ((1 << numBitsMantissa) - 1);
-        value = mantissa * (10 ** exponent);
-    }
 }
