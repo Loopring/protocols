@@ -172,6 +172,109 @@ contract("MetaTxmodule", () => {
     }
   });
 
+  it.only("recursive executeTransactions", async () => {
+    const owner = ctx.owners[0];
+    const { wallet, guardians } = await createWallet(ctx, owner, 3);
+    const signers = [owner, ...guardians].sort();
+
+    // Try to call an authorized function with only the signature of the owner
+    const authorizedCall = ctx.whitelistModule.contract.methods
+      .addToWhitelistImmediately(wallet, ctx.miscAddresses[0])
+      .encodeABI();
+
+    // More signers needed than signatures provided
+    {
+      const recursiveCall = ctx.whitelistModule.contract.methods
+        .executeTransactions(wallet, [owner], [authorizedCall], [signers])
+        .encodeABI();
+      await expectThrow(
+        executeTransaction(
+          ctx.whitelistModule.contract.methods.executeTransactions(
+            wallet,
+            [owner],
+            [recursiveCall],
+            [[owner]]
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        ),
+        "MISSING_SIGNER"
+      );
+    }
+
+    // Too few signers for recursive call to executeTransactions
+    {
+      const recursiveCall = ctx.whitelistModule.contract.methods
+        .executeTransactions(wallet, [...signers], [authorizedCall], [signers])
+        .encodeABI();
+      await expectThrow(
+        executeTransaction(
+          ctx.whitelistModule.contract.methods.executeTransactions(
+            wallet,
+            [owner],
+            [recursiveCall],
+            [[owner]]
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        ),
+        "TX_UNAUTHORIZED"
+      );
+    }
+
+    // Too few tx signers given
+    {
+      const recursiveCall = ctx.whitelistModule.contract.methods
+        .executeTransactions(wallet, [...signers], [authorizedCall], [[owner]])
+        .encodeABI();
+      await expectThrow(
+        executeTransaction(
+          ctx.whitelistModule.contract.methods.executeTransactions(
+            wallet,
+            [owner],
+            [recursiveCall],
+            [[owner]]
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        ),
+        "TX_UNAUTHORIZED"
+      );
+    }
+
+    // Only owner passed to the recursice call to executeTransactions
+    {
+      const recursiveCall = ctx.whitelistModule.contract.methods
+        .executeTransactions(wallet, [owner], [authorizedCall], [[owner]])
+        .encodeABI();
+      await expectThrow(
+        executeTransaction(
+          ctx.whitelistModule.contract.methods.executeTransactions(
+            wallet,
+            [owner],
+            [recursiveCall],
+            [[owner]]
+          ),
+          ctx,
+          true,
+          wallet,
+          [owner],
+          { from: owner }
+        ),
+        "NOT_ENOUGH_SIGNERS"
+      );
+    }
+  });
+
   it("should not be able to execute a meta tx with an invalid signature", async () => {
     const owner = ctx.owners[0];
     const { wallet } = await createWallet(ctx, owner);
