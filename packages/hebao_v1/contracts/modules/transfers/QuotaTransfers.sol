@@ -41,8 +41,7 @@ contract QuotaTransfers is TransferModule
         address        token,
         address        to,
         uint           amount,
-        bytes calldata logdata,
-        bool           enablePending
+        bytes calldata logdata
         )
         external
         nonReentrant
@@ -61,8 +60,7 @@ contract QuotaTransfers is TransferModule
         address            wallet,
         address            to,
         uint               value,
-        bytes     calldata data,
-        bool               enablePending
+        bytes     calldata data
         )
         external
         nonReentrant
@@ -89,18 +87,12 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        uint allowance = ERC20(token).allowance(wallet, to);
-        if (allowance >= amount) {
-            return;
-        }
-
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (!whitelisted) {
-            updateQuota(wallet, token, amount.sub(allowance));
-        }
 
-        approveInternal(wallet, token, to, 0);
-        approveInternal(wallet, token, to, amount);
+        if (!whitelisted) {
+            updateQuota(wallet, token, additionalAllowance);
+        }
     }
 
     function approveThenCallContract(
@@ -116,18 +108,11 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        uint allowance = ERC20(token).allowance(wallet, to);
+        uint additionalAllowance = approveInternal(wallet, token, to, amount);
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-
-        if (allowance < amount) {
-            if (!whitelisted) {
-                updateQuota(wallet, token, amount.sub(allowance));
-            }
-            approveInternal(wallet, token, to, 0);
-            approveInternal(wallet, token, to, amount);
-        }
-
+        
         if (!whitelisted) {
+            updateQuota(wallet, token, additionalAllowance);
             updateQuota(wallet, address(0), value);
         }
 

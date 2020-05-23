@@ -17,20 +17,28 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/AddressSet.sol";
 import "../../lib/ERC20.sol";
 
 import "./TransferModule.sol";
 
 
-/// @title ApprovedTransfers
-contract ApprovedTransfers is TransferModule
+/// @title DappTransfers
+contract DappTransfers is TransferModule
 {
+
     constructor(Controller _controller)
         public
         TransferModule(_controller)
     {
     }
 
+    modifier onlyWhitelistedDapp(address addr)
+    { 
+        require(controller.dappAddressStore().isDapp(addr), "DISALLOWED");
+        _; 
+    }
+    
     function transferToken(
         address            wallet,
         address            token,
@@ -40,6 +48,7 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
     {
@@ -54,6 +63,7 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
     {
@@ -68,6 +78,7 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
     {
@@ -84,6 +95,7 @@ contract ApprovedTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
     {

@@ -21,6 +21,7 @@ import "./WalletRegistry.sol";
 
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
+import "../stores/DappAddressStore.sol";
 import "../stores/WhitelistStore.sol";
 
 import "../iface/PriceOracle.sol";
@@ -42,6 +43,7 @@ contract Controller
 
     QuotaStore              public quotaStore;
     SecurityStore           public securityStore;
+    DappAddressStore        public dappAddressStore;
     WhitelistStore          public whitelistStore;
 
     PriceOracle             public priceOracle;

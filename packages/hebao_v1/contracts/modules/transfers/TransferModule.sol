@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
+import "../../lib/ERC20.sol";
 
 /// @title TransferModule
 abstract contract TransferModule is SecurityModule
@@ -78,15 +79,27 @@ abstract contract TransferModule is SecurityModule
         uint    amount
         )
         internal
+        returns (uint additionalAllowance)
     {
         require(token != address(0), "UNSUPPORTED");
 
-        bytes memory txData = abi.encodeWithSelector(
-            ERC20(0).approve.selector,
-            to,
-            amount
-        );
+        uint allowance = ERC20(token).allowance(wallet, to);
+        if (allowance >= amount) {
+            return 0;
+        }
+
+        bytes memory txData;
+
+        if (allowance > 0) {
+            txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, 0);
+            transactCall(wallet, token, 0, txData);
+        }
+        
+        txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, amount);
         transactCall(wallet, token, 0, txData);
+
+        additionalAllowance = amount.sub(allowance);
+
         emit Approved(wallet, token, to, amount);
     }
 
