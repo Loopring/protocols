@@ -83,6 +83,8 @@ Addressed by PR  https://github.com/Loopring/protocols/pull/1195
 
 ### 21. Consider removing the option to make delegateCalls from wallet and vault
 
-This method is not used ans is internal only. We'll keep it there just in case there are use cases in the future.
+This method is not used and is internal only. We'll keep it there just in case there are use cases in the future.
 
 ### 22. Consider implementing a receive() function for no-data calls.
+
+We implemented the `receive` function after sending the code for review: https://github.com/Loopring/protocols/blob/fc0a9bfdf82f07ccc60535b1a85493a29b897a6c/packages/hebao_v1/contracts/base/BaseWallet.sol#L226
