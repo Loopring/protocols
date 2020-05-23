@@ -283,7 +283,7 @@ library BytesUtil {
         return tempBytes;
     }
 
-    // @Dev This method was added by Daniel Wang.
+    // @dev This method was added by Daniel Wang.
     function toBool(bytes memory _bytes, uint _start) internal pure returns (bool) {
         require(_bytes.length >= (_start + 32));
         bool tempBool;
