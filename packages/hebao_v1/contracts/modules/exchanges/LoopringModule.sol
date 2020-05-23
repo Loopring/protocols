@@ -22,7 +22,6 @@ import "../../lib/ERC20.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../../thirdparty/BytesUtil.sol";
 import "../../thirdparty/loopring/IExchangeV3.sol";
 
 import "../security/SecurityModule.sol";
@@ -31,7 +30,6 @@ import "../security/SecurityModule.sol";
 /// @title LoopringModule
 contract LoopringModule is SecurityModule
 {
-    using BytesUtil for bytes;
     using MathUint  for uint;
 
     event Approval(

@@ -123,11 +123,6 @@ contract DappTransfers is TransferModule
             method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
-        return GuardianUtils.requireMajority(
-            controller.securityStore(),
-            wallet,
-            signers,
-            GuardianUtils.SigRequirement.OwnerRequired
-        );
+        return isOnlySigner(Wallet(wallet).owner(), signers);
     }
 }
