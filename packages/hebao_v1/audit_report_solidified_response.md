@@ -38,7 +38,7 @@ Addressed by PR https://github.com/Loopring/protocols/pull/1187
 
 ### 8. MetaTxModule.sol: Relayer can cause transactions to fail by sending just above the limit the user provided.
 
-Addressed by PR https://github.com/Loopring/protocols/pull/1186/files
+Addressed by PR https://github.com/Loopring/protocols/pull/1186
 
 ### 9. CompoundModule.sol and Inheritance: Deposits and withdraws to Compound and change of Inheritance settings are allowed with a locked wallet.
 
@@ -57,12 +57,17 @@ See issue# 4 for the same solution.
 ### 15. Dapp Modules can bypass quotas and whitelists
 
 Dapps that are whitelisted will bypass quotas **by design**. One principle we have is only to whitelist dapps that transfer Ether/token back to the original user address.
-We are removing Dapps modules, and adding a new `DappModule`to interact with whitelisted dapps. https://github.com/Loopring/protocols/pull/1189
+We are removing Dapps modules, and adding a new `DappModule`to interact with whitelisted dapps. https://github.com/Loopring/protocols/pull/1189 and https://github.com/Loopring/protocols/pull/1184
 
 ### 16. Vault can have more than MAX_OWNER owners
 
-Addressed in PR https://github.com/Loopring/protocols/pull/1185
+Addressed in PR https://github.com/Loopring/protocols/pull/1185 and https://github.com/Loopring/protocols/pull/1184
 
 ### 17. MetaTxModule.sol, ApprovedTransfers.sol: Return value of operations in collectTokens and reimburseGasFee is not being verified
 
-Addressed in PR https://github.com/Loopring/protocols/pull/1189
+Addressed in PR https://github.com/Loopring/protocols/pull/1189 and https://github.com/Loopring/protocols/pull/1184
+
+
+### 18. The initialization method initManager() could be front-run, unless it is called within the same transaction as the creation of the contract.
+
+Addressed by PR https://github.com/Loopring/protocols/pull/1194
