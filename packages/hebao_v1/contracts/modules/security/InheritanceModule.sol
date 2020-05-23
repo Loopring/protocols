@@ -37,7 +37,8 @@ contract InheritanceModule is SecurityModule
     event Inherited(
         address indexed wallet,
         address indexed newOwner,
-        uint            timestamp
+        uint            timestamp,
+        bool            removedAsGuardian
     );
 
     constructor(
@@ -92,14 +93,18 @@ contract InheritanceModule is SecurityModule
         SecurityStore securityStore = controller.securityStore();
         securityStore.setInheritor(wallet, address(0));
 
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+
         if (removeAllGuardians) {
             securityStore.removeAllGuardians(wallet);
+        } else if (removedAsGuardian) {
+            securityStore.removeGuardian(wallet, newOwner, now);
         }
         
         unlockWallet(wallet, true /*force*/);
         Wallet(wallet).setOwner(newOwner);
 
-        emit Inherited(wallet, newOwner, now);
+        emit Inherited(wallet, newOwner, now， removedAsGuardian);
     }
 
     function setInheritor(
