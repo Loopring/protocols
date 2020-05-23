@@ -432,7 +432,7 @@ abstract contract MetaTxModule is BaseModule
                 feeRecipient,
                 gasCost
             );
-            transactCall(wallet, gasSettings.token, 0, txData);
+            require(transactCall(wallet, gasSettings.token, 0, txData).toBool(0), "TRANSFER_FAILED");
         }
     }
 

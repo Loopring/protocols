@@ -22,6 +22,7 @@ import "../../lib/ERC20.sol";
 
 import "../../iface/Wallet.sol";
 
+import "../../thirdparty/BytesUtil.sol";
 import "../../thirdparty/loopring/IExchangeV3.sol";
 
 import "../security/SecurityModule.sol";
@@ -30,7 +31,8 @@ import "../security/SecurityModule.sol";
 /// @title LoopringModule
 contract LoopringModule is SecurityModule
 {
-    using MathUint for uint;
+    using BytesUtil for bytes;
+    using MathUint  for uint;
 
     event Approval(
         address indexed exchange,
@@ -137,7 +139,7 @@ contract LoopringModule is SecurityModule
             amount
         );
 
-        transactCall(wallet, address(token), 0, txData);
+        require(transactCall(wallet, address(token), 0, txData).toBool(0), "APPROVAL_FAILED");
         emit Approval(address(exchange), wallet, address(token), amount);
     }
 
