@@ -72,7 +72,10 @@ abstract contract TransferModule is SecurityModule
                 to,
                 amount
             );
-            require(transactCall(wallet, token, 0, txData).toBool(0), "TRANSFER_FAILED");
+            require(
+                abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+                "TRANSFER_FAILED"
+            );
         }
         emit Transfered(wallet, token, to, amount, logdata);
     }
@@ -96,11 +99,17 @@ abstract contract TransferModule is SecurityModule
         bytes memory txData;
         if (allowance > 0) {
             txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, 0);
-            require(transactCall(wallet, token, 0, txData).toBool(0), "APPROVAL_FAILED");
+            require(
+                abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+                "APPROVAL_FAILED"
+            );
         }
         
         txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, amount);
-        require(transactCall(wallet, token, 0, txData).toBool(0), "APPROVAL_FAILED");
+        require(
+            abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+            "APPROVAL_FAILED"
+        );
 
         additionalAllowance = amount.sub(allowance);
         emit Approved(wallet, token, to, amount);
