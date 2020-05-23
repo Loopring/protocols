@@ -61,4 +61,8 @@ We are removing Dapps modules, and adding a new `DappModule`to interact with whi
 
 ### 16. Vault can have more than MAX_OWNER owners
 
-Addressed in PR: https://github.com/Loopring/protocols/pull/1185
+Addressed in PR https://github.com/Loopring/protocols/pull/1185
+
+### 17. MetaTxModule.sol, ApprovedTransfers.sol: Return value of operations in collectTokens and reimburseGasFee is not being verified
+
+Addressed in PR https://github.com/Loopring/protocols/pull/1189
