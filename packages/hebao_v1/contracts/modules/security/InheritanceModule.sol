@@ -74,6 +74,7 @@ contract InheritanceModule is SecurityModule
         )
         external
         nonReentrant
+        onlyHaveEnoughGuardians(wallet)
     {
         (address newOwner, uint lastActive) = controller.securityStore().inheritor(wallet);
         require(newOwner != address(0), "NULL_INHERITOR");
