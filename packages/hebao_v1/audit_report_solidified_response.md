@@ -81,3 +81,8 @@ Addressed by PR  https://github.com/Loopring/protocols/pull/1195
 
 Addressed by PR  https://github.com/Loopring/protocols/pull/1195
 
+### 21. Consider removing the option to make delegateCalls from wallet and vault
+
+This method is not used ans is internal only. We'll keep it there just in case there are use cases in the future.
+
+### 22. Consider implementing a receive() function for no-data calls.
