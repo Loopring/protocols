@@ -293,10 +293,12 @@ abstract contract MetaTxModule is BaseModule
             address token = tokens[i];
             if (token == address(0)) {
                 uint amount = address(this).balance;
-                to.sendETH(amount, gasleft());
+                to.sendETHAndVerify(amount, gasleft());
             } else {
                 uint amount = ERC20(token).balanceOf(address(this));
-                if (amount > 0) ERC20(token).transfer(to, amount);
+                if (amount > 0) {
+                    require(ERC20(token).transfer(to, amount), "TRANSFER_FAILED");
+                }
             }
         }
     }

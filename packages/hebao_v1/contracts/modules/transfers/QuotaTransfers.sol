@@ -66,14 +66,14 @@ contract QuotaTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
-        returns (bytes32 pendingTxId)
+        returns (bytes memory returnData)
     {
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (!whitelisted) {
             updateQuota(wallet, address(0), value);
         }
 
-        callContractInternal(wallet, to, value, data);
+        return callContractInternal(wallet, to, value, data);
     }
 
     function approveToken(
@@ -107,6 +107,7 @@ contract QuotaTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
+        returns (bytes memory returnData)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
@@ -116,7 +117,7 @@ contract QuotaTransfers is TransferModule
             updateQuota(wallet, address(0), value);
         }
 
-        callContractInternal(wallet, to, value, data);
+        return callContractInternal(wallet, to, value, data);
     }
 
     function verifySigners(
@@ -148,10 +149,11 @@ contract QuotaTransfers is TransferModule
         )
         internal
         override
+        returns (bytes memory returnData)
     {
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).
         require(controller.priceOracle().tokenPrice(to, 1e18) == 0, "CALL_DISALLOWED");
-        super.callContractInternal(wallet, to, value, txData);
+        return super.callContractInternal(wallet, to, value, txData);
     }
 }

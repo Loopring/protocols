@@ -81,8 +81,9 @@ contract DappTransfers is TransferModule
         onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
+        returns (bytes memory returnData)
     {
-        callContractInternal(wallet, to, value, data);
+        return callContractInternal(wallet, to, value, data);
     }
 
     function approveThenCallContract(
@@ -98,9 +99,10 @@ contract DappTransfers is TransferModule
         onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
+        returns (bytes memory returnData)
     {
         approveInternal(wallet, token, to, amount);
-        callContractInternal(wallet, to, value, data);
+        return callContractInternal(wallet, to, value, data);
     }
 
     function verifySigners(

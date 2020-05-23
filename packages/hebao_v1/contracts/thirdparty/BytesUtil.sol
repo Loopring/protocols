@@ -2,6 +2,7 @@
 pragma solidity ^0.6.6;
 
 library BytesUtil {
+
     function concat(
         bytes memory _preBytes,
         bytes memory _postBytes
@@ -280,6 +281,17 @@ library BytesUtil {
         }
 
         return tempBytes;
+    }
+
+    function toBool(bytes memory _bytes, uint _start) internal pure returns (bool) {
+        require(_bytes.length >= (_start + 32));
+        bool tempBool;
+
+        assembly {
+            tempBool := mload(add(add(_bytes, 0x20), _start))
+        }
+
+        return tempBool;
     }
 
     function toAddress(bytes memory _bytes, uint _start) internal  pure returns (address) {
