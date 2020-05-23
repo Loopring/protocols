@@ -91,8 +91,6 @@ contract InheritanceModule is SecurityModule
         );
 
         SecurityStore securityStore = controller.securityStore();
-        securityStore.setInheritor(wallet, address(0));
-
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
 
         if (removeAllGuardians) {
@@ -101,10 +99,11 @@ contract InheritanceModule is SecurityModule
             securityStore.removeGuardian(wallet, newOwner, now);
         }
         
-        unlockWallet(wallet, true /*force*/);
+        securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
+        unlockWallet(wallet, true /*force*/);
 
-        emit Inherited(wallet, newOwner, now， removedAsGuardian);
+        emit Inherited(wallet, newOwner, now, removedAsGuardian);
     }
 
     function setInheritor(

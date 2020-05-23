@@ -63,14 +63,15 @@ contract RecoveryModule is SecurityModule
         require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-        w.setOwner(newOwner);
-        unlockWallet(wallet, true /*force*/);
-
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+        
         if (removedAsGuardian) {
            securityStore.removeGuardian(wallet, newOwner, now);
         }
+
+        w.setOwner(newOwner);
+        unlockWallet(wallet, true /*force*/);
 
         emit Recovered(wallet, oldOwner, newOwner, removedAsGuardian);
     }
