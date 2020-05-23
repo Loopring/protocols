@@ -58,8 +58,6 @@ abstract contract TransferModule is SecurityModule
         )
         internal
     {
-        if (amount == 0) return;
-
         if (token == address(0)) {
             transactCall(wallet, to, amount, "");
         } else {

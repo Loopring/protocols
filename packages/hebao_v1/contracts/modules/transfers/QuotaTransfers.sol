@@ -25,36 +25,15 @@ import "../../iface/Wallet.sol";
 
 import "./TransferModule.sol";
 
-
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
-    uint public delayPeriod;
-
-    mapping (address => mapping(bytes32 => uint)) public pendingTransactions;
-
-    event PendingTxCreated   (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    event PendingTxExecuted  (address indexed wallet, bytes32 indexed txid, uint timestamp);
-    event PendingTxCancelled (address indexed wallet, bytes32 indexed txid);
-
     constructor(
-        Controller  _controller,
-        uint        _delayPeriod
+        Controller  _controller
         )
         public
         TransferModule(_controller)
     {
-        delayPeriod = _delayPeriod;
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](1);
-        methods[0] = this.isPendingTxUsable.selector;
     }
 
     function transferToken(
@@ -69,45 +48,13 @@ contract QuotaTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
-        returns (bytes32 pendingTxId)
     {
-        bytes32 txid = keccak256(
-            abi.encodePacked(
-                "__TRANSFER__",
-                wallet,
-                token,
-                to,
-                amount,
-                keccak256(logdata)
-            )
-        );
-
-        bool isPendingTx = isPendingTxUsable(wallet, txid);
-        if (isPendingTx) {
-            emit PendingTxExecuted(wallet, txid, now);
-            delete pendingTransactions[wallet][txid];
-            transferInternal(wallet, token, to, amount, logdata);
-            return 0x0;
-        }
-
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (whitelisted) {
-            transferInternal(wallet, token, to, amount, logdata);
-            return 0x0;
+        if (!whitelisted) {
+            updateQuota(wallet, token, amount);
         }
 
-        bool withinQuota = tryToUpdateQuota(wallet, token, amount);
-        if (withinQuota) {
-            transferInternal(wallet, token, to, amount, logdata);
-            return 0x0;
-        }
-
-        if (enablePending) {
-            createPendingTx(wallet, txid);
-            return txid;
-        } else {
-            revert("QUOTA_EXCEEDED");
-        }
+        transferInternal(wallet, token, to, amount, logdata);
     }
 
     function callContract(
@@ -123,64 +70,12 @@ contract QuotaTransfers is TransferModule
         onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes32 pendingTxId)
     {
-        bytes32 txid = keccak256(
-            abi.encodePacked(
-                "__CALL_CONTRACT__",
-                wallet,
-                to,
-                value,
-                keccak256(data)
-            )
-        );
-
-        bool isPendingTx = isPendingTxUsable(wallet, txid);
-        if (isPendingTx) {
-            emit PendingTxExecuted(wallet, txid, now);
-            delete pendingTransactions[wallet][txid];
-            callContractInternal(wallet, to, value, data);
-            return 0x0;
-        }
-
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (whitelisted) {
-            callContractInternal(wallet, to, value, data);
-            return 0x0;
+        if (!whitelisted) {
+            updateQuota(wallet, address(0), value);
         }
 
-        bool withinQuota = tryToUpdateQuota(wallet, address(0), value);
-        if (withinQuota) {
-            callContractInternal(wallet, to, value, data);
-            return 0x0;
-        }
-
-        if (enablePending) {
-            createPendingTx(wallet, txid);
-            return txid;
-        } else {
-            revert("QUOTA_EXCEEDED");
-        }
-    }
-
-    function transferTokensFullBalance(
-        address            wallet,
-        address[] calldata tokens,
-        address            to,
-        bytes calldata     logdata
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
-    {
-        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        require(allowed, "PROHIBITED");
-
-        for (uint i = 0; i < tokens.length; i++) {
-            address token = tokens[i];
-            uint amount = (token == address(0)) ?
-                wallet.balance : ERC20(token).balanceOf(wallet);
-            transferInternal(wallet, token, to, amount, logdata);
-        }
+        callContractInternal(wallet, to, value, data);
     }
 
     function approveToken(
@@ -194,19 +89,17 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (whitelisted) {
-            approveInternal(wallet, token, to, amount);
-            return;
-        }
-
         uint allowance = ERC20(token).allowance(wallet, to);
         if (allowance >= amount) {
-            approveInternal(wallet, token, to, amount);
             return;
         }
 
-        updateQuota(wallet, token, amount.sub(allowance));
+        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
+        if (!whitelisted) {
+            updateQuota(wallet, token, amount.sub(allowance));
+        }
+
+        approveInternal(wallet, token, to, 0);
         approveInternal(wallet, token, to, amount);
     }
 
@@ -215,6 +108,7 @@ contract QuotaTransfers is TransferModule
         address            token,
         address            to,
         uint               amount,
+        uint               value,
         bytes     calldata data
         )
         external
@@ -222,49 +116,22 @@ contract QuotaTransfers is TransferModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        (bool allowed,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (allowed) {
-            approveInternal(wallet, token, to, amount);
-            callContractInternal(wallet, to, 0, data);
-            return;
-        }
-
         uint allowance = ERC20(token).allowance(wallet, to);
-        if (allowance >= amount) {
+        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
+
+        if (allowance < amount) {
+            if (!whitelisted) {
+                updateQuota(wallet, token, amount.sub(allowance));
+            }
+            approveInternal(wallet, token, to, 0);
             approveInternal(wallet, token, to, amount);
-            callContractInternal(wallet, to, 0, data);
-            return;
         }
 
-        updateQuota(wallet, token, amount.sub(allowance));
-        approveInternal(wallet, token, to, amount);
-        callContractInternal(wallet, to, 0, data);
-    }
+        if (!whitelisted) {
+            updateQuota(wallet, address(0), value);
+        }
 
-    function cancelPendingTx(
-        address wallet,
-        bytes32 pendingTxId
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
-    {
-        require(pendingTransactions[wallet][pendingTxId] != 0, "NOT_FOUND");
-        pendingTransactions[wallet][pendingTxId] = 0;
-        emit PendingTxCancelled(wallet, pendingTxId);
-    }
-
-    function isPendingTxUsable(
-        address wallet,
-        bytes32 pendingTxId
-        )
-        public
-        view
-        returns (bool)
-    {
-        uint timestamp = pendingTransactions[wallet][pendingTxId];
-        return timestamp > 0 && now >= timestamp;
+        callContractInternal(wallet, to, value, data);
     }
 
     function verifySigners(
@@ -280,26 +147,12 @@ contract QuotaTransfers is TransferModule
     {
         require (
             method == this.transferToken.selector ||
-            method == this.transferTokensFullBalance.selector ||
             method == this.approveToken.selector ||
             method == this.callContract.selector ||
-            method == this.approveThenCallContract.selector ||
-            method == this.cancelPendingTx.selector,
+            method == this.approveThenCallContract.selector,
             "INVALID_METHOD"
         );
         return isOnlySigner(Wallet(wallet).owner(), signers);
-    }
-
-    function createPendingTx(
-        address wallet,
-        bytes32 txid
-        )
-        private
-    {
-        require(pendingTransactions[wallet][txid] == 0, "DUPLICATE_PENDING_TX");
-        uint timestampUsable = now.add(delayPeriod);
-        pendingTransactions[wallet][txid] = timestampUsable;
-        emit PendingTxCreated(wallet, txid, timestampUsable);
     }
 
     function callContractInternal(

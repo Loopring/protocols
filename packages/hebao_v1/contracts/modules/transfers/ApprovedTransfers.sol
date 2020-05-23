@@ -46,24 +46,6 @@ contract ApprovedTransfers is TransferModule
         transferInternal(wallet, token, to, amount, logdata);
     }
 
-    function transferTokensFullBalance(
-        address            wallet,
-        address[] calldata tokens,
-        address            to,
-        bytes     calldata logdata
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
-    {
-        for (uint i = 0; i < tokens.length; i++) {
-            uint amount = (tokens[i] == address(0)) ?
-                wallet.balance : ERC20(tokens[i]).balanceOf(wallet);
-            transferInternal(wallet, tokens[i], to, amount, logdata);
-        }
-    }
-
     function approveToken(
         address            wallet,
         address            token,
@@ -121,7 +103,6 @@ contract ApprovedTransfers is TransferModule
     {
         require (
             method == this.transferToken.selector ||
-            method == this.transferTokensFullBalance.selector ||
             method == this.approveToken.selector ||
             method == this.callContract.selector ||
             method == this.approveThenCallContract.selector,
