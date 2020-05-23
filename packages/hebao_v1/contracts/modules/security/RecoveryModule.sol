@@ -66,12 +66,12 @@ contract RecoveryModule is SecurityModule
         w.setOwner(newOwner);
 
         SecurityStore securityStore = controller.securityStore();
-        bool newOwnerIsGuardian = securityStore.isGuardian(wallet, newOwner);
-        if (newOwnerIsGuardian) {
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+        if (removedAsGuardian) {
            securityStore.removeGuardian(wallet, newOwner, now);
         }
 
-        emit Recovered(wallet, oldOwner, newOwner, newOwnerIsGuardian);
+        emit Recovered(wallet, oldOwner, newOwner, removedAsGuardian);
     }
 
     function verifySigners(
