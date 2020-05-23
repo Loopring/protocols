@@ -37,12 +37,16 @@ contract AddressSet
     {
         Set storage set = sets[key];
         require(set.positions[addr] == 0, "ALREADY_IN_SET");
+        
+        if (maintainList) {
+            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAILED");
+            set.addresses.push(addr);
+        } else {
+            require(set.addresses.length == 0, "MUST_MAINTAIN");
+        }
+
         set.count += 1;
         set.positions[addr] = set.count;
-
-        if (maintainList) {
-            set.addresses.push(addr);
-        }
     }
 
     function removeAddressFromSet(
