@@ -90,10 +90,12 @@ contract InheritanceModule is SecurityModule
         );
 
         SecurityStore securityStore = controller.securityStore();
+        securityStore.setInheritor(wallet, address(0));
+
         if (removeAllGuardians) {
             securityStore.removeAllGuardians(wallet);
         }
-        securityStore.setInheritor(wallet, address(0));
+        
         unlockWallet(wallet, true /*force*/);
         Wallet(wallet).setOwner(newOwner);
 
