@@ -76,3 +76,8 @@ Addressed by PR https://github.com/Loopring/protocols/pull/1194
 ### 19. AddressSet.sol
 
 Addressed by PR  https://github.com/Loopring/protocols/pull/1195
+
+### 20. Possible misleading comment in Module.sol
+
+Addressed by PR  https://github.com/Loopring/protocols/pull/1195
+
