@@ -57,6 +57,7 @@ contract BaseVault is AddressSet, Vault
     uint    constant public   MAX_OWNERS = 10;
 
     uint    public _requirement;
+    uint    public _nonce;
     bytes32 public DOMAIN_SEPARATOR;
 
     modifier onlyFromExecute
@@ -112,6 +113,7 @@ contract BaseVault is AddressSet, Vault
         address   target,
         uint      value,
         uint8     mode,
+        uint      nonce,
         bytes     memory data,
         address[] memory signers,
         bytes[]   memory signatures
@@ -122,6 +124,9 @@ contract BaseVault is AddressSet, Vault
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
         require(mode == 1 || mode == 2, "INVALID_MODE");
+        require(nonce > _nonce, "NONCE_TOO_SMALL");
+        require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
+        _nonce = nonce;
 
         // Check whether all signers are owners
         for (uint i = 0; i < signers.length; i++) {
@@ -158,6 +163,7 @@ contract BaseVault is AddressSet, Vault
         override
         onlyFromExecute
     {
+        require(owners().length <= MAX_OWNERS, "TOO_MANY_OWNERS");
         addAddressToSet(OWNERS, owner, true);
         emit OwnerAdded(owner);
     }
