@@ -71,3 +71,8 @@ Addressed in PR https://github.com/Loopring/protocols/pull/1189 and https://gith
 ### 18. The initialization method initManager() could be front-run, unless it is called within the same transaction as the creation of the contract.
 
 Addressed by PR https://github.com/Loopring/protocols/pull/1194
+
+
+### 19. AddressSet.sol
+
+Addressed by PR  https://github.com/Loopring/protocols/pull/1195
