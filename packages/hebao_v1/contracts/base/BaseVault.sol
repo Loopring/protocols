@@ -46,11 +46,12 @@ contract BaseVault is AddressSet, Vault
         address   target;
         uint      value;
         uint8     mode;
+        uint      nonce;
         bytes     data;
     }
 
     bytes32 constant public VAULTTRANSACTION_TYPEHASH = keccak256(
-        "VaultTransaction(address vault,address target,uint256 value,uint8 mode,bytes data)"
+        "VaultTransaction(address vault,address target,uint256 value,uint8 mode,uint256 nonce,bytes data)"
     );
 
     bytes32 constant internal OWNERS = keccak256("__OWNER__");
@@ -104,6 +105,7 @@ contract BaseVault is AddressSet, Vault
                 _tx.target,
                 _tx.value,
                 _tx.mode,
+                _tx.nonce,
                 keccak256(_tx.data)
             )
         );
@@ -135,7 +137,7 @@ contract BaseVault is AddressSet, Vault
 
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
-            hash(VaultTransaction(address(this), target, value, mode, data))
+            hash(VaultTransaction(address(this), target, value, mode, nonce, data))
         );
 
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
@@ -163,7 +165,7 @@ contract BaseVault is AddressSet, Vault
         override
         onlyFromExecute
     {
-        require(owners().length <= MAX_OWNERS, "TOO_MANY_OWNERS");
+        require(owners().length < MAX_OWNERS, "TOO_MANY_OWNERS");
         addAddressToSet(OWNERS, owner, true);
         emit OwnerAdded(owner);
     }
