@@ -73,7 +73,7 @@ abstract contract TransferModule is SecurityModule
                 amount
             );
             require(
-                abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+                transactCallTokenTransfer(wallet, token, to, amount),
                 "TRANSFER_FAILED"
             );
         }
@@ -104,7 +104,7 @@ abstract contract TransferModule is SecurityModule
                 "APPROVAL_FAILED"
             );
         }
-        
+
         txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, amount);
         require(
             abi.decode(transactCall(wallet, token, 0, txData), (bool)),

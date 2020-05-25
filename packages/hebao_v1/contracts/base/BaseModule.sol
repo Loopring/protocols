@@ -157,6 +157,18 @@ contract BaseModule is ReentrancyGuard, Module
         return Wallet(wallet).transact(uint8(1), to, value, data);
     }
 
+    function transactCallTokenTransfer(
+        address wallet,
+        address token,
+        address to,
+        uint    amount
+        )
+        internal
+        returns (bool success)
+    {
+        return Wallet(wallet).transactTokenTransfer(token, to, amount);
+    }
+
     function transactDelegateCall(
         address wallet,
         address to,

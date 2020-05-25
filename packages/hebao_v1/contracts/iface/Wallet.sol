@@ -105,4 +105,12 @@ interface Wallet
         )
         external
         returns (bytes memory returnData);
+
+    function transactTokenTransfer(
+        address  token,
+        address  to,
+        uint     amount
+        )
+        external
+        returns (bool success);
 }

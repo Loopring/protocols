@@ -388,13 +388,8 @@ abstract contract MetaTxModule is BaseModule
         if (gasSettings.token == address(0)) {
             transactCall(wallet, feeRecipient, gasCost, "");
         } else {
-            bytes memory txData = abi.encodeWithSelector(
-                ERC20(0).transfer.selector,
-                feeRecipient,
-                gasCost
-            );
             require(
-                abi.decode(transactCall(wallet, gasSettings.token, 0, txData), (bool)),
+                transactCallTokenTransfer(wallet, gasSettings.token, feeRecipient, gasCost),
                 "TRANSFER_FAILED"
             );
         }
