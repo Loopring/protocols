@@ -72,6 +72,7 @@ abstract contract MetaTxModule is BaseModule
         uint    value;
         bytes   data;
         uint    nonce;
+        uint    validUntil;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
@@ -80,7 +81,7 @@ abstract contract MetaTxModule is BaseModule
     }
 
     bytes32 constant public METATRANSACTION_TYPEHASH = keccak256(
-        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
+        "MetaTransaction(address wallet,address module,uint256 value,bytes data,uint256 nonce,uint256 validUntil,address gasToken,uint256 gasPrice,uint256 gasLimit,uint256 gasOverhead,address feeRecipient)"
     );
 
     bytes32    public DOMAIN_SEPARATOR;
@@ -168,6 +169,7 @@ abstract contract MetaTxModule is BaseModule
     function executeMetaTx(
         bytes     memory data,
         uint      nonce,
+        uint      validUntil,
         uint[5]   memory gasSetting, // [gasToken address][gasPrice][gasLimit][gasOverhead][feeRecipient]
         bytes[]   memory signatures,
         address[] memory signers
@@ -175,6 +177,8 @@ abstract contract MetaTxModule is BaseModule
         public
         payable
     {
+        require(validUntil <= now, "METATX_EXPIRED");
+
         GasSettings memory gasSettings = GasSettings(
             address(gasSetting[0]),
             gasSetting[1],
@@ -194,6 +198,7 @@ abstract contract MetaTxModule is BaseModule
                     msg.value,
                     data,
                     nonce,
+                    validUntil,
                     gasSettings.token,
                     gasSettings.price,
                     gasSettings.limit,
@@ -355,6 +360,7 @@ abstract contract MetaTxModule is BaseModule
                 _tx.value,
                 keccak256(_tx.data),
                 _tx.nonce,
+                _tx.validUntil,
                 _tx.gasToken,
                 _tx.gasPrice,
                 _tx.gasLimit,
