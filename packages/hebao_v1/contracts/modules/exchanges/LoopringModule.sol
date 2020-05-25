@@ -113,7 +113,7 @@ contract LoopringModule is SecurityModule
         );
 
         require(
-            transactCall(wallet, address(token), address(exchange), amount),
+            abi.decode(transactCall(wallet, address(token), 0, txData), (bool)),
             "APPROVAL_FAILED"
         );
         emit Approval(address(exchange), wallet, address(token), amount);

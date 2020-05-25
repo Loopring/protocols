@@ -67,11 +67,6 @@ abstract contract TransferModule is SecurityModule
         if (token == address(0)) {
             transactCall(wallet, to, amount, "");
         } else {
-            bytes memory txData = abi.encodeWithSelector(
-                ERC20(0).transfer.selector,
-                to,
-                amount
-            );
             require(
                 transactCallTokenTransfer(wallet, token, to, amount),
                 "TRANSFER_FAILED"
