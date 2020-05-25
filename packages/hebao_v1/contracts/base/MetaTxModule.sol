@@ -498,7 +498,7 @@ abstract contract MetaTxModule is BaseModule
         )
         internal
     {
-        if (quotaStore() != address(0)) {
+        if (amount > 0 && quotaStore() != address(0)) {
             uint value = controller.priceOracle().tokenPrice(token, amount);
             QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
         }
