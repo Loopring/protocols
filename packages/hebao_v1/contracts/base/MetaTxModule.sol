@@ -161,6 +161,7 @@ abstract contract MetaTxModule is BaseModule
     ///              make sure the transaction's metaTxHash is unique; otherwise, the module
     ///              requires the nonce is greater than the last nonce used by the same
     ///              wallet, but not by more than `block.number * 2^128`.
+    /// @param validUntil The expiry timestamp
     /// @param gasSetting A list that contains `gasToken` address, `gasPrice`, `gasLimit`,
     ///                   `gasOverhead` and `feeRecipient`. To pay fee in Ether, use address(0) as gasToken.
     ///                   To receive reimbursement at `msg.sender`, use address(0) as feeRecipient.
