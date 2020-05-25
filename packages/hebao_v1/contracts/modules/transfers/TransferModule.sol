@@ -19,10 +19,16 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
+import "../../lib/ERC20.sol";
+
+import "../../thirdparty/BytesUtil.sol";
+
 
 /// @title TransferModule
 abstract contract TransferModule is SecurityModule
 {
+    using BytesUtil for bytes;
+
     event Transfered(
         address indexed wallet,
         address indexed token,
@@ -66,7 +72,10 @@ abstract contract TransferModule is SecurityModule
                 to,
                 amount
             );
-            transactCall(wallet, token, 0, txData);
+            require(
+                abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+                "TRANSFER_FAILED"
+            );
         }
         emit Transfered(wallet, token, to, amount, logdata);
     }
@@ -78,15 +87,31 @@ abstract contract TransferModule is SecurityModule
         uint    amount
         )
         internal
+        returns (uint additionalAllowance)
     {
         require(token != address(0), "UNSUPPORTED");
 
-        bytes memory txData = abi.encodeWithSelector(
-            ERC20(0).approve.selector,
-            to,
-            amount
+        uint allowance = ERC20(token).allowance(wallet, to);
+        if (allowance >= amount) {
+            return 0;
+        }
+
+        bytes memory txData;
+        if (allowance > 0) {
+            txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, 0);
+            require(
+                abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+                "APPROVAL_FAILED"
+            );
+        }
+        
+        txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, amount);
+        require(
+            abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+            "APPROVAL_FAILED"
         );
-        transactCall(wallet, token, 0, txData);
+
+        additionalAllowance = amount.sub(allowance);
         emit Approved(wallet, token, to, amount);
     }
 
@@ -98,13 +123,14 @@ abstract contract TransferModule is SecurityModule
         )
         internal
         virtual
+        returns (bytes memory returnData)
     {
         // Calls from the wallet to itself are deemed special
         // (e.g. this is used for updating the wallet implementation)
         // We also disallow calls to module functions directly
         // (e.g. this is used for some special wallet <-> module interaction)
         require(wallet != to && !Wallet(wallet).hasModule(to), "CALL_DISALLOWED");
-        transactCall(wallet, to, value, txData);
+        returnData = transactCall(wallet, to, value, txData);
         emit ContractCalled(wallet, to, value, txData);
     }
 }

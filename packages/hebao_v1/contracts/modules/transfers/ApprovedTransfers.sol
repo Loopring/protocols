@@ -70,8 +70,9 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
+        returns (bytes memory returnData)
     {
-        callContractInternal(wallet, to, value, data);
+        return callContractInternal(wallet, to, value, data);
     }
 
     function approveThenCallContract(
@@ -79,15 +80,17 @@ contract ApprovedTransfers is TransferModule
         address            token,
         address            to,
         uint               amount,
+        uint               value,
         bytes     calldata data
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTx
+        returns (bytes memory returnData)
     {
         approveInternal(wallet, token, to, amount);
-        callContractInternal(wallet, to, 0, data);
+        return callContractInternal(wallet, to, value, data);
     }
 
     function verifySigners(
