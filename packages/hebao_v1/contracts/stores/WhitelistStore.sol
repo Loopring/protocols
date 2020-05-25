@@ -23,7 +23,7 @@ import "../base/DataStore.sol";
 
 /// @title WhitelistStore
 /// @dev This store maintains a wallet's whitelisted addresses.
-contract WhitelistStore is DataStore
+contract WhitelistStore is DataStore, AddressSet
 {
     // wallet => whitelisted_addr => effective_since
     mapping(address => mapping(address => uint)) public effectiveTimeMap;
