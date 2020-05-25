@@ -56,6 +56,7 @@ contract RecoveryModule is SecurityModule
         nonReentrant
         notWalletOwner(wallet, newOwner)
         onlyFromMetaTx
+        onlyHaveEnoughGuardians(wallet)
     {
         Wallet w = Wallet(wallet);
         address oldOwner = w.owner();
