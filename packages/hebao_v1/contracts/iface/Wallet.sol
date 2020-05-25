@@ -106,6 +106,20 @@ interface Wallet
         external
         returns (bytes memory returnData);
 
+    /// @dev Performs ERC20 transfer transactions. Any module that has been added to this
+    ///      wallet can use this method to transact on any ERC20 contract with
+    ///      msg.sender as this wallet itself.
+    ///
+    ///      This method shall be used for ERC20 transfer instead of the more generic
+    ///      transact method so some old, non-standard ERC20 token transfer result can be
+    ///      checked correctly.
+    ///
+    ///      This method will emit `Transacted` event if it doesn't throw.
+    ///
+    /// @param token The ERC20 token address.
+    /// @param to The desitination address.
+    /// @param amount The amount of tokens to transfer.
+    /// @return success True if the transfer succeeded, false otherwise.
     function transactTokenTransfer(
         address  token,
         address  to,
