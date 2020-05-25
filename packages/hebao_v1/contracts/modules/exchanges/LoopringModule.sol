@@ -71,33 +71,8 @@ contract LoopringModule is SecurityModule
         override
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](3);
-        methods[0] = this.isExchangeRunning.selector;
-        methods[1] = this.getDEXSlots.selector;
-        methods[2] = this.getDEXAccount.selector;
-    }
-
-    function isExchangeRunning(IExchangeV3 exchange)
-        public
-        view
-        returns (bool)
-    {
-        return (
-            !exchange.isInMaintenance() &&
-            !exchange.isInWithdrawalMode() &&
-            !exchange.isShutdown()
-        );
-    }
-
-    function getDEXSlots(IExchangeV3 exchange)
-        public
-        view
-        returns (
-            uint numAvailableDepositSlots,
-            uint numAvailableWithdrawalSlots
-        )
-    {
-        (,numAvailableDepositSlots, , numAvailableWithdrawalSlots) = exchange.getRequestStats();
+        methods = new bytes4[](1);
+        methods[0] = this.getDEXAccount.selector;
     }
 
     function getDEXAccount(
