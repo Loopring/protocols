@@ -106,14 +106,8 @@ contract LoopringModule is SecurityModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        bytes memory txData = abi.encodeWithSelector(
-            token.approve.selector,
-            address(exchange),
-            amount
-        );
-
         require(
-            abi.decode(transactCall(wallet, address(token), 0, txData), (bool)),
+            transactTokenApprove(wallet, address(token), address(exchange), amount),
             "APPROVAL_FAILED"
         );
         emit Approval(address(exchange), wallet, address(token), amount);

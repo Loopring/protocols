@@ -2,7 +2,6 @@
 pragma solidity ^0.6.6;
 
 library BytesUtil {
-
     function concat(
         bytes memory _preBytes,
         bytes memory _postBytes

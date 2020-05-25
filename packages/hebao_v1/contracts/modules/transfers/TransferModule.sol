@@ -19,16 +19,10 @@ pragma experimental ABIEncoderV2;
 
 import "../security/SecurityModule.sol";
 
-import "../../lib/ERC20.sol";
-
-import "../../thirdparty/BytesUtil.sol";
-
 
 /// @title TransferModule
 abstract contract TransferModule is SecurityModule
 {
-    using BytesUtil for bytes;
-
     event Transfered(
         address indexed wallet,
         address indexed token,
@@ -39,7 +33,7 @@ abstract contract TransferModule is SecurityModule
     event Approved(
         address indexed wallet,
         address indexed token,
-        address         to,
+        address         spender,
         uint            amount
     );
     event ContractCalled(
@@ -78,7 +72,7 @@ abstract contract TransferModule is SecurityModule
     function approveInternal(
         address wallet,
         address token,
-        address to,
+        address spender,
         uint    amount
         )
         internal
@@ -86,28 +80,28 @@ abstract contract TransferModule is SecurityModule
     {
         require(token != address(0), "UNSUPPORTED");
 
-        uint allowance = ERC20(token).allowance(wallet, to);
+        uint allowance = ERC20(token).allowance(wallet, spender);
         if (allowance >= amount) {
             return 0;
         }
 
+        // First reset the approved amount
         bytes memory txData;
         if (allowance > 0) {
-            txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, 0);
             require(
-                abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+                transactTokenApprove(wallet, token, spender, 0),
                 "APPROVAL_FAILED"
             );
         }
 
-        txData = abi.encodeWithSelector(ERC20(0).approve.selector, to, amount);
+        // Now approve the requested amount
         require(
-            abi.decode(transactCall(wallet, token, 0, txData), (bool)),
+            transactTokenApprove(wallet, token, spender, amount),
             "APPROVAL_FAILED"
         );
 
         additionalAllowance = amount.sub(allowance);
-        emit Approved(wallet, token, to, amount);
+        emit Approved(wallet, token, spender, amount);
     }
 
     function callContractInternal(

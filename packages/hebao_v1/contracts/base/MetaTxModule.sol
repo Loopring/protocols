@@ -258,7 +258,8 @@ abstract contract MetaTxModule is BaseModule
             } else {
                 uint amount = ERC20(token).balanceOf(address(this));
                 if (amount > 0) {
-                    require(ERC20(token).transfer(to, amount), "TRANSFER_FAILED");
+                    // Do not check the return value to support "bad" ERC20 tokens
+                    ERC20(token).transfer(to, amount);
                 }
             }
         }

@@ -36,13 +36,18 @@ library GuardianUtils
     function requireMajority(
         SecurityStore   securityStore,
         address         wallet,
-        address[]       memory signers, // Assume there are no duplicate signers
+        address[]       memory signers,
         SigRequirement  requirement
         )
         internal
         view
         returns (bool)
     {
+        // We always need at least one signer
+        if (signers.length == 0) {
+            return false;
+        }
+
         // Calculate total group sizes
         Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
         uint[MAX_NUM_GROUPS] memory total = countGuardians(allGuardians);
@@ -52,7 +57,12 @@ library GuardianUtils
         Data.Guardian[] memory signingGuardians = new Data.Guardian[](signers.length);
         address walletOwner = Wallet(wallet).owner();
         uint numGuardians = 0;
+        address lastSigner;
         for (uint i = 0; i < signers.length; i++) {
+            // Check for duplicates
+            require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
+            lastSigner = signers[i];
+
             if (signers[i] == walletOwner) {
                 walletOwnerSigned = true;
             } else {
