@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/OwnerManagable.sol";
+import "../iface/Wallet.sol";
 
 
 /// @title DataStore
@@ -27,7 +27,11 @@ import "../lib/OwnerManagable.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract DataStore is OwnerManagable
+contract DataStore
 {
-    constructor() public OwnerManagable() {}
+  modifier onlyWalletModule(address wallet)
+    {
+        require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
+        _;
+    }
 }

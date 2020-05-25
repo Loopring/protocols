@@ -131,7 +131,7 @@ contract SecurityStore is DataStore
         uint    validSince
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         cleanRemovedGuardians(wallet);
 
@@ -152,7 +152,7 @@ contract SecurityStore is DataStore
         address guardianAddr
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         cleanRemovedGuardians(wallet);
 
@@ -179,7 +179,7 @@ contract SecurityStore is DataStore
         uint    validUntil
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         cleanRemovedGuardians(wallet);
 
@@ -192,7 +192,7 @@ contract SecurityStore is DataStore
 
     function removeAllGuardians(address wallet)
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
          Wallet storage w = wallets[wallet];
          for (uint i = 0; i < w.guardians.length; i++) {
@@ -206,7 +206,7 @@ contract SecurityStore is DataStore
         address guardianAddr
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         cleanRemovedGuardians(wallet);
 
@@ -236,7 +236,7 @@ contract SecurityStore is DataStore
         uint    lock
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         require(lock == 0 || lock > now, "INVALID_LOCK_TIME");
         uint128 _lock = uint128(lock);
@@ -248,7 +248,7 @@ contract SecurityStore is DataStore
 
     function touchLastActive(address wallet)
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         wallets[wallet].lastActive = uint128(now);
     }
@@ -267,7 +267,7 @@ contract SecurityStore is DataStore
 
     function setInheritor(address wallet, address who)
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         wallets[wallet].inheritor = who;
         wallets[wallet].lastActive = uint128(now);
