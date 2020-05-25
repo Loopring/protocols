@@ -25,7 +25,7 @@ abstract contract Vault
     /// @param value The amount of Ether to send to target.
     /// @param data The transaction to execute.
     /// @param mode The execution mode. 1 for CALL and 2 for DELEGATECALL.
-    /// @param nonce nonce of transaction
+    /// @param nonce The nonce of the transaction
     /// @param signers The addresses that signs the transaction, sorted ascendantly.
     /// @param signatures The signatures matching the signers.
     /// @return result The transaction result.

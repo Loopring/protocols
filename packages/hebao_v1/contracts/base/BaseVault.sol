@@ -24,7 +24,7 @@ import "../lib/SignatureUtil.sol";
 import "../iface/Vault.sol";
 
 
-contract BaseVault is AddressSet, Vault
+contract BaseVault is ReentrancyGuard, AddressSet, Vault
 {
     using SignatureUtil for bytes32;
 
@@ -122,12 +122,13 @@ contract BaseVault is AddressSet, Vault
         )
         public   // Needs to be public for now: https://github.com/ethereum/solidity/issues/7929
         override
+        nonReentrant
         returns (bytes memory result)
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
         require(mode == 1 || mode == 2, "INVALID_MODE");
         require(nonce > _nonce, "NONCE_TOO_SMALL");
-        require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
+        require((nonce >> 128) <= block.number, "NONCE_TOO_LARGE");
         _nonce = nonce;
 
         // Check whether all signers are owners
