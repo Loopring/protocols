@@ -60,7 +60,7 @@ contract QuotaStore is DataStore
         uint    effectiveTime
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         quotas[wallet].currentQuota = currentQuota(wallet);
         quotas[wallet].pendingQuota = newQuota;
@@ -78,7 +78,7 @@ contract QuotaStore is DataStore
         uint    amount
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         require(hasEnoughQuota(wallet, amount), "QUOTA_EXCEEDED");
         addToSpent(wallet, amount);
@@ -89,7 +89,7 @@ contract QuotaStore is DataStore
         uint    amount
         )
         public
-        onlyManager
+        onlyWalletModule(wallet)
     {
         Quota storage q = quotas[wallet];
         q.spentAmount = spentQuota(wallet).add(amount);

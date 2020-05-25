@@ -17,6 +17,7 @@
 pragma solidity ^0.6.6;
 
 import "..//lib/MathUint.sol";
+import "..//lib/OwnerManagable.sol";
 
 import "../iface/PriceOracle.sol";
 
@@ -24,7 +25,7 @@ import "../base/DataStore.sol";
 
 
 /// @title PriceCacheStore
-contract PriceCacheStore is DataStore, PriceOracle
+contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
 {
     using MathUint for uint;
 
