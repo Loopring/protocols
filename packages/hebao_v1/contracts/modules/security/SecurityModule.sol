@@ -96,6 +96,15 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
+    modifier onlyHaveEnoughGuardians(address wallet)
+    {
+        require(
+            controller.securityStore().numGuardians(wallet) >= 2,
+            "NO_ENOUGH_GUARDIANS"
+        );
+        _;
+    }
+
     // ----- internal methods -----
 
     function quotaStore()
