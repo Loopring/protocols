@@ -24,7 +24,7 @@ import "../lib/SignatureUtil.sol";
 import "../iface/Vault.sol";
 
 
-contract BaseVault is AddressSet, Vault
+contract BaseVault is ReentrancyGuard, AddressSet, Vault
 {
     using SignatureUtil for bytes32;
 
@@ -46,17 +46,19 @@ contract BaseVault is AddressSet, Vault
         address   target;
         uint      value;
         uint8     mode;
+        uint      nonce;
         bytes     data;
     }
 
     bytes32 constant public VAULTTRANSACTION_TYPEHASH = keccak256(
-        "VaultTransaction(address vault,address target,uint256 value,uint8 mode,bytes data)"
+        "VaultTransaction(address vault,address target,uint256 value,uint8 mode,uint256 nonce,bytes data)"
     );
 
     bytes32 constant internal OWNERS = keccak256("__OWNER__");
     uint    constant public   MAX_OWNERS = 10;
 
     uint    public _requirement;
+    uint    public _nonce;
     bytes32 public DOMAIN_SEPARATOR;
 
     modifier onlyFromExecute
@@ -103,6 +105,7 @@ contract BaseVault is AddressSet, Vault
                 _tx.target,
                 _tx.value,
                 _tx.mode,
+                _tx.nonce,
                 keccak256(_tx.data)
             )
         );
@@ -112,16 +115,21 @@ contract BaseVault is AddressSet, Vault
         address   target,
         uint      value,
         uint8     mode,
+        uint      nonce,
         bytes     memory data,
         address[] memory signers,
         bytes[]   memory signatures
         )
         public   // Needs to be public for now: https://github.com/ethereum/solidity/issues/7929
         override
+        nonReentrant
         returns (bytes memory result)
     {
         require(signers.length >= _requirement, "NEED_MORE_SIGNATURES");
         require(mode == 1 || mode == 2, "INVALID_MODE");
+        require(nonce > _nonce, "NONCE_TOO_SMALL");
+        require((nonce >> 128) <= block.number, "NONCE_TOO_LARGE");
+        _nonce = nonce;
 
         // Check whether all signers are owners
         for (uint i = 0; i < signers.length; i++) {
@@ -130,7 +138,7 @@ contract BaseVault is AddressSet, Vault
 
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
-            hash(VaultTransaction(address(this), target, value, mode, data))
+            hash(VaultTransaction(address(this), target, value, mode, nonce, data))
         );
 
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
@@ -158,6 +166,7 @@ contract BaseVault is AddressSet, Vault
         override
         onlyFromExecute
     {
+        require(owners().length < MAX_OWNERS, "TOO_MANY_OWNERS");
         addAddressToSet(OWNERS, owner, true);
         emit OwnerAdded(owner);
     }
