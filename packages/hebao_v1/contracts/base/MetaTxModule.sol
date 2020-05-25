@@ -216,7 +216,7 @@ abstract contract MetaTxModule is BaseModule
             wallet.sendETHAndVerify(msg.value, gasleft());
         }
 
-        require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
+        require(gasleft() >= (gasSettings.limit.mul(64) / 63).add(60000), "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
         (bool success, bytes memory returnData) = address(this).call{gas: gasSettings.limit}(data);
