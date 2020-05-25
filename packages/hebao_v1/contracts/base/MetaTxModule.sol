@@ -389,7 +389,7 @@ abstract contract MetaTxModule is BaseModule
             transactCall(wallet, feeRecipient, gasCost, "");
         } else {
             require(
-                transactCallTokenTransfer(wallet, gasSettings.token, feeRecipient, gasCost),
+                transactTokenTransfer(wallet, gasSettings.token, feeRecipient, gasCost),
                 "TRANSFER_FAILED"
             );
         }

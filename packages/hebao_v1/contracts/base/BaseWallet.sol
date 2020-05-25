@@ -209,50 +209,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         emit Transacted(msg.sender, to, value, data);
     }
 
-    function transactTokenTransfer(
-        address  token,
-        address  to,
-        uint     amount
-        )
-        external
-        override
-        onlyModule
-        returns (bool success)
-    {
-        require(
-            !controller.moduleRegistry().isModuleRegistered(to),
-            "TRANSACT_ON_MODULE_DISALLOWED"
-        );
-
-        bytes memory data = abi.encodeWithSelector(
-                ERC20(0).transfer.selector,
-                to,
-                amount
-            );
-        (success,) = nonReentrantCall(uint8(1), token, 0, data);
-
-        if (success) {
-            assembly {
-                switch returndatasize()
-                // Non-standard ERC20: nothing is returned so if 'call' was successful we assume the transfer succeeded
-                case 0 {
-                    success := 1
-                }
-                // Standard ERC20: a single boolean value is returned which needs to be true
-                case 32 {
-                    returndatacopy(0, 0, 32)
-                    success := mload(0)
-                }
-                // None of the above: not successful
-                default {
-                    success := 0
-                }
-            }
-        }
-
-        emit Transacted(msg.sender, token, 0, data);
-    }
-
     function addModuleInternal(address _module)
         internal
     {

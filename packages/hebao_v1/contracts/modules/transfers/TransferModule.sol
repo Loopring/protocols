@@ -68,7 +68,7 @@ abstract contract TransferModule is SecurityModule
             transactCall(wallet, to, amount, "");
         } else {
             require(
-                transactCallTokenTransfer(wallet, token, to, amount),
+                transactTokenTransfer(wallet, token, to, amount),
                 "TRANSFER_FAILED"
             );
         }
