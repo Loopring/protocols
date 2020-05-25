@@ -177,7 +177,7 @@ abstract contract MetaTxModule is BaseModule
         public
         payable
     {
-        require(validUntil <= now, "METATX_EXPIRED");
+        require(validUntil >= now, "EXPIRED");
 
         GasSettings memory gasSettings = GasSettings(
             address(gasSetting[0]),
