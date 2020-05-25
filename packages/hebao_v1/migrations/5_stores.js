@@ -14,7 +14,7 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      console.log(">>>>>>>> contracts deployed by registries:");
+      console.log(">>>>>>>> contracts deployed by stores:");
       console.log("QuotaStore:", QuotaStore.address);
       console.log("SecurityStore:", SecurityStore.address);
       console.log("WhitelistStore:", WhitelistStore.address);

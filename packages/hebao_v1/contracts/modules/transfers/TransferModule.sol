@@ -80,12 +80,10 @@ abstract contract TransferModule is SecurityModule
     {
         require(token != address(0), "UNSUPPORTED");
 
+        // Current allowance
         uint allowance = ERC20(token).allowance(wallet, spender);
-        if (allowance >= amount) {
-            return 0;
-        }
 
-        // First reset the approved amount
+        // First reset the approved amount if needed
         bytes memory txData;
         if (allowance > 0) {
             require(
@@ -100,7 +98,10 @@ abstract contract TransferModule is SecurityModule
             "APPROVAL_FAILED"
         );
 
-        additionalAllowance = amount.sub(allowance);
+        // If we increased the allowance, calculate by how much
+        if (amount > allowance) {
+            additionalAllowance = amount.sub(allowance);
+        }
         emit Approved(wallet, token, spender, amount);
     }
 

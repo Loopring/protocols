@@ -57,8 +57,6 @@ module.exports = function(deployer, network, accounts) {
     Number(process.env.whitelistDelayPeriod) || 1 * 24 * 3600;
   const quotaDelayPeriod =
     Number(process.env.quotaDelayPeriod) || 1 * 24 * 3600;
-  const quotaTransDelayPeriod =
-    Number(process.env.quotaTransDelayPeriod) || 1 * 24 * 3600;
 
   deployer
     .then(() => {
@@ -86,11 +84,7 @@ module.exports = function(deployer, network, accounts) {
           whitelistDelayPeriod
         ),
         deployer.deploy(QuotaModule, ControllerImpl.address, quotaDelayPeriod),
-        deployer.deploy(
-          QuotaTransfers,
-          ControllerImpl.address,
-          quotaTransDelayPeriod
-        ),
+        deployer.deploy(QuotaTransfers, ControllerImpl.address),
         deployer.deploy(ApprovedTransfers, ControllerImpl.address),
         deployer.deploy(ERC1271Module),
         deployer.deploy(LoopringModule, ControllerImpl.address),
