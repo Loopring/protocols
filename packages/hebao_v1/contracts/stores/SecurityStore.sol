@@ -46,14 +46,26 @@ contract SecurityStore is DataStore
 
     function isGuardian(
         address wallet,
-        address guardianAddr
+        address addr
         )
         public
         view
         returns (bool)
     {
-        Data.Guardian memory guardian = getGuardian(wallet, guardianAddr);
+        Data.Guardian memory guardian = getGuardian(wallet, addr);
         return guardian.addr != address(0) && isGuardianValid(guardian);
+    }
+
+    function isGuardianOrPendingAddition(
+        address wallet,
+        address addr
+        )
+        public
+        view
+        returns (bool)
+    {
+        Data.Guardian memory guardian = getGuardian(wallet, addr);
+        return guardian.addr != address(0) && (isGuardianValid(guardian) || isGuardianPendingAddition(guardian));
     }
 
     function getGuardian(
@@ -176,6 +188,17 @@ contract SecurityStore is DataStore
         require(idx > 0, "GUARDIAN_NOT_EXISTS");
 
         w.guardians[idx - 1].validUntil = validUntil;
+    }
+
+    function removeAllGuardians(address wallet)
+        public
+        onlyManager
+    {
+         Wallet storage w = wallets[wallet];
+         for (uint i = 0; i < w.guardians.length; i++) {
+            delete w.guardianIdx[w.guardians[i].addr];
+         }
+         delete w.guardians;
     }
 
     function cancelGuardianRemoval(

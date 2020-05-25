@@ -35,7 +35,8 @@ contract RecoveryModule is SecurityModule
     event Recovered(
         address indexed wallet,
         address indexed oldOwner,
-        address indexed newOwner
+        address indexed newOwner,
+        bool            removedAsGuardian
     );
 
     constructor(Controller _controller)
@@ -62,8 +63,17 @@ contract RecoveryModule is SecurityModule
         require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
+        SecurityStore securityStore = controller.securityStore();
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+        
+        if (removedAsGuardian) {
+           securityStore.removeGuardian(wallet, newOwner, now);
+        }
+
         w.setOwner(newOwner);
-        emit Recovered(wallet, oldOwner, newOwner);
+        unlockWallet(wallet, true /*force*/);
+
+        emit Recovered(wallet, oldOwner, newOwner, removedAsGuardian);
     }
 
     function verifySigners(

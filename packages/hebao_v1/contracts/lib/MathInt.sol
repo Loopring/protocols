@@ -1,60 +1,64 @@
-/*
+// Taken from
+// https://raw.githubusercontent.com/OpenZeppelin/openzeppelin-contracts/master/contracts/math/SignedSafeMath.sol
+// SPDX-License-Identifier: MIT
 
-  Copyright 2017 Loopring Project Ltd (Loopring Foundation).
-
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
-
-  http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License.
-*/
 pragma solidity ^0.6.6;
 
+/**
+ * @title MathInt
+ * @dev Signed math operations with safety checks that revert on error.
+ */
+library MathInt {
+    int256 constant private _INT256_MIN = -2**255;
 
-/// @title Utility Functions for int
-/// @author Daniel Wang - <daniel@loopring.org>
-library MathInt
-{
-    function mul(
-        int a,
-        int b
-        )
-        internal
-        pure
-        returns (int c)
-    {
-        c = a * b;
-        require(a == 0 || c / a == b, "MUL_OVERFLOW");
+    /**
+     * @dev Multiplies two signed integers, reverts on overflow.
+     */
+    function mul(int256 a, int256 b) internal pure returns (int256) {
+        // Gas optimization: this is cheaper than requiring 'a' not being zero, but the
+        // benefit is lost if 'b' is also tested.
+        // See: https://github.com/OpenZeppelin/openzeppelin-contracts/pull/522
+        if (a == 0) {
+            return 0;
+        }
+
+        require(!(a == -1 && b == _INT256_MIN), "SignedSafeMath: multiplication overflow");
+
+        int256 c = a * b;
+        require(c / a == b, "SignedSafeMath: multiplication overflow");
+
+        return c;
     }
 
-    function sub(
-        int a,
-        int b
-        )
-        internal
-        pure
-        returns (int c)
-    {
+    /**
+     * @dev Integer division of two signed integers truncating the quotient, reverts on division by zero.
+     */
+    function div(int256 a, int256 b) internal pure returns (int256) {
+        require(b != 0, "SignedSafeMath: division by zero");
+        require(!(b == -1 && a == _INT256_MIN), "SignedSafeMath: division overflow");
 
-        c = a - b;
-        require(a == b + c, "SUB_UNDERFLOW");
+        int256 c = a / b;
+
+        return c;
     }
 
-    function add(
-        int a,
-        int b
-        )
-        internal
-        pure
-        returns (int c)
-    {
-        c = a + b;
-        require(a == c - b, "ADD_OVERFLOW");
+    /**
+     * @dev Subtracts two signed integers, reverts on overflow.
+     */
+    function sub(int256 a, int256 b) internal pure returns (int256) {
+        int256 c = a - b;
+        require((b >= 0 && c <= a) || (b < 0 && c > a), "SignedSafeMath: subtraction overflow");
+
+        return c;
+    }
+
+    /**
+     * @dev Adds two signed integers, reverts on overflow.
+     */
+    function add(int256 a, int256 b) internal pure returns (int256) {
+        int256 c = a + b;
+        require((b >= 0 && c >= a) || (b < 0 && c < a), "SignedSafeMath: addition overflow");
+
+        return c;
     }
 }

@@ -37,7 +37,8 @@ contract InheritanceModule is SecurityModule
     event Inherited(
         address indexed wallet,
         address indexed newOwner,
-        uint            timestamp
+        uint            timestamp,
+        bool            removedAsGuardian
     );
 
     constructor(
@@ -70,7 +71,8 @@ contract InheritanceModule is SecurityModule
     }
 
     function inherit(
-        address wallet
+        address wallet,
+        bool    removeAllGuardians
         )
         external
         nonReentrant
@@ -88,10 +90,20 @@ contract InheritanceModule is SecurityModule
             "NOT_ALLOWED"
         );
 
-        controller.securityStore().setInheritor(wallet, address(0));
-        Wallet(wallet).setOwner(newOwner);
+        SecurityStore securityStore = controller.securityStore();
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
 
-        emit Inherited(wallet, newOwner, now);
+        if (removeAllGuardians) {
+            securityStore.removeAllGuardians(wallet);
+        } else if (removedAsGuardian) {
+            securityStore.removeGuardian(wallet, newOwner, now);
+        }
+        
+        securityStore.setInheritor(wallet, address(0));
+        Wallet(wallet).setOwner(newOwner);
+        unlockWallet(wallet, true /*force*/);
+
+        emit Inherited(wallet, newOwner, now, removedAsGuardian);
     }
 
     function setInheritor(
@@ -100,6 +112,7 @@ contract InheritanceModule is SecurityModule
         )
         external
         nonReentrant
+        onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.securityStore().setInheritor(wallet, who);

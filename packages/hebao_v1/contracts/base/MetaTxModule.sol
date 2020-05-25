@@ -216,7 +216,7 @@ abstract contract MetaTxModule is BaseModule
             wallet.sendETHAndVerify(msg.value, gasleft());
         }
 
-        require(gasleft() >= gasSettings.limit, "INSUFFICIENT_GAS");
+        require(gasleft() >= (gasSettings.limit.mul(64) / 63).add(60000), "INSUFFICIENT_GAS");
         uint gasUsed = gasleft();
         // solium-disable-next-line security/no-call-value
         (bool success, bytes memory returnData) = address(this).call{gas: gasSettings.limit}(data);
@@ -228,45 +228,6 @@ abstract contract MetaTxModule is BaseModule
 
         if (gasSettings.price != 0) {
             reimburseGasFee(wallet, gasSettings, gasUsed);
-        }
-    }
-
-    /// @dev Helper method to execute multiple transactions as part of a single meta transaction.
-    ///      This method can only be called by a meta transaction.
-    /// @param wallet The wallet used in all transactions.
-    /// @param signers The signers needed for all transactions whose signatures have been verified
-    ///                successfully by executeMetaTx and contains no duplicates.
-    /// @param data The raw transaction data used for each transaction.
-    /// @param txSigners The signers needed for the sub transaction
-    function executeTransactions(
-        address              wallet,
-        address[]   calldata signers,
-        bytes[]     calldata data,
-        address[][] calldata txSigners
-        )
-        external
-        onlyFromMetaTx
-    {
-        for (uint i = 0; i < data.length; i++) {
-            // Check that the wallet is the same for all transactions
-            address txWallet = extractWalletAddress(data[i]);
-            require(txWallet == wallet, "INVALID_WALLET");
-
-            // Make sure the signers needed for the transacaction are given in `signers`.
-            // This allows us to check the needed signatures a single time.
-            require(checkSigners(wallet, data[i], txSigners[i]), "TX_UNAUTHORIZED");
-            for (uint j = 0; j < txSigners[i].length; j++) {
-                uint s = 0;
-                while (s < signers.length && signers[s] != txSigners[i][j]) {
-                    s++;
-                }
-                require(s < signers.length, "MISSING_SIGNER");
-            }
-
-            (bool success, bytes memory returnData) = address(this).call(data[i]);
-            if (!success) {
-                assembly { revert(add(returnData, 32), mload(returnData)) }
-            }
         }
     }
 
@@ -451,23 +412,7 @@ abstract contract MetaTxModule is BaseModule
         returns (bool)
     {
         bytes4 method = extractMethod(data);
-        if (method == this.executeTransactions.selector) {
-            address[] memory addresses = extractAddressesFromCallData(data, 1);
-            // Check if it matches the list of signers
-            if (addresses.length == signers.length) {
-                for (uint i = 0; i < signers.length; i++) {
-                    if (addresses[i] != signers[i]) {
-                        return false;
-                    }
-                }
-            } else {
-                return false;
-            }
-            // We need at least one signer, and all signers need to be either the wallet owner or a guardian.
-            // Otherwise anyone could create meta transaction for a wallet and spend the gas costs
-            // (even a call that fails will reimburse the gas costs).
-            return isWalletOwnerOrGuardian(wallet, signers);
-        } else if (method == this.addModule.selector) {
+        if (method == this.addModule.selector) {
             return isOnlySigner(Wallet(wallet).owner(), signers);
         } else {
             return verifySigners(wallet, method, data, signers);
