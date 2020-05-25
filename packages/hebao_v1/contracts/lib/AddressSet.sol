@@ -24,7 +24,7 @@ contract AddressSet
     struct Set
     {
         address[] addresses;
-        mapping (address => uint) addressPos;
+        mapping (address => uint) positions;
         uint count;
     }
     mapping (bytes32 => Set) private sets;
@@ -36,15 +36,17 @@ contract AddressSet
         ) internal
     {
         Set storage set = sets[key];
-        require(set.addressPos[addr] == 0, "ALREADY_IN_SET");
+        require(set.positions[addr] == 0, "ALREADY_IN_SET");
+        
         if (maintainList) {
+            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAILED");
             set.addresses.push(addr);
-            set.addressPos[addr] = set.addresses.length;
         } else {
-            require(set.addresses.length == 0, "MUST_MAINTAIN_LIST");
-            set.addressPos[addr] = 1;
-            set.count += 1;
+            require(set.addresses.length == 0, "MUST_MAINTAIN");
         }
+
+        set.count += 1;
+        set.positions[addr] = set.count;
     }
 
     function removeAddressFromSet(
@@ -54,20 +56,20 @@ contract AddressSet
         internal
     {
         Set storage set = sets[key];
-        uint pos = set.addressPos[addr];
+        uint pos = set.positions[addr];
         require(pos != 0, "NOT_IN_SET");
 
+        delete set.positions[addr];
+        set.count -= 1;
+
         if (set.addresses.length > 0) {
-            address lastAddr = set.addresses[set.addresses.length - 1];
+            address lastAddr = set.addresses[set.count];
             if (lastAddr != addr) {
                 set.addresses[pos - 1] = lastAddr;
-                set.addressPos[lastAddr] = pos;
+                set.positions[lastAddr] = pos;
             }
             set.addresses.pop();
-        } else {
-            set.count -= 1;
         }
-        delete set.addressPos[addr];
     }
 
     function removeSet(bytes32 key)
@@ -84,7 +86,7 @@ contract AddressSet
         view
         returns (bool)
     {
-        return sets[key].addressPos[addr] != 0;
+        return sets[key].positions[addr] != 0;
     }
 
     function numAddressesInSet(bytes32 key)
@@ -93,7 +95,7 @@ contract AddressSet
         returns (uint)
     {
         Set storage set = sets[key];
-        return set.addresses.length + set.count;
+        return set.count;
     }
 
     function addressesInSet(bytes32 key)
@@ -101,6 +103,8 @@ contract AddressSet
         view
         returns (address[] memory)
     {
+        Set storage set = sets[key];
+        require(set.count == set.addresses.length, "NOT_MAINTAINED");
         return sets[key].addresses;
     }
 }
