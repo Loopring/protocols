@@ -83,20 +83,22 @@ abstract contract TransferModule is SecurityModule
         // Current allowance
         uint allowance = ERC20(token).allowance(wallet, spender);
 
-        // First reset the approved amount if needed
-        bytes memory txData;
-        if (allowance > 0) {
+        if (amount != allowance) {
+            // First reset the approved amount if needed
+            bytes memory txData;
+            if (allowance > 0) {
+                require(
+                    transactTokenApprove(wallet, token, spender, 0),
+                    "APPROVAL_FAILED"
+                );
+            }
+
+            // Now approve the requested amount
             require(
-                transactTokenApprove(wallet, token, spender, 0),
+                transactTokenApprove(wallet, token, spender, amount),
                 "APPROVAL_FAILED"
             );
         }
-
-        // Now approve the requested amount
-        require(
-            transactTokenApprove(wallet, token, spender, amount),
-            "APPROVAL_FAILED"
-        );
 
         // If we increased the allowance, calculate by how much
         if (amount > allowance) {
