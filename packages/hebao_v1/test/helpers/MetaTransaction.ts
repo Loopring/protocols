@@ -18,6 +18,7 @@ export interface MetaTransaction {
   data: string;
 
   nonce: number;
+  validUntil: number;
 
   gasToken: string;
   gasPrice: BN;
@@ -42,6 +43,7 @@ function toTypedData(metaTransaction: MetaTransaction) {
         { name: "value", type: "uint256" },
         { name: "data", type: "bytes" },
         { name: "nonce", type: "uint256" },
+        { name: "validUntil", type: "uint256" },
         { name: "gasToken", type: "address" },
         { name: "gasPrice", type: "uint256" },
         { name: "gasLimit", type: "uint256" },
@@ -62,6 +64,7 @@ function toTypedData(metaTransaction: MetaTransaction) {
       value: metaTransaction.value,
       data: metaTransaction.data,
       nonce: new BN(metaTransaction.nonce),
+      validUntil: metaTransaction.validUntil,
       gasToken: metaTransaction.gasToken,
       gasPrice: metaTransaction.gasPrice,
       gasLimit: new BN(metaTransaction.gasLimit),
@@ -110,6 +113,9 @@ export async function executeMetaTransaction(
   const actualSigners =
     options.actualSigners !== undefined ? options.actualSigners : signers;
 
+  const validUntil = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp
+    + 3600 * 24;
+
   // Create the meta transaction
   const metaTransaction: MetaTransaction = {
     wallet,
@@ -117,6 +123,7 @@ export async function executeMetaTransaction(
     value,
     data,
     nonce,
+    validUntil,
     gasToken: await getTokenAddress(ctx, gasToken),
     gasPrice,
     gasLimit,
@@ -145,6 +152,7 @@ export async function executeMetaTransaction(
     .executeMetaTx(
       metaTransaction.data,
       nonce,
+      validUntil,
       gasSettings,
       signatures,
       signers

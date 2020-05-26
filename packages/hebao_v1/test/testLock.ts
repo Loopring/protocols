@@ -87,7 +87,6 @@ contract("LockModule", (accounts: string[]) => {
       defaultCtx.controllerImpl.address
     );
     await defaultCtx.moduleRegistryImpl.registerModule(lockModule2.address);
-    await defaultCtx.securityStore.addManager(lockModule2.address);
   });
 
   beforeEach(async () => {

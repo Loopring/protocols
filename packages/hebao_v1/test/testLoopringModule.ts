@@ -27,7 +27,6 @@ contract("LoopringModule", () => {
     dummyExchange = await DummyExchange.new(defaultCtx.controllerImpl.address);
 
     await defaultCtx.moduleRegistryImpl.registerModule(loopringModule.address);
-    await defaultCtx.securityStore.addManager(loopringModule.address);
   });
 
   beforeEach(async () => {

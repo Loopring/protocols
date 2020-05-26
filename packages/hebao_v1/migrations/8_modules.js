@@ -31,11 +31,6 @@ const LoopringModule = artifacts.require(
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const BaseWallet = artifacts.require("./base/BaseWallet.sol");
 
-const QuotaStore = artifacts.require("./stores/QuotaStore.sol");
-const SecurityStore = artifacts.require("./stores/SecurityStore.sol");
-const WhitelistStore = artifacts.require("./stores/WhitelistStore.sol");
-const PriceCacheStore = artifacts.require("./stores/PriceCacheStore.sol");
-
 const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
 const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
 
