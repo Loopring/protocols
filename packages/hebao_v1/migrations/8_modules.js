@@ -24,9 +24,6 @@ const ApprovedTransfers = artifacts.require(
   "./modules/transfers/ApprovedTransfers.sol"
 );
 const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
-const LoopringModule = artifacts.require(
-  "./modules/exchanges/LoopringModule.sol"
-);
 
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const BaseWallet = artifacts.require("./base/BaseWallet.sol");
@@ -75,7 +72,6 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(QuotaTransfers, ControllerImpl.address),
         deployer.deploy(ApprovedTransfers, ControllerImpl.address),
         deployer.deploy(ERC1271Module),
-        deployer.deploy(LoopringModule, ControllerImpl.address),
       ]);
     })
     .then(() => {
@@ -91,7 +87,6 @@ module.exports = function(deployer, network, accounts) {
           moduleRegistryImpl.registerModule(QuotaTransfers.address),
           moduleRegistryImpl.registerModule(ApprovedTransfers.address),
           moduleRegistryImpl.registerModule(ERC1271Module.address),
-          moduleRegistryImpl.registerModule(LoopringModule.address),
         ]);
       });
     })
