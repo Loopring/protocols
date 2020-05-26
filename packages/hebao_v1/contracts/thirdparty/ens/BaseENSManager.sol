@@ -62,7 +62,6 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
      */
     constructor(string memory _rootName, bytes32 _rootNode, address _ensRegistry, address _ensResolver)
         ENSConsumer(_ensRegistry)
-        OwnerManagable()
         public {
         rootName = _rootName;
         rootNode = _rootNode;
