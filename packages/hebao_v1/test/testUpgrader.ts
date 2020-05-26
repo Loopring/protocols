@@ -210,7 +210,7 @@ contract("UpgraderModule", () => {
           ctx.guardianModule.addModule(wallet, ctx.whitelistModule.address, {
             from: owner
           }),
-          "MODULE_UNAUTHORIZED"
+          "UNAUTHORIZED"
         );
 
         // Add the module
