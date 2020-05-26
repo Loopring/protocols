@@ -27,9 +27,6 @@ const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
 const LoopringModule = artifacts.require(
   "./modules/exchanges/LoopringModule.sol"
 );
-const LRCStakingModule = artifacts.require(
-  "./modules/dapps/LRCStakingModule.sol"
-);
 
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const BaseWallet = artifacts.require("./base/BaseWallet.sol");
@@ -73,7 +70,6 @@ module.exports = function(deployer, network, accounts) {
   report += `- ApprovedTransfers: ${ApprovedTransfers.address}  \n`;
   report += `- ERC1271Module: ${ERC1271Module.address}  \n`;
   report += `- LoopringModule: ${LoopringModule.address}  \n`;
-  report += `- LRCStakingModule: ${LRCStakingModule.address}  \n`;
 
   console.log("report:\n" + report);
 };

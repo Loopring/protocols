@@ -27,9 +27,6 @@ const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
 const LoopringModule = artifacts.require(
   "./modules/exchanges/LoopringModule.sol"
 );
-const LRCStakingModule = artifacts.require(
-  "./modules/dapps/LRCStakingModule.sol"
-);
 
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const BaseWallet = artifacts.require("./base/BaseWallet.sol");
@@ -43,10 +40,6 @@ const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
 const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
 
 const ENSManager = artifacts.require("./WalletENSManager.sol");
-
-// const LRCToken = artifacts.require("./test/tokens/LRC.sol");
-// const lrcTokenAddress = process.env.lrcTokenAddress || LRCToken.address;
-// const stakingPoolAddress = process.env.stakingPoolAddress || `0x${"0".repeat(40)}`;
 
 module.exports = function(deployer, network, accounts) {
   const guardianPendingPeriod =
@@ -88,44 +81,7 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(ApprovedTransfers, ControllerImpl.address),
         deployer.deploy(ERC1271Module),
         deployer.deploy(LoopringModule, ControllerImpl.address),
-        deployer.deploy(LRCStakingModule, ControllerImpl.address)
       ]);
-    })
-    .then(() => {
-      SecurityStore.deployed().then(securityStore => {
-        return Promise.all([
-          securityStore.addManager(GuardianModule.address),
-          securityStore.addManager(LockModule.address),
-          securityStore.addManager(InheritanceModule.address),
-          securityStore.addManager(WhitelistModule.address),
-          securityStore.addManager(QuotaModule.address),
-          securityStore.addManager(QuotaTransfers.address),
-          securityStore.addManager(ApprovedTransfers.address),
-          securityStore.addManager(LoopringModule.address),
-          securityStore.addManager(LRCStakingModule.address)
-        ]);
-      });
-    })
-    .then(() => {
-      WhitelistStore.deployed().then(whitelistStore => {
-        return Promise.all([
-          whitelistStore.addManager(WhitelistModule.address)
-        ]);
-      });
-    })
-    .then(() => {
-      QuotaStore.deployed().then(quotaStore => {
-        return Promise.all([
-          quotaStore.addManager(GuardianModule.address),
-          quotaStore.addManager(RecoveryModule.address),
-          quotaStore.addManager(LockModule.address),
-          quotaStore.addManager(InheritanceModule.address),
-          quotaStore.addManager(WhitelistModule.address),
-          quotaStore.addManager(QuotaModule.address),
-          quotaStore.addManager(QuotaTransfers.address),
-          quotaStore.addManager(ApprovedTransfers.address)
-        ]);
-      });
     })
     .then(() => {
       ModuleRegistryImpl.deployed().then(moduleRegistryImpl => {
@@ -141,7 +97,6 @@ module.exports = function(deployer, network, accounts) {
           moduleRegistryImpl.registerModule(ApprovedTransfers.address),
           moduleRegistryImpl.registerModule(ERC1271Module.address),
           moduleRegistryImpl.registerModule(LoopringModule.address),
-          moduleRegistryImpl.registerModule(LRCStakingModule.address)
         ]);
       });
     })

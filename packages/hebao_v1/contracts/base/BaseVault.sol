@@ -20,6 +20,7 @@ pragma experimental ABIEncoderV2;
 import "../lib/AddressSet.sol";
 import "../lib/EIP712.sol";
 import "../lib/SignatureUtil.sol";
+import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Vault.sol";
 
