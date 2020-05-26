@@ -17,63 +17,42 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/Claimable.sol";
+import "../../lib/AddressSet.sol";
 import "../../lib/ERC20.sol";
-
-import "../../iface/PriceOracle.sol";
-import "../../iface/Wallet.sol";
 
 import "./TransferModule.sol";
 
-/// @title QuotaTransfers
-contract QuotaTransfers is TransferModule
+
+/// @title DappTransfers
+contract DappTransfers is TransferModule
 {
-    constructor(
-        Controller  _controller
-        )
+
+    constructor(Controller _controller)
         public
         TransferModule(_controller)
     {
     }
 
-    function transferToken(
-        address        wallet,
-        address        token,
-        address        to,
-        uint           amount,
-        bytes calldata logdata
-        )
-        external
-        nonReentrant
-        onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
-    {
-        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (!whitelisted) {
-            updateQuota(wallet, token, amount);
-        }
-
-        transferInternal(wallet, token, to, amount, logdata);
+    modifier onlyWhitelistedDapp(address addr)
+    { 
+        require(controller.dappAddressStore().isDapp(addr), "DISALLOWED");
+        _; 
     }
-
-    function callContract(
+    
+    function transferToken(
         address            wallet,
+        address            token,
         address            to,
-        uint               value,
-        bytes     calldata data
+        uint               amount,
+        bytes     calldata logdata
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
-        returns (bytes memory returnData)
+        onlyFromMetaTx
     {
-        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        if (!whitelisted) {
-            updateQuota(wallet, address(0), value);
-        }
-
-        return callContractInternal(wallet, to, value, data);
+        transferInternal(wallet, token, to, amount, logdata);
     }
 
     function approveToken(
@@ -84,15 +63,27 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyFromMetaTx
     {
-        uint additionalAllowance = approveInternal(wallet, token, to, amount);
-        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
+        approveInternal(wallet, token, to, amount);
+    }
 
-        if (!whitelisted) {
-            updateQuota(wallet, token, additionalAllowance);
-        }
+    function callContract(
+        address            wallet,
+        address            to,
+        uint               value,
+        bytes     calldata data
+        )
+        external
+        nonReentrant
+        onlyWhitelistedDapp(to)
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTx
+        returns (bytes memory returnData)
+    {
+        return callContractInternal(wallet, to, value, data);
     }
 
     function approveThenCallContract(
@@ -105,18 +96,12 @@ contract QuotaTransfers is TransferModule
         )
         external
         nonReentrant
+        onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOrWalletOwner(wallet)
+        onlyFromMetaTx
         returns (bytes memory returnData)
     {
-        uint additionalAllowance = approveInternal(wallet, token, to, amount);
-        (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        
-        if (!whitelisted) {
-            updateQuota(wallet, token, additionalAllowance);
-            updateQuota(wallet, address(0), value);
-        }
-
+        approveInternal(wallet, token, to, amount);
         return callContractInternal(wallet, to, value, data);
     }
 
@@ -139,21 +124,5 @@ contract QuotaTransfers is TransferModule
             "INVALID_METHOD"
         );
         return isOnlySigner(Wallet(wallet).owner(), signers);
-    }
-
-    function callContractInternal(
-        address wallet,
-        address to,
-        uint    value,
-        bytes   memory txData
-        )
-        internal
-        override
-        returns (bytes memory returnData)
-    {
-        // Disallow general calls to token contracts (for tokens that have price data
-        // so the quota is actually used).
-        require(controller.priceOracle().tokenPrice(to, 1e18) == 0, "CALL_DISALLOWED");
-        return super.callContractInternal(wallet, to, value, txData);
     }
 }

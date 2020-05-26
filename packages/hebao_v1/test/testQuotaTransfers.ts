@@ -30,8 +30,6 @@ contract("Transfers", (accounts: string[]) => {
 
   const quotaPeriod = 24 * 3600; // 1 day
 
-  let delayPeriod: number;
-
   let useMetaTx: boolean = false;
 
   const setOraclePrice = async (token: string, amount: BN, assetValue: BN) => {
@@ -49,18 +47,6 @@ contract("Transfers", (accounts: string[]) => {
     return descr + (metaTx ? " (meta tx)" : "");
   };
 
-  const isPendingTx = async (wallet: string, pendingTxId: string) => {
-    return (
-      (
-        await ctx.quotaTransfers.pendingTransactions(wallet, pendingTxId)
-      ).toNumber() > 0
-    );
-  };
-
-  const isPendingTxUsable = async (wallet: string, pendingTxId: string) => {
-    return ctx.quotaTransfers.isPendingTxUsable(wallet, pendingTxId);
-  };
-
   const transferTokenChecked = async (
     owner: string,
     wallet: string,
@@ -72,18 +58,14 @@ contract("Transfers", (accounts: string[]) => {
   ) => {
     let assetValue = options.assetValue ? options.assetValue : new BN(0);
     let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
-    let willBePending = options.willBePending ? options.willBePending : false;
-    let isPending = options.isPending ? options.isPending : false;
     let approved = options.signers ? true : false;
     token = await getTokenAddress(ctx, token);
 
     // Set the value of the transfer on the price oracle
     await setOraclePrice(token, amount, assetValue);
 
-    if (!willBePending) {
-      // Make sure the wallet has enough funds
-      await addBalance(ctx, wallet, token, amount);
-    }
+    // Make sure the wallet has enough funds
+    await addBalance(ctx, wallet, token, amount);
 
     // Cache quota data
     const oldAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
@@ -93,9 +75,8 @@ contract("Transfers", (accounts: string[]) => {
     const oldBalanceTo = await getBalance(ctx, token, to);
 
     // Transfer the tokens
-    let tx;
     if (approved) {
-      tx = await executeTransaction(
+      await executeTransaction(
         ctx.approvedTransfers.contract.methods.transferToken(
           wallet,
           token,
@@ -110,14 +91,13 @@ contract("Transfers", (accounts: string[]) => {
         { from: owner }
       );
     } else {
-      tx = await executeTransaction(
+      await executeTransaction(
         ctx.quotaTransfers.contract.methods.transferToken(
           wallet,
           token,
           to,
           amount.toString(10),
-          logdata,
-          willBePending
+          logdata
         ),
         ctx,
         useMetaTx,
@@ -126,61 +106,27 @@ contract("Transfers", (accounts: string[]) => {
         { from: owner }
       );
     }
-    if (willBePending) {
-      const blockTime = await getBlockTime(tx.blockNumber);
-      const event = await assertEventEmitted(
-        ctx.quotaTransfers,
-        "PendingTxCreated",
-        (event: any) => {
-          return (
-            event.wallet === wallet &&
-            event.timestamp == blockTime + delayPeriod
-          );
-        }
-      );
-      assert(await isPendingTx(wallet, event.txid), "tx should be pending");
-    } else {
-      await assertEventEmitted(
-        approved ? ctx.approvedTransfers : ctx.quotaTransfers,
-        "Transfered",
-        (event: any) => {
-          return (
-            event.wallet === wallet &&
-            event.token === token &&
-            event.to === to &&
-            event.amount.eq(amount) &&
-            (logdata === "0x"
-              ? event.logdata === null
-              : event.logdata === logdata)
-          );
-        }
-      );
-    }
-    if (isPending) {
-      const event = await assertEventEmitted(
-        ctx.quotaTransfers,
-        "PendingTxExecuted",
-        (event: any) => {
-          return event.wallet === wallet;
-        }
-      );
-      assert(
-        !(await isPendingTx(wallet, event.txid)),
-        "tx should not be pending"
-      );
-      assert(
-        !(await isPendingTxUsable(wallet, event.txid)),
-        "tx should not be pending and usable"
-      );
-    }
+
+    await assertEventEmitted(
+      approved ? ctx.approvedTransfers : ctx.quotaTransfers,
+      "Transfered",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.token === token &&
+          event.to === to &&
+          event.amount.eq(amount) &&
+          (logdata === "0x"
+            ? event.logdata === null
+            : event.logdata === logdata)
+        );
+      }
+    );
 
     // Check quota
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
-    const quotaDelta =
-      isWhitelisted || willBePending || isPending || approved
-        ? new BN(0)
-        : assetValue;
+    const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
     assert(
       oldAvailableQuota.eq(newAvailableQuota.add(quotaDelta)),
       "incorrect available quota"
@@ -192,7 +138,7 @@ contract("Transfers", (accounts: string[]) => {
     // Check balances
     const newBalanceWallet = await getBalance(ctx, token, wallet);
     const newBalanceTo = await getBalance(ctx, token, to);
-    const balalanceDelta = willBePending ? new BN(0) : amount;
+    const balalanceDelta = amount;
     assert(
       oldBalanceWallet.eq(newBalanceWallet.add(balalanceDelta)),
       "incorrect wallet balance"
@@ -213,8 +159,6 @@ contract("Transfers", (accounts: string[]) => {
   ) => {
     let assetValue = options.assetValue ? options.assetValue : new BN(0);
     let isWhitelisted = options.isWhitelisted ? options.isWhitelisted : false;
-    let willBePending = options.willBePending ? options.willBePending : false;
-    let isPending = options.isPending ? options.isPending : false;
     let approved = options.signers ? true : false;
 
     const token = await getTokenAddress(ctx, "ETH");
@@ -225,10 +169,8 @@ contract("Transfers", (accounts: string[]) => {
     // Set the value of the transfer on the price oracle
     await setOraclePrice(token, value, assetValue);
 
-    if (!willBePending) {
-      // Make sure the wallet has enough funds
-      await addBalance(ctx, wallet, token, value);
-    }
+    // Make sure the wallet has enough funds
+    await addBalance(ctx, wallet, token, value);
 
     // Cache quota data
     const oldAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
@@ -240,9 +182,8 @@ contract("Transfers", (accounts: string[]) => {
     const testValueBefore = (await targetContract.value()).toNumber();
 
     // Call the contract
-    let tx;
     if (approved) {
-      tx = await executeTransaction(
+      await executeTransaction(
         ctx.approvedTransfers.contract.methods.callContract(
           wallet,
           to,
@@ -256,13 +197,12 @@ contract("Transfers", (accounts: string[]) => {
         { from: owner }
       );
     } else {
-      tx = await executeTransaction(
+      await executeTransaction(
         ctx.quotaTransfers.contract.methods.callContract(
           wallet,
           to,
           value.toString(10),
-          data,
-          willBePending
+          data
         ),
         ctx,
         useMetaTx,
@@ -271,58 +211,24 @@ contract("Transfers", (accounts: string[]) => {
         { from: owner }
       );
     }
-    if (willBePending) {
-      const blockTime = await getBlockTime(tx.blockNumber);
-      const event = await assertEventEmitted(
-        ctx.quotaTransfers,
-        "PendingTxCreated",
-        (event: any) => {
-          return (
-            event.wallet === wallet &&
-            event.timestamp == blockTime + delayPeriod
-          );
-        }
-      );
-      assert(await isPendingTx(wallet, event.txid), "tx should be pending");
-    } else {
-      await assertEventEmitted(
-        approved ? ctx.approvedTransfers : ctx.quotaTransfers,
-        "ContractCalled",
-        (event: any) => {
-          return (
-            event.wallet === wallet &&
-            event.to === to &&
-            event.value.eq(value) &&
-            event.data === data
-          );
-        }
-      );
-    }
-    if (isPending) {
-      const event = await assertEventEmitted(
-        ctx.quotaTransfers,
-        "PendingTxExecuted",
-        (event: any) => {
-          return event.wallet === wallet;
-        }
-      );
-      assert(
-        !(await isPendingTx(wallet, event.txid)),
-        "tx should not be pending"
-      );
-      assert(
-        !(await isPendingTxUsable(wallet, event.txid)),
-        "tx should not be pending and usable"
-      );
-    }
+
+    await assertEventEmitted(
+      approved ? ctx.approvedTransfers : ctx.quotaTransfers,
+      "ContractCalled",
+      (event: any) => {
+        return (
+          event.wallet === wallet &&
+          event.to === to &&
+          event.value.eq(value) &&
+          event.data === data
+        );
+      }
+    );
 
     // Check quota
     const newAvailableQuota = await ctx.quotaStore.availableQuota(wallet);
     const newSpentQuota = await ctx.quotaStore.spentQuota(wallet);
-    const quotaDelta =
-      isWhitelisted || willBePending || isPending || approved
-        ? new BN(0)
-        : assetValue;
+    const quotaDelta = isWhitelisted || approved ? new BN(0) : assetValue;
     assert(
       oldAvailableQuota.eq(newAvailableQuota.add(quotaDelta)),
       "incorrect available quota"
@@ -334,7 +240,7 @@ contract("Transfers", (accounts: string[]) => {
     // Check balances
     const newBalanceWallet = await getBalance(ctx, token, wallet);
     const newBalanceTo = await getBalance(ctx, token, to);
-    const balalanceDelta = willBePending ? new BN(0) : value;
+    const balalanceDelta = value;
     assert(
       oldBalanceWallet.eq(newBalanceWallet.add(balalanceDelta)),
       "incorrect wallet balance"
@@ -345,7 +251,7 @@ contract("Transfers", (accounts: string[]) => {
     );
     // Check test value
     const testValueAfter = (await targetContract.value()).toNumber();
-    const expectedTestValueAfter = willBePending ? testValueBefore : nonce;
+    const expectedTestValueAfter = nonce;
     assert.equal(
       testValueAfter,
       expectedTestValueAfter,
@@ -425,7 +331,7 @@ contract("Transfers", (accounts: string[]) => {
         return (
           event.wallet === wallet &&
           event.token === token &&
-          event.to === to &&
+          event.spender === to &&
           event.amount.eq(amount)
         );
       }
@@ -454,6 +360,7 @@ contract("Transfers", (accounts: string[]) => {
     token: string,
     to: string,
     amount: BN,
+    value: BN,
     nonce: number,
     options: any = {}
   ) => {
@@ -497,6 +404,7 @@ contract("Transfers", (accounts: string[]) => {
           token,
           to,
           amount.toString(10),
+          value.toString(10),
           data
         ),
         ctx,
@@ -512,6 +420,7 @@ contract("Transfers", (accounts: string[]) => {
           token,
           to,
           amount.toString(10),
+          value.toString(10),
           data
         ),
         ctx,
@@ -528,7 +437,7 @@ contract("Transfers", (accounts: string[]) => {
         return (
           event.wallet === wallet &&
           event.token === token &&
-          event.to === to &&
+          event.spender === to &&
           event.amount.eq(amount)
         );
       }
@@ -566,121 +475,6 @@ contract("Transfers", (accounts: string[]) => {
     assert.equal(testValueAfter, nonce, "unexpected test value");
   };
 
-  const transferTokensFullBalanceChecked = async (
-    owner: string,
-    wallet: string,
-    tokens: string[],
-    to: string,
-    logdata: string,
-    amounts: BN[],
-    options: any = {}
-  ) => {
-    let approved = options.signers ? true : false;
-
-    const oldBalancesWallet: BN[] = [];
-    const oldBalancesTo: BN[] = [];
-    for (let i = 0; i < tokens.length; i++) {
-      tokens[i] = await getTokenAddress(ctx, tokens[i]);
-
-      // Cache balance data
-      oldBalancesWallet.push(await getBalance(ctx, tokens[i], wallet));
-      oldBalancesTo.push(await getBalance(ctx, tokens[i], to));
-    }
-
-    // Transfer the tokens
-    if (approved) {
-      await executeTransaction(
-        ctx.approvedTransfers.contract.methods.transferTokensFullBalance(
-          wallet,
-          tokens,
-          to,
-          logdata
-        ),
-        ctx,
-        useMetaTx,
-        wallet,
-        options.signers,
-        { from: owner }
-      );
-    } else {
-      await executeTransaction(
-        ctx.quotaTransfers.contract.methods.transferTokensFullBalance(
-          wallet,
-          tokens,
-          to,
-          logdata
-        ),
-        ctx,
-        useMetaTx,
-        wallet,
-        [owner],
-        { from: owner }
-      );
-    }
-    const events = await assertEventsEmitted(
-      approved ? ctx.approvedTransfers : ctx.quotaTransfers,
-      "Transfered",
-      tokens.length,
-      (event: any) => {
-        return (
-          event.wallet === wallet &&
-          event.to === to &&
-          (logdata === "0x"
-            ? event.logdata === null
-            : event.logdata === logdata)
-        );
-      }
-    );
-
-    for (let i = 0; i < tokens.length; i++) {
-      // Check balances
-      const newBalanceWallet = await getBalance(ctx, tokens[i], wallet);
-      const newBalanceTo = await getBalance(ctx, tokens[i], to);
-      assert(
-        oldBalancesWallet[i].eq(newBalanceWallet.add(amounts[i])),
-        "incorrect wallet balance"
-      );
-      assert(
-        newBalanceTo.eq(oldBalancesTo[i].add(amounts[i])),
-        "incorrect to balance"
-      );
-
-      // Check event data
-      assert.equal(events[i].token, tokens[i], "unexpected token address");
-      assert(events[i].amount.eq(amounts[i]), "unexpected transfer address");
-    }
-  };
-
-  const cancelPendingTxChecked = async (
-    owner: string,
-    wallet: string,
-    pendingTxId: string
-  ) => {
-    await executeTransaction(
-      ctx.quotaTransfers.contract.methods.cancelPendingTx(wallet, pendingTxId),
-      ctx,
-      useMetaTx,
-      wallet,
-      [owner],
-      { from: owner }
-    );
-    const event = await assertEventEmitted(
-      ctx.quotaTransfers,
-      "PendingTxCancelled",
-      (event: any) => {
-        return event.wallet === wallet && event.txid === pendingTxId;
-      }
-    );
-    assert(
-      !(await isPendingTx(wallet, event.txid)),
-      "tx should not be pending"
-    );
-    assert(
-      !(await isPendingTxUsable(wallet, event.txid)),
-      "tx should not be pending and usable"
-    );
-  };
-
   before(async () => {
     defaultCtx = await getContext();
     priceOracleMock = await defaultCtx.contracts.MockContract.new();
@@ -690,7 +484,6 @@ contract("Transfers", (accounts: string[]) => {
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
     targetContract = await TestTargetContract.new();
-    delayPeriod = (await ctx.quotaModule.delayPeriod()).toNumber();
   });
 
   [false, true].forEach(function(metaTx) {
@@ -861,100 +654,6 @@ contract("Transfers", (accounts: string[]) => {
           );
         }
       );
-
-      it(
-        description(
-          "owner should be able to transfer without limits using a pending tx",
-          metaTx
-        ),
-        async () => {
-          useMetaTx = metaTx;
-          const owner = ctx.owners[0];
-          const to = ctx.miscAddresses[0];
-          const { wallet } = await createWallet(ctx, owner);
-
-          const quota = await ctx.quotaStore.currentQuota(wallet);
-          const transferValue = quota.add(new BN(1));
-
-          // Create a transfer exceeding the daily quota which will create a pending tx
-          await transferTokenChecked(
-            owner,
-            wallet,
-            "LRC",
-            to,
-            toAmount("1000"),
-            "0x12",
-            { assetValue: transferValue, willBePending: true }
-          );
-          const pendingTx1Event = await assertEventEmitted(
-            ctx.quotaTransfers,
-            "PendingTxCreated"
-          );
-
-          // Try to execute the pending tx immediately
-          await expectThrow(
-            transferTokenChecked(
-              owner,
-              wallet,
-              "LRC",
-              to,
-              toAmount("1000"),
-              "0x12",
-              { assetValue: transferValue, willBePending: true }
-            ),
-            "DUPLICATE_PENDING_TX"
-          );
-
-          // Create another transfer exceeding the daily quota which will create a pending tx
-          await transferTokenChecked(
-            owner,
-            wallet,
-            "LRC",
-            to,
-            toAmount("1000"),
-            "0x34",
-            { assetValue: transferValue, willBePending: true }
-          );
-          const pendingTx2Event = await assertEventEmitted(
-            ctx.quotaTransfers,
-            "PendingTxCreated"
-          );
-
-          // Cancel the 2nd pending tx
-          await cancelPendingTxChecked(owner, wallet, pendingTx2Event.txid);
-          // Should not be possible to cancel a pending tx that doesn't exist
-          await expectThrow(
-            cancelPendingTxChecked(owner, wallet, pendingTx2Event.txid),
-            "NOT_FOUND"
-          );
-
-          // Skip forward `pendingPeriod - 100`
-          await advanceTimeAndBlockAsync(delayPeriod - 100);
-          // The tx should not yet be usable
-          assert(
-            !(await isPendingTxUsable(wallet, pendingTx1Event.txid)),
-            "pending tx should be usable"
-          );
-          // Skip forward the complete `pendingPeriod`
-          await advanceTimeAndBlockAsync(delayPeriod);
-          // The tx should now be usable
-          assert(
-            await isPendingTxUsable(wallet, pendingTx1Event.txid),
-            "pending tx should be usable"
-          );
-
-          // Now execute the 1st pending tx
-          await transferTokenChecked(
-            owner,
-            wallet,
-            "LRC",
-            to,
-            toAmount("1000"),
-            "0x12",
-            { assetValue: transferValue, isPending: true }
-          );
-        }
-      );
     });
 
     describe(description("CallContract", metaTx), () => {
@@ -1088,80 +787,6 @@ contract("Transfers", (accounts: string[]) => {
             ++nonce,
             { assetValue: quota.add(new BN(1)), isWhitelisted: true }
           );
-        }
-      );
-
-      it(
-        description(
-          "owner should be able to call a contract (with value) without limits using a pending tx",
-          metaTx
-        ),
-        async () => {
-          useMetaTx = metaTx;
-          const owner = ctx.owners[0];
-          const to = targetContract.address;
-          const { wallet } = await createWallet(ctx, owner);
-
-          const quota = await ctx.quotaStore.currentQuota(wallet);
-          const transferValue = quota.add(new BN(1));
-
-          // Create a transfer exceeding the daily quota which will create a pending tx
-          await callContractChecked(owner, wallet, to, toAmount("1"), 1, {
-            assetValue: transferValue,
-            willBePending: true
-          });
-          const pendingTx1Event = await assertEventEmitted(
-            ctx.quotaTransfers,
-            "PendingTxCreated"
-          );
-
-          // Try to execute the pending tx immediately
-          await expectThrow(
-            callContractChecked(owner, wallet, to, toAmount("1"), 1, {
-              assetValue: transferValue,
-              willBePending: true
-            }),
-            "DUPLICATE_PENDING_TX"
-          );
-
-          // Create another transfer exceeding the daily quota which will create a pending tx
-          await callContractChecked(owner, wallet, to, toAmount("1"), 2, {
-            assetValue: transferValue,
-            willBePending: true
-          });
-          const pendingTx2Event = await assertEventEmitted(
-            ctx.quotaTransfers,
-            "PendingTxCreated"
-          );
-
-          // Cancel the 2nd pending tx
-          await cancelPendingTxChecked(owner, wallet, pendingTx2Event.txid);
-          // Should not be possible to cancel a pending tx that doesn't exist
-          await expectThrow(
-            cancelPendingTxChecked(owner, wallet, pendingTx2Event.txid),
-            "NOT_FOUND"
-          );
-
-          // Skip forward `pendingPeriod - 100`
-          await advanceTimeAndBlockAsync(delayPeriod - 100);
-          // The tx should not yet be usable
-          assert(
-            !(await isPendingTxUsable(wallet, pendingTx1Event.txid)),
-            "pending tx should be usable"
-          );
-          // Skip forward the complete `pendingPeriod`
-          await advanceTimeAndBlockAsync(delayPeriod);
-          // The tx should now be usable
-          assert(
-            await isPendingTxUsable(wallet, pendingTx1Event.txid),
-            "pending tx should be usable"
-          );
-
-          // Now execute the 1st pending tx
-          await callContractChecked(owner, wallet, to, toAmount("1"), 1, {
-            assetValue: transferValue,
-            isPending: true
-          });
         }
       );
 
@@ -1359,6 +984,7 @@ contract("Transfers", (accounts: string[]) => {
               "WETH",
               to,
               toAmount("0.7"),
+              toAmount("0"),
               ++nonce,
               { assetValue: quota.add(new BN(1)) }
             ),
@@ -1372,6 +998,7 @@ contract("Transfers", (accounts: string[]) => {
             "WETH",
             to,
             toAmount("0.7"),
+            toAmount("0"),
             ++nonce,
             { assetValue: quota }
           );
@@ -1384,6 +1011,7 @@ contract("Transfers", (accounts: string[]) => {
               "REP",
               to,
               toAmount("100"),
+              toAmount("0"),
               ++nonce,
               { assetValue: quota.div(new BN(100)) }
             ),
@@ -1401,6 +1029,7 @@ contract("Transfers", (accounts: string[]) => {
             "LRC",
             to,
             toAmount("1"),
+            toAmount("0"),
             ++nonce,
             { assetValue: approveValue }
           );
@@ -1410,6 +1039,7 @@ contract("Transfers", (accounts: string[]) => {
             "LRC",
             to,
             toAmount("2"),
+            toAmount("0"),
             ++nonce,
             { assetValue: approveValue.mul(new BN(2)) }
           );
@@ -1422,6 +1052,7 @@ contract("Transfers", (accounts: string[]) => {
               "LRC",
               to,
               toAmount("4"),
+              toAmount("0"),
               ++nonce,
               { assetValue: approveValue.mul(new BN(4)) }
             ),
@@ -1438,6 +1069,7 @@ contract("Transfers", (accounts: string[]) => {
             "LRC",
             to,
             toAmount("4"),
+            toAmount("0"),
             ++nonce,
             { assetValue: approveValue.mul(new BN(4)) }
           );
@@ -1449,6 +1081,7 @@ contract("Transfers", (accounts: string[]) => {
             "LRC",
             to,
             toAmount("2"),
+            toAmount("0"),
             ++nonce,
             { assetValue: approveValue.mul(new BN(2)) }
           );
@@ -1458,6 +1091,7 @@ contract("Transfers", (accounts: string[]) => {
             "LRC",
             to,
             toAmount("1"),
+            toAmount("0"),
             ++nonce,
             { assetValue: approveValue.mul(new BN(1)) }
           );
@@ -1466,6 +1100,7 @@ contract("Transfers", (accounts: string[]) => {
             wallet,
             "LRC",
             to,
+            toAmount("0"),
             toAmount("0"),
             ++nonce,
             { assetValue: approveValue.mul(new BN(0)) }
@@ -1495,6 +1130,7 @@ contract("Transfers", (accounts: string[]) => {
             "WETH",
             to,
             toAmount("0.7"),
+            toAmount("0"),
             ++nonce,
             { assetValue: transferValue }
           );
@@ -1509,6 +1145,7 @@ contract("Transfers", (accounts: string[]) => {
             "LRC",
             to,
             toAmount("100"),
+            toAmount("0"),
             ++nonce,
             { assetValue: transferValue, isWhitelisted: true }
           );
@@ -1520,61 +1157,9 @@ contract("Transfers", (accounts: string[]) => {
             "REP",
             to,
             toAmount("0.35"),
+            toAmount("0"),
             ++nonce,
             { assetValue: quota.add(new BN(1)), isWhitelisted: true }
-          );
-        }
-      );
-    });
-
-    describe(description("transferTokensFullBalance", metaTx), () => {
-      it(
-        description(
-          "owner should be able to tranfer complete balances to whitelisted address",
-          metaTx
-        ),
-        async () => {
-          useMetaTx = metaTx;
-          const owner = ctx.owners[0];
-          let to = ctx.miscAddresses[0];
-          const { wallet } = await createWallet(ctx, owner);
-
-          const tokens = ["REP", "ETH", "LRC"];
-          const amounts = [
-            toAmount("1234.5"),
-            toAmount("0.4321"),
-            toAmount("567.8")
-          ];
-
-          // Make sure the wallet has the expected funds
-          for (let i = 0; i < tokens.length; i++) {
-            await addBalance(ctx, wallet, tokens[i], amounts[i]);
-          }
-
-          // Try to transfer to an address that isn't whitelisted
-          await expectThrow(
-            transferTokensFullBalanceChecked(
-              owner,
-              wallet,
-              tokens,
-              to,
-              "0xffaa",
-              amounts
-            ),
-            "PROHIBITED"
-          );
-
-          // Whitelist the destination address
-          await addToWhitelist(ctx, owner, wallet, to);
-
-          // Now transfer the complete balances
-          await transferTokensFullBalanceChecked(
-            owner,
-            wallet,
-            tokens,
-            to,
-            "0xffaa",
-            amounts
           );
         }
       );
@@ -1603,45 +1188,6 @@ contract("Transfers", (accounts: string[]) => {
           toAmount("0.7"),
           "0x1234",
           { assetValue: transferValue, signers }
-        );
-        if (signers.length >= numSignersRequired) {
-          const tx = await transaction;
-        } else {
-          await expectThrow(transaction, "NOT_ENOUGH_SIGNERS");
-        }
-      }
-    });
-
-    it("owner should be able to tranfer complete balances with majority", async () => {
-      useMetaTx = true;
-      const owner = ctx.owners[0];
-      let to = ctx.miscAddresses[0];
-      const { wallet, guardians } = await createWallet(ctx, owner, 2);
-
-      const tokens = ["REP", "ETH", "LRC"];
-      const amounts = [
-        toAmount("1234.5"),
-        toAmount("0.4321"),
-        toAmount("567.8")
-      ];
-
-      // Make sure the wallet has the expected funds
-      for (let i = 0; i < tokens.length; i++) {
-        await addBalance(ctx, wallet, tokens[i], amounts[i]);
-      }
-
-      // Transfer full balances
-      const numSignersRequired = Math.floor((1 + guardians.length) / 2) + 1;
-      for (let i = 0; i < numSignersRequired; i++) {
-        const signers = [owner, ...guardians.slice(0, i)].sort();
-        const transaction = transferTokensFullBalanceChecked(
-          owner,
-          wallet,
-          tokens,
-          to,
-          "0xffaa",
-          amounts,
-          { signers }
         );
         if (signers.length >= numSignersRequired) {
           const tx = await transaction;
@@ -1730,6 +1276,7 @@ contract("Transfers", (accounts: string[]) => {
           "REP",
           to,
           toAmount("0.35"),
+          toAmount("0"),
           ++nonce,
           { assetValue: transferValue, signers }
         );

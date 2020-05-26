@@ -60,7 +60,9 @@ contract BaseENSManager is IENSManager, OwnerManagable, ENSConsumer {
      * @param _rootName The root name (e.g. argentx.eth).
      * @param _rootNode The node of the root name (e.g. namehash(argentx.eth)).
      */
-    constructor(string memory _rootName, bytes32 _rootNode, address _ensRegistry, address _ensResolver) ENSConsumer(_ensRegistry) public {
+    constructor(string memory _rootName, bytes32 _rootNode, address _ensRegistry, address _ensResolver)
+        ENSConsumer(_ensRegistry)
+        public {
         rootName = _rootName;
         rootNode = _rootNode;
         ensResolver = _ensResolver;

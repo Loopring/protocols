@@ -260,10 +260,13 @@ abstract contract MetaTxModule is BaseModule
             address token = tokens[i];
             if (token == address(0)) {
                 uint amount = address(this).balance;
-                to.sendETH(amount, gasleft());
+                to.sendETHAndVerify(amount, gasleft());
             } else {
                 uint amount = ERC20(token).balanceOf(address(this));
-                if (amount > 0) ERC20(token).transfer(to, amount);
+                if (amount > 0) {
+                    // Do not check the return value to support "bad" ERC20 tokens
+                    ERC20(token).transfer(to, amount);
+                }
             }
         }
     }
@@ -393,12 +396,10 @@ abstract contract MetaTxModule is BaseModule
         if (gasSettings.token == address(0)) {
             transactCall(wallet, feeRecipient, gasCost, "");
         } else {
-            bytes memory txData = abi.encodeWithSelector(
-                ERC20(0).transfer.selector,
-                feeRecipient,
-                gasCost
+            require(
+                transactTokenTransfer(wallet, gasSettings.token, feeRecipient, gasCost),
+                "TRANSFER_FAILED"
             );
-            transactCall(wallet, gasSettings.token, 0, txData);
         }
     }
 

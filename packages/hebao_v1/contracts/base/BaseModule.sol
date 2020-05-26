@@ -16,6 +16,7 @@
 */
 pragma solidity ^0.6.6;
 
+import "../lib/ERC20.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Wallet.sol";
@@ -155,6 +156,58 @@ contract BaseModule is ReentrancyGuard, Module
         returns (bytes memory)
     {
         return Wallet(wallet).transact(uint8(1), to, value, data);
+    }
+
+    // Special case for transactCall to support transfers on "bad" ERC20 tokens
+    function transactTokenTransfer(
+        address wallet,
+        address token,
+        address to,
+        uint    amount
+        )
+        internal
+        returns (bool success)
+    {
+        bytes memory txData = abi.encodeWithSelector(
+            ERC20(0).transfer.selector,
+            to,
+            amount
+        );
+        bytes memory returnData = transactCall(wallet, token, 0, txData);
+        // `transactCall` will revert if the call was unsuccessful.
+        // The only extra check we have to do is verify if the return value (if there is any) is correct.
+        if (returnData.length > 0) {
+            success = abi.decode(returnData, (bool));
+        } else {
+            // If there is no return value then a failure would have resulted in a revert
+            success = true;
+        }
+    }
+
+    // Special case for transactCall to support approvals on "bad" ERC20 tokens
+    function transactTokenApprove(
+        address wallet,
+        address token,
+        address spender,
+        uint    amount
+        )
+        internal
+        returns (bool success)
+    {
+        bytes memory txData = abi.encodeWithSelector(
+            ERC20(0).approve.selector,
+            spender,
+            amount
+        );
+        bytes memory returnData = transactCall(wallet, token, 0, txData);
+        // `transactCall` will revert if the call was unsuccessful.
+        // The only extra check we have to do is verify if the return value (if there is any) is correct.
+        if (returnData.length > 0) {
+            success = abi.decode(returnData, (bool));
+        } else {
+            // If there is no return value then a failure would have resulted in a revert
+            success = true;
+        }
     }
 
     function transactDelegateCall(

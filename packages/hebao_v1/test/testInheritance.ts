@@ -50,7 +50,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         // Try to inherit without having set an inheritor
         await expectThrow(
           executeTransaction(
-            ctx.inheritanceModule.contract.methods.inherit(wallet),
+            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
             ctx,
             useMetaTx,
             wallet,
@@ -81,7 +81,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         // Try to inherit too soon
         await expectThrow(
           executeTransaction(
-            ctx.inheritanceModule.contract.methods.inherit(wallet),
+            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
             ctx,
             useMetaTx,
             wallet,
@@ -96,7 +96,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Now inherit
         await executeTransaction(
-          ctx.inheritanceModule.contract.methods.inherit(wallet),
+          ctx.inheritanceModule.contract.methods.inherit(wallet, false),
           ctx,
           useMetaTx,
           wallet,
@@ -122,7 +122,7 @@ contract("InheritanceModule", (accounts: string[]) => {
         // Try to inherit again
         await expectThrow(
           executeTransaction(
-            ctx.inheritanceModule.contract.methods.inherit(wallet),
+            ctx.inheritanceModule.contract.methods.inherit(wallet, false),
             ctx,
             useMetaTx,
             wallet,
@@ -190,7 +190,7 @@ contract("InheritanceModule", (accounts: string[]) => {
           // Try to inherit too soon
           await expectThrow(
             executeTransaction(
-              ctx.inheritanceModule.contract.methods.inherit(wallet),
+              ctx.inheritanceModule.contract.methods.inherit(wallet, false),
               ctx,
               useMetaTx,
               wallet,
@@ -213,7 +213,7 @@ contract("InheritanceModule", (accounts: string[]) => {
 
         // Inherit
         await executeTransaction(
-          ctx.inheritanceModule.contract.methods.inherit(wallet),
+          ctx.inheritanceModule.contract.methods.inherit(wallet, false),
           ctx,
           useMetaTx,
           wallet,

@@ -6,7 +6,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([deployer.deploy(BaseWallet)]);
     })
     .then(() => {
-      console.log(">>>>>>>> contracts deployed by controller:");
+      console.log(">>>>>>>> contracts deployed by wallet:");
       console.log("BaseWallet:", BaseWallet.address);
       console.log("");
     });

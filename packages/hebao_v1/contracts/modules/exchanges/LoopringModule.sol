@@ -30,7 +30,7 @@ import "../security/SecurityModule.sol";
 /// @title LoopringModule
 contract LoopringModule is SecurityModule
 {
-    using MathUint for uint;
+    using MathUint  for uint;
 
     event Approval(
         address indexed exchange,
@@ -106,13 +106,10 @@ contract LoopringModule is SecurityModule
         onlyWhenWalletUnlocked(wallet)
         onlyFromMetaTxOrWalletOwner(wallet)
     {
-        bytes memory txData = abi.encodeWithSelector(
-            token.approve.selector,
-            address(exchange),
-            amount
+        require(
+            transactTokenApprove(wallet, address(token), address(exchange), amount),
+            "APPROVAL_FAILED"
         );
-
-        transactCall(wallet, address(token), 0, txData);
         emit Approval(address(exchange), wallet, address(token), amount);
     }
 

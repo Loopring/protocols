@@ -45,7 +45,7 @@ contract("AddressSet", () => {
       const address2 = web3.eth.accounts.create().address;
       await expectThrow(
         addressSetWrapper.add(key1, address2, false),
-        "MUST_MAINTAIN_LIST"
+        "MUST_MAINTAIN"
       );
     });
 
