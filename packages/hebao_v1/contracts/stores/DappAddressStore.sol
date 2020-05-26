@@ -16,14 +16,14 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/AddressSet.sol";
+import "../lib/OwnerManagable.sol";
 
 import "../base/DataStore.sol";
 
 
 /// @title DappAddressStore
 /// @dev This store maintains global whitelist dapps.
-contract DappAddressStore is DataStore
+contract DappAddressStore is DataStore, OwnerManagable
 {
     bytes32 internal constant DAPPS = keccak256("__DAPPS__");
 
