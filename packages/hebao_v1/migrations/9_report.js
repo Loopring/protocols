@@ -24,9 +24,6 @@ const ApprovedTransfers = artifacts.require(
   "./modules/transfers/ApprovedTransfers.sol"
 );
 const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
-const LoopringModule = artifacts.require(
-  "./modules/exchanges/LoopringModule.sol"
-);
 
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const BaseWallet = artifacts.require("./base/BaseWallet.sol");
@@ -35,9 +32,13 @@ const QuotaStore = artifacts.require("./stores/QuotaStore.sol");
 const SecurityStore = artifacts.require("./stores/SecurityStore.sol");
 const WhitelistStore = artifacts.require("./stores/WhitelistStore.sol");
 const PriceCacheStore = artifacts.require("./stores/PriceCacheStore.sol");
+const DappAddressStore = artifacts.require("./stores/DappAddressStore.sol");
 
 const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
 const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
+const DappTransfers = artifacts.require(
+  "./modules/transfers/DappTransfers.sol"
+);
 
 var ENSManager = artifacts.require("./WalletENSManager.sol");
 
@@ -69,7 +70,8 @@ module.exports = function(deployer, network, accounts) {
   report += `- QuotaTransfers: ${QuotaTransfers.address}  \n`;
   report += `- ApprovedTransfers: ${ApprovedTransfers.address}  \n`;
   report += `- ERC1271Module: ${ERC1271Module.address}  \n`;
-  report += `- LoopringModule: ${LoopringModule.address}  \n`;
+  report += `- DappAddressStore: ${DappAddressStore.address}  \n`;
+  report += `- DappTransfers: ${DappTransfers.address}  \n`;
 
   console.log("report:\n" + report);
 };

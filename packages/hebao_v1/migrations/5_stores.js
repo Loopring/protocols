@@ -2,6 +2,7 @@ const QuotaStore = artifacts.require("./stores/QuotaStore.sol");
 const SecurityStore = artifacts.require("./stores/SecurityStore.sol");
 const WhitelistStore = artifacts.require("./stores/WhitelistStore.sol");
 const PriceCacheStore = artifacts.require("./stores/PriceCacheStore.sol");
+const DappAddressStore = artifacts.require("./stores/DappAddressStore.sol");
 
 module.exports = function(deployer, network, accounts) {
   deployer
@@ -10,15 +11,20 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(QuotaStore, 1000),
         deployer.deploy(SecurityStore),
         deployer.deploy(WhitelistStore),
-        deployer.deploy(PriceCacheStore, accounts[0], 14 * 24 * 3600)
+        deployer.deploy(PriceCacheStore, accounts[0], 14 * 24 * 3600),
+        deployer.deploy(DappAddressStore)
       ]);
     })
     .then(() => {
+      DappAddressStore.deployed().then(dappAddressStore => {
+        return Promise.all([dappAddressStore.addManager(accounts[1])]);
+      });
+
       console.log(">>>>>>>> contracts deployed by stores:");
       console.log("QuotaStore:", QuotaStore.address);
       console.log("SecurityStore:", SecurityStore.address);
       console.log("WhitelistStore:", WhitelistStore.address);
       console.log("PriceCacheStore:", PriceCacheStore.address);
-      console.log("");
+      console.log("DappAddressStore:", DappAddressStore.address);
     });
 };
