@@ -43,6 +43,7 @@ contract ControllerImpl is Claimable, Controller
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
+        DappAddressStore  _dappAddressStore,
         PriceOracle       _priceOracle,
         WalletENSManager  _ensManager
         )
@@ -62,6 +63,7 @@ contract ControllerImpl is Claimable, Controller
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
+        dappAddressStore = _dappAddressStore;
 
         priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
