@@ -34,11 +34,11 @@ contract DappTransfers is TransferModule
     }
 
     modifier onlyWhitelistedDapp(address addr)
-    { 
+    {
         require(controller.dappAddressStore().isDapp(addr), "DISALLOWED");
-        _; 
+        _;
     }
-    
+
     function transferToken(
         address            wallet,
         address            token,
@@ -50,7 +50,7 @@ contract DappTransfers is TransferModule
         nonReentrant
         onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         transferInternal(wallet, token, to, amount, logdata);
     }
@@ -65,7 +65,7 @@ contract DappTransfers is TransferModule
         nonReentrant
         onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         approveInternal(wallet, token, to, amount);
     }
@@ -80,7 +80,7 @@ contract DappTransfers is TransferModule
         nonReentrant
         onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes memory returnData)
     {
         return callContractInternal(wallet, to, value, data);
@@ -98,7 +98,7 @@ contract DappTransfers is TransferModule
         nonReentrant
         onlyWhitelistedDapp(to)
         onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTx
+        onlyFromMetaTxOrWalletOwner(wallet)
         returns (bytes memory returnData)
     {
         approveInternal(wallet, token, to, amount);
