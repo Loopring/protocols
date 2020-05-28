@@ -5,8 +5,7 @@ const PriceCacheStore = artifacts.require("./stores/PriceCacheStore.sol");
 const DappAddressStore = artifacts.require("./stores/DappAddressStore.sol");
 
 const dappManager = process.env.APP_MANAGER || "";
-console.log("dappManager:", dappManager);
-
+const loopringDEX = process.env.LOOPRING_DEX || "";
 module.exports = function(deployer, network, accounts) {
   deployer
     .then(() => {
@@ -20,8 +19,16 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       if (dappManager) {
+        console.log("dappManager:", dappManager);
         DappAddressStore.deployed().then(dappAddressStore => {
           return Promise.all([dappAddressStore.addManager(dappManager)]);
+        }).then(() => {
+          if (loopringDEX) {
+            DappAddressStore.deployed().then(dappAddressStore => {
+              console.log("loopringDEX:", loopringDEX);
+              return Promise.all([dappAddressStore.addDapp(loopringDEX)]);
+            });
+          }
         });
       }
 
