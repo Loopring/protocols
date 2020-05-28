@@ -23,6 +23,10 @@ const QuotaTransfers = artifacts.require(
 const ApprovedTransfers = artifacts.require(
   "./modules/transfers/ApprovedTransfers.sol"
 );
+const DappTransfers = artifacts.require(
+  "./modules/transfers/DappTransfers.sol"
+);
+
 const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
 
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
@@ -71,7 +75,8 @@ module.exports = function(deployer, network, accounts) {
         deployer.deploy(QuotaModule, ControllerImpl.address, quotaDelayPeriod),
         deployer.deploy(QuotaTransfers, ControllerImpl.address),
         deployer.deploy(ApprovedTransfers, ControllerImpl.address),
-        deployer.deploy(ERC1271Module),
+        deployer.deploy(DappTransfers, ControllerImpl.address),
+        deployer.deploy(ERC1271Module)
       ]);
     })
     .then(() => {
@@ -86,7 +91,8 @@ module.exports = function(deployer, network, accounts) {
           moduleRegistryImpl.registerModule(QuotaModule.address),
           moduleRegistryImpl.registerModule(QuotaTransfers.address),
           moduleRegistryImpl.registerModule(ApprovedTransfers.address),
-          moduleRegistryImpl.registerModule(ERC1271Module.address),
+          moduleRegistryImpl.registerModule(DappTransfers.address),
+          moduleRegistryImpl.registerModule(ERC1271Module.address)
         ]);
       });
     })
@@ -108,8 +114,7 @@ module.exports = function(deployer, network, accounts) {
         console.log("add manager for ENSManager:", WalletFactoryModule.address);
         ENSManager.deployed().then(ensManager => {
           return Promise.all([
-            ensManager.addManager(WalletFactoryModule.address),
-            ensManager.addManager(accounts[1])
+            ensManager.addManager(WalletFactoryModule.address)
           ]);
         });
       }

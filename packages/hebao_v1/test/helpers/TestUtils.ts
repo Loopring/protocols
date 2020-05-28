@@ -90,6 +90,7 @@ export async function createContext(context?: Context) {
     walletFactoryModule.address
   );
   await context.walletENSManager.addManager(walletFactoryModule.address);
+  await context.walletENSManager.addManager(context.owners[0]);
   context.walletFactoryModule = walletFactoryModule;
 
   return context;

@@ -7,6 +7,7 @@ const QuotaStore = artifacts.require("./stores/QuotaStore.sol");
 const SecurityStore = artifacts.require("./stores/SecurityStore.sol");
 const WhitelistStore = artifacts.require("./stores/WhitelistStore.sol");
 const PriceCacheStore = artifacts.require("./stores/PriceCacheStore.sol");
+const DappAddressStore = artifacts.require("./stores/DappAddressStore.sol");
 const WalletENSManager = artifacts.require("./base/WalletENSManager.sol");
 
 module.exports = function(deployer, network, accounts) {
@@ -33,6 +34,7 @@ module.exports = function(deployer, network, accounts) {
           QuotaStore.address,
           SecurityStore.address,
           WhitelistStore.address,
+          DappAddressStore.address,
           PriceCacheStore.address,
           deployedEnsManagerAddr
         )

@@ -18,6 +18,7 @@ const deployedEnsManagerAddr = process.env.ENSManager || "";
 
 module.exports = function(deployer, network) {
   console.log("deploying to network: " + network);
+  console.log("deployer:", deployer.address);
 
   if (web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
     console.log("use deployed ensManager:", deployedEnsManagerAddr);
@@ -27,6 +28,7 @@ module.exports = function(deployer, network) {
         Migrations.deployed().then(migrations => {
           migrations.owner().then(owner => {
             deployerAddress = owner;
+            console.log("migrate owner:", owner);
           });
         });
       })
