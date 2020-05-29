@@ -239,7 +239,7 @@ contract ExchangeV3 is IExchangeV3
             address(0),
             0,
             permission
-        );     
+        );
     }
 
     // -- Balances --
