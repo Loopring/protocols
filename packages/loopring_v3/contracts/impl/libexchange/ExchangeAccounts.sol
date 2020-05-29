@@ -35,6 +35,7 @@ library ExchangeAccounts
 
     event AccountCreated(
         address indexed owner,
+        address indexed creator,
         uint24  indexed id,
         uint            pubKeyX,
         uint            pubKeyY
@@ -42,6 +43,7 @@ library ExchangeAccounts
 
     event AccountUpdated(
         address indexed owner,
+        address indexed updater,
         uint24  indexed id,
         uint            pubKeyX,
         uint            pubKeyY
@@ -69,6 +71,7 @@ library ExchangeAccounts
     function createOrUpdateAccount(
         ExchangeData.State storage S,
         address owner,
+        address transactor,
         uint    pubKeyX,
         uint    pubKeyY,
         bytes   calldata permission
@@ -89,10 +92,10 @@ library ExchangeAccounts
                     "ADDRESS_NOT_WHITELISTED"
                 );
             }
-            accountID = createAccount(S, owner, pubKeyX, pubKeyY);
+            accountID = createAccount(S, owner, transactor, pubKeyX, pubKeyY);
             isAccountUpdated = false;
         } else {
-            (accountID, isAccountUpdated) = updateAccount(S, owner, pubKeyX, pubKeyY);
+            (accountID, isAccountUpdated) = updateAccount(S, owner, transactor, pubKeyX, pubKeyY);
         }
     }
 
@@ -113,6 +116,7 @@ library ExchangeAccounts
     function createAccount(
         ExchangeData.State storage S,
         address owner,
+        address creator,
         uint    pubKeyX,
         uint    pubKeyY
         )
@@ -122,7 +126,7 @@ library ExchangeAccounts
         require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
         require(S.ownerToAccountId[owner] == 0, "ACCOUNT_EXISTS");
 
-        accountID = calculateAccountId(uint24(S.accounts.length));
+        accountID = uint24(S.accounts.length);
         ExchangeData.Account memory account = ExchangeData.Account(
             owner,
             pubKeyX,
@@ -134,29 +138,17 @@ library ExchangeAccounts
 
         emit AccountCreated(
             owner,
+            creator,
             accountID,
             pubKeyX,
             pubKeyY
         );
     }
 
-    // We calculate account IDs based on account indices to make sure account nodes are evenly
-    // distributed inside the off-chain Merkle tree.
-    function calculateAccountId(uint24 accountIdx)
-        public
-        pure
-        returns (uint24 accountID)
-    {
-        uint24 idx = accountIdx;
-        for (uint i = 0; i < 24; i++) {
-            accountID = accountID << 1 | (idx & 1);
-            idx  = idx >> 1;
-        }
-    }
-
     function updateAccount(
         ExchangeData.State storage S,
         address owner,
+        address updater,
         uint    pubKeyX,
         uint    pubKeyY
         )
@@ -178,6 +170,7 @@ library ExchangeAccounts
 
             emit AccountUpdated(
                 owner,
+                updater,
                 accountID,
                 pubKeyX,
                 pubKeyY
