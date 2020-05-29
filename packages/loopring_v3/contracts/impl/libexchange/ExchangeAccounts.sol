@@ -146,7 +146,7 @@ library ExchangeAccounts
         returns (uint24 accountID)
     {
         uint24 idx = accountIdx;
-        for (uint i = 0; i < 192; i++) {
+        for (uint i = 0; i < 24; i++) {
             accountID = accountID << 1 | (idx & 1);
             idx  = idx >> 1;
         }
