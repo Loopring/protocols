@@ -140,6 +140,8 @@ library ExchangeAccounts
         );
     }
 
+    // We calculate account IDs based on account indices to make sure account nodes are evenly
+    // distributed inside the off-chain Merkle tree.
     function calculateAccountId(uint24 accountIdx)
         public
         pure
