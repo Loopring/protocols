@@ -233,13 +233,13 @@ contract ExchangeV3 is IExchangeV3
         }   
 
         return updateAccountAndDepositInternal(
-                owner,
-                pubKeyX,
-                pubKeyY,
-                address(0),
-                0,
-                permission
-            );     
+            owner,
+            pubKeyX,
+            pubKeyY,
+            address(0),
+            0,
+            permission
+        );     
     }
 
     // -- Balances --
