@@ -39,6 +39,7 @@ abstract contract IExchangeV3 is IExchange
     // are aggregrated here.
     event AccountCreated(
         address indexed owner,
+        address indexed creator,
         uint24  indexed id,
         uint            pubKeyX,
         uint            pubKeyY

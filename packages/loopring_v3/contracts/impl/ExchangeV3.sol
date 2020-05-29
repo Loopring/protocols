@@ -225,14 +225,35 @@ contract ExchangeV3 is IExchangeV3
             bool   isAccountUpdated
         )
     {
-        return updateAccountAndDepositInternal(
-            owner,
-            pubKeyX,
-            pubKeyY,
-            address(0),
-            0,
-            permission
-        );
+        try state.getAccount(owner) {
+            // Account exist, perform update
+            return updateAccountAndDepositInternal(
+                owner,
+                msg.sender,
+                pubKeyX,
+                pubKeyY,
+                address(0),
+                0,
+                permission
+            );
+        } catch {
+             // Account not exist perform creation
+            uint _pubKeyX;
+            uint _pubKeyY;
+            if (owner == msg.sender) {
+                _pubKeyX = pubKeyX;
+                _pubKeyY = pubKeyY;
+            }
+            return updateAccountAndDepositInternal(
+                owner,
+                msg.sender,
+                pubKeyX,
+                pubKeyY,
+                address(0),
+                0,
+                permission
+            );
+        }        
     }
 
     // -- Balances --
