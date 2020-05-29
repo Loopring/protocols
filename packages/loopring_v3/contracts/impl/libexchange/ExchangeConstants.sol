@@ -39,7 +39,6 @@ library ExchangeConstants
     ///         FEE_BLOCK_FINE_START_TIME
     ///         FEE_BLOCK_FINE_MAX_DURATION
     ///         MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
-    ///         GAS_LIMIT_SEND_TOKENS
     function getConstants()
         external
         pure
@@ -58,8 +57,7 @@ library ExchangeConstants
             uint(ExchangeData.MAX_NUM_ACCOUNTS()),
             uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
             uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
-            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
-            uint(ExchangeData.GAS_LIMIT_SEND_TOKENS())
+            uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED())
         ];
     }
 

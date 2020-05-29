@@ -198,7 +198,6 @@ abstract contract IExchangeV3 is IExchange
     ///         FEE_BLOCK_FINE_START_TIME
     ///         FEE_BLOCK_FINE_MAX_DURATION
     ///         MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED
-    ///         GAS_LIMIT_SEND_TOKENS
     function getConstants()
         external
         virtual

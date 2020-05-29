@@ -69,7 +69,8 @@ library ExchangeBlocks
     function submitBlocks(
         ExchangeData.State storage S,
         ExchangeData.Block[] memory blocks,
-        address payable feeRecipient
+        address payable feeRecipient,
+        uint            gasLimitSendToken
         )
         public
     {
@@ -96,7 +97,8 @@ library ExchangeBlocks
                 blocks[i],
                 feeRecipient,
                 publicDataHashes[i],
-                areUserRequestsEnabled
+                areUserRequestsEnabled,
+                gasLimitSendToken
             );
         }
 
@@ -115,7 +117,8 @@ library ExchangeBlocks
         ExchangeData.Block memory _block,
         address payable feeRecipient,
         bytes32 publicDataHash,
-        bool areUserRequestsEnabled
+        bool areUserRequestsEnabled,
+        uint gasLimitSendToken
         )
         private
     {
@@ -280,7 +283,7 @@ library ExchangeBlocks
                 withdrawals := add(data, start)
                 mstore(withdrawals, length)
             }
-            S.distributeWithdrawals(withdrawals);
+            S.distributeWithdrawals(withdrawals, gasLimitSendToken);
         }
 
         // Emit an event

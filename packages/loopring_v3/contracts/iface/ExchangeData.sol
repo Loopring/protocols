@@ -124,7 +124,6 @@ library ExchangeData
         uint FEE_BLOCK_FINE_START_TIME;
         uint FEE_BLOCK_FINE_MAX_DURATION;
         uint MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED;
-        uint GAS_LIMIT_SEND_TOKENS;
     }
 
     function SNARK_SCALAR_FIELD() internal pure returns (uint) {
@@ -144,7 +143,6 @@ library ExchangeData
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 6 hours; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 6 hours; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
-    function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 80000; }
 
     // Represents the entire exchange state except the owner of the exchange.
     struct State

@@ -34,13 +34,15 @@ contract Operator {
 
     function submitBlocks(
         ExchangeData.Block[] calldata blocks,
-        address payable feeRecipient
+        address payable feeRecipient,
+        uint            gasLimitSendToken
         )
         external
     {
         exchange.submitBlocks(
             blocks,
-            feeRecipient
+            feeRecipient,
+            gasLimitSendToken
         );
     }
 }

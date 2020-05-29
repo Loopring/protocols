@@ -173,7 +173,7 @@ library ExchangeWithdrawals
             accountID,
             tokenID,
             balance,
-            false
+            0
         );
     }
 
@@ -223,7 +223,7 @@ library ExchangeWithdrawals
             _deposit.accountID,
             _deposit.tokenID,
             amount,
-            false
+            0
         );
     }
 
@@ -247,16 +247,18 @@ library ExchangeWithdrawals
             accountID,
             tokenID,
             amount,
-            false
+            0
         );
     }
 
     function distributeWithdrawals(
         ExchangeData.State storage S,
-        bytes memory withdrawals
+        bytes memory withdrawals,
+        uint         gasLimitSendToken
         )
         public
     {
+        require(gasLimitSendToken > 0, "INVALID_GAS_LIMIT")
         for (uint i = 0; i < withdrawals.length; i += 8) {
             uint data = uint(withdrawals.bytesToUint64(i));
 
@@ -271,7 +273,7 @@ library ExchangeWithdrawals
                 accountID,
                 tokenID,
                 amount,
-                true
+                gasLimitSendToken
             );
             if (!success) {
                 // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
@@ -301,25 +303,26 @@ library ExchangeWithdrawals
         }
     }
 
-    // If allowFailure is true the transfer can fail because of a transfer error or
-    // because the transfer uses more than GAS_LIMIT_SEND_TOKENS gas. The function
+    // If gasLimitSendToken is non-zero transfer can fail because of a transfer error or
+    // because the transfer uses more than gasLimitSendToken gas. The function
     // will return true when successful, false otherwise.
-    // If allowFailure is false the transfer is guaranteed to succeed using
+    // If gasLimitSendToken is zero the transfer is guaranteed to succeed using
     // as much gas as needed, otherwise it throws. The function always returns true.
     function transferTokens(
         ExchangeData.State storage S,
         uint24  accountID,
         uint16  tokenID,
         uint    amount,
-        bool    allowFailure
+        uint    gasLimitSendToken
         )
         private
         returns (bool success)
     {
         address to = getOwner(S, accountID);
         address token = S.getTokenAddress(tokenID);
-        // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
-        uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
+
+        uint allowFailure = gasLimitSendToken > 0;
+        uint gasLimit = allowFailure ? gasLimitSendToken : gasleft();
 
         // Transfer the tokens from the deposit contract to the owner
         if (amount > 0) {

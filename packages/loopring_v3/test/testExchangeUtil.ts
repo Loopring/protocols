@@ -136,7 +136,6 @@ export class ExchangeTestUtil {
   public FEE_BLOCK_FINE_START_TIME: number;
   public FEE_BLOCK_FINE_MAX_DURATION: number;
   public MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED: number;
-  public GAS_LIMIT_SEND_TOKENS: number;
 
   public dummyAccountId: number;
   public dummyAccountKeyPair: any;
@@ -260,7 +259,6 @@ export class ExchangeTestUtil {
     this.FEE_BLOCK_FINE_START_TIME = constants[10].toNumber();
     this.FEE_BLOCK_FINE_MAX_DURATION = constants[11].toNumber();
     this.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED = constants[12].toNumber();
-    this.GAS_LIMIT_SEND_TOKENS = constants[13].toNumber();
   }
 
   public async setupTestState(exchangeID: number) {

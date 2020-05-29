@@ -313,7 +313,7 @@ We store the deposit information on-chain so users can withdraw from these depos
 
 ## Withdrawing
 
-The user requests a withdrawal either on-chain or off-chain by sending the operator a withdrawal request. Once the operator has included this request in a block and the block is submitted on-chain the tokens will be automatically sent to the account owner if the transfer cost is below `GAS_LIMIT_SEND_TOKENS`. If the cost is higher the funds can still be withdrawn by anyone by calling `withdrawFromApprovedWithdrawal` (and the tokens will be sent to the account owner).
+The user requests a withdrawal either on-chain or off-chain by sending the operator a withdrawal request. Once the operator has included this request in a block and the block is submitted on-chain the tokens will be automatically sent to the account owner if the transfer cost is below `gasLimitSendToken`. If the cost is higher the funds can still be withdrawn by anyone by calling `withdrawFromApprovedWithdrawal` (and the tokens will be sent to the account owner).
 
 ### Protocol Fee
 
