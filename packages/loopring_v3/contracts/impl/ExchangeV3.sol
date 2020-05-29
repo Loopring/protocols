@@ -227,26 +227,19 @@ contract ExchangeV3 is IExchangeV3
         try state.getAccountID(owner) {
             // Account exist, perform update
             require(isAgent(owner, msg.sender), "UNAUTHORIZED");
-            return updateAccountAndDepositInternal(
-                owner,
-                pubKeyX,
-                pubKeyY,
-                address(0),
-                0,
-                permission
-            );
         } catch {
              // Account not exist perform creation
             require(owner == msg.sender || pubKeyX == 0 && pubKeyY == 0, "PUBKEY_MUST_BE_ZERO");
-            return updateAccountAndDepositInternal(
+        }   
+
+        return updateAccountAndDepositInternal(
                 owner,
                 pubKeyX,
                 pubKeyY,
                 address(0),
                 0,
                 permission
-            );
-        }        
+            );     
     }
 
     // -- Balances --
