@@ -229,7 +229,7 @@ contract ExchangeV3 is IExchangeV3
             require(isAgent(owner, msg.sender), "UNAUTHORIZED");
         } catch {
              // Account not exist perform creation
-            require(owner == msg.sender || pubKeyX == 0 && pubKeyY == 0, "PUBKEY_MUST_BE_ZERO");
+            require(owner == msg.sender || pubKeyX == 1 && pubKeyY == 0, "PUBKEY_MUST_BE_ZERO");
         }   
 
         return updateAccountAndDepositInternal(
