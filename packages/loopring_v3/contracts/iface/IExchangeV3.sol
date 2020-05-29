@@ -47,6 +47,7 @@ abstract contract IExchangeV3 is IExchange
 
     event AccountUpdated(
         address indexed owner,
+        address indexed updater,
         uint24  indexed id,
         uint            pubKeyX,
         uint            pubKeyY

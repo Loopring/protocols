@@ -218,18 +218,17 @@ contract ExchangeV3 is IExchangeV3
         override
         nonReentrant
         payable
-        onlyAgentFor(owner)
         returns (
             uint24 accountID,
             bool   isAccountNew,
             bool   isAccountUpdated
         )
     {
-        try state.getAccount(owner) {
+        try state.getAccountID(owner) {
             // Account exist, perform update
+            require(isAgent(owner, msg.sender), "UNAUTHORIZED");
             return updateAccountAndDepositInternal(
                 owner,
-                msg.sender,
                 pubKeyX,
                 pubKeyY,
                 address(0),
@@ -238,15 +237,9 @@ contract ExchangeV3 is IExchangeV3
             );
         } catch {
              // Account not exist perform creation
-            uint _pubKeyX;
-            uint _pubKeyY;
-            if (owner == msg.sender) {
-                _pubKeyX = pubKeyX;
-                _pubKeyY = pubKeyY;
-            }
+            require(owner == msg.sender || pubKeyX == 0 && pubKeyY == 0, "PUBKEY_MUST_BE_ZERO");
             return updateAccountAndDepositInternal(
                 owner,
-                msg.sender,
                 pubKeyX,
                 pubKeyY,
                 address(0),
@@ -930,6 +923,7 @@ contract ExchangeV3 is IExchangeV3
     {
         (accountID, isAccountNew, isAccountUpdated) = state.createOrUpdateAccount(
             owner,
+            msg.sender,
             pubKeyX,
             pubKeyY,
             permission
