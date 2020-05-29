@@ -126,7 +126,7 @@ library ExchangeAccounts
         require(S.accounts.length < ExchangeData.MAX_NUM_ACCOUNTS(), "ACCOUNTS_FULL");
         require(S.ownerToAccountId[owner] == 0, "ACCOUNT_EXISTS");
 
-        accountID = uint24(S.accounts.length);
+        accountID = calculateAccountId(uint24(S.accounts.length));
         ExchangeData.Account memory account = ExchangeData.Account(
             owner,
             pubKeyX,
@@ -143,6 +143,20 @@ library ExchangeAccounts
             pubKeyX,
             pubKeyY
         );
+    }
+
+    // We calculate account IDs based on account indices to make sure account nodes are evenly  
+    // distributed inside the off-chain Merkle tree.    
+    function calculateAccountId(uint24 accountIdx)  
+        private  
+        pure    
+        returns (uint24 accountID)  
+    {   
+        uint24 idx = accountIdx;    
+        for (uint i = 0; i < 24; i++) { 
+            accountID = accountID << 1 | (idx & 1); 
+            idx  = idx >> 1;    
+        }   
     }
 
     function updateAccount(
