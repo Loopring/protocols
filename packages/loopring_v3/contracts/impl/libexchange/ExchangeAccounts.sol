@@ -145,18 +145,18 @@ library ExchangeAccounts
         );
     }
 
-    // We calculate account IDs based on account indices to make sure account nodes are evenly  
-    // distributed inside the off-chain Merkle tree.    
-    function calculateAccountId(uint24 accountIdx)  
-        private  
-        pure    
-        returns (uint24 accountID)  
-    {   
-        uint24 idx = accountIdx;    
-        for (uint i = 0; i < 24; i++) { 
-            accountID = accountID << 1 | (idx & 1); 
-            idx  = idx >> 1;    
-        }   
+    // We calculate account IDs based on account indices to make sure account nodes are evenly
+    // distributed inside the off-chain Merkle tree.
+    function calculateAccountId(uint24 accountIdx)
+        private
+        pure
+        returns (uint24 accountID)
+    {
+        uint24 idx = accountIdx;
+        for (uint i = 0; i < 24; i++) {
+            accountID = accountID << 1 | (idx & 1);
+            idx  = idx >> 1;
+        }
     }
 
     function updateAccount(
