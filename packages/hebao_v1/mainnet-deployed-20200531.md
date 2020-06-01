@@ -4,11 +4,11 @@
 
 ### Period parameters:
 
-- ControllerImpl.defaultLockPeriod: 1 _ 24 _ 2600
-- guardianPendingPeriod: 24 \* 3600
-- inheritanceWaitingPeriod: 360 _ 24 _ 3600
-- whitelistDelayPeriod: 24 \* 3600
-- quotaDelayPeriod: 24 \* 3600
+- ControllerImpl.defaultLockPeriod: 86400
+- guardianPendingPeriod: 86400
+- inheritanceWaitingPeriod: 31536000
+- whitelistDelayPeriod: 86400
+- quotaDelayPeriod: 86400
 
 ### contract addresses:
 
