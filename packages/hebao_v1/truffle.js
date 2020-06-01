@@ -70,7 +70,8 @@ module.exports = {
         return getWalletProvider("mainnet");
       },
       network_id: "1", // main-net
-      gasPrice: 3000000000
+      gasPrice: 27000000000,
+      gas: 9000000
     },
     testnet: {
       host: "localhost",

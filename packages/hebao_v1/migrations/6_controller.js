@@ -15,7 +15,7 @@ module.exports = function(deployer, network, accounts) {
   if (!web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
     deployedEnsManagerAddr = WalletENSManager.address;
   }
-  const lockPeriod = Number(process.env.controllerLockPeriod) || 5 * 24 * 3600;
+  const lockPeriod = Number(process.env.controllerLockPeriod) || 1 * 24 * 3600;
 
   deployer
     .then(() => {
