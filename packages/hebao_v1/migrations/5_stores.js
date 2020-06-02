@@ -10,7 +10,7 @@ module.exports = function(deployer, network, accounts) {
   deployer
     .then(() => {
       return Promise.all([
-        deployer.deploy(QuotaStore, 1000),
+        deployer.deploy(QuotaStore, "10000000000000000000"), // 10 ether
         deployer.deploy(SecurityStore),
         deployer.deploy(WhitelistStore),
         deployer.deploy(PriceCacheStore, accounts[0], 14 * 24 * 3600),
@@ -20,16 +20,18 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       if (dappManager) {
         console.log("dappManager:", dappManager);
-        DappAddressStore.deployed().then(dappAddressStore => {
-          return Promise.all([dappAddressStore.addManager(dappManager)]);
-        }).then(() => {
-          if (loopringDEX) {
-            DappAddressStore.deployed().then(dappAddressStore => {
-              console.log("loopringDEX:", loopringDEX);
-              return Promise.all([dappAddressStore.addDapp(loopringDEX)]);
-            });
-          }
-        });
+        DappAddressStore.deployed()
+          .then(dappAddressStore => {
+            return Promise.all([dappAddressStore.addManager(dappManager)]);
+          })
+          .then(() => {
+            if (loopringDEX) {
+              DappAddressStore.deployed().then(dappAddressStore => {
+                console.log("loopringDEX:", loopringDEX);
+                return Promise.all([dappAddressStore.addDapp(loopringDEX)]);
+              });
+            }
+          });
       }
 
       console.log(">>>>>>>> contracts deployed by stores:");
