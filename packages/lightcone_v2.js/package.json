@@ -41,7 +41,7 @@
     "ethereumjs-util": "6.1.0",
     "ethereumjs-wallet": "0.6.3",
     "google-protobuf": "^3.9.0-rc.1",
-    "hdkey": "1.1.1",
+    "hdkey": "2.0.1",
     "isomorphic-fetch": "2.2.1",
     "nodeunit": "^0.11.3",
     "snarkjs": "0.1.31"
