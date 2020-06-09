@@ -30,7 +30,6 @@ import "./SecurityModule.sol";
 contract GuardianModule is SecurityModule
 {
     uint constant public MAX_GUARDIANS = 20;
-
     uint public pendingPeriod;
 
     event GuardianAdded             (address indexed wallet, address indexed guardian, uint group, uint effectiveTime);
