@@ -1,7 +1,5 @@
-require("dotenv").config({ path: require("find-config")(".env") });
 const ethers = require("ethers");
 
-var Migrations = artifacts.require("./Migrations.sol");
 var ENSResolver = artifacts.require("./BaseENSResolver.sol");
 var ENSManager = artifacts.require("./WalletENSManager.sol");
 var ENSRegistry = artifacts.require("./ENSRegistryImpl.sol");
