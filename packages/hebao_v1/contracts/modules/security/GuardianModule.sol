@@ -30,6 +30,7 @@ import "./SecurityModule.sol";
 contract GuardianModule is SecurityModule
 {
     uint constant public MAX_GUARDIANS = 20;
+
     uint public pendingPeriod;
 
     event GuardianAdded             (address indexed wallet, address indexed guardian, uint group, uint effectiveTime);
@@ -61,11 +62,11 @@ contract GuardianModule is SecurityModule
     {
         require(guardian != address(0), "ZERO_ADDRESS");
         require(group < GuardianUtils.MAX_NUM_GROUPS, "INVALID_GROUP");
-        uint numGuardians = controller.securityStore().numGuardiansWithPending(wallet);
+        uint numGuardians = controller.securityStore().numActiveAndPendingGuardians(wallet);
         require(numGuardians < MAX_GUARDIANS, "TOO_MANY_GUARDIANS");
 
         uint effectiveTime = now;
-        if (numGuardians > 0) {
+        if (hasEnoughActiveGuardians(wallet)) {
             effectiveTime = now + pendingPeriod;
         }
         controller.securityStore().addGuardian(wallet, guardian, group, effectiveTime);

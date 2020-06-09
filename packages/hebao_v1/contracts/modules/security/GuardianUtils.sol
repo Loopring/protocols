@@ -49,7 +49,7 @@ library GuardianUtils
         }
 
         // Calculate total group sizes
-        Data.Guardian[] memory allGuardians = securityStore.guardians(wallet);
+        Data.Guardian[] memory allGuardians = securityStore.activeGuardians(wallet);
         uint[MAX_NUM_GROUPS] memory total = countGuardians(allGuardians);
 
         // Calculate how many signers are in each group

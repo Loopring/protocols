@@ -57,7 +57,7 @@ contract RecoveryModule is SecurityModule
         nonReentrant
         notWalletOwner(wallet, newOwner)
         onlyFromMetaTx
-        onlyHaveEnoughGuardians(wallet)
+        onlyHaveEnoughActiveGuardians(wallet)
     {
         Wallet w = Wallet(wallet);
         address oldOwner = w.owner();
@@ -66,7 +66,7 @@ contract RecoveryModule is SecurityModule
 
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
-        
+
         if (removedAsGuardian) {
            securityStore.removeGuardian(wallet, newOwner, now);
         }
