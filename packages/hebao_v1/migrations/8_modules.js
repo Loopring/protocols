@@ -1,5 +1,3 @@
-require("dotenv").config({ path: require("find-config")(".env") });
-
 const WalletFactoryModule = artifacts.require(
   "./modules/core/WalletFactoryModule.sol"
 );
@@ -114,7 +112,8 @@ module.exports = function(deployer, network, accounts) {
         console.log("add manager for ENSManager:", WalletFactoryModule.address);
         ENSManager.deployed().then(ensManager => {
           return Promise.all([
-            ensManager.addManager(WalletFactoryModule.address)
+            ensManager.addManager(WalletFactoryModule.address),
+            ensManager.addManager(accounts[1])
           ]);
         });
       }
