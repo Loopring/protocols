@@ -452,7 +452,7 @@ abstract contract MetaTxModule is BaseModule
         internal
     {
         if (amount > 0 && quotaStore() != address(0)) {
-            uint value = controller.priceOracle().tokenPrice(token, amount);
+            uint value = controller.priceOracle().tokenValue(token, amount);
             QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
         }
     }
@@ -466,7 +466,7 @@ abstract contract MetaTxModule is BaseModule
         returns (bool)
     {
         if (quotaStore() != address(0)) {
-            uint value = controller.priceOracle().tokenPrice(token, amount);
+            uint value = controller.priceOracle().tokenValue(token, amount);
             try QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value) {
                 return true;
             } catch Error(string memory /*reason*/) {

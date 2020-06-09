@@ -37,7 +37,7 @@ contract AggregationalPriceOracle is PriceOracle
         oracles = _oracles;
     }
 
-    function tokenPrice(address token, uint amount)
+    function tokenValue(address token, uint amount)
         public
         view
         override
@@ -46,7 +46,7 @@ contract AggregationalPriceOracle is PriceOracle
         uint total;
         uint count;
         for (uint i = 0; i < oracles.length; i++) {
-            uint value = PriceOracle(oracles[i]).tokenPrice(token, amount);
+            uint value = PriceOracle(oracles[i]).tokenValue(token, amount);
             if (value > 0) {
                 count += 1;
                 total = total.add(value);
