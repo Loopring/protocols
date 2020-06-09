@@ -16,53 +16,45 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/ERC20.sol";
+import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
+import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
 
 import "../iface/PriceOracle.sol";
 
+import "../lib/MathUint.sol";
 
-abstract contract KyberNetworkProxy {
-    function getExpectedRate(
-        ERC20 src,
-        ERC20 dest,
-        uint srcQty
+/// @title Uniswap2PriceOracle
+/// @dev Returns the value in Ether for any given ERC20 token.
+contract UniswapV2PriceOracle is PriceOracle
+{
+    using MathUint for uint;
+
+    IUniswapV2Factory uniswapV2Factory;
+    address wethAddress;
+
+    constructor(
+        IUniswapV2Factory _uniswapV2Factory,
+        address           _wethAddress
         )
         public
-        view
-        virtual
-        returns (
-            uint expectedRate,
-            uint slippageRate
-        );
-}
-
-/// @title KyberNetworkPriceOracle
-/// @dev Returns the value in Ether for any given ERC20 token.
-contract KyberNetworkPriceOracle is PriceOracle
-{
-    KyberNetworkProxy kyber;
-    address constant private ethTokenInKyber = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-
-    constructor(KyberNetworkProxy _kyber)
-        public
     {
-        kyber = _kyber;
+        uniswapV2Factory = _uniswapV2Factory;
+        wethAddress = _wethAddress;
     }
 
+    // Using UniswapV2's sliding window price.
     function tokenValue(address token, uint amount)
         public
         view
         override
-        returns (uint value)
+        returns (uint)
     {
         if (amount == 0) return 0;
-        if (token == address(0) || token == ethTokenInKyber) {
-            return amount;
-        }
-        (value,) = kyber.getExpectedRate(
-            ERC20(token),
-            ERC20(ethTokenInKyber),
-            amount
-        );
+        if (token == address(0) || token == wethAddress) return amount;
+
+        address pair = uniswapV2Factory.getPair(token, wethAddress);
+        if (pair == address(0)) return 0; // no pair
+
+        return IUniswapV2Pair(pair).price1CumulativeLast().mul(amount);
     }
 }

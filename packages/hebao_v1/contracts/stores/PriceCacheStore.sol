@@ -16,8 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "..//lib/MathUint.sol";
-import "..//lib/OwnerManagable.sol";
+import "../lib/MathUint.sol";
+import "../lib/OwnerManagable.sol";
 
 import "../iface/PriceOracle.sol";
 
@@ -59,7 +59,7 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         expiry = _expiry;
     }
 
-    function tokenPrice(address token, uint amount)
+    function tokenValue(address token, uint amount)
         public
         view
         override
@@ -80,7 +80,7 @@ contract PriceCacheStore is DataStore, PriceOracle, OwnerManagable
         external
         onlyManager
     {
-        uint value = oracle.tokenPrice(token, amount);
+        uint value = oracle.tokenValue(token, amount);
         if (value > 0) {
             cacheTokenPrice(token, amount, value);
         }

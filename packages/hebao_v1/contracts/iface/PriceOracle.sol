@@ -20,7 +20,8 @@ pragma solidity ^0.6.6;
 /// @title PriceOracle
 abstract contract PriceOracle
 {
-    function tokenPrice(address token, uint amount)
+    // @dev Return's the token's value in ETH
+    function tokenValue(address token, uint amount)
         public
         view
         virtual

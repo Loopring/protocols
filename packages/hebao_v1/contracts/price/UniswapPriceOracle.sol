@@ -34,11 +34,11 @@ contract UniswapPriceOracle is PriceOracle
         uniswapFactory = _uniswapFactory;
     }
 
-    function tokenPrice(address token, uint amount)
+    function tokenValue(address token, uint amount)
         public
         view
         override
-        returns (uint value)
+        returns (uint)
     {
         if (amount == 0) return 0;
         if (token == address(0)) return amount;

@@ -111,7 +111,7 @@ contract QuotaTransfers is TransferModule
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
-        
+
         if (!whitelisted) {
             updateQuota(wallet, token, additionalAllowance);
             updateQuota(wallet, address(0), value);
@@ -153,7 +153,7 @@ contract QuotaTransfers is TransferModule
     {
         // Disallow general calls to token contracts (for tokens that have price data
         // so the quota is actually used).
-        require(controller.priceOracle().tokenPrice(to, 1e18) == 0, "CALL_DISALLOWED");
+        require(controller.priceOracle().tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
         return super.callContractInternal(wallet, to, value, txData);
     }
 }
