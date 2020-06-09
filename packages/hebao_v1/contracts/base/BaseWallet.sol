@@ -130,7 +130,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         external
         override
         // allowReentrant (bindMethod)
-        onlyOwnerOrModule
+        onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
         try Module(_module).deactivate() {} catch {}
