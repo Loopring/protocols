@@ -32,7 +32,7 @@ import "../security/GuardianUtils.sol";
 abstract contract SecurityModule is MetaTxModule
 {
     // The minimal number of guardians for recovery and locking.
-    uint constant public MIN_GUARDIANS = 2;
+    uint constant public MIN_ACTIVE_GUARDIANS = 2;
 
     event WalletLock(
         address indexed wallet,
@@ -102,7 +102,7 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(
-            controller.securityStore().numGuardians(wallet) >= MIN_GUARDIANS,
+            controller.securityStore().numGuardians(wallet) >= MIN_ACTIVE_GUARDIANS,
             "NO_ENOUGH_ACTIVE_GUARDIANS"
         );
         _;
