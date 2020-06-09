@@ -54,7 +54,7 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         bytes32 hash;
-        if(_data.length == 32) {
+        if (_data.length == 32) {
             hash = BytesUtil.toBytes32(_data, 0);
         } else {
             hash = keccak256(_data);

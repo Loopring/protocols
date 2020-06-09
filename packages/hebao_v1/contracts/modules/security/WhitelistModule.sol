@@ -129,7 +129,7 @@ contract WhitelistModule is SecurityModule
         if (method == this.addToWhitelist.selector ||
             method == this.removeFromWhitelist.selector) {
             return isOnlySigner(Wallet(wallet).owner(), signers);
-        } else if(method == this.addToWhitelistImmediately.selector) {
+        } else if (method == this.addToWhitelistImmediately.selector) {
             return GuardianUtils.requireMajority(
                 controller.securityStore(),
                 wallet,
