@@ -103,7 +103,7 @@ abstract contract SecurityModule is MetaTxModule
     {
         require(
             controller.securityStore().numGuardians(wallet) >= MIN_GUARDIANS,
-            "NO_ENOUGH_GUARDIANS"
+            "NO_ENOUGH_ACTIVE_GUARDIANS"
         );
         _;
     }

@@ -77,28 +77,28 @@ contract SecurityStore is DataStore
         returns (Data.Guardian memory)
     {
         uint index = wallets[wallet].guardianIdx[guardianAddr];
-        if(index > 0) {
+        if (index > 0) {
             return wallets[wallet].guardians[index-1];
         }
     }
 
-    // @dev Returns the active guardians.
+    // @dev Returns active guardians.
     function guardians(address wallet)
         public
         view
-        returns (Data.Guardian[] memory guardians)
+        returns (Data.Guardian[] memory _guardians)
     {
         Wallet storage w = wallets[wallet];
-        guardians = new Data.Guardian[](w.guardians.length);
+        _guardians = new Data.Guardian[](w.guardians.length);
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
             if (isGuardianActive(g)) {
-                guardians[index] = g;
+                _guardians[index] = g;
                 index ++;
             }
         }
-        assembly { mstore(guardians, index) }
+        assembly { mstore(_guardians, index) }
     }
 
     // @dev Returns the number of active guardians.
@@ -110,28 +110,28 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
             if (isGuardianActive(w.guardians[i])) {
-                count++
+                count ++;
             }
         }
     }
 
-    // @dev Returns the guardians who are either active or pending addition.
+    // @dev Returns guardians who are either active or pending addition.
     function guardiansWithPending(address wallet)
         public
         view
-        returns (Data.Guardian[] memory guardians)
+        returns (Data.Guardian[] memory _guardians)
     {
         Wallet storage w = wallets[wallet];
-        guardians = new Data.Guardian[](w.guardians.length);
+        _guardians = new Data.Guardian[](w.guardians.length);
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
             if (isGuardianActive(g) || isGuardianPendingAddition(g)) {
-                guardians[index] = g;
+                _guardians[index] = g;
                 index ++;
             }
         }
-        assembly { mstore(guardians, index) }
+        assembly { mstore(_guardians, index) }
     }
 
     // @dev Returns the number of guardians who are active or pending addition.
@@ -144,7 +144,7 @@ contract SecurityStore is DataStore
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
             if (isGuardianActive(g) || isGuardianPendingAddition(g)) {
-                count++
+                count ++;
             }
         }
     }

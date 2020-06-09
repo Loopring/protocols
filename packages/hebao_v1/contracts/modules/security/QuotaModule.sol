@@ -101,7 +101,7 @@ contract QuotaModule is SecurityModule
     {
         if (method == this.changeDailyQuota.selector) {
             return isOnlySigner(Wallet(wallet).owner(), signers);
-        } else if(method == this.changeDailyQuotaImmediately.selector) {
+        } else if (method == this.changeDailyQuotaImmediately.selector) {
             return GuardianUtils.requireMajority(
                 controller.securityStore(),
                 wallet,
