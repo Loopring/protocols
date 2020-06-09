@@ -53,7 +53,7 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         Data.Guardian memory guardian = getGuardian(wallet, addr);
-        return guardian.addr != address(0) && isGuardianActive(guardian);
+        return guardian.addr != address(0) && isActiveGuardian(guardian);
     }
 
     function isGuardianOrPendingAddition(
@@ -65,7 +65,7 @@ contract SecurityStore is DataStore
         returns (bool)
     {
         Data.Guardian memory guardian = getGuardian(wallet, addr);
-        return guardian.addr != address(0) && (isGuardianActive(guardian) || isGuardianPendingAddition(guardian));
+        return guardian.addr != address(0) && (isActiveGuardian(guardian) || isGuardianPendingAddition(guardian));
     }
 
     function getGuardian(
@@ -92,7 +92,7 @@ contract SecurityStore is DataStore
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (isGuardianActive(g)) {
+            if (isActiveGuardian(g)) {
                 guardians[index] = g;
                 index ++;
             }
@@ -108,7 +108,7 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (isGuardianActive(g)) {
+            if (isActiveGuardian(g)) {
                 count ++;
             }
         }
@@ -124,7 +124,7 @@ contract SecurityStore is DataStore
         uint index = 0;
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (isGuardianActive(g) || isGuardianPendingAddition(g)) {
+            if (isActiveGuardian(g) || isGuardianPendingAddition(g)) {
                 guardians[index] = g;
                 index ++;
             }
@@ -140,7 +140,7 @@ contract SecurityStore is DataStore
         Wallet storage w = wallets[wallet];
         for (uint i = 0; i < w.guardians.length; i++) {
             Data.Guardian memory g = w.guardians[i];
-            if (isGuardianActive(g) || isGuardianPendingAddition(g)) {
+            if (isActiveGuardian(g) || isGuardianPendingAddition(g)) {
                 count ++;
             }
         }
@@ -315,7 +315,7 @@ contract SecurityStore is DataStore
         }
     }
 
-    function isGuardianActive(Data.Guardian memory guardian)
+    function isActiveGuardian(Data.Guardian memory guardian)
         private
         view
         returns (bool)
