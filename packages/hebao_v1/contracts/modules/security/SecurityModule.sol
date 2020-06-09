@@ -31,6 +31,9 @@ import "../security/GuardianUtils.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract SecurityModule is MetaTxModule
 {
+    // The minimal number of guardians for recovery and locking.
+    uint constant public MIN_GUARDIANS = 2;
+
     event WalletLock(
         address indexed wallet,
         uint            lock
@@ -99,7 +102,7 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(
-            controller.securityStore().numGuardians(wallet) >= 2,
+            controller.securityStore().numGuardians(wallet) >= MIN_GUARDIANS,
             "NO_ENOUGH_GUARDIANS"
         );
         _;
