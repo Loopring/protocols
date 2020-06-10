@@ -106,10 +106,10 @@ interface Wallet
         external
         returns (bytes memory returnData);
 
-    /// @dev Set the last-used upgrader
-    /// @param upgrader The address of the last upgrader module.
+    /// @dev Set the most recent upgrader address
+    /// @param upgrader The address of the new upgrader module.
     function setLastUpgrader(address upgrader) external;
 
-    /// @dev Get the current versoin of wallet
+    /// @dev Get the last upgrader address
     function lastUpgrader() external view returns (address);
 }

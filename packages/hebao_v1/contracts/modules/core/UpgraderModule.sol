@@ -18,21 +18,16 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 contract UpgraderModule is BaseModule {
     address    public implementation;
     address[]  public modules;
-    uint       public version;
 
     constructor(
         address          _implementation,
-        uint             _version,
         address[] memory _modules
         )
         public
     {
-        require(version > 0, "INVALID_VERSION_VALUE");
-        require(modules.length > 0, "EMPTY_MODULES");
+        require(_implementation != address(0) || modules.length > 0, "INVALID_ARGS");
         implementation = _implementation;
-        version = _version;
         modules = _modules;
-
     }
 
     function activate()
@@ -51,25 +46,27 @@ contract UpgraderModule is BaseModule {
             transactCall(msg.sender, msg.sender, 0, txData);
         }
 
-        address[] memory oldModules = w.modules();
+        if (modules.length > 0) {
+            address[] memory oldModules = w.modules();
 
-        bool found;
-        for(uint i = 0; i < oldModules.length; i++) {
-            found = false;
-            for (uint j = 0; j < modules.length; j++) {
-                if (modules[j] == oldModules[i]) {
-                    found = true;
-                    break;
+            bool found;
+            for(uint i = 0; i < oldModules.length; i++) {
+                found = false;
+                for (uint j = 0; j < modules.length; j++) {
+                    if (modules[j] == oldModules[i]) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    w.removeModule(oldModules[i]);
                 }
             }
-            if (!found) {
-                w.removeModule(oldModules[i]);
-            }
-        }
 
-        for(uint i = 0; i < modules.length; i++) {
-            if (!w.hasModule(modules[i])) {
-                w.addModule(modules[i]);
+            for(uint i = 0; i < modules.length; i++) {
+                if (!w.hasModule(modules[i])) {
+                    w.addModule(modules[i]);
+                }
             }
         }
 
