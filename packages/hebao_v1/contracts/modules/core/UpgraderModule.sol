@@ -17,19 +17,25 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
     address    public implementation;
-    address[]  public modulesToRemove;
-    address[]  public modulesToAdd;
+    address[]  public modules;
+    uint       public version;
+
+    mapping (address => uint) positions;
 
     constructor(
         address          _implementation,
-        address[] memory _modulesToAdd,
-        address[] memory _modulesToRemove
+        uint             _version,
+        address[] memory _modules
         )
         public
     {
         implementation = _implementation;
-        modulesToAdd = _modulesToAdd;
-        modulesToRemove = _modulesToRemove;
+        version = _version;
+        modules = _modules;
+
+        for (uint i = 0; i < _modules.length; i++) {
+            positions[_modules[i]] = i + 1;
+        }
     }
 
     function activate()
@@ -46,18 +52,24 @@ contract UpgraderModule is BaseModule {
         }
 
         Wallet w = Wallet(msg.sender);
-        for(uint i = 0; i < modulesToAdd.length; i++) {
-            if (!w.hasModule(modulesToAdd[i])) {
-                w.addModule(modulesToAdd[i]);
+        w.updateVersion(version);
+
+        address[] memory oldModules = w.modules();
+
+        for(uint i = 0; i < oldModules.length; i++) {
+            if (positions[oldModules[i]] == 0) {
+                w.removeModule(oldModules[i]);
             }
         }
-        for(uint i = 0; i < modulesToRemove.length; i++) {
-            if (w.hasModule(modulesToRemove[i])) {
-                w.removeModule(modulesToRemove[i]);
+
+        for(uint i = 0; i < modules.length; i++) {
+            if (!w.hasModule(modules[i])) {
+                w.addModule(modules[i]);
             }
         }
 
         emit Activated(msg.sender);
         w.removeModule(address(this));
     }
+
 }

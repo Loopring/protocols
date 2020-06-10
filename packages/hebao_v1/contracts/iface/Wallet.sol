@@ -105,4 +105,11 @@ interface Wallet
         )
         external
         returns (bytes memory returnData);
+
+    /// @dev Set the versoin of wallet
+    /// @param _version The new version to be set, must greater than the current version
+    function updateVersion(uint _version) external;
+
+    /// @dev Get the current versoin of wallet
+    function version() external view returns (uint _version);
 }
