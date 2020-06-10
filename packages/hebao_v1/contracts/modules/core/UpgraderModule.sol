@@ -25,7 +25,7 @@ contract UpgraderModule is BaseModule {
         )
         public
     {
-        require(_implementation != address(0) || modules.length > 0, "INVALID_ARGS");
+        require(_implementation != address(0) || _modules.length > 0, "INVALID_ARGS");
         implementation = _implementation;
         modules = _modules;
     }
@@ -47,8 +47,8 @@ contract UpgraderModule is BaseModule {
         }
 
         if (modules.length > 0) {
+            // remove all old modules that are not in the new module list.
             address[] memory oldModules = w.modules();
-
             bool found;
             for(uint i = 0; i < oldModules.length; i++) {
                 found = false;
@@ -63,6 +63,7 @@ contract UpgraderModule is BaseModule {
                 }
             }
 
+            // add all new modules
             for(uint i = 0; i < modules.length; i++) {
                 if (!w.hasModule(modules[i])) {
                     w.addModule(modules[i]);
