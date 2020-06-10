@@ -39,6 +39,9 @@ contract UpgraderModule is BaseModule {
         external
         override
     {
+        Wallet w = Wallet(msg.sender);
+        w.setLastUpgrader(address(this));
+
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {
             bytes memory txData = abi.encodeWithSelector(
@@ -48,21 +51,18 @@ contract UpgraderModule is BaseModule {
             transactCall(msg.sender, msg.sender, 0, txData);
         }
 
-        Wallet w = Wallet(msg.sender);
-        w.updateVersion(version);
-
         address[] memory oldModules = w.modules();
 
-        bool needRemove;
+        bool found;
         for(uint i = 0; i < oldModules.length; i++) {
-            needRemove = true;
-            for (uint j = 0; j < modules.length; j ++) {
+            found = false;
+            for (uint j = 0; j < modules.length; j++) {
                 if (modules[j] == oldModules[i]) {
-                    needRemove = false;
+                    found = true;
                     break;
                 }
             }
-            if (needRemove) {
+            if (!found) {
                 w.removeModule(oldModules[i]);
             }
         }

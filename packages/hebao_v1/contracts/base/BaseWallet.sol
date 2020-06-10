@@ -35,7 +35,7 @@ import "../iface/Wallet.sol";
 contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 {
     address internal _owner;
-    uint    internal _version;
+    address internal _upgrader;
 
     bytes32 internal constant MODULE = keccak256("__MODULE__");
 
@@ -47,7 +47,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
     event MethodBound           (bytes4  indexed method, address indexed module);
-    event VersionUpdated        (uint oldVersion, uint newVersion);
+    event Upgraded              (address indexed previousUpgrader, address indexed upgrader);
 
     event WalletSetup(address indexed owner);
 
@@ -211,24 +211,23 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         emit Transacted(msg.sender, to, value, data);
     }
 
-    function updateVersion(uint newVersion)
+    function setLastUpgrader(address upgrader)
         external
         override
         onlyModule
     {
-        require(_version < newVersion, "INVALID_VERSION");
-        uint oldVersion = _version;
-        _version = newVersion;
-        emit VersionUpdated(oldVersion, newVersion);
+        require(upgrader != address(0) && upgrader != _upgrader, "INVALID_UPGRADER");
+        emit Upgraded(_upgrader, upgrader);
+        _upgrader = upgrader;
     }
 
-    function version()
+    function lastUpgrader()
         external
         view
         override
-        returns (uint)
+        returns (address)
     {
-        return _version;
+        return _upgrader;
     }
 
     function addModuleInternal(address _module)
