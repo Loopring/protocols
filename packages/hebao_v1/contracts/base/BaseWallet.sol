@@ -47,7 +47,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
     event ModuleAdded           (address indexed module);
     event ModuleRemoved         (address indexed module);
     event MethodBound           (bytes4  indexed method, address indexed module);
-    event WalletVersionUpdated  (uint oldVersion, uint newVersion);
+    event VersionUpdated        (uint oldVersion, uint newVersion);
 
     event WalletSetup(address indexed owner);
 
@@ -219,14 +219,15 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         require(_version < newVersion, "INVALID_VERSION");
         uint oldVersion = _version;
         _version = newVersion;
-        emit WalletVersionUpdated(oldVersion, newVersion);
+        emit VersionUpdated(oldVersion, newVersion);
     }
 
     function version()
         external
         view
         override
-        returns (uint) {
+        returns (uint)
+    {
         return _version;
     }
 

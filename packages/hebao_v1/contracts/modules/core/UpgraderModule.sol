@@ -20,8 +20,6 @@ contract UpgraderModule is BaseModule {
     address[]  public modules;
     uint       public version;
 
-    mapping (address => uint) positions;
-
     constructor(
         address          _implementation,
         uint             _version,
@@ -29,13 +27,12 @@ contract UpgraderModule is BaseModule {
         )
         public
     {
+        require(version > 0, "INVALID_VERSION_VALUE");
+        require(modules.length > 0, "EMPTY_MODULES");
         implementation = _implementation;
         version = _version;
         modules = _modules;
 
-        for (uint i = 0; i < _modules.length; i++) {
-            positions[_modules[i]] = i + 1;
-        }
     }
 
     function activate()
@@ -57,7 +54,14 @@ contract UpgraderModule is BaseModule {
         address[] memory oldModules = w.modules();
 
         for(uint i = 0; i < oldModules.length; i++) {
-            if (positions[oldModules[i]] == 0) {
+            bool needRemove = true;
+            for (uint j = 0; j < modules.length; j ++) {
+                if (modules[j] == oldModules[i]) {
+                    needRemove = false;
+                    break;
+                }
+            }
+            if (needRemove) {
                 w.removeModule(oldModules[i]);
             }
         }
