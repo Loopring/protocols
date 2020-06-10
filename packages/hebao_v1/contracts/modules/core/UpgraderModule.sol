@@ -16,29 +16,34 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
+    string     public label; // For example: "1.0.1"
+    bool       public addModulesFirst;
     address    public implementation;
     address[]  public modules;
-    uint       public version;
 
     constructor(
+        string    memory _label,
+        bool             _addModulesFirst,
         address          _implementation,
-        uint             _version,
         address[] memory _modules
         )
         public
     {
-        require(version > 0, "INVALID_VERSION_VALUE");
-        require(modules.length > 0, "EMPTY_MODULES");
+        require(bytes(_label).length >= 5, "INVALID_VERSION_LABEL");
+        require(_implementation != address(0) || _modules.length > 0, "INVALID_ARGS");
+        label = _label;
+        addModulesFirst = _addModulesFirst;
         implementation = _implementation;
-        version = _version;
         modules = _modules;
-
     }
 
     function activate()
         external
         override
     {
+        Wallet w = Wallet(msg.sender);
+        w.setLastUpgrader(address(this));
+
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {
             bytes memory txData = abi.encodeWithSelector(
@@ -48,28 +53,13 @@ contract UpgraderModule is BaseModule {
             transactCall(msg.sender, msg.sender, 0, txData);
         }
 
-        Wallet w = Wallet(msg.sender);
-        w.updateVersion(version);
-
-        address[] memory oldModules = w.modules();
-
-        bool needRemove;
-        for(uint i = 0; i < oldModules.length; i++) {
-            needRemove = true;
-            for (uint j = 0; j < modules.length; j ++) {
-                if (modules[j] == oldModules[i]) {
-                    needRemove = false;
-                    break;
-                }
-            }
-            if (needRemove) {
-                w.removeModule(oldModules[i]);
-            }
-        }
-
-        for(uint i = 0; i < modules.length; i++) {
-            if (!w.hasModule(modules[i])) {
-                w.addModule(modules[i]);
+        if (modules.length > 0) {
+            if (addModulesFirst) {
+                addNewModules(w);
+                removeOldModules(w);
+            } else {
+                removeOldModules(w);
+                addNewModules(w);
             }
         }
 
@@ -77,4 +67,32 @@ contract UpgraderModule is BaseModule {
         w.removeModule(address(this));
     }
 
+    function removeOldModules(Wallet w)
+        private
+    {
+        address[] memory oldModules = w.modules();
+        bool found;
+        for(uint i = 0; i < oldModules.length; i++) {
+            found = false;
+            for (uint j = 0; j < modules.length; j++) {
+                if (modules[j] == oldModules[i]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                w.removeModule(oldModules[i]);
+            }
+        }
+    }
+
+    function addNewModules(Wallet w)
+        private
+    {
+        for(uint i = 0; i < modules.length; i++) {
+            if (!w.hasModule(modules[i])) {
+                w.addModule(modules[i]);
+            }
+        }
+    }
 }

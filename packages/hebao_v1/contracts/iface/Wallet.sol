@@ -106,10 +106,10 @@ interface Wallet
         external
         returns (bytes memory returnData);
 
-    /// @dev Set the versoin of wallet
-    /// @param _version The new version to be set, must greater than the current version
-    function updateVersion(uint _version) external;
+    /// @dev Set the most recent upgrader address
+    /// @param upgrader The address of the new upgrader module.
+    function setLastUpgrader(address upgrader) external;
 
-    /// @dev Get the current versoin of wallet
-    function version() external view returns (uint _version);
+    /// @dev Get the last upgrader address
+    function lastUpgrader() external view returns (address);
 }
