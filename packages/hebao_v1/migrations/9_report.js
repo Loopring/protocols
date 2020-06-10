@@ -1,5 +1,3 @@
-require("dotenv").config({ path: require("find-config")(".env") });
-
 const WalletFactoryModule = artifacts.require(
   "./modules/core/WalletFactoryModule.sol"
 );

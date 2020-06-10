@@ -1,5 +1,3 @@
-require("dotenv").config({ path: require("find-config")(".env") });
-
 const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
 const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
 const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
@@ -39,10 +37,5 @@ module.exports = function(deployer, network, accounts) {
           deployedEnsManagerAddr
         )
       ]);
-    })
-    .then(() => {
-      console.log(">>>>>>>> contracts deployed by controller:");
-      console.log("ControllerImpl:", ControllerImpl.address);
-      console.log("");
     });
 };

@@ -90,7 +90,6 @@ export async function createContext(context?: Context) {
     walletFactoryModule.address
   );
   await context.walletENSManager.addManager(walletFactoryModule.address);
-  await context.walletENSManager.addManager(context.owners[0]);
   context.walletFactoryModule = walletFactoryModule;
 
   return context;
@@ -202,18 +201,25 @@ export function sortAddresses(addresses: string[]) {
   });
 }
 
-export async function getEnsApproval(wallet: string, walletName: string, signer: string) {
-  const messageBuf =  Buffer.concat(
-    [
-      Buffer.from(wallet.slice(2), "hex"),
-      Buffer.from(walletName, "utf8")
-    ]
-  );
+export async function getEnsApproval(
+  wallet: string,
+  walletName: string,
+  signer: string
+) {
+  const messageBuf = Buffer.concat([
+    Buffer.from(wallet.slice(2), "hex"),
+    Buffer.from(walletName, "utf8")
+  ]);
 
   const messageHash = web3.utils.sha3(messageBuf);
   const hashBuf = Buffer.from(messageHash.slice(2), "hex");
 
-  let signature = await sign(undefined, signer, hashBuf, SignatureType.ETH_SIGN);
+  let signature = await sign(
+    undefined,
+    signer,
+    hashBuf,
+    SignatureType.ETH_SIGN
+  );
   signature = signature.slice(0, -2);
   return signature;
 }
