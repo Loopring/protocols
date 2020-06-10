@@ -16,16 +16,20 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
+    string     public label; // For example: "1.0.1"
     address    public implementation;
     address[]  public modules;
 
     constructor(
+        string    memory _label,
         address          _implementation,
         address[] memory _modules
         )
         public
     {
+        require(bytes(_label).length >= 5, "INVALID_VERSION_LABEL");
         require(_implementation != address(0) || _modules.length > 0, "INVALID_ARGS");
+        label = _label;
         implementation = _implementation;
         modules = _modules;
     }
