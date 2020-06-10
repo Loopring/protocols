@@ -53,8 +53,9 @@ contract UpgraderModule is BaseModule {
 
         address[] memory oldModules = w.modules();
 
+        bool needRemove;
         for(uint i = 0; i < oldModules.length; i++) {
-            bool needRemove = true;
+            needRemove = true;
             for (uint j = 0; j < modules.length; j ++) {
                 if (modules[j] == oldModules[i]) {
                     needRemove = false;
