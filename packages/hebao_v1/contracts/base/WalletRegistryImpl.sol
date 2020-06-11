@@ -29,8 +29,8 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
 {
     address internal factory;
 
-    mapping (address => uint) private walletIds;
-    uint private totalCount;
+    mapping (address => uint) public walletIds;
+    uint public totalCount;
 
     event WalletRegistered      (address indexed wallet);
     event WalletFactoryUpdated  (address indexed factory);
