@@ -37,12 +37,19 @@ contract("WalletFactoryModule", () => {
       signer = ctx.owners[0];
       signature = await getEnsApproval(wallet, walletName, signer);
     }
-    await executeTransaction(
+    const tx = await executeTransaction(
       ctx.walletFactoryModule.contract.methods.createWallet(
         owner,
         walletName,
         signature,
-        []
+        [
+          ctx.guardianModule.address,
+          ctx.whitelistModule.address,
+          ctx.quotaModule.address,
+          ctx.quotaTransfers.address,
+          ctx.approvedTransfers.address,
+          ctx.dappTransfers.address
+        ]
       ),
       ctx,
       useMetaTx,
@@ -50,6 +57,13 @@ contract("WalletFactoryModule", () => {
       [owner],
       { from: owner, gasPrice: new BN(1) }
     );
+
+    if (useMetaTx) {
+      console.log("wallet creation tx gas usage (meta tx):", tx.gasUsed);
+    } else {
+      console.log("wallet creation tx gas usage:", tx.gasUsed);
+    }
+
     await assertEventEmitted(
       ctx.walletFactoryModule,
       "WalletCreated",
@@ -120,7 +134,7 @@ contract("WalletFactoryModule", () => {
         useMetaTx = metaTx;
         await createWalletChecked(
           ctx.owners[0],
-          "MyWallet" + (useMetaTx ? "A" : "B")
+          "mywallet" + (useMetaTx ? "-a-" : "-b-") + new Date().getTime()
         );
       }
     );

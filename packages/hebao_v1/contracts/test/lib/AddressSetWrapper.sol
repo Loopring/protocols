@@ -24,8 +24,7 @@ contract AddressSetWrapper is AddressSet
 {
     function add(
         bytes32 key,
-        address addr,
-        bool maintainList
+        address addr
         ) external
     {
         addAddressToSet(key, addr);

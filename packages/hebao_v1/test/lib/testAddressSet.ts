@@ -6,58 +6,29 @@ const AddressSetWrapper = artifacts.require("AddressSetWrapper");
 
 contract("AddressSet", () => {
   describe("addAddressToSet", () => {
-    it("should be able to add multiple address to non-maintain-list if set has no maintain address ", async () => {
+    it("should be able to add multiple address to address set ", async () => {
       const addressSetWrapper = await AddressSetWrapper.new();
       const address1 = web3.eth.accounts.create().address;
       const key1 = web3.utils.sha3(address1);
-      await addressSetWrapper.add(key1, address1, false);
+      await addressSetWrapper.add(key1, address1);
       const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
       assert.equal(isInSet1, true, "address not in set after insertion");
 
       const address2 = web3.eth.accounts.create().address;
-      await addressSetWrapper.add(key1, address2, false);
+      await addressSetWrapper.add(key1, address2);
       const isInSet2 = await addressSetWrapper.isInSet(key1, address2);
       assert.equal(isInSet2, true, "address not in set after insertion");
-    });
-
-    it("should be able to add the multiple maintain addresses ", async () => {
-      const addressSetWrapper = await AddressSetWrapper.new();
-      const address1 = web3.eth.accounts.create().address;
-      const key1 = web3.utils.sha3(address1);
-      await addressSetWrapper.add(key1, address1, true);
-      const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
-      assert.equal(isInSet1, true, "address not in set after insertion");
-
-      const address2 = web3.eth.accounts.create().address;
-      await addressSetWrapper.add(key1, address2, true);
-      const isInSet2 = await addressSetWrapper.isInSet(key1, address2);
-      assert.equal(isInSet2, true, "address not in set after insertion");
-    });
-
-    it("should not be able to add non-maintain-list address if set has maintain address", async () => {
-      const addressSetWrapper = await AddressSetWrapper.new();
-      const address1 = web3.eth.accounts.create().address;
-      const key1 = web3.utils.sha3(address1);
-      await addressSetWrapper.add(key1, address1, true);
-      const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
-      assert.equal(isInSet1, true, "address not in set after insertion");
-
-      const address2 = web3.eth.accounts.create().address;
-      await expectThrow(
-        addressSetWrapper.add(key1, address2, false),
-        "MUST_MAINTAIN"
-      );
     });
 
     it("should not be able to add the same address twice ", async () => {
       const addressSetWrapper = await AddressSetWrapper.new();
       const address1 = web3.eth.accounts.create().address;
       const key1 = web3.utils.sha3(address1);
-      await addressSetWrapper.add(key1, address1, false);
+      await addressSetWrapper.add(key1, address1);
       const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
       assert.equal(isInSet1, true, "address not in set after insertion");
       await expectThrow(
-        addressSetWrapper.add(key1, address1, false),
+        addressSetWrapper.add(key1, address1),
         "ALREADY_IN_SET"
       );
     });
@@ -70,7 +41,7 @@ contract("AddressSet", () => {
       const key1 = web3.utils.sha3(address1);
       await expectThrow(addressSetWrapper.remove(key1, address1), "NOT_IN_SET");
 
-      await addressSetWrapper.add(key1, address1, false);
+      await addressSetWrapper.add(key1, address1);
       const isInSet1 = await addressSetWrapper.isInSet(key1, address1);
       assert.equal(isInSet1, true, "address not in set after insertion");
       await addressSetWrapper.remove(key1, address1);
@@ -78,7 +49,7 @@ contract("AddressSet", () => {
       assert.equal(isInSet2, false, "address still in set after removal");
 
       const address2 = web3.eth.accounts.create().address;
-      await addressSetWrapper.add(key1, address2, true);
+      await addressSetWrapper.add(key1, address2);
       const isInSet3 = await addressSetWrapper.isInSet(key1, address2);
       assert.equal(isInSet3, true, "address not in set after insertion");
       await addressSetWrapper.remove(key1, address2);
@@ -92,7 +63,7 @@ contract("AddressSet", () => {
       const addressSetWrapper = await AddressSetWrapper.new();
       const address1 = web3.eth.accounts.create().address;
       const key1 = web3.utils.sha3(address1);
-      await addressSetWrapper.add(key1, address1, false);
+      await addressSetWrapper.add(key1, address1);
       const numAddressesInSet = await addressSetWrapper.numInSet(key1);
       assert.equal(
         1,

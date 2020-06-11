@@ -12,14 +12,14 @@ import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 contract("LockModule", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
-  let lockModule2: any;
+  let guardianModule2: any;
 
   let defaultLockPeriod: number;
 
   let useMetaTx: boolean = false;
 
   const isLocked = async (wallet: string) => {
-    return ctx.lockModule.isLocked(wallet);
+    return ctx.guardianModule.isLocked(wallet);
   };
 
   const lockChecked = async (
@@ -31,22 +31,22 @@ contract("LockModule", (accounts: string[]) => {
 
     // Lock the wallet
     await executeTransaction(
-      ctx.lockModule.contract.methods.lock(wallet, guardian),
+      ctx.guardianModule.contract.methods.lock(wallet, guardian),
       ctx,
       useMetaTx,
       wallet,
       [from],
       { from }
     );
-    await assertEventEmitted(ctx.lockModule, "WalletLock", (event: any) => {
+    await assertEventEmitted(ctx.guardianModule, "WalletLock", (event: any) => {
       return event.wallet == wallet;
     });
     assert(await isLocked(wallet), "wallet needs to be locked");
     // Check the lock data
-    const lockData = await ctx.lockModule.getLock(wallet);
+    const lockData = await ctx.guardianModule.getLock(wallet);
     assert.equal(
       lockData._lockedBy,
-      ctx.lockModule.address,
+      ctx.guardianModule.address,
       "wallet locker unexpected"
     );
   };
@@ -54,14 +54,14 @@ contract("LockModule", (accounts: string[]) => {
   const unlockChecked = async (
     wallet: string,
     guardian: string,
-    lockModule: any = ctx.lockModule,
+    guardianModule: any = ctx.guardianModule,
     from?: string
   ) => {
     from = from === undefined ? guardian : from;
     const wasLocked = await isLocked(wallet);
     // Unlock the wallet
     await executeTransaction(
-      lockModule.contract.methods.unlock(wallet, guardian),
+      guardianModule.contract.methods.unlock(wallet, guardian),
       ctx,
       useMetaTx,
       wallet,
@@ -69,7 +69,7 @@ contract("LockModule", (accounts: string[]) => {
       { from }
     );
     if (wasLocked) {
-      await assertEventEmitted(lockModule, "WalletLock", (event: any) => {
+      await assertEventEmitted(guardianModule, "WalletLock", (event: any) => {
         return event.wallet == wallet && event.lock == 0;
       });
     }
@@ -83,10 +83,14 @@ contract("LockModule", (accounts: string[]) => {
   before(async () => {
     // Create another lock module for testing
     defaultCtx = await getContext();
-    lockModule2 = await defaultCtx.contracts.LockModule.new(
-      defaultCtx.controllerImpl.address
+    defaultLockPeriod = (
+      await defaultCtx.controllerImpl.defaultLockPeriod()
+    ).toNumber();
+    guardianModule2 = await defaultCtx.contracts.GuardianModule.new(
+      defaultCtx.controllerImpl.address,
+      defaultLockPeriod
     );
-    await defaultCtx.moduleRegistryImpl.registerModule(lockModule2.address);
+    await defaultCtx.moduleRegistryImpl.registerModule(guardianModule2.address);
   });
 
   beforeEach(async () => {
@@ -115,7 +119,7 @@ contract("LockModule", (accounts: string[]) => {
           unlockChecked(
             wallet,
             guardians[1],
-            ctx.lockModule,
+            ctx.guardianModule,
             ctx.miscAddresses[0]
           ),
           useMetaTx ? "METATX_UNAUTHORIZED" : "UNAUTHORIZED"
@@ -123,7 +127,7 @@ contract("LockModule", (accounts: string[]) => {
 
         // Mismatch signer and guardian
         await expectThrow(
-          unlockChecked(wallet, guardians[0], ctx.lockModule, guardians[1]),
+          unlockChecked(wallet, guardians[0], ctx.guardianModule, guardians[1]),
           useMetaTx ? "METATX_UNAUTHORIZED" : "UNAUTHORIZED"
         );
 
@@ -133,7 +137,7 @@ contract("LockModule", (accounts: string[]) => {
           useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_GUARDIAN"
         );
         await expectThrow(
-          unlockChecked(wallet, owner, ctx.lockModule, owner),
+          unlockChecked(wallet, owner, ctx.guardianModule, owner),
           useMetaTx ? "METATX_UNAUTHORIZED" : "NOT_GUARDIAN"
         );
 
@@ -185,7 +189,7 @@ contract("LockModule", (accounts: string[]) => {
         await lockChecked(wallet, guardians[0]);
         // Try to unlock a lock set by a different module
         await expectThrow(
-          unlockChecked(wallet, guardians[1], lockModule2),
+          unlockChecked(wallet, guardians[1], guardianModule2),
           "UNABLE_TO_UNLOCK"
         );
       }

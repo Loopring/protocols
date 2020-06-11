@@ -188,7 +188,7 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the wallet is still fully functional
-        await ctx.guardianModule.addModule(wallet, ctx.recoveryModule.address, {
+        await ctx.guardianModule.addModule(wallet, ctx.guardianModule.address, {
           from: owner
         });
       }
@@ -238,7 +238,7 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the module is now authorized
-        await ctx.guardianModule.addModule(wallet, ctx.recoveryModule.address, {
+        await ctx.guardianModule.addModule(wallet, ctx.guardianModule.address, {
           from: owner
         });
       }
@@ -285,7 +285,7 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the module is now authorized
-        await ctx.guardianModule.addModule(wallet, ctx.recoveryModule.address, {
+        await ctx.guardianModule.addModule(wallet, ctx.guardianModule.address, {
           from: owner
         });
       }
@@ -358,7 +358,7 @@ contract("UpgraderModule", () => {
           ctx.guardianModule.address
         ]);
         const walletContract = await ctx.contracts.BaseWallet.at(wallet);
-        const wrappedWallet = await ctx.contracts.LockModule.at(wallet);
+        const wrappedWallet = await ctx.contracts.GuardianModule.at(wallet);
         const getLockFunctionSelector = wrappedWallet.contract.methods
           .getLock(wallet)
           .encodeABI()
@@ -373,11 +373,17 @@ contract("UpgraderModule", () => {
         await expectThrow(wrappedWallet.getLock(wallet), "MODULE_UNAUTHORIZED");
 
         // Add the module
-        await walletContract.addModule(ctx.lockModule.address, { from: owner });
-        // Check events
-        await assertEventEmitted(ctx.lockModule, "Activated", (event: any) => {
-          return event.wallet === wallet;
+        await walletContract.addModule(ctx.guardianModule.address, {
+          from: owner
         });
+        // Check events
+        await assertEventEmitted(
+          ctx.guardianModule,
+          "Activated",
+          (event: any) => {
+            return event.wallet === wallet;
+          }
+        );
         const methodBoundEvents = await assertEventsEmitted(
           walletContract,
           "MethodBound",
@@ -385,25 +391,27 @@ contract("UpgraderModule", () => {
         );
         for (const [i, event] of methodBoundEvents.entries()) {
           return (
-            event.module === ctx.lockModule.address &&
+            event.module === ctx.guardianModule.address &&
             event.method.slice(0, 10) === methods[i]
           );
         }
         // Check if the method is correctly bound
         assert.equal(
           await walletContract.boundMethodModule(getLockFunctionSelector),
-          ctx.lockModule.address,
+          ctx.guardianModule.address,
           "method not bound to module"
         );
 
         // Lock the wallet
-        await ctx.lockModule.lock(wallet, guardians[0], { from: guardians[0] });
+        await ctx.guardianModule.lock(wallet, guardians[0], {
+          from: guardians[0]
+        });
 
         // Check if the bounded method works correctly
         const lockData = await wrappedWallet.getLock(wallet);
         assert.equal(
           lockData._lockedBy,
-          ctx.lockModule.address,
+          ctx.guardianModule.address,
           "bounded method doesn't work"
         );
 
@@ -412,12 +420,12 @@ contract("UpgraderModule", () => {
           owner,
           wallet,
           [],
-          [ctx.lockModule.address],
+          [ctx.guardianModule.address],
           ctx.guardianModule
         );
         // Check events
         await assertEventEmitted(
-          ctx.lockModule,
+          ctx.guardianModule,
           "Deactivated",
           (event: any) => {
             return event.wallet === wallet;

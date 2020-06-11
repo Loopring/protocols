@@ -4,10 +4,6 @@ const WalletFactoryModule = artifacts.require(
 const GuardianModule = artifacts.require(
   "./modules/security/GuardianModule.sol"
 );
-const RecoveryModule = artifacts.require(
-  "./modules/security/RecoveryModule.sol"
-);
-const LockModule = artifacts.require("./modules/security/LockModule.sol");
 const InheritanceModule = artifacts.require(
   "./modules/security/InheritanceModule.sol"
 );
@@ -58,8 +54,6 @@ module.exports = function(deployer, network, accounts) {
           ControllerImpl.address,
           guardianPendingPeriod
         ),
-        deployer.deploy(RecoveryModule, ControllerImpl.address),
-        deployer.deploy(LockModule, ControllerImpl.address),
         deployer.deploy(
           InheritanceModule,
           ControllerImpl.address,
@@ -82,8 +76,6 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           moduleRegistryImpl.registerModule(WalletFactoryModule.address),
           moduleRegistryImpl.registerModule(GuardianModule.address),
-          moduleRegistryImpl.registerModule(RecoveryModule.address),
-          moduleRegistryImpl.registerModule(LockModule.address),
           moduleRegistryImpl.registerModule(InheritanceModule.address),
           moduleRegistryImpl.registerModule(WhitelistModule.address),
           moduleRegistryImpl.registerModule(QuotaModule.address),
