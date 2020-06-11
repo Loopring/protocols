@@ -23,7 +23,7 @@ contract AddressSet
 {
     struct Set
     {
-        address[] addresses;
+        mapping (uint => address) addresses;
         mapping (address => uint) positions;
         uint count;
     }
@@ -31,22 +31,15 @@ contract AddressSet
 
     function addAddressToSet(
         bytes32 key,
-        address addr,
-        bool maintainList
+        address addr
         ) internal
     {
         Set storage set = sets[key];
         require(set.positions[addr] == 0, "ALREADY_IN_SET");
-        
-        if (maintainList) {
-            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAILED");
-            set.addresses.push(addr);
-        } else {
-            require(set.addresses.length == 0, "MUST_MAINTAIN");
-        }
 
         set.count += 1;
         set.positions[addr] = set.count;
+        set.addresses[set.count] = addr;
     }
 
     function removeAddressFromSet(
@@ -60,16 +53,13 @@ contract AddressSet
         require(pos != 0, "NOT_IN_SET");
 
         delete set.positions[addr];
-        set.count -= 1;
 
-        if (set.addresses.length > 0) {
-            address lastAddr = set.addresses[set.count];
-            if (lastAddr != addr) {
-                set.addresses[pos - 1] = lastAddr;
-                set.positions[lastAddr] = pos;
-            }
-            set.addresses.pop();
+        if (pos != set.count) {
+            set.addresses[pos] = set.addresses[set.count];
         }
+        delete set.addresses[set.count];
+
+        set.count -= 1;
     }
 
     function removeSet(bytes32 key)
@@ -101,10 +91,12 @@ contract AddressSet
     function addressesInSet(bytes32 key)
         internal
         view
-        returns (address[] memory)
+        returns (address[] memory addrs)
     {
         Set storage set = sets[key];
-        require(set.count == set.addresses.length, "NOT_MAINTAINED");
-        return sets[key].addresses;
+        addrs = new address[](set.count);
+        for (uint i = 0; i < set.count; i ++) {
+            addrs[i] = set.addresses[i + 1];
+        }
     }
 }

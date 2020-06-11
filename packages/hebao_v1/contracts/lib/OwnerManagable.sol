@@ -94,7 +94,7 @@ contract OwnerManagable is Claimable, AddressSet
     function addManagerInternal(address manager)
         internal
     {
-        addAddressToSet(MANAGER, manager, true);
+        addAddressToSet(MANAGER, manager);
         emit ManagerAdded(manager);
     }
 }

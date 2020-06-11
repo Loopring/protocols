@@ -82,7 +82,7 @@ contract BaseVault is ReentrancyGuard, AddressSet, Vault
         for (uint i = 0; i < owners.length; i++) {
             address owner = owners[i];
             require(owner != address(0), "ZERO_ADDRESS");
-            addAddressToSet(OWNERS, owner, true);
+            addAddressToSet(OWNERS, owner);
         }
         require(
             initialRequirement > 0 &&
@@ -168,7 +168,7 @@ contract BaseVault is ReentrancyGuard, AddressSet, Vault
         onlyFromExecute
     {
         require(owners().length < MAX_OWNERS, "TOO_MANY_OWNERS");
-        addAddressToSet(OWNERS, owner, true);
+        addAddressToSet(OWNERS, owner);
         emit OwnerAdded(owner);
     }
 

@@ -38,7 +38,7 @@ contract DappAddressStore is DataStore, OwnerManagable
         public
         onlyManager
     {
-        addAddressToSet(DAPPS, addr, true);
+        addAddressToSet(DAPPS, addr);
         emit Whitelisted(addr, true);
     }
 

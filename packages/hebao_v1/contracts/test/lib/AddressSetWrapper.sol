@@ -28,7 +28,7 @@ contract AddressSetWrapper is AddressSet
         bool maintainList
         ) external
     {
-        addAddressToSet(key, addr, maintainList);
+        addAddressToSet(key, addr);
     }
 
     function remove(

@@ -40,7 +40,7 @@ contract ModuleRegistryImpl is Claimable, AddressSet, ModuleRegistry
         override
         onlyOwner
     {
-        addAddressToSet(MODULE, module, true);
+        addAddressToSet(MODULE, module);
         emit ModuleRegistered(module);
     }
 

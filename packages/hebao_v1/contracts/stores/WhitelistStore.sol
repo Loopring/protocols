@@ -45,7 +45,7 @@ contract WhitelistStore is DataStore, AddressSet
         public
         onlyWalletModule(wallet)
     {
-        addAddressToSet(walletKey(wallet), addr, true);
+        addAddressToSet(walletKey(wallet), addr);
         uint effective = effectiveTime >= now ? effectiveTime : now;
         effectiveTimeMap[wallet][addr] = effective;
         emit Whitelisted(wallet, addr, true, effective);
