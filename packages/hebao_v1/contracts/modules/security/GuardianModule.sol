@@ -29,6 +29,10 @@ import "./SecurityModule.sol";
 /// @title GuardianModule
 contract GuardianModule is SecurityModule
 {
+    using SignatureUtil for bytes32;
+    using AddressUtil   for address;
+
+
     uint constant public MAX_GUARDIANS = 20;
     uint public pendingPeriod;
 
@@ -36,6 +40,13 @@ contract GuardianModule is SecurityModule
     event GuardianAdditionCancelled (address indexed wallet, address indexed guardian);
     event GuardianRemoved           (address indexed wallet, address indexed guardian, uint removalEffectiveTime);
     event GuardianRemovalCancelled  (address indexed wallet, address indexed guardian);
+
+    event Recovered(
+        address indexed wallet,
+        address indexed oldOwner,
+        address indexed newOwner,
+        bool            removedAsGuardian
+    );
 
     constructor(
         Controller _controller,
@@ -46,6 +57,17 @@ contract GuardianModule is SecurityModule
     {
         require(_pendingPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;
+    }
+
+    function bindableMethods()
+        public
+        pure
+        override
+        returns (bytes4[] memory methods)
+    {
+        methods = new bytes4[](2);
+        methods[0] = this.getLock.selector;
+        methods[1] = this.isLocked.selector;
     }
 
     function addGuardian(
@@ -112,10 +134,85 @@ contract GuardianModule is SecurityModule
         emit GuardianRemovalCancelled(wallet, guardian);
     }
 
+    function lock(
+        address wallet,
+        address guardian
+        )
+        external
+        nonReentrant
+        // onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOr(guardian)
+        onlyWalletGuardian(wallet, guardian)
+        onlyHaveEnoughGuardians(wallet)
+    {
+        lockWallet(wallet);
+    }
+
+    function unlock(
+        address wallet,
+        address guardian
+        )
+        external
+        nonReentrant
+        // onlyWhenWalletLocked(wallet)
+        onlyFromMetaTxOr(guardian)
+        onlyWalletGuardian(wallet, guardian)
+    {
+        unlockWallet(wallet, false);
+    }
+
+    function getLock(address wallet)
+        public
+        view
+        returns (uint _lock, address _lockedBy)
+    {
+        return getWalletLock(wallet);
+    }
+
+    function isLocked(address wallet)
+        public
+        view
+        returns (bool)
+    {
+        return isWalletLocked(wallet);
+    }
+
+    /// @dev Recover a wallet by setting a new owner.
+    /// @param wallet The wallet for which the recovery shall be cancelled.
+    /// @param newOwner The new owner address to set.
+    ///        The addresses must be sorted ascendently.
+    function recover(
+        address            wallet,
+        address            newOwner
+        )
+        external
+        nonReentrant
+        notWalletOwner(wallet, newOwner)
+        onlyFromMetaTx
+        onlyHaveEnoughGuardians(wallet)
+    {
+        Wallet w = Wallet(wallet);
+        address oldOwner = w.owner();
+        require(newOwner != oldOwner, "SAME_ADDRESS");
+        require(newOwner != address(0), "ZERO_ADDRESS");
+
+        SecurityStore securityStore = controller.securityStore();
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+
+        if (removedAsGuardian) {
+           securityStore.removeGuardian(wallet, newOwner, now);
+        }
+
+        w.setOwner(newOwner);
+        unlockWallet(wallet, true /*force*/);
+
+        emit Recovered(wallet, oldOwner, newOwner, removedAsGuardian);
+    }
+
     function verifySigners(
         address   wallet,
         bytes4    method,
-        bytes     memory /*data*/,
+        bytes     memory data,
         address[] memory signers
         )
         internal
@@ -128,6 +225,18 @@ contract GuardianModule is SecurityModule
             method == this.cancelGuardianAddition.selector ||
             method == this.cancelGuardianRemoval.selector) {
             return isOnlySigner(Wallet(wallet).owner(), signers);
+        } else if(method == this.lock.selector ||
+            method == this.unlock.selector) {
+            address expectedSigner = extractAddressFromCallData(data, 1);
+            return isOnlySigner(expectedSigner, signers) &&
+                controller.securityStore().isGuardian(wallet, expectedSigner);
+        } else if( method == this.recover.selector) {
+            return GuardianUtils.requireMajority(
+                controller.securityStore(),
+                wallet,
+                signers,
+                GuardianUtils.SigRequirement.OwnerNotAllowed
+            );
         } else {
             revert("INVALID_METHOD");
         }

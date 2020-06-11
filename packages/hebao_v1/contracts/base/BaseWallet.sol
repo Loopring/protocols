@@ -200,39 +200,6 @@ contract BaseWallet is ReentrancyGuard, SimpleAddressSet, Wallet
         emit Transacted(msg.sender, to, value, data);
     }
 
-    function setLastUpgrader(address upgrader)
-        external
-        override
-        onlyModule
-    {
-        require(upgrader != address(0) && upgrader != _upgrader, "INVALID_UPGRADER");
-        emit Upgraded(_upgrader, upgrader);
-        _upgrader = upgrader;
-    }
-
-    function lastUpgrader()
-        external
-        view
-        override
-        returns (address)
-    {
-        return _upgrader;
-    }
-
-    function addModuleInternal(address _module)
-        internal
-    {
-        require(_module != address(0), "NULL_MODULE");
-        require(
-            controller.moduleRegistry().isModuleRegistered(_module),
-            "INVALID_MODULE"
-        );
-
-        addAddressToSet(_module);
-        Module(_module).activate();
-        emit ModuleAdded(_module);
-    }
-
     receive() external payable { }
 
     /// @dev This default function can receive Ether or perform queries to modules
@@ -250,6 +217,21 @@ contract BaseWallet is ReentrancyGuard, SimpleAddressSet, Wallet
             case 0 { revert(add(returnData, 32), mload(returnData)) }
             default { return(add(returnData, 32), mload(returnData)) }
         }
+    }
+
+
+    function addModuleInternal(address _module)
+        internal
+    {
+        require(_module != address(0), "NULL_MODULE");
+        require(
+            controller.moduleRegistry().isModuleRegistered(_module),
+            "INVALID_MODULE"
+        );
+
+        addAddressToSet(_module);
+        Module(_module).activate();
+        emit ModuleAdded(_module);
     }
 
     // This call is introduced to support reentrany check.

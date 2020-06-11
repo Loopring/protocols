@@ -26,7 +26,6 @@ import "./TransferModule.sol";
 /// @title DappTransfers
 contract DappTransfers is TransferModule
 {
-
     constructor(Controller _controller)
         public
         TransferModule(_controller)

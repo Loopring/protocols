@@ -16,22 +16,18 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    string     public label; // For example: "1.0.1"
     address    public implementation;
     address[]  public modulesToRemove;
     address[]  public modulesToAdd;
     // address[]  public modules;
 
     constructor(
-        string    memory _label,
         address          _implementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove
             )
         public
     {
-        require(bytes(_label).length >= 5, "INVALID_VERSION_LABEL");
-        label = _label;
         implementation = _implementation;
         modulesToAdd = _modulesToAdd;
         modulesToRemove = _modulesToRemove;
@@ -42,7 +38,6 @@ contract UpgraderModule is BaseModule {
         override
     {
         Wallet w = Wallet(msg.sender);
-        w.setLastUpgrader(address(this));
 
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {
