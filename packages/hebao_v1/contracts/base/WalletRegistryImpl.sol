@@ -27,8 +27,6 @@ import "../iface/WalletRegistry.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract WalletRegistryImpl is Claimable, WalletRegistry
 {
-    bytes32 internal constant WALLET = keccak256("__WALLET__");
-
     address internal factory;
 
     mapping (address => uint) private walletIds;
