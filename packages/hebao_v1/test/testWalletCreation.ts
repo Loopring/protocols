@@ -44,10 +44,7 @@ contract("WalletFactoryModule", () => {
         signature,
         [
           ctx.guardianModule.address,
-          ctx.lockModule.address,
-          ctx.recoveryModule.address,
           ctx.whitelistModule.address,
-          ctx.quotaModule.address,
           ctx.quotaTransfers.address,
           ctx.approvedTransfers.address,
           ctx.dappTransfers.address,
