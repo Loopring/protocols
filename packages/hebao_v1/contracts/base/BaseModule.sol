@@ -116,8 +116,8 @@ contract BaseModule is ReentrancyGuard, Module
     ///         when this module is activated for the wallet.
     function bindableMethods()
         public
-        virtual
         pure
+        virtual
         returns (bytes4[] memory methods)
     {
         return new bytes4[](0);
