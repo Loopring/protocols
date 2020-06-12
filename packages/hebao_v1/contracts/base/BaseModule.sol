@@ -120,7 +120,6 @@ contract BaseModule is ReentrancyGuard, Module
         virtual
         returns (bytes4[] memory methods)
     {
-        return new bytes4[](0);
     }
 
     // ===== internal & private methods =====

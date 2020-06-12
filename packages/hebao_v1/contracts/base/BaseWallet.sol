@@ -209,7 +209,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
             "INVALID_MODULE"
         );
 
-        addAddressToSet(MODULE, _module);
+        addAddressToSet(MODULE, _module, false);
         Module(_module).activate();
         emit ModuleAdded(_module);
     }
