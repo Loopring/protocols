@@ -28,6 +28,7 @@ export class Artifacts {
   public QuotaModule: any;
   public QuotaTransfers: any;
   public ApprovedTransfers: any;
+  public DappTransfers: any;
   public ERC1271Module: any;
 
   public SecurityStore: any;
@@ -69,6 +70,7 @@ export class Artifacts {
     this.QuotaModule = artifacts.require("QuotaModule");
     this.QuotaTransfers = artifacts.require("QuotaTransfers");
     this.ApprovedTransfers = artifacts.require("ApprovedTransfers");
+    this.DappTransfers = artifacts.require("DappTransfers");
     this.ERC1271Module = artifacts.require("ERC1271Module");
 
     this.SecurityStore = artifacts.require("SecurityStore");
