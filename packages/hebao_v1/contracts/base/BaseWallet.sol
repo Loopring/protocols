@@ -35,7 +35,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 
-    mapping (address => bool) public modules;
+    mapping (address => bool) private modules;
 
     Controller public controller;
 
@@ -129,6 +129,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
+        require(modules[_module], "MODULE_NOT_EXISTS");
         try Module(_module).deactivate() {} catch {}
         delete modules[_module];
         emit ModuleRemoved(_module);
