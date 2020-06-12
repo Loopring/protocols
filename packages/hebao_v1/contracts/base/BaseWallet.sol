@@ -35,7 +35,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 
-    mapping (address => bool) moduleMap;
+    mapping (address => bool) public modules;
 
     Controller public controller;
 
@@ -63,14 +63,14 @@ contract BaseWallet is ReentrancyGuard, Wallet
 
     modifier onlyModule
     {
-        require(moduleMap[msg.sender], "MODULE_UNAUTHORIZED");
+        require(modules[msg.sender], "MODULE_UNAUTHORIZED");
         _;
     }
 
     modifier onlyOwnerOrModule
     {
         require(
-            msg.sender == _owner || moduleMap[msg.sender],
+            msg.sender == _owner || modules[msg.sender],
             "MODULE_UNAUTHORIZED"
         );
         _;
@@ -130,7 +130,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
     {
         // Allow deactivate to fail to make sure the module can be removed
         try Module(_module).deactivate() {} catch {}
-        delete moduleMap[_module];
+        delete modules[_module];
         emit ModuleRemoved(_module);
     }
 
@@ -140,7 +140,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         override
         returns (bool)
     {
-        return moduleMap[_module];
+        return modules[_module];
     }
 
     function bindMethod(bytes4 _method, address _module)
@@ -152,7 +152,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         require(_method != bytes4(0), "BAD_METHOD");
         if (_module != address(0)) {
             require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
-            require(moduleMap[_module], "MODULE_UNAUTHORIZED");
+            require(modules[_module], "MODULE_UNAUTHORIZED");
         }
 
         methodToModule[_method] = _module;
@@ -200,13 +200,13 @@ contract BaseWallet is ReentrancyGuard, Wallet
         internal
     {
         require(_module != address(0), "NULL_MODULE");
-        require(moduleMap[_module] == false, "MODULE_EXISTS");
+        require(modules[_module] == false, "MODULE_EXISTS");
         require(
             controller.moduleRegistry().isModuleRegistered(_module),
             "INVALID_MODULE"
         );
 
-        moduleMap[_module] = true;
+        modules[_module] = true;
         Module(_module).activate();
         emit ModuleAdded(_module);
     }
@@ -220,7 +220,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         payable
     {
         address module = methodToModule[msg.sig];
-        require(moduleMap[module], "MODULE_UNAUTHORIZED");
+        require(modules[module], "MODULE_UNAUTHORIZED");
 
         (bool success, bytes memory returnData) = module.call{value: msg.value}(msg.data);
         assembly {
