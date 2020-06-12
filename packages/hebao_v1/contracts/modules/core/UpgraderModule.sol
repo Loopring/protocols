@@ -16,34 +16,26 @@ import "../../thirdparty/OwnedUpgradabilityProxy.sol";
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
 contract UpgraderModule is BaseModule {
-    string     public label; // For example: "1.0.1"
-    bool       public addModulesFirst;
     address    public implementation;
-    address[]  public modules;
+    address[]  public modulesToRemove;
+    address[]  public modulesToAdd;
 
     constructor(
-        string    memory _label,
-        bool             _addModulesFirst,
         address          _implementation,
-        address[] memory _modules
+        address[] memory _modulesToAdd,
+        address[] memory _modulesToRemove
         )
         public
     {
-        require(bytes(_label).length >= 5, "INVALID_VERSION_LABEL");
-        require(_implementation != address(0) || _modules.length > 0, "INVALID_ARGS");
-        label = _label;
-        addModulesFirst = _addModulesFirst;
         implementation = _implementation;
-        modules = _modules;
+        modulesToAdd = _modulesToAdd;
+        modulesToRemove = _modulesToRemove;
     }
 
     function activate()
         external
         override
     {
-        Wallet w = Wallet(msg.sender);
-        w.setLastUpgrader(address(this));
-
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(msg.sender).implementation()) {
             bytes memory txData = abi.encodeWithSelector(
@@ -53,46 +45,19 @@ contract UpgraderModule is BaseModule {
             transactCall(msg.sender, msg.sender, 0, txData);
         }
 
-        if (modules.length > 0) {
-            if (addModulesFirst) {
-                addNewModules(w);
-                removeOldModules(w);
-            } else {
-                removeOldModules(w);
-                addNewModules(w);
+        Wallet w = Wallet(msg.sender);
+        for(uint i = 0; i < modulesToAdd.length; i++) {
+            if (!w.hasModule(modulesToAdd[i])) {
+                w.addModule(modulesToAdd[i]);
+            }
+        }
+        for(uint i = 0; i < modulesToRemove.length; i++) {
+            if (w.hasModule(modulesToRemove[i])) {
+                w.removeModule(modulesToRemove[i]);
             }
         }
 
         emit Activated(msg.sender);
         w.removeModule(address(this));
-    }
-
-    function removeOldModules(Wallet w)
-        private
-    {
-        address[] memory oldModules = w.modules();
-        bool found;
-        for(uint i = 0; i < oldModules.length; i++) {
-            found = false;
-            for (uint j = 0; j < modules.length; j++) {
-                if (modules[j] == oldModules[i]) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                w.removeModule(oldModules[i]);
-            }
-        }
-    }
-
-    function addNewModules(Wallet w)
-        private
-    {
-        for(uint i = 0; i < modules.length; i++) {
-            if (!w.hasModule(modules[i])) {
-                w.addModule(modules[i]);
-            }
-        }
     }
 }
