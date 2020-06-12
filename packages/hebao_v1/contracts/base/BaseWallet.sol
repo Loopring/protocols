@@ -138,15 +138,6 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         emit ModuleRemoved(_module);
     }
 
-    function modules()
-        external
-        view
-        override
-        returns (address[] memory)
-    {
-        return addressesInSet(MODULE);
-    }
-
     function hasModule(address _module)
         external
         view
@@ -270,16 +261,5 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         } else {
             revert("UNSUPPORTED_MODE");
         }
-    }
-
-    function isLocalMethod(bytes4 _method)
-        private
-        pure
-        returns (bool)
-    {
-        return _method == this.owner.selector ||
-            _method == this.modules.selector ||
-            _method == this.hasModule.selector ||
-            _method == this.boundMethodModule.selector;
     }
 }

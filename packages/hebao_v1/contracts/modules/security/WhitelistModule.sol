@@ -104,17 +104,6 @@ contract WhitelistModule is SecurityModule
         return controller.whitelistStore().isWhitelisted(wallet, addr);
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](2);
-        methods[0] = this.getWhitelist.selector;
-        methods[1] = this.isWhitelisted.selector;
-    }
-
     function verifySigners(
         address   wallet,
         bytes4    method,
