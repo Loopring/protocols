@@ -29,6 +29,7 @@ export interface Context {
   quotaModule: any;
   quotaTransfers: any;
   approvedTransfers: any;
+  dappTransfers: any;
   erc1271Module: any;
 
   baseWallet: any;
@@ -67,6 +68,7 @@ export async function getContext() {
     quotaModule: await contracts.QuotaModule.deployed(),
     quotaTransfers: await contracts.QuotaTransfers.deployed(),
     approvedTransfers: await contracts.ApprovedTransfers.deployed(),
+    dappTransfers: await contracts.DappTransfers.deployed(),
     erc1271Module: await contracts.ERC1271Module.deployed(),
 
     baseWallet: await contracts.BaseWallet.deployed(),
