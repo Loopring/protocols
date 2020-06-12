@@ -24,7 +24,7 @@ import "./TransferModule.sol";
 
 
 /// @title DappTransfers
-contract DappTransfers is ERC1271, TransferModule
+contract DappTransfers is TransferModule
 {
     using SignatureUtil for bytes32;
 
@@ -104,39 +104,6 @@ contract DappTransfers is ERC1271, TransferModule
     {
         approveInternal(wallet, token, to, amount);
         return callContractInternal(wallet, to, value, data);
-    }
-
-    // Will use msg.sender to detect the wallet, so this function should be called through
-    // the bounded method on the wallet itself, not directly on this module.
-    function isValidSignature(
-        bytes memory _data,
-        bytes memory _signature)
-        public
-        view
-        override
-        returns (bytes4 magicValue)
-    {
-        bytes32 hash;
-        if (_data.length == 32) {
-            hash = BytesUtil.toBytes32(_data, 0);
-        } else {
-            hash = keccak256(_data);
-        }
-        if (hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
-            return MAGICVALUE;
-        } else {
-            return 0;
-        }
-    }
-
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](1);
-        methods[0] = this.isValidSignature.selector;
     }
 
     function verifySigners(

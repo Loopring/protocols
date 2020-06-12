@@ -52,16 +52,6 @@ contract InheritanceModule is SecurityModule
         waitingPeriod = _waitingPeriod;
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](1);
-        methods[0] = this.inheritor.selector;
-    }
-
     function inheritor(address wallet)
         public
         view
@@ -98,7 +88,7 @@ contract InheritanceModule is SecurityModule
         } else if (removedAsGuardian) {
             securityStore.removeGuardian(wallet, newOwner, now);
         }
-        
+
         securityStore.setInheritor(wallet, address(0));
         Wallet(wallet).setOwner(newOwner);
         unlockWallet(wallet, true /*force*/);

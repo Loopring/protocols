@@ -59,17 +59,6 @@ contract GuardianModule is SecurityModule
         pendingPeriod = _pendingPeriod;
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](2);
-        methods[0] = this.getLock.selector;
-        methods[1] = this.isLocked.selector;
-    }
-
     function addGuardian(
         address wallet,
         address guardian,

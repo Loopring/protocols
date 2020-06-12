@@ -78,16 +78,6 @@ contract QuotaModule is SecurityModule
         available = controller.quotaStore().availableQuota(wallet);
     }
 
-    function bindableMethods()
-        public
-        pure
-        override
-        returns (bytes4[] memory methods)
-    {
-        methods = new bytes4[](1);
-        methods[0] = this.getDailyQuota.selector;
-    }
-
     function verifySigners(
         address   wallet,
         bytes4    method,
