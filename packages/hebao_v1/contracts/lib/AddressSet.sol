@@ -37,16 +37,14 @@ contract AddressSet
     {
         Set storage set = sets[key];
         require(set.positions[addr] == 0, "ALREADY_IN_SET");
-        
-        if (maintainList) {
-            require(set.addresses.length == set.count, "PREVIOUSLY_NOT_MAINTAILED");
-            set.addresses.push(addr);
-        } else {
-            require(set.addresses.length == 0, "MUST_MAINTAIN");
-        }
 
-        set.count += 1;
-        set.positions[addr] = set.count;
+        if (maintainList) {
+            set.addresses.push(addr);
+            set.positions[addr] = set.addresses.length;
+        } else {
+            set.count += 1;
+            set.positions[addr] = set.count;
+        }
     }
 
     function removeAddressFromSet(
@@ -60,10 +58,12 @@ contract AddressSet
         require(pos != 0, "NOT_IN_SET");
 
         delete set.positions[addr];
-        set.count -= 1;
+        if (set.count > 0) {
+            set.count -= 1;
+        }
 
         if (set.addresses.length > 0) {
-            address lastAddr = set.addresses[set.count];
+            address lastAddr = set.addresses[set.addresses.length - 1];
             if (lastAddr != addr) {
                 set.addresses[pos - 1] = lastAddr;
                 set.positions[lastAddr] = pos;
@@ -95,7 +95,7 @@ contract AddressSet
         returns (uint)
     {
         Set storage set = sets[key];
-        return set.count;
+        return set.count + set.addresses.length;
     }
 
     function addressesInSet(bytes32 key)
@@ -104,7 +104,7 @@ contract AddressSet
         returns (address[] memory)
     {
         Set storage set = sets[key];
-        require(set.count == set.addresses.length, "NOT_MAINTAINED");
+        require(set.count == 0, "UNSUPPORTED");
         return sets[key].addresses;
     }
 }
