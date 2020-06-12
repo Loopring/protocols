@@ -17,7 +17,6 @@
 pragma solidity ^0.6.6;
 
 import "../lib/ERC20.sol";
-import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Controller.sol";
@@ -32,11 +31,11 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
+contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 
-    bytes32 internal constant MODULE = keccak256("__MODULE__");
+    mapping (address => bool) private modules;
 
     Controller public controller;
 
@@ -64,14 +63,14 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
 
     modifier onlyModule
     {
-        require(isAddressInSet(MODULE, msg.sender), "MODULE_UNAUTHORIZED");
+        require(modules[msg.sender], "MODULE_UNAUTHORIZED");
         _;
     }
 
     modifier onlyOwnerOrModule
     {
         require(
-            msg.sender == _owner || isAddressInSet(MODULE, msg.sender),
+            msg.sender == _owner || modules[msg.sender],
             "MODULE_UNAUTHORIZED"
         );
         _;
@@ -103,10 +102,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         override
         nonReentrant
     {
-        require(
-            _owner == address(0) && numAddressesInSet(MODULE) == 0,
-            "INITIALIZED_ALREADY"
-        );
+        require(_owner == address(0), "INITIALIZED_ALREADY");
         require(initialOwner != address(0), "ZERO_ADDRESS");
         require(bootstrapModule != address(0), "NO_BOOTSTRAP_MODULE");
 
@@ -133,8 +129,9 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
+        require(modules[_module], "MODULE_NOT_EXISTS");
         try Module(_module).deactivate() {} catch {}
-        removeAddressFromSet(MODULE, _module);
+        delete modules[_module];
         emit ModuleRemoved(_module);
     }
 
@@ -144,7 +141,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         override
         returns (bool)
     {
-        return isAddressInSet(MODULE, _module);
+        return modules[_module];
     }
 
     function bindMethod(bytes4 _method, address _module)
@@ -156,7 +153,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         require(_method != bytes4(0), "BAD_METHOD");
         if (_module != address(0)) {
             require(methodToModule[_method] == address(0), "METHOD_BOUND_ALREADY");
-            require(isAddressInSet(MODULE, _module), "MODULE_UNAUTHORIZED");
+            require(modules[_module], "MODULE_UNAUTHORIZED");
         }
 
         methodToModule[_method] = _module;
@@ -204,12 +201,13 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         internal
     {
         require(_module != address(0), "NULL_MODULE");
+        require(modules[_module] == false, "MODULE_EXISTS");
         require(
             controller.moduleRegistry().isModuleRegistered(_module),
             "INVALID_MODULE"
         );
 
-        addAddressToSet(MODULE, _module, false);
+        modules[_module] = true;
         Module(_module).activate();
         emit ModuleAdded(_module);
     }
@@ -223,7 +221,7 @@ contract BaseWallet is ReentrancyGuard, AddressSet, Wallet
         payable
     {
         address module = methodToModule[msg.sig];
-        require(isAddressInSet(MODULE, module), "MODULE_UNAUTHORIZED");
+        require(modules[module], "MODULE_UNAUTHORIZED");
 
         (bool success, bytes memory returnData) = module.call{value: msg.value}(msg.data);
         assembly {

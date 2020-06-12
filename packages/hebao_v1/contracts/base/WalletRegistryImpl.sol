@@ -16,7 +16,6 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/AddressSet.sol";
 import "../lib/Claimable.sol";
 
 import "../iface/WalletRegistry.sol";
@@ -26,9 +25,10 @@ import "../iface/WalletRegistry.sol";
 /// @dev Basic implementation of a WalletRegistry.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
+contract WalletRegistryImpl is Claimable, WalletRegistry
 {
-    bytes32 internal constant WALLET = keccak256("__WALLET__");
+    mapping (address => bool) public wallets;
+    uint public count;
 
     address internal factory;
 
@@ -57,7 +57,9 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
         override
         onlyFactory
     {
-        addAddressToSet(WALLET, wallet, false);
+        require(wallets[wallet] == false, "ALREADY_REGISTERED");
+        wallets[wallet] = true;
+        count += 1;
         emit WalletRegistered(wallet);
     }
 
@@ -67,7 +69,7 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
         override
         returns (bool)
     {
-        return isAddressInSet(WALLET, addr);
+        return wallets[addr];
     }
 
     function numOfWallets()
@@ -76,6 +78,6 @@ contract WalletRegistryImpl is Claimable, AddressSet, WalletRegistry
         override
         returns (uint)
     {
-        return numAddressesInSet(WALLET);
+        return count;
     }
 }
