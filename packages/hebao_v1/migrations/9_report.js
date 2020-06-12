@@ -4,17 +4,12 @@ const WalletFactoryModule = artifacts.require(
 const GuardianModule = artifacts.require(
   "./modules/security/GuardianModule.sol"
 );
-const RecoveryModule = artifacts.require(
-  "./modules/security/RecoveryModule.sol"
-);
-const LockModule = artifacts.require("./modules/security/LockModule.sol");
 const InheritanceModule = artifacts.require(
   "./modules/security/InheritanceModule.sol"
 );
 const WhitelistModule = artifacts.require(
   "./modules/security/WhitelistModule.sol"
 );
-const QuotaModule = artifacts.require("./modules/security/QuotaModule.sol");
 const QuotaTransfers = artifacts.require(
   "./modules/transfers/QuotaTransfers.sol"
 );
@@ -60,11 +55,8 @@ module.exports = function(deployer, network, accounts) {
   report += `- BaseWallet: ${BaseWallet.address}  \n`;
   report += `- WalletFactoryModule: ${WalletFactoryModule.address}  \n`;
   report += `- GuardianModule: ${GuardianModule.address}  \n`;
-  report += `- RecoveryModule: ${RecoveryModule.address}  \n`;
-  report += `- LockModule: ${LockModule.address}  \n`;
   report += `- InheritanceModule: ${InheritanceModule.address}  \n`;
   report += `- WhitelistModule: ${WhitelistModule.address}  \n`;
-  report += `- QuotaModule: ${QuotaModule.address}  \n`;
   report += `- QuotaTransfers: ${QuotaTransfers.address}  \n`;
   report += `- ApprovedTransfers: ${ApprovedTransfers.address}  \n`;
   report += `- ERC1271Module: ${ERC1271Module.address}  \n`;

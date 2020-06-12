@@ -20,12 +20,9 @@ export class Artifacts {
   public WalletENSManager: any;
   public ENSRegistryImpl: any;
 
-  public RecoveryModule: any;
   public GuardianModule: any;
-  public LockModule: any;
   public InheritanceModule: any;
   public WhitelistModule: any;
-  public QuotaModule: any;
   public QuotaTransfers: any;
   public ApprovedTransfers: any;
   public DappTransfers: any;
@@ -62,12 +59,9 @@ export class Artifacts {
     this.WalletENSManager = artifacts.require("WalletENSManager.sol");
     this.ENSRegistryImpl = artifacts.require("ENSRegistryImpl.sol");
 
-    this.RecoveryModule = artifacts.require("RecoveryModule");
     this.GuardianModule = artifacts.require("GuardianModule");
-    this.LockModule = artifacts.require("LockModule");
     this.InheritanceModule = artifacts.require("InheritanceModule");
     this.WhitelistModule = artifacts.require("WhitelistModule");
-    this.QuotaModule = artifacts.require("QuotaModule");
     this.QuotaTransfers = artifacts.require("QuotaTransfers");
     this.ApprovedTransfers = artifacts.require("ApprovedTransfers");
     this.DappTransfers = artifacts.require("DappTransfers");

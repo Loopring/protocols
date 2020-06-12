@@ -8,7 +8,7 @@ import { assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import { Constants } from "./helpers/Constants";
 
-contract("RecoveryModule", (accounts: string[]) => {
+contract("GuardianModule - Recovery", (accounts: string[]) => {
   let ctx: Context;
 
   beforeEach(async () => {
@@ -24,10 +24,7 @@ contract("RecoveryModule", (accounts: string[]) => {
         owner,
         "",
         Constants.emptyBytes,
-        [
-          ctx.guardianModule.address,
-          ctx.recoveryModule.address
-        ]
+        [ctx.guardianModule.address]
       ),
       ctx,
       true,
@@ -50,7 +47,7 @@ contract("RecoveryModule", (accounts: string[]) => {
     for (let i = 1; i <= numSignersRequired; i++) {
       const signers = guardians.slice(0, i).sort();
       const transaction = executeTransaction(
-        ctx.recoveryModule.contract.methods.recover(wallet, newOwner),
+        ctx.guardianModule.contract.methods.recover(wallet, newOwner),
         ctx,
         true,
         wallet,
@@ -59,7 +56,7 @@ contract("RecoveryModule", (accounts: string[]) => {
       if (signers.length >= numSignersRequired) {
         await transaction;
         await assertEventEmitted(
-          ctx.recoveryModule,
+          ctx.guardianModule,
           "Recovered",
           (event: any) => {
             return (

@@ -4,17 +4,12 @@ const WalletFactoryModule = artifacts.require(
 const GuardianModule = artifacts.require(
   "./modules/security/GuardianModule.sol"
 );
-const RecoveryModule = artifacts.require(
-  "./modules/security/RecoveryModule.sol"
-);
-const LockModule = artifacts.require("./modules/security/LockModule.sol");
 const InheritanceModule = artifacts.require(
   "./modules/security/InheritanceModule.sol"
 );
 const WhitelistModule = artifacts.require(
   "./modules/security/WhitelistModule.sol"
 );
-const QuotaModule = artifacts.require("./modules/security/QuotaModule.sol");
 const QuotaTransfers = artifacts.require(
   "./modules/transfers/QuotaTransfers.sol"
 );
@@ -58,8 +53,6 @@ module.exports = function(deployer, network, accounts) {
           ControllerImpl.address,
           guardianPendingPeriod
         ),
-        deployer.deploy(RecoveryModule, ControllerImpl.address),
-        deployer.deploy(LockModule, ControllerImpl.address),
         deployer.deploy(
           InheritanceModule,
           ControllerImpl.address,
@@ -70,8 +63,11 @@ module.exports = function(deployer, network, accounts) {
           ControllerImpl.address,
           whitelistDelayPeriod
         ),
-        deployer.deploy(QuotaModule, ControllerImpl.address, quotaDelayPeriod),
-        deployer.deploy(QuotaTransfers, ControllerImpl.address),
+        deployer.deploy(
+          QuotaTransfers,
+          ControllerImpl.address,
+          quotaDelayPeriod
+        ),
         deployer.deploy(ApprovedTransfers, ControllerImpl.address),
         deployer.deploy(DappTransfers, ControllerImpl.address),
         deployer.deploy(ERC1271Module)
@@ -82,11 +78,8 @@ module.exports = function(deployer, network, accounts) {
         return Promise.all([
           moduleRegistryImpl.registerModule(WalletFactoryModule.address),
           moduleRegistryImpl.registerModule(GuardianModule.address),
-          moduleRegistryImpl.registerModule(RecoveryModule.address),
-          moduleRegistryImpl.registerModule(LockModule.address),
           moduleRegistryImpl.registerModule(InheritanceModule.address),
           moduleRegistryImpl.registerModule(WhitelistModule.address),
-          moduleRegistryImpl.registerModule(QuotaModule.address),
           moduleRegistryImpl.registerModule(QuotaTransfers.address),
           moduleRegistryImpl.registerModule(ApprovedTransfers.address),
           moduleRegistryImpl.registerModule(DappTransfers.address),
