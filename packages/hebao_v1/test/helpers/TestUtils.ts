@@ -21,12 +21,9 @@ export interface Context {
   moduleRegistryImpl: any;
   walletENSManager: any;
 
-  recoveryModule: any;
   guardianModule: any;
-  lockModule: any;
   inheritanceModule: any;
   whitelistModule: any;
-  quotaModule: any;
   quotaTransfers: any;
   approvedTransfers: any;
   dappTransfers: any;
@@ -60,12 +57,9 @@ export async function getContext() {
     moduleRegistryImpl: await contracts.ModuleRegistryImpl.deployed(),
     walletENSManager: await contracts.WalletENSManager.deployed(),
 
-    recoveryModule: await contracts.RecoveryModule.deployed(),
     guardianModule: await contracts.GuardianModule.deployed(),
-    lockModule: await contracts.LockModule.deployed(),
     inheritanceModule: await contracts.InheritanceModule.deployed(),
     whitelistModule: await contracts.WhitelistModule.deployed(),
-    quotaModule: await contracts.QuotaModule.deployed(),
     quotaTransfers: await contracts.QuotaTransfers.deployed(),
     approvedTransfers: await contracts.ApprovedTransfers.deployed(),
     dappTransfers: await contracts.DappTransfers.deployed(),
@@ -99,12 +93,9 @@ export async function createContext(context?: Context) {
 
 export function getAllModuleAddresses(ctx: Context) {
   return [
-    ctx.recoveryModule.address,
     ctx.guardianModule.address,
-    ctx.lockModule.address,
     ctx.inheritanceModule.address,
     ctx.whitelistModule.address,
-    ctx.quotaModule.address,
     ctx.quotaTransfers.address,
     ctx.approvedTransfers.address,
     ctx.erc1271Module.address

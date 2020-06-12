@@ -140,9 +140,13 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the wallet is still fully functional
-        await ctx.guardianModule.addModule(wallet, ctx.recoveryModule.address, {
-          from: owner
-        });
+        await ctx.guardianModule.addModule(
+          wallet,
+          ctx.whitelistModule.address,
+          {
+            from: owner
+          }
+        );
       }
     );
 
@@ -190,9 +194,13 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the module is now authorized
-        await ctx.guardianModule.addModule(wallet, ctx.recoveryModule.address, {
-          from: owner
-        });
+        await ctx.guardianModule.addModule(
+          wallet,
+          ctx.whitelistModule.address,
+          {
+            from: owner
+          }
+        );
       }
     );
 
@@ -237,9 +245,13 @@ contract("UpgraderModule", () => {
         );
 
         // Make sure the module is now authorized
-        await ctx.guardianModule.addModule(wallet, ctx.recoveryModule.address, {
-          from: owner
-        });
+        await ctx.guardianModule.addModule(
+          wallet,
+          ctx.inheritanceModule.address,
+          {
+            from: owner
+          }
+        );
       }
     );
 

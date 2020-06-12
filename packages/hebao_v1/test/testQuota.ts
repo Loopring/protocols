@@ -12,7 +12,7 @@ import { advanceTimeAndBlockAsync } from "../util/TimeTravel";
 import { assertEventEmitted } from "../util/Events";
 import BN = require("bn.js");
 
-contract("QuotaModule", (accounts: string[]) => {
+contract("QuotaTransfers - changeQuota", (accounts: string[]) => {
   let defaultCtx: Context;
   let ctx: Context;
 
@@ -34,7 +34,7 @@ contract("QuotaModule", (accounts: string[]) => {
 
     // Start changing the daily quota
     const tx = await executeTransaction(
-      ctx.quotaModule.contract.methods.changeDailyQuota(
+      ctx.quotaTransfers.contract.methods.changeDailyQuota(
         wallet,
         newQuota.toString(10)
       ),
@@ -95,7 +95,7 @@ contract("QuotaModule", (accounts: string[]) => {
 
   beforeEach(async () => {
     ctx = await createContext(defaultCtx);
-    delayPeriod = (await ctx.quotaModule.delayPeriod()).toNumber();
+    delayPeriod = (await ctx.quotaTransfers.delayPeriod()).toNumber();
     defaultQuota = await ctx.quotaStore.defaultQuota();
   });
 
@@ -142,7 +142,7 @@ contract("QuotaModule", (accounts: string[]) => {
       for (let i = 0; i < numSignersRequired; i++) {
         const signers = [owner, ...guardians.slice(0, i)].sort();
         const transaction = executeTransaction(
-          ctx.quotaModule.contract.methods.changeDailyQuotaImmediately(
+          ctx.quotaTransfers.contract.methods.changeDailyQuotaImmediately(
             wallet,
             newQuota.toString(10)
           ),
