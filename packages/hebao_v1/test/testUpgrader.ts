@@ -46,16 +46,6 @@ contract("UpgraderModule", () => {
     );
     await ctx.moduleRegistryImpl.registerModule(upgraderModule.address);
 
-    const modulesBefore = await walletContract.modules();
-
-    // Filter out modules that will be ignored on-chain because they are already enabled/disabled
-    modulesToAdd = modulesToAdd.filter(
-      module => !modulesBefore.includes(module)
-    );
-    modulesToRemove = modulesToRemove.filter(module =>
-      modulesBefore.includes(module)
-    );
-
     // Do the upgrade
     await executeTransaction(
       initialModule.contract.methods.addModule(wallet, upgraderModule.address),
@@ -76,44 +66,6 @@ contract("UpgraderModule", () => {
         "module not removed"
       );
     }
-    // Events
-    modulesToAdd.push(upgraderModule.address);
-    modulesToRemove.push(upgraderModule.address);
-    // Check for the `ModuleAdded` event on the wallet
-    const moduleAddedEvents = await assertEventsEmitted(
-      walletContract,
-      "ModuleAdded",
-      modulesToAdd.length
-    );
-    for (const [i, moduleAddedEvent] of moduleAddedEvents.entries()) {
-      assert.equal(
-        moduleAddedEvent.module,
-        modulesToAdd[i],
-        "ModuleAdded module address unexpected"
-      );
-    }
-    const moduleRemovedEvents = await assertEventsEmitted(
-      walletContract,
-      "ModuleRemoved",
-      modulesToRemove.length
-    );
-    for (const [i, moduleRemovedEvent] of moduleRemovedEvents.entries()) {
-      assert.equal(
-        moduleRemovedEvent.module,
-        modulesToRemove[i],
-        "ModuleRemoved module address unexpected"
-      );
-    }
-    // Modules list
-    const modulesAfter = await walletContract.modules();
-    const expectedModules = [...modulesBefore, ...modulesToAdd].filter(
-      module => !modulesToRemove.includes(module)
-    );
-    assert.equal(
-      JSON.stringify(modulesAfter.sort()),
-      JSON.stringify(expectedModules.sort()),
-      "unexpected modules list"
-    );
   };
 
   const description = (descr: string, metaTx: boolean = useMetaTx) => {
@@ -234,7 +186,7 @@ contract("UpgraderModule", () => {
         // Try to add the same module again
         await expectThrow(
           walletContract.addModule(ctx.guardianModule.address, { from: owner }),
-          "ALREADY_IN_SET"
+          "MODULE_EXISTS"
         );
 
         // Make sure the module is now authorized
@@ -343,107 +295,6 @@ contract("UpgraderModule", () => {
           [modules[1], modules[3]],
           initialModule
         );
-      }
-    );
-
-    it(
-      description(
-        "module should be able to bind/unbind methods on the wallet",
-        metaTx
-      ),
-      async () => {
-        useMetaTx = metaTx;
-        const owner = ctx.owners[0];
-        const { wallet, guardians } = await createWallet(ctx, owner, 1, [
-          ctx.guardianModule.address
-        ]);
-        const walletContract = await ctx.contracts.BaseWallet.at(wallet);
-        const wrappedWallet = await ctx.contracts.LockModule.at(wallet);
-        const getLockFunctionSelector = wrappedWallet.contract.methods
-          .getLock(wallet)
-          .encodeABI()
-          .slice(0, 10);
-        const isLockedFunctionSelector = wrappedWallet.contract.methods
-          .isLocked(wallet)
-          .encodeABI()
-          .slice(0, 10);
-        const methods = [getLockFunctionSelector, isLockedFunctionSelector];
-
-        // Try to call the bounded method of the module before adding the module to the wallet
-        await expectThrow(wrappedWallet.getLock(wallet), "MODULE_UNAUTHORIZED");
-
-        // Add the module
-        await walletContract.addModule(ctx.lockModule.address, { from: owner });
-        // Check events
-        await assertEventEmitted(ctx.lockModule, "Activated", (event: any) => {
-          return event.wallet === wallet;
-        });
-        const methodBoundEvents = await assertEventsEmitted(
-          walletContract,
-          "MethodBound",
-          2
-        );
-        for (const [i, event] of methodBoundEvents.entries()) {
-          return (
-            event.module === ctx.lockModule.address &&
-            event.method.slice(0, 10) === methods[i]
-          );
-        }
-        // Check if the method is correctly bound
-        assert.equal(
-          await walletContract.boundMethodModule(getLockFunctionSelector),
-          ctx.lockModule.address,
-          "method not bound to module"
-        );
-
-        // Lock the wallet
-        await ctx.lockModule.lock(wallet, guardians[0], { from: guardians[0] });
-
-        // Check if the bounded method works correctly
-        const lockData = await wrappedWallet.getLock(wallet);
-        assert.equal(
-          lockData._lockedBy,
-          ctx.lockModule.address,
-          "bounded method doesn't work"
-        );
-
-        // Remove the module
-        await addAndRemoveModulesChecked(
-          owner,
-          wallet,
-          [],
-          [ctx.lockModule.address],
-          ctx.guardianModule
-        );
-        // Check events
-        await assertEventEmitted(
-          ctx.lockModule,
-          "Deactivated",
-          (event: any) => {
-            return event.wallet === wallet;
-          }
-        );
-        const methodUnboundEvents = await assertEventsEmitted(
-          walletContract,
-          "MethodBound",
-          2
-        );
-        for (const [i, event] of methodUnboundEvents.entries()) {
-          return (
-            event.module === Constants.zeroAddress &&
-            event.method.slice(0, 10) === methods[i]
-          );
-        }
-
-        // Check if the method is correctly unbound
-        assert.equal(
-          await walletContract.boundMethodModule(getLockFunctionSelector),
-          Constants.zeroAddress,
-          "method still bound to module"
-        );
-
-        // Try to call the bounded method
-        await expectThrow(wrappedWallet.getLock(wallet), "MODULE_UNAUTHORIZED");
       }
     );
   });

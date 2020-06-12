@@ -118,7 +118,7 @@ contract("WalletFactoryModule", () => {
     ctx = await createContext(defaultCtx);
   });
 
-  [/*false,*/ true].forEach(function(metaTx) {
+  [false, true].forEach(function(metaTx) {
     it(
       description("user should be able to create a wallet without ENS", metaTx),
       async () => {
@@ -127,7 +127,7 @@ contract("WalletFactoryModule", () => {
       }
     );
 
-    it.only(
+    it(
       description("user should be able to create a wallet with ENS", metaTx),
       async () => {
         useMetaTx = metaTx;
