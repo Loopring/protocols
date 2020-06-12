@@ -17,7 +17,6 @@
 pragma solidity ^0.6.6;
 
 import "../lib/ERC20.sol";
-// import "../lib/AddressSet.sol";
 import "../lib/ReentrancyGuard.sol";
 
 import "../iface/Controller.sol";
@@ -36,7 +35,6 @@ contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 
-    // bytes32 internal constant MODULE = keccak256("__MODULE__");
     mapping (address => bool) moduleMap;
 
     Controller public controller;
@@ -132,7 +130,6 @@ contract BaseWallet is ReentrancyGuard, Wallet
     {
         // Allow deactivate to fail to make sure the module can be removed
         try Module(_module).deactivate() {} catch {}
-        // removeAddressFromSet(MODULE, _module);
         delete moduleMap[_module];
         emit ModuleRemoved(_module);
     }
@@ -209,7 +206,6 @@ contract BaseWallet is ReentrancyGuard, Wallet
             "INVALID_MODULE"
         );
 
-        // addAddressToSet(MODULE, _module);
         moduleMap[_module] = true;
         Module(_module).activate();
         emit ModuleAdded(_module);
