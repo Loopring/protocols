@@ -40,10 +40,6 @@ contract AddressSetWrapper is AddressSet
         removeAddressFromSet(key, addr);
     }
 
-    function removeAll(bytes32 key) external {
-        removeSet(key);
-    }
-
     function isInSet(bytes32 key, address addr) external view returns (bool) {
         return isAddressInSet(key, addr);
     }
