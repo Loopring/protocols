@@ -38,7 +38,7 @@ contract("Transfers", (accounts: string[]) => {
     // Set the specified price
     token = await getTokenAddress(ctx, token);
     const data = ctx.priceCacheStore.contract.methods
-      .tokenPrice(token, amount.toString(10))
+      .tokenValue(token, amount.toString(10))
       .encodeABI();
     await priceOracleMock.givenCalldataReturnUint(data, assetValue);
   };

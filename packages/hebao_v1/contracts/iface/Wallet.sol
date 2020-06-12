@@ -57,11 +57,6 @@ interface Wallet
     /// @param _module The module's address.
     function removeModule(address _module) external;
 
-    /// @dev Returns the list of modules added to this wallet in the order
-    ///      they were added.
-    /// @return _modules The list of modules added to this wallet.
-    function modules() external view returns (address[] memory _modules);
-
     /// @dev Checks if a module has been added to this wallet.
     /// @param _module The module to check.
     /// @return True if the module exists; False otherwise.

@@ -28,12 +28,41 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
+    uint public delayPeriod;
+
     constructor(
-        Controller  _controller
+        Controller  _controller,
+        uint       _delayPeriod
         )
         public
         TransferModule(_controller)
     {
+        require(_delayPeriod > 0, "INVALID_DELAY");
+        delayPeriod = _delayPeriod;
+    }
+
+    function changeDailyQuota(
+        address wallet,
+        uint    newQuota
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
+    {
+        controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
+    }
+
+    function changeDailyQuotaImmediately(
+        address            wallet,
+        uint               newQuota
+        )
+        external
+        nonReentrant
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTx
+    {
+        controller.quotaStore().changeQuota(wallet, newQuota, now);
     }
 
     function transferToken(
@@ -120,25 +149,18 @@ contract QuotaTransfers is TransferModule
         return callContractInternal(wallet, to, value, data);
     }
 
-    function verifySigners(
-        address   wallet,
-        bytes4    method,
-        bytes     memory /*data*/,
-        address[] memory signers
-        )
-        internal
+    function getDailyQuota(address wallet)
+        public
         view
-        override
-        returns (bool)
+        returns (
+            uint total,
+            uint spent,
+            uint available
+        )
     {
-        require (
-            method == this.transferToken.selector ||
-            method == this.approveToken.selector ||
-            method == this.callContract.selector ||
-            method == this.approveThenCallContract.selector,
-            "INVALID_METHOD"
-        );
-        return isOnlySigner(Wallet(wallet).owner(), signers);
+        total = controller.quotaStore().currentQuota(wallet);
+        spent = controller.quotaStore().spentQuota(wallet);
+        available = controller.quotaStore().availableQuota(wallet);
     }
 
     function callContractInternal(
@@ -156,4 +178,37 @@ contract QuotaTransfers is TransferModule
         require(controller.priceOracle().tokenValue(to, 1e18) == 0, "CALL_DISALLOWED");
         return super.callContractInternal(wallet, to, value, txData);
     }
+
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
+        )
+        internal
+        view
+        override
+        returns (bool)
+    {
+        if (
+            method == this.transferToken.selector ||
+            method == this.approveToken.selector ||
+            method == this.callContract.selector ||
+            method == this.approveThenCallContract.selector ||
+            method == this.changeDailyQuota.selector
+            ) {
+            return isOnlySigner(Wallet(wallet).owner(), signers);
+        } else if (method == this.changeDailyQuotaImmediately.selector) {
+            return GuardianUtils.requireMajority(
+                controller.securityStore(),
+                wallet,
+                signers,
+                GuardianUtils.SigRequirement.OwnerRequired
+            );
+        } else {
+            revert("INVALID_METHOD");
+        }
+
+    }
+
 }
