@@ -84,6 +84,7 @@
   },
   "dependencies": {
     "@ensdomains/ens": "^0.4.0",
+    "@opengsn/gsn": "^0.10.0",
     "@types/bitwise-xor": "0.0.31",
     "@types/web3": "^1.0.20",
     "any-promise": "1.3.0",
