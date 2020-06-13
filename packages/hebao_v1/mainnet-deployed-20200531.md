@@ -1,5 +1,37 @@
 # Hebao Mainnet deploy info
 
+## Hebao V1.0.2 (2020-06-13)
+
+### Period parameters:
+
+- ControllerImpl.defaultLockPeriod: 86400
+- guardianPendingPeriod: 86400
+- inheritanceWaitingPeriod: 31536000
+- whitelistDelayPeriod: 86400
+- quotaDelayPeriod: 86400
+
+### contract addresses:
+
+- deployer: 0xfbbDEc9BD33324B960195d9Ff951377D41A35980
+- WalletENSManager: 0x3252A69Ed3d0283B8ca20efe274dC47f82f47e61
+- WalletRegistryImpl: 0x3A19d73f124151f1A4A251dfE9DBfF2332dA6C00
+- ModuleRegistryImpl: 0x6fe80ea9F97eE1BA340Ac43727F4d76E78493Cb0
+- QuotaStore: 0x04d0a8727e4BE677d09AaE2f29662b5EBd045c30
+- SecurityStore: 0x43F14319a5c5d88E37D7c4b6dA9EFD4E8718a153
+- WhitelistStore: 0x226ae180B79d6185568cdA4d26e667FA6F72dA2c
+- ERC1271Module: 0xE1b59bf1dA5adE6B58fF780D8868D82FF70FD1E7
+- DappAddressStore: 0x3563624Eb4a0270DaDaa941a503b5674462F3525
+- ControllerImpl: 0x728348A947B808483365Bf24F5f7886f0a9786Bf
+- BaseWallet: 0xF8C1F5848969baC54a5cc0178e0A36504B818Db9
+- WalletFactoryModule: 0xD49Da05aef8077CC6824e3B84493D6491f452B0A
+- GuardianModule: 0x01DdF96fD2130Fb1A1E72B4F241ef402CA4b43Bd
+- WhitelistModule: 0x0535ccf8e3E6940B82a9D502701fc21C33d47E00
+- QuotaTransfers: 0xCc4Fa8D650bb137515272f12276E259537E53242
+- ApprovedTransfers: 0x18cA1f3CA8f467696aeFb9d0599116854f6E2E99
+- DappTransfers: 0xdD6d0747d686fBef23e3567F48bA538132477711
+- UniswapPriceOracleV2: 0x6de01906c6a2D563C443B0F5F5fEaA508c9Ce227
+- UpgraderModule:
+
 ## Hebao V1.0.0 (2020-06-03)
 
 ### Period parameters:
