@@ -44,7 +44,7 @@
   0xE1b59bf1dA5adE6B58fF780D8868D82FF70FD1E7
   ]
   ```
-  - modulesToRemoce:
+  - modulesToRemove:
   ```
   [
   0x23a732aCe185a2b62eFEa22320875bB823e0D97B
