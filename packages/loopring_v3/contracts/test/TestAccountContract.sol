@@ -48,42 +48,16 @@ contract TestAccountContract {
         exchange = IExchangeV3(_exchangeAddress);
     }
 
-    function updateAccountAndDeposit(
-        address owner,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        address token,
-        uint96  amount,
-        bytes   calldata permission
-        )
-        external
-        payable
-        refund
-        returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
-        )
-    {
-        (accountID, isAccountNew, isAccountUpdated) = exchange.updateAccountAndDeposit{value: msg.value}(
-            owner,
-            pubKeyX,
-            pubKeyY,
-            token,
-            amount,
-            permission
-        );
-    }
-
     function withdraw(
         address token,
-        uint96 amount
+        uint96 amount,
+        uint24 accountID
         )
         external
         payable
         refund
     {
-        exchange.withdraw{value: msg.value}(address(this), token, amount);
+        exchange.withdraw{value: msg.value}(address(this), token, amount, accountID);
     }
 
     receive()

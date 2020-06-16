@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { Block, DepositInfo, RingInfo } from "./types";
+import { Block, DepositInfo, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -21,7 +21,7 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const setupRandomRing = async (send: boolean = true) => {
-    const ring: RingInfo = {
+    const ring: SpotTrade = {
       orderA: {
         tokenS: "WETH",
         tokenB: "GTO",
@@ -40,7 +40,6 @@ contract("Exchange", (accounts: string[]) => {
       }
     };
     await exchangeTestUtil.setupRing(ring);
-    await exchangeTestUtil.commitDeposits(exchangeId);
     if (send) {
       await exchangeTestUtil.sendRing(exchangeId, ring);
     }
@@ -49,7 +48,7 @@ contract("Exchange", (accounts: string[]) => {
 
   const commitSomeWork = async () => {
     await setupRandomRing();
-    await exchangeTestUtil.commitRings(exchangeId);
+    await exchangeTestUtil.submitTransactions();
   };
 
   before(async () => {
@@ -134,7 +133,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.SETTLEMENT,
+            BlockType.NOOP,
             true,
             2,
             blockVersion,
@@ -152,7 +151,7 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(exchangeTestUtil.SNARK_SCALAR_FIELD, 32);
           bs.addNumber(timestamp, 4);
           const block: OnchainBlock = {
-            blockType: BlockType.SETTLEMENT,
+            blockType: BlockType.NOOP,
             blockSize: 2,
             blockVersion: blockVersion,
             data: web3.utils.hexToBytes(bs.getData()),
@@ -172,7 +171,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.SETTLEMENT,
+            BlockType.NOOP,
             true,
             2,
             blockVersion,
@@ -192,7 +191,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.NOOP,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -223,7 +222,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addBN(exchangeTestUtil.GENESIS_MERKLE_ROOT.add(new BN(1)), 32);
             bs.addNumber(timestamp, 4);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.NOOP,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -246,7 +245,7 @@ contract("Exchange", (accounts: string[]) => {
           await createExchange(false);
           const blockVersion = blockVersionGenerator++;
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.SETTLEMENT,
+            BlockType.NOOP,
             true,
             2,
             blockVersion,
@@ -270,7 +269,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips.add(new BN(1)), 1);
             bs.addNumber(protocolFees.makerFeeBips, 1);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.NOOP,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -298,7 +297,7 @@ contract("Exchange", (accounts: string[]) => {
             bs.addNumber(protocolFees.takerFeeBips, 1);
             bs.addNumber(protocolFees.makerFeeBips.add(new BN(1)), 1);
             const block: OnchainBlock = {
-              blockType: BlockType.SETTLEMENT,
+              blockType: BlockType.NOOP,
               blockSize: 2,
               blockVersion: blockVersion,
               data: web3.utils.hexToBytes(bs.getData()),
@@ -560,7 +559,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.advanceBlockTimestamp(
             exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_FORCED + 1
           );
-          await exchangeTestUtil.commitRings(exchangeId);
+          await exchangeTestUtil.submitTransactions();
           // Try to submit the rings
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(exchangeId),
@@ -571,7 +570,7 @@ contract("Exchange", (accounts: string[]) => {
 
         it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
           await createExchange();
-          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.submitTransactions();
           await exchangeTestUtil.submitPendingBlocks(exchangeId);
 
           // Do a deposit
@@ -600,8 +599,8 @@ contract("Exchange", (accounts: string[]) => {
           bs.addBN(merkleRoot.add(new BN(1)), 32);
           bs.addNumber(0, 4);
           const tradeBlock: OnchainBlock = {
-            blockType: BlockType.SETTLEMENT,
-            blockSize: exchangeTestUtil.ringSettlementBlockSizes[0],
+            blockType: BlockType.NOOP,
+            blockSize: exchangeTestUtil.blockSizes[0],
             blockVersion: 0,
             data: web3.utils.hexToBytes(bs.getData()),
             proof: [0, 0, 0, 0, 0, 0, 0, 0],
@@ -623,7 +622,7 @@ contract("Exchange", (accounts: string[]) => {
           );
 
           // Commit the withdrawals
-          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
+          await exchangeTestUtil.submitTransactions();
           await exchangeTestUtil.submitPendingBlocks(exchangeId);
           // Try to commit the rings again
           await expectThrow(
@@ -635,13 +634,13 @@ contract("Exchange", (accounts: string[]) => {
             "DEPOSIT_BLOCK_FORCED"
           );
           // Commit the deposits
-          await exchangeTestUtil.commitDeposits(exchangeId);
+          await exchangeTestUtil.submitTransactions();
           // Commit the rings
-          await exchangeTestUtil.sendRing(
+          /*await exchangeTestUtil.sendRing(
             exchangeId,
-            exchangeTestUtil.dummyRing
-          );
-          await exchangeTestUtil.commitRings(exchangeId);
+            exchangeTestUtil.dummySpotTrade
+          );*/
+          await exchangeTestUtil.submitTransactions();
           // Submit the blocks
           await exchangeTestUtil.submitPendingBlocks(exchangeId);
         });

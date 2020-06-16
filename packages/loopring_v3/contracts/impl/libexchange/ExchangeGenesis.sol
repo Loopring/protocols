@@ -41,7 +41,8 @@ library ExchangeGenesis
         address _loopringAddress,
         address payable _operator,
         bool    _onchainDataAvailability,
-        bytes32 _genesisBlockHash
+        bytes32 _genesisBlockHash,
+        address _insuranceContract
         )
         external
     {
@@ -50,6 +51,7 @@ library ExchangeGenesis
         require(address(0) != _operator, "ZERO_ADDRESS");
         require(_genesisBlockHash != 0, "ZERO_GENESIS_BLOCK_HASH");
         require(S.id == 0, "INITIALIZED_ALREADY");
+        require(address(0) != _insuranceContract, "ZERO_ADDRESS");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;
@@ -64,27 +66,6 @@ library ExchangeGenesis
 
         S.merkleRoot = S.genesisMerkleRoot;
         S.numBlocksSubmitted = 1;
-        S.numDepositRequestsCommitted = 1;
-        S.numWithdrawalRequestsCommitted = 1;
-
-        ExchangeData.Request memory genesisRequest = ExchangeData.Request(
-            0,
-            0,
-            0xFFFFFFFF
-        );
-        S.depositChain.push(genesisRequest);
-        S.withdrawalChain.push(genesisRequest);
-
-        // Create an account for the protocol fees. This account is also used
-        // for padding deposits and on-chain withdrawal requests.
-        ExchangeData.Account memory protocolFeePoolAccount = ExchangeData.Account(
-            address(0),
-            uint(0),
-            uint(0)
-        );
-
-        S.accounts.push(protocolFeePoolAccount);
-        S.ownerToAccountId[protocolFeePoolAccount.owner] = uint24(S.accounts.length);
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.timestamp = uint32(0);

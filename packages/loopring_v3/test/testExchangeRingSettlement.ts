@@ -2,12 +2,21 @@ import BN = require("bn.js");
 import { Constants, Signature } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { OrderInfo, RingInfo } from "./types";
+import { OrderInfo, SpotTrade } from "./types";
+
+export interface TransferOptions {
+  conditionalTransfer?: boolean;
+  autoApprove?: boolean;
+  amountToDeposit?: BN;
+  feeToDeposit?: BN;
+}
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
 
   let exchangeID = 0;
+  let operatorAccountID: number;
+  let operator: string;
 
   const bVerify = true;
 
@@ -15,6 +24,62 @@ contract("Exchange", (accounts: string[]) => {
     if (bVerify) {
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
     }
+  };
+
+  const transfer = async (
+    from: string,
+    to: string,
+    token: string,
+    amount: BN,
+    feeToken: string,
+    fee: BN,
+    options: TransferOptions = {}
+  ) => {
+    const amountToDeposit = options.amountToDeposit
+      ? options.amountToDeposit
+      : amount;
+    const feeToDeposit = options.feeToDeposit ? options.feeToDeposit : fee;
+    const conditionalTransfer =
+      options.conditionalTransfer !== undefined
+        ? options.conditionalTransfer
+        : false;
+    const autoApprove =
+      options.autoApprove !== undefined ? options.autoApprove : true;
+    // From
+    let accountFromId = await exchangeTestUtil.depositToOwner(
+      from,
+      token,
+      amountToDeposit
+    );
+    await exchangeTestUtil.depositToOwner(from, feeToken, feeToDeposit);
+    // To
+    let accountToId = await exchangeTestUtil.depositToOwner(
+      to,
+      token,
+      new BN(0)
+    );
+    if (conditionalTransfer && autoApprove) {
+      await exchangeTestUtil.approveOffchainTransfer(from, to, token, amount);
+      await exchangeTestUtil.approveOffchainTransfer(
+        from,
+        operator,
+        feeToken,
+        fee
+      );
+    }
+    // Do the transfer
+    const request = await exchangeTestUtil.requestInternalTransfer(
+      exchangeID,
+      accountFromId,
+      accountToId,
+      token,
+      amount,
+      feeToken,
+      fee,
+      undefined,
+      conditionalTransfer
+    );
+    return request;
   };
 
   before(async () => {
@@ -33,13 +98,106 @@ contract("Exchange", (accounts: string[]) => {
       exchangeTestUtil.testContext.stateOwners[0],
       true
     );
+    operatorAccountID = await exchangeTestUtil.getActiveOperator(exchangeID);
+    operator = exchangeTestUtil.getAccount(operatorAccountID).owner;
   });
 
   describe("Trade", function() {
     this.timeout(0);
 
+    it.only("Multiple txs", async () => {
+      const ringA: SpotTrade = {
+        orderA: {
+          tokenS: "ETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("3", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[0]
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "ETH",
+          amountS: new BN(web3.utils.toWei("100", "ether")),
+          amountB: new BN(web3.utils.toWei("2", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[1]
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("1", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+      const ringB: SpotTrade = {
+        orderA: {
+          tokenS: "WETH",
+          tokenB: "GTO",
+          amountS: new BN(web3.utils.toWei("110", "ether")),
+          amountB: new BN(web3.utils.toWei("200", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[2]
+        },
+        orderB: {
+          tokenS: "GTO",
+          tokenB: "WETH",
+          amountS: new BN(web3.utils.toWei("200", "ether")),
+          amountB: new BN(web3.utils.toWei("100", "ether")),
+          owner: exchangeTestUtil.testContext.orderOwners[3]
+        },
+        expected: {
+          orderA: {
+            filledFraction: 1.0,
+            spread: new BN(web3.utils.toWei("10", "ether"))
+          },
+          orderB: { filledFraction: 1.0 }
+        }
+      };
+
+      await exchangeTestUtil.setupRing(ringA);
+      await exchangeTestUtil.setupRing(ringB);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
+
+      const token = "ETH";
+      const feeToken = "LRC";
+      const amount = new BN(web3.utils.toWei("2.9", "ether"));
+      const fee = new BN(web3.utils.toWei("12.3", "ether"));
+
+      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
+      const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+
+      // Do a transfer
+      await transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true});
+
+      const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
+
+      await exchangeTestUtil.requestWithdrawalOffchain(
+        exchangeID,
+        ownerB_ID,
+        token,
+        amount,
+        feeToken,
+        /*fee*/new BN(0)
+      );
+
+      /*await exchangeTestUtil.requestWithdrawalOnchain(
+        exchangeID,
+        ownerB_ID,
+        token,
+        amount,
+        ownerB
+      );*/
+
+      await exchangeTestUtil.submitTransactions();
+
+      await verify();
+
+      assert(false);
+    });
+
     it("Perfect match", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -61,14 +219,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Matchable (orderA < orderB)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -93,14 +250,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Matchable (orderA > orderB)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "LRC",
           tokenB: "GTO",
@@ -125,8 +281,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
@@ -145,7 +300,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupOrder(order, 0);
 
       const spread = new BN(web3.utils.toWei("1", "ether"));
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -175,8 +330,7 @@ contract("Exchange", (accounts: string[]) => {
         ringA.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // tokenS
       const exptectedBalanceS = spread;
@@ -215,7 +369,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupOrder(order, 0);
 
       const spread = new BN(web3.utils.toWei("5", "ether"));
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -232,7 +386,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -272,8 +426,7 @@ contract("Exchange", (accounts: string[]) => {
         ringB.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // tokenS
       const exptectedBalanceS = spread;
@@ -312,7 +465,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupOrder(order, 0);
 
       const spread = new BN(web3.utils.toWei("1", "ether"));
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -342,8 +495,7 @@ contract("Exchange", (accounts: string[]) => {
         ringA.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // tokenS
       await exchangeTestUtil.checkOffchainBalance(
@@ -382,7 +534,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupOrder(order, 0);
 
       const spread = new BN(web3.utils.toWei("50", "ether"));
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -399,7 +551,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -439,8 +591,7 @@ contract("Exchange", (accounts: string[]) => {
         ringB.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // tokenS
       await exchangeTestUtil.checkOffchainBalance(
@@ -479,7 +630,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupOrder(order, 0);
 
       const spread = new BN(web3.utils.toWei("5", "ether"));
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -496,7 +647,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "GTO",
           tokenB: "WETH",
@@ -535,8 +686,7 @@ contract("Exchange", (accounts: string[]) => {
         ringB.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // tokenS
       const exptectedBalanceS = spread;
@@ -575,7 +725,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupOrder(order, 0);
 
       const spread = new BN(web3.utils.toWei("5", "ether"));
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -592,7 +742,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "GTO",
           tokenB: "WETH",
@@ -626,8 +776,7 @@ contract("Exchange", (accounts: string[]) => {
         ringA.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // tokenS
       await exchangeTestUtil.checkOffchainBalance(
@@ -653,7 +802,7 @@ contract("Exchange", (accounts: string[]) => {
     });
 
     it("feeBips < maxFeeBips", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "LRC",
           tokenB: "GTO",
@@ -682,14 +831,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Rebate (single order)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "LRC",
           tokenB: "GTO",
@@ -725,14 +873,13 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Rebate (both orders, rebate token == operator fee token)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "LRC",
           tokenB: "GTO",
@@ -776,14 +923,13 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderB.amountB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Unmatchable", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -809,15 +955,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
 
     it("No funds available", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -840,14 +985,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Insufficient funds available (buy order)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -871,14 +1015,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Insufficient funds available (sell order)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -902,14 +1045,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("allOrNone (Buy, successful)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -935,14 +1077,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("allOrNone (Sell, successful)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -969,14 +1110,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("allOrNone (Buy, unsuccessful)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1003,15 +1143,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("allOrNone (Sell, unsuccessful)", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -1036,15 +1175,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("Self-trading", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1076,14 +1214,13 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("selling token with decimals == 0", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "INDA",
           tokenB: "WETH",
@@ -1105,14 +1242,13 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("fillAmountB rounding error > 0.1%", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "INDA",
           tokenB: "INDB",
@@ -1137,15 +1273,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("fillAmountB is 0 because of rounding error", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "INDA",
           tokenB: "INDB",
@@ -1168,15 +1303,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("operator == order owner", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "LRC",
@@ -1196,14 +1330,13 @@ contract("Exchange", (accounts: string[]) => {
 
       exchangeTestUtil.setActiveOperator(ring.orderB.accountID);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("orderA.owner == orderB.owner == operator", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1238,14 +1371,13 @@ contract("Exchange", (accounts: string[]) => {
 
       exchangeTestUtil.setActiveOperator(ring.orderA.accountID);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("tokenS/tokenB mismatch", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -1263,15 +1395,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
 
     it("tokenS == tokenB", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "WETH",
@@ -1289,15 +1420,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("Wrong order signature", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "LRC",
@@ -1316,15 +1446,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("validUntil < now", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1347,15 +1476,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("validSince > now", async () => {
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1378,15 +1506,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
 
     it("Multiple rings", async () => {
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -1409,7 +1536,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1438,8 +1565,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
@@ -1454,7 +1580,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupOrder(order, 0);
 
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -1471,7 +1597,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: order,
         orderB: {
           tokenS: "GTO",
@@ -1494,15 +1620,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Reused OrderID (tradeHistory.filled > order.amount)", async () => {
       const orderID = 79;
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1523,7 +1648,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1547,15 +1672,13 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await verify();
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(exchangeID),
         "invalid block"
       );
     });
@@ -1565,7 +1688,7 @@ contract("Exchange", (accounts: string[]) => {
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
       const orderIDA = 8;
       const orderIDB = 0;
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1587,7 +1710,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1609,7 +1732,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 0.0 }
         }
       };
-      const ringC: RingInfo = {
+      const ringC: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1631,7 +1754,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringD: RingInfo = {
+      const ringD: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1654,7 +1777,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 0.0 }
         }
       };
-      const ringE: RingInfo = {
+      const ringE: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1690,15 +1813,14 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ringD);
       await exchangeTestUtil.sendRing(exchangeID, ringE);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await verify();
     });
 
     it("Invalid OrderID (order.orderID > tradeHistory.orderID)", async () => {
       const orderID = 8;
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1719,7 +1841,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1744,22 +1866,20 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await verify();
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
 
     it("Cancelled OrderID (order.orderID < tradeHistory.orderID)", async () => {
       const orderID = 8;
-      const ringA: RingInfo = {
+      const ringA: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1780,7 +1900,7 @@ contract("Exchange", (accounts: string[]) => {
           orderB: { filledFraction: 1.0 }
         }
       };
-      const ringB: RingInfo = {
+      const ringB: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -1804,15 +1924,13 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA);
       await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await verify();
 
       await exchangeTestUtil.setupRing(ringB);
       await exchangeTestUtil.sendRing(exchangeID, ringB);
-      await exchangeTestUtil.commitDeposits(exchangeID);
       await expectThrow(
-        exchangeTestUtil.commitRings(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });

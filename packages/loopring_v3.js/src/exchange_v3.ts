@@ -149,7 +149,7 @@ export class ExchangeV3 {
       exchangeId,
       blockIdx: 0,
 
-      blockType: BlockType.SETTLEMENT,
+      blockType: BlockType.NOOP,
       blockSize: 0,
       blockVersion: 0,
       data: "0x",
@@ -1057,7 +1057,7 @@ export class ExchangeV3 {
   private processBlock(block: Block, replay: boolean) {
     let requests: any[] = [];
     try {
-      if (block.blockType === BlockType.SETTLEMENT) {
+      if (block.blockType === BlockType.SPOT_TRADE) {
         requests = RingSettlementProcessor.processBlock(this.state, block);
         block.totalNumTradesProccesed += replay ? 0 : requests.length;
       } else if (block.blockType === BlockType.DEPOSIT) {
@@ -1108,6 +1108,17 @@ export class ExchangeV3 {
       nonce: 0,
       balances: {}
     };
+    const insuranceAccount: Account = {
+      exchangeId: this.state.exchangeId,
+      accountId: 1,
+      owner: Constants.zeroAddress,
+
+      publicKeyX: "0",
+      publicKeyY: "0",
+      nonce: 0,
+      balances: {}
+    };
     this.state.accounts.push(protocolPoolAccount);
+    this.state.accounts.push(insuranceAccount);
   }
 }

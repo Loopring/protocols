@@ -80,6 +80,7 @@ contract("Exchange", (accounts: string[]) => {
       amount,
       feeToken,
       fee,
+      undefined,
       conditionalTransfer
     );
     return request;
@@ -121,8 +122,7 @@ contract("Exchange", (accounts: string[]) => {
         });
         await transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
         // Submit the transfers
-        await exchangeTestUtil.commitDeposits(exchangeID);
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks(exchangeID);
       });
 
@@ -142,8 +142,7 @@ contract("Exchange", (accounts: string[]) => {
           conditionalTransfer: true
         });
         // Submit the transfers
-        await exchangeTestUtil.commitDeposits(exchangeID);
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks(exchangeID);
       });
 
@@ -158,8 +157,7 @@ contract("Exchange", (accounts: string[]) => {
           conditionalTransfer: true
         });
         // Submit the transfers
-        await exchangeTestUtil.commitDeposits(exchangeID);
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await expectThrow(
           exchangeTestUtil.submitPendingBlocks(exchangeID),
           "SUB_UNDERFLOW"
@@ -215,8 +213,7 @@ contract("Exchange", (accounts: string[]) => {
           { conditionalTransfer: true, autoApprove: false }
         );
         // Submit the single transfer
-        await exchangeTestUtil.commitDeposits(exchangeID);
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks(exchangeID);
       });
 
@@ -232,10 +229,10 @@ contract("Exchange", (accounts: string[]) => {
         });
         await transfer(ownerA, ownerB, tokenB, amountD, tokenA, amountA);
         // Submit the deposits
-        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks(exchangeID);
         // Commmit the transfers
-        await exchangeTestUtil.commitInternalTransfers(exchangeID);
+        await exchangeTestUtil.submitTransactions();
 
         // Submit the transfers: invalid length
         await expectThrow(
@@ -323,10 +320,8 @@ contract("Exchange", (accounts: string[]) => {
       );
       await transfer(ownerB, ownerA, token, amount, feeToken, fee);
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
       // Commit the transfers
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
@@ -352,10 +347,8 @@ contract("Exchange", (accounts: string[]) => {
       );
       await transfer(ownerB, ownerA, token, amount, feeToken, fee);
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
       // Commit the transfers
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
@@ -396,10 +389,8 @@ contract("Exchange", (accounts: string[]) => {
         fee.mul(new BN(4))
       );
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
       // Commit the transfers
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
@@ -440,10 +431,8 @@ contract("Exchange", (accounts: string[]) => {
         fee.mul(new BN(4))
       );
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
       // Commit the transfers
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
@@ -467,10 +456,8 @@ contract("Exchange", (accounts: string[]) => {
         await exchangeTestUtil.getAccountID(ownerA)
       );
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
       // Commit the transfers
-      await exchangeTestUtil.commitInternalTransfers(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
@@ -490,12 +477,9 @@ contract("Exchange", (accounts: string[]) => {
         feeToDeposit: new BN(0)
       });
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
-
       // Commit the transfers
       await expectThrow(
-        exchangeTestUtil.commitInternalTransfers(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -514,12 +498,9 @@ contract("Exchange", (accounts: string[]) => {
         feeToDeposit: fee
       });
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
-
       // Commit the transfers
       await expectThrow(
-        exchangeTestUtil.commitInternalTransfers(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });
@@ -538,12 +519,9 @@ contract("Exchange", (accounts: string[]) => {
         feeToDeposit: new BN(0)
       });
 
-      // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
-
       // Commit the transfers
       await expectThrow(
-        exchangeTestUtil.commitInternalTransfers(exchangeID),
+        exchangeTestUtil.submitTransactions(),
         "invalid block"
       );
     });

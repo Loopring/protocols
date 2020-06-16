@@ -8,51 +8,18 @@ import pathlib
 from state import Account, Context, State, Order, Ring, copyAccountInfo, AccountUpdateData
 
 
-class RingSettlementBlock(object):
+class Block(object):
     def __init__(self):
         self.blockType = 0
-        self.ringSettlements = []
+        self.transactions = []
 
     def toJSON(self):
-        self.blockSize = len(self.ringSettlements)
+        self.blockSize = len(self.transactions)
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
+class GeneralObject(object):
+    pass
 
-class DepositBlock(object):
-    def __init__(self):
-        self.blockType = 1
-        self.deposits = []
-
-    def toJSON(self):
-        self.blockSize = len(self.deposits)
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
-class OnchainWithdrawalBlock(object):
-    def __init__(self):
-        self.blockType = 2
-        self.withdrawals = []
-
-    def toJSON(self):
-        self.blockSize = len(self.withdrawals)
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
-class OffchainWithdrawalBlock(object):
-    def __init__(self):
-        self.blockType = 3
-        self.withdrawals = []
-
-    def toJSON(self):
-        self.blockSize = len(self.withdrawals)
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
-
-class InternalTransferBlock(object):
-    def __init__(self):
-        self.blockType = 5
-        self.transfers = []
-
-    def toJSON(self):
-        self.blockSize = len(self.transfers)
-        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
 def orderFromJSON(jOrder, state):
     exchangeID = int(jOrder["exchangeID"])
@@ -71,6 +38,20 @@ def orderFromJSON(jOrder, state):
     feeBips = int(jOrder["feeBips"])
     rebateBips = int(jOrder["rebateBips"])
 
+    #transferAmountTrade = int(jOrder["transferAmountTrade"])
+    #reduceOnly = int(jOrder["reduceOnly"])
+    #triggerPrice = int(jOrder["triggerPrice"])
+
+    #transferAmount = int(jOrder["transferAmount"])
+    #transferFee = int(jOrder["transferFee"])
+
+    transferAmountTrade = int(0)
+    reduceOnly = int(0)
+    triggerPrice = int(0)
+
+    transferAmount = int(0)
+    transferFee = int(0)
+
     account = state.getAccount(accountID)
 
     order = Order(account.publicKeyX, account.publicKeyY,
@@ -78,12 +59,62 @@ def orderFromJSON(jOrder, state):
                   tokenS, tokenB,
                   amountS, amountB,
                   allOrNone, validSince, validUntil, buy,
-                  maxFeeBips, feeBips, rebateBips)
+                  maxFeeBips, feeBips, rebateBips,
+                  transferAmountTrade, reduceOnly, triggerPrice,
+                  transferAmount, transferFee)
 
     order.signature = jOrder["signature"]
 
     return order
 
+def transferFromJSON(jTransfer):
+    transfer = GeneralObject()
+    transfer.accountFromID = int(jTransfer["accountFromID"])
+    transfer.accountToID = int(jTransfer["accountToID"])
+    transfer.transTokenID = int(jTransfer["transTokenID"])
+    transfer.amount = str(jTransfer["amount"])
+    transfer.feeTokenID = int(jTransfer["feeTokenID"])
+    transfer.fee = str(jTransfer["fee"])
+    transfer.type = int(jTransfer["type"])
+    transfer.nonce = int(jTransfer["nonce"])
+    transfer.ownerFrom = str(jTransfer["ownerFrom"])
+    transfer.ownerTo = str(jTransfer["ownerTo"])
+    transfer.signature = jTransfer["signature"]
+    return transfer
+
+def withdrawFromJSON(jWithdraw):
+    withdraw = GeneralObject()
+    withdraw.owner = str(jWithdraw["owner"])
+    withdraw.accountID = int(jWithdraw["accountID"])
+    withdraw.nonce = str(jWithdraw["nonce"])
+    withdraw.tokenID = int(jWithdraw["tokenID"])
+    withdraw.amount = str(jWithdraw["amount"])
+    withdraw.feeTokenID = int(jWithdraw["feeTokenID"])
+    withdraw.fee = str(jWithdraw["fee"])
+    withdraw.type = int(jWithdraw["type"])
+    withdraw.signature = jWithdraw["signature"]
+    return withdraw
+
+def depositFromJSON(jDeposit):
+    deposit = GeneralObject()
+    deposit.owner = str(jDeposit["owner"])
+    deposit.accountID = int(jDeposit["accountID"])
+    deposit.tokenID = int(jDeposit["tokenID"])
+    deposit.amount = str(jDeposit["amount"])
+    return deposit
+
+
+def publicKeyUpdateFromJSON(jUpdate):
+    update = GeneralObject()
+    update.owner = str(jUpdate["owner"])
+    update.accountID = int(jUpdate["accountID"])
+    update.nonce = str(jUpdate["nonce"])
+    update.publicKeyX = str(jUpdate["publicKeyX"])
+    update.publicKeyY = str(jUpdate["publicKeyY"])
+    update.feeTokenID = int(jUpdate["feeTokenID"])
+    update.fee = str(jUpdate["fee"])
+    update.onchainSignature = str(jUpdate["onchainSignature"])
+    return update
 
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
@@ -93,8 +124,8 @@ def ringFromJSON(jRing, state):
 
     return ring
 
-def createRingSettlementBlock(state, data):
-    block = RingSettlementBlock()
+def createBlock(state, data):
+    block = Block()
     block.onchainDataAvailability = data["onchainDataAvailability"]
     block.exchangeID = state.exchangeID
     block.merkleRootBefore = str(state.getRoot())
@@ -108,10 +139,39 @@ def createRingSettlementBlock(state, data):
     # Protocol fee payment / Operator payment
     accountBefore_P = copyAccountInfo(state.getAccount(0))
 
-    for ringInfo in data["rings"]:
-        ring = ringFromJSON(ringInfo, state)
-        ringSettlement = state.settleRing(context, ring)
-        block.ringSettlements.append(ringSettlement)
+    for transactionInfo in data["transactions"]:
+        txType = transactionInfo["txType"]
+        if txType == "Noop":
+            transaction = GeneralObject()
+        if txType == "SpotTrade":
+            transaction = ringFromJSON(transactionInfo, state)
+        if txType == "Transfer":
+            transaction = transferFromJSON(transactionInfo)
+        if txType == "Withdraw":
+            transaction = withdrawFromJSON(transactionInfo)
+        if txType == "Deposit":
+            transaction = depositFromJSON(transactionInfo)
+        if txType == "PublicKeyUpdate":
+            transaction = publicKeyUpdateFromJSON(transactionInfo)
+
+        transaction.txType = txType
+        tx = state.executeTransaction(context, transaction)
+        txWitness = GeneralObject()
+        txWitness.witness = tx.witness
+        if txType == "Noop":
+            txWitness.noop = tx.input
+        if txType == "SpotTrade":
+            txWitness.spotTrade = tx.input
+        if txType == "Transfer":
+            txWitness.transfer = tx.input
+        if txType == "Withdraw":
+            txWitness.withdraw = tx.input
+        if txType == "Deposit":
+            txWitness.deposit = tx.input
+        if txType == "PublicKeyUpdate":
+            txWitness.publicKeyUpdate = tx.input
+        txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
+        block.transactions.append(txWitness)
 
     # Protocol fee payment
     rootBefore = state._accountsTree._root
@@ -126,139 +186,14 @@ def createRingSettlementBlock(state, data):
     rootBefore = state._accountsTree._root
     accountBefore = copyAccountInfo(state.getAccount(context.operatorAccountID))
     proof = state._accountsTree.createProof(context.operatorAccountID)
-    for ringSettlement in block.ringSettlements:
-        ringSettlement.balanceUpdateA_O = account.updateBalance(ringSettlement.ring.orderA.tokenB, ringSettlement.balanceDeltaA_O)
-        ringSettlement.balanceUpdateB_O = account.updateBalance(ringSettlement.ring.orderB.tokenB, ringSettlement.balanceDeltaB_O)
+    for tx in block.transactions:
+        tx.witness.balanceUpdateA_O = account.updateBalance(tx.witness.balanceO_A_Address, tx.witness.balanceDeltaA_O)
+        tx.witness.balanceUpdateB_O = account.updateBalance(tx.witness.balanceO_B_Address, tx.witness.balanceDeltaB_O)
     account.nonce += 1
     state.updateAccountTree(context.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))
     rootAfter = state._accountsTree._root
     block.accountUpdate_O = AccountUpdateData(context.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-
-    block.merkleRootAfter = str(state.getRoot())
-    return block
-
-def createDepositBlock(state, data):
-    block = DepositBlock()
-    block.onchainDataAvailability = False
-    block.exchangeID = state.exchangeID
-    block.merkleRootBefore = str(state.getRoot())
-    block.startHash = str(data["startHash"])
-    block.startIndex = str(data["startIndex"])
-    block.count = str(data["count"])
-
-    for depositInfo in data["deposits"]:
-        accountID = int(depositInfo["accountID"])
-        publicKeyX = int(depositInfo["publicKeyX"])
-        publicKeyY = int(depositInfo["publicKeyY"])
-        token = int(depositInfo["tokenID"])
-        amount = int(depositInfo["amount"])
-
-        deposit = state.deposit(accountID, publicKeyX, publicKeyY, token, amount)
-
-        block.deposits.append(deposit)
-
-    block.merkleRootAfter = str(state.getRoot())
-    return block
-
-def createOnchainWithdrawalBlock(state, data):
-    block = OnchainWithdrawalBlock()
-    block.onchainDataAvailability = False
-    block.exchangeID = state.exchangeID
-    block.merkleRootBefore = str(state.getRoot())
-    block.startHash = str(data["startHash"])
-    block.startIndex = str(data["startIndex"])
-    block.count = str(data["count"])
-
-    # If count == 0 the exchange is shutdown and we do withdrawals that also reset
-    # the state back to default values
-    shutdown = int(block.count) == 0
-
-    for withdrawalInfo in data["withdrawals"]:
-        accountID = int(withdrawalInfo["accountID"])
-        tokenID = int(withdrawalInfo["tokenID"])
-        amount = int(withdrawalInfo["amount"])
-
-        withdrawal = state.onchainWithdraw(block.exchangeID, accountID, tokenID, amount, shutdown)
-
-        block.withdrawals.append(withdrawal)
-
-    block.merkleRootAfter = str(state.getRoot())
-    return block
-
-def createOffchainWithdrawalBlock(state, data):
-    block = OffchainWithdrawalBlock()
-    block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.exchangeID = state.exchangeID
-    block.merkleRootBefore = str(state.getRoot())
-    block.operatorAccountID = int(data["operatorAccountID"])
-
-    for withdrawalInfo in data["withdrawals"]:
-        accountID = int(withdrawalInfo["accountID"])
-        tokenID = int(withdrawalInfo["tokenID"])
-        amount = int(withdrawalInfo["amount"])
-        feeTokenID = int(withdrawalInfo["feeTokenID"])
-        fee = int(withdrawalInfo["fee"])
-
-        withdrawal = state.offchainWithdraw(block.exchangeID, accountID, tokenID, amount,
-                                            block.operatorAccountID, feeTokenID, fee)
-        withdrawal.signature = withdrawalInfo["signature"]
-        block.withdrawals.append(withdrawal)
-
-    # Operator payments
-    account = state.getAccount(block.operatorAccountID)
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
-    proof = state._accountsTree.createProof(block.operatorAccountID)
-    for withdrawal in block.withdrawals:
-        withdrawal.balanceUpdateF_O = account.updateBalance(withdrawal.feeTokenID, int(withdrawal.feeValue))
-    state.updateAccountTree(block.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
-    rootAfter = state._accountsTree._root
-    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-
-    block.merkleRootAfter = str(state.getRoot())
-    return block
-
-def createInternalTransferBlock(state, data):
-    block = InternalTransferBlock()
-    block.onchainDataAvailability = data["onchainDataAvailability"]
-    block.exchangeID = state.exchangeID
-    block.merkleRootBefore = str(state.getRoot())
-    block.operatorAccountID = int(data["operatorAccountID"])
-
-    numConditionalTransfers = 0
-    for transInfo in data["transfers"]:
-        accountFromID = int(transInfo["accountFromID"])
-        accountToID = int(transInfo["accountToID"])
-        transTokenID = int(transInfo["transTokenID"])
-        amount = int(transInfo["amount"])
-        feeTokenID = int(transInfo["feeTokenID"])
-        fee = int(transInfo["fee"])
-        type = int(transInfo["type"])
-
-        transfer = state.internalTransfer(block.exchangeID, block.operatorAccountID,
-                                        accountFromID, accountToID, transTokenID,
-                                        amount, feeTokenID, fee, type)
-
-        if type > 0:
-            numConditionalTransfers += 1
-
-        transfer.signature = transInfo["signature"]
-        transfer.numConditionalTransfersAfter = numConditionalTransfers
-        block.transfers.append(transfer)
-
-    # Operator payments
-    account = state.getAccount(block.operatorAccountID)
-    rootBefore = state._accountsTree._root
-    accountBefore = copyAccountInfo(state.getAccount(block.operatorAccountID))
-    proof = state._accountsTree.createProof(block.operatorAccountID)
-    for transfer in block.transfers:
-        transfer.balanceUpdateF_O = account.updateBalance(transfer.feeTokenID, int(transfer.feeValue))
-    state.updateAccountTree(block.operatorAccountID)
-    accountAfter = copyAccountInfo(state.getAccount(block.operatorAccountID))
-    rootAfter = state._accountsTree._root
-    block.accountUpdate_O = AccountUpdateData(block.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
 
     block.merkleRootAfter = str(state.getRoot())
     return block
@@ -276,18 +211,7 @@ def main(exchangeID, blockIdx, blockType, inputFilename, outputFilename):
 
     #blockType = data["blockType"]
 
-    if blockType == "0":
-        block = createRingSettlementBlock(state, data)
-    elif blockType == "1":
-        block = createDepositBlock(state, data)
-    elif blockType == "2":
-        block = createOnchainWithdrawalBlock(state, data)
-    elif blockType == "3":
-        block = createOffchainWithdrawalBlock(state, data)
-    elif blockType == "5":
-        block = createInternalTransferBlock(state, data)
-    else:
-        raise Exception("Unknown block type")
+    block = createBlock(state, data)
 
     f = open(outputFilename,"w+")
     f.write(block.toJSON())

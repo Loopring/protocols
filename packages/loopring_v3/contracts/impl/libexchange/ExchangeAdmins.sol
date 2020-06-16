@@ -42,12 +42,6 @@ library ExchangeAdmins
         address         newOperator
     );
 
-    event AddressWhitelistChanged(
-        uint    indexed exchangeId,
-        address         oldAddressWhitelist,
-        address         newAddressWhitelist
-    );
-
     event FeesUpdated(
         uint    indexed exchangeId,
         uint            accountCreationFeeETH,
@@ -72,26 +66,6 @@ library ExchangeAdmins
             S.id,
             oldOperator,
             _operator
-        );
-    }
-
-    function setAddressWhitelist(
-        ExchangeData.State storage S,
-        address _addressWhitelist
-        )
-        external
-        returns (address oldAddressWhitelist)
-    {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(S.addressWhitelist != _addressWhitelist, "SAME_ADDRESS");
-
-        oldAddressWhitelist = S.addressWhitelist;
-        S.addressWhitelist = _addressWhitelist;
-
-        emit AddressWhitelistChanged(
-            S.id,
-            oldAddressWhitelist,
-            _addressWhitelist
         );
     }
 
@@ -179,14 +153,10 @@ library ExchangeAdmins
     {
         // Exchange needs to be shutdown
         require(S.isShutdown(), "EXCHANGE_NOT_SHUTDOWN");
-        // We also require that all deposit requests are processed
-        require(
-            S.numDepositRequestsCommitted == S.depositChain.length,
-            "DEPOSITS_NOT_PROCESSED"
-        );
-        // Merkle root needs to be reset to the genesis block
-        // (i.e. all balances 0 and all other state reset to default values)
-        require(S.isInInitialState(), "MERKLE_ROOT_NOT_REVERTED");
+        require(!S.isInWithdrawalMode(), "CANNOT_BE_IN_WITHDRAWAL_MODE");
+
+        // Need to remain in shutdown for some time
+        require(now >= S.shutdownStartTime + ExchangeData.MIN_TIME_IN_SHUTDOWN(), "NOT_LONG_ENOUGH_IN_SHUTDOWN");
 
         // Withdraw the complete stake
         uint amount = S.loopring.getExchangeStake(S.id);

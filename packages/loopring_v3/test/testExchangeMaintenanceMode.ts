@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { RingInfo } from "./types";
+import { SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -371,7 +371,7 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange();
 
       // Setup a ring
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -393,7 +393,7 @@ contract("Exchange", (accounts: string[]) => {
         }
       };
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       const duration = 1000;
 
@@ -416,7 +416,7 @@ contract("Exchange", (accounts: string[]) => {
       // The operator shouldn't be able to commit any ring settlement blocks
       // while in maitenance mode
       await exchangeTestUtil.sendRing(exchangeID, ring);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await expectThrow(
         exchangeTestUtil.submitPendingBlocks(exchangeID),
         "SETTLEMENT_SUSPENDED"

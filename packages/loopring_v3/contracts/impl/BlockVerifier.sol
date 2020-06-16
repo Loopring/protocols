@@ -52,8 +52,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         nonReentrant
         onlyOwner
     {
-        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        require(dataAvailability == onchainDataAvailability, "NO_DATA_AVAILABILITY_NEEDED");
         Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == false, "ALREADY_REGISTERED");
 
@@ -109,8 +107,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        Circuit storage circuit = circuits[dataAvailability][blockType][blockSize][blockVersion];
+        Circuit storage circuit = circuits[onchainDataAvailability][blockType][blockSize][blockVersion];
         require(circuit.registered == true, "NOT_REGISTERED");
 
         uint[18] storage vk = circuit.verificationKey;
@@ -144,8 +141,7 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        return circuits[dataAvailability][blockType][blockSize][blockVersion].registered;
+        return circuits[onchainDataAvailability][blockType][blockSize][blockVersion].registered;
     }
 
     function isCircuitEnabled(
@@ -159,23 +155,6 @@ contract BlockVerifier is ReentrancyGuard, IBlockVerifier
         view
         returns (bool)
     {
-        bool dataAvailability = needsDataAvailability(blockType, onchainDataAvailability);
-        return circuits[dataAvailability][blockType][blockSize][blockVersion].enabled;
-    }
-
-    function needsDataAvailability(
-        uint8 blockType,
-        bool  onchainDataAvailability
-        )
-        internal
-        pure
-        returns (bool)
-    {
-        // On-chain requests never need data-availability
-        return (
-            (blockType == uint(ExchangeData.BlockType.DEPOSIT)) ||
-            (blockType == uint(ExchangeData.BlockType.ONCHAIN_WITHDRAWAL))
-            ? false : onchainDataAvailability
-        );
+        return circuits[onchainDataAvailability][blockType][blockSize][blockVersion].enabled;
     }
 }

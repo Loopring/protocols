@@ -28,20 +28,7 @@ interface Range {
  */
 export class RingSettlementProcessor {
   public static processBlock(state: ExchangeState, block: Block) {
-    let data: Bitstream;
-    if (state.onchainDataAvailability) {
-      // Reverse circuit transform
-      const ringDataStart = 4 + 32 + 32 + 4 + 1 + 1 + 3;
-      const ringData = this.inverseTransformRingSettlementsData(
-        "0x" + block.data.slice(2 + 2 * ringDataStart)
-      );
-      data = new Bitstream(
-        block.data.slice(0, 2 + 2 * ringDataStart) + ringData.slice(2)
-      );
-    } else {
-      data = new Bitstream(block.data);
-    }
-
+    let data = new Bitstream(block.data);
     let offset = 0;
 
     // General data
@@ -375,55 +362,5 @@ export class RingSettlementProcessor {
     const fee = fillB.mul(new BN(feeBips)).div(new BN(10000));
     const rebate = fillB.mul(new BN(rebateBips)).div(new BN(10000));
     return [fee, protocolFee, rebate];
-  }
-
-  private static inverseTransformRingSettlementsData(input: string) {
-    // Inverse Transform
-    const transformed = new Bitstream(input);
-    const ringSize = 21;
-    const numRings = transformed.length() / ringSize;
-    const ranges = this.getRingTransformations();
-    const compressed = new Bitstream();
-    for (let r = 0; r < numRings; r++) {
-      let offset = 0;
-      let ringData = "00".repeat(ringSize);
-      for (const subranges of ranges) {
-        let totalRangeLength = 0;
-        for (const subrange of subranges) {
-          totalRangeLength += subrange.length;
-        }
-        let partialRangeLength = 0;
-        for (const subrange of subranges) {
-          const dataPart = transformed.extractData(
-            offset + totalRangeLength * r + partialRangeLength,
-            subrange.length
-          );
-          ringData = this.replaceAt(ringData, subrange.offset * 2, dataPart);
-          partialRangeLength += subrange.length;
-        }
-        offset += totalRangeLength * numRings;
-      }
-      compressed.addHex(ringData);
-    }
-    return compressed.getData();
-  }
-
-  private static getRingTransformations() {
-    const ranges: Range[][] = [];
-    ranges.push([{ offset: 0, length: 4 }]); // orderA.orderID + orderB.orderID
-    ranges.push([{ offset: 4, length: 6 }]); // orderA.accountID + orderB.accountID
-    ranges.push([{ offset: 10, length: 3 }]); // orderA.tokenS + orderB.tokenS
-    ranges.push([{ offset: 13, length: 6 }]); // orderA.fillS + orderB.fillS
-    ranges.push([{ offset: 19, length: 1 }]); // orderA.data
-    ranges.push([{ offset: 20, length: 1 }]); // orderB.data
-    return ranges;
-  }
-
-  private static replaceAt(data: string, index: number, replacement: string) {
-    return (
-      data.substr(0, index) +
-      replacement +
-      data.substr(index + replacement.length)
-    );
   }
 }

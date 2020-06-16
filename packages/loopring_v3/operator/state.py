@@ -13,15 +13,21 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
 BINARY_TREE_DEPTH_TRADING_HISTORY = 14
 BINARY_TREE_DEPTH_ACCOUNTS = 24
-BINARY_TREE_DEPTH_TOKENS = 10
+BINARY_TREE_DEPTH_TOKENS = 12
 
 MAX_AMOUNT = 2 ** 96 - 1
+
+class GeneralObject(object):
+    pass
+
+def setValue(value, default):
+    return default if value is None else value
 
 def copyBalanceInfo(leaf):
     c = copy.deepcopy(leaf)
@@ -38,7 +44,7 @@ def copyAccountInfo(account):
     return c
 
 def getDefaultAccount():
-    return Account(Point(0, 0))
+    return Account(0, Point(0, 0))
 
 class Fill(object):
     def __init__(self, amountS, amountB):
@@ -51,6 +57,7 @@ class Context(object):
         self.timestamp = int(timestamp)
         self.protocolTakerFeeBips = int(protocolTakerFeeBips)
         self.protocolMakerFeeBips = int(protocolMakerFeeBips)
+        self.numConditionalTransactions = int(0)
 
 class Signature(object):
     def __init__(self, sig):
@@ -72,8 +79,12 @@ class BalanceLeaf(object):
         self._tradeHistoryLeafs = {}
         # print("Empty trading tree: " + str(self._tradingHistoryTree._root))
 
+
     def hash(self):
-        return poseidon([int(self.balance), int(self._tradingHistoryTree._root)], poseidonParamsBalance)
+        #print("balance: " + self.balance)
+        temp = [int(self.balance), int(self._tradingHistoryTree._root)]
+        #print(temp)
+        return poseidon(temp, poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
@@ -128,13 +139,13 @@ class TradeHistoryLeaf(object):
     def hash(self):
         return poseidon([int(self.filled), int(self.orderID)], poseidonParamsTradingHistory)
 
-    def fromJSON(self, jAccount):
-        self.filled = jAccount["filled"]
-        self.orderID = jAccount["orderID"]
-
+    def fromJSON(self, jBalance):
+        self.filled = jBalance["filled"]
+        self.orderID = jBalance["orderID"]
 
 class Account(object):
-    def __init__(self, publicKey):
+    def __init__(self, owner, publicKey):
+        self.owner = str(owner)
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
@@ -145,9 +156,10 @@ class Account(object):
         #print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
+        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
+        self.owner = jAccount["owner"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
@@ -170,19 +182,15 @@ class Account(object):
     def getBalance(self, address):
         return self.getBalanceLeaf(address).balance
 
-    def updateBalance(self, tokenID, amount, shutdown = False):
-        # Make sure the leaf exist in our map
+    def updateBalance(self, tokenID, deltaBalance):
+        # Make sure the leaf exists in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
 
         balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         rootBefore = self._balancesTree._root
 
-        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
-        if int(self._balancesLeafs[str(tokenID)].balance) > MAX_AMOUNT:
-            self._balancesLeafs[str(tokenID)].balance = str(MAX_AMOUNT)
-        if shutdown:
-            self._balancesLeafs[str(tokenID)].resetTradeHistory()
+        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(deltaBalance))
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -193,7 +201,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndTradeHistory(self, tokenID, orderID, amount, filled):
+    def updateBalanceAndTradeHistory(self, tokenID, orderID, filled, delta_balance):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -203,9 +211,7 @@ class Account(object):
 
         # Update filled amounts
         tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled)
-        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + amount)
-        if int(self._balancesLeafs[str(tokenID)].balance) > MAX_AMOUNT:
-            self._balancesLeafs[str(tokenID)].balance = str(MAX_AMOUNT)
+        self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -258,13 +264,6 @@ class AccountUpdateData(object):
         self.after = after
 
 
-class Deposit(object):
-    def __init__(self, amount, balanceUpdate, accountUpdate):
-        self.amount = str(amount)
-        self.balanceUpdate = balanceUpdate
-        self.accountUpdate = accountUpdate
-
-
 class WithdrawProof(object):
     def __init__(self,
                  exchangeID, accountID, tokenID,
@@ -286,7 +285,9 @@ class Order(object):
                  tokenS, tokenB,
                  amountS, amountB,
                  allOrNone, validSince, validUntil, buy,
-                 maxFeeBips, feeBips, rebateBips):
+                 maxFeeBips, feeBips, rebateBips,
+                 transferAmountTrade, reduceOnly, triggerPrice,
+                 transferAmount, transferFee):
         self.publicKeyX = str(publicKeyX)
         self.publicKeyY = str(publicKeyY)
 
@@ -308,6 +309,13 @@ class Order(object):
 
         self.feeBips = feeBips
         self.rebateBips = rebateBips
+
+        self.transferAmountTrade = transferAmountTrade
+        self.reduceOnly = reduceOnly
+        self.triggerPrice = triggerPrice
+
+        self.transferAmount = transferAmount
+        self.transferFee = transferFee
 
     def checkValid(self, context, order, fillAmountS, fillAmountB):
         valid = True
@@ -333,16 +341,25 @@ class Ring(object):
         self.orderA = orderA
         self.orderB = orderB
 
-class RingSettlement(object):
+class TxWitness(object):
+    def __init__(self, witness, input):
+        self.witness = witness
+        self.input = input
+
+class Witness(object):
     def __init__(self,
-                 ring,
+                 signatureA, signatureB,
                  accountsMerkleRoot,
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                  balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
                  balanceUpdateA_P, balanceUpdateB_P,
+                 balanceO_A_Address, balanceO_B_Address,
                  balanceDeltaA_O, balanceDeltaB_O):
-        self.ring = ring
+        if signatureA is not None:
+            self.signatureA = signatureA
+        if signatureB is not None:
+            self.signatureB = signatureB
 
         self.accountsMerkleRoot = str(accountsMerkleRoot)
 
@@ -360,84 +377,12 @@ class RingSettlement(object):
         self.balanceUpdateA_P = balanceUpdateA_P
         self.balanceUpdateB_P = balanceUpdateB_P
 
+        self.balanceO_A_Address = balanceO_A_Address
+        self.balanceO_B_Address = balanceO_B_Address
+
         self.balanceDeltaA_O = balanceDeltaA_O
         self.balanceDeltaB_O = balanceDeltaB_O
 
-
-class OnchainWithdrawal(object):
-    def __init__(self,
-                 amountRequested, balanceUpdate, accountUpdate,
-                 accountID, tokenID, fAmountWithdrawn):
-        self.amountRequested = str(amountRequested)
-        self.balanceUpdate = balanceUpdate
-        self.accountUpdate = accountUpdate
-        self.accountID = accountID
-        self.tokenID = tokenID
-        self.fAmountWithdrawn = int(fAmountWithdrawn)
-
-class OffchainWithdrawal(object):
-    def __init__(self,
-                 exchangeID,
-                 accountID, tokenID, amountRequested, fAmountWithdrawn,
-                 feeTokenID, fee,
-                 feeValue,
-                 balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
-                 balanceUpdateF_O,
-                 nonce):
-        self.exchangeID = exchangeID
-
-        self.accountID = accountID
-        self.tokenID = tokenID
-        self.amountRequested = str(amountRequested)
-        self.fAmountWithdrawn = int(fAmountWithdrawn)
-
-        self.feeTokenID = feeTokenID
-        self.fee = str(fee)
-
-        self.feeValue = feeValue
-
-        self.balanceUpdateF_A = balanceUpdateF_A
-        self.balanceUpdateW_A = balanceUpdateW_A
-        self.accountUpdate_A = accountUpdate_A
-
-        self.balanceUpdateF_O = balanceUpdateF_O
-
-        self.nonce = nonce
-
-class InternalTransfer(object):
-    def __init__(self,
-                 exchangeID,
-                 accountFromID, accountToID,
-                 transTokenID, amountRequested, fAmountTrans,
-                 feeTokenID, fee, type,
-                 nonceFrom, nonceTo,
-                 feeValue,
-                 balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
-                 balanceUpdateT_To, accountUpdate_To,
-                 balanceUpdateF_O):
-        self.exchangeID = exchangeID
-
-        self.accountFromID = accountFromID
-        self.accountToID = accountToID
-        self.transTokenID = transTokenID
-        self.amountRequested = str(amountRequested)
-        self.fAmountTrans = str(fAmountTrans)
-        self.feeTokenID = feeTokenID
-        self.fee = str(fee)
-        self.type = int(type)
-        self.nonceFrom = nonceFrom
-        self.nonceTo = nonceTo
-
-        self.feeValue = feeValue
-
-        self.balanceUpdateF_From = balanceUpdateF_From
-        self.balanceUpdateT_From = balanceUpdateT_From
-        self.accountUpdate_From = accountUpdate_From
-
-        self.balanceUpdateT_To = balanceUpdateT_To
-        self.accountUpdate_To = accountUpdate_To
-
-        self.balanceUpdateF_O = balanceUpdateF_O
 
 class State(object):
     def __init__(self, exchangeID):
@@ -447,6 +392,7 @@ class State(object):
         self._accountsTree.newTree(getDefaultAccount().hash())
         self._accounts = {}
         self._accounts[str(0)] = getDefaultAccount()
+        self._accounts[str(1)] = getDefaultAccount()
         # print("Empty accounts tree: " + str(hex(self._accountsTree._root)))
 
     def load(self, filename):
@@ -478,7 +424,7 @@ class State(object):
         rebate = (amountB * rebateBips) // 10000
         return (fee, protocolFee, rebate)
 
-    def getMaxFillAmounts(self, order):
+    def getFilled(self, order):
         account = self.getAccount(order.accountID)
         tradeHistory = account.getBalanceLeaf(order.tokenS).getTradeHistory(int(order.orderID))
 
@@ -488,15 +434,13 @@ class State(object):
         filled = int(tradeHistory.filled) if (int(order.orderID) == int(tradeHistoryOrderId)) else 0
         overwrite = 1 if (int(order.orderID) == int(tradeHistoryOrderId) + numSlots) else 0
 
-        """
-        print("tradeHistory.orderID: " + str(tradeHistory.orderID))
-        print("order.orderID: " + str(order.orderID))
-        print("filled: " + str(filled))
-        print("overwrite: " + str(overwrite))
-        """
+        return (filled, overwrite)
+
+    def getMaxFill(self, order, filled, balanceLimit):
+        account = self.getAccount(order.accountID)
 
         # Scale the order
-        balanceS = int(account.getBalance(order.tokenS))
+        balanceS = int(account.getBalance(order.tokenS)) if balanceLimit else int(order.amountS)
 
         limit = int(order.amountB) if order.buy else int(order.amountS)
         filledLimited = limit if limit < filled else filled
@@ -505,7 +449,7 @@ class State(object):
         remainingS = remainingS_buy if order.buy else remaining
         fillAmountS = balanceS if balanceS < remainingS else remainingS
         fillAmountB = fillAmountS * int(order.amountB) // int(order.amountS)
-        return (Fill(fillAmountS, fillAmountB), filled, overwrite)
+        return Fill(fillAmountS, fillAmountB)
 
     def match(self, takerOrder, takerFill, makerOrder, makerFill):
         if takerFill.B < makerFill.S:
@@ -520,325 +464,396 @@ class State(object):
 
         return (spread, matchable)
 
-    def settleRing(self, context, ring):
-        #print("State update ring: ")
+    def executeTransaction(self, context, txInput):
+        newState = GeneralObject()
+        newState.signatureA = None
+        newState.signatureB = None
+        # A
+        newState.accountA_Address = None
+        newState.accountA_Owner = None
+        newState.accountA_PublicKeyX = None
+        newState.accountA_PublicKeyY = None
+        newState.accountA_Nonce = None
+        newState.balanceA_S_Address = None
+        newState.balanceA_S_Balance = None
+        newState.balanceA_B_Address = None
+        newState.balanceA_B_Balance = None
+        newState.tradeHistoryA_Address = None
+        newState.tradeHistoryA_Filled = None
+        newState.tradeHistoryA_OrderId = None
+        # B
+        newState.accountB_Address = None
+        newState.accountB_Owner = None
+        newState.accountB_PublicKeyX = None
+        newState.accountB_PublicKeyY = None
+        newState.accountB_Nonce = None
+        newState.balanceB_S_Address = None
+        newState.balanceB_S_Balance = None
+        newState.balanceB_B_Address = None
+        newState.balanceB_B_Balance = None
+        newState.tradeHistoryB_Address = None
+        newState.tradeHistoryB_Filled = None
+        newState.tradeHistoryB_OrderId = None
+        # Operator
+        newState.balanceDeltaA_O = None
+        newState.balanceDeltaB_O = None
+        # Protocol fees
+        #newState.balanceA_P_Address = None
+        newState.balanceDeltaA_P = None
+        #newState.balanceB_P_Address = None
+        newState.balanceDeltaB_P = None
 
-        (fillA, filled_A, overwriteTradeHistorySlotA) = self.getMaxFillAmounts(ring.orderA)
-        (fillB, filled_B, overwriteTradeHistorySlotB) = self.getMaxFillAmounts(ring.orderB)
+        if txInput.txType == "Noop":
 
-        #'''
-        print("fillA.S: " + str(fillA.S))
-        print("fillA.B: " + str(fillA.B))
-        print("fillB.S: " + str(fillB.S))
-        print("fillB.B: " + str(fillB.B))
-        print("-------------")
-        #'''
+            # Nothing to do
+            pass
 
-        if ring.orderA.buy:
-            (spread, matchable) = self.match(ring.orderA, fillA, ring.orderB, fillB)
-            fillA.S = fillB.B
-        else:
-            (spread, matchable) = self.match(ring.orderB, fillB, ring.orderA, fillA)
+        elif txInput.txType == "SpotTrade":
+
+            ring = txInput
+
+            # Amount filled in the trade history
+            (filled_A, overwriteTradeHistorySlotA) = self.getFilled(ring.orderA)
+            (filled_B, overwriteTradeHistorySlotB) = self.getFilled(ring.orderB)
+
+            # Simple matching logic
+            fillA = self.getMaxFill(ring.orderA, filled_A, True)
+            fillB = self.getMaxFill(ring.orderB, filled_B, True)
+            '''
+            print("fillA.S: " + str(fillA.S))
+            print("fillA.B: " + str(fillA.B))
+            print("fillB.S: " + str(fillB.S))
+            print("fillB.B: " + str(fillB.B))
+            print("-------------")
+            '''
+            if ring.orderA.buy:
+                (spread, matchable) = self.match(ring.orderA, fillA, ring.orderB, fillB)
+                fillA.S = fillB.B
+            else:
+                (spread, matchable) = self.match(ring.orderB, fillB, ring.orderA, fillA)
+                fillA.B = fillB.S
+
+            # Check valid
+            ring.orderA.checkValid(context, ring.orderA, fillA.S, fillA.B)
+            ring.orderB.checkValid(context, ring.orderB, fillB.S, fillB.B)
+            ring.valid = matchable and ring.orderA.valid and ring.orderB.valid
+            #print("ring.orderA.valid " + str(ring.orderA.valid))
+            #print("ring.orderB.valid " + str(ring.orderB.valid))
+            #if ring.valid == False:
+                #print("ring.valid false: ")
+                #fillA.S = 0
+                #fillA.B = 0
+                #fillB.S = 0
+                #fillB.B = 0
+
+            # Saved in ring for tests
+            ring.fFillS_A = toFloat(fillA.S, Float24Encoding)
+            ring.fFillS_B = toFloat(fillB.S, Float24Encoding)
+            ring.overwriteTradeHistorySlotA = overwriteTradeHistorySlotA
+            ring.overwriteTradeHistorySlotB = overwriteTradeHistorySlotB
+
+            fillA.S = roundToFloatValue(fillA.S, Float24Encoding)
+            fillB.S = roundToFloatValue(fillB.S, Float24Encoding)
             fillA.B = fillB.S
+            fillB.B = fillA.S
 
-        # Check valid
-        ring.orderA.checkValid(context, ring.orderA, fillA.S, fillA.B)
-        ring.orderB.checkValid(context, ring.orderB, fillB.S, fillB.B)
-        ring.valid = matchable and ring.orderA.valid and ring.orderB.valid
-        print("ring.orderA.valid " + str(ring.orderA.valid))
-        print("ring.orderB.valid " + str(ring.orderB.valid))
-        #if ring.valid == False:
-            #print("ring.valid false: ")
-            #fillA.S = 0
-            #fillA.B = 0
-            #fillB.S = 0
-            #fillB.B = 0
+            '''
+            print("fillA.S: " + str(fillA.S))
+            print("fillA.B: " + str(fillA.B))
+            print("fillB.S: " + str(fillB.S))
+            print("fillB.B: " + str(fillB.B))
+            print("spread: " + str(spread))
+            '''
 
-        # Saved in ring for tests
-        ring.fFillS_A = toFloat(fillA.S, Float24Encoding)
-        ring.fFillS_B = toFloat(fillB.S, Float24Encoding)
-        ring.overwriteTradeHistorySlotA = overwriteTradeHistorySlotA
-        ring.overwriteTradeHistorySlotB = overwriteTradeHistorySlotB
+            (fee_A, protocolFee_A, rebate_A) = self.calculateFees(
+                fillA.B,
+                ring.orderA.feeBips,
+                context.protocolTakerFeeBips,
+                ring.orderA.rebateBips
+            )
 
-        fillA.S = roundToFloatValue(fillA.S, Float24Encoding)
-        fillB.S = roundToFloatValue(fillB.S, Float24Encoding)
-        fillA.B = fillB.S
-        fillB.B = fillA.S
+            (fee_B, protocolFee_B, rebate_B) = self.calculateFees(
+                fillB.B,
+                ring.orderB.feeBips,
+                context.protocolMakerFeeBips,
+                ring.orderB.rebateBips
+            )
 
-        '''
-        print("fillA.S: " + str(fillA.S))
-        print("fillA.B: " + str(fillA.B))
-        print("fillB.S: " + str(fillB.S))
-        print("fillB.B: " + str(fillB.B))
-        print("spread: " + str(spread))
-        '''
+            '''
+            print("fee_A: " + str(fee_A))
+            print("protocolFee_A: " + str(protocolFee_A))
+            print("rebate_A: " + str(rebate_A))
+
+            print("fee_B: " + str(fee_B))
+            print("protocolFee_B: " + str(protocolFee_B))
+            print("rebate_B: " + str(rebate_B))
+            '''
+
+            newState.signatureA = ring.orderA.signature
+            newState.signatureB = ring.orderB.signature
+
+            newState.accountA_Address = ring.orderA.accountID
+            accountA = self.getAccount(ring.orderA.accountID)
+
+            newState.accountA_Nonce = accountA.nonce
+
+            newState.balanceA_S_Address = ring.orderA.tokenS
+            newState.balanceA_S_Balance = -fillA.S
+
+            newState.balanceA_B_Address = ring.orderA.tokenB
+            newState.balanceA_B_Balance = fillA.B - fee_A + rebate_A
+
+            newState.tradeHistoryA_Address = ring.orderA.orderID
+            newState.tradeHistoryA_Filled = filled_A + (fillA.B if ring.orderA.buy else fillA.S)
+            newState.tradeHistoryA_OrderId = ring.orderA.orderID
+
+
+            newState.accountB_Address = ring.orderB.accountID
+            accountB = self.getAccount(ring.orderB.accountID)
+
+            newState.accountB_Nonce = accountB.nonce
+
+            newState.balanceB_S_Address = ring.orderB.tokenS
+            newState.balanceB_S_Balance = -fillB.S
+
+            newState.balanceB_B_Address = ring.orderB.tokenB
+            newState.balanceB_B_Balance = fillB.B - fee_B + rebate_B
+
+            newState.tradeHistoryB_Address = ring.orderB.orderID
+            newState.tradeHistoryB_Filled = filled_B + (fillB.B if ring.orderB.buy else fillB.S)
+            newState.tradeHistoryB_OrderId = ring.orderB.orderID
+
+            newState.balanceDeltaA_O = fee_A - protocolFee_A - rebate_A
+            newState.balanceDeltaB_O = fee_B - protocolFee_B - rebate_B
+
+            newState.balanceDeltaA_P = protocolFee_A
+            newState.balanceDeltaB_P = protocolFee_B
+
+        elif txInput.txType == "Transfer":
+
+            transferAmount = roundToFloatValue(int(txInput.amount), Float24Encoding)
+            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
+
+            newState.signatureA = txInput.signature
+
+            newState.accountA_Address = txInput.accountFromID
+            accountA = self.getAccount(newState.accountA_Address)
+
+            newState.balanceA_S_Address = txInput.transTokenID
+            newState.balanceA_S_Balance = -transferAmount
+
+            newState.balanceA_B_Address = txInput.feeTokenID
+            newState.balanceA_B_Balance = -feeValue
+
+            newState.accountB_Address = txInput.accountToID
+            accountB = self.getAccount(newState.accountB_Address)
+            newState.accountB_Owner = txInput.ownerTo
+
+            newState.balanceB_B_Address = txInput.transTokenID
+            newState.balanceB_B_Balance = transferAmount
+
+            newState.accountA_Nonce = accountA.nonce + 1
+
+            if txInput.type != 0:
+                context.numConditionalTransactions = context.numConditionalTransactions + 1
+
+            newState.balanceDeltaA_O = feeValue
+
+        elif txInput.txType == "Withdraw":
+
+            ## calculate how much can be withdrawn
+            account = self.getAccount(txInput.accountID)
+            if int(txInput.type) == 2:
+                txInput.amountWithdrawn = str(0)
+            else:
+                balance = int(account.getBalance(txInput.tokenID))
+                txInput.amountWithdrawn = str(int(txInput.amount) if int(txInput.amount) <= balance else balance)
+
+            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
+
+            newState.signatureA = txInput.signature
+
+            newState.accountA_Address = txInput.accountID
+            accountA = self.getAccount(newState.accountA_Address)
+
+            newState.balanceA_S_Address = txInput.tokenID
+            newState.balanceA_S_Balance = -int(txInput.amountWithdrawn)
+
+            newState.balanceA_B_Address = txInput.feeTokenID
+            newState.balanceA_B_Balance = -feeValue
+
+            newState.accountA_Nonce = accountA.nonce + 1
+
+            newState.balanceDeltaA_O = feeValue
+
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
+
+        elif txInput.txType == "Deposit":
+
+            newState.accountA_Address = txInput.accountID
+            newState.accountA_Owner = txInput.owner
+
+            newState.balanceA_S_Address = txInput.tokenID
+            newState.balanceA_S_Balance = txInput.amount
+
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
+
+        elif txInput.txType == "PublicKeyUpdate":
+
+            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
+
+            accountA = self.getAccount(newState.accountA_Address)
+            newState.accountA_Address = txInput.accountID
+            newState.accountA_PublicKeyX = txInput.publicKeyX
+            newState.accountA_PublicKeyY = txInput.publicKeyY
+            newState.accountA_Nonce = accountA.nonce + 1
+
+            newState.balanceA_S_Address = txInput.feeTokenID
+            newState.balanceA_S_Balance = -feeValue
+
+            newState.balanceDeltaB_O = feeValue
+
+            context.numConditionalTransactions = context.numConditionalTransactions + 1
+
+
+        # Set default values if none provided
+        # A
+        newState.accountA_Address = setValue(newState.accountA_Address, 1)
+        accountA = self.getAccount(newState.accountA_Address)
+        newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
+        newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
+        newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
+        newState.accountA_Nonce = setValue(newState.accountA_Nonce, accountA.nonce)
+
+
+        newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
+        balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
+        newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
+
+        newState.balanceA_B_Address = setValue(newState.balanceA_B_Address, 0)
+        newState.balanceA_B_Balance = setValue(newState.balanceA_B_Balance, 0)
+
+        newState.tradeHistoryA_Address = setValue(newState.tradeHistoryA_Address, 0)
+        tradeHistoryA = balanceLeafA_S.getTradeHistory(newState.tradeHistoryA_Address)
+        newState.tradeHistoryA_Filled = setValue(newState.tradeHistoryA_Filled, tradeHistoryA.filled)
+        newState.tradeHistoryA_OrderId = setValue(newState.tradeHistoryA_OrderId, tradeHistoryA.orderID)
+
+        # B
+        newState.accountB_Address = setValue(newState.accountB_Address, 1)
+        accountB = self.getAccount(newState.accountB_Address)
+        newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
+        newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
+        newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
+        newState.accountB_Nonce = setValue(newState.accountB_Nonce, accountB.nonce)
+
+
+        newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
+        balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
+        newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
+
+        newState.balanceB_B_Address = setValue(newState.balanceB_B_Address, 0)
+        newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
+
+        newState.tradeHistoryB_Address = setValue(newState.tradeHistoryB_Address, 0)
+        tradeHistoryB = balanceLeafB_S.getTradeHistory(newState.tradeHistoryB_Address)
+        newState.tradeHistoryB_Filled = setValue(newState.tradeHistoryB_Filled, tradeHistoryB.filled)
+        newState.tradeHistoryB_OrderId = setValue(newState.tradeHistoryB_OrderId, tradeHistoryB.orderID)
+
+        # Operator
+        newState.balanceDeltaA_O = setValue(newState.balanceDeltaA_O, 0)
+        newState.balanceDeltaB_O = setValue(newState.balanceDeltaB_O, 0)
+
+        # Protocol fees
+        newState.balanceDeltaA_P = setValue(newState.balanceDeltaA_P, 0)
+        newState.balanceDeltaB_P = setValue(newState.balanceDeltaB_P, 0)
+
 
         # Copy the initial merkle root
         accountsMerkleRoot = self._accountsTree._root
 
-        (fee_A, protocolFee_A, rebate_A) = self.calculateFees(
-            fillA.B,
-            ring.orderA.feeBips,
-            context.protocolTakerFeeBips,
-            ring.orderA.rebateBips
-        )
-
-        (fee_B, protocolFee_B, rebate_B) = self.calculateFees(
-            fillB.B,
-            ring.orderB.feeBips,
-            context.protocolMakerFeeBips,
-            ring.orderB.rebateBips
-        )
-
-        '''
-        print("fee_A: " + str(fee_A))
-        print("protocolFee_A: " + str(protocolFee_A))
-        print("rebate_A: " + str(rebate_A))
-
-        print("fee_B: " + str(fee_B))
-        print("protocolFee_B: " + str(protocolFee_B))
-        print("rebate_B: " + str(rebate_B))
-        '''
-
         # Update balances A
-        accountA = self.getAccount(ring.orderA.accountID)
+        accountA = self.getAccount(newState.accountA_Address)
 
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.orderA.accountID))
-        proof = self._accountsTree.createProof(ring.orderA.accountID)
+        accountBefore = copyAccountInfo(self.getAccount(newState.accountA_Address))
+        proof = self._accountsTree.createProof(newState.accountA_Address)
 
         (balanceUpdateS_A, tradeHistoryUpdate_A) = accountA.updateBalanceAndTradeHistory(
-            ring.orderA.tokenS, ring.orderA.orderID, -fillA.S,
-            filled_A + (fillA.B if ring.orderA.buy else fillA.S)
+            newState.balanceA_S_Address,
+            newState.tradeHistoryA_OrderId,
+            newState.tradeHistoryA_Filled,
+            newState.balanceA_S_Balance
         )
-        balanceUpdateB_A = accountA.updateBalance(ring.orderA.tokenB, fillA.B - fee_A + rebate_A)
+        balanceUpdateB_A = accountA.updateBalance(
+            newState.balanceA_B_Address,
+            newState.balanceA_B_Balance
+        )
 
-        self.updateAccountTree(ring.orderA.accountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.orderA.accountID))
+        accountA.owner = newState.accountA_Owner
+        accountA.publicKeyX = newState.accountA_PublicKeyX
+        accountA.publicKeyY = newState.accountA_PublicKeyY
+        accountA.nonce = newState.accountA_Nonce
+
+        self.updateAccountTree(newState.accountA_Address)
+        accountAfter = copyAccountInfo(self.getAccount(newState.accountA_Address))
         rootAfter = self._accountsTree._root
-        accountUpdate_A = AccountUpdateData(ring.orderA.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_A = AccountUpdateData(newState.accountA_Address, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # Update balances B
-        accountB = self.getAccount(ring.orderB.accountID)
+        accountB = self.getAccount(newState.accountB_Address)
 
         rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(ring.orderB.accountID))
-        proof = self._accountsTree.createProof(ring.orderB.accountID)
+        accountBefore = copyAccountInfo(self.getAccount(newState.accountB_Address))
+        proof = self._accountsTree.createProof(newState.accountB_Address)
 
         (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(
-            ring.orderB.tokenS, ring.orderB.orderID, -fillB.S,
-            filled_B + (fillB.B if ring.orderB.buy else fillB.S)
+            newState.balanceB_S_Address,
+            newState.tradeHistoryB_OrderId,
+            newState.tradeHistoryB_Filled,
+            newState.balanceB_S_Balance
         )
-        balanceUpdateB_B = accountB.updateBalance(ring.orderB.tokenB, fillB.B - fee_B + rebate_B)
+        balanceUpdateB_B = accountB.updateBalance(
+            newState.balanceB_B_Address,
+            newState.balanceB_B_Balance
+        )
 
-        self.updateAccountTree(ring.orderB.accountID)
-        accountAfter = copyAccountInfo(self.getAccount(ring.orderB.accountID))
+        accountB.owner = newState.accountB_Owner
+        accountB.publicKeyX = newState.accountB_PublicKeyX
+        accountB.publicKeyY = newState.accountB_PublicKeyY
+        accountB.nonce = newState.accountB_Nonce
+
+        self.updateAccountTree(newState.accountB_Address)
+        accountAfter = copyAccountInfo(self.getAccount(newState.accountB_Address))
         rootAfter = self._accountsTree._root
-        accountUpdate_B = AccountUpdateData(ring.orderB.accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
+        accountUpdate_B = AccountUpdateData(newState.accountB_Address, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
         # Protocol fee payment
-        balanceUpdateA_P = self.getAccount(0).updateBalance(ring.orderA.tokenB, protocolFee_A)
-        balanceUpdateB_P = self.getAccount(0).updateBalance(ring.orderB.tokenB, protocolFee_B)
+        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceA_B_Address, newState.balanceDeltaA_P)
+        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceB_B_Address, newState.balanceDeltaB_P)
         ###
 
         # Operator payment
-        balanceDeltaA_O = fee_A - protocolFee_A - rebate_A
-        balanceDeltaB_O = fee_B - protocolFee_B - rebate_B
         # The Merkle tree update is done after all rings are settled
 
-        return RingSettlement(ring,
-                              accountsMerkleRoot,
-                              tradeHistoryUpdate_A, tradeHistoryUpdate_B,
-                              balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
-                              balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
-                              balanceUpdateA_P, balanceUpdateB_P,
-                              balanceDeltaA_O, balanceDeltaB_O)
+        witness = Witness(newState.signatureA, newState.signatureB,
+                          accountsMerkleRoot,
+                          tradeHistoryUpdate_A, tradeHistoryUpdate_B,
+                          balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
+                          balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
+                          balanceUpdateA_P, balanceUpdateB_P,
+                          newState.balanceA_B_Address, newState.balanceB_B_Address,
+                          newState.balanceDeltaA_O, newState.balanceDeltaB_O)
 
-
-    def deposit(self, accountID, publicKeyX, publicKeyY, token, amount):
-        # Copy the initial merkle root
-        rootBefore = self._accountsTree._root
-
-        if not(str(accountID) in self._accounts):
-            accountBefore = copyAccountInfo(getDefaultAccount())
-        else:
-            accountBefore = copyAccountInfo(self.getAccount(accountID))
-
-        proof = self._accountsTree.createProof(accountID)
-
-        # Create the account if necessary
-        if not(str(accountID) in self._accounts):
-            self._accounts[str(accountID)] = Account(Point(publicKeyX, publicKeyY))
-
-        account = self.getAccount(accountID)
-        balanceUpdate = account.updateBalance(token, amount)
-
-        # Update keys
-        account.publicKeyX = str(publicKeyX)
-        account.publicKeyY = str(publicKeyY)
-
-        self._accountsTree.update(accountID, account.hash())
-
-        accountAfter = copyAccountInfo(account)
-
-        rootAfter = self._accountsTree._root
-
-        accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        return Deposit(amount, balanceUpdate, accountUpdate)
+        return TxWitness(witness, txInput)
 
     def getAccount(self, accountID):
         # Make sure the leaf exist in our map
         if not(str(accountID) in self._accounts):
-            print("Account doesn't exist: " + str(accountID))
+            # print("Account doesn't exist: " + str(accountID))
+            self._accounts[str(accountID)] = Account(0, Point(0, 0))
         return self._accounts[str(accountID)]
-
-    def onchainWithdraw(self, exchangeID, accountID, tokenID, amountRequested, shutdown):
-        # When a withdrawal is done before the deposit (account creation) we shouldn't
-        # do anything. Just leave everything as it is.
-        if str(accountID) in self._accounts:
-            # Calculate amount withdrawn
-            balance = int(self.getAccount(accountID).getBalance(tokenID))
-            uAmountMin = int(amountRequested) if (int(amountRequested) < balance) else balance
-
-            # Withdraw the complete balance in shutdown
-            uAmount = balance if shutdown else uAmountMin
-
-            fAmount = toFloat(uAmount, Float24Encoding)
-            amount = fromFloat(fAmount, Float24Encoding)
-
-            # Make sure no 'dust' remains after a withdrawal in shutdown
-            amountToSubtract = uAmount if shutdown else amount
-
-            # Update account
-            rootBefore = self._accountsTree._root
-            accountBefore = copyAccountInfo(self.getAccount(accountID))
-            proof = self._accountsTree.createProof(accountID)
-
-            balanceUpdate = self.getAccount(accountID).updateBalance(tokenID, -amountToSubtract, shutdown)
-            if shutdown:
-                self.getAccount(accountID).publicKeyX = str(0)
-                self.getAccount(accountID).publicKeyY = str(0)
-                self.getAccount(accountID).nonce = 0
-
-            self.updateAccountTree(accountID)
-            accountAfter = copyAccountInfo(self.getAccount(accountID))
-            rootAfter = self._accountsTree._root
-            accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-            ###
-        else:
-            # Dummy update
-            fAmount = 0
-
-            rootBefore = self._accountsTree._root
-            accountBefore = copyAccountInfo(getDefaultAccount())
-            proof = self._accountsTree.createProof(accountID)
-
-            balanceUpdate = getDefaultAccount().updateBalance(tokenID, 0, shutdown)
-
-            accountAfter = copyAccountInfo(getDefaultAccount())
-            rootAfter = self._accountsTree._root
-            accountUpdate = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-            ###
-
-        withdrawal = OnchainWithdrawal(amountRequested, balanceUpdate, accountUpdate,
-                                       accountID, tokenID, fAmount)
-        return withdrawal
-
-    def offchainWithdraw(self,
-                         exchangeID, accountID, tokenID, amountRequested,
-                         operatorAccountID, feeTokenID, fee):
-        feeValue = roundToFloatValue(fee, Float16Encoding)
-
-        # Update account
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(accountID))
-        nonce = accountBefore.nonce
-        proof = self._accountsTree.createProof(accountID)
-
-        balanceUpdateF_A = self.getAccount(accountID).updateBalance(feeTokenID, -feeValue)
-
-        balance = int(self.getAccount(accountID).getBalance(tokenID))
-        uAmountWithdrawn = int(amountRequested) if (int(amountRequested) < balance) else balance
-
-        fAmountWithdrawn = toFloat(uAmountWithdrawn, Float24Encoding)
-        amountWithdrawn = fromFloat(fAmountWithdrawn, Float24Encoding)
-
-        balanceUpdateW_A = self.getAccount(accountID).updateBalance(tokenID, -amountWithdrawn)
-        self.getAccount(accountID).nonce += 1
-
-        self.updateAccountTree(accountID)
-        accountAfter = copyAccountInfo(self.getAccount(accountID))
-        rootAfter = self._accountsTree._root
-        accountUpdate_A = AccountUpdateData(accountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-        ###
-
-        # Operator payment
-        # This is done after all withdrawals are processed
-
-        withdrawal = OffchainWithdrawal(exchangeID,
-                                        accountID, tokenID, amountRequested, fAmountWithdrawn,
-                                        feeTokenID, fee,
-                                        feeValue,
-                                        balanceUpdateF_A, balanceUpdateW_A, accountUpdate_A,
-                                        None,
-                                        nonce)
-        return withdrawal
-
-    def internalTransfer(self,
-                    exchangeID, operatorAccountID, accountFromID, accountToID,
-                    transTokenID, amountRequested, feeTokenID, fee, type):
-
-        feeValue = roundToFloatValue(fee, Float16Encoding)
-
-        # Update account From
-        rootBefore = self._accountsTree._root
-        accountBefore = copyAccountInfo(self.getAccount(accountFromID))
-        nonce = accountBefore.nonce
-        proof = self._accountsTree.createProof(accountFromID)
-
-        balanceUpdateF_From = self.getAccount(accountFromID).updateBalance(feeTokenID, -feeValue)
-
-        fAmountTrans = toFloat(amountRequested, Float24Encoding)
-        amountTrans = fromFloat(fAmountTrans, Float24Encoding)
-        balanceUpdateT_From = self.getAccount(accountFromID).updateBalance(transTokenID, -amountTrans)
-
-        if type == 0:
-            self.getAccount(accountFromID).nonce += 1
-
-        self.updateAccountTree(accountFromID)
-        accountAfter = copyAccountInfo(self.getAccount(accountFromID))
-        rootAfter = self._accountsTree._root
-        accountUpdate_From = AccountUpdateData(accountFromID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
-
-        # Update account To
-        rootToBefore = self._accountsTree._root
-        accountToBefore = copyAccountInfo(self.getAccount(accountToID))
-        nonceTo = accountToBefore.nonce
-        proofTo = self._accountsTree.createProof(accountToID)
-
-        accountTo = self.getAccount(accountToID)
-        balanceUpdateT_To = accountTo.updateBalance(transTokenID, amountTrans)
-
-        self.updateAccountTree(accountToID)
-        accountToAfter = copyAccountInfo(self.getAccount(accountToID))
-        rootToAfter = self._accountsTree._root
-        accountUpdate_To = AccountUpdateData(accountToID, proofTo, rootToBefore, rootToAfter, accountToBefore, accountToAfter)
-
-        # Operator payment
-        # This is done after all internal transfer are processed
-
-        internalTrans = InternalTransfer(exchangeID,
-                                         accountFromID, accountToID,
-                                         transTokenID, amountRequested, fAmountTrans,
-                                         feeTokenID, fee, type,
-                                         nonce, nonceTo,
-                                         feeValue,
-                                         balanceUpdateF_From, balanceUpdateT_From, accountUpdate_From,
-                                         balanceUpdateT_To, accountUpdate_To,
-                                         None)
-        return internalTrans
 
     def updateAccountTree(self, accountID):
         self._accountsTree.update(accountID, self.getAccount(accountID).hash())

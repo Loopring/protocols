@@ -15,21 +15,17 @@
   limitations under the License.
 */
 pragma solidity ^0.6.6;
-pragma experimental ABIEncoderV2;
 
-import "../../lib/MathUint.sol";
-
-import "../../iface/IAddressWhitelist.sol";
-import "../../iface/ExchangeData.sol";
-
-import "./ExchangeBalances.sol";
-
-
-/// @title ExchangeAccounts.
-/// @author Daniel Wang  - <daniel@loopring.org>
-/// @author Brecht Devos - <brecht@loopring.org>
-library ExchangeAccounts
+/// @title IPriceProvider
+/// @author Brecht Devos  - <brecht@loopring.org>
+interface IPriceProvider
 {
-    using MathUint          for uint;
-    using ExchangeBalances  for ExchangeData.State;
+    /// @dev Gets the latest base token price valuated in quoteToken with 18 decimals.
+    /// @param baseToken The base token
+    /// @param quoteToken The quote token
+    /// @return The price
+    function getPrice(address baseToken, address quoteToken)
+        external
+        view
+        returns (uint);
 }

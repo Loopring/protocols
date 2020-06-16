@@ -38,27 +38,7 @@ library ExchangeMode
         view
         returns (bool result)
     {
-        result = false;
-        // Check if there's a deposit request that's too old
-        if (S.numDepositRequestsCommitted < S.depositChain.length) {
-            uint32 requestTimestamp = S.depositChain[S.numDepositRequestsCommitted].timestamp;
-            result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
-        }
-
-        // Check if there's a withdrawal request that's too old
-        if (result == false && S.numWithdrawalRequestsCommitted < S.withdrawalChain.length) {
-            uint32 requestTimestamp = S.withdrawalChain[S.numWithdrawalRequestsCommitted].timestamp;
-            result = requestTimestamp < now.sub(ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE());
-        }
-
-        // Check if we're longer in a non-initial state while shutdown than allowed
-        if (result == false && isShutdown(S) && !isInInitialState(S)) {
-            // The max amount of time an exchange can be in shutdown is
-            // MAX_TIME_IN_SHUTDOWN_BASE + (accounts.length * MAX_TIME_IN_SHUTDOWN_DELTA)
-            uint maxTimeInShutdown = ExchangeData.MAX_TIME_IN_SHUTDOWN_BASE();
-            maxTimeInShutdown = maxTimeInShutdown.add(S.accounts.length.mul(ExchangeData.MAX_TIME_IN_SHUTDOWN_DELTA()));
-            result = now > S.shutdownStartTime.add(maxTimeInShutdown);
-        }
+        result = S.withdrawalModeStartTime > 0;
     }
 
     function isShutdown(
@@ -81,15 +61,14 @@ library ExchangeMode
         return S.downtimeStart != 0 && getNumDowntimeMinutesLeft(S) > 0;
     }
 
-    function isInInitialState(
+    function getNumAvailableForcedSlots(
         ExchangeData.State storage S
         )
-        internal // inline call
+        internal
         view
-        returns (bool)
+        returns (uint)
     {
-        return (S.numDepositRequestsCommitted == S.depositChain.length) &&
-            (S.merkleRoot == S.genesisMerkleRoot);
+        return ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS() - S.numPendingForcedTransactions;
     }
 
     function areUserRequestsEnabled(

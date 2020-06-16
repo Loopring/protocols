@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { BlockType, Constants, roundToFloatValue } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { BalanceSnapshot, ExchangeTestUtil } from "./testExchangeUtil";
-import { DepositInfo, RingInfo } from "./types";
+import { DepositInfo, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -926,7 +926,7 @@ contract("Exchange", (accounts: string[]) => {
 
     it.skip("Number of open deposits needs to be limited", async () => {
       await createExchange(false);
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       exchangeTestUtil.autoCommit = false;
 
@@ -943,42 +943,12 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Do another one
       await exchangeTestUtil.doRandomDeposit(undefined, false);
 
       exchangeTestUtil.autoCommit = true;
-    });
-
-    it("Wrong deposit ending hash", async () => {
-      await createExchange();
-
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const balance = new BN(web3.utils.toWei("7", "ether"));
-      const token = exchangeTestUtil.getTokenAddress("LRC");
-
-      await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerA,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
-        token,
-        balance
-      );
-
-      // Change the deposit info so double the amount is used to update the Merkle tree
-      const pendingDeposits = exchangeTestUtil.getPendingDeposits(exchangeID);
-      pendingDeposits[0].amount = pendingDeposits[0].amount.mul(new BN(2));
-
-      await exchangeTestUtil.commitDeposits(exchangeID);
-
-      await expectThrow(
-        exchangeTestUtil.submitPendingBlocks(exchangeID),
-        "INVALID_ENDING_HASH"
-      );
     });
 
     it("Onchain withdrawal request", async () => {
@@ -1001,7 +971,7 @@ contract("Exchange", (accounts: string[]) => {
         balance
       );
       const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
@@ -1044,62 +1014,15 @@ contract("Exchange", (accounts: string[]) => {
       depositInfo.amount = toWithdraw;
 
       // Commit the withdrawal
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       await submitWithdrawalBlockChecked([depositInfo]);
     });
 
-    it("Wrong onchain withdrawal ending hash", async () => {
-      await createExchange();
-
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
-      const ownerA = exchangeTestUtil.testContext.orderOwners[0];
-      const balance = new BN(web3.utils.toWei("7", "ether"));
-      const toWithdraw = new BN(web3.utils.toWei("4", "ether"));
-      const token = exchangeTestUtil.getTokenAddress("LRC");
-
-      const depositInfo = await exchangeTestUtil.deposit(
-        exchangeID,
-        ownerA,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
-        token,
-        balance
-      );
-      const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(exchangeID);
-
-      // Do the request
-      await exchangeTestUtil.requestWithdrawalOnchain(
-        exchangeID,
-        accountID,
-        token,
-        toWithdraw,
-        ownerA
-      );
-
-      // Change the withdrawal info so half the amount is used to update the Merkle tree
-      const pendingWithdrawals = exchangeTestUtil.getPendingOnchainWithdrawals(
-        exchangeID
-      );
-      pendingWithdrawals[0].amount = pendingWithdrawals[0].amount.div(
-        new BN(2)
-      );
-
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
-
-      // Commit the withdrawal
-      await expectThrow(
-        exchangeTestUtil.submitPendingBlocks(exchangeID),
-        "INVALID_ENDING_HASH"
-      );
-    });
-
     it.skip("Number of open onchain withdrawal requests needs to be limited", async () => {
       await createExchange(false);
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Do a deposit
       const depositInfo = await exchangeTestUtil.doRandomDeposit(
@@ -1107,7 +1030,7 @@ contract("Exchange", (accounts: string[]) => {
         false
       );
       // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       exchangeTestUtil.autoCommit = false;
 
@@ -1124,7 +1047,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the deposits
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Do another one
       await exchangeTestUtil.doRandomOnchainWithdrawal(depositInfo, false);
@@ -1153,7 +1076,7 @@ contract("Exchange", (accounts: string[]) => {
         balance
       );
       const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await exchangeTestUtil.requestWithdrawalOffchain(
@@ -1164,7 +1087,7 @@ contract("Exchange", (accounts: string[]) => {
         feeToken,
         fee
       );
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       depositInfo.amount = balance.sub(fee);
@@ -1203,7 +1126,7 @@ contract("Exchange", (accounts: string[]) => {
         fee
       );
       const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await exchangeTestUtil.requestWithdrawalOffchain(
@@ -1214,7 +1137,7 @@ contract("Exchange", (accounts: string[]) => {
         feeToken,
         fee
       );
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       await submitWithdrawalBlockChecked([depositInfo]);
@@ -1241,7 +1164,7 @@ contract("Exchange", (accounts: string[]) => {
         balance
       );
       const accountID = depositInfo.accountID;
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await exchangeTestUtil.requestWithdrawalOffchain(
@@ -1255,7 +1178,7 @@ contract("Exchange", (accounts: string[]) => {
 
       exchangeTestUtil.setActiveOperator(accountID);
 
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       depositInfo.amount = balance.sub(fee);
@@ -1295,7 +1218,7 @@ contract("Exchange", (accounts: string[]) => {
         tokenB,
         balanceB
       );
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Verify the deposits
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
@@ -1310,7 +1233,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the deposit
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       depositInfoA.amount = toWithdrawA;
@@ -1325,7 +1248,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Commit the withdrawal
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the block
       await submitWithdrawalBlockChecked([depositInfoB]);
@@ -1336,7 +1259,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const protocolFees = await exchange.getProtocolFeeValues();
 
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "ETH",
           tokenB: "GTO",
@@ -1354,9 +1277,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
-
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       const operatorAccountID = await exchangeTestUtil.getActiveOperator(
@@ -1376,7 +1297,7 @@ contract("Exchange", (accounts: string[]) => {
         ring.orderB.amountB,
         exchangeTestUtil.getAccount(operatorAccountID).owner
       );
-      await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Expected protocol fees earned
       const protocolFeeA = ring.orderA.amountB
@@ -1458,7 +1379,7 @@ contract("Exchange", (accounts: string[]) => {
       await TestToken.setTestCase(await TestToken.TEST_EXPENSIVE_TRANSFER());
 
       // Do deposits to fill a complete block
-      const blockSize = exchangeTestUtil.offchainWithdrawalBlockSizes[0];
+      const blockSize = exchangeTestUtil.blockSizes[0];
       assert(blockSize >= 4);
       const deposits: DepositInfo[] = [];
       for (let i = 0; i < blockSize; i++) {
@@ -1492,7 +1413,7 @@ contract("Exchange", (accounts: string[]) => {
         );
         deposits.push(deposit);
       }
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       for (const deposit of deposits) {
         exchangeTestUtil.requestWithdrawalOffchain(
@@ -1509,7 +1430,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       // Commit the withdrawals
-      await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       // Submit the withdrawals
       const expectedSuccess = [true, false, true, false];
@@ -1526,7 +1447,7 @@ contract("Exchange", (accounts: string[]) => {
     describe("Block fee", () => {
       it("Deposit", async () => {
         await createExchange();
-        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
         const testCases: any[] = [
@@ -1558,7 +1479,7 @@ contract("Exchange", (accounts: string[]) => {
           // Do some deposits
           const deposits: DepositInfo[] = [];
           const numWithdrawals =
-            exchangeTestUtil.onchainWithdrawalBlockSizes[0];
+            exchangeTestUtil.blockSizes[0];
           let blockFee = new BN(0);
           for (let i = 0; i < numWithdrawals; i++) {
             const deposit = await exchangeTestUtil.doRandomDeposit(i);
@@ -1570,7 +1491,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.advanceBlockTimestamp(testCase.waitTime);
 
           // Submit deposits
-          await exchangeTestUtil.commitDeposits(exchangeID);
+          await exchangeTestUtil.submitTransactions();
           await submitDepositBlockChecked(
             deposits,
             blockFee,
@@ -1582,7 +1503,7 @@ contract("Exchange", (accounts: string[]) => {
 
       it("Withdrawal", async () => {
         await createExchange();
-        await exchangeTestUtil.commitDeposits(exchangeID);
+        await exchangeTestUtil.submitTransactions();
         await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
         const testCases: any[] = [
@@ -1614,7 +1535,7 @@ contract("Exchange", (accounts: string[]) => {
           // Do some withdrawals
           const deposits: DepositInfo[] = [];
           const numWithdrawals =
-            exchangeTestUtil.onchainWithdrawalBlockSizes[0];
+            exchangeTestUtil.blockSizes[0];
           let blockFee = new BN(0);
           for (let i = 0; i < numWithdrawals; i++) {
             const deposit = await exchangeTestUtil.doRandomDeposit(i);
@@ -1639,11 +1560,11 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.advanceBlockTimestamp(testCase.waitTime);
 
           // Submit deposits
-          await exchangeTestUtil.commitDeposits(exchangeID);
+          await exchangeTestUtil.submitTransactions();
           await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
           // Submit withdrawals
-          await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeID);
+          await exchangeTestUtil.submitTransactions();
           await submitWithdrawalBlockChecked(
             deposits,
             undefined,

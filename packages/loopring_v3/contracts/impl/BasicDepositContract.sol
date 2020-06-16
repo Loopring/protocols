@@ -199,6 +199,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         internal
     {
+        // TODO: check balances in this contract. Transfer the available amount out of this contract,
+        //       use the insurance contract for the remaining amount if needed.
         if (amount > 0) {
             if (isETHInternal(token)) {
                 // ETH

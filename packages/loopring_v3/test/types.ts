@@ -24,6 +24,13 @@ export interface OrderInfo {
   feeBips?: number;
   rebateBips?: number;
 
+  transferAmountTrade?: BN;
+  reduceOnly?: boolean;
+  triggerPrice?: BN;
+
+  transferAmount?: BN;
+  transferFee?: BN;
+
   balanceS?: BN;
   balanceB?: BN;
 
@@ -43,7 +50,13 @@ export interface RingExpectation {
   orderB?: OrderExpectation;
 }
 
-export interface RingInfo {
+export interface Noop {
+  txType?: "Noop";
+}
+
+export interface SpotTrade {
+  txType?: "SpotTrade";
+
   orderA: OrderInfo;
   orderB: OrderInfo;
 
@@ -53,8 +66,8 @@ export interface RingInfo {
   expected?: RingExpectation;
 }
 
-export interface RingBlock {
-  rings: RingInfo[];
+export interface TxBlock {
+  transactions: any[];
   protocolTakerFeeBips?: number;
   protocolMakerFeeBips?: number;
 
@@ -67,27 +80,31 @@ export interface RingBlock {
 }
 
 export interface Deposit {
-  exchangeId: number;
-  depositIdx: number;
+  txType?: "Deposit";
+  owner: string;
   accountID: number;
-  publicKeyX: string;
-  publicKeyY: string;
   tokenID: number;
   amount: BN;
   timestamp?: number;
   transactionHash?: string;
 }
 
-export interface DepositBlock {
-  deposits: Deposit[];
+export interface PublicKeyUpdate {
+  txType?: "PublicKeyUpdate";
+  owner: string;
+  accountID: number;
+  nonce: number;
+  publicKeyX: string;
+  publicKeyY: string;
+  feeTokenID: number;
+  fee: BN;
 
-  onchainDataAvailability?: boolean;
-  startHash: BN;
-  startIndex: number;
-  count: number;
+  onchainSignature?: any;
 }
 
-export interface InternalTransferRequest {
+export class Transfer {
+  txType?: "Transfer";
+
   type: number;
 
   accountFromID: number;
@@ -99,20 +116,22 @@ export interface InternalTransferRequest {
   feeTokenID: number;
   fee: BN;
 
+  ownerFrom: string;
+  ownerTo: string;
+
+  nonce: number;
+
   signature?: Signature;
 }
 
-export interface InternalTransferBlock {
-  transfers: InternalTransferRequest[];
-
-  onchainDataAvailability?: boolean;
-
-  operatorAccountID?: number;
-}
-
 export interface WithdrawalRequest {
-  exchangeId: number;
+  txType?: "Withdraw";
+
+  type: number;
+
+  owner: string;
   accountID: number;
+  nonce: number;
   tokenID: number;
   amount: BN;
 
@@ -127,24 +146,6 @@ export interface WithdrawalRequest {
   signature?: Signature;
   timestamp?: number;
   transactionHash?: string;
-}
-
-export interface Withdrawal {
-  exchangeID: number;
-  blockIdx: number;
-  withdrawalIdx: number;
-}
-
-export interface WithdrawBlock {
-  withdrawals: WithdrawalRequest[];
-
-  onchainDataAvailability?: boolean;
-
-  operatorAccountID?: number;
-
-  startHash: BN;
-  startIndex: number;
-  count: number;
 }
 
 export interface Block {
@@ -188,6 +189,8 @@ export interface TradeHistory {
 
 export interface Balance {
   balance: BN;
+  position: BN;
+  fundingIndex: BN;
   tradeHistory: { [key: number]: TradeHistory };
 }
 
@@ -231,3 +234,4 @@ export interface DepositInfo {
   accountID: number;
   depositIdx: number;
 }
+

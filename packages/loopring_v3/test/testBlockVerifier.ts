@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, RingInfo } from "./types";
+import { Block, SpotTrade } from "./types";
 
 const BlockVerifier = artifacts.require("BlockVerifier");
 
@@ -25,7 +25,7 @@ contract("BlockVerifier", (accounts: string[]) => {
   };
 
   const setupRandomRing = async () => {
-    const ring: RingInfo = {
+    const ring: SpotTrade = {
       orderA: {
         tokenS: "WETH",
         tokenB: "GTO",
@@ -346,10 +346,10 @@ contract("BlockVerifier", (accounts: string[]) => {
         await exchangeTestUtil.sendRing(exchangeId, ring);
       }
       commitBlocksSize1.push(
-        ...(await exchangeTestUtil.commitDeposits(exchangeId, undefined, 1))
+        ...(await exchangeTestUtil.submitTransactions(exchangeId, 1))
       );
       settlementBlocksSize1.push(
-        ...(await exchangeTestUtil.commitRings(exchangeId, 1))
+        ...(await exchangeTestUtil.submitTransactions(exchangeId, 1))
       );
 
       for (let i = 0; i < 4; i++) {
@@ -357,10 +357,10 @@ contract("BlockVerifier", (accounts: string[]) => {
         await exchangeTestUtil.sendRing(exchangeId, ring);
       }
       commitBlocksSize2.push(
-        ...(await exchangeTestUtil.commitDeposits(exchangeId, undefined, 2))
+        ...(await exchangeTestUtil.submitTransactions(exchangeId, 2))
       );
       settlementBlocksSize2.push(
-        ...(await exchangeTestUtil.commitRings(exchangeId, 2))
+        ...(await exchangeTestUtil.submitTransactions(exchangeId, 2))
       );
 
       // Generate the proofs

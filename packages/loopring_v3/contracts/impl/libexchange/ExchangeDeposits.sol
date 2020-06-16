@@ -38,93 +38,30 @@ library ExchangeDeposits
     using ExchangeTokens    for ExchangeData.State;
 
     event DepositRequested(
-        uint    indexed depositIdx,
-        uint24  indexed accountID,
+        address indexed owner,
         uint16  indexed tokenID,
-        uint96          amount,
-        uint            pubKeyX,
-        uint            pubKeyY
+        uint96          amount
     );
-
-    function getDepositRequest(
-        ExchangeData.State storage S,
-        uint index
-        )
-        external
-        view
-        returns (
-          bytes32 accumulatedHash,
-          uint    accumulatedFee,
-          uint32  timestamp
-        )
-    {
-        require(index < S.depositChain.length, "INVALID_INDEX");
-        ExchangeData.Request storage request = S.depositChain[index];
-        accumulatedHash = request.accumulatedHash;
-        accumulatedFee = request.accumulatedFee;
-        timestamp = request.timestamp;
-    }
 
     function deposit(
         ExchangeData.State storage S,
         address from,
         address to,
         address tokenAddress,
-        uint96  amount,  // can be zero
-        uint    additionalFeeETH
+        uint96  amount    // can be zero
         )
         external
     {
         require(to != address(0), "ZERO_ADDRESS");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
-        require(getNumAvailableDepositSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(tokenAddress);
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
-        uint24 accountID = S.getAccountID(to);
-        ExchangeData.Account storage account = S.accounts[accountID];
-
-        // We allow invalid public keys to be set for accounts to
-        // disable offchain request signing.
-        // Make sure we can detect accounts that were not yet created in the circuits
-        // by forcing the pubKeyX to be non-zero.
-        require(account.pubKeyX > 0, "INVALID_PUBKEY");
-        // Make sure the public key can be stored in the SNARK field
-        require(account.pubKeyX < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
-        require(account.pubKeyY < ExchangeData.SNARK_SCALAR_FIELD(), "INVALID_PUBKEY");
-
-        // Total fee to be paid by the user
-        uint feeETH = additionalFeeETH.add(S.depositFeeETH);
-
-        // Add the request to the deposit chain
-        ExchangeData.Request storage prevRequest = S.depositChain[S.depositChain.length - 1];
-        ExchangeData.Request memory request = ExchangeData.Request(
-            sha256(
-                abi.encodePacked(
-                    prevRequest.accumulatedHash,
-                    accountID,
-                    account.pubKeyX,  // Include the pubKey to allow using the same circuit for
-                                      // account creation, account updating and depositing.
-                                      // In the circuit we always overwrite the public keys in
-                                      // the Account leaf with the data given onchain.
-                    account.pubKeyY,
-                    uint16(tokenID),
-                    amount
-                )
-            ),
-            prevRequest.accumulatedFee.add(feeETH),
-            uint32(now)
-        );
-        S.depositChain.push(request);
-
-        // Store deposit info onchain so we can withdraw from uncommitted deposit blocks
-        ExchangeData.Deposit memory _deposit = ExchangeData.Deposit(
-            accountID,
-            tokenID,
-            amount
-        );
-        S.deposits.push(_deposit);
+        // Add the amount to the deposit request and reset the time the operator has to process it
+        S.pendingDeposits[to][tokenID].amount += amount;
+        S.pendingDeposits[to][tokenID].timestamp = uint32(now);
+        S.pendingDeposits[to][tokenID].fee += uint64(S.depositFeeETH);
 
         // Transfer the tokens to this contract
         transferDeposit(
@@ -132,38 +69,14 @@ library ExchangeDeposits
             from,
             tokenAddress,
             amount,
-            feeETH
+            S.depositFeeETH
         );
 
         emit DepositRequested(
-            uint32(S.depositChain.length - 1),
-            accountID,
+            to,
             tokenID,
-            amount,
-            account.pubKeyX,
-            account.pubKeyY
+            amount
         );
-    }
-
-    function getNumDepositRequestsProcessed(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        return S.numDepositRequestsCommitted;
-    }
-
-    function getNumAvailableDepositSlots(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numOpenRequests = S.depositChain.length - getNumDepositRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_DEPOSIT_REQUESTS() - numOpenRequests;
     }
 
     function transferDeposit(

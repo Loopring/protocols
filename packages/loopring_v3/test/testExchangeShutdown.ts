@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { Block, RingInfo } from "./types";
+import { Block, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -53,7 +53,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Do a trade so the trading history/nonce for some accounts don't have default values
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -73,8 +73,7 @@ contract("Exchange", (accounts: string[]) => {
       };
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeId, ring);
-      await exchangeTestUtil.commitDeposits(exchangeId);
-      await exchangeTestUtil.commitRings(exchangeId);
+      await exchangeTestUtil.submitTransactions();
 
       // Do a deposit
       const keyPair = exchangeTestUtil.getKeyPairEDDSA();
@@ -114,7 +113,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Make sure all deposits are done
-      await exchangeTestUtil.commitDeposits(exchangeId);
+      await exchangeTestUtil.submitTransactions();
       // Verify the block
       await exchangeTestUtil.submitPendingBlocks(exchangeId);
 
@@ -157,12 +156,12 @@ contract("Exchange", (accounts: string[]) => {
             const tokenAddress = exchangeTestUtil.tokenIDToAddressMap.get(
               Number(tokenID)
             );
-            await exchangeTestUtil.requestShutdownWithdrawal(
+            /*await exchangeTestUtil.requestShutdownWithdrawal(
               exchangeId,
               accountID,
               tokenAddress,
               balanceValue.balance
-            );
+            );*/
           }
         }
         if (
@@ -171,16 +170,16 @@ contract("Exchange", (accounts: string[]) => {
             account.publicKeyY !== "0" ||
             account.nonce !== 0)
         ) {
-          await exchangeTestUtil.requestShutdownWithdrawal(
+          /*await exchangeTestUtil.requestShutdownWithdrawal(
             exchangeId,
             accountID,
             Constants.zeroAddress,
             new BN(0)
-          );
+          );*/
         }
       }
 
-      await exchangeTestUtil.commitShutdownWithdrawalRequests(exchangeId);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeId);
 
       // Withdraw the exchange stake
@@ -194,7 +193,7 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange();
 
       // Make sure all deposits are done
-      await exchangeTestUtil.commitDeposits(exchangeId);
+      await exchangeTestUtil.submitTransactions();
 
       // Deposit some LRC to stake for the exchange
       const depositer = exchangeTestUtil.testContext.operators[2];

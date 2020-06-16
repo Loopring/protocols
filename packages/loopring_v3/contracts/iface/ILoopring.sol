@@ -58,7 +58,8 @@ abstract contract ILoopring is Claimable, ReentrancyGuard
         uint    exchangeId,
         address owner,
         address payable operator,
-        bool    onchainDataAvailability
+        bool    onchainDataAvailability,
+        address insuranceContract
         )
         external
         virtual;

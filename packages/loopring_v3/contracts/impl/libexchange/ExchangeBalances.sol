@@ -31,6 +31,7 @@ library ExchangeBalances
     function verifyAccountBalance(
         uint     merkleRoot,
         uint24   accountID,
+        address  owner,
         uint16   tokenID,
         uint     pubKeyX,
         uint     pubKeyY,
@@ -45,6 +46,7 @@ library ExchangeBalances
     {
         bool isCorrect = isAccountBalanceCorrect(
             merkleRoot,
+            owner,
             accountID,
             tokenID,
             pubKeyX,
@@ -60,6 +62,7 @@ library ExchangeBalances
 
     function isAccountBalanceCorrect(
         uint     merkleRoot,
+        address  owner,
         uint24   accountID,
         uint16   tokenID,
         uint     pubKeyX,

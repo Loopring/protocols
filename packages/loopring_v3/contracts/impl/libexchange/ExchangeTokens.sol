@@ -94,7 +94,10 @@ library ExchangeTokens
             S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, amountToBurn);
         }
 
-        ExchangeData.Token memory token = ExchangeData.Token(tokenAddress, false);
+        ExchangeData.Token memory token = ExchangeData.Token(
+            tokenAddress,
+            false
+        );
         S.tokens.push(token);
         tokenID = uint16(S.tokens.length - 1);
         S.tokenToTokenId[tokenAddress] = tokenID + 1;

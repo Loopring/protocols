@@ -125,7 +125,8 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         ForgeMode forgeMode,
         bool      onchainDataAvailability,
         address   protocol,
-        address   implementation
+        address   implementation,
+        address   insuranceContract
         )
         external
         virtual

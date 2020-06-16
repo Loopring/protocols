@@ -44,23 +44,15 @@ contract("Operator 1", (accounts: string[]) => {
       subOperators.push(subOperator);
     }
 
-    await exchangeTestUtil.commitDeposits(exchangeId);
+    await exchangeTestUtil.submitTransactions();
     await exchangeTestUtil.submitPendingBlocks(exchangeId);
   });
 
   const commitDepositBlock = async () => {
     await exchangeTestUtil.doRandomDeposit(exchangeId);
-    const pendingDeposits = exchangeTestUtil.getPendingDeposits(exchangeId);
-    const blocks = await exchangeTestUtil.commitDeposits(
-      exchangeId,
-      pendingDeposits
-    );
+    const blocks = await exchangeTestUtil.submitTransactions();
     assert(blocks.length === 1);
-    const block: TestDepositBlock = {
-      block: blocks[0],
-      deposits: pendingDeposits
-    };
-    return block;
+    return blocks[0];
   };
 
   const getActiveOperator = async () => {

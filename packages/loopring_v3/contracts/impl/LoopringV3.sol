@@ -75,7 +75,8 @@ contract LoopringV3 is ILoopringV3
         uint    exchangeId,
         address owner,
         address payable operator,
-        bool    onchainDataAvailability
+        bool    onchainDataAvailability,
+        address insuranceContract
         )
         external
         override
@@ -96,7 +97,8 @@ contract LoopringV3 is ILoopringV3
             owner,
             exchangeId,
             operator,
-            onchainDataAvailability
+            onchainDataAvailability,
+            insuranceContract
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);

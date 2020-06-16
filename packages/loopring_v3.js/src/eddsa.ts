@@ -26,6 +26,21 @@ export class EdDSA {
     return keyPair;
   }
 
+  public static pack(publicKeyX: string, publicKeyY: string) {
+    const keyX = Scalar.fromString(publicKeyX);
+    const keyY = Scalar.fromString(publicKeyY);
+    return babyJub.packPoint([keyX, keyY]).toString("hex");
+  }
+
+  public static unpack(publicKey: string) {
+    const unpacked = babyJub.unpackPoint(Buffer.from(publicKey, "hex"));
+    const pubKey = {
+      publicKeyX: unpacked[0].toString(10),
+      publicKeyY: unpacked[1].toString(10),
+    };
+    return pubKey;
+  }
+
   public static sign(strKey: string, msg: string) {
     const key = Scalar.fromString(strKey);
     const prv = utils.leInt2Buff(key, 32);

@@ -77,6 +77,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address feeToken;
         uint    fastFee;                // Fee paid for a fast withdrawal
         uint    fee;                    // Fee paid for a standard onchain withdrawal
+        uint24  fromAccountID;          // Used when falling back to a standard onchain withdrawal
         bool    onchainFeePayment;
         uint    fastUntil;
         uint    validUntil;
@@ -192,7 +193,8 @@ contract FastWithdrawalAgent is ReentrancyGuard
             exchange.withdraw{value: withdrawalFeeETH}(
                 fastWithdrawal.from,
                 fastWithdrawal.token,
-                uint96(fastWithdrawal.amount)
+                uint96(fastWithdrawal.amount),
+                fastWithdrawal.fromAccountID
             );
 
             // Pay the standard fee
@@ -216,7 +218,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
                 exchange.approveOffchainTransfer(
                     fastWithdrawal.from,
                     liquidityProvider,
-                    fastWithdrawal.feeToken, 
+                    fastWithdrawal.feeToken,
                     fee
                 );
             }

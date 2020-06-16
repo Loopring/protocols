@@ -35,23 +35,6 @@ import "./ExchangeData.sol";
 abstract contract IExchangeV3 is IExchange
 {
     // -- Events --
-    // We need to make sure all events defined in exchange/*.sol
-    // are aggregrated here.
-    event AccountCreated(
-        address indexed owner,
-        address indexed creator,
-        uint24  indexed id,
-        uint            pubKeyX,
-        uint            pubKeyY
-    );
-
-    event AccountUpdated(
-        address indexed owner,
-        address indexed updater,
-        uint24  indexed id,
-        uint            pubKeyX,
-        uint            pubKeyY
-    );
 
     event TokenRegistered(
         address indexed token,
@@ -62,12 +45,6 @@ abstract contract IExchangeV3 is IExchange
         uint    indexed exchangeId,
         address         oldOperator,
         address         newOperator
-    );
-
-    event AddressWhitelistChanged(
-        uint    indexed exchangeId,
-        address         oldAddressWhitelist,
-        address         newAddressWhitelist
     );
 
     event FeesUpdated(
@@ -84,26 +61,18 @@ abstract contract IExchangeV3 is IExchange
 
     event BlockSubmitted(
         uint    indexed blockIdx,
-        bytes32 indexed publicDataHash
+        bytes32 indexed publicDataHash,
+        uint    indexed blockFee
     );
 
     event DepositRequested(
         uint    indexed depositIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
-        uint96          amount,
-        uint            pubKeyX,
-        uint            pubKeyY
-    );
-
-    event BlockFeeWithdrawn(
-        uint    indexed blockIdx,
-        uint            amountRewarded,
-        uint            amountFined
+        uint96          amount
     );
 
     event WithdrawalRequested(
-        uint    indexed withdrawalIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
         uint96          amount
@@ -131,8 +100,8 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event ConditionalTransferApproved(
-        uint24  indexed from,
-        uint24  indexed to,
+        address indexed from,
+        address indexed to,
         uint16          token,
         uint            amount
     );
@@ -164,7 +133,8 @@ abstract contract IExchangeV3 is IExchange
         address owner,
         uint    exchangeId,
         address payable operator,
-        bool    onchainDataAvailability
+        bool    onchainDataAvailability,
+        address insuranceContract
         )
         external
         virtual;
@@ -232,78 +202,11 @@ abstract contract IExchangeV3 is IExchange
         view
         returns (bool);
 
-    // -- Accounts --
-
-    /// @dev Gets the number of accounts registered on this exchange.
-    /// @return The number of accounts registered
-    function getNumAccounts()
-        external
-        virtual
-        view
-        returns (uint);
-
-    /// @dev Gets the account information for a given address.
-    /// @param  owner The owning address of the account
-    /// @return accountID The account's ID
-    /// @return pubKeyX The first part of the account's trading EdDSA public key
-    /// @return pubKeyY The second part of the account's trading EdDSA public key
-    function getAccount(
-        address owner
-        )
-        external
-        virtual
-        view
-        returns (
-            uint24 accountID,
-            uint   pubKeyX,
-            uint   pubKeyY
-        );
-
-    /// @dev Submits an onchain request to create a new account for owner or
-    ///      update its existing account by replacing its trading public key.
-    ///      The total fee in ETH that the user needs to pay is:
-    ///          depositFee +
-    ///          (isAccountNew ? accountCreationFee : 0) +
-    ///          (isAccountUpdated ? accountUpdateFee : 0)
-    ///      If the user sends too much ETH the surplus is sent back immediately.
-    ///
-    ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
-    ///      and create or update the offchain account.
-    ///
-    ///      Calling this method with a different trading public key will effectively
-    ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
-    ///
-    ///      Can only be called by an agent.
-    ///
-    /// @param  owner The owner of the account
-    /// @param  pubKeyX The first part of the account's trading EdDSA public key
-    /// @param  pubKeyY The second part of the account's trading EdDSA public key.
-    ///                 Note that pubkeyX and pubKeyY cannot be both `1`.
-    /// @param  permission Data used for checking address whitelisting prior to
-    ///                    account creation.
-    /// @return accountID The account's ID
-    /// @return isAccountNew True if this account is newly created, false if the account existed
-    /// @return isAccountUpdated True if this account was updated, false otherwise
-    function createOrUpdateAccount(
-        address owner,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        bytes   calldata permission
-        )
-        external
-        virtual
-        payable
-        returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
-        );
-
     // -- Balances --
     /// @dev Verifies that the given information is stored in the Merkle tree with
     ///      the specified merkle root.
     /// @param  merkleRoot The Merkle tree root of all account data
+    /// @param  owner The owner of the account
     /// @param  accountID The ID of the account the balance is verified for
     /// @param  tokenID The ID of the token the balance is verified for
     /// @param  pubKeyX The first part of the public key of the account
@@ -322,6 +225,7 @@ abstract contract IExchangeV3 is IExchange
     /// @return True if the given information is stored in the Merkle tree, false otherwise
     function isAccountBalanceCorrect(
         uint     merkleRoot,
+        address  owner,
         uint24   accountID,
         uint16   tokenID,
         uint     pubKeyX,
@@ -576,89 +480,13 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
+    function getNumAvailableForcedSlots()
+        external
+        virtual
+        view
+        returns (uint);
+
     // -- Deposits --
-    /// @dev Returns the index of the first deposit request that wasn't yet included
-    ///      in a block. Can be used to check if a deposit with a given depositIdx
-    ///      (as specified in the DepositRequested event) was processed by the operator.
-    /// @return The num of the processed deposit requests
-    function getNumDepositRequestsProcessed()
-        external
-        virtual
-        view
-        returns (uint);
-
-    /// @dev Gets the number of available onchain deposit slots.
-    /// @return The number of slots avalable for deposits.
-    function getNumAvailableDepositSlots()
-        external
-        virtual
-        view
-        returns (uint);
-
-    /// @dev Gets an item from deposit request-chain.
-    /// @param index The 0-based index of the request
-    /// @return accumulatedHash See @Request
-    /// @return accumulatedFee  See @Request
-    /// @return timestamp       See @Request
-    function getDepositRequest(
-        uint index
-        )
-        external
-        virtual
-        view
-        returns (
-          bytes32 accumulatedHash,
-          uint    accumulatedFee,
-          uint32  timestamp
-        );
-
-    /// @dev Deposits Ether or ERC20 tokens to the owner's account.
-    ///
-    ///      This function is only callable by an agent of the account.
-    ///
-    ///      This function will create a new account if no account exists
-    ///      for owner, or update the existing account with the given trading
-    ///      public key when the account exists.
-    ///
-    ///      The total fee in ETH that the user needs to pay is:
-    ///          depositFee +
-    ///          (isAccountNew ? accountCreationFee : 0) +
-    ///          (isAccountUpdated ? accountUpdateFee : 0)
-    ///      If the user sends too much ETH the surplus is sent back immediately.
-    ///
-    ///      Note that after such an operation, it will take the operator some
-    ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
-    ///      and create the deposit to the offchain account.
-    ///
-    ///      Calling this method with a different trading public key will effectively
-    ///      cancel all existing orders within MAX_AGE_REQUEST_UNTIL_FORCED.
-    ///
-    /// @param  owner The owner of the account
-    /// @param  pubKeyX The first part of the account's trading EdDSA public key
-    /// @param  pubKeyY The second part of the account's trading EdDSA public key
-    /// @param  permission Data used for checking address whitelisting prior to
-    ///                    account creation.
-    /// @param  tokenAddress The adderss of the token, use `0x0` for Ether.
-    /// @param  amount The amount of tokens to deposit
-    /// @return accountID The id of the account
-    /// @return isAccountNew True if this account is newly created, false if the account existed
-    /// @return isAccountUpdated True if this account was updated, false otherwise
-    function updateAccountAndDeposit(
-        address owner,
-        uint    pubKeyX,
-        uint    pubKeyY,
-        address tokenAddress,
-        uint96  amount,
-        bytes   calldata permission
-        )
-        external
-        virtual
-        payable
-        returns (
-            uint24 accountID,
-            bool   isAccountNew,
-            bool   isAccountUpdated
-        );
 
     /// @dev Deposits Ether or ERC20 tokens to the specified account.
     ///
@@ -690,43 +518,6 @@ abstract contract IExchangeV3 is IExchange
         payable;
 
     // -- Withdrawals --
-
-    /// @dev Returns the index of the first withdrawal request that wasn't yet included
-    ///      in a block. Can be used to check if a withdrawal with a given withdrawalIdx
-    ///      (as specified in the WithdrawalRequested event) was processed by the operator.
-    /// @return The num of processed withdrawal requests
-    function getNumWithdrawalRequestsProcessed()
-        external
-        virtual
-        view
-        returns (uint);
-
-    /// @dev Gets the number of available onchain withdrawal slots.
-    /// @return The number of slots available for withdrawals
-    function getNumAvailableWithdrawalSlots(
-        )
-        external
-        virtual
-        view
-        returns (uint);
-
-    /// @dev Gets an item from withdrawal request-chain.
-    /// @param index The 0-based index of the request
-    /// @return accumulatedHash See @Request
-    /// @return accumulatedFee  See @Request
-    /// @return timestamp       See @Request
-    function getWithdrawRequest(
-        uint index
-        )
-        external
-        virtual
-        view
-        returns (
-            bytes32 accumulatedHash,
-            uint    accumulatedFee,
-            uint32  timestamp
-        );
-
     /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens. To withdraw
     ///      the complete balance, use a very large number for `amount`.
     ///
@@ -739,13 +530,15 @@ abstract contract IExchangeV3 is IExchange
     ///      time (no more than MAX_AGE_REQUEST_UNTIL_FORCED) to process the request
     ///      and create the deposit to the offchain account.
     ///
-    /// @param owner The address of the owner.
+    /// @param owner The expected owner of the account
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
     /// @param amount The amount of tokens to deposit
+    /// @param accountID The address the account in the Merkle tree.
     function withdraw(
         address owner,
         address tokenAddress,
-        uint96  amount
+        uint96  amount,
+        uint24  accountID
         )
         external
         virtual
@@ -791,6 +584,7 @@ abstract contract IExchangeV3 is IExchange
     ///                      token for the account. The deepest hash in the tree is the
     ///                      1st element of the array.
     function withdrawFromMerkleTree(
+        uint24   accountID,
         address  owner,
         address  token,
         uint     pubKeyX,
@@ -805,19 +599,16 @@ abstract contract IExchangeV3 is IExchange
         virtual;
 
     /// @dev Allows withdrawing funds deposited to the contract in a deposit request when
-    ///      it was never committed in a block (so the balance in the Merkle tree was
-    ///      not updated).
+    ///      it was never processed by the operator within the maximum time allowed.
     ///
     ///      Can be called by anyone. The deposited tokens will be sent back to
     ///      the owner of the account they were deposited in.
     ///
-    ///      Can only be used in withdrawal mode (i.e. when the operator has stopped
-    ///      committing blocks and is not able to commit anymore blocks).
-    ///
-    /// @param  depositIdx The index of the deposit request (as given in the
-    ///                    depositIdx field in the DepositRequested event)
+    /// @param  owner The address of the account the withdrawal was done for.
+    /// @param  token The token address
     function withdrawFromDepositRequest(
-        uint depositIdx
+        address owner,
+        address token
         )
         external
         virtual;
@@ -903,21 +694,6 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
-    /// @dev Gets the currently approved amounts to be transferred using internal transfers.
-    /// @param from The address of the account that sends the tokens.
-    /// @param to The address to which 'amount' tokens are transferred.
-    /// @param token The address of the token to transfer ('0x0' for ETH).
-    /// @return The amount approved
-    function getApprovedTransferAmount(
-        address from,
-        address to,
-        address token
-        )
-        external
-        virtual
-        view
-        returns (uint);
-
     /// @dev Allows an agent to transfer ERC-20 tokens for a user using the allowance
     ///      the user has set for the exchange. This way the user only needs to approve a single exchange contract
     ///      for all exchange/agent features, which allows for a more seamless user experience.
@@ -933,6 +709,19 @@ abstract contract IExchangeV3 is IExchange
         address to,
         address token,
         uint    amount
+        )
+        external
+        virtual;
+
+    /// @dev Allows an agent to approve a rollup tx.
+    ///
+    ///      This function can only be called by an agent.
+    ///
+    /// @param owner The owner of the account
+    /// @param txHash The hash of the transaction
+    function approveTransaction(
+        address owner,
+        bytes32 txHash
         )
         external
         virtual;
@@ -956,25 +745,6 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (address payable);
-
-    /// @dev Sets the address whitelist contract address.
-    ///      Can only be called by the exchange owner.
-    /// @param _addressWhitelist The new address whitelist contract address
-    /// @return oldAddressWhitelist The old address whitelist contract address
-    function setAddressWhitelist(
-        address _addressWhitelist
-        )
-        external
-        virtual
-        returns (address oldAddressWhitelist);
-
-    /// @dev Gets the address whitelist contract address.
-    /// @return The whitelist contract
-    function getAddressWhitelist()
-        external
-        virtual
-        view
-        returns (address);
 
     /// @dev Updates fee settings.
     ///      This function is only callable by the exchange owner.
@@ -1096,22 +866,6 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual
         returns (bool success);
-
-    /// @dev Gets number of available/processed deposits/withdrawals.
-    /// @return numDepositRequestsProcessed The num of the processed deposit requests
-    /// @return numAvailableDepositSlots The number of slots available for deposits
-    /// @return numWithdrawalRequestsProcessed The num of processed withdrawal requests
-    /// @return numAvailableWithdrawalSlots The number of slots available for withdrawals
-    function getRequestStats()
-        external
-        virtual
-        view
-        returns(
-            uint numDepositRequestsProcessed,
-            uint numAvailableDepositSlots,
-            uint numWithdrawalRequestsProcessed,
-            uint numAvailableWithdrawalSlots
-        );
 
     /// @dev Gets the protocol fees for this exchange.
     /// @return timestamp The timestamp the protocol fees were last updated

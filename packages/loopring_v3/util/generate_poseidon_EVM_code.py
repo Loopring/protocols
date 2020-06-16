@@ -67,6 +67,6 @@ def poseidon_EVM_asm(params):
 
     return o
 
-poseidonParamsEVM = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsEVM = poseidon_params(SNARK_SCALAR_FIELD, 3, 6, 51, b'poseidon', 5, security_target=128)
 data = poseidon_EVM_asm(poseidonParamsEVM)
 print(data)

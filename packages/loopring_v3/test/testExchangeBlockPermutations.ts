@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { DepositInfo, RingInfo } from "./types";
+import { DepositInfo, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -11,7 +11,7 @@ contract("Exchange", (accounts: string[]) => {
     // Make sure the ring is valid
     const fillA = new BN(1).add(exchangeTestUtil.getRandomAmount());
     const fillB = new BN(1).add(exchangeTestUtil.getRandomAmount());
-    const ring: RingInfo = {
+    const ring: SpotTrade = {
       orderA: {
         tokenS: "WETH",
         tokenB: "GTO",
@@ -120,9 +120,9 @@ contract("Exchange", (accounts: string[]) => {
       const bDataAvailabilities = [true, false];
       for (const bDataAvailability of bDataAvailabilities) {
         await createExchange(bDataAvailability);
-        const blockSizes = exchangeTestUtil.ringSettlementBlockSizes;
+        const blockSizes = exchangeTestUtil.blockSizes;
         for (const blockSize of blockSizes) {
-          const rings: RingInfo[] = [];
+          const rings: SpotTrade[] = [];
           for (let i = 0; i < blockSize; i++) {
             rings.push(createRandomRing());
           }
@@ -130,27 +130,7 @@ contract("Exchange", (accounts: string[]) => {
             await exchangeTestUtil.setupRing(ring);
             await exchangeTestUtil.sendRing(exchangeId, ring);
           }
-          await exchangeTestUtil.commitDeposits(exchangeId);
-          await exchangeTestUtil.commitRings(exchangeId);
-        }
-        await verify();
-      }
-    });
-
-    it("Ring Settlement (dummy rings)", async () => {
-      const bDataAvailabilities = [true];
-      for (const bDataAvailability of bDataAvailabilities) {
-        await createExchange(bDataAvailability);
-        await exchangeTestUtil.commitDeposits(exchangeId);
-        const blockSizes = exchangeTestUtil.ringSettlementBlockSizes;
-        for (const blockSize of blockSizes) {
-          for (let i = 0; i < blockSize; i++) {
-            await exchangeTestUtil.sendRing(
-              exchangeId,
-              exchangeTestUtil.dummyRing
-            );
-          }
-          await exchangeTestUtil.commitRings(exchangeId);
+          await exchangeTestUtil.submitTransactions();
         }
         await verify();
       }
@@ -158,12 +138,12 @@ contract("Exchange", (accounts: string[]) => {
 
     it("Deposit", async () => {
       await createExchange(false);
-      const blockSizes = exchangeTestUtil.depositBlockSizes;
+      const blockSizes = exchangeTestUtil.blockSizes;
       for (const blockSize of blockSizes) {
         for (let i = 0; i < blockSize; i++) {
           await doRandomDeposit();
         }
-        await exchangeTestUtil.commitDeposits(exchangeId);
+        await exchangeTestUtil.submitTransactions();
       }
       await verify();
     });
@@ -177,16 +157,16 @@ contract("Exchange", (accounts: string[]) => {
       for (let i = 0; i < numDeposits; i++) {
         deposits.push(await doRandomDeposit());
       }
-      await exchangeTestUtil.commitDeposits(exchangeId);
+      await exchangeTestUtil.submitTransactions();
 
-      const blockSizes = exchangeTestUtil.onchainWithdrawalBlockSizes;
+      const blockSizes = exchangeTestUtil.blockSizes;
       for (const blockSize of blockSizes) {
         for (let i = 0; i < blockSize; i++) {
           const randomDeposit =
             deposits[exchangeTestUtil.getRandomInt(numDeposits)];
           await doRandomOnchainWithdrawal(randomDeposit);
         }
-        await exchangeTestUtil.commitOnchainWithdrawalRequests(exchangeId);
+        await exchangeTestUtil.submitTransactions();
       }
       await verify();
     });
@@ -202,16 +182,16 @@ contract("Exchange", (accounts: string[]) => {
         for (let i = 0; i < numDeposits; i++) {
           deposits.push(await doRandomDeposit());
         }
-        await exchangeTestUtil.commitDeposits(exchangeId);
+        await exchangeTestUtil.submitTransactions();
 
-        const blockSizes = exchangeTestUtil.offchainWithdrawalBlockSizes;
+        const blockSizes = exchangeTestUtil.blockSizes;
         for (const blockSize of blockSizes) {
           for (let i = 0; i < blockSize; i++) {
             const randomDeposit =
               deposits[exchangeTestUtil.getRandomInt(numDeposits)];
             await doRandomOffchainWithdrawal(randomDeposit);
           }
-          await exchangeTestUtil.commitOffchainWithdrawalRequests(exchangeId);
+          await exchangeTestUtil.submitTransactions();
         }
         await verify();
       }
@@ -228,9 +208,9 @@ contract("Exchange", (accounts: string[]) => {
         for (let i = 0; i < numDeposits; i++) {
           deposits.push(await doRandomDeposit());
         }
-        await exchangeTestUtil.commitDeposits(exchangeId);
+        await exchangeTestUtil.submitTransactions();
 
-        const blockSizes = exchangeTestUtil.transferBlockSizes;
+        const blockSizes = exchangeTestUtil.blockSizes;
         for (const blockSize of blockSizes) {
           for (let i = 0; i < blockSize; i++) {
             const randomDepositA =
@@ -239,7 +219,7 @@ contract("Exchange", (accounts: string[]) => {
               deposits[exchangeTestUtil.getRandomInt(numDeposits)];
             await doRandomInternalTransfer(randomDepositA, randomDepositB);
           }
-          await exchangeTestUtil.commitInternalTransfers(exchangeId);
+          await exchangeTestUtil.submitTransactions();
         }
         await verify();
       }

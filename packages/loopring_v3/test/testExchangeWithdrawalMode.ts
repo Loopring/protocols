@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { RingInfo } from "./types";
+import { SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -117,14 +117,14 @@ contract("Exchange", (accounts: string[]) => {
 
     it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
       await createExchange(true);
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Commit the deposits
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
@@ -150,7 +150,7 @@ contract("Exchange", (accounts: string[]) => {
       await createExchange(false);
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
@@ -200,7 +200,7 @@ contract("Exchange", (accounts: string[]) => {
       );
       const accountID = depositInfo.accountID;
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await expectThrow(
@@ -255,7 +255,7 @@ contract("Exchange", (accounts: string[]) => {
         balance
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       await expectThrow(
@@ -290,7 +290,7 @@ contract("Exchange", (accounts: string[]) => {
       const protocolFees = await exchange.getProtocolFeeValues();
 
       // Ring with ETH and ERC20
-      const ring: RingInfo = {
+      const ring: SpotTrade = {
         orderA: {
           tokenS: "WETH",
           tokenB: "GTO",
@@ -308,8 +308,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.setupRing(ring);
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
-      await exchangeTestUtil.commitRings(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       // Expected protocol fees earned
@@ -380,7 +379,7 @@ contract("Exchange", (accounts: string[]) => {
         balanceA
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       const depositInfoB = await exchangeTestUtil.deposit(
@@ -393,7 +392,7 @@ contract("Exchange", (accounts: string[]) => {
         balanceB
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       const depositInfoC = await exchangeTestUtil.deposit(
         exchangeID,
@@ -405,7 +404,7 @@ contract("Exchange", (accounts: string[]) => {
         balanceC
       );
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
 
       const depositInfoD = await exchangeTestUtil.deposit(
         exchangeID,
@@ -478,7 +477,7 @@ contract("Exchange", (accounts: string[]) => {
       );
       const accountID = depositInfo.accountID;
 
-      await exchangeTestUtil.commitDeposits(exchangeID);
+      await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeID);
 
       // Request withdrawal onchain

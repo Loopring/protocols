@@ -43,7 +43,6 @@ library ExchangeWithdrawals
     using ExchangeTokens    for ExchangeData.State;
 
     event WithdrawalRequested(
-        uint    indexed withdrawalIdx,
         uint24  indexed accountID,
         uint16  indexed tokenID,
         uint96          amount
@@ -63,37 +62,19 @@ library ExchangeWithdrawals
         uint96          amount
     );
 
-    function getWithdrawRequest(
-        ExchangeData.State storage S,
-        uint index
-        )
-        external
-        view
-        returns (
-            bytes32 accumulatedHash,
-            uint    accumulatedFee,
-            uint32  timestamp
-        )
-    {
-        require(index < S.withdrawalChain.length, "INVALID_INDEX");
-        ExchangeData.Request storage request = S.withdrawalChain[index];
-        accumulatedHash = request.accumulatedHash;
-        accumulatedFee = request.accumulatedFee;
-        timestamp = request.timestamp;
-    }
-
     function withdraw(
         ExchangeData.State storage S,
-        uint24  accountID,
+        address owner,
         address token,
-        uint96  amount
+        uint96  amount,
+        uint24  accountID
         )
         external
     {
         require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
-        require(getNumAvailableWithdrawalSlots(S) > 0, "TOO_MANY_REQUESTS_OPEN");
+        require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(token);
 
@@ -106,24 +87,16 @@ library ExchangeWithdrawals
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
-        // Add the withdraw to the withdraw chain
-        ExchangeData.Request storage prevRequest = S.withdrawalChain[S.withdrawalChain.length - 1];
-        ExchangeData.Request memory request = ExchangeData.Request(
-            sha256(
-                abi.encodePacked(
-                    prevRequest.accumulatedHash,
-                    accountID,
-                    uint16(tokenID),
-                    amount
-                )
-            ),
-            prevRequest.accumulatedFee.add(S.withdrawalFeeETH),
-            uint32(now)
-        );
-        S.withdrawalChain.push(request);
+        require(S.pendingWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
+
+        S.pendingWithdrawals[accountID][tokenID].owner = owner;
+        S.pendingWithdrawals[accountID][tokenID].amount = amount;
+        S.pendingWithdrawals[accountID][tokenID].timestamp = uint32(now);
+        S.pendingWithdrawals[accountID][tokenID].fee = uint64(S.withdrawalFeeETH);
+
+        S.numPendingForcedTransactions++;
 
         emit WithdrawalRequested(
-            uint32(S.withdrawalChain.length - 1),
             accountID,
             tokenID,
             amount
@@ -133,6 +106,7 @@ library ExchangeWithdrawals
     // We still alow anyone to withdraw these funds for the account owner
     function withdrawFromMerkleTree(
         ExchangeData.State storage S,
+        uint24   accountID,
         address  owner,
         address  token,
         uint     pubKeyX,
@@ -147,13 +121,13 @@ library ExchangeWithdrawals
     {
         require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
 
-        uint24 accountID = S.getAccountID(owner);
         uint16 tokenID = S.getTokenID(token);
-        require(S.withdrawnInWithdrawMode[owner][token] == false, "WITHDRAWN_ALREADY");
+        require(S.withdrawnInWithdrawMode[accountID][tokenID] == false, "WITHDRAWN_ALREADY");
 
         ExchangeBalances.verifyAccountBalance(
             uint(S.merkleRoot),
             accountID,
+            owner,
             tokenID,
             pubKeyX,
             pubKeyY,
@@ -165,66 +139,49 @@ library ExchangeWithdrawals
         );
 
         // Make sure the balance can only be withdrawn once
-        S.withdrawnInWithdrawMode[owner][token] = true;
+        S.withdrawnInWithdrawMode[accountID][tokenID] = true;
 
         // Transfer the tokens
         transferTokens(
             S,
-            accountID,
+            owner,
             tokenID,
             balance,
             false
         );
     }
 
-    function getNumWithdrawalRequestsProcessed(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        return S.numWithdrawalRequestsCommitted;
-    }
-
-    function getNumAvailableWithdrawalSlots(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint)
-    {
-        uint numOpenRequests = S.withdrawalChain.length - getNumWithdrawalRequestsProcessed(S);
-        return ExchangeData.MAX_OPEN_WITHDRAWAL_REQUESTS() - numOpenRequests;
-    }
-
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
-        uint depositIdx
+        address owner,
+        address token
         )
         external
     {
-        require(S.isInWithdrawalMode(), "NOT_IN_WITHDRAW_MODE");
+        uint16 tokenID = S.getTokenID(token);
+        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
 
-        require(depositIdx >= S.numDepositRequestsCommitted, "REQUEST_INCLUDED_IN_BLOCK");
+        // Only allow withdrawing from deposit when the time limit
+        // to process it has been exceeded.
+        require(deposit.timestamp + ExchangeData.MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE() >= now, "DEPOSIT_NOT_WITHDRAWABLE_YET");
 
-        // The deposit info is stored at depositIdx - 1
-        ExchangeData.Deposit storage _deposit = S.deposits[depositIdx.sub(1)];
+        uint amount = deposit.amount;
+        uint fee = deposit.fee;
 
-        uint amount = _deposit.amount;
-        require(amount > 0, "WITHDRAWN_ALREADY");
-
-        // Set the amount to 0 so it cannot be withdrawn again
-        _deposit.amount = 0;
+        // Reset the deposit request
+        S.pendingDeposits[owner][tokenID] = ExchangeData.Deposit(0, 0, 0);
 
         // Transfer the tokens
         transferTokens(
             S,
-            _deposit.accountID,
-            _deposit.tokenID,
+            owner,
+            tokenID,
             amount,
             false
         );
+
+        // Return the fee
+        owner.sendETHAndVerify(fee, gasleft());
     }
 
     function withdrawFromApprovedWithdrawal(
@@ -234,72 +191,45 @@ library ExchangeWithdrawals
         )
         public
     {
-        uint24 accountID = (owner != address(0)) ? S.getAccountID(owner) : 0;
         uint16 tokenID = S.getTokenID(token);
-        uint amount = S.amountWithdrawable[accountID][tokenID];
+        uint amount = S.amountWithdrawable[owner][tokenID];
 
         // Make sure this amount can't be withdrawn again
-        S.amountWithdrawable[accountID][tokenID] = 0;
+        S.amountWithdrawable[owner][tokenID] = 0;
 
         // Transfer the tokens
         transferTokens(
             S,
-            accountID,
+            owner,
             tokenID,
             amount,
             false
         );
     }
 
-    function distributeWithdrawals(
+    function distributeWithdrawal(
         ExchangeData.State storage S,
-        bytes memory withdrawals
+        address owner,
+        uint16 tokenID,
+        uint amount
         )
         public
     {
-        for (uint i = 0; i < withdrawals.length; i += 8) {
-            uint data = uint(withdrawals.bytesToUint64(i));
-
-            // Extract the withdrawal data
-            uint16 tokenID = uint16((data >> 48) & 0xFFFF);
-            uint24 accountID = uint24((data >> 24) & 0xFFFFFF);
-            uint amount = (data & 0xFFFFFF).decodeFloat(24);
-
-            // Transfer the tokens
-            bool success = transferTokens(
-                S,
-                accountID,
-                tokenID,
-                amount,
-                true
-            );
-            if (!success) {
-                // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
-                S.amountWithdrawable[accountID][tokenID] = S.amountWithdrawable[accountID][tokenID].add(amount);
-            }
+        // Transfer the tokens
+        bool success = transferTokens(
+            S,
+            owner,
+            tokenID,
+            amount,
+            true
+        );
+        if (!success) {
+            // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
+            S.amountWithdrawable[owner][tokenID] = S.amountWithdrawable[owner][tokenID].add(amount);
         }
     }
 
     // == Internal and Private Functions ==
-
-    function getOwner(
-        ExchangeData.State storage S,
-        uint24 accountID
-        )
-        private
-        view
-        returns (address addr)
-    {
-        // If we're withdrawing from the protocol fee account send the tokens
-        // directly to the protocol fee vault.
-        // If we're withdrawing to an unknown account (can currently happen while
-        // distributing tokens in shutdown) send the tokens to the protocol fee vault as well.
-        if (accountID == 0 || accountID >= S.accounts.length) {
-            addr = S.loopring.protocolFeeVault();
-        } else {
-            addr = S.accounts[accountID].owner;
-        }
-    }
 
     // If allowFailure is true the transfer can fail because of a transfer error or
     // because the transfer uses more than GAS_LIMIT_SEND_TOKENS gas. The function
@@ -308,7 +238,7 @@ library ExchangeWithdrawals
     // as much gas as needed, otherwise it throws. The function always returns true.
     function transferTokens(
         ExchangeData.State storage S,
-        uint24  accountID,
+        address to,
         uint16  tokenID,
         uint    amount,
         bool    allowFailure
@@ -316,7 +246,9 @@ library ExchangeWithdrawals
         private
         returns (bool success)
     {
-        address to = getOwner(S, accountID);
+        if (to == address(0)) {
+            to = S.loopring.protocolFeeVault();
+        }
         address token = S.getTokenAddress(tokenID);
         // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
         uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
@@ -338,14 +270,14 @@ library ExchangeWithdrawals
 
         if (success) {
             emit WithdrawalCompleted(
-                accountID,
+                0,
                 tokenID,
                 to,
                 uint96(amount)
             );
         } else {
             emit WithdrawalFailed(
-                accountID,
+                0,
                 tokenID,
                 to,
                 uint96(amount)

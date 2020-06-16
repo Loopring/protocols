@@ -9,12 +9,12 @@ import {
   DetailedTokenTransfer,
   ExchangeState,
   OrderInfo,
-  RingInfo,
+  SpotTrade,
   DetailedSimulatorReport,
   SimulatorReport,
   TradeHistory,
   WithdrawalRequest,
-  InternalTransferRequest
+  Transfer
 } from "./types";
 
 interface SettlementValues {
@@ -46,7 +46,7 @@ export class Simulator {
     const newExchangeState = this.copyExchangeState(exchangeState);
     assert(
       deposit.accountID <= exchangeState.accounts.length,
-      "accountID not incremented by 1"
+      "accountID not incremented by 1: " + deposit.accountID + " <= " + exchangeState.accounts.length,
     );
     if (deposit.accountID === exchangeState.accounts.length) {
       // Make sure all tokens exist
@@ -54,6 +54,8 @@ export class Simulator {
       for (let i = 0; i < Constants.MAX_NUM_TOKENS; i++) {
         balances[i] = {
           balance: new BN(0),
+          position: new BN(0),
+          fundingIndex: new BN(0),
           tradeHistory: {}
         };
       }
@@ -72,8 +74,8 @@ export class Simulator {
     if (account.balances[deposit.tokenID].balance.gt(Constants.MAX_AMOUNT)) {
       account.balances[deposit.tokenID].balance = Constants.MAX_AMOUNT;
     }
-    account.publicKeyX = deposit.publicKeyX;
-    account.publicKeyY = deposit.publicKeyY;
+    //account.publicKeyX = deposit.publicKeyX;
+    //account.publicKeyY = deposit.publicKeyY;
 
     const simulatorReport: SimulatorReport = {
       exchangeStateBefore: exchangeState,
@@ -244,7 +246,7 @@ export class Simulator {
   }
 
   public internalTransferFromInputData(
-    transfer: InternalTransferRequest,
+    transfer: Transfer,
     exchangeState: ExchangeState,
     operatorAccountID: number
   ) {
@@ -309,7 +311,7 @@ export class Simulator {
   }
 
   public settleRingFromInputData(
-    ring: RingInfo,
+    ring: SpotTrade,
     exchangeState: ExchangeState,
     timestamp: number,
     operatorAccountID: number,
@@ -697,7 +699,7 @@ export class Simulator {
 
   private getDetailedTransfers(
     operatorAccountID: number,
-    ring: RingInfo,
+    ring: SpotTrade,
     order: OrderInfo,
     orderTo: OrderInfo,
     fillAmountS: BN,
@@ -969,6 +971,8 @@ export class Simulator {
       }
       balances[Number(tokenID)] = {
         balance: balanceValue.balance,
+        position: balanceValue.position,
+        fundingIndex: balanceValue.fundingIndex,
         tradeHistory
       };
     }

@@ -146,7 +146,8 @@ contract UniversalRegistry is IUniversalRegistry {
         ForgeMode forgeMode,
         bool      onchainDataAvailability,
         address   protocol,
-        address   implementation
+        address   implementation,
+        address   insuranceContract
         )
         external
         override
@@ -163,12 +164,11 @@ contract UniversalRegistry is IUniversalRegistry {
 
         ILoopringV3 loopring = ILoopringV3(_protocol);
         uint exchangeCreationCostLRC = loopring.exchangeCreationCostLRC();
-        address feeVault = loopring.protocolFeeVault();
 
         if (exchangeCreationCostLRC > 0) {
             lrcAddress.safeTransferFromAndVerify(
                 msg.sender,
-                feeVault,
+                loopring.protocolFeeVault(),
                 exchangeCreationCostLRC
             );
         }
@@ -185,7 +185,8 @@ contract UniversalRegistry is IUniversalRegistry {
             exchangeId,
             msg.sender,  // owner
             msg.sender,  // operator
-            onchainDataAvailability
+            onchainDataAvailability,
+            insuranceContract
         );
 
         emit ExchangeForged(

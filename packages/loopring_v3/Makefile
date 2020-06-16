@@ -2,7 +2,8 @@ ROOT_DIR := $(shell dirname $(realpath $(MAKEFILE_LIST)))
 PYTHON=python3
 
 # CMAKE_TYPE := cmake-release
-CMAKE_TYPE := cmake-openmp-performance
+#CMAKE_TYPE := cmake-openmp-performance
+CMAKE_TYPE := cmake-openmp-debug
 
 ifeq ($(OS),Windows_NT)
 	detected_OS := Windows
