@@ -664,10 +664,9 @@ class State(object):
             ## calculate how much can be withdrawn
             account = self.getAccount(txInput.accountID)
             if int(txInput.type) == 2:
-                txInput.amountWithdrawn = str(0)
-            else:
-                balance = int(account.getBalance(txInput.tokenID))
-                txInput.amountWithdrawn = str(int(txInput.amount) if int(txInput.amount) <= balance else balance)
+                txInput.amount = account.getBalance(txInput.tokenID)
+            elif int(txInput.type) == 3:
+                txInput.amount = str(0)
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
@@ -677,7 +676,7 @@ class State(object):
             accountA = self.getAccount(newState.accountA_Address)
 
             newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = -int(txInput.amountWithdrawn)
+            newState.balanceA_S_Balance = -int(txInput.amount)
 
             newState.balanceA_B_Address = txInput.feeTokenID
             newState.balanceA_B_Balance = -feeValue

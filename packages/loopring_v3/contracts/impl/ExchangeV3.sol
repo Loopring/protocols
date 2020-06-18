@@ -156,7 +156,7 @@ contract ExchangeV3 is IExchangeV3
             uint(ExchangeData.FEE_BLOCK_FINE_START_TIME()),
             uint(ExchangeData.FEE_BLOCK_FINE_MAX_DURATION()),
             uint(ExchangeData.MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED()),
-            uint(ExchangeData.GAS_LIMIT_SEND_TOKENS())
+            uint(0)
         );
     }
 
@@ -397,10 +397,9 @@ contract ExchangeV3 is IExchangeV3
 
     // -- Withdrawals --
 
-    function withdraw(
+    function forceWithdraw(
         address owner,
         address token,
-        uint96  amount,
         uint24  accountID
         )
         external
@@ -409,7 +408,7 @@ contract ExchangeV3 is IExchangeV3
         payable
         onlyAgentFor(owner)
     {
-        state.withdraw(owner, token, amount, accountID);
+        state.forceWithdraw(owner, token, accountID);
     }
 
     function withdrawProtocolFees(
@@ -420,8 +419,7 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         payable
     {
-        // Always request the maximum amount so the complete balance is withdrawn
-        state.withdraw(address(0), token, ~uint96(0), 0);
+        state.forceWithdraw(address(0), token, 0);
     }
 
     // We still alow anyone to withdraw these funds for the account owner
@@ -504,7 +502,7 @@ contract ExchangeV3 is IExchangeV3
         //override
     {
         uint16 tokenID = state.getTokenID(token);
-        ExchangeData.Withdrawal storage withdrawal = state.pendingWithdrawals[accountID][tokenID];
+        ExchangeData.ForcedWithdrawal storage withdrawal = state.pendingForcedWithdrawals[accountID][tokenID];
 
         // Check if the withdrawal has indeed exceeded the time limit
         require(withdrawal.timestamp + ExchangeData.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE() >= now, "WITHDRAWAL_NOT_TOO_OLD");

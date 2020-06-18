@@ -56,11 +56,18 @@ library ExchangeData
         uint8 previousMakerFeeBips;
     }
 
-    // Represents an onchain deposit request.  `tokenID` being `0x0` means depositing Ether.
+    // General auxiliary data for each conditional transaction
     struct AuxiliaryData
     {
         uint txIndex;
         bytes data;
+    }
+
+    // Auxiliary data for each withdrawal
+    struct WithdrawalAuxiliaryData
+    {
+        uint gasLimit;
+        bytes signature;
     }
 
     // This is the (virtual) block an operator needs to submit onchain to maintain the
@@ -90,10 +97,9 @@ library ExchangeData
         uint64 fee;
     }
 
-    struct Withdrawal
+    struct ForcedWithdrawal
     {
         address owner;
-        uint96  amount;
         uint32  timestamp;
         uint64  fee;
     }
@@ -133,10 +139,8 @@ library ExchangeData
     function FEE_BLOCK_FINE_START_TIME() internal pure returns (uint32) { return 6 hours; }
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 6 hours; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
-    // TODO: Move this to deposit contract
-    function GAS_LIMIT_SEND_TOKENS() internal pure returns (uint32) { return 200000; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
-    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 64; }
+    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 68; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE() internal pure returns (uint32) { return 1 days; }
 
 
@@ -185,8 +189,8 @@ library ExchangeData
         // This is only used when the automatic distribution of the withdrawal failed.
         mapping (address => mapping (uint16 => uint)) amountWithdrawable;
 
-        // A map from an account to a token to how much can be withdrawn
-        mapping (uint24 => mapping (uint16 => Withdrawal)) pendingWithdrawals;
+        // A map from an account to a token to how much should be withdrawn
+        mapping (uint24 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
         // A map from an address to a token to a deposit
         mapping (address => mapping (uint16 => Deposit)) pendingDeposits;

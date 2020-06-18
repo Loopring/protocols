@@ -79,11 +79,6 @@ function replacer(name: any, val: any) {
   }
 }
 
-interface Range {
-  offset: number;
-  length: number;
-}
-
 export interface OnchainBlock {
   blockType: number;
   blockSize: number;
@@ -97,6 +92,100 @@ export interface OnchainBlock {
 export interface AuxiliaryData {
   txIndex: number;
   txAuxiliaryData?: any;
+}
+
+export namespace PublicKeyUpdateUtils {
+  export function toTypedData(update: PublicKeyUpdate, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        PublicKeyUpdate: [
+          { name: "owner", type: "address" },
+          { name: "accountID", type: "uint24" },
+          { name: "nonce", type: "uint32" },
+          { name: "publicKey", type: "uint256" },
+          { name: "feeTokenID", type: "uint16" },
+          { name: "fee", type: "uint256" }
+        ]
+      },
+      primaryType: "PublicKeyUpdate",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        owner: update.owner,
+        accountID: update.accountID,
+        nonce: update.nonce,
+        publicKey: new BN(update.publicKeyY),
+        feeTokenID: update.feeTokenID,
+        fee: update.fee
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(update: PublicKeyUpdate, verifyingContract: string) {
+    const typedData = this.toTypedData(update, verifyingContract);
+    const orderHash = getEIP712Message(typedData);
+    return orderHash;
+  }
+}
+
+export namespace WithdrawalUtils {
+  export function toTypedData(withdrawal: WithdrawalRequest, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        Withdrawal: [
+          { name: "owner", type: "address" },
+          { name: "accountID", type: "uint24" },
+          { name: "nonce", type: "uint32" },
+          { name: "tokenID", type: "uint16" },
+          { name: "amount", type: "uint256" },
+          { name: "feeTokenID", type: "uint16" },
+          { name: "fee", type: "uint256" },
+          { name: "to", type: "address" }
+        ]
+      },
+      primaryType: "Withdrawal",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        owner: withdrawal.owner,
+        accountID: withdrawal.accountID,
+        nonce: withdrawal.nonce,
+        tokenID: withdrawal.tokenID,
+        amount: withdrawal.amount,
+        feeTokenID: withdrawal.feeTokenID,
+        fee: withdrawal.fee,
+        to: withdrawal.to
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(withdrawal: WithdrawalRequest, verifyingContract: string) {
+    const typedData = this.toTypedData(withdrawal, verifyingContract);
+    const orderHash = getEIP712Message(typedData);
+    return orderHash;
+  }
 }
 
 export class ExchangeTestUtil {
@@ -705,49 +794,6 @@ export class ExchangeTestUtil {
     return this.flattenList([proof.A, this.flattenList(proof.B), proof.C]);
   };
 
-  public toTypedData(update: PublicKeyUpdate) {
-    const typedData = {
-      types: {
-        EIP712Domain: [
-          { name: "name", type: "string" },
-          { name: "version", type: "string" },
-          { name: "chainId", type: "uint256" },
-          { name: "verifyingContract", type: "address" }
-        ],
-        PublicKeyUpdate: [
-          { name: "owner", type: "address" },
-          { name: "accountID", type: "uint24" },
-          { name: "nonce", type: "uint32" },
-          { name: "publicKey", type: "uint256" },
-          { name: "feeTokenID", type: "uint16" },
-          { name: "fee", type: "uint256" }
-        ]
-      },
-      primaryType: "PublicKeyUpdate",
-      domain: {
-        name: "Loopring Protocol",
-        version: "3.6.0",
-        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
-        verifyingContract: this.exchange.address
-      },
-      message: {
-        owner: update.owner,
-        accountID: update.accountID,
-        nonce: update.nonce,
-        publicKey: new BN(update.publicKeyY),
-        feeTokenID: update.feeTokenID,
-        fee: update.fee
-      }
-    };
-    return typedData;
-  }
-
-  public getHash(update: PublicKeyUpdate) {
-    const typedData = this.toTypedData(update);
-    const orderHash = getEIP712Message(typedData);
-    return orderHash;
-  }
-
   public async deposit(
     exchangeID: number,
     owner: string,
@@ -919,7 +965,7 @@ export class ExchangeTestUtil {
 
     if (publicKeyUpdate !== undefined) {
       // Sign the public key update
-      const hash = this.getHash(publicKeyUpdate);
+      const hash = PublicKeyUpdateUtils.getHash(publicKeyUpdate, this.exchange.address);
       publicKeyUpdate.onchainSignature = await sign(owner, hash, SignatureType.EIP_712);
       await verifySignature(owner, hash, publicKeyUpdate.onchainSignature);
 
@@ -1017,7 +1063,8 @@ export class ExchangeTestUtil {
     token: string,
     amount: BN,
     feeToken: string,
-    fee: BN
+    fee: BN,
+    type: number = 0
   ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -1027,14 +1074,14 @@ export class ExchangeTestUtil {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
-    this.addWithdrawalRequest(
+    await this.addWithdrawalRequest(
       this.pendingTransactions[exchangeID],
       accountID,
       tokenID,
       amount,
       feeTokenID,
       fee,
-      0
+      type
     );
     return this.pendingTransactions[exchangeID][
       this.pendingTransactions[exchangeID].length - 1
@@ -1108,7 +1155,7 @@ export class ExchangeTestUtil {
       "WithdrawalRequested"
     );
 
-    const withdrawalRequest = this.addWithdrawalRequest(
+    const withdrawalRequest = await this.addWithdrawalRequest(
       this.pendingTransactions[exchangeID],
       accountID,
       tokenID,
@@ -1144,7 +1191,7 @@ export class ExchangeTestUtil {
     return deposit;
   }
 
-  public addWithdrawalRequest(
+  public async addWithdrawalRequest(
     transactions: TxType[],
     accountID: number,
     tokenID: number,
@@ -1152,9 +1199,13 @@ export class ExchangeTestUtil {
     feeTokenID: number,
     fee: BN,
     type: number,
+    to?: string,
     withdrawalFee?: BN
   ) {
     const owner = this.accounts[this.exchangeId][accountID].owner;
+    if (to === undefined) {
+      to = owner;
+    }
     const withdrawalRequest: WithdrawalRequest = {
       txType: "Withdraw",
       type,
@@ -1165,8 +1216,31 @@ export class ExchangeTestUtil {
       amount,
       feeTokenID,
       fee,
+      to: this.hexToDecString(to),
       withdrawalFee
     };
+
+    if (type === 0) {
+      //console.log("Sign!");
+      this.signWithdrawal(withdrawalRequest);
+    } else if (type === 1) {
+      // Sign the public key update
+      console.log(withdrawalRequest);
+      const hash = WithdrawalUtils.getHash(withdrawalRequest, this.exchange.address);
+      console.log("hash:");
+      console.log(hash);
+      withdrawalRequest.onchainSignature = await sign(owner, hash, SignatureType.EIP_712);
+      await verifySignature(owner, hash, withdrawalRequest.onchainSignature);
+    } else {
+      const keyPair = this.getKeyPairEDDSA();
+      // Random valid curve point
+      withdrawalRequest.signature = {
+        Rx: keyPair.publicKeyX,
+        Ry: keyPair.publicKeyY,
+        s: "0"
+      };
+    }
+
     transactions.push(withdrawalRequest);
     return withdrawalRequest;
   }
@@ -1829,21 +1903,6 @@ export class ExchangeTestUtil {
               s: "0"
             };
           }
-          //console.log(transaction);
-        } else if (transaction.txType === "Withdraw") {
-          //console.log("Withdraw!");
-          if (transaction.type === 0) {
-            //console.log("Sign!");
-            this.signWithdrawal(transaction);
-          } else {
-            const keyPair = this.getKeyPairEDDSA();
-            // Random valid curve point
-            transaction.signature = {
-              Rx: keyPair.publicKeyX,
-              Ry: keyPair.publicKeyY,
-              s: "0"
-            };
-          }
         }
       }
 
@@ -1860,7 +1919,11 @@ export class ExchangeTestUtil {
         } else if (transaction.txType === "Withdraw") {
           //console.log("withdraw");
           numConditionalTransactions++;
-          auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+          const encodedWithdrawalData = web3.eth.abi.encodeParameter(
+            'tuple(uint256,bytes)',
+            [100000, web3.utils.hexToBytes(transaction.onchainSignature ? transaction.onchainSignature : "0x")]
+          );
+          auxiliaryData.push([i, web3.utils.hexToBytes(encodedWithdrawalData)]);
         } else if (transaction.txType === "Deposit") {
           //console.log("Deposit");
           numConditionalTransactions++;
@@ -1993,9 +2056,9 @@ export class ExchangeTestUtil {
               withdraw.tokenID * 2 ** 12 + withdraw.feeTokenID,
               3
             );
-            da.addBN(new BN(withdraw.amountWithdrawn), 12);
-            da.addNumber(toFloat(new BN(withdraw.fee), Constants.Float16Encoding), 2);
             da.addBN(new BN(withdraw.amount), 12);
+            da.addNumber(toFloat(new BN(withdraw.fee), Constants.Float16Encoding), 2);
+            da.addBN(new BN(withdraw.to), 20);
           } else if (tx.deposit) {
             const deposit = tx.deposit;
             da.addNumber(BlockType.DEPOSIT, 1);

@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
 import "../../lib/BytesUtil.sol";
@@ -33,6 +34,13 @@ library TransferTransaction
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
         "Transfer(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint16 feeTokenID,uint256 fee)"
+    );
+
+    event ConditionalTransferConsumed(
+        uint24  indexed from,
+        uint24  indexed to,
+        uint16          token,
+        uint            amount
     );
 
     function process(

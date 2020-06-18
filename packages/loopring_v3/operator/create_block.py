@@ -91,8 +91,13 @@ def withdrawFromJSON(jWithdraw):
     withdraw.amount = str(jWithdraw["amount"])
     withdraw.feeTokenID = int(jWithdraw["feeTokenID"])
     withdraw.fee = str(jWithdraw["fee"])
+    withdraw.to = str(jWithdraw["to"])
     withdraw.type = int(jWithdraw["type"])
-    withdraw.signature = jWithdraw["signature"]
+    withdraw.signature = None
+    if "signature" in jWithdraw:
+        withdraw.signature = str(jWithdraw["signature"])
+    if "onchainSignature" in jWithdraw:
+        withdraw.onchainSignature = str(jWithdraw["onchainSignature"])
     return withdraw
 
 def depositFromJSON(jDeposit):

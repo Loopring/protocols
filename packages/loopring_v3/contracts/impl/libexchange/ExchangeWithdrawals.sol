@@ -44,8 +44,7 @@ library ExchangeWithdrawals
 
     event WithdrawalRequested(
         uint24  indexed accountID,
-        uint16  indexed tokenID,
-        uint96          amount
+        uint16  indexed tokenID
     );
 
     event WithdrawalCompleted(
@@ -62,16 +61,14 @@ library ExchangeWithdrawals
         uint96          amount
     );
 
-    function withdraw(
+    function forceWithdraw(
         ExchangeData.State storage S,
         address owner,
         address token,
-        uint96  amount,
         uint24  accountID
         )
         external
     {
-        require(amount > 0, "ZERO_VALUE");
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
         require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
@@ -87,19 +84,17 @@ library ExchangeWithdrawals
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
 
-        require(S.pendingWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
+        require(S.pendingForcedWithdrawals[accountID][tokenID].timestamp == 0, "WITHDRAWAL_ALREADY_PENDING");
 
-        S.pendingWithdrawals[accountID][tokenID].owner = owner;
-        S.pendingWithdrawals[accountID][tokenID].amount = amount;
-        S.pendingWithdrawals[accountID][tokenID].timestamp = uint32(now);
-        S.pendingWithdrawals[accountID][tokenID].fee = uint64(S.withdrawalFeeETH);
+        S.pendingForcedWithdrawals[accountID][tokenID].owner = owner;
+        S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(now);
+        S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(S.withdrawalFeeETH);
 
         S.numPendingForcedTransactions++;
 
         emit WithdrawalRequested(
             accountID,
-            tokenID,
-            amount
+            tokenID
         );
     }
 
@@ -147,6 +142,7 @@ library ExchangeWithdrawals
             owner,
             tokenID,
             balance,
+            gasleft(),
             false
         );
     }
@@ -177,6 +173,7 @@ library ExchangeWithdrawals
             owner,
             tokenID,
             amount,
+            gasleft(),
             false
         );
 
@@ -203,6 +200,7 @@ library ExchangeWithdrawals
             owner,
             tokenID,
             amount,
+            gasleft(),
             false
         );
     }
@@ -211,18 +209,23 @@ library ExchangeWithdrawals
         ExchangeData.State storage S,
         address owner,
         uint16 tokenID,
-        uint amount
+        uint amount,
+        uint gasLimit
         )
         public
     {
-        // Transfer the tokens
-        bool success = transferTokens(
-            S,
-            owner,
-            tokenID,
-            amount,
-            true
-        );
+        bool success = false;
+        if (gasLimit > 0) {
+            // Try to transfer the tokens
+            success = transferTokens(
+                S,
+                owner,
+                tokenID,
+                amount,
+                gasLimit,
+                true
+            );
+        }
         if (!success) {
             // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
             S.amountWithdrawable[owner][tokenID] = S.amountWithdrawable[owner][tokenID].add(amount);
@@ -232,7 +235,7 @@ library ExchangeWithdrawals
     // == Internal and Private Functions ==
 
     // If allowFailure is true the transfer can fail because of a transfer error or
-    // because the transfer uses more than GAS_LIMIT_SEND_TOKENS gas. The function
+    // because the transfer uses more than `gasLimit` gas. The function
     // will return true when successful, false otherwise.
     // If allowFailure is false the transfer is guaranteed to succeed using
     // as much gas as needed, otherwise it throws. The function always returns true.
@@ -241,6 +244,7 @@ library ExchangeWithdrawals
         address to,
         uint16  tokenID,
         uint    amount,
+        uint    gasLimit,
         bool    allowFailure
         )
         private
@@ -250,8 +254,6 @@ library ExchangeWithdrawals
             to = S.loopring.protocolFeeVault();
         }
         address token = S.getTokenAddress(tokenID);
-        // Either limit the gas by ExchangeData.GAS_LIMIT_SEND_TOKENS() or forward all gas
-        uint gasLimit = allowFailure ? ExchangeData.GAS_LIMIT_SEND_TOKENS() : gasleft();
 
         // Transfer the tokens from the deposit contract to the owner
         if (amount > 0) {

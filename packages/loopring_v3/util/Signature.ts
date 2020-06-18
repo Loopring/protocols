@@ -141,5 +141,7 @@ function verifyECDSA(message: Buffer, data: Bitstream, signer: string) {
 function getPrivateKey(address: string) {
   const textData = fs.readFileSync("./ganache_account_keys.txt", "ascii");
   const data = JSON.parse(textData);
-  return data.private_keys[address.toLowerCase()];
+  const privateKey = data.private_keys[address.toLowerCase()];
+  assert(privateKey !== undefined, "private key not found for: " + address);
+  return privateKey;
 }

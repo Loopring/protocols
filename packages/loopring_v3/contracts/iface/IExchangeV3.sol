@@ -74,8 +74,7 @@ abstract contract IExchangeV3 is IExchange
 
     event WithdrawalRequested(
         uint24  indexed accountID,
-        uint16  indexed tokenID,
-        uint96          amount
+        uint16  indexed tokenID
     );
 
     event WithdrawalCompleted(
@@ -518,8 +517,8 @@ abstract contract IExchangeV3 is IExchange
         payable;
 
     // -- Withdrawals --
-    /// @dev Submits an onchain request to withdraw Ether or ERC20 tokens. To withdraw
-    ///      the complete balance, use a very large number for `amount`.
+    /// @dev Submits an onchain request to force withdraw Ether or ERC20 tokens.
+    ///      This request always withdraws the full balance.
     ///
     ///      This function is only callable by an agent of the account.
     ///
@@ -532,12 +531,10 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param owner The expected owner of the account
     /// @param tokenAddress The address of the token, use `0x0` for Ether.
-    /// @param amount The amount of tokens to deposit
     /// @param accountID The address the account in the Merkle tree.
-    function withdraw(
+    function forceWithdraw(
         address owner,
         address tokenAddress,
-        uint96  amount,
         uint24  accountID
         )
         external

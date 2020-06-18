@@ -33,6 +33,7 @@ import "./ExchangeWithdrawals.sol";
 import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/PublicKeyUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
+import "../libtransactions/WithdrawTransaction.sol";
 
 
 /// @title ExchangeBlocks.
@@ -52,19 +53,6 @@ library ExchangeBlocks
         uint    indexed blockIdx,
         bytes32 indexed publicDataHash,
         uint    indexed blockFee
-    );
-
-    event ConditionalTransferConsumed(
-        uint24  indexed from,
-        uint24  indexed to,
-        uint16          token,
-        uint            amount
-    );
-
-    event OnchainWithdrawalConsumed(
-        uint24  indexed owner,
-        uint16          token,
-        uint            amount
     );
 
     event ProtocolFeesUpdated(
@@ -297,7 +285,7 @@ library ExchangeBlocks
                         txAuxiliaryData[i].data
                     );
                 } else if (txType == ExchangeData.TransactionType.OFFCHAIN_WITHDRAWAL) {
-                    txFeeETH = consumeWithdrawal(
+                    txFeeETH = WithdrawTransaction.process(
                         S,
                         txData,
                         txAuxiliaryData[i].data
@@ -322,70 +310,6 @@ library ExchangeBlocks
                 previousTransferOffset = transferOffset;
             }
         }
-    }
-
-    function consumeWithdrawal(
-        ExchangeData.State storage S,
-        bytes memory data,
-        bytes memory auxiliaryData
-        )
-        private
-        returns (uint feeETH)
-    {
-        uint offset = 1;
-
-        uint withdrawalType = data.bytesToUint8(offset);
-        offset += 1;
-
-        address owner = data.bytesToAddress(offset);
-        offset += 20;
-        uint24 accountID = data.bytesToUint24(offset);
-        offset += 3;
-        //uint32 nonce = data.bytesToUint32(offset);
-        offset += 4;
-        uint16 tokenID = data.bytesToUint16(offset) >> 4;
-        //uint16 feeTokenID = uint16(data.bytesToUint16(offset + 1) & 0xFFF);
-        offset += 3;
-        uint amountWithdrawn = data.bytesToUint96(offset);
-        offset += 12;
-        uint fee = uint(data.bytesToUint16(offset)).decodeFloat(16);
-        offset += 2;
-        uint amountRequested = data.bytesToUint96(offset);
-        offset += 12;
-
-        // Check if this was an onchain withdrawal
-        // When we're in shutdown mode the operator can do withdrawals without any authorization
-        if(withdrawalType > 0 && !S.isInWithdrawalMode()) {
-            require(fee == 0, "FEE_NOT_ZERO");
-            require(withdrawalType <= 2, "INVALID_WITHDRAWAL_TYPE");
-
-            ExchangeData.Withdrawal storage withdrawal = S.pendingWithdrawals[accountID][tokenID];
-            require(withdrawal.amount == amountRequested, "INVALID_WITHDRAW_AMOUNT");
-
-            emit OnchainWithdrawalConsumed(accountID, tokenID, amountRequested);
-
-            // Type == 1: valid onchain withdrawal started by the owner
-            // Type == 2: invalid onchain withdrawal started by someone else
-            require((withdrawalType == 1) == (owner == withdrawal.owner), "INVALID_WITHDRAW_TYPE");
-            // TODO: check against DA
-
-            // Get the fee
-            feeETH = withdrawal.fee;
-
-            // Reset the approval
-            S.pendingWithdrawals[accountID][tokenID] = ExchangeData.Withdrawal(address(0), 0, 0, 0);
-
-            // Open up a slot
-            S.numPendingForcedTransactions--;
-        }
-
-        emit LogUint(uint(amountWithdrawn));
-
-        S.distributeWithdrawal(
-            owner,
-            tokenID,
-            amountWithdrawn
-        );
     }
 
     function validateAndUpdateProtocolFeeValues(

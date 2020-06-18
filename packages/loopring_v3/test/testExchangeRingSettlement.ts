@@ -178,7 +178,8 @@ contract("Exchange", (accounts: string[]) => {
         token,
         amount,
         feeToken,
-        /*fee*/new BN(0)
+        /*fee*/new BN(0),
+        1
       );
 
       /*await exchangeTestUtil.requestWithdrawalOnchain(

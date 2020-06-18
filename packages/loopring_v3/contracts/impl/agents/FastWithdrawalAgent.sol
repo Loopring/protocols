@@ -190,12 +190,12 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
             // Do the onchain withdrawal request
             (,,, uint withdrawalFeeETH) = exchange.getFees();
-            exchange.withdraw{value: withdrawalFeeETH}(
+            /*exchange.withdraw{value: withdrawalFeeETH}(
                 fastWithdrawal.from,
                 fastWithdrawal.token,
                 uint96(fastWithdrawal.amount),
                 fastWithdrawal.fromAccountID
-            );
+            );*/
 
             // Pay the standard fee
             fee = fastWithdrawal.fee;

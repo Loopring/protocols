@@ -138,12 +138,16 @@ export interface WithdrawalRequest {
   feeTokenID?: number;
   fee?: BN;
 
+  to: string;
+
   withdrawalIdx?: number;
   slotIdx?: number;
 
   withdrawalFee?: BN;
 
   signature?: Signature;
+  onchainSignature?: any;
+
   timestamp?: number;
   transactionHash?: string;
 }
