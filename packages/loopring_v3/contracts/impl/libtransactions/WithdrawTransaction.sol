@@ -102,10 +102,9 @@ library WithdrawTransaction
                 require(S.approvedTx[withdrawal.owner][txHash], "TX_NOT_APPROVED");
                 S.approvedTx[withdrawal.owner][txHash] = false;
             }
-        } else {
+        } else if (withdrawal.withdrawalType == 2 || withdrawal.withdrawalType == 3) {
             require(withdrawal.owner == withdrawal.to, "INVALID_WITHDRAWAL_ADDRESS");
             require(withdrawal.fee == 0, "FEE_NOT_ZERO");
-            require(withdrawal.withdrawalType <= 3, "INVALID_WITHDRAWAL_TYPE");
 
             ExchangeData.ForcedWithdrawal storage forcedWithdrawal = S.pendingForcedWithdrawals[withdrawal.accountID][withdrawal.tokenID];
             if (forcedWithdrawal.timestamp == 0) {
@@ -115,7 +114,11 @@ library WithdrawTransaction
             } else {
                 // Type == 2: valid onchain withdrawal started by the owner
                 // Type == 3: invalid onchain withdrawal started by someone else
-                require((withdrawal.withdrawalType == 2) == (withdrawal.owner == forcedWithdrawal.owner), "INVALID_WITHDRAW_TYPE");
+                bool authorized = (withdrawal.owner == forcedWithdrawal.owner);
+                require((withdrawal.withdrawalType == 2) == authorized, "INVALID_WITHDRAW_TYPE");
+                if (!authorized) {
+                    require(withdrawal.amount == 0, "UNAUTHORIZED_WITHDRAWAL");
+                }
 
                 // Get the fee
                 feeETH = forcedWithdrawal.fee;
@@ -128,6 +131,8 @@ library WithdrawTransaction
 
                 emit OnchainWithdrawalConsumed(withdrawal.accountID, withdrawal.tokenID, withdrawal.amount);
             }
+        } else {
+            revert("INVALID_WITHDRAWAL_TYPE");
         }
 
         // Try to transfer the tokens with the provided gas limit

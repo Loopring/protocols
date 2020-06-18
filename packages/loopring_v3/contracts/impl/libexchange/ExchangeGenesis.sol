@@ -65,7 +65,7 @@ library ExchangeGenesis
         S.lrcAddress = loopring.lrcAddress();
 
         S.merkleRoot = S.genesisMerkleRoot;
-        S.numBlocksSubmitted = 1;
+        S.blocks.push(ExchangeData.BlockInfo(bytes32(0)));
 
         // Get the protocol fees for this exchange
         S.protocolFeeData.timestamp = uint32(0);

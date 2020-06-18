@@ -51,16 +51,6 @@ library ExchangeMode
         return S.shutdownStartTime > 0;
     }
 
-    function isInMaintenance(
-        ExchangeData.State storage S
-        )
-        internal // inline call
-        view
-        returns (bool)
-    {
-        return S.downtimeStart != 0 && getNumDowntimeMinutesLeft(S) > 0;
-    }
-
     function getNumAvailableForcedSlots(
         ExchangeData.State storage S
         )
@@ -80,26 +70,6 @@ library ExchangeMode
     {
         // User requests are possible when the exchange is not in maintenance mode,
         // the exchange hasn't been shutdown, and the exchange isn't in withdrawal mode
-        return !isInMaintenance(S) && !isShutdown(S) && !isInWithdrawalMode(S);
-    }
-
-    function getNumDowntimeMinutesLeft(
-        ExchangeData.State storage S
-        )
-        internal // inline call
-        view
-        returns (uint)
-    {
-        if (S.downtimeStart == 0) {
-            return S.numDowntimeMinutes;
-        } else {
-            // Calculate how long (in minutes) the exchange is in maintenance
-            uint numDowntimeMinutesUsed = now.sub(S.downtimeStart) / 60;
-            if (S.numDowntimeMinutes > numDowntimeMinutesUsed) {
-                return S.numDowntimeMinutes.sub(numDowntimeMinutesUsed);
-            } else {
-                return 0;
-            }
-        }
+        return !isShutdown(S) && !isInWithdrawalMode(S);
     }
 }

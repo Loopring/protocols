@@ -179,15 +179,6 @@ contract ExchangeV3 is IExchangeV3
         return state.isShutdown();
     }
 
-    function isInMaintenance()
-        external
-        override
-        view
-        returns (bool)
-    {
-        return state.isInMaintenance();
-    }
-
     // -- Balances --
     function isAccountBalanceCorrect(
         uint     merkleRoot,
@@ -351,7 +342,16 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (uint)
     {
-        return state.numBlocksSubmitted;
+        return state.blocks.length;
+    }
+
+    function getBlockInfo(uint blockIdx)
+        external
+        override
+        view
+        returns (ExchangeData.BlockInfo memory)
+    {
+        return state.blocks[blockIdx];
     }
 
     function submitBlocks(
@@ -467,17 +467,17 @@ contract ExchangeV3 is IExchangeV3
         );
     }
 
-    function withdrawFromApprovedWithdrawal(
-        address owner,
-        address token
+    function withdrawFromApprovedWithdrawals(
+        address[] calldata owners,
+        address[] calldata tokens
         )
         external
         override
         nonReentrant
     {
-        state.withdrawFromApprovedWithdrawal(
-            owner,
-            token
+        state.withdrawFromApprovedWithdrawals(
+            owners,
+            tokens
         );
     }
 
@@ -512,6 +512,22 @@ contract ExchangeV3 is IExchangeV3
     }
 
     // -- Agents --
+    function whitelistAgents(
+        address[] calldata agents,
+        bool[]    calldata whitelisted
+        )
+        external
+        override
+        nonReentrant
+        onlyOwner
+    {
+        require(agents.length == whitelisted.length, "INVALID_DATA");
+        for (uint i = 0; i < agents.length; i++) {
+            state.whitelistedAgent[agents[i]] = whitelisted[i];
+            emit AgentWhitelisted(agents[i], whitelisted[i]);
+        }
+    }
+
     function authorizeAgents(
         address   owner,
         address[] calldata agents,
@@ -535,7 +551,7 @@ contract ExchangeV3 is IExchangeV3
         view
         returns (bool)
     {
-        return owner == agent || state.agent[owner][agent];
+        return owner == agent || state.agent[owner][agent] || state.whitelistedAgent[agent];
     }
 
     function approveOffchainTransfer(
@@ -549,16 +565,8 @@ contract ExchangeV3 is IExchangeV3
         nonReentrant
         onlyAgentFor(from)
     {
-        uint16 tokenID = state.getTokenID(token);
-
+        // uint16 tokenID = state.getTokenID(token);
         // TODO: Remove or hash the data and call `approveTransaction`.
-
-        emit ConditionalTransferApproved(
-            from,
-            to,
-            tokenID,
-            amount
-        );
     }
 
     function onchainTransferFrom(
@@ -577,14 +585,15 @@ contract ExchangeV3 is IExchangeV3
 
     function approveTransaction(
         address owner,
-        bytes32 txHash
+        bytes32 transactionHash
         )
         external
         override
         nonReentrant
         onlyAgentFor(owner)
     {
-        state.approvedTx[owner][txHash] = true;
+        state.approvedTx[owner][transactionHash] = true;
+        emit TransactionApproved(owner, transactionHash);
     }
 
     // -- Admins --
@@ -643,55 +652,6 @@ contract ExchangeV3 is IExchangeV3
         _accountUpdateFeeETH = state.accountUpdateFeeETH;
         _depositFeeETH = state.depositFeeETH;
         _withdrawalFeeETH = state.withdrawalFeeETH;
-    }
-
-    function startOrContinueMaintenanceMode(
-        uint durationMinutes
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.startOrContinueMaintenanceMode(durationMinutes);
-    }
-
-    function stopMaintenanceMode()
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.stopMaintenanceMode();
-    }
-
-    function getRemainingDowntime()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getRemainingDowntime();
-    }
-
-    function getDowntimeCostLRC(
-        uint durationMinutes
-        )
-        external
-        override
-        view
-        returns (uint costLRC)
-    {
-        return state.getDowntimeCostLRC(durationMinutes);
-    }
-
-    function getTotalTimeInMaintenanceSeconds()
-        external
-        override
-        view
-        returns (uint)
-    {
-        return state.getTotalTimeInMaintenanceSeconds();
     }
 
     function getExchangeCreationTimestamp()

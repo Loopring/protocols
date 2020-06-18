@@ -66,28 +66,26 @@ abstract contract IExchangeV3 is IExchange
     );
 
     event DepositRequested(
-        uint    indexed depositIdx,
-        uint24  indexed accountID,
-        uint16  indexed tokenID,
+        address indexed owner,
+        address indexed token,
         uint96          amount
     );
 
     event WithdrawalRequested(
-        uint24  indexed accountID,
-        uint16  indexed tokenID
+        address indexed owner,
+        address indexed token,
+        uint24  indexed accountID
     );
 
     event WithdrawalCompleted(
-        uint24  indexed accountID,
-        uint16  indexed tokenID,
-        address         to,
+        address indexed to,
+        address indexed token,
         uint96          amount
     );
 
     event WithdrawalFailed(
-        uint24  indexed accountID,
-        uint16  indexed tokenID,
-        address         to,
+        address indexed to,
+        address indexed token,
         uint96          amount
     );
 
@@ -98,22 +96,18 @@ abstract contract IExchangeV3 is IExchange
         uint8 previousMakerFeeBips
     );
 
-    event ConditionalTransferApproved(
-        address indexed from,
-        address indexed to,
-        uint16          token,
-        uint            amount
-    );
-
-    event ConditionalTransferConsumed(
-        uint24  indexed from,
-        uint24  indexed to,
-        uint16          token,
-        uint            amount
+    event TransactionApproved(
+        address indexed owner,
+        bytes32 indexed transactionHash
     );
 
     event AgentAuthorized(
         address indexed owner,
+        address indexed agent,
+        bool            authorized
+    );
+
+    event AgentWhitelisted(
         address indexed agent,
         bool            authorized
     );
@@ -188,14 +182,6 @@ abstract contract IExchangeV3 is IExchange
     /// @dev Returns whether the exchange is shutdown.
     /// @return Returns true if the exchange is shutdown, else false.
     function isShutdown()
-        external
-        virtual
-        view
-        returns (bool);
-
-    /// @dev Returns whether the exchange is in maintenance.
-    /// @return Returns true if the exchange is in maintenance, else false.
-    function isInMaintenance()
         external
         virtual
         view
@@ -381,6 +367,14 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (uint);
+
+    /// @dev Gets some minimal info of a previously submitted block that's kept onchain.
+    /// @return blockIdx The block index.
+    function getBlockInfo(uint blockIdx)
+        external
+        virtual
+        view
+        returns (ExchangeData.BlockInfo memory);
 
     /// @dev Sumbits new blocks to the rollup blockchain.
     ///
@@ -621,16 +615,16 @@ abstract contract IExchangeV3 is IExchange
     ///      immediately by the operator when the block is submitted.
     ///      The user will however need to call this manually if the transfer failed.
     ///
-    /// @param  owner The address of the account the withdrawal was done for.
-    /// @param  token The token address
-    function withdrawFromApprovedWithdrawal(
-        address owner,
-        address token
+    /// @param  owners The addresses of the account the withdrawal was done for.
+    /// @param  tokens The token addresses
+    function withdrawFromApprovedWithdrawals(
+        address[] calldata owners,
+        address[] calldata tokens
         )
         external
         virtual;
 
-    /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawal`.
+    /// @dev Gets the amount that can be withdrawn immediately with `withdrawFromApprovedWithdrawals`.
     /// @param  owner The address of the account the withdrawal was done for.
     /// @param  token The token address
     /// @return The amount withdrawable
@@ -644,6 +638,20 @@ abstract contract IExchangeV3 is IExchange
         returns (uint);
 
     // -- Agents --
+
+    /// @dev Authorizes/Deauthorizes agents for all accounts.
+    ///      An agent is allowed to authorize onchain operations for the account owner.
+    ///
+    ///      This function can only be called by the exchange owner.
+    ///
+    /// @param agents The agents to be authorized/deauthorized.
+    /// @param whitelisted True to authorize the agent, false to deauthorize
+    function whitelistAgents(
+        address[] calldata agents,
+        bool[]    calldata whitelisted
+        )
+        external
+        virtual;
 
     /// @dev Authorizes/Deauthorizes agents for an account.
     ///      An agent is allowed to authorize onchain operations for the account owner.
@@ -773,69 +781,6 @@ abstract contract IExchangeV3 is IExchange
             uint _depositFeeETH,
             uint _withdrawalFeeETH
         );
-
-    /// @dev Starts or continues maintenance mode for the specified duration.
-    ///      The necessary additional downtime minutes will be purchased. The number of
-    ///      downtime minutes still available for use can be checked with getRemainingDowntime().
-    ///      In maintenance mode, all onchain user requests, including account creation,
-    ///      account update, deposits, and withdrawal requests are disabled.
-    ///
-    ///      The remaining downtime time will be extended so that the exchange can stay in
-    ///      maintenance mode for at least `durationMinutes`.
-    ///
-    ///      The exchange owner can exit maintenance mode by calling stopMaintenanceMode()
-    ///      or by waiting until the remaining downtime is reduced to 0.
-    ///
-    ///      Once entering the maintenance mode, the operator should still fulfill his duty
-    ///      by submitting blocks and proofs until all pending user requests have been taken
-    ///      care of within the required timeouts. In the maintenance mode, operator can no longer
-    ///      submit settlement blocks.
-    ///
-    ///      After all pending onchain requests have been handled, the operator can no longer
-    ///      submit blocks of any type until maintenance mode is no longer active.
-    ///
-    ///      This function is only callable by the exchange owner.
-    ///
-    /// @param durationMinutes The duration in minutes that this exchange can remain in
-    ///                        the maintenance mode.
-    function startOrContinueMaintenanceMode(
-        uint durationMinutes
-        )
-        external
-        virtual;
-
-    /// @dev Gets the exchange out of maintenance mode.
-    ///
-    ///      This function is only callable by the exchange owner.
-    function stopMaintenanceMode()
-        external
-        virtual;
-
-    /// @dev Gets the remaining downtime.
-    /// @return durationMinutes Remaining downtime in minutes.
-    function getRemainingDowntime()
-        external
-        virtual
-        view
-        returns (uint durationMinutes);
-
-    /// @dev Gets the amount of LRC to burn for buying the downtime.
-    /// @return costLRC The amount of LRC to burn
-    function getDowntimeCostLRC(
-        uint durationMinutes
-        )
-        external
-        virtual
-        view
-        returns (uint costLRC);
-
-    /// @dev Gets the total amount of time in seconds the exchange has ever been in maintenance.
-    /// @return timeInSeconds The total time in maintenance.
-    function getTotalTimeInMaintenanceSeconds()
-        external
-        virtual
-        view
-        returns (uint timeInSeconds);
 
     /// @dev Gets the time the exchange was created.
     /// @return timestamp The time the exchange was created.

@@ -90,6 +90,7 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         nonReentrant
         payable
         onlyExchange
+        returns (uint)
     {
         // Keep track how many tokens are deposited in the exchange
         exchangeBalance[token] = exchangeBalance[token].add(amount);
@@ -110,6 +111,8 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
                 );
             }
         }
+
+        return amount;
     }
 
     function withdraw(

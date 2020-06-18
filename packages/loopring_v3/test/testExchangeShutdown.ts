@@ -126,59 +126,6 @@ contract("Exchange", (accounts: string[]) => {
         "MERKLE_ROOT_NOT_REVERTED"
       );
 
-      const exchangeState = await exchangeTestUtil.loadExchangeState(
-        exchangeId
-      );
-
-      // Do all withdrawal requests to completely reset the merkle tree
-      for (
-        let accountID = 0;
-        accountID < exchangeState.accounts.length;
-        accountID++
-      ) {
-        const account = exchangeState.accounts[accountID];
-        let bAccountReset = false;
-        for (const tokenID of Object.keys(account.balances)) {
-          const balanceValue = account.balances[Number(tokenID)];
-          let bTradeHistoryNeedsReset = false;
-          for (const orderID of Object.keys(balanceValue.tradeHistory)) {
-            const tradeHistoryValue =
-              balanceValue.tradeHistory[Number(orderID)];
-            if (
-              tradeHistoryValue.filled.gt(new BN(0)) ||
-              tradeHistoryValue.orderID > 0
-            ) {
-              bTradeHistoryNeedsReset = true;
-            }
-          }
-          if (balanceValue.balance.gt(new BN(0)) || bTradeHistoryNeedsReset) {
-            bAccountReset = true;
-            const tokenAddress = exchangeTestUtil.tokenIDToAddressMap.get(
-              Number(tokenID)
-            );
-            /*await exchangeTestUtil.requestShutdownWithdrawal(
-              exchangeId,
-              accountID,
-              tokenAddress,
-              balanceValue.balance
-            );*/
-          }
-        }
-        if (
-          !bAccountReset &&
-          (account.publicKeyX !== "0" ||
-            account.publicKeyY !== "0" ||
-            account.nonce !== 0)
-        ) {
-          /*await exchangeTestUtil.requestShutdownWithdrawal(
-            exchangeId,
-            accountID,
-            Constants.zeroAddress,
-            new BN(0)
-          );*/
-        }
-      }
-
       await exchangeTestUtil.submitTransactions();
       await exchangeTestUtil.submitPendingBlocks(exchangeId);
 

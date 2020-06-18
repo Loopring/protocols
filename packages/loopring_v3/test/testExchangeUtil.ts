@@ -636,7 +636,7 @@ export class ExchangeTestUtil {
     assert(success, "Failed to verify signature");
   }
 
-  public signInternalTransfer(transfer: Transfer) {
+  public signTransfer(transfer: Transfer) {
     if (transfer.signature !== undefined) {
       return;
     }
@@ -1037,6 +1037,7 @@ export class ExchangeTestUtil {
     }
 
     const transfer: Transfer = {
+      txType: "Transfer",
       accountFromID,
       accountToID,
       transTokenID,
@@ -1048,7 +1049,10 @@ export class ExchangeTestUtil {
       type: conditionalTransfer ? 1 : 0,
       nonce: this.accounts[this.exchangeId][accountFromID].nonce++,
     };
-    transfer.txType = "Transfer";
+
+    if (transfer.type === 0) {
+      this.signTransfer(transfer);
+    }
 
     this.pendingTransactions[exchangeID].push(transfer);
 
@@ -1073,6 +1077,16 @@ export class ExchangeTestUtil {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
+
+    const owner = this.accounts[this.exchangeId][accountID].owner;
+
+    if (type > 1) {
+      const sender = (type === 2) ? owner : this.exchangeOwner;
+      // Force the operator to include the withdrawal
+      const withdrawalFee = (await this.exchange.getFees())._withdrawalFeeETH;
+      await this.exchange.forceWithdraw(sender, token, accountID, {from: sender, value: withdrawalFee});
+    }
+
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
     await this.addWithdrawalRequest(
       this.pendingTransactions[exchangeID],
@@ -1206,12 +1220,17 @@ export class ExchangeTestUtil {
     if (to === undefined) {
       to = owner;
     }
+
+    if (type == 0 || type == 1) {
+      this.accounts[this.exchangeId][accountID].nonce++;
+    }
+
     const withdrawalRequest: WithdrawalRequest = {
       txType: "Withdraw",
       type,
       owner: this.hexToDecString(owner),
       accountID,
-      nonce: this.accounts[this.exchangeId][accountID].nonce++,
+      nonce: this.accounts[this.exchangeId][accountID].nonce,
       tokenID,
       amount,
       feeTokenID,
@@ -1221,24 +1240,11 @@ export class ExchangeTestUtil {
     };
 
     if (type === 0) {
-      //console.log("Sign!");
       this.signWithdrawal(withdrawalRequest);
     } else if (type === 1) {
-      // Sign the public key update
-      console.log(withdrawalRequest);
       const hash = WithdrawalUtils.getHash(withdrawalRequest, this.exchange.address);
-      console.log("hash:");
-      console.log(hash);
       withdrawalRequest.onchainSignature = await sign(owner, hash, SignatureType.EIP_712);
       await verifySignature(owner, hash, withdrawalRequest.onchainSignature);
-    } else {
-      const keyPair = this.getKeyPairEDDSA();
-      // Random valid curve point
-      withdrawalRequest.signature = {
-        Rx: keyPair.publicKeyX,
-        Ry: keyPair.publicKeyY,
-        s: "0"
-      };
     }
 
     transactions.push(withdrawalRequest);
@@ -1886,27 +1892,7 @@ export class ExchangeTestUtil {
       assert(transactions.length === blockSize);
       numTransactionsDone += blockSize;
 
-      // Sign the offchain withdrawals
-      for (const transaction of transactions) {
-        //console.log("signing..." + transaction.txType);
-        if (transaction.txType === "Transfer") {
-          //console.log("Transfer!");
-          if (transaction.type === 0) {
-            //console.log("Sign!");
-            this.signInternalTransfer(transaction);
-          } else {
-            const keyPair = this.getKeyPairEDDSA();
-            // Random valid curve point
-            transaction.signature = {
-              Rx: keyPair.publicKeyX,
-              Ry: keyPair.publicKeyY,
-              s: "0"
-            };
-          }
-        }
-      }
-
-      // Build the conditional transfer data
+      // Create the auxiliary data
       const auxiliaryData: any[] = [];
       let numConditionalTransactions = 0;
       for (const [i, transaction] of transactions.entries()) {

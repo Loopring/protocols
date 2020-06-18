@@ -681,7 +681,8 @@ class State(object):
             newState.balanceA_B_Address = txInput.feeTokenID
             newState.balanceA_B_Balance = -feeValue
 
-            newState.accountA_Nonce = accountA.nonce + 1
+            if int(txInput.type) == 0 or int(txInput.type) == 1:
+                newState.accountA_Nonce = accountA.nonce + 1
 
             newState.balanceDeltaA_O = feeValue
 

@@ -39,7 +39,7 @@ library ExchangeDeposits
 
     event DepositRequested(
         address indexed owner,
-        uint16  indexed tokenID,
+        address indexed token,
         uint96          amount
     );
 
@@ -58,13 +58,8 @@ library ExchangeDeposits
         uint16 tokenID = S.getTokenID(tokenAddress);
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
-        // Add the amount to the deposit request and reset the time the operator has to process it
-        S.pendingDeposits[to][tokenID].amount += amount;
-        S.pendingDeposits[to][tokenID].timestamp = uint32(now);
-        S.pendingDeposits[to][tokenID].fee += uint64(S.depositFeeETH);
-
         // Transfer the tokens to this contract
-        transferDeposit(
+        uint amountDeposited = transferDeposit(
             S,
             from,
             tokenAddress,
@@ -72,9 +67,14 @@ library ExchangeDeposits
             S.depositFeeETH
         );
 
+        // Add the amount to the deposit request and reset the time the operator has to process it
+        S.pendingDeposits[to][tokenID].amount += uint96(amountDeposited);
+        S.pendingDeposits[to][tokenID].timestamp = uint32(now);
+        S.pendingDeposits[to][tokenID].fee += uint64(S.depositFeeETH);
+
         emit DepositRequested(
             to,
-            tokenID,
+            tokenAddress,
             amount
         );
     }
@@ -87,6 +87,7 @@ library ExchangeDeposits
         uint    feeETH
         )
         private
+        returns (uint amountDeposited)
     {
         uint totalRequiredETH = feeETH;
         uint depositValueETH = 0;
@@ -102,6 +103,6 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
+        amountDeposited = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
     }
 }

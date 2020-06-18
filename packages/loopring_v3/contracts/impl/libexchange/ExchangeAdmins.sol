@@ -21,8 +21,6 @@ import "../../lib/ERC20.sol";
 import "../../lib/ERC20SafeTransfer.sol";
 import "../../lib/MathUint.sol";
 
-import "../../iface/IDowntimeCostCalculator.sol";
-
 import "../../iface/ExchangeData.sol";
 import "./ExchangeMode.sol";
 
@@ -98,52 +96,6 @@ library ExchangeAdmins
         );
     }
 
-    function startOrContinueMaintenanceMode(
-        ExchangeData.State storage S,
-        uint durationMinutes
-        )
-        external
-    {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(!S.isShutdown(), "INVALID_MODE");
-        require(durationMinutes > 0, "INVALID_DURATION");
-
-        uint numMinutesLeft = S.getNumDowntimeMinutesLeft();
-
-        // If we automatically exited maintenance mode first call stop
-        if (S.downtimeStart != 0 && numMinutesLeft == 0) {
-            stopMaintenanceMode(S);
-        }
-
-        // Purchased downtime from a previous maintenance period or a previous call
-        // to startOrContinueMaintenanceMode can be re-used, so we need to calculate
-        // how many additional minutes we need to purchase
-        if (numMinutesLeft < durationMinutes) {
-            uint numMinutesToPurchase = durationMinutes.sub(numMinutesLeft);
-            uint costLRC = getDowntimeCostLRC(S, numMinutesToPurchase);
-            if (costLRC > 0) {
-                address feeVault = S.loopring.protocolFeeVault();
-                S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, costLRC);
-            }
-            S.numDowntimeMinutes = S.numDowntimeMinutes.add(numMinutesToPurchase);
-        }
-
-        // Start maintenance mode if the exchange isn't in maintenance mode yet
-        if (S.downtimeStart == 0) {
-            S.downtimeStart = now;
-        }
-    }
-
-    function getRemainingDowntime(
-        ExchangeData.State storage S
-        )
-        external
-        view
-        returns (uint duration)
-    {
-        return S.getNumDowntimeMinutesLeft();
-    }
-
     function withdrawExchangeStake(
         ExchangeData.State storage S,
         address recipient
@@ -161,74 +113,5 @@ library ExchangeAdmins
         // Withdraw the complete stake
         uint amount = S.loopring.getExchangeStake(S.id);
         return S.loopring.withdrawExchangeStake(S.id, recipient, amount);
-    }
-
-    function stopMaintenanceMode(
-        ExchangeData.State storage S
-        )
-        public
-    {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(!S.isShutdown(), "INVALID_MODE");
-        require(S.downtimeStart != 0, "NOT_IN_MAINTENANCE_MODE");
-
-        // Keep a history of how long the exchange has been in maintenance
-        S.totalTimeInMaintenanceSeconds = getTotalTimeInMaintenanceSeconds(S);
-
-        // Get the number of downtime minutes left
-        S.numDowntimeMinutes = S.getNumDowntimeMinutesLeft();
-
-        // Add an extra fixed cost of 1 minute to mitigate the posibility of abusing
-        // the starting/stopping of maintenance mode within a minute or even a single Ethereum block.
-        // This is practically the same as rounding down when converting from seconds to minutes.
-        if (S.numDowntimeMinutes > 0) {
-            S.numDowntimeMinutes -= 1;
-        }
-
-        // Stop maintenance mode
-        S.downtimeStart = 0;
-    }
-
-    function getDowntimeCostLRC(
-        ExchangeData.State storage S,
-        uint durationMinutes
-        )
-        public
-        view
-        returns (uint)
-    {
-        if (durationMinutes == 0) {
-            return 0;
-        }
-
-        address costCalculatorAddr = S.loopring.downtimeCostCalculator();
-        if (costCalculatorAddr == address(0)) {
-            return 0;
-        }
-
-        return IDowntimeCostCalculator(costCalculatorAddr).getDowntimeCostLRC(
-            S.totalTimeInMaintenanceSeconds,
-            now - S.exchangeCreationTimestamp,
-            S.numDowntimeMinutes,
-            S.loopring.getExchangeStake(S.id),
-            durationMinutes
-        );
-    }
-
-    function getTotalTimeInMaintenanceSeconds(
-        ExchangeData.State storage S
-        )
-        public
-        view
-        returns (uint time)
-    {
-        time = S.totalTimeInMaintenanceSeconds;
-        if (S.downtimeStart != 0) {
-            if (S.getNumDowntimeMinutesLeft() > 0) {
-                time = time.add(now.sub(S.downtimeStart));
-            } else {
-                time = time.add(S.numDowntimeMinutes.mul(60));
-            }
-        }
     }
 }

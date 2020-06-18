@@ -43,21 +43,20 @@ library ExchangeWithdrawals
     using ExchangeTokens    for ExchangeData.State;
 
     event WithdrawalRequested(
-        uint24  indexed accountID,
-        uint16  indexed tokenID
+        address indexed owner,
+        address indexed token,
+        uint24  indexed accountID
     );
 
     event WithdrawalCompleted(
-        uint24  indexed accountID,
-        uint16  indexed tokenID,
-        address         to,
+        address indexed to,
+        address indexed token,
         uint96          amount
     );
 
     event WithdrawalFailed(
-        uint24  indexed accountID,
-        uint16  indexed tokenID,
-        address         to,
+        address indexed to,
+        address indexed token,
         uint96          amount
     );
 
@@ -70,7 +69,6 @@ library ExchangeWithdrawals
         external
     {
         require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(S.areUserRequestsEnabled(), "USER_REQUEST_SUSPENDED");
         require(S.getNumAvailableForcedSlots() > 0, "TOO_MANY_REQUESTS_OPEN");
 
         uint16 tokenID = S.getTokenID(token);
@@ -93,8 +91,9 @@ library ExchangeWithdrawals
         S.numPendingForcedTransactions++;
 
         emit WithdrawalRequested(
-            accountID,
-            tokenID
+            owner,
+            token,
+            accountID
         );
     }
 
@@ -181,28 +180,32 @@ library ExchangeWithdrawals
         owner.sendETHAndVerify(fee, gasleft());
     }
 
-    function withdrawFromApprovedWithdrawal(
+    function withdrawFromApprovedWithdrawals(
         ExchangeData.State storage S,
-        address owner,
-        address token
+        address[] memory owners,
+        address[] memory tokens
         )
         public
     {
-        uint16 tokenID = S.getTokenID(token);
-        uint amount = S.amountWithdrawable[owner][tokenID];
+        require(owners.length == tokens.length, "INVALID_INPUT_DATA");
+        for (uint i = 0; i < owners.length; i++) {
+            address owner = owners[i];
+            uint16 tokenID = S.getTokenID(tokens[i]);
+            uint amount = S.amountWithdrawable[owner][tokenID];
 
-        // Make sure this amount can't be withdrawn again
-        S.amountWithdrawable[owner][tokenID] = 0;
+            // Make sure this amount can't be withdrawn again
+            S.amountWithdrawable[owner][tokenID] = 0;
 
-        // Transfer the tokens
-        transferTokens(
-            S,
-            owner,
-            tokenID,
-            amount,
-            gasleft(),
-            false
-        );
+            // Transfer the tokens
+            transferTokens(
+                S,
+                owner,
+                tokenID,
+                amount,
+                gasleft(),
+                false
+            );
+        }
     }
 
     function distributeWithdrawal(
@@ -272,16 +275,14 @@ library ExchangeWithdrawals
 
         if (success) {
             emit WithdrawalCompleted(
-                0,
-                tokenID,
                 to,
+                token,
                 uint96(amount)
             );
         } else {
             emit WithdrawalFailed(
-                0,
-                tokenID,
                 to,
+                token,
                 uint96(amount)
             );
         }

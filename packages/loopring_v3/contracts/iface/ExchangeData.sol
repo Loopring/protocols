@@ -89,6 +89,11 @@ library ExchangeData
         bytes                  offchainData;
     }
 
+    struct BlockInfo
+    {
+        bytes32 blockDataHash;
+    }
+
     // Represents an onchain deposit request.  `tokenID` being `0x0` means depositing Ether.
     struct Deposit
     {
@@ -97,6 +102,9 @@ library ExchangeData
         uint64 fee;
     }
 
+    // A forced withdrawal request.
+    // If the actual owner of the account initiated the request (we don't know who the owner is
+    // at the time the request is being made) the full balance will be withdrawn.
     struct ForcedWithdrawal
     {
         address owner;
@@ -170,7 +178,11 @@ library ExchangeData
         uint    depositFeeETH;
         uint    withdrawalFeeETH;
 
-        Token[]             tokens;
+        // List of all tokens
+        Token[] tokens;
+
+        // List of all blocks
+        BlockInfo[] blocks;
 
         // A map from a token to its tokenID + 1
         mapping (address => uint16) tokenToTokenId;
@@ -179,9 +191,6 @@ library ExchangeData
         // stores balances for users using an account model.
         bytes32 merkleRoot;
 
-        // The number of blocks that are submitted onchain
-        uint32 numBlocksSubmitted;
-
         // A map from an accountID to a tokenID to if the balance is withdrawn
         mapping (uint24 => mapping (uint16 => bool)) withdrawnInWithdrawMode;
 
@@ -189,7 +198,7 @@ library ExchangeData
         // This is only used when the automatic distribution of the withdrawal failed.
         mapping (address => mapping (uint16 => uint)) amountWithdrawable;
 
-        // A map from an account to a token to how much should be withdrawn
+        // A map from an account to a token to the forced withdrawal (always full balance)
         mapping (uint24 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
         // A map from an address to a token to a deposit
@@ -197,6 +206,9 @@ library ExchangeData
 
         // A map from an account owner to an approved general hash to a boolean for some transaction
         mapping (address => mapping (bytes32 => bool)) approvedTx;
+
+        // Whitelisted agents
+        mapping (address => bool) whitelistedAgent;
 
         // Agents - A map from an account owner to an agent to a boolean that is true/false depending
         // on if the agent can be used for the account.

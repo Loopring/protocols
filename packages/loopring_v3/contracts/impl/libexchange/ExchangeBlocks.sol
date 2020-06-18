@@ -164,11 +164,11 @@ library ExchangeBlocks
         feeRecipient.sendETHAndVerify(blockFeeETH, gasleft());
 
         // Emit an event
-        emit BlockSubmitted(S.numBlocksSubmitted, publicDataHash, blockFeeETH);
+        emit BlockSubmitted(S.blocks.length, publicDataHash, blockFeeETH);
 
         // Update the onchain state
         S.merkleRoot = merkleRootAfter;
-        S.numBlocksSubmitted++;
+        S.blocks.push(ExchangeData.BlockInfo(publicDataHash));
     }
 
     function verifyBlocks(
