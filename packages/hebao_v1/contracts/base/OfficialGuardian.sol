@@ -46,7 +46,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271
 
         address signer = hash.recoverECDSASigner(_signature);
         if (isManager(signer)) {
-            returnValue =  MAGICVALUE;
+            returnValue = MAGICVALUE;
         }
     }
 }
