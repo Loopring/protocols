@@ -26,14 +26,33 @@ contract OfficialGuardian
     address public operator;
     address public erc1271Module;
 
-    address internal _owner;
+    address public _owner;
+    address public pendingOwner;
 
-    event OperatorChanged(address _operator);
-    event ERC1271ModuleChanged(address _erc1271Module);
+    event OperatorChanged(
+        address indexed oldOperator,
+        address indexed newOperator
+    );
+
+    event ERC1271ModuleChanged(
+        address indexed oldERC1271Module,
+        address indexed newERC1271Module
+    );
+
+    event OwnershipTransferred(
+        address indexed previousOwner,
+        address indexed newOwner
+    );
+
 
     modifier onlyOwner()
     {
         require(msg.sender == _owner, "UNAUTHORIZED");
+        _;
+    }
+
+    modifier onlyPendingOwner() {
+        require(msg.sender == pendingOwner, "UNAUTHORIZED");
         _;
     }
 
@@ -51,26 +70,48 @@ contract OfficialGuardian
         erc1271Module = _erc1271Module;
     }
 
-    function changeOperator(address _operator)
+    /// @dev Allows the current owner to set the pendingOwner address.
+    /// @param newOwner The address to transfer ownership to.
+    function transferOwnership(
+        address newOwner
+        )
+        public
         onlyOwner
-        external
     {
-        require(_operator != address(0), "ZERO_ADDRESS");
-        require(operator != _operator, "ALREADY_OPERATOR");
-
-        operator = _operator;
-        emit OperatorChanged(_operator);
+        require(newOwner != address(0) && newOwner != _owner, "INVALID_ADDRESS");
+        pendingOwner = newOwner;
     }
 
-    function changeERC1271Module(address _erc1271Module)
+    /// @dev Allows the pendingOwner address to finalize the transfer.
+    function claimOwnership()
+        public
+        onlyPendingOwner
+    {
+        emit OwnershipTransferred(_owner, pendingOwner);
+        _owner = pendingOwner;
+        pendingOwner = address(0);
+    }
+
+    function changeOperator(address newOperator)
         onlyOwner
         external
     {
-        require(_erc1271Module != address(0), "ZERO_ADDRESS");
-        require(erc1271Module != _erc1271Module, "SAME_ADDRESS");
+        require(newOperator != address(0) && newOperator != operator,
+                "INVALID_ADDRESS");
 
-        erc1271Module = _erc1271Module;
-        emit ERC1271ModuleChanged(_erc1271Module);
+        emit OperatorChanged(operator, newOperator);
+        operator = newOperator;
+    }
+
+    function changeERC1271Module(address newERC1271Module)
+        onlyOwner
+        external
+    {
+        require(newERC1271Module != address(0) &&
+                newERC1271Module != erc1271Module, "INVALID_ADDRESS");
+
+        emit ERC1271ModuleChanged(erc1271Module, newERC1271Module);
+        erc1271Module = newERC1271Module;
     }
 
     function owner()
