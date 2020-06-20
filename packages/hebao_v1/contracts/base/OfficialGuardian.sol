@@ -16,11 +16,12 @@
 */
 pragma solidity ^0.6.6;
 
-import "../thirdparty/ERC1271.sol";
 import "../thirdparty/BytesUtil.sol";
+import "../thirdparty/ERC1271.sol";
 
 import "../lib/OwnerManagable.sol";
 import "../lib/SignatureUtil.sol";
+
 
 /// @title OfficialGuardian
 /// @author Freeman Zhong - <kongliang@loopring.org>
@@ -34,7 +35,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         public
         view
         override
-        returns (bytes4 magicValue)
+        returns (bytes4 returnValue)
     {
         bytes32 hash;
         if (_data.length == 32) {
@@ -45,11 +46,7 @@ contract OfficialGuardian is OwnerManagable, ERC1271
 
         address signer = hash.recoverECDSASigner(_signature);
         if (isManager(signer)) {
-            return MAGICVALUE;
-        } else {
-            return 0;
+            returnValue =  MAGICVALUE;
         }
-
     }
-
 }
