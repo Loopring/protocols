@@ -17,119 +17,39 @@
 pragma solidity ^0.6.6;
 
 import "../thirdparty/ERC1271.sol";
-import "../lib/Claimable.sol";
+import "../thirdparty/BytesUtil.sol";
+
+import "../lib/OwnerManagable.sol";
+import "../lib/SignatureUtil.sol";
 
 /// @title OfficialGuardian
 /// @author Freeman Zhong - <kongliang@loopring.org>
-contract OfficialGuardian
+contract OfficialGuardian is OwnerManagable, ERC1271
 {
-    address public operator;
-    address public erc1271Module;
-
-    address public _owner;
-    address public pendingOwner;
-
-    event OperatorChanged(
-        address indexed oldOperator,
-        address indexed newOperator
-    );
-
-    event ERC1271ModuleChanged(
-        address indexed oldERC1271Module,
-        address indexed newERC1271Module
-    );
-
-    event OwnershipTransferred(
-        address indexed previousOwner,
-        address indexed newOwner
-    );
-
-
-    modifier onlyOwner()
-    {
-        require(msg.sender == _owner, "UNAUTHORIZED");
-        _;
-    }
-
-    modifier onlyPendingOwner() {
-        require(msg.sender == pendingOwner, "UNAUTHORIZED");
-        _;
-    }
-
-    constructor(
-        address _operator,
-        address _erc1271Module
-    )
-        public
-    {
-        require(_operator != address(0), "ZERO_ADDRESS");
-        require(_erc1271Module != address(0), "ZERO_ADDRESS");
-
-        _owner = msg.sender;
-        operator = _operator;
-        erc1271Module = _erc1271Module;
-    }
-
-    /// @dev Allows the current owner to set the pendingOwner address.
-    /// @param newOwner The address to transfer ownership to.
-    function transferOwnership(
-        address newOwner
-        )
-        public
-        onlyOwner
-    {
-        require(newOwner != address(0) && newOwner != _owner, "INVALID_ADDRESS");
-        pendingOwner = newOwner;
-    }
-
-    /// @dev Allows the pendingOwner address to finalize the transfer.
-    function claimOwnership()
-        public
-        onlyPendingOwner
-    {
-        emit OwnershipTransferred(_owner, pendingOwner);
-        _owner = pendingOwner;
-        pendingOwner = address(0);
-    }
-
-    function changeOperator(address newOperator)
-        onlyOwner
-        external
-    {
-        require(newOperator != address(0) && newOperator != operator,
-                "INVALID_ADDRESS");
-
-        emit OperatorChanged(operator, newOperator);
-        operator = newOperator;
-    }
-
-    function changeERC1271Module(address newERC1271Module)
-        onlyOwner
-        external
-    {
-        require(newERC1271Module != address(0) &&
-                newERC1271Module != erc1271Module, "INVALID_ADDRESS");
-
-        emit ERC1271ModuleChanged(erc1271Module, newERC1271Module);
-        erc1271Module = newERC1271Module;
-    }
-
-    function owner()
-        public
-        view
-        returns(address)
-    {
-        return operator;
-    }
+    using SignatureUtil for bytes32;
 
     function isValidSignature(
         bytes memory _data,
         bytes memory _signature)
         public
         view
+        override
         returns (bytes4 magicValue)
     {
-        return ERC1271(erc1271Module).isValidSignature(_data, _signature);
+        bytes32 hash;
+        if (_data.length == 32) {
+            hash = BytesUtil.toBytes32(_data, 0);
+        } else {
+            hash = keccak256(_data);
+        }
+
+        address signer = hash.recoverECDSASigner(_signature);
+        if (isManager(signer)) {
+            return MAGICVALUE;
+        } else {
+            return 0;
+        }
+
     }
 
 }
