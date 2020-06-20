@@ -19,9 +19,9 @@ pragma solidity ^0.6.6;
 import "../thirdparty/ERC1271.sol";
 import "../lib/Claimable.sol";
 
-/// @title OfficialGuardianWallet
+/// @title OfficialGuardian
 /// @author Freeman Zhong - <kongliang@loopring.org>
-contract OfficialGuardianWallet
+contract OfficialGuardian
 {
     address public operator;
     address public erc1271Module;
