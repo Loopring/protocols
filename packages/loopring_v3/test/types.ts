@@ -119,9 +119,20 @@ export class Transfer {
   ownerFrom: string;
   ownerTo: string;
 
+  validUntil: number;
+
+  dualAuthorX: string;
+  dualAuthorY: string;
+  payerAccountToID: number;
+  payerOwnerTo: string;
+  payeeAccountToID: number;
+
   nonce: number;
 
+  dualSecretKey?: string;
+
   signature?: Signature;
+  dualSignature?: Signature;
 }
 
 export interface WithdrawalRequest {

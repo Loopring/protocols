@@ -6,6 +6,7 @@ import { OrderInfo, SpotTrade } from "./types";
 
 export interface TransferOptions {
   conditionalTransfer?: boolean;
+  useDualAuthoring?: boolean;
   autoApprove?: boolean;
   amountToDeposit?: BN;
   feeToDeposit?: BN;
@@ -43,6 +44,10 @@ contract("Exchange", (accounts: string[]) => {
       options.conditionalTransfer !== undefined
         ? options.conditionalTransfer
         : false;
+    const useDualAuthoring =
+        options.useDualAuthoring !== undefined
+          ? options.useDualAuthoring
+          : false;
     const autoApprove =
       options.autoApprove !== undefined ? options.autoApprove : true;
     // From
@@ -77,7 +82,8 @@ contract("Exchange", (accounts: string[]) => {
       feeToken,
       fee,
       undefined,
-      conditionalTransfer
+      conditionalTransfer,
+      useDualAuthoring
     );
     return request;
   };
@@ -167,8 +173,9 @@ contract("Exchange", (accounts: string[]) => {
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
 
       // Do a transfer
-      await transfer(ownerA, ownerB, token, amount, feeToken, fee);
+      //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true});
+      await transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
 
       const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
 

@@ -79,7 +79,21 @@ def transferFromJSON(jTransfer):
     transfer.nonce = int(jTransfer["nonce"])
     transfer.ownerFrom = str(jTransfer["ownerFrom"])
     transfer.ownerTo = str(jTransfer["ownerTo"])
-    transfer.signature = jTransfer["signature"]
+    transfer.validUntil = int(jTransfer["validUntil"])
+    transfer.dualAuthorX = str(jTransfer["dualAuthorX"])
+    transfer.dualAuthorY = str(jTransfer["dualAuthorY"])
+    transfer.payerAccountToID = int(jTransfer["payerAccountToID"])
+    transfer.payerOwnerTo = str(jTransfer["payerOwnerTo"])
+    transfer.payeeAccountToID = int(jTransfer["payeeAccountToID"])
+    transfer.signature = None
+    transfer.dualSignature = None
+    transfer.onchainSignature = None
+    if "signature" in jTransfer:
+        transfer.signature = jTransfer["signature"]
+    if "dualSignature" in jTransfer:
+        transfer.dualSignature = jTransfer["dualSignature"]
+    if "onchainSignature" in jTransfer:
+        transfer.onchainSignature = str(jTransfer["onchainSignature"])
     return transfer
 
 def withdrawFromJSON(jWithdraw):

@@ -635,6 +635,7 @@ class State(object):
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
             newState.signatureA = txInput.signature
+            newState.signatureB = txInput.dualSignature
 
             newState.accountA_Address = txInput.accountFromID
             accountA = self.getAccount(newState.accountA_Address)

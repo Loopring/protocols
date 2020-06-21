@@ -124,7 +124,7 @@ export namespace PublicKeyUpdateUtils {
         owner: update.owner,
         accountID: update.accountID,
         nonce: update.nonce,
-        publicKey: new BN(update.publicKeyY),
+        publicKey: new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16),
         feeTokenID: update.feeTokenID,
         fee: update.fee
       }
@@ -534,10 +534,6 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
-    if (order.signature !== undefined) {
-      return;
-    }
-
     const hasher = Poseidon.createHash(13, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
@@ -606,10 +602,6 @@ export class ExchangeTestUtil {
   }
 
   public signWithdrawal(withdrawal: WithdrawalRequest) {
-    if (withdrawal.signature !== undefined) {
-      return;
-    }
-
     const hasher = Poseidon.createHash(8, 6, 53);
     const account = this.accounts[this.exchangeId][withdrawal.accountID];
 
@@ -636,36 +628,44 @@ export class ExchangeTestUtil {
     assert(success, "Failed to verify signature");
   }
 
-  public signTransfer(transfer: Transfer) {
-    if (transfer.signature !== undefined) {
-      return;
-    }
-
-    const hasher = Poseidon.createHash(9, 6, 53);
-    const account = this.accounts[this.exchangeId][transfer.accountFromID];
-
+  public signTransfer(transfer: Transfer, payer: boolean = true) {
+    const hasher = Poseidon.createHash(13, 6, 53);
     // Calculate hash
     const inputs = [
       this.exchangeId,
       transfer.accountFromID,
-      transfer.accountToID,
+      payer ? transfer.payerAccountToID : transfer.accountToID,
       transfer.transTokenID,
       transfer.amount,
       transfer.feeTokenID,
       transfer.fee,
+      transfer.validUntil,
+      payer ? transfer.payerOwnerTo : transfer.ownerTo,
+      transfer.dualAuthorX,
+      transfer.dualAuthorY,
       transfer.nonce
     ];
     const hash = hasher(inputs).toString(10);
 
     // Create signature
-    transfer.signature = EdDSA.sign(account.secretKey, hash);
-
-    // Verify signature
-    const success = EdDSA.verify(hash, transfer.signature, [
-      account.publicKeyX,
-      account.publicKeyY
-    ]);
-    assert(success, "Failed to verify signature");
+    if (payer) {
+      const account = this.accounts[this.exchangeId][transfer.accountFromID];
+      transfer.signature = EdDSA.sign(account.secretKey, hash);
+      // Verify signature
+      const success = EdDSA.verify(hash, transfer.signature, [
+        account.publicKeyX,
+        account.publicKeyY
+      ]);
+      assert(success, "Failed to verify signature");
+    } else {
+      transfer.dualSignature = EdDSA.sign(transfer.dualSecretKey, hash);
+      // Verify signature
+      const success = EdDSA.verify(hash, transfer.dualSignature, [
+        transfer.dualAuthorX,
+        transfer.dualAuthorY
+      ]);
+      assert(success, "Failed to verify dual signature");
+    }
   }
 
   public async setOrderBalances(order: OrderInfo) {
@@ -763,14 +763,7 @@ export class ExchangeTestUtil {
   }
 
   public getKeyPairEDDSA() {
-    const keyPair = EdDSA.getKeyPair();
-    /*console.log(keyPair);
-    const packed = new BN(EdDSA.pack(keyPair.publicKeyX, keyPair.publicKeyY), 16);
-    console.log(packed.toString(10));
-    const unpacked = EdDSA.unpack(packed.toString(16));
-    console.log(unpacked);*/
-    return keyPair;
-    //return EdDSA.getKeyPair();
+    return EdDSA.getKeyPair();
   }
 
   public flattenList = (l: any[]) => {
@@ -1021,7 +1014,8 @@ export class ExchangeTestUtil {
     feeToken: string,
     fee: BN,
     ownerTo?: string,
-    conditionalTransfer: boolean = false
+    conditionalTransfer: boolean = false,
+    useDualAuthoring: boolean = false
   ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -1036,6 +1030,16 @@ export class ExchangeTestUtil {
       ownerTo = this.getAccount(accountToID).owner;
     }
 
+    const dualAuthorkeyPair = this.getKeyPairEDDSA();
+    let dualAuthorX = "0";
+    let dualAuthorY = "0";
+    let dualSecretKey = "0";
+    if (useDualAuthoring) {
+      dualAuthorX = dualAuthorkeyPair.publicKeyX;
+      dualAuthorY = dualAuthorkeyPair.publicKeyY;
+      dualSecretKey = dualAuthorkeyPair.secretKey;
+    }
+
     const transfer: Transfer = {
       txType: "Transfer",
       accountFromID,
@@ -1047,11 +1051,22 @@ export class ExchangeTestUtil {
       ownerFrom: this.hexToDecString(this.accounts[this.exchangeId][accountFromID].owner),
       ownerTo: this.hexToDecString(ownerTo),
       type: conditionalTransfer ? 1 : 0,
+      validUntil: 0xFFFFFFFF,
+      dualAuthorX,
+      dualAuthorY,
+      payerAccountToID: useDualAuthoring ? 0 : accountToID,
+      payerOwnerTo: useDualAuthoring ? "0" : this.hexToDecString(ownerTo),
+      payeeAccountToID: accountToID,
       nonce: this.accounts[this.exchangeId][accountFromID].nonce++,
+      dualSecretKey
     };
+    console.log(transfer);
 
     if (transfer.type === 0) {
-      this.signTransfer(transfer);
+      this.signTransfer(transfer, true);
+      if (useDualAuthoring) {
+        this.signTransfer(transfer, false);
+      }
     }
 
     this.pendingTransactions[exchangeID].push(transfer);
@@ -2052,20 +2067,16 @@ export class ExchangeTestUtil {
             da.addNumber(deposit.accountID, 3);
             da.addNumber(deposit.tokenID, 2);
             da.addBN(new BN(deposit.amount), 12);
-          }  else if (tx.publicKeyUpdate) {
-            const publicKeyUpdate = tx.publicKeyUpdate;
+          } else if (tx.publicKeyUpdate) {
+            const update = tx.publicKeyUpdate;
             da.addNumber(BlockType.PUBLIC_KEY_UPDATE, 1);
-            const owner = this.accounts[this.exchangeId][publicKeyUpdate.accountID].owner;
+            const owner = this.accounts[this.exchangeId][update.accountID].owner;
             da.addBN(new BN(this.hexToDecString(owner)), 20);
-            da.addNumber(publicKeyUpdate.accountID, 3);
-            da.addNumber(publicKeyUpdate.nonce, 4);
-            //const packedKey = new BN(EdDSA.pack(publicKeyUpdate.publicKeyX, publicKeyUpdate.publicKeyY), 16);
-            //da.addBN(packedKey, 32);
-            //console.log("Y: " + publicKeyUpdate.publicKeyY);
-            //console.log("packedKey: " + packedKey.toString(10));
-            da.addBN(new BN(publicKeyUpdate.publicKeyY), 32);
-            da.addNumber(publicKeyUpdate.feeTokenID, 2);
-            da.addNumber(toFloat(new BN(publicKeyUpdate.fee), Constants.Float16Encoding), 2);
+            da.addNumber(update.accountID, 3);
+            da.addNumber(update.nonce, 4);
+            da.addBN(new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16), 32);
+            da.addNumber(update.feeTokenID, 2);
+            da.addNumber(toFloat(new BN(update.fee), Constants.Float16Encoding), 2);
           }
 
           assert(da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE, "tx uses too much da");
