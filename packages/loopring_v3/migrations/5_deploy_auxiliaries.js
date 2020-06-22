@@ -1,9 +1,6 @@
 // Deploy all auxiliary contracts used by either Exchange, LoopringV3,
 // or UniversalRegistry.
 
-var DowntimeCostCalculator = artifacts.require(
-  "./impl/DowntimeCostCalculator.sol"
-);
 const ProtocolFeeVault = artifacts.require("./impl/ProtocolFeeVault.sol");
 
 var UniswapTokenSeller = artifacts.require("./impl/UniswapTokenSeller.sol");
@@ -18,10 +15,6 @@ module.exports = function(deployer, network, accounts) {
   var deployer_ = deployer;
 
   if (network != "live" && network != "live-fork") {
-    DowntimeCostCalculator = artifacts.require(
-      "./test/FixPriceDowntimeCostCalculator.sol"
-    );
-
     const LRCToken = artifacts.require("./test/tokens/LRC.sol");
     const WETHToken = artifacts.require("./test/tokens/WETH.sol");
 
@@ -82,8 +75,7 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(BlockVerifier),
-        deployer.deploy(DowntimeCostCalculator)
+        deployer.deploy(BlockVerifier)
       ]);
     })
     .then(() => {
@@ -94,7 +86,6 @@ module.exports = function(deployer, network, accounts) {
       console.log("userStakingPoolAddress:", userStakingPoolAddress);
       console.log("uniswapTokenSellerAddress:", uniswapTokenSellerAddress);
       console.log("BlockVerifier:", BlockVerifier.address);
-      console.log("DowntimeCostCalculator:", DowntimeCostCalculator.address);
       console.log("");
     });
 };

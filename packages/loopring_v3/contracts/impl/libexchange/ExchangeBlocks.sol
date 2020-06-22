@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/AddressUtil.sol";
@@ -24,7 +24,6 @@ import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 import "../../iface/IBlockVerifier.sol";
-import "../../iface/IDecompressor.sol";
 import "../../iface/ExchangeData.sol";
 
 import "./ExchangeMode.sol";
@@ -74,7 +73,7 @@ library ExchangeBlocks
 
         // Check if this exchange has a minimal amount of LRC staked
         require(
-            S.loopring.canExchangeCommitBlocks(S.id, S.onchainDataAvailability),
+            S.loopring.canExchangeSubmitBlocks(S.id, S.onchainDataAvailability),
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 

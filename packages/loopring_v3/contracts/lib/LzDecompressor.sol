@@ -14,9 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
-
-import "../iface/IDecompressor.sol";
+pragma solidity ^0.6.10;
 
 
 /// @title LzDecompressor
@@ -31,19 +29,19 @@ import "../iface/IDecompressor.sol";
 ///      - add mode copying from random location in calldata (faster than memory copies)
 ///      - add support to copy data from memory using the identity pre-compile
 ///        (large initital cost but cheaper copying, does not support overlapping memory ranges)
-contract LzDecompressor is IDecompressor
+library LzDecompressor
 {
     function decompress(
         bytes calldata /*data*/
         )
-        external
-        override
+        internal
         pure
         returns (bytes memory)
     {
+        bytes memory uncompressed;
         assembly {
-            let uncompressed := mload(0x40)
-            let ptr := add(uncompressed, 64)
+            uncompressed := mload(0x40)
+            let ptr := add(uncompressed, 32)
             let dataLength := calldataload(36)
             for { let pos := 0 } lt(pos, dataLength) {} {
                 // Read the mode
@@ -112,12 +110,12 @@ contract LzDecompressor is IDecompressor
                     revert(0, 0)
                 }
             }
-            // Store offset to data
-            mstore(uncompressed, 0x20)
             // Store data length
-            mstore(add(uncompressed, 32), sub(sub(ptr, uncompressed), 64))
-            // Return the data
-            return(uncompressed, sub(ptr, uncompressed))
+            mstore(uncompressed, sub(sub(ptr, uncompressed), 32))
+
+            // Update free memory pointer
+            mstore(0x40, add(ptr, 0x20))
         }
+        return uncompressed;
     }
 }

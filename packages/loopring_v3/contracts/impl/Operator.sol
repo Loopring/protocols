@@ -14,15 +14,27 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../iface/IExchangeV3.sol";
 
+import "../lib/LzDecompressor.sol";
 
-contract Operator {
 
-    IExchangeV3 exchange;
+contract Operator is Claimable
+{
+    IExchangeV3 public exchange;
+
+    bool public open;
+
+    modifier onlyOperator()
+    {
+        if (!open) {
+            require(msg.sender == owner, "UNAUTHORIZED");
+        }
+        _;
+    }
 
     constructor(
         address _exchangeAddress
@@ -37,10 +49,31 @@ contract Operator {
         address payable feeRecipient
         )
         external
+        onlyOperator
     {
         exchange.submitBlocks(
             blocks,
             feeRecipient
         );
+    }
+
+    function submitBlocksCompressed(
+        bytes calldata data
+        )
+        external
+        onlyOperator
+    {
+        bytes memory decompressed = LzDecompressor.decompress(data);
+        (bool success, bytes memory returnData) = address(exchange).call(decompressed);
+        if (!success) {
+            assembly { revert(add(returnData, 32), mload(returnData)) }
+        }
+    }
+
+    function setOpen(bool newOpen)
+        external
+        onlyOwner
+    {
+        open = newOpen;
     }
 }

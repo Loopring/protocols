@@ -4,13 +4,11 @@ TRUFFLE_CMD="./node_modules/.bin/truffle"
 declare -a ALL_CONTRACTS=(Cloneable \
 			  BatchVerifier \
 			  UniversalRegistry \
-			  DowntimeCostCalculator \
 			  ProtocolFeeVault \
 			  UniswapTokenSeller \
 			  UserStakingPool \
 			  BlockVerifier \
 			  ExchangeConstants \
-			  ExchangeAccounts \
 			  ExchangeAdmins \
 			  ExchangeBalances \
 			  ExchangeBlocks \

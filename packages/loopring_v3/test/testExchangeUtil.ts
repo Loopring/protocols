@@ -6,6 +6,7 @@ import http = require("http");
 import { performance } from "perf_hooks";
 import { SHA256 } from "sha2";
 import util = require("util");
+import { calculateCalldataCost, compressLZ, decompressLZ } from "./compression";
 import { Artifacts } from "../util/Artifacts";
 import { getEIP712Message } from "../util/EIP712";
 import {
@@ -198,7 +199,6 @@ export class ExchangeTestUtil {
 
   public loopringV3: any;
   public blockVerifier: any;
-  public downtimeCostCalculator: any;
   public lzDecompressor: any;
 
   public lrcAddress: string;
@@ -280,15 +280,12 @@ export class ExchangeTestUtil {
     await this.loopringV3.updateSettings(
       this.protocolFeeVault,
       this.blockVerifier.address,
-      this.downtimeCostCalculator.address,
       new BN(web3.utils.toWei("0.02", "ether")),
       new BN(web3.utils.toWei("10000", "ether")),
       new BN(web3.utils.toWei("2000", "ether")),
       new BN(web3.utils.toWei("1", "ether")),
       new BN(web3.utils.toWei("250000", "ether")),
       new BN(web3.utils.toWei("1000000", "ether")),
-      new BN(web3.utils.toWei("50000", "ether")),
-      new BN(web3.utils.toWei("10", "ether")),
       { from: this.testContext.deployer }
     );
 
@@ -1060,7 +1057,6 @@ export class ExchangeTestUtil {
       nonce: this.accounts[this.exchangeId][accountFromID].nonce++,
       dualSecretKey
     };
-    console.log(transfer);
 
     if (transfer.type === 0) {
       this.signTransfer(transfer, true);
@@ -1628,11 +1624,24 @@ export class ExchangeTestUtil {
 
     // Submit the blocks onchain
     const operatorContract = this.operator ? this.operator : this.exchange;
-    const tx = await operatorContract.submitBlocks(
+
+    // Compress the data
+    const txData = operatorContract.contract.methods.submitBlocks(
+      onchainBlocks,
+      this.exchangeOperator
+    ).encodeABI();
+    const compressed = compressLZ(txData);
+
+    let tx: any = undefined;
+    tx = await operatorContract.submitBlocksCompressed(
+      web3.utils.hexToBytes(compressed),
+      { from: this.exchangeOperator, gasPrice: 0 }
+    );
+    /*tx = await operatorContract.submitBlocks(
       onchainBlocks,
       this.exchangeOperator,
       { from: this.exchangeOperator, gasPrice: 0 }
-    );
+    );*/
     logInfo(
       "\x1b[46m%s\x1b[0m",
       "[submitBlocks] Gas used: " + tx.receipt.gasUsed
@@ -2275,8 +2284,6 @@ export class ExchangeTestUtil {
       from: owner
     });
 
-    const insuranceContractAddress = lrcAddress;
-
     // randomely support upgradability
     const forgeMode = new Date().getMilliseconds() % 4;
     // Create the new exchange
@@ -2285,7 +2292,6 @@ export class ExchangeTestUtil {
       onchainDataAvailability,
       Constants.zeroAddress,
       Constants.zeroAddress,
-      insuranceContractAddress,
       { from: owner }
     );
 
@@ -2334,14 +2340,15 @@ export class ExchangeTestUtil {
       "unexpected deposit contract"
     );
 
-    // Set the operator
-    await this.exchange.setOperator(operator, { from: owner });
-
     this.exchangeOwner = owner;
     this.exchangeOperator = operator;
     this.exchangeId = exchangeId;
     this.onchainDataAvailability = onchainDataAvailability;
     this.activeOperator = undefined;
+
+    // Set the operator
+    const operatorContract = await this.contracts.Operator.new(this.exchange.address, {from: this.exchangeOperator});
+    await this.setOperatorContract(operatorContract);
 
     const exchangeCreationTimestamp = (await this.exchange.getExchangeCreationTimestamp()).toNumber();
     this.GENESIS_MERKLE_ROOT = new BN(
@@ -3451,7 +3458,6 @@ export class ExchangeTestUtil {
       exchangeConstants,
       exchange,
       blockVerifier,
-      downtimeCostCalculator,
       lrcToken,
       wethToken
     ] = await Promise.all([
@@ -3460,7 +3466,6 @@ export class ExchangeTestUtil {
       this.contracts.ExchangeConstants.deployed(),
       this.contracts.ExchangeV3.deployed(),
       this.contracts.BlockVerifier.deployed(),
-      this.contracts.FixPriceDowntimeCostCalculator.deployed(),
       this.contracts.LRCToken.deployed(),
       this.contracts.WETHToken.deployed()
     ]);
@@ -3480,7 +3485,6 @@ export class ExchangeTestUtil {
     this.exchangeConstants = exchangeConstants;
     this.exchange = exchange;
     this.blockVerifier = blockVerifier;
-    this.downtimeCostCalculator = downtimeCostCalculator;
 
     this.lrcAddress = lrcToken.address;
     this.wethAddress = wethToken.address;

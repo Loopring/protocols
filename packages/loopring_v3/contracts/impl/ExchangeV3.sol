@@ -14,10 +14,9 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
-import "./libexchange/ExchangeAccounts.sol";
 import "./libexchange/ExchangeAdmins.sol";
 import "./libexchange/ExchangeBalances.sol";
 import "./libexchange/ExchangeBlocks.sol";
@@ -44,7 +43,6 @@ contract ExchangeV3 is IExchangeV3
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;
-    using ExchangeAccounts      for ExchangeData.State;
     using ExchangeBalances      for ExchangeData.State;
     using ExchangeBlocks        for ExchangeData.State;
     using ExchangeDeposits      for ExchangeData.State;
@@ -91,8 +89,7 @@ contract ExchangeV3 is IExchangeV3
         address _owner,
         uint    _id,
         address payable _operator,
-        bool    _onchainDataAvailability,
-        address _insuranceContract
+        bool    _onchainDataAvailability
         )
         external
         override
@@ -109,8 +106,7 @@ contract ExchangeV3 is IExchangeV3
             _loopringAddress,
             _operator,
             _onchainDataAvailability,
-            genesisBlockHash,
-            _insuranceContract
+            genesisBlockHash
         );
     }
 

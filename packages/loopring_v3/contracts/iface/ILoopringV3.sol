@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "./ILoopring.sol";
 
@@ -68,14 +68,11 @@ abstract contract ILoopringV3 is ILoopring
     address public wethAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
-    address public downtimeCostCalculator;
     uint    public maxWithdrawalFee;
-    uint    public withdrawalFineLRC;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
     uint    public minExchangeStakeWithDataAvailability;
     uint    public minExchangeStakeWithoutDataAvailability;
-    uint    public revertFineLRC;
     uint8   public minProtocolTakerFeeBips;
     uint8   public maxProtocolTakerFeeBips;
     uint8   public minProtocolMakerFeeBips;
@@ -103,15 +100,12 @@ abstract contract ILoopringV3 is ILoopring
     function updateSettings(
         address payable _protocolFeeVault,   // address(0) not allowed
         address _blockVerifierAddress,       // address(0) not allowed
-        address _downtimeCostCalculator,     // address(0) allowed
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _minExchangeStakeWithoutDataAvailability
         )
         external
         virtual;
@@ -141,7 +135,7 @@ abstract contract ILoopringV3 is ILoopring
     /// @param onchainDataAvailability True if the exchange has on-chain
     ///        data-availability, else false
     /// @return True if the exchange has staked enough, else false
-    function canExchangeCommitBlocks(
+    function canExchangeSubmitBlocks(
         uint exchangeId,
         bool onchainDataAvailability
         )

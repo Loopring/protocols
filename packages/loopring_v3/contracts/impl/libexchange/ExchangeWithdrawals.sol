@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
@@ -22,7 +22,6 @@ import "../../iface/ExchangeData.sol";
 import "../../lib/AddressUtil.sol";
 import "../../lib/BytesUtil.sol";
 
-import "./ExchangeAccounts.sol";
 import "./ExchangeBalances.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
@@ -37,7 +36,6 @@ library ExchangeWithdrawals
     using AddressUtil       for address payable;
     using BytesUtil         for bytes;
     using MathUint          for uint;
-    using ExchangeAccounts  for ExchangeData.State;
     using ExchangeBalances  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;

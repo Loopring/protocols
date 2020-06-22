@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../lib/AddressUtil.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -40,8 +40,7 @@ contract LoopringV3 is ILoopringV3
         address _lrcAddress,
         address _wethAddress,
         address payable _protocolFeeVault,
-        address _blockVerifierAddress,
-        address _downtimeCostCalculator
+        address _blockVerifierAddress
         )
         Claimable()
         public
@@ -57,8 +56,7 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _downtimeCostCalculator,
-            0, 0, 0, 0, 0, 0, 0, 0
+            0, 0, 0, 0, 0, 0
         );
     }
 
@@ -75,8 +73,7 @@ contract LoopringV3 is ILoopringV3
         uint    exchangeId,
         address owner,
         address payable operator,
-        bool    onchainDataAvailability,
-        address insuranceContract
+        bool    onchainDataAvailability
         )
         external
         override
@@ -97,8 +94,7 @@ contract LoopringV3 is ILoopringV3
             owner,
             exchangeId,
             operator,
-            onchainDataAvailability,
-            insuranceContract
+            onchainDataAvailability
         );
 
         exchanges[exchangeId] = Exchange(exchangeAddress, 0, 0);
@@ -116,15 +112,12 @@ contract LoopringV3 is ILoopringV3
     function updateSettings(
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
-        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _minExchangeStakeWithoutDataAvailability
         )
         external
         override
@@ -134,15 +127,12 @@ contract LoopringV3 is ILoopringV3
         updateSettingsInternal(
             _protocolFeeVault,
             _blockVerifierAddress,
-            _downtimeCostCalculator,
             _exchangeCreationCostLRC,
             _maxWithdrawalFee,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
-            _minExchangeStakeWithoutDataAvailability,
-            _revertFineLRC,
-            _withdrawalFineLRC
+            _minExchangeStakeWithoutDataAvailability
         );
     }
 
@@ -169,7 +159,7 @@ contract LoopringV3 is ILoopringV3
         emit SettingsUpdated(now);
     }
 
-    function canExchangeCommitBlocks(
+    function canExchangeSubmitBlocks(
         uint exchangeId,
         bool onchainDataAvailability
         )
@@ -373,33 +363,26 @@ contract LoopringV3 is ILoopringV3
     function updateSettingsInternal(
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
-        address _downtimeCostCalculator,
         uint    _exchangeCreationCostLRC,
         uint    _maxWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
-        uint    _minExchangeStakeWithoutDataAvailability,
-        uint    _revertFineLRC,
-        uint    _withdrawalFineLRC
+        uint    _minExchangeStakeWithoutDataAvailability
         )
         private
     {
         require(address(0) != _protocolFeeVault, "ZERO_ADDRESS");
         require(address(0) != _blockVerifierAddress, "ZERO_ADDRESS");
-        require(address(0) != _downtimeCostCalculator, "ZERO_ADDRESS");
 
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
-        downtimeCostCalculator = _downtimeCostCalculator;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
         maxWithdrawalFee = _maxWithdrawalFee;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;
         minExchangeStakeWithoutDataAvailability = _minExchangeStakeWithoutDataAvailability;
-        revertFineLRC = _revertFineLRC;
-        withdrawalFineLRC = _withdrawalFineLRC;
 
         emit SettingsUpdated(now);
     }

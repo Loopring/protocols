@@ -20,11 +20,9 @@ export class EdDSA {
     // Increment the secretKey until we found a point that is compressable
     let unpacked = null;
     while (unpacked == null) {
-      console.log(secretKey);
       const publicKey = babyJub.mulPointEscalar(babyJub.Base8, secretKey);
       const packed = this.pack(publicKey[0].toString(10), publicKey[1].toString(10));
       unpacked = this.unpack(packed);
-      console.log(unpacked);
       if (unpacked == null) {
         secretKey = Fr.add(secretKey, Fr.e("1"));
       } else {

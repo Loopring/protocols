@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../lib/Claimable.sol";
 import "../lib/ReentrancyGuard.sol";
@@ -125,8 +125,7 @@ abstract contract IUniversalRegistry is Claimable, ReentrancyGuard
         ForgeMode forgeMode,
         bool      onchainDataAvailability,
         address   protocol,
-        address   implementation,
-        address   insuranceContract
+        address   implementation
         )
         external
         virtual

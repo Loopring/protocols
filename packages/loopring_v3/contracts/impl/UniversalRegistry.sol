@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "../lib/SimpleProxy.sol";
 import "../lib/ERC20SafeTransfer.sol";
@@ -146,8 +146,7 @@ contract UniversalRegistry is IUniversalRegistry {
         ForgeMode forgeMode,
         bool      onchainDataAvailability,
         address   protocol,
-        address   implementation,
-        address   insuranceContract
+        address   implementation
         )
         external
         override
@@ -185,8 +184,7 @@ contract UniversalRegistry is IUniversalRegistry {
             exchangeId,
             msg.sender,  // owner
             msg.sender,  // operator
-            onchainDataAvailability,
-            insuranceContract
+            onchainDataAvailability
         );
 
         emit ExchangeForged(

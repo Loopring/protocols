@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 
 import "./DelayedOwner.sol";
 
@@ -33,23 +33,20 @@ contract LoopringV3Owner is DelayedOwner
     {
         uint minExchangeStakeDA;
         uint minExchangeStakeWDA;
-        uint revertFine;
     }
 
     Costs public USD;
 
     event LRCValuesUpdated(
         uint minExchangeStakeWithDataAvailabilityLRC,
-        uint minExchangeStakeWithoutDataAvailabilityLRC,
-        uint revertFineLRC
+        uint minExchangeStakeWithoutDataAvailabilityLRC
     );
 
     constructor(
         ILoopringV3                _loopringV3,
         ITokenPriceProvider        _provider,
         uint                       _minExchangeStakeWithDataAvailabilityUSD,
-        uint                       _minExchangeStakeWithoutDataAvailabilityUSD,
-        uint                       _revertFineUSD
+        uint                       _minExchangeStakeWithoutDataAvailabilityUSD
         )
         DelayedOwner(address(_loopringV3), 3 days)
         public
@@ -58,7 +55,6 @@ contract LoopringV3Owner is DelayedOwner
         provider = _provider;
         USD.minExchangeStakeDA = _minExchangeStakeWithDataAvailabilityUSD;
         USD.minExchangeStakeWDA = _minExchangeStakeWithoutDataAvailabilityUSD;
-        USD.revertFine = _revertFineUSD;
 
         setFunctionDelay(loopringV3.transferOwnership.selector, 7 days);
         setFunctionDelay(loopringV3.updateSettings.selector, 7 days);
@@ -74,29 +70,24 @@ contract LoopringV3Owner is DelayedOwner
         // Get the current costs in LRC
         Costs memory lrcCosts = Costs(
             provider.usd2lrc(USD.minExchangeStakeDA),
-            provider.usd2lrc(USD.minExchangeStakeWDA),
-            provider.usd2lrc(USD.revertFine)
+            provider.usd2lrc(USD.minExchangeStakeWDA)
         );
 
         // Set the new LRC values on the protocol contract immediately
         loopringV3.updateSettings(
             loopringV3.protocolFeeVault(),
             loopringV3.blockVerifierAddress(),
-            loopringV3.downtimeCostCalculator(),
             loopringV3.exchangeCreationCostLRC(),
             loopringV3.maxWithdrawalFee(),
             loopringV3.tokenRegistrationFeeLRCBase(),
             loopringV3.tokenRegistrationFeeLRCDelta(),
             lrcCosts.minExchangeStakeDA,
-            lrcCosts.minExchangeStakeWDA,
-            lrcCosts.revertFine,
-            loopringV3.withdrawalFineLRC()
+            lrcCosts.minExchangeStakeWDA
         );
 
         emit LRCValuesUpdated(
             lrcCosts.minExchangeStakeDA,
-            lrcCosts.minExchangeStakeWDA,
-            lrcCosts.revertFine
+            lrcCosts.minExchangeStakeWDA
         );
     }
 }

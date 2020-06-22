@@ -14,7 +14,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
@@ -23,7 +23,6 @@ import "../../iface/ExchangeData.sol";
 import "../../iface/IBlockVerifier.sol";
 import "../../iface/ILoopringV3.sol";
 
-import "./ExchangeAccounts.sol";
 import "./ExchangeTokens.sol";
 
 
@@ -32,7 +31,6 @@ import "./ExchangeTokens.sol";
 /// @author Brecht Devos - <brecht@loopring.org>
 library ExchangeGenesis
 {
-    using ExchangeAccounts  for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
     function initializeGenesisBlock(
@@ -41,8 +39,7 @@ library ExchangeGenesis
         address _loopringAddress,
         address payable _operator,
         bool    _onchainDataAvailability,
-        bytes32 _genesisBlockHash,
-        address _insuranceContract
+        bytes32 _genesisBlockHash
         )
         external
     {
@@ -51,7 +48,6 @@ library ExchangeGenesis
         require(address(0) != _operator, "ZERO_ADDRESS");
         require(_genesisBlockHash != 0, "ZERO_GENESIS_BLOCK_HASH");
         require(S.id == 0, "INITIALIZED_ALREADY");
-        require(address(0) != _insuranceContract, "ZERO_ADDRESS");
 
         S.id = _id;
         S.exchangeCreationTimestamp = now;

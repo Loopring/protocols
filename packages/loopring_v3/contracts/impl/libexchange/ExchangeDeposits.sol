@@ -14,14 +14,13 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 */
-pragma solidity ^0.6.6;
+pragma solidity ^0.6.10;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/ExchangeData.sol";
 
 import "../../lib/AddressUtil.sol";
 
-import "./ExchangeAccounts.sol";
 import "./ExchangeMode.sol";
 import "./ExchangeTokens.sol";
 
@@ -33,7 +32,6 @@ library ExchangeDeposits
 {
     using AddressUtil       for address payable;
     using MathUint          for uint;
-    using ExchangeAccounts  for ExchangeData.State;
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
