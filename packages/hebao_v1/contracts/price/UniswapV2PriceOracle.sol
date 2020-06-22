@@ -30,7 +30,7 @@ import "../lib/MathUint.sol";
 contract UniswapV2PriceOracle is PriceOracle
 {
     using FixedPoint for *;
-    using MathUint for uint;
+    using MathUint   for uint;
 
     IUniswapV2Factory uniswapV2Factory;
     address wethAddress;
@@ -43,20 +43,7 @@ contract UniswapV2PriceOracle is PriceOracle
     {
         uniswapV2Factory = _uniswapV2Factory;
         wethAddress = _wethAddress;
-    }
-
-    // given the cumulative prices of the start and end of a period,
-    // and the length of the period, compute the average
-    // price in terms of how much amount out is received for the amount in
-    function computeAmountOut(
-        uint priceCumulativeStart, uint priceCumulativeEnd,
-        uint timeElapsed, uint amountIn
-    ) private pure returns (uint amountOut) {
-        // overflow is desired.
-        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(
-            uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed)
-        );
-        amountOut = priceAverage.mul(amountIn).decode144();
+        require(_wethAddress != address(0), "INVALID_WETH_ADDRESS");
     }
 
     // Using UniswapV2's sliding window price.
@@ -75,32 +62,35 @@ contract UniswapV2PriceOracle is PriceOracle
         (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) =
             IUniswapV2Pair(pair).getReserves();
 
-        uint timeElapsed = block.timestamp - blockTimestampLast;
         (uint price0Cumulative, uint price1Cumulative,) =
             UniswapV2OracleLibrary.currentCumulativePrices(pair);
-        (address token0,) = sortTokens(token, wethAddress);
-        if (token0 == token) {
-            return computeAmountOut(reserve0,
-                                    price0Cumulative,
-                                    timeElapsed,
-                                    amount);
+
+        uint timeElapsed = block.timestamp - blockTimestampLast;
+
+        if (token < wethAddress) {
+            return computeAmountOut(reserve0, price0Cumulative, timeElapsed, amount);
         } else {
-            return computeAmountOut(reserve1,
-                                    price1Cumulative,
-                                    timeElapsed,
-                                    amount);
+            return computeAmountOut(reserve1, price1Cumulative, timeElapsed, amount);
         }
     }
 
-    /// returns sorted token addresses, used to handle return values from pairs sorted in this order
-    /// taken from UniswapV2Library
-    function sortTokens(address tokenA, address tokenB)
-        internal
+    // Given the cumulative prices of the start and end of a period,
+    // and the length of the period, compute the average
+    // price in terms of how much amount out is received for the amount in
+    function computeAmountOut(
+        uint priceCumulativeStart,
+        uint priceCumulativeEnd,
+        uint timeElapsed,
+        uint amountIn
+        )
+        private
         pure
-        returns (address token0, address token1)
+        returns (uint amountOut)
     {
-        require(tokenA != tokenB, "UniswapV2Library: IDENTICAL_ADDRESSES");
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), "UniswapV2Library: ZERO_ADDRESS");
+        // overflow is desired.
+        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(
+            uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed)
+        );
+        amountOut = priceAverage.mul(amountIn).decode144();
     }
 }
