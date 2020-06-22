@@ -171,6 +171,7 @@ contract("Exchange", (accounts: string[]) => {
 
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
+      const ownerC = exchangeTestUtil.testContext.orderOwners[2];
 
       // Do a transfer
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
@@ -188,6 +189,8 @@ contract("Exchange", (accounts: string[]) => {
         /*fee*/new BN(0),
         3
       );
+
+      await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerC)
 
       /*await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID,

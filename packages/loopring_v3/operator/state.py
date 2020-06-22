@@ -703,8 +703,9 @@ class State(object):
 
             feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
 
-            accountA = self.getAccount(newState.accountA_Address)
             newState.accountA_Address = txInput.accountID
+            accountA = self.getAccount(newState.accountA_Address)
+
             newState.accountA_PublicKeyX = txInput.publicKeyX
             newState.accountA_PublicKeyY = txInput.publicKeyY
             newState.accountA_Nonce = accountA.nonce + 1
@@ -715,6 +716,26 @@ class State(object):
             newState.balanceDeltaB_O = feeValue
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
+
+        elif txInput.txType == "NewAccount":
+
+            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
+
+            newState.accountA_Address = txInput.payerAccountID
+            accountA = self.getAccount(newState.accountA_Address)
+            newState.accountA_Nonce = accountA.nonce + 1
+
+            newState.accountB_Address = txInput.newAccountID
+            newState.accountB_Owner = txInput.newOwner
+            newState.accountB_PublicKeyX = txInput.newPublicKeyX
+            newState.accountB_PublicKeyY = txInput.newPublicKeyY
+
+            newState.balanceA_S_Address = txInput.feeTokenID
+            newState.balanceA_S_Balance = -feeValue
+
+            newState.balanceDeltaB_O = feeValue
+
+            newState.signatureA = txInput.signature
 
 
         # Set default values if none provided

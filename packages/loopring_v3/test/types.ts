@@ -163,6 +163,21 @@ export interface WithdrawalRequest {
   transactionHash?: string;
 }
 
+export interface NewAccount {
+  txType?: "NewAccount";
+  payerAccountID: number;
+  feeTokenID: number;
+  fee: BN;
+  nonce: number;
+
+  newAccountID: number;
+  newOwner: string;
+  newPublicKeyX: string;
+  newPublicKeyY: string;
+
+  signature?: any;
+}
+
 export interface Block {
   blockIdx: number;
   filename: string;

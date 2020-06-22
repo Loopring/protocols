@@ -313,8 +313,7 @@ contract("Exchange", (accounts: string[]) => {
     );
     const block = exchangeTestUtil.pendingBlocks[exchangeID][0];
     assert(
-      block.blockType === BlockType.ONCHAIN_WITHDRAWAL ||
-        block.blockType === BlockType.OFFCHAIN_WITHDRAWAL,
+      block.blockType === BlockType.WITHDRAWAL,
       "unexptected blocktype"
     );
     if (expectedSuccess === undefined) {
@@ -328,7 +327,7 @@ contract("Exchange", (accounts: string[]) => {
       ].owner;
       const deposit: DepositInfo = {
         owner:
-          block.blockType === BlockType.OFFCHAIN_WITHDRAWAL
+          block.blockType === BlockType.WITHDRAWAL
             ? dummyAccountOwner
             : await loopring.protocolFeeVault(),
         token: Constants.zeroAddress,
@@ -336,7 +335,7 @@ contract("Exchange", (accounts: string[]) => {
         fee: new BN(0),
         timestamp: 0,
         accountID:
-          block.blockType === BlockType.OFFCHAIN_WITHDRAWAL
+          block.blockType === BlockType.WITHDRAWAL
             ? exchangeTestUtil.dummyAccountId
             : 0,
         depositIdx: 0
@@ -350,7 +349,7 @@ contract("Exchange", (accounts: string[]) => {
     const withdrawalFee = (await exchange.getFees())._withdrawalFeeETH;
     if (blockFee === undefined) {
       blockFee =
-        block.blockType === BlockType.ONCHAIN_WITHDRAWAL
+        block.blockType === BlockType.WITHDRAWAL
           ? withdrawalFee.mul(new BN(numDeposits))
           : new BN(0);
     }
@@ -483,7 +482,7 @@ contract("Exchange", (accounts: string[]) => {
       );
     }
     // BlockFeeWithdrawn event
-    if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+    if (block.blockType === BlockType.WITHDRAWAL) {
       // Check the event
       const event = await exchangeTestUtil.assertEventEmitted(
         exchange,

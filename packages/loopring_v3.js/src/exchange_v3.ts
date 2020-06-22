@@ -1063,17 +1063,17 @@ export class ExchangeV3 {
       } else if (block.blockType === BlockType.DEPOSIT) {
         requests = DepositProcessor.processBlock(this.state, block);
         block.totalNumDepositsProccesed += replay ? 0 : requests.length;
-      } else if (block.blockType === BlockType.ONCHAIN_WITHDRAWAL) {
+      } else if (block.blockType === BlockType.WITHDRAWAL) {
         requests = OnchainWithdrawalProcessor.processBlock(this.state, block);
         block.totalNumOnchainWithdrawalsProcessed += replay
           ? 0
           : requests.length;
-      } else if (block.blockType === BlockType.OFFCHAIN_WITHDRAWAL) {
+      }/* else if (block.blockType === BlockType.WITHDRAWAL) {
         requests = OffchainWithdrawalProcessor.processBlock(this.state, block);
         block.totalNumOffchainWithdrawalsProcessed += replay
           ? 0
           : requests.length;
-      } else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
+      } */else if (block.blockType === BlockType.INTERNAL_TRANSFER) {
         requests = InternalTransferProcessor.processBlock(this.state, block);
         block.totalNumOrderInternalTransfersProcessed += replay
           ? 0

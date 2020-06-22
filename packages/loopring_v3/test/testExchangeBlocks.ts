@@ -334,14 +334,14 @@ contract("Exchange", (accounts: string[]) => {
             new Array(18).fill(1)
           );
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.ONCHAIN_WITHDRAWAL,
+            BlockType.WITHDRAWAL,
             false,
             2,
             blockVersion,
             new Array(18).fill(1)
           );
           await exchangeTestUtil.blockVerifier.registerCircuit(
-            BlockType.ONCHAIN_WITHDRAWAL,
+            BlockType.WITHDRAWAL,
             false,
             8,
             blockVersion,
@@ -374,7 +374,7 @@ contract("Exchange", (accounts: string[]) => {
             });
           }
 
-          const blockTypes = [BlockType.DEPOSIT, BlockType.ONCHAIN_WITHDRAWAL];
+          const blockTypes = [BlockType.DEPOSIT, BlockType.WITHDRAWAL];
           for (const blockType of blockTypes) {
             let startIndex = 0;
             let startingHash = "0x0";

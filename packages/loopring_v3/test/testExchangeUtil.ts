@@ -50,11 +50,12 @@ import {
   SpotTrade,
   TradeHistory,
   WithdrawalRequest,
+  NewAccount,
 } from "./types";
 import { OffchainWithdrawal } from "loopringV3.js";
 
 
-type TxType = Noop | SpotTrade | Transfer | WithdrawalRequest | Deposit | PublicKeyUpdate;
+type TxType = Noop | SpotTrade | Transfer | WithdrawalRequest | Deposit | PublicKeyUpdate | NewAccount;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -665,6 +666,34 @@ export class ExchangeTestUtil {
     }
   }
 
+  public signNewAccount(create: NewAccount) {
+    // Calculate hash
+    const hasher = Poseidon.createHash(10, 6, 53);
+    const inputs = [
+      this.exchangeId,
+      create.payerAccountID,
+      create.feeTokenID,
+      create.fee,
+      create.nonce,
+      create.newAccountID,
+      create.newOwner,
+      create.newPublicKeyX,
+      create.newPublicKeyY
+    ];
+    const hash = hasher(inputs).toString(10);
+
+    // Create signature
+    const account = this.accounts[this.exchangeId][create.payerAccountID];
+    create.signature = EdDSA.sign(account.secretKey, hash);
+
+    // Verify signature
+    const success = EdDSA.verify(hash, create.signature, [
+      account.publicKeyX,
+      account.publicKeyY
+    ]);
+    assert(success, "Failed to verify signature");
+  }
+
   public async setOrderBalances(order: OrderInfo) {
     const keyPair = this.getKeyPairEDDSA();
     let publicKeyX = keyPair.publicKeyX;
@@ -1196,6 +1225,45 @@ export class ExchangeTestUtil {
     return withdrawalRequest;
   }
 
+  public async requestNewAccount(
+    payerAccountID: number,
+    feeToken: string,
+    fee: BN,
+    newOwner: string
+  ) {
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    const keypair = this.getKeyPairEDDSA();
+    const account: Account = {
+      accountID: this.accounts[this.exchangeId].length,
+      owner: newOwner,
+      publicKeyX: keypair.publicKeyX,
+      publicKeyY: keypair.publicKeyY,
+      secretKey: keypair.secretKey,
+      nonce: 0
+    };
+    this.accounts[this.exchangeId].push(account);
+
+    const newAccount: NewAccount = {
+      txType: "NewAccount",
+      payerAccountID,
+      feeTokenID,
+      fee,
+      nonce: this.accounts[this.exchangeId][payerAccountID].nonce++,
+      newOwner: this.hexToDecString(newOwner),
+      newAccountID: account.accountID,
+      newPublicKeyX: account.publicKeyX,
+      newPublicKeyY: account.publicKeyY
+    };
+    this.signNewAccount(newAccount);
+
+    this.pendingTransactions[this.exchangeId].push(newAccount);
+    return newAccount;
+  }
+
   public addDeposit(
     transactions: TxType[],
     owner: string,
@@ -1406,11 +1474,7 @@ export class ExchangeTestUtil {
     const block: any = {};
     block.blockType = blockType;
     block.blockSize = blockSize;
-    block.onchainDataAvailability =
-      blockType === BlockType.DEPOSIT ||
-      blockType === BlockType.ONCHAIN_WITHDRAWAL
-        ? false
-        : this.onchainDataAvailability;
+    block.onchainDataAvailability = this.onchainDataAvailability;
     fs.writeFileSync(
       blockFilename,
       JSON.stringify(block, undefined, 4),
@@ -2057,7 +2121,7 @@ export class ExchangeTestUtil {
             da.addBN(new BN(transfer.ownerTo), 20);
           } else if (tx.withdraw) {
             const withdraw = tx.withdraw;
-            da.addNumber(BlockType.OFFCHAIN_WITHDRAWAL, 1);
+            da.addNumber(BlockType.WITHDRAWAL, 1);
             da.addNumber(withdraw.type, 1);
             da.addBN(new BN(withdraw.owner), 20);
             da.addNumber(withdraw.accountID, 3);
@@ -2086,6 +2150,16 @@ export class ExchangeTestUtil {
             da.addBN(new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16), 32);
             da.addNumber(update.feeTokenID, 2);
             da.addNumber(toFloat(new BN(update.fee), Constants.Float16Encoding), 2);
+          } else if (tx.newAccount) {
+            const create = tx.newAccount;
+            da.addNumber(BlockType.NEW_ACCOUNT, 1);
+            da.addNumber(create.payerAccountID, 3);
+            da.addNumber(create.nonce, 4);
+            da.addNumber(create.feeTokenID, 2);
+            da.addNumber(toFloat(new BN(create.fee), Constants.Float16Encoding), 2);
+            da.addNumber(create.newAccountID, 3);
+            da.addBN(new BN(create.newOwner), 20);
+            da.addBN(new BN(EdDSA.pack(create.newPublicKeyX, create.newPublicKeyY), 16), 32);
           }
 
           assert(da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE, "tx uses too much da");

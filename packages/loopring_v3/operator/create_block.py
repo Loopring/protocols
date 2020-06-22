@@ -135,6 +135,19 @@ def publicKeyUpdateFromJSON(jUpdate):
     update.onchainSignature = str(jUpdate["onchainSignature"])
     return update
 
+def newAccountFromJSON(jCreate):
+    create = GeneralObject()
+    create.payerAccountID = int(jCreate["payerAccountID"])
+    create.feeTokenID = int(jCreate["feeTokenID"])
+    create.fee = str(jCreate["fee"])
+    create.nonce = str(jCreate["nonce"])
+    create.newAccountID = int(jCreate["newAccountID"])
+    create.newOwner = str(jCreate["newOwner"])
+    create.newPublicKeyX = str(jCreate["newPublicKeyX"])
+    create.newPublicKeyY = str(jCreate["newPublicKeyY"])
+    create.signature = jCreate["signature"]
+    return create
+
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
     orderB = orderFromJSON(jRing["orderB"], state)
@@ -172,6 +185,8 @@ def createBlock(state, data):
             transaction = depositFromJSON(transactionInfo)
         if txType == "PublicKeyUpdate":
             transaction = publicKeyUpdateFromJSON(transactionInfo)
+        if txType == "NewAccount":
+            transaction = newAccountFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -189,6 +204,8 @@ def createBlock(state, data):
             txWitness.deposit = tx.input
         if txType == "PublicKeyUpdate":
             txWitness.publicKeyUpdate = tx.input
+        if txType == "NewAccount":
+            txWitness.newAccount = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

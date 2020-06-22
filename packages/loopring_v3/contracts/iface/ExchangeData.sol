@@ -34,8 +34,8 @@ library ExchangeData
         NOOP,
         SPOT_TRADE,
         DEPOSIT,
-        ONCHAIN_WITHDRAWAL,
-        OFFCHAIN_WITHDRAWAL,
+        NEW_ACCOUNT,
+        WITHDRAWAL,
         PUBLICKEY_UPDATE,
         TRANSFER
     }

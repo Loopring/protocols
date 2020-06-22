@@ -283,7 +283,7 @@ library ExchangeBlocks
                         txData,
                         txAuxiliaryData[i].data
                     );
-                } else if (txType == ExchangeData.TransactionType.OFFCHAIN_WITHDRAWAL) {
+                } else if (txType == ExchangeData.TransactionType.WITHDRAWAL) {
                     txFeeETH = WithdrawTransaction.process(
                         S,
                         txData,
