@@ -1,4 +1,4 @@
-pragma solidity >=0.5.0;
+pragma solidity ^0.6.6;
 
 import "./IUniswapV2Pair.sol";
 import "./FixedPoint.sol";
