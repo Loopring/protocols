@@ -18,6 +18,8 @@ pragma solidity ^0.6.6;
 
 import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
 import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
+import "../thirdparty/uniswap2/FixedPoint.sol";
+import "../thirdparty/uniswap2/UniswapV2OracleLibrary.sol";
 
 import "../iface/PriceOracle.sol";
 
@@ -27,7 +29,8 @@ import "../lib/MathUint.sol";
 /// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapV2PriceOracle is PriceOracle
 {
-    using MathUint for uint;
+    using FixedPoint for *;
+    using MathUint   for uint;
 
     IUniswapV2Factory uniswapV2Factory;
     address wethAddress;
@@ -40,6 +43,7 @@ contract UniswapV2PriceOracle is PriceOracle
     {
         uniswapV2Factory = _uniswapV2Factory;
         wethAddress = _wethAddress;
+        require(_wethAddress != address(0), "INVALID_WETH_ADDRESS");
     }
 
     // Using UniswapV2's sliding window price.
@@ -55,6 +59,38 @@ contract UniswapV2PriceOracle is PriceOracle
         address pair = uniswapV2Factory.getPair(token, wethAddress);
         if (pair == address(0)) return 0; // no pair
 
-        return IUniswapV2Pair(pair).price1CumulativeLast().mul(amount);
+        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) =
+            IUniswapV2Pair(pair).getReserves();
+
+        (uint price0Cumulative, uint price1Cumulative,) =
+            UniswapV2OracleLibrary.currentCumulativePrices(pair);
+
+        uint timeElapsed = block.timestamp - blockTimestampLast;
+
+        if (token < wethAddress) {
+            return computeAmountOut(reserve0, price0Cumulative, timeElapsed, amount);
+        } else {
+            return computeAmountOut(reserve1, price1Cumulative, timeElapsed, amount);
+        }
+    }
+
+    // Given the cumulative prices of the start and end of a period,
+    // and the length of the period, compute the average
+    // price in terms of how much amount out is received for the amount in
+    function computeAmountOut(
+        uint priceCumulativeStart,
+        uint priceCumulativeEnd,
+        uint timeElapsed,
+        uint amountIn
+        )
+        private
+        pure
+        returns (uint amountOut)
+    {
+        // overflow is desired.
+        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(
+            uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed)
+        );
+        amountOut = priceAverage.mul(amountIn).decode144();
     }
 }
