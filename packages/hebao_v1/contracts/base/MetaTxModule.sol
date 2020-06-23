@@ -233,7 +233,7 @@ abstract contract MetaTxModule is BaseModule
 
         emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
-        if (gasSettings.price != 0) {
+        if (gasSettings.price != 0 && reimbursable(extractMethod(data))) {
             reimburseGasFee(wallet, gasSettings, gasUsed);
         }
     }
@@ -300,6 +300,14 @@ abstract contract MetaTxModule is BaseModule
         returns (bool)
     {
         return (signers.length == 1 && signers[0] == signer);
+    }
+
+    function reimbursable(bytes4 method)
+        internal
+        view
+        virtual
+        returns (bool) {
+        return true;
     }
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
