@@ -18,35 +18,32 @@ pragma solidity ^0.6.6;
 
 import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
 import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
-import "../thirdparty/uniswap2/FixedPoint.sol";
-import "../thirdparty/uniswap2/UniswapV2OracleLibrary.sol";
 
 import "../iface/PriceOracle.sol";
 
 import "../lib/MathUint.sol";
 
+
 /// @title Uniswap2PriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapV2PriceOracle is PriceOracle
 {
-    using FixedPoint for *;
     using MathUint   for uint;
 
-    IUniswapV2Factory uniswapV2Factory;
+    IUniswapV2Factory factory;
     address wethAddress;
 
     constructor(
-        IUniswapV2Factory _uniswapV2Factory,
+        IUniswapV2Factory _factory,
         address           _wethAddress
         )
         public
     {
-        uniswapV2Factory = _uniswapV2Factory;
+        factory = _factory;
         wethAddress = _wethAddress;
         require(_wethAddress != address(0), "INVALID_WETH_ADDRESS");
     }
 
-    // Using UniswapV2's sliding window price.
     function tokenValue(address token, uint amount)
         public
         view
@@ -56,41 +53,21 @@ contract UniswapV2PriceOracle is PriceOracle
         if (amount == 0) return 0;
         if (token == address(0) || token == wethAddress) return amount;
 
-        address pair = uniswapV2Factory.getPair(token, wethAddress);
-        if (pair == address(0)) return 0; // no pair
+        address pair = factory.getPair(token, wethAddress);
+        if (pair == address(0)) {
+            return 0;
+        }
 
-        (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast) =
-            IUniswapV2Pair(pair).getReserves();
+        (uint112 reserve0, uint112 reserve1,) = IUniswapV2Pair(pair).getReserves();
 
-        (uint price0Cumulative, uint price1Cumulative,) =
-            UniswapV2OracleLibrary.currentCumulativePrices(pair);
-
-        uint timeElapsed = block.timestamp - blockTimestampLast;
+        if (reserve0 == 0 || reserve1 == 0) {
+            return 0;
+        }
 
         if (token < wethAddress) {
-            return computeAmountOut(reserve0, price0Cumulative, timeElapsed, amount);
+            return amount.mul(reserve1) / reserve0;
         } else {
-            return computeAmountOut(reserve1, price1Cumulative, timeElapsed, amount);
+            return amount.mul(reserve0) / reserve1;
         }
-    }
-
-    // Given the cumulative prices of the start and end of a period,
-    // and the length of the period, compute the average
-    // price in terms of how much amount out is received for the amount in
-    function computeAmountOut(
-        uint priceCumulativeStart,
-        uint priceCumulativeEnd,
-        uint timeElapsed,
-        uint amountIn
-        )
-        private
-        pure
-        returns (uint amountOut)
-    {
-        // overflow is desired.
-        FixedPoint.uq112x112 memory priceAverage = FixedPoint.uq112x112(
-            uint224((priceCumulativeEnd - priceCumulativeStart) / timeElapsed)
-        );
-        amountOut = priceAverage.mul(amountIn).decode144();
     }
 }
