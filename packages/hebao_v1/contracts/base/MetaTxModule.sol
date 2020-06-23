@@ -189,12 +189,12 @@ abstract contract MetaTxModule is BaseModule
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
-        address wallet = extractWalletAddress(data);
+        (address msgSender, address wallet) = extractWalletAddresses(data);
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
             hash(
                 MetaTransaction(
-                    wallet,
+                    msgSender,
                     address(this),
                     msg.value,
                     data,
@@ -215,7 +215,7 @@ abstract contract MetaTxModule is BaseModule
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(wallet, nonce, metaTxHash);
+        saveExecutedMetaTx(msgSender, nonce, metaTxHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -233,7 +233,7 @@ abstract contract MetaTxModule is BaseModule
         emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
-            reimburseGasFee(wallet, gasSettings, gasUsed);
+            reimburseGasFee(msgSender, gasSettings, gasUsed);
         }
     }
 
@@ -302,13 +302,14 @@ abstract contract MetaTxModule is BaseModule
     }
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
-    function extractWalletAddress(bytes memory data)
+    function extractWalletAddresses(bytes memory data)
         internal
         view
         virtual
-        returns (address wallet)
+        returns (address msgSender, address wallet)
     {
-        wallet = extractAddressFromCallData(data, 0);
+        msgSender = extractAddressFromCallData(data, 0);
+        wallet = msgSender;
     }
 
     /// @dev Returns the address stored in the call data

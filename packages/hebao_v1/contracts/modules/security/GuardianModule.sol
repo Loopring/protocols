@@ -197,6 +197,22 @@ contract GuardianModule is SecurityModule
         return isWalletLocked(wallet);
     }
 
+    function extractWalletAddresses(bytes memory data)
+        internal
+        view
+        virtual
+        returns (address msgSender, address wallet)
+    {
+        bytes4 method = extractMethod(data);
+
+        if (method == this.lock.selector ||
+            method == this.unlock.selector) {
+            msgSender = extractAddressFromCallData(data, 1);
+            wallet = extractAddressFromCallData(data, 0);
+        } else {
+            return super.extractWalletAddresses(data);
+        }
+    }
     function verifySigners(
         address   wallet,
         bytes4    method,
