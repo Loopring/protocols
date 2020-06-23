@@ -201,6 +201,7 @@ contract GuardianModule is SecurityModule
         internal
         view
         virtual
+        override
         returns (address msgSender, address wallet)
     {
         bytes4 method = extractMethod(data);
@@ -213,6 +214,7 @@ contract GuardianModule is SecurityModule
             return super.extractWalletAddresses(data);
         }
     }
+
     function verifySigners(
         address   wallet,
         bytes4    method,

@@ -112,14 +112,15 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         }
     }
 
-    function extractWalletAddress(bytes memory data)
+    function extractWalletAddresses(bytes memory data)
         internal
         view
         override
-        returns (address wallet)
+        returns (address msgSender, address wallet)
     {
         require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
         address owner = extractAddressFromCallData(data, 0);
         wallet = computeWalletAddress(owner);
+        msgSender = wallet;
     }
 }
