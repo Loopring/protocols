@@ -146,7 +146,7 @@ abstract contract MetaTxModule is BaseModule
         return true;
     }
 
-    /// @dev Execute a signed meta transaction.
+    /// @dev Execute a signed meta transaction on behalf of a wallet!
     ///      This method can be called by any relayer without restriction. The relayer
     ///      will pay for transaction gas in Ether and charge the wallet Ether or other
     ///      ERC20 tokens as fee. If gasPrice is set to 0, then the relayer won't charge
@@ -189,12 +189,12 @@ abstract contract MetaTxModule is BaseModule
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
-        (address msgSender, address wallet) = extractWalletAddresses(data);
+        (address senderWallet, address wallet) = extractWalletAddresses(data);
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
             hash(
                 MetaTransaction(
-                    msgSender,
+                    senderWallet,
                     address(this),
                     msg.value,
                     data,
@@ -215,7 +215,7 @@ abstract contract MetaTxModule is BaseModule
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
         // (the only exploit possible here is that the transaction can be executed multiple times).
-        saveExecutedMetaTx(msgSender, nonce, metaTxHash);
+        saveExecutedMetaTx(senderWallet, nonce, metaTxHash);
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
@@ -233,7 +233,7 @@ abstract contract MetaTxModule is BaseModule
         emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
-            reimburseGasFee(msgSender, gasSettings, gasUsed);
+            reimburseGasFee(senderWallet, gasSettings, gasUsed);
         }
     }
 
@@ -306,10 +306,10 @@ abstract contract MetaTxModule is BaseModule
         internal
         view
         virtual
-        returns (address msgSender, address wallet)
+        returns (address senderWallet, address wallet)
     {
-        msgSender = extractAddressFromCallData(data, 0);
-        wallet = msgSender;
+        senderWallet = extractAddressFromCallData(data, 0);
+        wallet = senderWallet;
     }
 
     /// @dev Returns the address stored in the call data
@@ -429,19 +429,19 @@ abstract contract MetaTxModule is BaseModule
     /// @param nonce The nonce
     /// @param metaTxHash The signed hash of the transaction
     function saveExecutedMetaTx(
-        address wallet,
+        address senderWallet,
         uint    nonce,
         bytes32 metaTxHash
         )
         private
     {
         if (nonce == 0) {
-            require(!wallets[wallet].metaTxHash[metaTxHash], "INVALID_HASH");
-            wallets[wallet].metaTxHash[metaTxHash] = true;
+            require(!wallets[senderWallet].metaTxHash[metaTxHash], "INVALID_HASH");
+            wallets[senderWallet].metaTxHash[metaTxHash] = true;
         } else {
-            require(nonce > wallets[wallet].nonce, "NONCE_TOO_SMALL");
+            require(nonce > wallets[senderWallet].nonce, "NONCE_TOO_SMALL");
             require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
-            wallets[wallet].nonce = nonce;
+            wallets[senderWallet].nonce = nonce;
         }
     }
 
