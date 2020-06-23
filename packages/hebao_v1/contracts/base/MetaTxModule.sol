@@ -386,26 +386,38 @@ abstract contract MetaTxModule is BaseModule
 
     function reimburseGasFee(
         address     wallet,
-        GasSettings memory gasSettings,
-        uint        gasUsed
+        address     feeRecipient,
+        address     feeToken,
+        uint        feeAmount
         )
-        private
+        internal
     {
-        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
-        updateQuota(wallet, gasSettings.token, gasCost);
+        updateQuota(wallet, feeToken, feeAmount);
 
-        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
-        if (gasSettings.token == address(0)) {
-            transactCall(wallet, feeRecipient, gasCost, "");
+        if (feeToken == address(0)) {
+            transactCall(wallet, feeRecipient, feeAmount, "");
         } else {
             require(
-                transactTokenTransfer(wallet, gasSettings.token, feeRecipient, gasCost),
+                transactTokenTransfer(wallet, feeToken, feeRecipient, feeAmount),
                 "TRANSFER_FAILED"
             );
         }
     }
 
     // ---- private functions -----
+
+    function reimburseGasFee(
+        address     wallet,
+        GasSettings memory gasSettings,
+        uint        gasUsed
+        )
+        private
+    {
+        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
+        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
+
+        reimburseGasFee(wallet, feeRecipient, gasSettings.token, gasCost);
+    }
 
     function checkSigners(
         address   wallet,
@@ -426,7 +438,7 @@ abstract contract MetaTxModule is BaseModule
 
     /// @dev Save the meta-transaction to history.
     ///      This method must throw if the transaction is not unique or the nonce is invalid.
-    /// @param wallet The target wallet.
+    /// @param senderWallet The target wallet.
     /// @param nonce The nonce
     /// @param metaTxHash The signed hash of the transaction
     function saveExecutedMetaTx(
