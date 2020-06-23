@@ -116,11 +116,11 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         internal
         view
         override
-        returns (address msgSender, address wallet)
+        returns (address senderWallet, address targetWallet)
     {
         require(extractMethod(data) == this.createWallet.selector, "INVALID_METHOD");
         address owner = extractAddressFromCallData(data, 0);
-        wallet = computeWalletAddress(owner);
-        msgSender = wallet;
+        targetWallet = computeWalletAddress(owner);
+        senderWallet = targetWallet;
     }
 }
