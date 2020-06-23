@@ -90,7 +90,6 @@ abstract contract MetaTxModule is BaseModule
     mapping (address => WalletState) public wallets;
 
     event MetaTxExecuted(
-        address indexed transactor,
         address indexed senderWallet,
         address indexed targetWallet,
         uint    nonce,
@@ -231,10 +230,12 @@ abstract contract MetaTxModule is BaseModule
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
         gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
 
-        emit MetaTxExecuted(msg.sender, senderWallet, targetWallet, nonce, metaTxHash, gasUsed, success, returnData);
+        emit MetaTxExecuted(senderWallet, targetWallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
-            reimburseGasFee(senderWallet, gasSettings, gasUsed);
+            uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
+            address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
+            reimburseGasFee(senderWallet, feeRecipient, gasSettings.token, gasCost);
         }
     }
 
@@ -405,19 +406,6 @@ abstract contract MetaTxModule is BaseModule
     }
 
     // ---- private functions -----
-
-    function reimburseGasFee(
-        address     wallet,
-        GasSettings memory gasSettings,
-        uint        gasUsed
-        )
-        private
-    {
-        uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
-        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
-
-        reimburseGasFee(wallet, feeRecipient, gasSettings.token, gasCost);
-    }
 
     function checkSigners(
         address   wallet,
