@@ -21,6 +21,7 @@ import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
 import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 
+
 /// @title Uniswap2PriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapV2PriceOracle is PriceOracle
@@ -50,13 +51,12 @@ contract UniswapV2PriceOracle is PriceOracle
         if (amount == 0) return 0;
         if (token == address(0) || token == wethAddress) return amount;
 
-        address pairAddress = factory.getPair(token, wethAddress);
-        if (pairAddress == address(0)) {
+        address pair = factory.getPair(token, wethAddress);
+        if (pair == address(0)) {
             return 0;
         }
 
-        IUniswapV2Pair pair = IUniswapV2Pair(pairAddress);
-        (uint112 reserve0, uint112 reserve1,) = pair.getReserves();
+        (uint112 reserve0, uint112 reserve1,) = IUniswapV2Pair(pair).getReserves();
 
         if (reserve0 == 0 || reserve1 == 0) {
             return 0;
