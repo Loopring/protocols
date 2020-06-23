@@ -18,19 +18,13 @@ pragma solidity ^0.6.6;
 
 import "../thirdparty/uniswap2/IUniswapV2Factory.sol";
 import "../thirdparty/uniswap2/IUniswapV2Pair.sol";
-import "../thirdparty/uniswap2/FixedPoint.sol";
-import "../thirdparty/uniswap2/UniswapV2Library.sol";
-import "../thirdparty/uniswap2/UniswapV2OracleLibrary.sol";
-
 import "../iface/PriceOracle.sol";
-
 import "../lib/MathUint.sol";
 
 /// @title Uniswap2PriceOracle
 /// @dev Returns the value in Ether for any given ERC20 token.
 contract UniswapV2PriceOracle is PriceOracle
 {
-    using FixedPoint for *;
     using MathUint   for uint;
 
     IUniswapV2Factory factory;
@@ -68,44 +62,10 @@ contract UniswapV2PriceOracle is PriceOracle
             return 0;
         }
 
-        (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
-            UniswapV2OracleLibrary.currentCumulativePrices(pairAddress);
-
-        uint timeElapsed = block.timestamp - blockTimestamp;
-
         if (token < wethAddress) {
-            return computeAmountOut(
-                price0Cumulative,
-                pair.price0CumulativeLast(),
-                timeElapsed,
-                amount
-            );
+            return amount.mul(reserve1) / reserve0;
         } else {
-            return computeAmountOut(
-                price1Cumulative,
-                pair.price1CumulativeLast(),
-                timeElapsed,
-                amount
-            );
+            return amount.mul(reserve0) / reserve1;
         }
-    }
-
-    // Given the cumulative prices of the start and end of a period,
-    // and the length of the period, compute the average
-    // price in terms of how much amount out is received for the amount in
-    function computeAmountOut(
-        uint price1Cumulative,
-        uint price1CumulativeLast,
-        uint timeElapsed,
-        uint amountIn
-        )
-        private
-        pure
-        returns (uint amountOut)
-    {
-        // overflow is desired.
-        return FixedPoint.uq112x112(
-            uint224((price1Cumulative - price1CumulativeLast) / timeElapsed)
-        ).mul(amountIn).decode144();
     }
 }
