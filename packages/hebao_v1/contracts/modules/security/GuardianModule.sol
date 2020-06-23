@@ -202,14 +202,14 @@ contract GuardianModule is SecurityModule
         view
         virtual
         override
-        returns (address senderWallet, address wallet)
+        returns (address senderWallet, address targetWallet)
     {
         bytes4 method = extractMethod(data);
 
         if (method == this.lock.selector ||
             method == this.unlock.selector) {
             senderWallet = extractAddressFromCallData(data, 1);
-            wallet = extractAddressFromCallData(data, 0);
+            targetWallet = extractAddressFromCallData(data, 0);
         } else {
             return super.extractWalletAddresses(data);
         }

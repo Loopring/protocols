@@ -91,7 +91,8 @@ abstract contract MetaTxModule is BaseModule
 
     event MetaTxExecuted(
         address indexed transactor,
-        address indexed wallet,
+        address indexed senderWallet,
+        address indexed targetWallet,
         uint    nonce,
         bytes32 metaTxHash,
         uint    gasUsed,
@@ -189,7 +190,7 @@ abstract contract MetaTxModule is BaseModule
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
 
-        (address senderWallet, address wallet) = extractWalletAddresses(data);
+        (address senderWallet, address targetWallet) = extractWalletAddresses(data);
         bytes32 metaTxHash = EIP712.hashPacked(
             DOMAIN_SEPARATOR,
             hash(
@@ -210,7 +211,7 @@ abstract contract MetaTxModule is BaseModule
         );
 
         // Get the signers necessary for this meta transaction.
-        require(checkSigners(wallet, data, signers), "METATX_UNAUTHORIZED");
+        require(checkSigners(targetWallet, data, signers), "METATX_UNAUTHORIZED");
         require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
 
         // Mark the transaction as used before doing the call to guard against re-entrancy
@@ -219,7 +220,7 @@ abstract contract MetaTxModule is BaseModule
 
         // Deposit msg.value to the wallet so it can be used from the wallet
         if (msg.value > 0) {
-            wallet.sendETHAndVerify(msg.value, gasleft());
+            targetWallet.sendETHAndVerify(msg.value, gasleft());
         }
 
         require(gasleft() >= (gasSettings.limit.mul(64) / 63).add(60000), "INSUFFICIENT_GAS");
@@ -230,7 +231,7 @@ abstract contract MetaTxModule is BaseModule
         // The gas amount measured could be a little bit higher because of the extra costs to do the call itself
         gasUsed = gasUsed < gasSettings.limit ? gasUsed : gasSettings.limit;
 
-        emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
+        emit MetaTxExecuted(msg.sender, senderWallet, targetWallet, nonce, metaTxHash, gasUsed, success, returnData);
 
         if (gasSettings.price != 0) {
             reimburseGasFee(senderWallet, gasSettings, gasUsed);
@@ -306,10 +307,10 @@ abstract contract MetaTxModule is BaseModule
         internal
         view
         virtual
-        returns (address senderWallet, address wallet)
+        returns (address senderWallet, address targetWallet)
     {
         senderWallet = extractAddressFromCallData(data, 0);
-        wallet = senderWallet;
+        targetWallet = senderWallet;
     }
 
     /// @dev Returns the address stored in the call data
