@@ -36,6 +36,12 @@ contract BaseModule is ReentrancyGuard, Module
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
+    modifier onlyFrom(address sender) virtual
+    {
+        require(msg.sender == sender, "INVALID_SENDER");
+        _;
+    }
+
     modifier onlyFromWallet(address wallet) virtual
     {
         require(msg.sender == wallet, "NOT_FROM_WALLET");

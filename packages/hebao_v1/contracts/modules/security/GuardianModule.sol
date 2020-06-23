@@ -129,7 +129,7 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         // onlyWhenWalletUnlocked(wallet)
-        onlyFromMetaTxOr(guardian)
+        onlyFrom(guardian)
         onlyWalletGuardian(wallet, guardian)
         onlyHaveEnoughGuardians(wallet)
     {
@@ -143,7 +143,7 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         // onlyWhenWalletLocked(wallet)
-        onlyFromMetaTxOr(guardian)
+        onlyFrom(guardian)
         onlyWalletGuardian(wallet, guardian)
     {
         unlockWallet(wallet, false);
