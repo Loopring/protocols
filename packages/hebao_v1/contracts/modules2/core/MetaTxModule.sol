@@ -41,7 +41,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
     {
     }
 
-    modifier onlyFromWallet(address wallet) virtual override {
+    modifier onlyFromWallet(address wallet) virtual  {
         require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
