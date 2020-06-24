@@ -27,9 +27,7 @@ contract ApprovedTransfers is TransferModule
 {
     constructor(Controller _controller)
         public
-        TransferModule(_controller)
-    {
-    }
+        TransferModule(_controller) {}
 
     function transferToken(
         address            wallet,

@@ -45,9 +45,7 @@ abstract contract TransferModule is SecurityModule
 
     constructor(Controller _controller)
         public
-        SecurityModule(_controller)
-    {
-    }
+        SecurityModule(_controller) {}
 
     function transferInternal(
         address wallet,

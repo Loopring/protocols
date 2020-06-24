@@ -28,9 +28,7 @@ contract DappTransfers is TransferModule
 
     constructor(Controller _controller)
         public
-        TransferModule(_controller)
-    {
-    }
+        TransferModule(_controller) {}
 
     modifier onlyWhitelistedDapp(address addr)
     {
