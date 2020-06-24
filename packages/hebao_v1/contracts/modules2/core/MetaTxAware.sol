@@ -26,7 +26,7 @@ import "../../thirdparty/BytesUtil.sol";
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
-contract MetaTxAware
+abstract contract MetaTxAware
 {
     using AddressUtil for address;
     using BytesUtil   for bytes;

@@ -32,7 +32,7 @@ import "../../iface/Module.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseModule is ReentrancyGuard, Module
+abstract contract BaseModule is ReentrancyGuard, Module
 {
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
