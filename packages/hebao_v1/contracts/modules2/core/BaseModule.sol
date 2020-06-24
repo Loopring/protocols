@@ -15,6 +15,7 @@
   limitations under the License.
 */
 pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 import "../../lib/ReentrancyGuard.sol";

@@ -51,6 +51,7 @@ abstract contract MetaTxRelayerModule is MetaTxRelayer, BaseModule
         returns (bool abort)
     {
         require(gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(100000), "INSUFFICIENT_GAS");
+        require(controller.walletRegistry().isWalletRegistered(metaTx.from), "NOT_A_WALLET");
     }
 
     function postExecute(
@@ -65,8 +66,7 @@ abstract contract MetaTxRelayerModule is MetaTxRelayer, BaseModule
     {
         uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
-        if (metaTx.gasPrice > 0 &&
-            controller.walletRegistry().isWalletRegistered(metaTx.from)) {
+        if (metaTx.gasPrice > 0) {
             reimburseGasFee(metaTx.from, metaTx.gasToken, metaTx.gasPrice, gasAmount);
         }
     }

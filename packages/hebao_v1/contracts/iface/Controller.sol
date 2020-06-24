@@ -19,6 +19,7 @@ pragma solidity ^0.6.6;
 import "./ModuleRegistry.sol";
 import "./WalletRegistry.sol";
 
+import "../stores/NonceStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
 import "../stores/DappAddressStore.sol";
@@ -45,6 +46,7 @@ contract Controller
     SecurityStore           public securityStore;
     DappAddressStore        public dappAddressStore;
     WhitelistStore          public whitelistStore;
+    NonceStore              public nonceStore;
 
     PriceOracle             public priceOracle;
     WalletENSManager        public ensManager;

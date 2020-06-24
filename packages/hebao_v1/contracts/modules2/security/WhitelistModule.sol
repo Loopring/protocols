@@ -26,7 +26,40 @@ import "../../modules/security/GuardianUtils.sol";
 
 import "./SecurityModule.sol";
 
+library MultiSigRequest {
+    using SignatureUtil for bytes32;
 
+    struct Request {
+        address[] signers;
+        bytes[]   signatures;
+        uint      nonce;
+        address   wallet;
+    }
+
+
+    function verifySignatures(Request memory request, bytes32 txHash)
+        public
+    {
+        require(txHash.verifySignatures(request.signers, request.signatures), "INVALID_SIGNATURES");
+    }
+
+    function verifyPermission(
+        Controller controller,
+        Request memory request,
+        GuardianUtils.SigRequirement sigRequirement)
+        public
+    {
+        require(
+            GuardianUtils.requireMajority(
+                controller.securityStore(),
+                request.wallet,
+                request.signers,
+                sigRequirement
+            ),
+            "PERMISSION_DENIED"
+        );
+    }
+}
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
@@ -61,28 +94,21 @@ contract WhitelistModule is SecurityModule
     }
 
     function addToWhitelistImmediately(
-        address            wallet,
-        address            addr,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        MultiSigRequest.Request calldata request ,
+        address         addr
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletUnlocked(request.wallet)
+        // verifyPermissionAndUpdateNonce(signers, wallet,  GuardianUtils.SigRequirement.OwnerRequired)
     {
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerRequired
-            ),
-            "PERMISSION_DENIED"
-        );
+        bytes32 txhash; // TODO... nonce?
+        MultiSigRequest.verifySignatures(request, txhash);
 
-        controller.whitelistStore().addToWhitelist(wallet, addr, now);
+        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
+
+
+        controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }
 
     function removeFromWhitelist(

@@ -15,8 +15,13 @@
   limitations under the License.
 */
 pragma solidity ^0.6.6;
+pragma experimental ABIEncoderV2;
 
 import "../../iface/Module.sol";
+
+import "../../lib/SignatureUtil.sol";
+
+import "../../modules/security/GuardianUtils.sol";
 
 import "./BaseModule.sol";
 import "./MetaTxAware.sol";
@@ -31,6 +36,8 @@ import "./MetaTxAware.sol";
 /// https://github.com/opengsn/gsn/contracts
 abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
+    using SignatureUtil for bytes32;
+
     constructor(
         Controller _controller,
         address    _trustedRelayer
@@ -43,6 +50,29 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 
     modifier onlyFromWallet(address wallet) virtual  {
         require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+        _;
+    }
+
+    modifier verifyPermissionAndUpdateNonce(
+        address[] memory signers,
+        address          wallet,
+        GuardianUtils.SigRequirement sigRequirement
+        // uint nonce
+        )
+    {
+        require(
+            GuardianUtils.requireMajority(
+                controller.securityStore(),
+                wallet,
+                signers,
+                sigRequirement
+            ),
+            "PERMISSION_DENIED"
+        );
+
+        // controller.nonceStore().verifyNonce(wallet, nonce);
+        // controller.nonceStore().updateNonce(wallet);
+
         _;
     }
 
