@@ -26,40 +26,7 @@ import "../../modules/security/GuardianUtils.sol";
 
 import "./SecurityModule.sol";
 
-library MultiSigRequest {
-    using SignatureUtil for bytes32;
 
-    struct Request {
-        address[] signers;
-        bytes[]   signatures;
-        uint      nonce;
-        address   wallet;
-    }
-
-
-    function verifySignatures(Request memory request, bytes32 txHash)
-        public
-    {
-        require(txHash.verifySignatures(request.signers, request.signatures), "INVALID_SIGNATURES");
-    }
-
-    function verifyPermission(
-        Controller controller,
-        Request memory request,
-        GuardianUtils.SigRequirement sigRequirement)
-        public
-    {
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                request.wallet,
-                request.signers,
-                sigRequirement
-            ),
-            "PERMISSION_DENIED"
-        );
-    }
-}
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
@@ -94,20 +61,15 @@ contract WhitelistModule is SecurityModule
     }
 
     function addToWhitelistImmediately(
-        MultiSigRequest.Request calldata request ,
+        WalletMultisig.Request calldata request ,
         address         addr
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
-        // verifyPermissionAndUpdateNonce(signers, wallet,  GuardianUtils.SigRequirement.OwnerRequired)
     {
         bytes32 txhash; // TODO... nonce?
-        MultiSigRequest.verifySignatures(request, txhash);
-
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-
-
+        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }
 

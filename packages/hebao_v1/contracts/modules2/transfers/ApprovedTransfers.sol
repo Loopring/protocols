@@ -33,113 +33,68 @@ contract ApprovedTransfers is TransferModule
         TransferModule(_controller, _trustedRelayer) {}
 
     function transferToken(
-        address            wallet,
+        WalletMultisig.Request calldata request,
         address            token,
         address            to,
         uint               amount,
-        bytes     calldata logdata,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        bytes     calldata logdata
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerRequired
-            ),
-            "PERMISSION_DENIED"
-        );
-        transferInternal(wallet, token, to, amount, logdata);
+        bytes32 txhash; // TODO... nonce?
+        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        transferInternal(request.wallet, token, to, amount, logdata);
     }
 
     function approveToken(
-        address            wallet,
+        WalletMultisig.Request calldata request,
         address            token,
         address            to,
-        uint               amount,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        uint               amount
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerRequired
-            ),
-            "PERMISSION_DENIED"
-        );
-        approveInternal(wallet, token, to, amount);
+        bytes32 txhash; // TODO... nonce?
+        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        approveInternal(request.wallet, token, to, amount);
     }
 
     function callContract(
-        address            wallet,
+        WalletMultisig.Request calldata request,
         address            to,
         uint               value,
-        bytes     calldata data,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        bytes     calldata data
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerRequired
-            ),
-            "PERMISSION_DENIED"
-        );
-        return callContractInternal(wallet, to, value, data);
+        bytes32 txhash; // TODO... nonce?
+        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        return callContractInternal(request.wallet, to, value, data);
     }
 
     function approveThenCallContract(
-        address            wallet,
+        WalletMultisig.Request calldata request,
         address            token,
         address            to,
         uint               amount,
         uint               value,
-        bytes     calldata data,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        bytes     calldata data
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerRequired
-            ),
-            "PERMISSION_DENIED"
-        );
-        approveInternal(wallet, token, to, amount);
-        return callContractInternal(wallet, to, value, data);
+        bytes32 txhash; // TODO... nonce?
+        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        approveInternal(request.wallet, token, to, amount);
+        return callContractInternal(request.wallet, to, value, data);
     }
 }

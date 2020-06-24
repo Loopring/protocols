@@ -55,27 +55,16 @@ contract QuotaTransfers is TransferModule
     }
 
     function changeDailyQuotaImmediately(
-        address            wallet,
-        uint               newQuota,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        WalletMultisig.Request calldata request,
+        uint newQuota
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(wallet)
+        onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerRequired
-            ),
-            "PERMISSION_DENIED"
-        );
-        controller.quotaStore().changeQuota(wallet, newQuota, now);
+        bytes32 txhash; // TODO... nonce?
+        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        controller.quotaStore().changeQuota(request.wallet, newQuota, now);
     }
 
     function transferToken(

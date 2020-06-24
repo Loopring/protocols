@@ -25,6 +25,7 @@ import "../../modules/security/GuardianUtils.sol";
 
 import "./BaseModule.sol";
 import "./MetaTxAware.sol";
+import "./WalletMultisig.sol";
 
 
 /// @title MetaTxModule
@@ -36,7 +37,8 @@ import "./MetaTxAware.sol";
 /// https://github.com/opengsn/gsn/contracts
 abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
-    using SignatureUtil for bytes32;
+    using SignatureUtil  for bytes32;
+    using WalletMultisig for Controller;
 
     constructor(
         Controller _controller,
