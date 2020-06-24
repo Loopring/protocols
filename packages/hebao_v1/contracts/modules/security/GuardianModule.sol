@@ -229,4 +229,18 @@ contract GuardianModule is SecurityModule
             revert("INVALID_METHOD");
         }
     }
+
+    function reimbursable(bytes4 method)
+        internal
+        view
+        override
+        returns (bool) {
+        if (method == this.lock.selector || method == this.unlock.selector) {
+            return false;
+        } else {
+            return true;
+        }
+
+    }
+
 }

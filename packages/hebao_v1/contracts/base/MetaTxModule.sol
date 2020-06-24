@@ -188,6 +188,7 @@ abstract contract MetaTxModule is BaseModule
             address(gasSetting[4])
         );
         require(gasSettings.limit > 0, "INVALID_GAS_LIMIT");
+        require(gasSettings.recipient == controller.collectTo(), "INVALID_GAS_RECIPIENT");
 
         address wallet = extractWalletAddress(data);
         bytes32 metaTxHash = EIP712.hashPacked(
@@ -232,7 +233,7 @@ abstract contract MetaTxModule is BaseModule
 
         emit MetaTxExecuted(msg.sender, wallet, nonce, metaTxHash, gasUsed, success, returnData);
 
-        if (gasSettings.price != 0) {
+        if (gasSettings.price != 0 && reimbursable(extractMethod(data))) {
             reimburseGasFee(wallet, gasSettings, gasUsed);
         }
     }
@@ -299,6 +300,14 @@ abstract contract MetaTxModule is BaseModule
         returns (bool)
     {
         return (signers.length == 1 && signers[0] == signer);
+    }
+
+    function reimbursable(bytes4 method)
+        internal
+        view
+        virtual
+        returns (bool) {
+        return true;
     }
 
     /// @dev For all relayed method, the first parameter must be the wallet address.
@@ -392,7 +401,7 @@ abstract contract MetaTxModule is BaseModule
         uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
         updateQuota(wallet, gasSettings.token, gasCost);
 
-        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
+        address feeRecipient = gasSettings.recipient;
         if (gasSettings.token == address(0)) {
             transactCall(wallet, feeRecipient, gasCost, "");
         } else {
