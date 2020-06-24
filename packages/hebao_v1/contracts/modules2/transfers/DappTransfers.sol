@@ -25,15 +25,12 @@ import "./TransferModule.sol";
 /// @title DappTransfers
 contract DappTransfers is TransferModule
 {
-
     constructor(
         Controller _controller,
         address    _trustdRelayer
         )
         public
-        TransferModule(_controller, _trustdRelayer)
-    {
-    }
+        TransferModule(_controller, _trustdRelayer) {}
 
     modifier onlyWhitelistedDapp(address addr)
     {

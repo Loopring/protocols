@@ -21,7 +21,7 @@ import "../../iface/Controller.sol";
 
 import "../../modules/security/GuardianUtils.sol";
 
-import "../core/BaseModule.sol";
+import "../core/MetaTxModule.sol";
 
 
 /// @title SecurityStore
@@ -30,7 +30,7 @@ import "../core/BaseModule.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-abstract contract SecurityModule is BaseModule
+abstract contract SecurityModule is MetaTxModule
 {
     // The minimal number of guardians for recovery and locking.
     uint constant public MIN_ACTIVE_GUARDIANS = 2;
@@ -45,9 +45,7 @@ abstract contract SecurityModule is BaseModule
         address    _trustedRelayer
         )
         public
-        BaseModule(_controller, _trustedRelayer)
-    {
-    }
+        MetaTxModule(_controller, _trustedRelayer) {}
 
     modifier onlyFromWalletOwner(address wallet) override {
         require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");

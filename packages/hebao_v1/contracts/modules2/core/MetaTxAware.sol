@@ -16,26 +16,48 @@
 */
 pragma solidity ^0.6.6;
 
+import "../../lib/AddressUtil.sol";
+
+import "../../thirdparty/BytesUtil.sol";
+
 
 /// @title MetaTxAware
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
-abstract contract MetaTxAware
+contract MetaTxAware
 {
+    using AddressUtil for address;
+    using BytesUtil   for bytes;
+
+    address public trustedRelayer;
+
+    constructor(address _trustedRelayer) public
+    {
+        trustedRelayer = _trustedRelayer;
+    }
+
     /// @dev Returns if a relayer is a trusted meta-tx relayer.
     function isTrustedRelayer(address relayer)
         public
-        virtual
         view
-        returns(bool);
+        returns(bool)
+    {
+        return relayer == trustedRelayer;
+    }
 
     /// @dev Return's the function's logicial message sender. This method should be
     // used to replace `msg.sender` for all meta-tx enabled functions.
-    function  msgSender()
+    function msgSender()
         internal
-        virtual
         view
-        returns (address payable);
+        returns (address payable)
+    {
+        if (msg.data.length >= 24 && isTrustedRelayer(msg.sender)) {
+            return msg.data.toAddress(msg.data.length - 20).toPayable();
+        } else {
+            return msg.sender;
+        }
+    }
 }

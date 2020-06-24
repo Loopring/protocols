@@ -30,9 +30,7 @@ contract ApprovedTransfers is TransferModule
         address    _trustedRelayer
         )
         public
-        TransferModule(_controller, _trustedRelayer)
-    {
-    }
+        TransferModule(_controller, _trustedRelayer) {}
 
     function transferToken(
         address            wallet,

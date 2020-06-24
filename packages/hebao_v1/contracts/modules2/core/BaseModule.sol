@@ -23,8 +23,6 @@ import "../../iface/Controller.sol";
 import "../../iface/Wallet.sol";
 import "../../iface/Module.sol";
 
-import "./MetaTxModule.sol";
-
 
 /// @title BaseModule
 /// @dev This contract implements some common functions that are likely
@@ -34,19 +32,13 @@ import "./MetaTxModule.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseModule is ReentrancyGuard, MetaTxModule
+contract BaseModule is ReentrancyGuard, Module
 {
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
-    // modifier onlyFromWallet(address wallet) virtual
-    // {
-    //     require(msgSender() == wallet, "NOT_FROM_WALLET");
-    //     _;
-    // }
-
     modifier onlyFromWalletOwner(address wallet) virtual {
-        require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
 
@@ -62,14 +54,10 @@ contract BaseModule is ReentrancyGuard, MetaTxModule
 
     Controller public controller;
 
-    constructor(
-        Controller _controller,
-        address    _trustedRelayer
-        )
+    constructor(Controller _controller)
         public
     {
         controller = _controller;
-        trustedRelayer = _trustedRelayer;
     }
 
     function addModule(
@@ -89,7 +77,7 @@ contract BaseModule is ReentrancyGuard, MetaTxModule
         override
         virtual
     {
-        address wallet = msgSender();
+        address wallet = msg.sender;
         bindMethods(wallet);
         emit Activated(wallet);
     }
@@ -100,7 +88,7 @@ contract BaseModule is ReentrancyGuard, MetaTxModule
         override
         virtual
     {
-        address wallet = msgSender();
+        address wallet = msg.sender;
         unbindMethods(wallet);
         emit Deactivated(wallet);
     }

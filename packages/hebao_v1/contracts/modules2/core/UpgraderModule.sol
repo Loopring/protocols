@@ -22,12 +22,11 @@ contract UpgraderModule is BaseModule {
 
     constructor(
         Controller       _controller,
-        address          _trustedRelayer,
         address          _implementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove
         )
-        BaseModule(_controller, _trustedRelayer)
+        BaseModule(_controller)
         public
     {
         implementation = _implementation;
@@ -39,7 +38,7 @@ contract UpgraderModule is BaseModule {
         external
         override
     {
-        address payable wallet = msgSender(); /// ???
+        address payable wallet = msg.sender;
         if (implementation != address(0) &&
             implementation != OwnedUpgradabilityProxy(wallet).implementation()) {
             bytes memory txData = abi.encodeWithSelector(

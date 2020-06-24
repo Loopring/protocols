@@ -33,14 +33,9 @@ contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
 
-    constructor(
-        Controller _controller // TODO.....
-        )
+    constructor(Controller _controller)
         public
-        BaseModule(_controller, address(0))
-    {
-
-    }
+        BaseModule(_controller) {}
 
     function bindableMethods()
         public

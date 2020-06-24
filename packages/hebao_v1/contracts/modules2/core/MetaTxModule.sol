@@ -18,10 +18,7 @@ pragma solidity ^0.6.6;
 
 import "../../iface/Module.sol";
 
-import "../../thirdparty/BytesUtil.sol";
-
-import "../../lib/AddressUtil.sol";
-
+import "./BaseModule.sol";
 import "./MetaTxAware.sol";
 
 
@@ -32,42 +29,43 @@ import "./MetaTxAware.sol";
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
-abstract contract MetaTxModule is MetaTxAware, Module
+contract MetaTxModule is MetaTxAware, BaseModule
 {
-    using AddressUtil for address;
-    using BytesUtil   for bytes;
-
-    address public trustedRelayer;
-
-    /// @dev Returns if a relayer is a trusted meta-tx relayer.
-    function isTrustedRelayer(address relayer)
+    constructor(
+        Controller _controller,
+        address    _trustedRelayer
+        )
         public
-        override
-        view
-        returns(bool)
+        BaseModule(controller)
+        MetaTxAware(_trustedRelayer)
     {
-        return relayer == trustedRelayer;
     }
 
-    /// @dev Return's the function's logicial message sender. This method should be
-    // used to replace `msg.sender` for all meta-tx enabled functions.
-    function msgSender()
-        internal
-        override
-        view
-        returns (address payable)
-    {
-        if (msg.data.length >= 24 && isTrustedRelayer(msg.sender)) {
-            return msg.data.toAddress(msg.data.length - 20).toPayable();
-        } else {
-            return msg.sender;
-        }
-    }
-
-    modifier onlyFromMetaTxOrWalletOwner(address wallet) virtual {
-        require(
-            msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
-            "NOT_FROM_METATX_OR_WALLET_OWNER");
+    modifier onlyFromWalletOwner(address wallet) virtual override {
+        require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
+
+    /// @dev This method will cause an re-entry to the same module contract.
+    function activate()
+        external
+        override
+        virtual
+    {
+        address wallet = msgSender();
+        bindMethods(wallet);
+        emit Activated(wallet);
+    }
+
+    /// @dev This method will cause an re-entry to the same module contract.
+    function deactivate()
+        external
+        override
+        virtual
+    {
+        address wallet = msgSender();
+        unbindMethods(wallet);
+        emit Deactivated(wallet);
+    }
 }
+
