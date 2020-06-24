@@ -148,4 +148,17 @@ abstract contract SecurityModule is BaseModule
         (uint _lock,) = controller.securityStore().getLock(wallet);
         return _lock > now;
     }
+
+    function updateQuota(
+        address wallet,
+        address token,
+        uint    amount
+        )
+        internal
+    {
+        if (amount > 0 && quotaStore() != address(0)) {
+            uint value = controller.priceOracle().tokenValue(token, amount);
+            QuotaStore(quotaStore()).checkAndAddToSpent(wallet, value);
+        }
+    }
 }
