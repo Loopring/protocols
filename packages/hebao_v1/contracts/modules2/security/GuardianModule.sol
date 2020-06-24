@@ -23,7 +23,7 @@ import "../../thirdparty/ERC1271.sol";
 
 import "../../iface/Wallet.sol";
 
-import "../core/WalletMultisig.sol";
+import "../core/SignedRequest.sol";
 
 import "./SecurityModule.sol";
 
@@ -49,7 +49,9 @@ contract GuardianModule is SecurityModule
         bool            removedAsGuardian
     );
 
-    bytes32 public RECOVER_HASHTYPE;
+    bytes32 public constant RECOVER_HASHTYPE = keccak256(
+        "recover(Request request, address newOwner)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
 
     constructor(
         Controller _controller,
@@ -61,11 +63,6 @@ contract GuardianModule is SecurityModule
     {
         require(_pendingPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;
-
-        RECOVER_HASHTYPE = keccak256(abi.encodePacked(
-            "recover(Request request, address newOwner)",
-            WalletMultisig.REQUEST_TYPE
-        ));
     }
 
     function addGuardian(
@@ -156,7 +153,7 @@ contract GuardianModule is SecurityModule
     /// @param newOwner The new owner address to set.
     ///        The addresses must be sorted ascendently.
     function recover(
-        WalletMultisig.Request calldata request,
+        SignedRequest.Request calldata request,
         address newOwner
         )
         external
@@ -176,7 +173,7 @@ contract GuardianModule is SecurityModule
             request,
             abi.encode(
                 RECOVER_HASHTYPE,
-                WalletMultisig.hashRequest(request),
+                SignedRequest.hash(request),
                 newOwner
             )
         );

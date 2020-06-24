@@ -51,7 +51,9 @@ abstract contract TransferModule is SecurityModule
         address    _trustedRelayer
         )
         public
-        SecurityModule(_controller, _trustedRelayer) {}
+        SecurityModule(_controller, _trustedRelayer)
+    {
+    }
 
     function transferInternal(
         address wallet,

@@ -45,7 +45,9 @@ abstract contract SecurityModule is MetaTxModule
         address    _trustedRelayer
         )
         public
-        MetaTxModule(_controller, _trustedRelayer) {}
+        MetaTxModule(_controller, _trustedRelayer)
+    {
+    }
 
     modifier onlyFromWallet(address wallet) override {
         require(msgSender() == wallet, "NOT_FROM_WALLET_OWNER");

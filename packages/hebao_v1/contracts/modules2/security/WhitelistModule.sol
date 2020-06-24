@@ -25,7 +25,7 @@ import "../../iface/Wallet.sol";
 
 import "../../modules/security/GuardianUtils.sol";
 
-import "../core/WalletMultisig.sol";
+import "../core/SignedRequest.sol";
 
 import "./SecurityModule.sol";
 
@@ -37,7 +37,9 @@ contract WhitelistModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    bytes32 public ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE;
+    bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
+        "addToWhitelistImmediately(Request request,address addr)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
 
     uint public delayPeriod;
 
@@ -51,11 +53,6 @@ contract WhitelistModule is SecurityModule
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
-
-        ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(abi.encodePacked(
-            "addToWhitelistImmediately(Request request,address addr)",
-            WalletMultisig.REQUEST_TYPE
-        ));
     }
 
     function addToWhitelist(
@@ -71,8 +68,8 @@ contract WhitelistModule is SecurityModule
     }
 
     function addToWhitelistImmediately(
-        WalletMultisig.Request calldata request,
-        address         addr
+        SignedRequest.Request calldata request,
+        address addr
         )
         external
         nonReentrant
@@ -84,7 +81,7 @@ contract WhitelistModule is SecurityModule
             request,
             abi.encode(
                 ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
-                WalletMultisig.hashRequest(request),
+                SignedRequest.hash(request),
                 addr
             )
         );

@@ -19,7 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 
-import "../core/WalletMultisig.sol";
+import "../core/SignedRequest.sol";
 
 import "./TransferModule.sol";
 
@@ -27,10 +27,21 @@ import "./TransferModule.sol";
 /// @title ApprovedTransfers
 contract ApprovedTransfers is TransferModule
 {
-    bytes32 public TRANSFER_TOKEN_HASHTYPE;
-    bytes32 public APPROVE_TOKEN_HASHTYPE;
-    bytes32 public CALL_CONTRACT_HASHTYPE;
-    bytes32 public APPROVE_THEN_CALL_CONTRACT_HASHTYPE;
+    bytes32 public constant TRANSFER_TOKEN_HASHTYPE = keccak256(
+        "transferToken(Request request,address token,address to,uint256 amount,bytes logdata)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
+
+    bytes32 public constant APPROVE_TOKEN_HASHTYPE = keccak256(
+        "approveToken(Request request,address token,address to,uint256 amount)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
+
+    bytes32 public constant CALL_CONTRACT_HASHTYPE = keccak256(
+        "callContract(Request request,address to,uint256 value,bytes data)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
+
+    bytes32 public constant APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
+        "approveThenCallContract(Request request,address token,address to,uint256 amount,uint256 value,bytes data)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    ); 
 
     constructor(
         Controller _controller,
@@ -39,33 +50,14 @@ contract ApprovedTransfers is TransferModule
         public
         TransferModule(_controller, _trustedRelayer)
     {
-        TRANSFER_TOKEN_HASHTYPE = keccak256(abi.encodePacked(
-            "transferToken(Request request,address token,address to,uint256 amount,bytes logdata)",
-            WalletMultisig.REQUEST_TYPE
-        ));
-
-        APPROVE_TOKEN_HASHTYPE = keccak256(abi.encodePacked(
-            "approveToken(Request request,address token,address to,uint256 amount)",
-            WalletMultisig.REQUEST_TYPE
-        ));
-
-        CALL_CONTRACT_HASHTYPE = keccak256(abi.encodePacked(
-            "callContract(Request request,address to,uint256 value,bytes data)",
-            WalletMultisig.REQUEST_TYPE
-        ));
-
-        APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(abi.encodePacked(
-            "approveThenCallContract(Request request,address token,address to,uint256 amount,uint256 value,bytes data)",
-            WalletMultisig.REQUEST_TYPE
-        )); 
     }
 
     function transferToken(
-        WalletMultisig.Request calldata request,
-        address            token,
-        address            to,
-        uint               amount,
-        bytes     calldata logdata
+        SignedRequest.Request calldata request,
+        address        token,
+        address        to,
+        uint           amount,
+        bytes calldata logdata
         )
         external
         nonReentrant
@@ -77,7 +69,7 @@ contract ApprovedTransfers is TransferModule
             request,
             abi.encode(
                 TRANSFER_TOKEN_HASHTYPE,
-                WalletMultisig.hashRequest(request),
+                SignedRequest.hash(request),
                 token,
                 to,
                 amount,
@@ -88,10 +80,10 @@ contract ApprovedTransfers is TransferModule
     }
 
     function approveToken(
-        WalletMultisig.Request calldata request,
-        address            token,
-        address            to,
-        uint               amount
+        SignedRequest.Request calldata request,
+        address token,
+        address to,
+        uint    amount
         )
         external
         nonReentrant
@@ -103,7 +95,7 @@ contract ApprovedTransfers is TransferModule
             request,
             abi.encode(
                 APPROVE_TOKEN_HASHTYPE,
-                WalletMultisig.hashRequest(request),
+                SignedRequest.hash(request),
                 token,
                 to,
                 amount
@@ -113,10 +105,10 @@ contract ApprovedTransfers is TransferModule
     }
 
     function callContract(
-        WalletMultisig.Request calldata request,
-        address            to,
-        uint               value,
-        bytes     calldata data
+        SignedRequest.Request calldata request,
+        address        to,
+        uint           value,
+        bytes calldata data
         )
         external
         nonReentrant
@@ -129,7 +121,7 @@ contract ApprovedTransfers is TransferModule
             request,
             abi.encode(
                 CALL_CONTRACT_HASHTYPE,
-                WalletMultisig.hashRequest(request),
+                SignedRequest.hash(request),
                 to,
                 value,
                 data
@@ -140,32 +132,33 @@ contract ApprovedTransfers is TransferModule
     }
 
     function approveThenCallContract(
-        WalletMultisig.Request calldata request,
-        address            token,
-        address            to,
-        uint               amount,
-        uint               value,
-        bytes     calldata data
+        SignedRequest.Request calldata request,
+        address        token,
+        address        to,
+        uint           amount,
+        uint           value,
+        bytes calldata data
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        // controller.verifyPermission(
-        //     DOMAIN_SEPERATOR,
-        //     GuardianUtils.SigRequirement.OwnerRequired,
-        //     request,
-        //     abi.encode(
-        //             APPROVE_THEN_CALL_CONTRACT_HASHTYPE,
-        //             WalletMultisig.hashRequest(request),
-        //             token,
-        //             to,
-        //             amount,
-        //             value,
-        //             data
-        //         )
-        // );
+        bytes memory encoded = abi.encode(
+            APPROVE_THEN_CALL_CONTRACT_HASHTYPE,
+            SignedRequest.hash(request),
+            token,
+            to,
+            amount,
+            value,
+            data
+        );
+        controller.verifyPermission(
+            DOMAIN_SEPERATOR,
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            encoded
+        );
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);

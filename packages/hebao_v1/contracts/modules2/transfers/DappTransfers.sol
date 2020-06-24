@@ -30,7 +30,9 @@ contract DappTransfers is TransferModule
         address    _trustdRelayer
         )
         public
-        TransferModule(_controller, _trustdRelayer) {}
+        TransferModule(_controller, _trustdRelayer)
+    {
+    }
 
     modifier onlyWhitelistedDapp(address addr)
     {

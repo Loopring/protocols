@@ -28,7 +28,9 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
-    bytes32 public CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE;
+    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(
+        "changeDailyQuotaImmediately(Request request,uint256 newQuota)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
 
     uint public delayPeriod;
 
@@ -42,11 +44,6 @@ contract QuotaTransfers is TransferModule
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
-
-        CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(abi.encodePacked(
-            "changeDailyQuotaImmediately(Request request,uint256 newQuota)",
-            WalletMultisig.REQUEST_TYPE
-        ));
     }
 
     function changeDailyQuota(
@@ -62,7 +59,7 @@ contract QuotaTransfers is TransferModule
     }
 
     function changeDailyQuotaImmediately(
-        WalletMultisig.Request calldata request,
+        SignedRequest.Request calldata request,
         uint newQuota
         )
         external
@@ -75,7 +72,7 @@ contract QuotaTransfers is TransferModule
             request,
             abi.encode(
                 CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE,
-                WalletMultisig.hashRequest(request),
+                SignedRequest.hash(request),
                 newQuota
             )
         );

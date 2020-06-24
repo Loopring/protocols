@@ -25,7 +25,7 @@ import "../../lib/SignatureUtil.sol";
 import "../../modules/security/GuardianUtils.sol";
 
 
-library WalletMultisig {
+library SignedRequest {
     using SignatureUtil for bytes32;
 
     struct Request {
@@ -38,7 +38,7 @@ library WalletMultisig {
     string  public constant REQUEST_TYPE = "Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)";
     bytes32 public constant REQUEST_TYPEHASH = keccak256(abi.encodePacked(REQUEST_TYPE));
 
-    function hashRequest(Request memory request)
+    function hash(Request memory request)
         public
         returns (bytes32)
     {

@@ -26,7 +26,7 @@ import "../../modules/security/GuardianUtils.sol";
 
 import "./BaseModule.sol";
 import "./MetaTxAware.sol";
-import "./WalletMultisig.sol";
+import "./SignedRequest.sol";
 
 
 /// @title MetaTxModule
@@ -39,7 +39,7 @@ import "./WalletMultisig.sol";
 abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
     using SignatureUtil  for bytes32;
-    using WalletMultisig for Controller;
+    using SignedRequest for Controller;
 
      bytes32 public DOMAIN_SEPERATOR;
 
@@ -58,29 +58,6 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 
     modifier onlyFromWallet(address wallet) virtual  {
         require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
-        _;
-    }
-
-    modifier verifyPermissionAndUpdateNonce(
-        address[] memory signers,
-        address          wallet,
-        GuardianUtils.SigRequirement sigRequirement
-        // uint nonce
-        )
-    {
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                sigRequirement
-            ),
-            "PERMISSION_DENIED"
-        );
-
-        // controller.nonceStore().verifyNonce(wallet, nonce);
-        // controller.nonceStore().updateNonce(wallet);
-
         _;
     }
 
