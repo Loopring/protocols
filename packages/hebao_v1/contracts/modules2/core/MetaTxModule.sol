@@ -63,4 +63,11 @@ abstract contract MetaTxModule is MetaTxAware, Module
             return msg.sender;
         }
     }
+
+    modifier onlyFromMetaTxOrWalletOwner(address wallet) virtual {
+        require(
+            msg.sender == address(this) || msg.sender == Wallet(wallet).owner(),
+            "NOT_FROM_METATX_OR_WALLET_OWNER");
+        _;
+    }
 }
