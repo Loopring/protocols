@@ -110,7 +110,7 @@ export class Transfer {
   accountFromID: number;
   accountToID: number;
 
-  transTokenID: number;
+  tokenID: number;
   amount: BN;
 
   feeTokenID: number;
@@ -133,6 +133,8 @@ export class Transfer {
 
   signature?: Signature;
   dualSignature?: Signature;
+
+  onchainSignature?: any;
 }
 
 export interface WithdrawalRequest {

@@ -71,7 +71,7 @@ def transferFromJSON(jTransfer):
     transfer = GeneralObject()
     transfer.accountFromID = int(jTransfer["accountFromID"])
     transfer.accountToID = int(jTransfer["accountToID"])
-    transfer.transTokenID = int(jTransfer["transTokenID"])
+    transfer.tokenID = int(jTransfer["tokenID"])
     transfer.amount = str(jTransfer["amount"])
     transfer.feeTokenID = int(jTransfer["feeTokenID"])
     transfer.fee = str(jTransfer["fee"])

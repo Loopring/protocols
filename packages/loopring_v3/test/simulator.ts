@@ -253,8 +253,8 @@ export class Simulator {
     const fee = roundToFloatValue(transfer.fee, Constants.Float16Encoding);
 
     const accountFrom = exchangeState.accounts[transfer.accountFromID];
-    let balanceFrom = accountFrom.balances[transfer.transTokenID].balance;
-    if (transfer.transTokenID === transfer.feeTokenID) {
+    let balanceFrom = accountFrom.balances[transfer.tokenID].balance;
+    if (transfer.tokenID === transfer.feeTokenID) {
       balanceFrom = balanceFrom.sub(fee);
     }
     const amountTrans = roundToFloatValue(
@@ -268,7 +268,7 @@ export class Simulator {
       operatorAccountID,
       transfer.accountFromID,
       transfer.accountToID,
-      transfer.transTokenID,
+      transfer.tokenID,
       amountTrans,
       transfer.feeTokenID,
       fee,
@@ -285,7 +285,7 @@ export class Simulator {
     };
     const payAmount: DetailedTokenTransfer = {
       description: "Amount",
-      token: transfer.transTokenID,
+      token: transfer.tokenID,
       from: transfer.accountFromID,
       to: transfer.accountToID,
       amount: transfer.amount,

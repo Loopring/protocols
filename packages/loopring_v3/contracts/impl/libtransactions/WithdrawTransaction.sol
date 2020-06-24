@@ -54,6 +54,13 @@ library WithdrawTransaction
         address to;
     }
 
+    // Auxiliary data for each withdrawal
+    struct WithdrawalAuxiliaryData
+    {
+        uint gasLimit;
+        bytes signature;
+    }
+
     event OnchainWithdrawalConsumed(
         uint24  indexed owner,
         uint16          token,
@@ -70,7 +77,7 @@ library WithdrawTransaction
     {
         Withdrawal memory withdrawal = readWithdrawal(data);
 
-        ExchangeData.WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (ExchangeData.WithdrawalAuxiliaryData));
+        WithdrawalAuxiliaryData memory auxData = abi.decode(auxiliaryData, (WithdrawalAuxiliaryData));
 
         if (withdrawal.withdrawalType == 0) {
             // Signature checked offchain, nothing to do

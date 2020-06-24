@@ -33,12 +33,12 @@ library TransferTransaction
     using SignatureUtil        for bytes32;
 
     bytes32 constant public TRANSFER_TYPEHASH = keccak256(
-        "Transfer(address owner,uint24 accountID,uint32 nonce,uint256 publicKey,uint16 feeTokenID,uint256 fee)"
+        "Transfer(address from,address to,uint16 tokenID,uint256 amount,uint16 feeTokenID,uint256 fee,uint32 nonce)"
     );
 
     event ConditionalTransferConsumed(
-        uint24  indexed from,
-        uint24  indexed to,
+        address indexed from,
+        address indexed to,
         uint16          token,
         uint            amount
     );
@@ -94,6 +94,8 @@ library TransferTransaction
                 )
             )
         );
+
+        emit ConditionalTransferConsumed(from, to, tokenID, amount);
 
         // Verify the signature if one is provided, otherwise fall back to an approved tx
         if (auxiliaryData.length > 0) {

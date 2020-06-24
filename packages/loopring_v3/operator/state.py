@@ -640,7 +640,7 @@ class State(object):
             newState.accountA_Address = txInput.accountFromID
             accountA = self.getAccount(newState.accountA_Address)
 
-            newState.balanceA_S_Address = txInput.transTokenID
+            newState.balanceA_S_Address = txInput.tokenID
             newState.balanceA_S_Balance = -transferAmount
 
             newState.balanceA_B_Address = txInput.feeTokenID
@@ -650,7 +650,7 @@ class State(object):
             accountB = self.getAccount(newState.accountB_Address)
             newState.accountB_Owner = txInput.ownerTo
 
-            newState.balanceB_B_Address = txInput.transTokenID
+            newState.balanceB_B_Address = txInput.tokenID
             newState.balanceB_B_Balance = transferAmount
 
             newState.accountA_Nonce = accountA.nonce + 1

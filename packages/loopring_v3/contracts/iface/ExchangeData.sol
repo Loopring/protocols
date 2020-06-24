@@ -63,13 +63,6 @@ library ExchangeData
         bytes data;
     }
 
-    // Auxiliary data for each withdrawal
-    struct WithdrawalAuxiliaryData
-    {
-        uint gasLimit;
-        bytes signature;
-    }
-
     // This is the (virtual) block an operator needs to submit onchain to maintain the
     // per-exchange (virtual) blockchain.
     struct Block

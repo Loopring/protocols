@@ -190,6 +190,57 @@ export namespace WithdrawalUtils {
   }
 }
 
+export namespace TransferUtils {
+  export function toTypedData(transfer: Transfer, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        Transfer: [
+          { name: "from", type: "address" },
+          { name: "to", type: "address" },
+          { name: "tokenID", type: "uint16" },
+          { name: "amount", type: "uint256" },
+          { name: "feeTokenID", type: "uint16" },
+          { name: "fee", type: "uint256" },
+          //{ name: "fromAccountID", type: "uint24" },
+          //{ name: "toAccountID", type: "uint24" },
+          { name: "nonce", type: "uint32" }
+        ]
+      },
+      primaryType: "Transfer",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        from: transfer.ownerFrom,
+        to: transfer.ownerTo,
+        tokenID: transfer.tokenID,
+        amount: transfer.amount,
+        feeTokenID: transfer.feeTokenID,
+        fee: transfer.fee,
+        //fromAccountID: transfer.accountFromID,
+        //toAccountID: transfer.accountToID,
+        nonce: transfer.nonce
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(transfer: Transfer, verifyingContract: string) {
+    const typedData = this.toTypedData(transfer, verifyingContract);
+    const orderHash = getEIP712Message(typedData);
+    return orderHash;
+  }
+}
+
 export class ExchangeTestUtil {
   public context: Context;
   public testContext: ExchangeTestContext;
@@ -633,7 +684,7 @@ export class ExchangeTestUtil {
       this.exchangeId,
       transfer.accountFromID,
       payer ? transfer.payerAccountToID : transfer.accountToID,
-      transfer.transTokenID,
+      transfer.tokenID,
       transfer.amount,
       transfer.feeTokenID,
       transfer.fee,
@@ -1041,7 +1092,8 @@ export class ExchangeTestUtil {
     fee: BN,
     ownerTo?: string,
     conditionalTransfer: boolean = false,
-    useDualAuthoring: boolean = false
+    useDualAuthoring: boolean = false,
+    useOnchainSignature: boolean = false
   ) {
     if (!token.startsWith("0x")) {
       token = this.testContext.tokenSymbolAddrMap.get(token);
@@ -1049,7 +1101,7 @@ export class ExchangeTestUtil {
     if (!feeToken.startsWith("0x")) {
       feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
     }
-    const transTokenID = this.tokenAddressToIDMap.get(token);
+    const tokenID = this.tokenAddressToIDMap.get(token);
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
 
     if (ownerTo === undefined) {
@@ -1066,15 +1118,16 @@ export class ExchangeTestUtil {
       dualSecretKey = dualAuthorkeyPair.secretKey;
     }
 
+    const from = this.accounts[this.exchangeId][accountFromID].owner;
     const transfer: Transfer = {
       txType: "Transfer",
       accountFromID,
       accountToID,
-      transTokenID,
+      tokenID,
       amount,
       feeTokenID,
       fee,
-      ownerFrom: this.hexToDecString(this.accounts[this.exchangeId][accountFromID].owner),
+      ownerFrom: this.hexToDecString(from),
       ownerTo: this.hexToDecString(ownerTo),
       type: conditionalTransfer ? 1 : 0,
       validUntil: 0xFFFFFFFF,
@@ -1091,6 +1144,12 @@ export class ExchangeTestUtil {
       this.signTransfer(transfer, true);
       if (useDualAuthoring) {
         this.signTransfer(transfer, false);
+      }
+    } else {
+      if (useOnchainSignature) {
+        const hash = TransferUtils.getHash(transfer, this.exchange.address);
+        transfer.onchainSignature = await sign(from, hash, SignatureType.EIP_712);
+        await verifySignature(from, hash, transfer.onchainSignature);
       }
     }
 
@@ -1665,7 +1724,7 @@ export class ExchangeTestUtil {
             approvalsSnapshot.transfer(
               transfer.accountFromID,
               transfer.accountToID,
-              transfer.transTokenID,
+              transfer.tokenID,
               transfer.amount
             );
             approvalsSnapshot.transfer(
@@ -1988,7 +2047,7 @@ export class ExchangeTestUtil {
           if (transaction.type > 0) {
             //console.log("Conditional transfer");
             numConditionalTransactions++;
-            auxiliaryData.push([i, web3.utils.hexToBytes("0x")]);
+            auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature ? transaction.onchainSignature : "0x")]);
           }
         } else if (transaction.txType === "Withdraw") {
           //console.log("withdraw");
@@ -2111,7 +2170,7 @@ export class ExchangeTestUtil {
             da.addNumber(transfer.accountFromID, 3);
             da.addNumber(transfer.accountToID, 3);
             da.addNumber(
-              transfer.transTokenID * 2 ** 12 + transfer.feeTokenID,
+              transfer.tokenID * 2 ** 12 + transfer.feeTokenID,
               3
             );
             da.addNumber(toFloat(new BN(transfer.amount), Constants.Float24Encoding), 3);

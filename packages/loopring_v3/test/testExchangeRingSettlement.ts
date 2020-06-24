@@ -7,6 +7,7 @@ import { OrderInfo, SpotTrade } from "./types";
 export interface TransferOptions {
   conditionalTransfer?: boolean;
   useDualAuthoring?: boolean;
+  useOnchainSignature?: boolean;
   autoApprove?: boolean;
   amountToDeposit?: BN;
   feeToDeposit?: BN;
@@ -48,6 +49,10 @@ contract("Exchange", (accounts: string[]) => {
         options.useDualAuthoring !== undefined
           ? options.useDualAuthoring
           : false;
+    const useOnchainSignature =
+        options.useOnchainSignature !== undefined
+          ? options.useOnchainSignature
+          : false;
     const autoApprove =
       options.autoApprove !== undefined ? options.autoApprove : true;
     // From
@@ -63,7 +68,7 @@ contract("Exchange", (accounts: string[]) => {
       token,
       new BN(0)
     );
-    if (conditionalTransfer && autoApprove) {
+    if (conditionalTransfer && autoApprove && !useOnchainSignature) {
       await exchangeTestUtil.approveOffchainTransfer(from, to, token, amount);
       await exchangeTestUtil.approveOffchainTransfer(
         from,
@@ -83,7 +88,8 @@ contract("Exchange", (accounts: string[]) => {
       fee,
       undefined,
       conditionalTransfer,
-      useDualAuthoring
+      useDualAuthoring,
+      useOnchainSignature
     );
     return request;
   };
@@ -175,8 +181,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do a transfer
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
-      //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true});
-      await transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
+      await transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true, useOnchainSignature: true});
+      //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
 
       const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
 
