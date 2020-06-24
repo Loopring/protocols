@@ -61,6 +61,18 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         _;
     }
 
+    function addModule(
+        address wallet,
+        address module
+        )
+        external
+        nonReentrant
+        onlyFromWallet(wallet)
+    {
+        Wallet(wallet).addModule(module);
+    }
+
+
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external
