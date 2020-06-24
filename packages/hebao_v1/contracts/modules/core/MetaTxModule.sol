@@ -17,19 +17,19 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../lib/AddressUtil.sol";
-import "../lib/EIP712.sol";
-import "../lib/ERC20.sol";
-import "../lib/MathUint.sol";
-import "../lib/SignatureUtil.sol";
+import "../../lib/AddressUtil.sol";
+import "../../lib/EIP712.sol";
+import "../../lib/ERC20.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
 
-import "../thirdparty/BytesUtil.sol";
-import "../thirdparty/ERC1271.sol";
+import "../../thirdparty/BytesUtil.sol";
+import "../../thirdparty/ERC1271.sol";
 
-import "../iface/Controller.sol";
-import "../iface/Wallet.sol";
+import "../../iface/Controller.sol";
+import "../../iface/Wallet.sol";
 
-import "./BaseModule.sol";
+import "../../base/BaseModule.sol";
 
 
 /// @title MetaTxModule

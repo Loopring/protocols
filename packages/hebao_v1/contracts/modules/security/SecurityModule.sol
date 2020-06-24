@@ -17,10 +17,11 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../base/MetaTxModule.sol";
-
 import "../../iface/Controller.sol";
+
 import "../security/GuardianUtils.sol";
+
+import "../core/MetaTxModule.sol";
 
 
 /// @title SecurityStore

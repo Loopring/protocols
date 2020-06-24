@@ -17,13 +17,14 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../base/MetaTxModule.sol";
 import "../../base/WalletFactory.sol";
 
 import "../../iface/Controller.sol";
 import "../../iface/Wallet.sol";
 
 import "../../lib/AddressUtil.sol";
+
+import "./MetaTxModule.sol";
 
 
 /// @title WalletFactoryModule

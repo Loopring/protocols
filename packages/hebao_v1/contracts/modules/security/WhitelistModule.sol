@@ -18,11 +18,12 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/MathUint.sol";
-import "./GuardianUtils.sol";
 
 import "../../iface/Wallet.sol";
 
 import "./SecurityModule.sol";
+
+import "./GuardianUtils.sol";
 
 
 /// @title WhitelistModule
