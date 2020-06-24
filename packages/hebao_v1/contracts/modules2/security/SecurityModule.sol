@@ -93,6 +93,17 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
+    function addModule(
+        address wallet,
+        address module
+        )
+        external
+        nonReentrant
+        onlyFromWallet(wallet)
+    {
+        Wallet(wallet).addModule(module);
+    }
+
     // ----- internal methods -----
 
     function quotaStore()
