@@ -392,7 +392,9 @@ abstract contract MetaTxModule is BaseModule
         uint gasCost = gasUsed.add(gasSettings.overhead).mul(gasSettings.price);
         updateQuota(wallet, gasSettings.token, gasCost);
 
-        address feeRecipient = (gasSettings.recipient == address(0)) ? msg.sender : gasSettings.recipient;
+        // TEMPORARY FIX: only collect meta-tx fees to a cold wallet other than the guardian
+        // address.
+        address feeRecipient = controller.collectTo();
         if (gasSettings.token == address(0)) {
             transactCall(wallet, feeRecipient, gasCost, "");
         } else {
