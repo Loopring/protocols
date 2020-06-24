@@ -19,6 +19,7 @@ pragma solidity ^0.6.6;
 import "../../lib/ERC20.sol";
 import "../../lib/ReentrancyGuard.sol";
 
+import "../../iface/Controller.sol";
 import "../../iface/Wallet.sol";
 import "../../iface/Module.sol";
 
@@ -57,6 +58,18 @@ contract BaseModule is ReentrancyGuard, MetaTxModule
     modifier notWalletOwner(address wallet, address addr) virtual {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
+    }
+
+    Controller public controller;
+
+    constructor(
+        Controller _controller,
+        address    _trustedRelayer
+        )
+        public
+    {
+        controller = _controller;
+        trustedRelayer = _trustedRelayer;
     }
 
     function addModule(

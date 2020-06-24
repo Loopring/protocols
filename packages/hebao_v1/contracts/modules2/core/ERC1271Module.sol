@@ -33,6 +33,16 @@ contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
 
+    constructor(
+        Controller _controller,
+        address    _trustedRelayer
+        )
+        public
+        BaseModule(_controller, _trustedRelayer)
+    {
+
+    }
+
     function bindableMethods()
         public
         pure
