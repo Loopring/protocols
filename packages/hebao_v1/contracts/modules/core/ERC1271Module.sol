@@ -16,13 +16,13 @@
 */
 pragma solidity ^0.6.6;
 
-import "../thirdparty/ERC1271.sol";
+import "../../thirdparty/ERC1271.sol";
 
-import "../lib/MathUint.sol";
-import "../lib/SignatureUtil.sol";
-import "../thirdparty/BytesUtil.sol";
+import "../../lib/MathUint.sol";
+import "../../lib/SignatureUtil.sol";
+import "../../thirdparty/BytesUtil.sol";
 
-import "../iface/Wallet.sol";
+import "../../iface/Wallet.sol";
 
 import "./BaseModule.sol";
 

@@ -29,7 +29,7 @@ import "../../thirdparty/ERC1271.sol";
 import "../../iface/Controller.sol";
 import "../../iface/Wallet.sol";
 
-import "../../base/BaseModule.sol";
+import "./BaseModule.sol";
 
 
 /// @title MetaTxModule

@@ -2,9 +2,9 @@ pragma solidity ^0.6.6;
 
 import "../../iface/Controller.sol";
 
-import "../../base/BaseModule.sol";
-
 import "../../thirdparty/OwnedUpgradabilityProxy.sol";
+
+import "./BaseModule.sol";
 
 
 /// @title UpgraderModule

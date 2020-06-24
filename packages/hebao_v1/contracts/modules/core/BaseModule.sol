@@ -16,11 +16,11 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/ERC20.sol";
-import "../lib/ReentrancyGuard.sol";
+import "../../lib/ERC20.sol";
+import "../../lib/ReentrancyGuard.sol";
 
-import "../iface/Wallet.sol";
-import "../iface/Module.sol";
+import "../../iface/Wallet.sol";
+import "../../iface/Module.sol";
 
 
 /// @title BaseModule
