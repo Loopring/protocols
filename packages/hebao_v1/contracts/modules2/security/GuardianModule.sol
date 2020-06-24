@@ -49,9 +49,7 @@ contract GuardianModule is SecurityModule
         bool            removedAsGuardian
     );
 
-    bytes32 constant public RECOVER_HASHTYPE = keccak256(
-        "recover(WalletMultisig.Request request, address newOwner)"
-    );
+    bytes32 public RECOVER_HASHTYPE;
 
     constructor(
         Controller _controller,
@@ -63,6 +61,11 @@ contract GuardianModule is SecurityModule
     {
         require(_pendingPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;
+
+        RECOVER_HASHTYPE = keccak256(abi.encodePacked(
+            "recover(Request request, address newOwner)",
+            WalletMultisig.REQUEST_TYPE
+        ));
     }
 
     function addGuardian(

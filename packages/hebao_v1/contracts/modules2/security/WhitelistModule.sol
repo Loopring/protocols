@@ -37,10 +37,7 @@ contract WhitelistModule is SecurityModule
     using MathUint      for uint;
     using SignatureUtil for bytes32;
 
-    bytes32 constant public ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
-        "addToWhitelistImmediately(WalletMultisig.Request request,address addr)"
-    );
-
+    bytes32 public ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE;
 
     uint public delayPeriod;
 
@@ -54,6 +51,11 @@ contract WhitelistModule is SecurityModule
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
+
+        ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(abi.encodePacked(
+            "addToWhitelistImmediately(Request request,address addr)",
+            WalletMultisig.REQUEST_TYPE
+        ));
     }
 
     function addToWhitelist(

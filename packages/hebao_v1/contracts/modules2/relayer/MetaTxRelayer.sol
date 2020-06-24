@@ -85,7 +85,7 @@ abstract contract MetaTxRelayer {
         nonces[metaTx.from]++;
 
         uint gasLeft = gasleft();
-        if (beforeExecute(metaTx)) {
+        if (preExecute(metaTx)) {
             return (false, returnValue);
         }
 
@@ -99,7 +99,7 @@ abstract contract MetaTxRelayer {
         }
     }
 
-    function beforeExecute(MetaTx memory metaTx)
+    function preExecute(MetaTx memory metaTx)
         internal
         virtual
         returns(bool abort) {}
@@ -144,7 +144,6 @@ abstract contract MetaTxRelayer {
         view
     {
         require(metaTx.to != address(this), "CANNOT_RELAY_TO_SELF");
-        require(Wallet(metaTx.from).hasModule(metaTx.to), "INVALID_DEST");
         require(nonces[metaTx.from] == metaTx.nonce, "NONCE_MISMATCH");
         verifySignature(metaTx, signature);
     }

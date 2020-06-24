@@ -35,10 +35,8 @@ library WalletMultisig {
         address   wallet;
     }
 
-
-    bytes32 public constant REQUEST_TYPEHASH = keccak256(
-        "WalletMultisig.Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
-    );
+    string  public constant REQUEST_TYPE = "Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)";
+    bytes32 public constant REQUEST_TYPEHASH = keccak256(abi.encodePacked(REQUEST_TYPE));
 
     function hashRequest(Request memory request)
         public

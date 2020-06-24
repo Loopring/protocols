@@ -43,7 +43,7 @@ abstract contract MetaTxRelayerModule is MetaTxRelayer, BaseModule
         BaseModule(_controller)
         MetaTxRelayer() {}
 
-    function beforeExecute(MetaTx memory metaTx)
+    function preExecute(MetaTx memory metaTx)
         internal
         override
         returns (bool abort)

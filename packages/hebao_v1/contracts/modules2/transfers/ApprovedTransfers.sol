@@ -27,29 +27,38 @@ import "./TransferModule.sol";
 /// @title ApprovedTransfers
 contract ApprovedTransfers is TransferModule
 {
-    bytes32 constant public TRANSFER_TOKEN_HASHTYPE = keccak256(
-        "transferToken(WalletMultisig.Request request,address token,address to,uint256 amount,bytes logdata)"
-    );
-
-    bytes32 constant public APPROVE_TOKEN_HASHTYPE = keccak256(
-        "approveToken(WalletMultisig.Request request,address token,address to,uint256 amount)"
-    );
-
-
-    bytes32 constant public CALL_CONTRACT_HASHTYPE = keccak256(
-        "callContract(WalletMultisig.Request request,address to,uint256 value,bytes data)"
-    );
-
-    bytes32 constant public APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
-        "approveThenCallContract(WalletMultisig.Request request,address token,address to,uint256 amount,uint256 value,bytes data)"
-    );
+    bytes32 public TRANSFER_TOKEN_HASHTYPE;
+    bytes32 public APPROVE_TOKEN_HASHTYPE;
+    bytes32 public CALL_CONTRACT_HASHTYPE;
+    bytes32 public APPROVE_THEN_CALL_CONTRACT_HASHTYPE;
 
     constructor(
         Controller _controller,
         address    _trustedRelayer
         )
         public
-        TransferModule(_controller, _trustedRelayer) {}
+        TransferModule(_controller, _trustedRelayer)
+    {
+        TRANSFER_TOKEN_HASHTYPE = keccak256(abi.encodePacked(
+            "transferToken(Request request,address token,address to,uint256 amount,bytes logdata)",
+            WalletMultisig.REQUEST_TYPE
+        ));
+
+        APPROVE_TOKEN_HASHTYPE = keccak256(abi.encodePacked(
+            "approveToken(Request request,address token,address to,uint256 amount)",
+            WalletMultisig.REQUEST_TYPE
+        ));
+
+        CALL_CONTRACT_HASHTYPE = keccak256(abi.encodePacked(
+            "callContract(Request request,address to,uint256 value,bytes data)",
+            WalletMultisig.REQUEST_TYPE
+        ));
+
+        APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(abi.encodePacked(
+            "approveThenCallContract(Request request,address token,address to,uint256 amount,uint256 value,bytes data)",
+            WalletMultisig.REQUEST_TYPE
+        )); 
+    }
 
     function transferToken(
         WalletMultisig.Request calldata request,
