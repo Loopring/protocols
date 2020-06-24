@@ -66,7 +66,7 @@ contract QuotaTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyPermission(
+        controller.verifyRequest(
             DOMAIN_SEPERATOR,
             GuardianUtils.SigRequirement.OwnerRequired,
             request,

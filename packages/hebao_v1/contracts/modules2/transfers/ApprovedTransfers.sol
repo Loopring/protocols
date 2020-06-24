@@ -63,7 +63,7 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyPermission(
+        controller.verifyRequest(
             DOMAIN_SEPERATOR,
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -89,7 +89,7 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        controller.verifyPermission(
+        controller.verifyRequest(
             DOMAIN_SEPERATOR,
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -115,7 +115,7 @@ contract ApprovedTransfers is TransferModule
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        controller.verifyPermission(
+        controller.verifyRequest(
             DOMAIN_SEPERATOR,
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
@@ -153,7 +153,7 @@ contract ApprovedTransfers is TransferModule
             value,
             data
         );
-        controller.verifyPermission(
+        controller.verifyRequest(
             DOMAIN_SEPERATOR,
             GuardianUtils.SigRequirement.OwnerRequired,
             request,

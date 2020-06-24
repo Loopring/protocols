@@ -53,7 +53,7 @@ library SignedRequest {
         );
     }
 
-    function verifyPermission(
+    function verifyRequest(
         Controller controller,
         bytes32 domainSeperator,
         GuardianUtils.SigRequirement sigRequirement,

@@ -167,7 +167,7 @@ contract GuardianModule is SecurityModule
         require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-        controller.verifyPermission(
+        controller.verifyRequest(
             DOMAIN_SEPERATOR,
             GuardianUtils.SigRequirement.OwnerNotAllowed,
             request,
