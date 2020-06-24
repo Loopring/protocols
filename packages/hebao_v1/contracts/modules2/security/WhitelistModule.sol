@@ -17,12 +17,15 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 
 import "../../iface/Wallet.sol";
 
 import "../../modules/security/GuardianUtils.sol";
+
+import "../core/WalletMultisig.sol";
 
 import "./SecurityModule.sol";
 
@@ -33,6 +36,11 @@ contract WhitelistModule is SecurityModule
 {
     using MathUint      for uint;
     using SignatureUtil for bytes32;
+
+    bytes32 constant public ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
+        "addToWhitelistImmediately(WalletMultisig.Request request, address addr)"
+    );
+
 
     uint public delayPeriod;
 
@@ -61,15 +69,26 @@ contract WhitelistModule is SecurityModule
     }
 
     function addToWhitelistImmediately(
-        WalletMultisig.Request calldata request ,
+        WalletMultisig.Request calldata request,
         address         addr
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 txhash; // TODO... nonce?
-        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+
+        bytes32 txHash = EIP712.hashPacked(
+            DOMAIN_SEPERATOR,
+            keccak256(
+                abi.encode(
+                    ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
+                    WalletMultisig.hashRequest(request),
+                    addr
+                )
+            )
+        );
+
+        controller.verifyPermission(request, txHash, GuardianUtils.SigRequirement.OwnerRequired);
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }
 

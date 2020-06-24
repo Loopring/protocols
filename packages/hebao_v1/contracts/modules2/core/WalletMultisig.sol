@@ -34,6 +34,26 @@ library WalletMultisig {
         address   wallet;
     }
 
+
+    bytes32 public constant REQUEST_TYPEHASH = keccak256(
+        "WalletMultisig.Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+    );
+
+    function hashRequest(Request memory request)
+        public
+        returns (bytes32)
+    {
+        return keccak256(
+            abi.encode(
+                REQUEST_TYPEHASH,
+                keccak256(abi.encode(request.signers)),
+                keccak256(abi.encode(request.signatures)),
+                request.nonce,
+                request.wallet
+            )
+        );
+    }
+
     function verifyPermission(
         Controller controller,
         Request memory request,

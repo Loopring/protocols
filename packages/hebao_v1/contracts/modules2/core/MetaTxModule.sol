@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/Module.sol";
 
+import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
 
 import "../../modules/security/GuardianUtils.sol";
@@ -40,6 +41,8 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
     using SignatureUtil  for bytes32;
     using WalletMultisig for Controller;
 
+     bytes32 public DOMAIN_SEPERATOR;
+
     constructor(
         Controller _controller,
         address    _trustedRelayer
@@ -48,6 +51,9 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         BaseModule(controller)
         MetaTxAware(_trustedRelayer)
     {
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("MetaTxModule", "2.0", address(this))
+        );
     }
 
     modifier onlyFromWallet(address wallet) virtual  {

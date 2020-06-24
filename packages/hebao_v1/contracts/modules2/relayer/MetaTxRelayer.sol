@@ -39,15 +39,12 @@ abstract contract MetaTxRelayer {
     );
 
     bytes32 public DOMAIN_SEPARATOR;
-
-
     mapping(address => uint256) public nonces;
-
 
     constructor()
         public
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Wallet MetaTx", "2.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxRelayer", "1.0", address(this)));
     }
 
     // solhint-disable-next-line no-empty-blocks
@@ -126,18 +123,16 @@ abstract contract MetaTxRelayer {
     {
         bytes memory encoded = abi.encodePacked(
             META_TX_TYPEHASH,
-            abi.encode(
-                metaTx.to,
-                keccak256(metaTx.data),
-                metaTx.from,
-                metaTx.nonce,
-                metaTx.gasToken,
-                metaTx.gasPrice,
-                metaTx.gasLimit
-            )
+            metaTx.to,
+            keccak256(metaTx.data),
+            metaTx.from,
+            metaTx.nonce,
+            metaTx.gasToken,
+            metaTx.gasPrice,
+            metaTx.gasLimit
         );
 
-        bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, keccak256(encoded)));
-        require(digest.verifySignature(metaTx.from, signature), "INVALID_SIGNATURE");
+        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, keccak256(encoded));
+        require(metaTxHash.verifySignature(metaTx.from, signature), "INVALID_SIGNATURE");
     }
 }
