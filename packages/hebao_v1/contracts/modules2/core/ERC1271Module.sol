@@ -34,11 +34,10 @@ contract ERC1271Module is ERC1271, BaseModule
     using SignatureUtil for bytes32;
 
     constructor(
-        Controller _controller,
-        address    _trustedRelayer
+        Controller _controller // TODO.....
         )
         public
-        BaseModule(_controller, _trustedRelayer)
+        BaseModule(_controller, address(0))
     {
 
     }
@@ -57,7 +56,8 @@ contract ERC1271Module is ERC1271, BaseModule
     // the bounded method on the wallet itself, not directly on this module.
     function isValidSignature(
         bytes memory _data,
-        bytes memory _signature)
+        bytes memory _signature
+        )
         public
         view
         override
