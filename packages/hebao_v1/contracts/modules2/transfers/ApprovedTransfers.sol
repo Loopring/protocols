@@ -19,12 +19,31 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
 
+import "../core/WalletMultisig.sol";
+
 import "./TransferModule.sol";
 
 
 /// @title ApprovedTransfers
 contract ApprovedTransfers is TransferModule
 {
+    bytes32 constant public TRANSFER_TOKEN_HASHTYPE = keccak256(
+        "transferToken(WalletMultisig.Request request,address token,address to,uint256 amount,bytes logdata)"
+    );
+
+    bytes32 constant public APPROVE_TOKEN_HASHTYPE = keccak256(
+        "approveToken(WalletMultisig.Request request,address token,address to,uint256 amount)"
+    );
+
+
+    bytes32 constant public CALL_CONTRACT_HASHTYPE = keccak256(
+        "callContract(WalletMultisig.Request request,address to,uint256 value,bytes data)"
+    );
+
+    bytes32 constant public APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
+        "approveThenCallContract(WalletMultisig.Request request,address token,address to,uint256 amount,uint256 value,bytes data)"
+    );
+
     constructor(
         Controller _controller,
         address    _trustedRelayer
@@ -43,8 +62,19 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 txhash; // TODO... nonce?
-        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        controller.verifyPermission(
+            DOMAIN_SEPERATOR,
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                TRANSFER_TOKEN_HASHTYPE,
+                WalletMultisig.hashRequest(request),
+                token,
+                to,
+                amount,
+                keccak256(logdata)
+            )
+        );
         transferInternal(request.wallet, token, to, amount, logdata);
     }
 
@@ -58,8 +88,18 @@ contract ApprovedTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 txhash; // TODO... nonce?
-        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        controller.verifyPermission(
+            DOMAIN_SEPERATOR,
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                APPROVE_TOKEN_HASHTYPE,
+                WalletMultisig.hashRequest(request),
+                token,
+                to,
+                amount
+            )
+        );
         approveInternal(request.wallet, token, to, amount);
     }
 
@@ -74,8 +114,19 @@ contract ApprovedTransfers is TransferModule
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        bytes32 txhash; // TODO... nonce?
-        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        controller.verifyPermission(
+            DOMAIN_SEPERATOR,
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CALL_CONTRACT_HASHTYPE,
+                WalletMultisig.hashRequest(request),
+                to,
+                value,
+                data
+            )
+        );
+
         return callContractInternal(request.wallet, to, value, data);
     }
 
@@ -92,8 +143,21 @@ contract ApprovedTransfers is TransferModule
         onlyWhenWalletUnlocked(request.wallet)
         returns (bytes memory returnData)
     {
-        bytes32 txhash; // TODO... nonce?
-        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        // controller.verifyPermission(
+        //     DOMAIN_SEPERATOR,
+        //     GuardianUtils.SigRequirement.OwnerRequired,
+        //     request,
+        //     abi.encode(
+        //             APPROVE_THEN_CALL_CONTRACT_HASHTYPE,
+        //             WalletMultisig.hashRequest(request),
+        //             token,
+        //             to,
+        //             amount,
+        //             value,
+        //             data
+        //         )
+        // );
+
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);
     }

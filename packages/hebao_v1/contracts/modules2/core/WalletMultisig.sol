@@ -19,6 +19,7 @@ pragma experimental ABIEncoderV2;
 
 import "../../iface/Controller.sol";
 
+import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
 
 import "../../modules/security/GuardianUtils.sol";
@@ -56,14 +57,17 @@ library WalletMultisig {
 
     function verifyPermission(
         Controller controller,
+        bytes32 domainSeperator,
+        GuardianUtils.SigRequirement sigRequirement,
         Request memory request,
-        bytes32 txHash,
-        GuardianUtils.SigRequirement sigRequirement)
+        bytes memory encodedRequest
+        )
         public
     {
         controller.nonceStore().verifyNonce(request.wallet, request.nonce);
         controller.nonceStore().updateNonce(request.wallet);
 
+        bytes32 txHash = EIP712.hashPacked(domainSeperator, keccak256(encodedRequest));
         require(txHash.verifySignatures(request.signers, request.signatures), "INVALID_SIGNATURES");
 
         require(

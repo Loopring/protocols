@@ -82,12 +82,6 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
-    // modifier onlyFrom(address guardian)
-    // {
-    //     require(msgSender() == guardian, "UNAUTHORIZED");
-    //     _;
-    // }
-
     modifier onlyHaveEnoughGuardians(address wallet)
     {
         require(

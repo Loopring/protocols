@@ -38,7 +38,7 @@ contract WhitelistModule is SecurityModule
     using SignatureUtil for bytes32;
 
     bytes32 constant public ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
-        "addToWhitelistImmediately(WalletMultisig.Request request, address addr)"
+        "addToWhitelistImmediately(WalletMultisig.Request request,address addr)"
     );
 
 
@@ -76,17 +76,16 @@ contract WhitelistModule is SecurityModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 txHash = EIP712.hashPacked(
+        controller.verifyPermission(
             DOMAIN_SEPERATOR,
-            keccak256(
-                abi.encode(
-                    ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
-                    WalletMultisig.hashRequest(request),
-                    addr
-                )
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
+                WalletMultisig.hashRequest(request),
+                addr
             )
         );
-        controller.verifyPermission(request, txHash, GuardianUtils.SigRequirement.OwnerRequired);
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }
 

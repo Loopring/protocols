@@ -17,7 +17,6 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 
 import "../../thirdparty/ERC1271.sol";
@@ -168,17 +167,16 @@ contract GuardianModule is SecurityModule
         require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-        bytes32 txHash = EIP712.hashPacked(
+        controller.verifyPermission(
             DOMAIN_SEPERATOR,
-            keccak256(
-                abi.encode(
-                    RECOVER_HASHTYPE,
-                    WalletMultisig.hashRequest(request),
-                    newOwner
-                )
+            GuardianUtils.SigRequirement.OwnerNotAllowed,
+            request,
+            abi.encode(
+                RECOVER_HASHTYPE,
+                WalletMultisig.hashRequest(request),
+                newOwner
             )
         );
-        controller.verifyPermission(request, txHash, GuardianUtils.SigRequirement.OwnerNotAllowed);
 
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);

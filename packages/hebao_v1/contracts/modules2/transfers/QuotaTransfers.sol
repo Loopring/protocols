@@ -28,6 +28,10 @@ import "./TransferModule.sol";
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule
 {
+    bytes32 constant public CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(
+        "changeDailyQuotaImmediately(WalletMultisig.Request request,uint256 newQuota)"
+    );
+
     uint public delayPeriod;
 
     constructor(
@@ -62,8 +66,17 @@ contract QuotaTransfers is TransferModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-        bytes32 txhash; // TODO... nonce?
-        controller.verifyPermission(request, txhash, GuardianUtils.SigRequirement.OwnerRequired);
+        controller.verifyPermission(
+            DOMAIN_SEPERATOR,
+            GuardianUtils.SigRequirement.OwnerRequired,
+            request,
+            abi.encode(
+                CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE,
+                WalletMultisig.hashRequest(request),
+                newQuota
+            )
+        );
+
         controller.quotaStore().changeQuota(request.wallet, newQuota, now);
     }
 
