@@ -17,11 +17,14 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 
 import "../../thirdparty/ERC1271.sol";
 
 import "../../iface/Wallet.sol";
+
+import "../core/WalletMultisig.sol";
 
 import "./SecurityModule.sol";
 
@@ -45,6 +48,10 @@ contract GuardianModule is SecurityModule
         address indexed oldOwner,
         address indexed newOwner,
         bool            removedAsGuardian
+    );
+
+    bytes32 constant public RECOVER_HASHTYPE = keccak256(
+        "recover(WalletMultisig.Request request, address newOwner)"
     );
 
     constructor(
@@ -127,7 +134,7 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         // onlyWhenWalletUnlocked(wallet)
-        onlyWalletGuardian(wallet, msgSender())
+        onlyFromGuardian(wallet)
         onlyHaveEnoughGuardians(wallet)
     {
         lockWallet(wallet);
@@ -137,56 +144,53 @@ contract GuardianModule is SecurityModule
         external
         nonReentrant
         // onlyWhenWalletLocked(wallet)
-        onlyWalletGuardian(wallet,  msgSender())
+        onlyFromGuardian(wallet)
     {
         unlockWallet(wallet, false);
     }
 
     /// @dev Recover a wallet by setting a new owner.
-    /// @param wallet The wallet for which the recovery shall be cancelled.
+    /// @param request The general request object.
     /// @param newOwner The new owner address to set.
     ///        The addresses must be sorted ascendently.
     function recover(
-        address            wallet,
-        address            newOwner,
-        address[] calldata signers,
-        bytes[]   calldata signatures
+        WalletMultisig.Request calldata request,
+        address newOwner
         )
         external
         nonReentrant
-        notWalletOwner(wallet, newOwner)
-        onlyHaveEnoughGuardians(wallet)
+        notWalletOwner(request.wallet, newOwner)
+        onlyHaveEnoughGuardians(request.wallet)
     {
 
-        Wallet w = Wallet(wallet);
+        Wallet w = Wallet(request.wallet);
         address oldOwner = w.owner();
         require(newOwner != oldOwner, "SAME_ADDRESS");
         require(newOwner != address(0), "ZERO_ADDRESS");
 
-
-        bytes32 metaTxHash; // TODO... nonce?
-        // require(metaTxHash.verifySignatures(signers, signatures), "INVALID_SIGNATURES");
-        require(
-            GuardianUtils.requireMajority(
-                controller.securityStore(),
-                wallet,
-                signers,
-                GuardianUtils.SigRequirement.OwnerNotAllowed
-            ),
-            "PERMISSION_DENIED"
+        bytes32 txHash = EIP712.hashPacked(
+            DOMAIN_SEPERATOR,
+            keccak256(
+                abi.encode(
+                    RECOVER_HASHTYPE,
+                    WalletMultisig.hashRequest(request),
+                    newOwner
+                )
+            )
         );
+        controller.verifyPermission(request, txHash, GuardianUtils.SigRequirement.OwnerNotAllowed);
 
         SecurityStore securityStore = controller.securityStore();
-        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);
 
         if (removedAsGuardian) {
-           securityStore.removeGuardian(wallet, newOwner, now);
+           securityStore.removeGuardian(request.wallet, newOwner, now);
         }
 
         w.setOwner(newOwner);
-        unlockWallet(wallet, true /*force*/);
+        unlockWallet(request.wallet, true /*force*/);
 
-        emit Recovered(wallet, oldOwner, newOwner, removedAsGuardian);
+        emit Recovered(request.wallet, oldOwner, newOwner, removedAsGuardian);
     }
 
     function getLock(address wallet)

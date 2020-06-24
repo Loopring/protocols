@@ -76,7 +76,6 @@ contract WhitelistModule is SecurityModule
         nonReentrant
         onlyWhenWalletUnlocked(request.wallet)
     {
-
         bytes32 txHash = EIP712.hashPacked(
             DOMAIN_SEPERATOR,
             keccak256(
@@ -87,7 +86,6 @@ contract WhitelistModule is SecurityModule
                 )
             )
         );
-
         controller.verifyPermission(request, txHash, GuardianUtils.SigRequirement.OwnerRequired);
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }

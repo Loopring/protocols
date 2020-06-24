@@ -53,6 +53,11 @@ abstract contract SecurityModule is MetaTxModule
         _;
     }
 
+    modifier onlyFromGuardian(address wallet) {
+        require(controller.securityStore().isGuardian(wallet, msgSender()), "NOT_FROM_GUARDIAN");
+        _; 
+    }
+
     modifier onlyWhenWalletLocked(address wallet)
     {
         require(isWalletLocked(wallet), "NOT_LOCKED");
