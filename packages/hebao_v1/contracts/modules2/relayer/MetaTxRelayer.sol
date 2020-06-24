@@ -18,8 +18,10 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
+import "../../lib/SignatureUtil.sol";
 
 abstract contract MetaTxRelayer {
+    using SignatureUtil for bytes32;
 
     struct MetaTx {
         address to;
@@ -136,6 +138,6 @@ abstract contract MetaTxRelayer {
         );
 
         bytes32 digest = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, keccak256(encoded)));
-        // require(digest.recover(sig) == req.from, "INVALID_SIGNATURE");
+        require(digest.verifySignature(metaTx.from, signature), "INVALID_SIGNATURE");
     }
 }

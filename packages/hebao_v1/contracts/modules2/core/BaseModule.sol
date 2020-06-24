@@ -37,7 +37,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
-    modifier onlyFromWalletOwner(address wallet) virtual {
+    modifier onlyFromWallet(address wallet) virtual {
         require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
         _;
     }
@@ -66,7 +66,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         )
         external
         nonReentrant
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
     {
         Wallet(wallet).addModule(module);
     }

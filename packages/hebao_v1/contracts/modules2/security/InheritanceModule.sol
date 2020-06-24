@@ -96,7 +96,7 @@ contract InheritanceModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
     {
         controller.securityStore().setInheritor(wallet, who);
     }

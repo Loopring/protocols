@@ -49,7 +49,7 @@ contract QuotaTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
     {
         controller.quotaStore().changeQuota(wallet, newQuota, now.add(delayPeriod));
     }
@@ -88,7 +88,7 @@ contract QuotaTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
     {
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
         if (!whitelisted) {
@@ -107,7 +107,7 @@ contract QuotaTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
         returns (bytes memory returnData)
     {
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
@@ -127,7 +127,7 @@ contract QuotaTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
         (bool whitelisted,) = controller.whitelistStore().isWhitelisted(wallet, to);
@@ -148,7 +148,7 @@ contract QuotaTransfers is TransferModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWalletOwner(wallet)
+        onlyFromWallet(wallet)
         returns (bytes memory returnData)
     {
         uint additionalAllowance = approveInternal(wallet, token, to, amount);
