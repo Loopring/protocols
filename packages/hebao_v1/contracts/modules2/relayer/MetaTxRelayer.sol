@@ -17,6 +17,8 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../iface/Wallet.sol";
+
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
 
@@ -65,8 +67,7 @@ abstract contract MetaTxRelayer {
         external
         view
     {
-        require(nonces[metaTx.from] == metaTx.nonce, "NONCE_MISMATCH");
-        verifySignature(metaTx, signature);
+        verifyInternal(metaTx, signature);
     }
 
     function execute(
@@ -80,8 +81,7 @@ abstract contract MetaTxRelayer {
             bytes memory returnValue
         )
     {
-        require(nonces[metaTx.from] == metaTx.nonce, "NONCE_MISMATCH");
-        verifySignature(metaTx, signature);
+        verifyInternal(metaTx, signature);
         nonces[metaTx.from]++;
 
         uint gasLeft = gasleft();
@@ -134,5 +134,18 @@ abstract contract MetaTxRelayer {
 
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, keccak256(encoded));
         require(metaTxHash.verifySignature(metaTx.from, signature), "INVALID_SIGNATURE");
+    }
+
+    function verifyInternal(
+        MetaTx memory metaTx,
+        bytes  memory signature
+        )
+        private
+        view
+    {
+        require(metaTx.to != address(this), "CANNOT_RELAY_TO_SELF");
+        require(Wallet(metaTx.from).hasModule(metaTx.to), "INVALID_DEST");
+        require(nonces[metaTx.from] == metaTx.nonce, "NONCE_MISMATCH");
+        verifySignature(metaTx, signature);
     }
 }

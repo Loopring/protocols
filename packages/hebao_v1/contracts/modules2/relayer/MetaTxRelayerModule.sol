@@ -43,8 +43,6 @@ abstract contract MetaTxRelayerModule is MetaTxRelayer, BaseModule
         BaseModule(_controller)
         MetaTxRelayer() {}
 
-    uint public constant GAS_OVERHEAD = 200000;
-
     function beforeExecute(MetaTx memory metaTx)
         internal
         override
@@ -67,30 +65,12 @@ abstract contract MetaTxRelayerModule is MetaTxRelayer, BaseModule
         uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 
         if (metaTx.gasPrice > 0) {
-            reimburseGasFee(metaTx.from, metaTx.gasToken, metaTx.gasPrice, gasAmount);
-        }
-    }
-
-    function reimburseGasFee(
-        address     wallet,
-        address     gasToken,
-        uint        gasPrice,
-        uint        gasAmount
-        )
-        private
-    {
-        uint gasCost = gasAmount.add(GAS_OVERHEAD).mul(gasPrice);
-        uint value = controller.priceOracle().tokenValue(gasToken, gasCost);
-        if (value > 0) {
-          controller.quotaStore().checkAndAddToSpent(wallet, value);
-        }
-
-        if (gasToken == address(0)) {
-            transactCall(wallet, controller.collectTo(), gasCost, "");
-        } else {
-            require(
-                transactTokenTransfer(wallet, gasToken, controller.collectTo(), gasCost),
-                "TRANSFER_FAILED"
+            reimburseGasFee(
+                metaTx.from,
+                controller.collectTo(),
+                metaTx.gasToken,
+                metaTx.gasPrice,
+                gasAmount
             );
         }
     }

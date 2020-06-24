@@ -18,6 +18,7 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
+import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
 
 import "../../iface/Controller.sol";
@@ -35,6 +36,8 @@ import "../../iface/Module.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract BaseModule is ReentrancyGuard, Module
 {
+    using MathUint for uint;
+
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
@@ -52,6 +55,8 @@ abstract contract BaseModule is ReentrancyGuard, Module
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
     }
+
+    uint public constant GAS_OVERHEAD = 200000;
 
     Controller public controller;
 
@@ -216,5 +221,31 @@ abstract contract BaseModule is ReentrancyGuard, Module
         returns (bytes memory)
     {
         return Wallet(wallet).transact(uint8(3), to, 0, data);
+    }
+
+
+    function reimburseGasFee(
+        address     wallet,
+        address     recipient,
+        address     gasToken,
+        uint        gasPrice,
+        uint        gasAmount
+        )
+        internal
+    {
+        uint gasCost = gasAmount.add(GAS_OVERHEAD).mul(gasPrice);
+        uint value = controller.priceOracle().tokenValue(gasToken, gasCost);
+        if (value > 0) {
+          controller.quotaStore().checkAndAddToSpent(wallet, value);
+        }
+
+        if (gasToken == address(0)) {
+            transactCall(wallet, recipient, gasCost, "");
+        } else {
+            require(
+                transactTokenTransfer(wallet, gasToken, recipient, gasCost),
+                "TRANSFER_FAILED"
+            );
+        }
     }
 }
