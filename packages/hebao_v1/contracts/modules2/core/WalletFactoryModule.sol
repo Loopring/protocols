@@ -41,6 +41,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     using AddressUtil for address;
 
     address public walletImplementation;
+    bool    public allowEmptyEns;
 
 	bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(Request request,address owner,string label,bytes labelApproval,address[] modules,bytes signature)"
@@ -49,12 +50,14 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     constructor(
         Controller _controller,
         address    _trustedForwarder,
-        address    _walletImplementation
+        address    _walletImplementation,
+        bool       _allowEmptyEns
         )
         public
         MetaTxModule(_controller, _trustedForwarder)
     {
         walletImplementation = _walletImplementation;
+        allowEmptyEns = _allowEmptyEns;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -62,6 +65,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     /// @param _label The ENS subdomain to register, use "" to skip.
     /// @param _labelApproval The signature for ENS subdomain approval.
     /// @param _modules The wallet's modules.
+    /// @param _signature The wallet owner's signature.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
         address            _owner,
@@ -75,6 +79,8 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         nonReentrant
         returns (address _wallet)
     {
+    	require(_modules.length > 0, "EMPTY_MODULES");
+
     	bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
@@ -100,7 +106,10 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
                 _label,
                 _labelApproval
             );
+        } else {
+        	require(allowEmptyEns, "INVALID_ENS_LABEL");
         }
+
         w.removeModule(address(this));
     }
 }
