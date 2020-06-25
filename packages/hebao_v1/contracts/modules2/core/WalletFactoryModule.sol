@@ -43,7 +43,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     address public walletImplementation;
 
 	bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "CreateWallet(Request request,address owner,string label,bytes labelApproval,address[] modules,bytes signature)"
+        "createWallet(Request request,address owner,string label,bytes labelApproval,address[] modules,bytes signature)"
     );
 
     constructor(
