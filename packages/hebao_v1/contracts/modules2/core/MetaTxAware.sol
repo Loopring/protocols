@@ -32,20 +32,20 @@ abstract contract MetaTxAware
     using AddressUtil for address;
     using BytesUtil   for bytes;
 
-    address public trustedRelayer;
+    address public trustedForwarder;
 
-    constructor(address _trustedRelayer) public
+    constructor(address _trustedForwarder) public
     {
-        trustedRelayer = _trustedRelayer;
+        trustedForwarder = _trustedForwarder;
     }
 
     /// @dev Returns if a relayer is a trusted meta-tx relayer.
-    function isTrustedRelayer(address relayer)
+    function isTrustedForwarder(address relayer)
         public
         view
         returns(bool)
     {
-        return relayer == trustedRelayer;
+        return relayer == trustedForwarder;
     }
 
     /// @dev Return's the function's logicial message sender. This method should be
@@ -55,7 +55,7 @@ abstract contract MetaTxAware
         view
         returns (address payable)
     {
-        if (msg.data.length >= 24 && isTrustedRelayer(msg.sender)) {
+        if (msg.data.length >= 24 && isTrustedForwarder(msg.sender)) {
             return msg.data.toAddress(msg.data.length - 20).toPayable();
         } else {
             return msg.sender;

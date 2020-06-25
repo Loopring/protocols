@@ -36,11 +36,11 @@ contract QuotaTransfers is TransferModule
 
     constructor(
         Controller  _controller,
-        address     _trustedRelayer,
+        address     _trustedForwarder,
         uint        _delayPeriod
         )
         public
-        TransferModule(_controller, _trustedRelayer)
+        TransferModule(_controller, _trustedForwarder)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;

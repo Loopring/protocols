@@ -42,10 +42,10 @@ abstract contract SecurityModule is MetaTxModule
 
     constructor(
         Controller _controller,
-        address    _trustedRelayer
+        address    _trustedForwarder
         )
         public
-        MetaTxModule(_controller, _trustedRelayer)
+        MetaTxModule(_controller, _trustedForwarder)
     {
     }
 

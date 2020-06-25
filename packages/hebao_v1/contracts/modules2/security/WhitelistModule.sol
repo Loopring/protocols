@@ -45,11 +45,11 @@ contract WhitelistModule is SecurityModule
 
     constructor(
         Controller  _controller,
-        address     _trustedRelayer,
+        address     _trustedForwarder,
         uint        _delayPeriod
         )
         public
-        SecurityModule(_controller, _trustedRelayer)
+        SecurityModule(_controller, _trustedForwarder)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;

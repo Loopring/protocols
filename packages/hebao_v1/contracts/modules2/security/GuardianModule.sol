@@ -55,11 +55,11 @@ contract GuardianModule is SecurityModule
 
     constructor(
         Controller _controller,
-        address    _trustedRelayer,
+        address    _trustedForwarder,
         uint       _pendingPeriod
         )
         public
-        SecurityModule(_controller, _trustedRelayer)
+        SecurityModule(_controller, _trustedForwarder)
     {
         require(_pendingPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;

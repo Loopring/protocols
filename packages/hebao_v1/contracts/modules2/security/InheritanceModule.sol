@@ -43,11 +43,11 @@ contract InheritanceModule is SecurityModule
 
     constructor(
         Controller _controller,
-        address    _trustedRelayer,
+        address    _trustedForwarder,
         uint       _waitingPeriod
         )
         public
-        SecurityModule(_controller, _trustedRelayer)
+        SecurityModule(_controller, _trustedForwarder)
     {
         require(_waitingPeriod > 0, "INVALID_DELAY");
         waitingPeriod = _waitingPeriod;

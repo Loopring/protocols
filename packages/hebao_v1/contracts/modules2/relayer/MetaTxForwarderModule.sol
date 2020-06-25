@@ -24,7 +24,7 @@ import "../../lib/MathUint.sol";
 
 import "../core/BaseModule.sol";
 
-import "./MetaTxRelayer.sol";
+import "./MetaTxForwarder.sol";
 
 
 /// @title RelayerModule
@@ -34,14 +34,14 @@ import "./MetaTxRelayer.sol";
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
-abstract contract MetaTxRelayerModule is MetaTxRelayer, BaseModule
+abstract contract MetaTxForwarderModule is MetaTxForwarder, BaseModule
 {
     using MathUint for uint;
 
     constructor(Controller _controller)
         public
         BaseModule(_controller)
-        MetaTxRelayer() {}
+        MetaTxForwarder() {}
 
     function preExecute(MetaTx memory metaTx)
         internal

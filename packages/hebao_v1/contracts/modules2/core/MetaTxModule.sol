@@ -45,11 +45,11 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 
     constructor(
         Controller _controller,
-        address    _trustedRelayer
+        address    _trustedForwarder
         )
         public
         BaseModule(controller)
-        MetaTxAware(_trustedRelayer)
+        MetaTxAware(_trustedForwarder)
     {
         DOMAIN_SEPERATOR = EIP712.hash(
             EIP712.Domain("MetaTxModule", "2.0", address(this))
@@ -71,7 +71,6 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
     {
         Wallet(wallet).addModule(module);
     }
-
 
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()

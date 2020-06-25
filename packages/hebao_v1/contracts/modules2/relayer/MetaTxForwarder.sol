@@ -22,7 +22,7 @@ import "../../iface/Wallet.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
 
-abstract contract MetaTxRelayer {
+abstract contract MetaTxForwarder {
     using SignatureUtil for bytes32;
 
     struct MetaTx {
@@ -46,7 +46,7 @@ abstract contract MetaTxRelayer {
     constructor()
         public
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxRelayer", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxForwarder", "1.0", address(this)));
     }
 
     // solhint-disable-next-line no-empty-blocks

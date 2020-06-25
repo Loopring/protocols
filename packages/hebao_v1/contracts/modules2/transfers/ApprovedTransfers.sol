@@ -45,10 +45,10 @@ contract ApprovedTransfers is TransferModule
 
     constructor(
         Controller _controller,
-        address    _trustedRelayer
+        address    _trustedForwarder
         )
         public
-        TransferModule(_controller, _trustedRelayer)
+        TransferModule(_controller, _trustedForwarder)
     {
     }
 
