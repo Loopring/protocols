@@ -35,22 +35,6 @@ library SignedRequest {
         address   wallet;
     }
 
-    string  public constant REQUEST_TYPE = "Request(uint256 nonce,address wallet)";
-    bytes32 public constant REQUEST_TYPEHASH = keccak256(abi.encodePacked(REQUEST_TYPE));
-
-    function hash(Request memory request)
-        public
-        returns (bytes32)
-    {
-        return keccak256(
-            abi.encode(
-                REQUEST_TYPEHASH,
-                request.nonce,
-                request.wallet
-            )
-        );
-    }
-
     function verifyRequest(
         Controller controller,
         bytes32 domainSeperator,

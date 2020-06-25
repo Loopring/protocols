@@ -29,7 +29,7 @@ import "./TransferModule.sol";
 contract QuotaTransfers is TransferModule
 {
     bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(
-        "changeDailyQuotaImmediately(Request request,uint256 newQuota)Request(uint256 nonce,address wallet)"
+        "changeDailyQuotaImmediately(address wallet,uint256 nonce,uint256 newQuota)"
     );
 
     uint public delayPeriod;
@@ -72,7 +72,8 @@ contract QuotaTransfers is TransferModule
             request,
             abi.encode(
                 CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE,
-                SignedRequest.hash(request),
+                request.wallet,
+                request.nonce,
                 newQuota
             )
         );

@@ -38,7 +38,7 @@ contract WhitelistModule is SecurityModule
     using SignatureUtil for bytes32;
 
     bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
-        "addToWhitelistImmediately(Request request,address addr)Request(uint256 nonce,address wallet)"
+        "addToWhitelistImmediately(address wallet,uint256 nonce,address addr)"
     );
 
     uint public delayPeriod;
@@ -81,7 +81,8 @@ contract WhitelistModule is SecurityModule
             request,
             abi.encode(
                 ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
-                SignedRequest.hash(request),
+                request.wallet,
+                request.nonce,
                 addr
             )
         );

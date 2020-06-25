@@ -50,7 +50,7 @@ contract GuardianModule is SecurityModule
     );
 
     bytes32 public constant RECOVER_HASHTYPE = keccak256(
-        "recover(Request request, address newOwner)Request(uint256 nonce,address wallet)"
+        "recover(address wallet,uint256 nonce,address newOwner)"
     );
 
     constructor(
@@ -173,7 +173,8 @@ contract GuardianModule is SecurityModule
             request,
             abi.encode(
                 RECOVER_HASHTYPE,
-                SignedRequest.hash(request),
+                request.wallet,
+                request.nonce,
                 newOwner
             )
         );
