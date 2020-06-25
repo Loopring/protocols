@@ -50,7 +50,7 @@ contract GuardianModule is SecurityModule
     );
 
     bytes32 public constant RECOVER_HASHTYPE = keccak256(
-        "recover(Request request, address newOwner)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+        "recover(Request request, address newOwner)Request(uint256 nonce,address wallet)"
     );
 
     constructor(

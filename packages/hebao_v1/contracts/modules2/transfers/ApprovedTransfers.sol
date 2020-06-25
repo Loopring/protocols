@@ -28,19 +28,19 @@ import "./TransferModule.sol";
 contract ApprovedTransfers is TransferModule
 {
     bytes32 public constant TRANSFER_TOKEN_HASHTYPE = keccak256(
-        "transferToken(Request request,address token,address to,uint256 amount,bytes logdata)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+        "transferToken(Request request,address token,address to,uint256 amount,bytes logdata)Request(uint256 nonce,address wallet)"
     );
 
     bytes32 public constant APPROVE_TOKEN_HASHTYPE = keccak256(
-        "approveToken(Request request,address token,address to,uint256 amount)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+        "approveToken(Request request,address token,address to,uint256 amount)Request(uint256 nonce,address wallet)"
     );
 
     bytes32 public constant CALL_CONTRACT_HASHTYPE = keccak256(
-        "callContract(Request request,address to,uint256 value,bytes data)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+        "callContract(Request request,address to,uint256 value,bytes data)Request(uint256 nonce,address wallet)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
-        "approveThenCallContract(Request request,address token,address to,uint256 amount,uint256 value,bytes data)Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)"
+        "approveThenCallContract(Request request,address token,address to,uint256 amount,uint256 value,bytes data)Request(uint256 nonce,address wallet)"
     ); 
 
     constructor(

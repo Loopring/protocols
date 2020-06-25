@@ -27,7 +27,7 @@ import "../core/BaseModule.sol";
 import "./MetaTxForwarder.sol";
 
 
-/// @title RelayerModule
+/// @title MetaTxForwarderModule
 /// @dev Base contract for all smart wallet modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>

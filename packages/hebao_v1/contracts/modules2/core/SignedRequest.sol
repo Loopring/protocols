@@ -35,7 +35,7 @@ library SignedRequest {
         address   wallet;
     }
 
-    string  public constant REQUEST_TYPE = "Request(address[] signers,bytes[] signatures,uint256 nonce,address wallet)";
+    string  public constant REQUEST_TYPE = "Request(uint256 nonce,address wallet)";
     bytes32 public constant REQUEST_TYPEHASH = keccak256(abi.encodePacked(REQUEST_TYPE));
 
     function hash(Request memory request)
@@ -45,8 +45,6 @@ library SignedRequest {
         return keccak256(
             abi.encode(
                 REQUEST_TYPEHASH,
-                keccak256(abi.encode(request.signers)),
-                keccak256(abi.encode(request.signatures)),
                 request.nonce,
                 request.wallet
             )

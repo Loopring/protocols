@@ -44,7 +44,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     bool    public allowEmptyEns;
 
 	bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(Request request,address owner,string label,bytes labelApproval,address[] modules,bytes signature)"
+        "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
     );
 
     constructor(
@@ -87,7 +87,6 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
             _label,
             keccak256(_labelApproval),
             keccak256(abi.encode(_modules)),
-            keccak256(_signature)
 		);
 
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, keccak256(encodedRequest));
