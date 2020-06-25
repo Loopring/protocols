@@ -82,7 +82,7 @@ abstract contract MetaTxForwarder {
         )
     {
         verifyInternal(metaTx, signature);
-        nonces[metaTx.from]++;
+        nonces[metaTx.from] = metaTx.nonce;
 
         uint gasLeft = gasleft();
         if (preExecute(metaTx)) {
@@ -143,8 +143,10 @@ abstract contract MetaTxForwarder {
         private
         view
     {
-        require(metaTx.to != address(this), "CANNOT_RELAY_TO_SELF");
-        require(nonces[metaTx.from] == metaTx.nonce, "NONCE_MISMATCH");
+        require(metaTx.to != address(this), "CANNOT_FORWARD_TO_SELF");
+        require((metaTx.nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
+        require(metaTx.nonce > nonces[metaTx.from], "NONCE_TOO_SMALL");
+
         verifySignature(metaTx, signature);
     }
 }
