@@ -36,8 +36,9 @@ contract ControllerImpl is Claimable, Controller
     );
 
     function init(
-        address           _collectTo,
         uint              _defaultLockPeriod,
+        address           _collectTo,
+        PriceOracle       _priceOracle,
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
         QuotaStore        _quotaStore,
@@ -45,7 +46,6 @@ contract ControllerImpl is Claimable, Controller
         WhitelistStore    _whitelistStore,
         NonceStore        _nonceStore,
         DappAddressStore  _dappAddressStore,
-        PriceOracle       _priceOracle,
         WalletENSManager  _ensManager
         )
         external
@@ -53,21 +53,21 @@ contract ControllerImpl is Claimable, Controller
     {
         require(!initialized, "INITIALIZED_ALREADY");
         initialized = true;
-
-        require(_collectTo != address(0), "ZERO_ADDRESS");
-        collectTo = _collectTo;                 // modifiable
         defaultLockPeriod = _defaultLockPeriod;
 
+        // modifiable
+        require(_collectTo != address(0), "ZERO_ADDRESS");
+        collectTo = _collectTo;  
+        priceOracle = _priceOracle;     
+
+        // non-modifiable
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;
-
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
         nonceStore = _nonceStore;
         dappAddressStore = _dappAddressStore;
-
-        priceOracle = _priceOracle;             // modifiable
         ensManager = _ensManager;
     }
 
