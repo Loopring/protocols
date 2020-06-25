@@ -22,7 +22,7 @@ import "../../iface/Wallet.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
 
-abstract contract MetaTxForwarder {
+abstract contract Forwarder {
     using SignatureUtil for bytes32;
 
     struct MetaTx {
@@ -35,7 +35,6 @@ abstract contract MetaTxForwarder {
         uint    gasLimit;
     }
 
-
     bytes32 constant public META_TX_TYPEHASH = keccak256(
         "MetaTx(address to,bytes data,address from,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit)"
     );
@@ -46,7 +45,7 @@ abstract contract MetaTxForwarder {
     constructor()
         public
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("MetaTxForwarder", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Forwarder", "1.0", address(this)));
     }
 
     // solhint-disable-next-line no-empty-blocks

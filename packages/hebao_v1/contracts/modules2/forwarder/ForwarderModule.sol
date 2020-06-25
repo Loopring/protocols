@@ -24,24 +24,24 @@ import "../../lib/MathUint.sol";
 
 import "../core/BaseModule.sol";
 
-import "./MetaTxForwarder.sol";
+import "./Forwarder.sol";
 
 
-/// @title MetaTxForwarderModule
+/// @title ForwarderModule
 /// @dev Base contract for all smart wallet modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
-abstract contract MetaTxForwarderModule is MetaTxForwarder, BaseModule
+abstract contract ForwarderModule is Forwarder, BaseModule
 {
     using MathUint for uint;
 
     constructor(Controller _controller)
         public
         BaseModule(_controller)
-        MetaTxForwarder() {}
+        Forwarder() {}
 
     function preExecute(MetaTx memory metaTx)
         internal
