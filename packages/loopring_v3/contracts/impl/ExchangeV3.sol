@@ -554,15 +554,29 @@ contract ExchangeV3 is IExchangeV3
         address from,
         address to,
         address token,
-        uint    amount
+        uint    amount,
+        address feeToken,
+        uint    fee,
+        uint32  nonce
         )
         external
         override
         nonReentrant
         onlyAgentFor(from)
     {
-        // uint16 tokenID = state.getTokenID(token);
-        // TODO: Remove or hash the data and call `approveTransaction`.
+        uint16 tokenID = state.getTokenID(token);
+        uint16 feeTokenID = state.getTokenID(feeToken);
+        bytes32 transactionHash = TransferTransaction.hash(
+            state.DOMAIN_SEPARATOR,
+            from,
+            to,
+            tokenID,
+            amount,
+            feeTokenID,
+            fee,
+            nonce
+        );
+        state.approvedTx[from][transactionHash] = true;
     }
 
     function onchainTransferFrom(

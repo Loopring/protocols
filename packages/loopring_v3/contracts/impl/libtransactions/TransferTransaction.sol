@@ -79,8 +79,43 @@ library TransferTransaction
         offset += 20;
 
         // Calculate the tx hash
-        bytes32 txHash = EIP712.hashPacked(
+        bytes32 txHash = hash(
             S.DOMAIN_SEPARATOR,
+            from,
+            to,
+            tokenID,
+            amount,
+            feeTokenID,
+            fee,
+            nonce
+        );
+
+        emit ConditionalTransferConsumed(from, to, tokenID, amount);
+
+        // Verify the signature if one is provided, otherwise fall back to an approved tx
+        if (auxiliaryData.length > 0) {
+            require(txHash.verifySignature(from, auxiliaryData), "INVALID_SIGNATURE");
+        } else {
+            require(S.approvedTx[from][txHash], "TX_NOT_APPROVED");
+            S.approvedTx[from][txHash] = false;
+        }
+    }
+
+    function hash(
+        bytes32 DOMAIN_SEPARATOR,
+        address from,
+        address to,
+        uint16  tokenID,
+        uint    amount,
+        uint16  feeTokenID,
+        uint    fee,
+        uint32  nonce
+        )
+        internal
+        returns (bytes32)
+    {
+        return EIP712.hashPacked(
+            DOMAIN_SEPARATOR,
             keccak256(
                 abi.encode(
                     TRANSFER_TYPEHASH,
@@ -94,15 +129,5 @@ library TransferTransaction
                 )
             )
         );
-
-        emit ConditionalTransferConsumed(from, to, tokenID, amount);
-
-        // Verify the signature if one is provided, otherwise fall back to an approved tx
-        if (auxiliaryData.length > 0) {
-            require(txHash.verifySignature(from, auxiliaryData), "INVALID_SIGNATURE");
-        } else {
-            require(S.approvedTx[from][txHash], "TX_NOT_APPROVED");
-            S.approvedTx[from][txHash] = false;
-        }
     }
 }

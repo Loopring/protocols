@@ -689,11 +689,17 @@ abstract contract IExchangeV3 is IExchange
     /// @param to The address to which 'amount' tokens are transferred.
     /// @param token The address of the token to transfer ('0x0' for ETH).
     /// @param amount The amount of tokens to be transferred.
+    /// @param feeToken The address of the token used for the fee ('0x0' for ETH).
+    /// @param fee The fee for the transfer.
+    /// @param fee The nonce.
     function approveOffchainTransfer(
         address from,
         address to,
         address token,
-        uint    amount
+        uint    amount,
+        address feeToken,
+        uint    fee,
+        uint32  nonce
         )
         external
         virtual;

@@ -583,6 +583,10 @@ export class ExchangeTestUtil {
   }
 
   public signOrder(order: OrderInfo) {
+    if (order.signature !== undefined) {
+      return;
+    }
+
     const hasher = Poseidon.createHash(13, 6, 53);
     const account = this.accounts[this.exchangeId][order.accountID];
 
