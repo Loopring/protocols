@@ -25,7 +25,14 @@ import "../base/DataStore.sol";
 /// @dev This store maintains all nonces.
 contract NonceStore is DataStore
 {
-    mapping(address => uint256) public nonces;
+    uint public constant WINDOW_SIZE = 100;
+
+    struct Nonce {
+        mapping (uint =>bool) used;
+        uint next;
+    }
+
+    mapping(address => Nonce) public nonces;
 
     constructor() public DataStore() {}
 
@@ -34,19 +41,27 @@ contract NonceStore is DataStore
         view
         returns (uint)
     {
-        return nonces[wallet];
+        return nonces[wallet].next;
     }
 
     function verifyNonce(address wallet, uint nonce)
         public
         view
     {
-        require(nonces[wallet] == nonce, "NONCE_MISMATCH");
+        Nonce storage n = nonces[wallet];
+        require(nonce <= n.next + WINDOW_SIZE, "NONCE_TOO_LARGE");
+        require(n.used[nonce] == false, "NONCE_USED");
     }
 
-    function updateNonce(address wallet)
+    function verifyAndUpdateNonce(address wallet, uint nonce)
         public
     {
-        nonces[wallet]++;
+        verifyNonce(wallet, nonce);
+
+        Nonce storage n = nonces[wallet];
+        n.used[nonce] = true;
+        if (nonce >= n.next) {
+            n.next = nonce + 1;
+        }
     }
 }

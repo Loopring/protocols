@@ -47,8 +47,7 @@ library SignedRequest {
         bytes32 txHash = EIP712.hashPacked(domainSeperator, keccak256(encodedRequest));
         require(txHash.verifySignatures(request.signers, request.signatures), "INVALID_SIGNATURES");
 
-        controller.nonceStore().verifyNonce(request.wallet, request.nonce);
-        controller.nonceStore().updateNonce(request.wallet);
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         require(
             GuardianUtils.requireMajority(
