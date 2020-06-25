@@ -222,7 +222,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         )
         internal
     {
-        uint gasCost = gasAmount.add(GAS_OVERHEAD).mul(gasPrice);
+        uint gasCost = gasAmount.mul(gasPrice);
         uint value = controller.priceOracle().tokenValue(gasToken, gasCost);
         if (value > 0) {
           controller.quotaStore().checkAndAddToSpent(wallet, value);

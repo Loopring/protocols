@@ -70,7 +70,7 @@ abstract contract MetaTxForwarderModule is MetaTxForwarder, BaseModule
                 controller.collectTo(),
                 metaTx.gasToken,
                 metaTx.gasPrice,
-                gasAmount
+                gasAmount.add(GAS_OVERHEAD)
             );
         }
     }
