@@ -32,6 +32,11 @@ contract NonceStore is DataStore
         uint next;
     }
 
+    event NextNonceChanged(
+        address indexed wallet,
+        uint            next
+    );
+
     mapping(address => Nonce) public nonces;
 
     constructor() public DataStore() {}
@@ -62,6 +67,7 @@ contract NonceStore is DataStore
         n.used[nonce] = true;
         if (nonce >= n.next) {
             n.next = nonce + 1;
+            emit NextNonceChanged(wallet, nonce + 1);
         }
     }
 }
