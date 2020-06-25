@@ -113,8 +113,9 @@ export async function executeMetaTransaction(
   const actualSigners =
     options.actualSigners !== undefined ? options.actualSigners : signers;
 
-  const validUntil = (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp
-    + 3600 * 24;
+  const validUntil =
+    (await web3.eth.getBlock(await web3.eth.getBlockNumber())).timestamp +
+    3600 * 24;
 
   // Create the meta transaction
   const metaTransaction: MetaTransaction = {

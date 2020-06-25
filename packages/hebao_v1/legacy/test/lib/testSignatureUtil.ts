@@ -27,12 +27,27 @@ contract("signatureUtil", () => {
       const signer = ctx.owners[0];
       const hashStr = web3.utils.sha3(src);
       const hashBuf = Buffer.from(hashStr.slice(2), "hex");
-      const signatureStr = await sign(undefined, signer, hashBuf, SignatureType.ETH_SIGN);
+      const signatureStr = await sign(
+        undefined,
+        signer,
+        hashBuf,
+        SignatureType.ETH_SIGN
+      );
 
-      const verifyRes = await signatureUtilWrapper.verifySignature(hashStr, signer, signatureStr);
-      const recoveredAddress = await signatureUtilWrapper.recoverECDSASigner(hashStr, signatureStr);
-      assert.equal(signer, recoveredAddress, "recovered address not equal to signer");
-
+      const verifyRes = await signatureUtilWrapper.verifySignature(
+        hashStr,
+        signer,
+        signatureStr
+      );
+      const recoveredAddress = await signatureUtilWrapper.recoverECDSASigner(
+        hashStr,
+        signatureStr
+      );
+      assert.equal(
+        signer,
+        recoveredAddress,
+        "recovered address not equal to signer"
+      );
     });
 
     it("should be able to recover the signer from an eddsa signature (EIP_712)", async () => {
@@ -42,9 +57,20 @@ contract("signatureUtil", () => {
       const hashBuf = Buffer.from(hashStr.slice(2), "hex");
       const signatureStr = await sign(undefined, signer, hashBuf);
 
-      const verifyRes = await signatureUtilWrapper.verifySignature(hashStr, signer, signatureStr);
-      const recoveredAddress = await signatureUtilWrapper.recoverECDSASigner(hashStr, signatureStr);
-      assert.equal(signer, recoveredAddress, "recovered address not equal to signer");
+      const verifyRes = await signatureUtilWrapper.verifySignature(
+        hashStr,
+        signer,
+        signatureStr
+      );
+      const recoveredAddress = await signatureUtilWrapper.recoverECDSASigner(
+        hashStr,
+        signatureStr
+      );
+      assert.equal(
+        signer,
+        recoveredAddress,
+        "recovered address not equal to signer"
+      );
     });
   });
 });

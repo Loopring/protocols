@@ -84,7 +84,7 @@ abstract contract Forwarder {
         nonces[metaTx.from] = metaTx.nonce;
 
         uint gasLeft = gasleft();
-        if (preExecute(metaTx)) {
+        if (beforeExecute(metaTx)) {
             return (false, returnValue);
         }
 
@@ -93,17 +93,17 @@ abstract contract Forwarder {
         );
 
         uint gasUsed = gasLeft - gasleft();
-        if (postExecute(metaTx, success, returnValue, gasUsed)) {
+        if (afterExecute(metaTx, success, returnValue, gasUsed)) {
             return (false, returnValue);
         }
     }
 
-    function preExecute(MetaTx memory metaTx)
+    function beforeExecute(MetaTx memory metaTx)
         internal
         virtual
         returns(bool abort) {}
 
-    function postExecute(
+    function afterExecute(
         MetaTx memory metaTx,
         bool          success,
         bytes memory  returnValue,

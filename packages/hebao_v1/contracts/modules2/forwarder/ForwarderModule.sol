@@ -43,7 +43,7 @@ abstract contract ForwarderModule is Forwarder, BaseModule
         BaseModule(_controller)
         Forwarder() {}
 
-    function preExecute(MetaTx memory metaTx)
+    function beforeExecute(MetaTx memory metaTx)
         internal
         override
         returns (bool abort)
@@ -52,7 +52,7 @@ abstract contract ForwarderModule is Forwarder, BaseModule
         require(controller.walletRegistry().isWalletRegistered(metaTx.from), "NOT_A_WALLET");
     }
 
-    function postExecute(
+    function afterExecute(
         MetaTx memory metaTx,
         bool          success,
         bytes memory  returnValue,

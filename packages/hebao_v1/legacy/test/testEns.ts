@@ -64,7 +64,6 @@ contract("WalletENSManager", () => {
         [owner],
         { from: owner, gasPrice: new BN(1) }
       );
-
     });
 
     it("will be able get address by ens subdomain ans vice versa", async () => {
