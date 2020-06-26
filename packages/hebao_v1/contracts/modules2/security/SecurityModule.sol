@@ -45,9 +45,7 @@ abstract contract SecurityModule is MetaTxModule
         address    _trustedForwarder
         )
         public
-        MetaTxModule(_controller, _trustedForwarder)
-    {
-    }
+        MetaTxModule(_controller, _trustedForwarder) {}
 
     modifier onlyFromWallet(address wallet)
         override

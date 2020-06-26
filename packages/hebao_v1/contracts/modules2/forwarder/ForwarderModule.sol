@@ -50,7 +50,7 @@ abstract contract ForwarderModule is Forwarder, BaseModule
         returns (bool /*abort*/)
     {
         require(gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD), "INSUFFICIENT_GAS");
-        require(controller.walletRegistry().isWalletRegistered(metaTx.from), "NOT_A_WALLET");
+        // require(controller.walletRegistry().isWalletRegistered(metaTx.from), "NOT_A_WALLET");
     }
 
     function afterExecute(

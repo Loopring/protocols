@@ -36,9 +36,14 @@ contract InheritanceModule is SecurityModule
 
     event Inherited(
         address indexed wallet,
-        address indexed newOwner,
+        address indexed inheritor,
         uint            timestamp,
         bool            removedAsGuardian
+    );
+
+    event InheritorChanged(
+        address indexed wallet,
+        address indexed inheritor
     );
 
     constructor(
@@ -68,36 +73,40 @@ contract InheritanceModule is SecurityModule
         external
         nonReentrant
     {
-        (address newOwner, uint lastActive) = controller.securityStore().inheritor(wallet);
-        require(msgSender() == newOwner, "NOT_ALLOWED");
+        (address inheritor, uint lastActive) = controller.securityStore().inheritor(wallet);
+        require(msgSender() == inheritor, "NOT_ALLOWED");
 
         require(lastActive > 0 && now >= lastActive + waitingPeriod, "NEED_TO_WAIT");
 
         SecurityStore securityStore = controller.securityStore();
-        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, newOwner);
+        bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(wallet, inheritor);
 
         if (removeAllGuardians) {
             securityStore.removeAllGuardians(wallet);
         } else if (removedAsGuardian) {
-            securityStore.removeGuardian(wallet, newOwner, now);
+            securityStore.removeGuardian(wallet, inheritor, now);
         }
 
         securityStore.setInheritor(wallet, address(0));
-        Wallet(wallet).setOwner(newOwner);
+        Wallet(wallet).setOwner(inheritor);
         unlockWallet(wallet, true /*force*/);
 
-        emit Inherited(wallet, newOwner, now, removedAsGuardian);
+        emit Inherited(wallet, inheritor, now, removedAsGuardian);
     }
 
     function setInheritor(
         address wallet,
-        address who
+        address inheritor
         )
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
         onlyFromWallet(wallet)
     {
-        controller.securityStore().setInheritor(wallet, who);
+        (address existingInheritor,) = controller.securityStore().inheritor(wallet);
+        require(existingInheritor != inheritor, "SAME_INHERITOR");
+
+        controller.securityStore().setInheritor(wallet, inheritor);
+        emit InheritorChanged(wallet, inheritor);
     }
 }
