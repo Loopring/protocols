@@ -29,7 +29,7 @@ import "./BaseModule.sol";
 
 
 /// @title ERC1271Module
-/// @dev This is the base module for supporting ERC1271.
+/// @dev This module enables our smart wallets to message signers.
 contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;

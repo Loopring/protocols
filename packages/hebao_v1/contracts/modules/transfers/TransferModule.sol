@@ -83,7 +83,6 @@ abstract contract TransferModule is SecurityModule
 
         if (amount != allowance) {
             // First reset the approved amount if needed
-            bytes memory txData;
             if (allowance > 0) {
                 require(
                     transactTokenApprove(wallet, token, spender, 0),

@@ -30,7 +30,7 @@ import "./SignedRequest.sol";
 
 
 /// @title MetaTxModule
-/// @dev Base contract for all smart wallet modules.
+/// @dev Base contract for all modules that support meta-transactions.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 ///
@@ -38,17 +38,17 @@ import "./SignedRequest.sol";
 /// https://github.com/opengsn/gsn/contracts
 abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
-    using SignatureUtil  for bytes32;
+    using SignatureUtil for bytes32;
     using SignedRequest for Controller;
 
-     bytes32 public DOMAIN_SEPERATOR;
+    bytes32 public DOMAIN_SEPERATOR;
 
     constructor(
         Controller _controller,
         address    _trustedForwarder
         )
         public
-        BaseModule(controller)
+        BaseModule(_controller)
         MetaTxAware(_trustedForwarder)
     {
         DOMAIN_SEPERATOR = EIP712.hash(
@@ -57,7 +57,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
     }
 
     modifier onlyFromWallet(address wallet) virtual  {
-        require(msgSender() == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+        require(msgSender() == wallet, "NOT_FROM_WALLET");
         _;
     }
 

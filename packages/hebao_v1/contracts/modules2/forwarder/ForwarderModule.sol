@@ -46,7 +46,7 @@ abstract contract ForwarderModule is Forwarder, BaseModule
     function beforeExecute(MetaTx memory metaTx)
         internal
         override
-        returns (bool abort)
+        returns (bool /*abort*/)
     {
         require(gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(100000), "INSUFFICIENT_GAS");
         require(controller.walletRegistry().isWalletRegistered(metaTx.from), "NOT_A_WALLET");
@@ -54,13 +54,13 @@ abstract contract ForwarderModule is Forwarder, BaseModule
 
     function afterExecute(
         MetaTx memory metaTx,
-        bool          success,
-        bytes memory  returnValue,
+        bool          /*success*/,
+        bytes  memory /*returnValue*/,
         uint          gasUsed
         )
         internal
         override
-        returns(bool abort)
+        returns(bool /*abort*/)
     {
         uint gasAmount = gasUsed < metaTx.gasLimit ? gasUsed : metaTx.gasLimit;
 

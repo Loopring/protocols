@@ -113,6 +113,7 @@ abstract contract MetaTxModule is BaseModule
         controller = _controller;
     }
 
+    /* solium-disable-next-line */
     function quotaStore()
         internal
         view
@@ -302,11 +303,13 @@ abstract contract MetaTxModule is BaseModule
         return (signers.length == 1 && signers[0] == signer);
     }
 
-    function reimbursable(bytes4 method)
+    /* solium-disable-next-line */
+    function reimbursable(bytes4 /*method*/)
         internal
         view
         virtual
-        returns (bool) {
+        returns (bool)
+    {
         return true;
     }
 

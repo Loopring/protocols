@@ -27,6 +27,10 @@ import "../../thirdparty/BytesUtil.sol";
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
+///
+/// @dev Inherit this abstract contract to make a module meta-transaction
+///      aware. `msgSender()` shall be used to replace `msg.sender` for
+///      verifying permissions.
 abstract contract MetaTxAware
 {
     using AddressUtil for address;
@@ -39,13 +43,13 @@ abstract contract MetaTxAware
         trustedForwarder = _trustedForwarder;
     }
 
-    /// @dev Returns if a relayer is a trusted meta-tx relayer.
-    function isTrustedForwarder(address relayer)
+    /// @dev Returns if a forwarder is a trusted meta-tx forwarder.
+    function isTrustedForwarder(address forwarder)
         public
         view
         returns(bool)
     {
-        return relayer == trustedForwarder;
+        return forwarder == trustedForwarder;
     }
 
     /// @dev Return's the function's logicial message sender. This method should be
