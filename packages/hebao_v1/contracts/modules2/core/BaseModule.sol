@@ -60,8 +60,6 @@ abstract contract BaseModule is ReentrancyGuard, Module
         _;
     }
 
-    uint public constant GAS_OVERHEAD = 100000; // TODO
-
     Controller public controller;
 
     constructor(Controller _controller)

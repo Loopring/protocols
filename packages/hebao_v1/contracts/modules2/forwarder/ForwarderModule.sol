@@ -37,6 +37,7 @@ import "./Forwarder.sol";
 abstract contract ForwarderModule is Forwarder, BaseModule
 {
     using MathUint for uint;
+    uint public constant GAS_OVERHEAD = 200000; // TODO
 
     constructor(Controller _controller)
         public
@@ -48,7 +49,7 @@ abstract contract ForwarderModule is Forwarder, BaseModule
         override
         returns (bool /*abort*/)
     {
-        require(gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(100000), "INSUFFICIENT_GAS");
+        require(gasleft() >= (metaTx.gasLimit.mul(64) / 63).add(GAS_OVERHEAD), "INSUFFICIENT_GAS");
         require(controller.walletRegistry().isWalletRegistered(metaTx.from), "NOT_A_WALLET");
     }
 
