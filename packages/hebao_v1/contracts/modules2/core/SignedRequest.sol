@@ -24,7 +24,10 @@ import "../../lib/SignatureUtil.sol";
 
 import "../../modules/security/GuardianUtils.sol";
 
-
+/// @title SignedRequest
+/// @dev Utilitiy library for better handling of signed wallet requests.
+///
+/// @author Daniel Wang - <daniel@loopring.org>
 library SignedRequest {
     using SignatureUtil for bytes32;
 
@@ -37,15 +40,18 @@ library SignedRequest {
 
     function verifyRequest(
         Controller controller,
-        bytes32 domainSeperator,
+        bytes32    domainSeperator,
         GuardianUtils.SigRequirement sigRequirement,
         Request memory request,
-        bytes memory encodedRequest
+        bytes   memory encodedRequest
         )
         public
     {
         bytes32 txHash = EIP712.hashPacked(domainSeperator, keccak256(encodedRequest));
-        require(txHash.verifySignatures(request.signers, request.signatures), "INVALID_SIGNATURES");
+        require(
+            txHash.verifySignatures(request.signers, request.signatures),
+            "INVALID_SIGNATURES"
+        );
 
         controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 

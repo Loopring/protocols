@@ -25,18 +25,24 @@ import "../../lib/SignatureUtil.sol";
 abstract contract Forwarder {
     using SignatureUtil for bytes32;
 
+    event MetaTxExecuted(
+        address indexed relayer,
+        address indexed from,
+        uint            nonce
+    );
+
     struct MetaTx {
-        address to;
-        bytes   data;
         address from;
+        address to;
         uint    nonce;
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
+        bytes   data;
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address to,bytes data,address from,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit)"
+        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
     );
 
     bytes32 public DOMAIN_SEPARATOR;
@@ -45,11 +51,11 @@ abstract contract Forwarder {
     constructor()
         public
     {
-        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Forwarder", "1.0", address(this)));
+        DOMAIN_SEPARATOR = EIP712.hash(EIP712.Domain("Loopring Wallet MetaTx", "2.0", address(this)));
     }
 
     // solhint-disable-next-line no-empty-blocks
-    receive() external payable {}
+    receive() external payable {} // TODO:testing
 
     function getNonce(address from)
         external
@@ -57,16 +63,6 @@ abstract contract Forwarder {
         returns(uint)
     {
         return nonces[from];
-    }
-
-    function verify(
-        MetaTx calldata metaTx,
-        bytes  calldata signature
-        )
-        external
-        view
-    {
-        verifyInternal(metaTx, signature);
     }
 
     function execute(
@@ -80,8 +76,13 @@ abstract contract Forwarder {
             bytes memory returnValue
         )
     {
-        verifyInternal(metaTx, signature);
+        require(msg.value == 0, "INVALID_VALUE"); // TODO: shall we check this?
+        require(metaTx.to != address(this), "CANNOT_FORWARD_TO_SELF");
+        require((metaTx.nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
+        require(metaTx.nonce > nonces[metaTx.from], "NONCE_TOO_SMALL");
         nonces[metaTx.from] = metaTx.nonce;
+
+        verifySignature(metaTx, signature);
 
         uint gasLeft = gasleft();
         if (beforeExecute(metaTx)) {
@@ -91,6 +92,14 @@ abstract contract Forwarder {
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from)
         );
+
+        if (address(this).balance > 0) {
+            payable(msg.sender).transfer(address(this).balance); 
+            // TODO:
+            // showe we send any ether to msg.sender or metaTx.from????
+        }
+
+        emit MetaTxExecuted(msg.sender, metaTx.from, metaTx.nonce);
 
         uint gasUsed = gasLeft - gasleft();
         if (afterExecute(metaTx, success, returnValue, gasUsed)) {
@@ -117,35 +126,22 @@ abstract contract Forwarder {
         MetaTx memory metaTx,
         bytes  memory signature
         )
-        internal
+        private
         view
     {
         bytes memory encoded = abi.encodePacked(
             META_TX_TYPEHASH,
-            metaTx.to,
-            keccak256(metaTx.data),
             metaTx.from,
+            metaTx.to,
             metaTx.nonce,
             metaTx.gasToken,
             metaTx.gasPrice,
-            metaTx.gasLimit
+            metaTx.gasLimit,
+            keccak256(metaTx.data)
         );
 
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, keccak256(encoded));
         require(metaTxHash.verifySignature(metaTx.from, signature), "INVALID_SIGNATURE");
     }
 
-    function verifyInternal(
-        MetaTx memory metaTx,
-        bytes  memory signature
-        )
-        private
-        view
-    {
-        require(metaTx.to != address(this), "CANNOT_FORWARD_TO_SELF");
-        require((metaTx.nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
-        require(metaTx.nonce > nonces[metaTx.from], "NONCE_TOO_SMALL");
-
-        verifySignature(metaTx, signature);
-    }
 }

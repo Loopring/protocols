@@ -86,7 +86,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
             _owner,
             _label,
             keccak256(_labelApproval),
-            keccak256(abi.encode(_modules))
+            keccak256(abi.encode(_modules)) // TODO: is this correct?
 		);
 
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, keccak256(encodedRequest));
