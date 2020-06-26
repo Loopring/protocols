@@ -67,15 +67,6 @@ contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-    modifier onlyOwnerOrModule
-    {
-        require(
-            msg.sender == _owner || modules[msg.sender],
-            "MODULE_UNAUTHORIZED"
-        );
-        _;
-    }
-
     function owner() override external view returns (address)
     {
         return _owner;
@@ -117,7 +108,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         external
         override
         // allowReentrant (bindMethod)
-        onlyOwnerOrModule
+        onlyModule
     {
         addModuleInternal(_module);
     }
