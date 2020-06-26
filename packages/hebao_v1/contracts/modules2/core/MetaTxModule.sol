@@ -56,7 +56,11 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         );
     }
 
-    modifier onlyFromWallet(address wallet) virtual  {
+    /// @dev Override to use msgSender()
+    modifier onlyFromWallet(address wallet)
+        override
+        virtual
+    {
         require(msgSender() == wallet, "NOT_FROM_WALLET");
         _;
     }
@@ -72,7 +76,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         Wallet(wallet).addModule(module);
     }
 
-    /// @dev This method will cause an re-entry to the same module contract.
+    /// @dev Override to use msgSender()
     function activate()
         external
         override
@@ -83,7 +87,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         emit Activated(wallet);
     }
 
-    /// @dev This method will cause an re-entry to the same module contract.
+    /// @dev Override to use msgSender()
     function deactivate()
         external
         override

@@ -41,22 +41,26 @@ abstract contract BaseModule is ReentrancyGuard, Module
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
-    modifier onlyFromWalletOwner(address wallet) virtual {
-        require(msg.sender == Wallet(wallet).owner(), "NOT_FROM_WALLET_OWNER");
+    modifier onlyFromWallet(address wallet) virtual {
+        require(msg.sender == wallet, "NOT_FROM_WALLET");
         _;
     }
 
-    modifier onlyWalletOwner(address wallet, address addr) virtual {
+    modifier onlyWalletOwner(address wallet, address addr)
+        virtual
+    {
         require(Wallet(wallet).owner() == addr, "NOT_WALLET_OWNER");
         _;
     }
 
-    modifier notWalletOwner(address wallet, address addr) virtual {
+    modifier notWalletOwner(address wallet, address addr)
+    virtual
+    {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
     }
 
-    uint public constant GAS_OVERHEAD = 200000;
+    uint public constant GAS_OVERHEAD = 100000; // TODO
 
     Controller public controller;
 
