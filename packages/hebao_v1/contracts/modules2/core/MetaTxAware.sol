@@ -57,13 +57,13 @@ abstract contract MetaTxAware
     function msgSender()
         internal
         view
-        returns (address payable sender)
+        returns (address payable logicalSender)
     {
         if (msg.data.length >= 24 && isTrustedForwarder(msg.sender)) {
-            sender = msg.data.toAddress(msg.data.length - 20).toPayable();
-        }
-        if (sender == address(0) {
-            return msg.sender;
+            logicalSender = msg.data.toAddress(msg.data.length - 20).toPayable();
+            require(logicalSender != address(0), "INVALID_SENDER");
+        } else {
+            logicalSender = msg.sender;
         }
     }
 }
