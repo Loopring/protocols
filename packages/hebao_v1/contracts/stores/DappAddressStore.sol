@@ -16,9 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/OwnerManagable.sol";
-
 import "../base/DataStore.sol";
+import "../lib/OwnerManagable.sol";
 
 
 /// @title DappAddressStore

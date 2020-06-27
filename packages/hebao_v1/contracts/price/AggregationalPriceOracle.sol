@@ -16,9 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/MathUint.sol";
-
 import "../iface/PriceOracle.sol";
+import "../lib/MathUint.sol";
 
 
 /// @title AggregationalPriceOracle

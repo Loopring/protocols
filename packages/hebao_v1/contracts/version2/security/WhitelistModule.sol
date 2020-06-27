@@ -17,16 +17,12 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../iface/Wallet.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
-
-import "../../iface/Wallet.sol";
-
 import "../../version1/security/GuardianUtils.sol";
-
 import "../core/SignedRequest.sol";
-
 import "./SecurityModule.sol";
 
 

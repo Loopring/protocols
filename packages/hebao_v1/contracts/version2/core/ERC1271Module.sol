@@ -17,14 +17,11 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../thirdparty/ERC1271.sol";
-
+import "../../iface/Wallet.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
-
-import "../../iface/Wallet.sol";
-
+import "../../thirdparty/ERC1271.sol";
 import "./BaseModule.sol";
 
 

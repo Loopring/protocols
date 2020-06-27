@@ -19,16 +19,12 @@ pragma solidity ^0.6.6;
 import "../iface/ModuleRegistry.sol";
 import "../iface/WalletRegistry.sol";
 
-import "../iface/PriceOracle.sol";
-
-import "../base/WalletENSManager.sol";
 
 /// @title Controller
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract Controller
 {
-    ModuleRegistry          public moduleRegistry;
-    WalletRegistry          public walletRegistry;
-
+    ModuleRegistry public moduleRegistry;
+    WalletRegistry public walletRegistry;
 }

@@ -17,13 +17,12 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/Claimable.sol";
-import "../../lib/ERC20.sol";
-
 import "../../iface/PriceOracle.sol";
 import "../../iface/Wallet.sol";
-
+import "../../lib/Claimable.sol";
+import "../../lib/ERC20.sol";
 import "./TransferModule.sol";
+
 
 /// @title QuotaTransfers
 contract QuotaTransfers is TransferModule

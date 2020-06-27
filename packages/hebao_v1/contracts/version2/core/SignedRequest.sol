@@ -19,10 +19,9 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-
 import "../../version1/security/GuardianUtils.sol";
-
 import "../ControllerV2.sol";
+
 
 /// @title SignedRequest
 /// @dev Utilitiy library for better handling of signed wallet requests.

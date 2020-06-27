@@ -18,9 +18,9 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
-
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
+
 
 abstract contract Forwarder {
     using SignatureUtil for bytes32;

@@ -17,13 +17,10 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../thirdparty/BytesUtil.sol";
-
 import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
-
+import "../../thirdparty/BytesUtil.sol";
 import "../core/BaseModule.sol";
-
 import "./Forwarder.sol";
 
 

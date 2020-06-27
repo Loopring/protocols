@@ -18,7 +18,6 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../version1/security/GuardianUtils.sol";
-
 import "../core/MetaTxModule.sol";
 
 

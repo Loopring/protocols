@@ -16,12 +16,10 @@
 */
 pragma solidity ^0.6.6;
 
+import "../base/DataStore.sol";
+import "../iface/PriceOracle.sol";
 import "../lib/MathUint.sol";
 import "../lib/OwnerManagable.sol";
-
-import "../iface/PriceOracle.sol";
-
-import "../base/DataStore.sol";
 
 
 /// @title PriceCacheStore

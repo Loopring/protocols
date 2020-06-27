@@ -17,14 +17,13 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../iface/Module.sol";
+import "../../iface/Wallet.sol";
 import "../../lib/ERC20.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/ReentrancyGuard.sol";
-
-import "../../iface/Wallet.sol";
-import "../../iface/Module.sol";
-
 import "../ControllerV2.sol";
+
 
 /// @title BaseModule
 /// @dev This contract implements some common functions that are likely

@@ -16,13 +16,12 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/ERC20.sol";
-import "../lib/ReentrancyGuard.sol";
-
 import "../iface/Module.sol";
 import "../iface/Wallet.sol";
-
+import "../lib/ERC20.sol";
+import "../lib/ReentrancyGuard.sol";
 import "./Controller.sol";
+
 
 /// @title BaseWallet
 /// @dev This contract provides basic implementation for a Wallet.

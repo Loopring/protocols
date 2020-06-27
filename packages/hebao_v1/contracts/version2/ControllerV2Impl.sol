@@ -17,7 +17,6 @@
 pragma solidity ^0.6.6;
 
 import "../lib/Claimable.sol";
-
 import "./ControllerV2.sol";
 
 
