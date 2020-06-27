@@ -16,12 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/MathUint.sol";
-
 import "../iface/PriceOracle.sol";
-
-import "./KyberNetworkPriceOracle.sol";
-import "./UniswapPriceOracle.sol";
+import "../lib/MathUint.sol";
 
 
 /// @title AggregationalPriceOracle
@@ -38,7 +34,7 @@ contract AggregationalPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint)

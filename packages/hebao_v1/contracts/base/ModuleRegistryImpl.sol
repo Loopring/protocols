@@ -16,10 +16,9 @@
 */
 pragma solidity ^0.6.6;
 
+import "../iface/ModuleRegistry.sol";
 import "../lib/AddressSet.sol";
 import "../lib/Claimable.sol";
-
-import "../iface/ModuleRegistry.sol";
 
 
 /// @title ModuleRegistryImpl

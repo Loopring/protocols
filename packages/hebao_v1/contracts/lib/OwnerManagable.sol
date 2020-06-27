@@ -16,8 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "./Claimable.sol";
 import "./AddressSet.sol";
+import "./Claimable.sol";
 
 
 contract OwnerManagable is Claimable, AddressSet

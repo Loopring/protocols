@@ -18,12 +18,11 @@ pragma solidity ^0.6.6;
 
 
 /// @title PriceOracle
-abstract contract PriceOracle
+interface PriceOracle
 {
     // @dev Return's the token's value in ETH
     function tokenValue(address token, uint amount)
-        public
+        external
         view
-        virtual
         returns (uint value);
 }

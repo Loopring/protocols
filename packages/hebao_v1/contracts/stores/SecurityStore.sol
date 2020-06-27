@@ -18,7 +18,7 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../base/DataStore.sol";
-import "../iface/Data.sol";
+import "../stores/Data.sol";
 
 
 /// @title SecurityStore

@@ -16,9 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/ERC20.sol";
-
 import "../iface/PriceOracle.sol";
+import "../lib/ERC20.sol";
 
 
 abstract contract KyberNetworkProxy {
@@ -50,7 +49,7 @@ contract KyberNetworkPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint value)

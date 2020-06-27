@@ -16,11 +16,10 @@
 */
 pragma solidity ^0.6.6;
 
-import "../thirdparty/BytesUtil.sol";
-import "../thirdparty/ERC1271.sol";
-
 import "../lib/OwnerManagable.sol";
 import "../lib/SignatureUtil.sol";
+import "../thirdparty/BytesUtil.sol";
+import "../thirdparty/ERC1271.sol";
 
 
 /// @title OfficialGuardian

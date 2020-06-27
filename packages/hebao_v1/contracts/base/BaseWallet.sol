@@ -16,12 +16,11 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/ERC20.sol";
-import "../lib/ReentrancyGuard.sol";
-
-import "../iface/Controller.sol";
 import "../iface/Module.sol";
 import "../iface/Wallet.sol";
+import "../lib/ERC20.sol";
+import "../lib/ReentrancyGuard.sol";
+import "./Controller.sol";
 
 
 /// @title BaseWallet
@@ -31,7 +30,7 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is ReentrancyGuard, Wallet
+abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 
@@ -64,15 +63,6 @@ contract BaseWallet is ReentrancyGuard, Wallet
     modifier onlyModule
     {
         require(modules[msg.sender], "MODULE_UNAUTHORIZED");
-        _;
-    }
-
-    modifier onlyOwnerOrModule
-    {
-        require(
-            msg.sender == _owner || modules[msg.sender],
-            "MODULE_UNAUTHORIZED"
-        );
         _;
     }
 
@@ -117,7 +107,7 @@ contract BaseWallet is ReentrancyGuard, Wallet
         external
         override
         // allowReentrant (bindMethod)
-        onlyOwnerOrModule
+        onlyModule
     {
         addModuleInternal(_module);
     }

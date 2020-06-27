@@ -16,14 +16,13 @@
 */
 pragma solidity ^0.6.6;
 
+import "../iface/Module.sol";
+import "../iface/Wallet.sol";
 import "../lib/OwnerManagable.sol";
 import "../lib/ReentrancyGuard.sol";
-import "../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../thirdparty/Create2.sol";
-
-import "../iface/Controller.sol";
-import "../iface/Wallet.sol";
-import "../iface/Module.sol";
+import "../thirdparty/OwnedUpgradabilityProxy.sol";
+import "./Controller.sol";
 
 
 /// @title WalletFactory

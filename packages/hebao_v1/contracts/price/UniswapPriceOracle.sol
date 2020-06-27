@@ -16,10 +16,9 @@
 */
 pragma solidity ^0.6.6;
 
+import "../iface/PriceOracle.sol";
 import "../thirdparty/uniswap/UniswapExchangeInterface.sol";
 import "../thirdparty/uniswap/UniswapFactoryInterface.sol";
-
-import "../iface/PriceOracle.sol";
 
 
 /// @title UniswapPriceOracle
@@ -35,7 +34,7 @@ contract UniswapPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint)

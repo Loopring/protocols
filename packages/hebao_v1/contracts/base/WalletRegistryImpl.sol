@@ -16,9 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../lib/Claimable.sol";
-
 import "../iface/WalletRegistry.sol";
+import "../lib/Claimable.sol";
 
 
 /// @title WalletRegistryImpl
