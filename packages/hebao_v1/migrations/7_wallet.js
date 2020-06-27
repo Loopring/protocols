@@ -1,5 +1,5 @@
-const BaseWallet = artifacts.require("./base/BaseWallet.sol");
+const WalletImplV2 = artifacts.require("./version2/WalletImplV2.sol");
 
 module.exports = function(deployer, network, accounts) {
-  deployer.deploy(BaseWallet);
+  deployer.deploy(WalletImplV2);
 };

@@ -20,7 +20,7 @@ pragma experimental ABIEncoderV2;
 import "../../iface/Wallet.sol";
 import "../../lib/MathUint.sol";
 import "../../thirdparty/ERC1271.sol";
-import "../core/SignedRequest.sol";
+import "../base/SignedRequest.sol";
 import "./SecurityModule.sol";
 
 

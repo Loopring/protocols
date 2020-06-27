@@ -22,7 +22,7 @@ import "../../lib/EIP712.sol";
 import "../../lib/MathUint.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../version1/security/GuardianUtils.sol";
-import "../core/SignedRequest.sol";
+import "../base/SignedRequest.sol";
 import "./SecurityModule.sol";
 
 

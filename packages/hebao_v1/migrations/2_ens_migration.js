@@ -1,8 +1,8 @@
 const ethers = require("ethers");
 
-var ENSResolver = artifacts.require("./BaseENSResolver.sol");
 var ENSManager = artifacts.require("./WalletENSManager.sol");
 var ENSRegistry = artifacts.require("./ENSRegistryImpl.sol");
+var ENSResolver = artifacts.require("./BaseENSResolver.sol");
 var ENSReverseRegistrar = artifacts.require("./ENSReverseRegistrarImpl.sol");
 
 var root = "eth";

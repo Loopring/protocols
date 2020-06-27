@@ -18,7 +18,7 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../lib/ERC20.sol";
-import "../core/SignedRequest.sol";
+import "../base/SignedRequest.sol";
 import "./TransferModule.sol";
 
 

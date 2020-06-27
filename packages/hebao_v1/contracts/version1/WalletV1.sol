@@ -16,8 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../version1/WalletImplV1.sol";
+import "../base/BaseWallet.sol";
 
 
-/// @title WalletImplV1
-contract WalletImplV2 is WalletImplV1 {}
+/// @title WalletV1
+contract WalletV1 is BaseWallet {}

@@ -17,11 +17,12 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../base/WalletENSManager.sol";
 import "../../base/WalletFactory.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/AddressUtil.sol";
-import "./MetaTxModule.sol";
-import "./SignedRequest.sol";
+import "../base/MetaTxModule.sol";
+import "../base/SignedRequest.sol";
 
 
 /// @title WalletFactoryModule
@@ -37,7 +38,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     using AddressUtil for address;
 
     address public walletImplementation;
-    bool    public allowEmptyEns;
+    bool    public allowEmptyENS;
 
 	bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
@@ -47,13 +48,13 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         ControllerV2 _controller,
         address      _trustedForwarder,
         address      _walletImplementation,
-        bool         _allowEmptyEns
+        bool         _allowEmptyENS
         )
         public
         MetaTxModule(_controller, _trustedForwarder)
     {
         walletImplementation = _walletImplementation;
-        allowEmptyEns = _allowEmptyEns;
+        allowEmptyENS = _allowEmptyENS;
     }
 
     /// @dev Create a new wallet by deploying a proxy.
@@ -95,14 +96,16 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
             w.addModule(_modules[i]);
         }
 
-        if (bytes(_label).length > 0) {
-            controller.ensManager().register(
-                _wallet,
-                _label,
-                _labelApproval
-            );
-        } else {
-        	require(allowEmptyEns, "INVALID_ENS_LABEL");
+        if (controller.ensManagerAddress() != address(0)) {
+            if (bytes(_label).length > 0) {
+                WalletENSManager(controller.ensManagerAddress()).register(
+                    _wallet,
+                    _label,
+                    _labelApproval
+                );
+            } else {
+            	require(allowEmptyENS, "INVALID_ENS_LABEL");
+            }
         }
 
         w.removeModule(address(this));

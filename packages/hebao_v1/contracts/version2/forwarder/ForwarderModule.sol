@@ -20,7 +20,7 @@ pragma experimental ABIEncoderV2;
 import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
 import "../../thirdparty/BytesUtil.sol";
-import "../core/BaseModule.sol";
+import "../base/BaseModule.sol";
 import "./Forwarder.sol";
 
 

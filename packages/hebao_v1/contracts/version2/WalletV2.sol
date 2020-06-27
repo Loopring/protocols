@@ -16,24 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "../thirdparty/ens/BaseENSManager.sol";
+import "../base/BaseWallet.sol";
 
-/// @title WalletENSManager
-/// @dev An ENS manager to interactive with ENS module.
-///
-/// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by Argent's contract codebase:
-/// https://github.com/argentlabs/argent-contracts
-contract WalletENSManager is BaseENSManager {
 
-    constructor(
-        string memory _rootName,
-        bytes32       _rootNode,
-        address       _ensRegistry,
-        address       _ensResolver
-        )
-        public
-        BaseENSManager(_rootName, _rootNode, _ensRegistry, _ensResolver) {}
-
-}
+/// @title WalletV2
+contract WalletV2 is BaseWallet {}
