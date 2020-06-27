@@ -29,7 +29,7 @@ import "../iface/Wallet.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract DataStore
 {
-  modifier onlyWalletModule(address wallet)
+    modifier onlyWalletModule(address wallet)
     {
         require(Wallet(wallet).hasModule(msg.sender), "UNAUTHORIZED");
         _;
