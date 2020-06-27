@@ -17,11 +17,14 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/Wallet.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
 
-
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+///
+/// The design of this contract is inspired by GSN's contract codebase:
+/// https://github.com/opengsn/gsn/contracts
 abstract contract Forwarder {
     using SignatureUtil for bytes32;
 
@@ -93,10 +96,8 @@ abstract contract Forwarder {
             abi.encodePacked(metaTx.data, metaTx.from)
         );
 
-        if (address(this).balance > 0) {
-            payable(msg.sender).transfer(address(this).balance); 
-            // TODO:
-            // showe we send any ether to msg.sender or metaTx.from????
+        if (msg.value > 0) {
+            payable(metaTx.to).transfer(msg.value); 
         }
 
         emit MetaTxExecuted(msg.sender, metaTx.from, metaTx.nonce);

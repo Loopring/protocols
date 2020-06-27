@@ -22,7 +22,6 @@ import "../../iface/Wallet.sol";
 import "../../lib/AddressUtil.sol";
 import "../../thirdparty/ens/BaseENSManager.sol";
 import "../base/MetaTxModule.sol";
-import "../base/SignedRequest.sol";
 
 
 /// @title WalletFactoryModule

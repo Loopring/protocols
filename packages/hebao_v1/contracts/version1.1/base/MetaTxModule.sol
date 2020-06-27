@@ -17,10 +17,8 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/Module.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../version1.0/security/GuardianUtils.sol";
 import "./BaseModule.sol";
 import "./MetaTxAware.sol";
 import "./SignedRequest.sol";

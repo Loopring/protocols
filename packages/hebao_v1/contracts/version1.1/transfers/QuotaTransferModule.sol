@@ -17,10 +17,6 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/PriceOracle.sol";
-import "../../iface/Wallet.sol";
-import "../../lib/Claimable.sol";
-import "../../lib/ERC20.sol";
 import "./TransferModule.sol";
 
 

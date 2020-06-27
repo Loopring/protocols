@@ -17,9 +17,7 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/AddressUtil.sol";
 import "../../lib/MathUint.sol";
-import "../../thirdparty/BytesUtil.sol";
 import "../base/BaseModule.sol";
 import "./Forwarder.sol";
 
@@ -28,18 +26,14 @@ import "./Forwarder.sol";
 /// @dev Base contract for all smart wallet modules.
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-///
-/// The design of this contract is inspired by GSN's contract codebase:
-/// https://github.com/opengsn/gsn/contracts
-contract ForwarderModule is Forwarder, BaseModule
+abstract contract ForwarderModule is BaseModule, Forwarder
 {
     using MathUint for uint;
     uint public constant GAS_OVERHEAD = 200000; // TODO
 
     constructor(ControllerImpl _controller)
         public
-        BaseModule(_controller)
-        Forwarder() {}
+        BaseModule(_controller) {}
 
     function beforeExecute(MetaTx memory metaTx)
         internal
