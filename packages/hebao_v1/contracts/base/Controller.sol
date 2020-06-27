@@ -16,13 +16,19 @@
 */
 pragma solidity ^0.6.6;
 
+import "../iface/ModuleRegistry.sol";
+import "../iface/WalletRegistry.sol";
 
-/// @title PriceOracle
-interface PriceOracle
+import "../iface/PriceOracle.sol";
+
+import "../base/WalletENSManager.sol";
+
+/// @title Controller
+///
+/// @author Daniel Wang - <daniel@loopring.org>
+abstract contract Controller
 {
-    // @dev Return's the token's value in ETH
-    function tokenValue(address token, uint amount)
-        external
-        view
-        returns (uint value);
+    ModuleRegistry          public moduleRegistry;
+    WalletRegistry          public walletRegistry;
+
 }

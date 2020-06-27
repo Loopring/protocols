@@ -19,10 +19,10 @@ pragma solidity ^0.6.6;
 import "../lib/ERC20.sol";
 import "../lib/ReentrancyGuard.sol";
 
-import "../iface/Controller.sol";
 import "../iface/Module.sol";
 import "../iface/Wallet.sol";
 
+import "./Controller.sol";
 
 /// @title BaseWallet
 /// @dev This contract provides basic implementation for a Wallet.
@@ -31,7 +31,7 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract BaseWallet is ReentrancyGuard, Wallet
+abstract contract BaseWallet is ReentrancyGuard, Wallet
 {
     address internal _owner;
 

@@ -21,9 +21,10 @@ import "../lib/ReentrancyGuard.sol";
 import "../thirdparty/OwnedUpgradabilityProxy.sol";
 import "../thirdparty/Create2.sol";
 
-import "../iface/Controller.sol";
 import "../iface/Wallet.sol";
 import "../iface/Module.sol";
+
+import "./Controller.sol";
 
 
 /// @title WalletFactory

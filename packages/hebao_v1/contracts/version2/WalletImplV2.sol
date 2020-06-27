@@ -16,13 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
+import "../version1/WalletImplV1.sol";
 
-/// @title PriceOracle
-interface PriceOracle
-{
-    // @dev Return's the token's value in ETH
-    function tokenValue(address token, uint amount)
-        external
-        view
-        returns (uint value);
-}
+
+/// @title WalletImplV1
+contract WalletImplV2 is WalletImplV1 {}

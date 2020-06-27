@@ -16,23 +16,8 @@
 */
 pragma solidity ^0.6.6;
 
-import "./ModuleRegistry.sol";
-import "./WalletRegistry.sol";
+import "../base/BaseWallet.sol";
 
-import "../iface/PriceOracle.sol";
 
-import "../base/WalletENSManager.sol";
-
-/// @title Controller
-///
-/// @author Daniel Wang - <daniel@loopring.org>
-abstract contract Controller
-{
-    address public collectTo;
-    uint    public defaultLockPeriod;
-
-    ModuleRegistry          public moduleRegistry;
-    WalletRegistry          public walletRegistry;
-    PriceOracle             public priceOracle;
-    WalletENSManager        public ensManager;
-}
+/// @title WalletImplV1
+contract WalletImplV1 is BaseWallet {}

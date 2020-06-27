@@ -35,7 +35,7 @@ contract UniswapPriceOracle is PriceOracle
     }
 
     function tokenValue(address token, uint amount)
-        public
+        external
         view
         override
         returns (uint)

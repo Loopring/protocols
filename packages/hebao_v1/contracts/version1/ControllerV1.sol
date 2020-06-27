@@ -16,7 +16,7 @@
 */
 pragma solidity ^0.6.6;
 
-import "../iface/Controller.sol";
+import "../base/Controller.sol";
 
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
@@ -28,6 +28,11 @@ import "../stores/WhitelistStore.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 abstract contract ControllerV1 is Controller
 {
+    address public collectTo;
+    uint    public defaultLockPeriod;
+    PriceOracle             public priceOracle;
+    WalletENSManager        public ensManager;
+
     QuotaStore              public quotaStore;
     SecurityStore           public securityStore;
     DappAddressStore        public dappAddressStore;
