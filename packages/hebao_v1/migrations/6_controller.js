@@ -7,7 +7,7 @@ const NonceStore = artifacts.require("./stores/NonceStore.sol");
 const QuotaStore = artifacts.require("./stores/QuotaStore.sol");
 const SecurityStore = artifacts.require("./stores/SecurityStore.sol");
 const WhitelistStore = artifacts.require("./stores/WhitelistStore.sol");
-const Controller = artifacts.require("./version1.1/ControllerImpl.sol");
+const ControllerImpl = artifacts.require("./version1.1/ControllerImpl.sol");
 
 module.exports = function(deployer, network, accounts) {
   let ensManagerAddr = process.env.ENSManager || "";
@@ -22,10 +22,10 @@ module.exports = function(deployer, network, accounts) {
     .then(() => {
       return Promise.all([deployer.deploy(PriceOracle)]);
     })
-    .then(controller => {
+    .then(() => {
       return Promise.all([
         deployer.deploy(
-          Controller,
+          ControllerImpl,
           ModuleRegistry.address,
           WalletRegistry.address,
           lockPeriod,

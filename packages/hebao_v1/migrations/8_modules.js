@@ -54,7 +54,7 @@ module.exports = function(deployer, network, accounts) {
           WalletFactoryModule,
           ControllerImpl.address,
           ForwarderModule.adddress,
-          BaseWallet.address,
+          WalletImpl.address,
           false
         ),
         deployer.deploy(
@@ -95,17 +95,17 @@ module.exports = function(deployer, network, accounts) {
       ]);
     })
     .then(() => {
-      ModuleRegistry.deployed().then(moduleRegistryImpl => {
+      ModuleRegistry.deployed().then(moduleRegistry => {
         return Promise.all([
-          moduleRegistryImpl.registerModule(ForwarderModule.address),
-          moduleRegistryImpl.registerModule(ERC1271Module.address),
-          moduleRegistryImpl.registerModule(WalletFactoryModule.address),
-          moduleRegistryImpl.registerModule(GuardianModule.address),
-          moduleRegistryImpl.registerModule(InheritanceModule.address),
-          moduleRegistryImpl.registerModule(WhitelistModule.address),
-          moduleRegistryImpl.registerModule(ApprovedTransfers.address),
-          moduleRegistryImpl.registerModule(DappTransfers.address),
-          moduleRegistryImpl.registerModule(QuotaTransfers.address)
+          moduleRegistry.registerModule(ForwarderModule.address),
+          moduleRegistry.registerModule(ERC1271Module.address),
+          moduleRegistry.registerModule(WalletFactoryModule.address),
+          moduleRegistry.registerModule(GuardianModule.address),
+          moduleRegistry.registerModule(InheritanceModule.address),
+          moduleRegistry.registerModule(WhitelistModule.address),
+          moduleRegistry.registerModule(ApprovedTransfers.address),
+          moduleRegistry.registerModule(DappTransfers.address),
+          moduleRegistry.registerModule(QuotaTransfers.address)
         ]);
       });
     })

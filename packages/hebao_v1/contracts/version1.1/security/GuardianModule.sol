@@ -47,8 +47,8 @@ contract GuardianModule is SecurityModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder,
-        uint         _pendingPeriod
+        address        _trustedForwarder,
+        uint           _pendingPeriod
         )
         public
         SecurityModule(_controller, _trustedForwarder)
