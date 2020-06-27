@@ -17,13 +17,13 @@
 pragma solidity ^0.6.6;
 
 import "../base/Controller.sol";
-import "../base/WalletENSManager.sol";
 import "../iface/PriceOracle.sol";
 import "../lib/Claimable.sol";
 import "../stores/DappAddressStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
 import "../stores/WhitelistStore.sol";
+import "../thirdparty/ens/BaseENSManager.sol";
 
 
 /// @title ControllerImpl
@@ -38,7 +38,7 @@ contract ControllerV1 is Claimable, Controller
     address                 public collectTo;
     uint                    public defaultLockPeriod;
     PriceOracle             public priceOracle;
-    WalletENSManager        public ensManager;
+    BaseENSManager        public ensManager;
 
     QuotaStore              public quotaStore;
     SecurityStore           public securityStore;
@@ -60,7 +60,7 @@ contract ControllerV1 is Claimable, Controller
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore,
         DappAddressStore  _dappAddressStore,
-        WalletENSManager  _ensManager
+        BaseENSManager  _ensManager
         )
         external
         onlyOwner

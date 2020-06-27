@@ -17,10 +17,10 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../base/WalletENSManager.sol";
 import "../../base/WalletFactory.sol";
 import "../../iface/Wallet.sol";
 import "../../lib/AddressUtil.sol";
+import "../../thirdparty/ens/BaseENSManager.sol";
 import "../base/MetaTxModule.sol";
 import "../base/SignedRequest.sol";
 
@@ -98,7 +98,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
 
         if (controller.ensManagerAddress() != address(0)) {
             if (bytes(_label).length > 0) {
-                WalletENSManager(controller.ensManagerAddress()).register(
+                BaseENSManager(controller.ensManagerAddress()).register(
                     _wallet,
                     _label,
                     _labelApproval

@@ -1,6 +1,6 @@
 const ethers = require("ethers");
 
-var ENSManager = artifacts.require("./WalletENSManager.sol");
+var BaseENSManager = artifacts.require("./thirdparty/ens/BaseENSManager.sol");
 var ENSRegistry = artifacts.require("./ENSRegistryImpl.sol");
 var ENSResolver = artifacts.require("./BaseENSResolver.sol");
 var ENSReverseRegistrar = artifacts.require("./ENSReverseRegistrarImpl.sol");
@@ -10,7 +10,7 @@ var subName = "loopring";
 var fullName = subName + "." + root;
 var rootNode = ethers.utils.namehash(fullName);
 
-const deployedEnsManagerAddr = process.env.ENSManager || "";
+const deployedEnsManagerAddr = process.env.BaseENSManager || "";
 
 module.exports = function(deployer, network, accounts) {
   if (web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
@@ -33,7 +33,7 @@ module.exports = function(deployer, network, accounts) {
             ENSResolver.address
           ),
           deployer.deploy(
-            ENSManager,
+            BaseENSManager,
             fullName,
             rootNode,
             ENSRegistry.address,
@@ -52,7 +52,7 @@ module.exports = function(deployer, network, accounts) {
             ensRegistry.setSubnodeOwner(
               ethers.utils.namehash(root),
               web3.utils.keccak256(subName),
-              ENSManager.address
+              BaseENSManager.address
             ),
             ensRegistry.setSubnodeOwner(
               "0x0",
@@ -69,7 +69,7 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         ENSResolver.deployed().then(ensResolver => {
-          return Promise.all([ensResolver.addManager(ENSManager.address)]);
+          return Promise.all([ensResolver.addManager(BaseENSManager.address)]);
         });
       });
   }

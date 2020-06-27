@@ -20,4 +20,6 @@ import "../base/BaseWallet.sol";
 
 
 /// @title WalletV2
-contract WalletV2 is BaseWallet {}
+contract WalletV2 is BaseWallet {
+    string public constant VERSION = "2.0.0";
+}
