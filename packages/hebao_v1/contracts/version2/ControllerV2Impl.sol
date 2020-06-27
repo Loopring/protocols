@@ -35,39 +35,39 @@ contract ControllerV2Impl is Claimable, ControllerV2
     );
 
     function init(
+        ModuleRegistry    _moduleRegistry,
+        WalletRegistry    _walletRegistry,
         uint              _defaultLockPeriod,
         address           _collectTo,
         PriceOracle       _priceOracle,
-        ModuleRegistry    _moduleRegistry,
-        WalletRegistry    _walletRegistry,
+        WalletENSManager  _ensManager,
+        DappAddressStore  _dappAddressStore,
+        NonceStore        _nonceStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
-        WhitelistStore    _whitelistStore,
-        NonceStore        _nonceStore,
-        DappAddressStore  _dappAddressStore,
-        WalletENSManager  _ensManager
+        WhitelistStore    _whitelistStore
         )
         external
         onlyOwner
     {
         require(!initialized, "INITIALIZED_ALREADY");
         initialized = true;
+
+        moduleRegistry = _moduleRegistry;
+        walletRegistry = _walletRegistry;    
+
         defaultLockPeriod = _defaultLockPeriod;
 
-        // modifiable
         require(_collectTo != address(0), "ZERO_ADDRESS");
         collectTo = _collectTo;  
-        priceOracle = _priceOracle;     
 
-        // non-modifiable
-        moduleRegistry = _moduleRegistry;
-        walletRegistry = _walletRegistry;
+        priceOracle = _priceOracle;     
+        dappAddressStore = _dappAddressStore;
+        ensManager = _ensManager;
+        nonceStore = _nonceStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;
-        nonceStore = _nonceStore;
-        dappAddressStore = _dappAddressStore;
-        ensManager = _ensManager;
     }
 
     function setCollectTo(address _collectTo)

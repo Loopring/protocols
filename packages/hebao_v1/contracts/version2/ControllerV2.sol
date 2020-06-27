@@ -17,6 +17,8 @@
 pragma solidity ^0.6.6;
 
 import "../base/Controller.sol";
+import "../base/WalletENSManager.sol";
+import "../iface/PriceOracle.sol";
 import "../stores/DappAddressStore.sol";
 import "../stores/NonceStore.sol";
 import "../stores/QuotaStore.sol";
