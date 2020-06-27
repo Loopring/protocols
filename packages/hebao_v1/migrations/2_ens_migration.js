@@ -1,20 +1,22 @@
 const ethers = require("ethers");
 
-var BaseENSManager = artifacts.require("./thirdparty/ens/BaseENSManager.sol");
-var ENSRegistry = artifacts.require("./ENSRegistryImpl.sol");
-var ENSResolver = artifacts.require("./BaseENSResolver.sol");
-var ENSReverseRegistrar = artifacts.require("./ENSReverseRegistrarImpl.sol");
+var ENSManager = artifacts.require("./thirdparty/ens/BaseENSManager.sol");
+var ENSRegistry = artifacts.require("./thirdparty/ens/ENSRegistryImpl.sol");
+var ENSResolver = artifacts.require("./thirdparty/ens/BaseENSResolver.sol");
+var ENSReverseRegistrar = artifacts.require(
+  "./thirdparty/ens/ENSReverseRegistrarImpl.sol"
+);
 
 var root = "eth";
 var subName = "loopring";
 var fullName = subName + "." + root;
 var rootNode = ethers.utils.namehash(fullName);
 
-const deployedEnsManagerAddr = process.env.BaseENSManager || "";
+const ensManagerAddr = process.env.ENSManager || "";
 
 module.exports = function(deployer, network, accounts) {
-  if (web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
-    console.log("use deployed ensManager:", deployedEnsManagerAddr);
+  if (web3.utils.isAddress(ensManagerAddr.toLowerCase())) {
+    console.log("use deployed ensManager:", ensManagerAddr);
   } else {
     const deployerAddress = accounts[0];
 
@@ -33,7 +35,7 @@ module.exports = function(deployer, network, accounts) {
             ENSResolver.address
           ),
           deployer.deploy(
-            BaseENSManager,
+            ENSManager,
             fullName,
             rootNode,
             ENSRegistry.address,
@@ -52,7 +54,7 @@ module.exports = function(deployer, network, accounts) {
             ensRegistry.setSubnodeOwner(
               ethers.utils.namehash(root),
               web3.utils.keccak256(subName),
-              BaseENSManager.address
+              ENSManager.address
             ),
             ensRegistry.setSubnodeOwner(
               "0x0",
@@ -69,7 +71,7 @@ module.exports = function(deployer, network, accounts) {
       })
       .then(() => {
         ENSResolver.deployed().then(ensResolver => {
-          return Promise.all([ensResolver.addManager(BaseENSManager.address)]);
+          return Promise.all([ensResolver.addManager(ENSManager.address)]);
         });
       });
   }

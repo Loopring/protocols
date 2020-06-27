@@ -22,8 +22,8 @@ import "../base/SignedRequest.sol";
 import "./TransferModule.sol";
 
 
-/// @title ApprovedTransfers
-contract ApprovedTransfers is TransferModule
+/// @title ApprovedTransferModule
+contract ApprovedTransferModule is TransferModule
 {
     bytes32 public constant TRANSFER_TOKEN_HASHTYPE = keccak256(
         "transferToken(address wallet,uint256 nonce,address token,address to,uint256 amount,bytes logdata)"

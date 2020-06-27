@@ -24,8 +24,8 @@ import "../../lib/ERC20.sol";
 import "./TransferModule.sol";
 
 
-/// @title QuotaTransfers
-contract QuotaTransfers is TransferModule
+/// @title QuotaTransferModule
+contract QuotaTransferModule is TransferModule
 {
     bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(
         "changeDailyQuotaImmediately(address wallet,uint256 nonce,uint256 newQuota)"

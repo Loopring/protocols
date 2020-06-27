@@ -1,34 +1,35 @@
+const WalletRegistry = artifacts.require("./base/WalletRegistryImpl.sol");
+const ModuleRegistry = artifacts.require("./base/ModuleRegistryImpl.sol");
+const ENSManager = artifacts.require("./thirdparty/ens/BaseENSManager.sol");
+
+const ForwarderModule = artifacts.require(
+  "./version1.1/core/ForwarderModule.sol"
+);
+const ERC1271Module = artifacts.require("./version1.1/core/ERC1271Module.sol");
 const WalletFactoryModule = artifacts.require(
-  "./modules/core/WalletFactoryModule.sol"
+  "./version1.1/core/WalletFactoryModule.sol"
 );
 const GuardianModule = artifacts.require(
-  "./modules/security/GuardianModule.sol"
+  "./version1.1/security/GuardianModule.sol"
 );
 const InheritanceModule = artifacts.require(
-  "./modules/security/InheritanceModule.sol"
+  "./version1.1/security/InheritanceModule.sol"
 );
 const WhitelistModule = artifacts.require(
-  "./modules/security/WhitelistModule.sol"
+  "./version1.1/security/WhitelistModule.sol"
 );
-const QuotaTransfers = artifacts.require(
-  "./modules/transfers/QuotaTransfers.sol"
+const ApprovedTransferModule = artifacts.require(
+  "./version1.1/transfers/ApprovedTransferModule.sol"
 );
-const ApprovedTransfers = artifacts.require(
-  "./modules/transfers/ApprovedTransfers.sol"
+const DappTransferModule = artifacts.require(
+  "./version1.1/transfers/DappTransferModule.sol"
 );
-const DappTransfers = artifacts.require(
-  "./modules/transfers/DappTransfers.sol"
+const QuotaTransferModule = artifacts.require(
+  "./version1.1/transfers/QuotaTransferModule.sol"
 );
 
-const ERC1271Module = artifacts.require("./base/ERC1271Module.sol");
-
-const ControllerImpl = artifacts.require("./base/ControllerImpl.sol");
-const BaseWallet = artifacts.require("./base/BaseWallet.sol");
-
-const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
-const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
-
-const ENSManager = artifacts.require("./WalletENSManager.sol");
+const ControllerImpl = artifacts.require("./version1.1/ControllerImpl.sol");
+const WalletImpl = artifacts.require("./version1.1/WalletImpl.sol");
 
 module.exports = function(deployer, network, accounts) {
   const guardianPendingPeriod =
@@ -43,60 +44,81 @@ module.exports = function(deployer, network, accounts) {
   deployer
     .then(() => {
       return Promise.all([
+        deployer.deploy(ForwarderModule, ControllerImpl.address),
+        deployer.deploy(ERC1271Module, ControllerImpl.address)
+      ]);
+    })
+    .then(() => {
+      return Promise.all([
         deployer.deploy(
           WalletFactoryModule,
           ControllerImpl.address,
-          BaseWallet.address
+          ForwarderModule.adddress,
+          BaseWallet.address,
+          false
         ),
         deployer.deploy(
           GuardianModule,
           ControllerImpl.address,
+          ForwarderModule.adddress,
           guardianPendingPeriod
         ),
         deployer.deploy(
           InheritanceModule,
           ControllerImpl.address,
+          ForwarderModule.adddress,
           inheritanceWaitingPeriod
         ),
         deployer.deploy(
           WhitelistModule,
           ControllerImpl.address,
+          ForwarderModule.adddress,
           whitelistDelayPeriod
         ),
         deployer.deploy(
-          QuotaTransfers,
+          ApprovedTransferModule,
           ControllerImpl.address,
-          quotaDelayPeriod
+          ForwarderModule.adddress
         ),
-        deployer.deploy(ApprovedTransfers, ControllerImpl.address),
-        deployer.deploy(DappTransfers, ControllerImpl.address),
-        deployer.deploy(ERC1271Module)
+        deployer.deploy(
+          DappTransferModule,
+          ControllerImpl.address,
+          ForwarderModule.adddress
+        ),
+
+        deployer.deploy(
+          QuotaTransferModule,
+          ControllerImpl.address,
+          ForwarderModule.adddress,
+          quotaDelayPeriod
+        )
       ]);
     })
     .then(() => {
-      ModuleRegistryImpl.deployed().then(moduleRegistryImpl => {
+      ModuleRegistry.deployed().then(moduleRegistryImpl => {
         return Promise.all([
+          moduleRegistryImpl.registerModule(ForwarderModule.address),
+          moduleRegistryImpl.registerModule(ERC1271Module.address),
           moduleRegistryImpl.registerModule(WalletFactoryModule.address),
           moduleRegistryImpl.registerModule(GuardianModule.address),
           moduleRegistryImpl.registerModule(InheritanceModule.address),
           moduleRegistryImpl.registerModule(WhitelistModule.address),
-          moduleRegistryImpl.registerModule(QuotaTransfers.address),
           moduleRegistryImpl.registerModule(ApprovedTransfers.address),
           moduleRegistryImpl.registerModule(DappTransfers.address),
-          moduleRegistryImpl.registerModule(ERC1271Module.address)
+          moduleRegistryImpl.registerModule(QuotaTransfers.address)
         ]);
       });
     })
     .then(() => {
-      WalletRegistryImpl.deployed().then(walletRegistryImpl => {
+      WalletRegistry.deployed().then(walletRegistry => {
         return Promise.all([
-          walletRegistryImpl.setWalletFactory(WalletFactoryModule.address)
+          walletRegistry.setWalletFactory(WalletFactoryModule.address)
         ]);
       });
     })
     .then(() => {
-      let deployedEnsManagerAddr = process.env.ENSManager || "";
-      if (web3.utils.isAddress(deployedEnsManagerAddr.toLowerCase())) {
+      let ensManagerAddr = process.env.ENSManager || "";
+      if (web3.utils.isAddress(ensManagerAddr.toLowerCase())) {
         // should be done manually.
         console.log(
           "You will have to do ensManager.addManager(WalletFactoryModule.address) manually"

@@ -32,8 +32,6 @@ import "../stores/WhitelistStore.sol";
 /// @author Daniel Wang - <daniel@loopring.org>
 contract ControllerImpl is Claimable, Controller
 {
-    bool                private initialized;
-
     address             public collectTo;
     uint                public defaultLockPeriod;
     address             public ensManagerAddress;
@@ -49,7 +47,7 @@ contract ControllerImpl is Claimable, Controller
         address indexed addr
     );
 
-    function init(
+    constructor(
         ModuleRegistry    _moduleRegistry,
         WalletRegistry    _walletRegistry,
         uint              _defaultLockPeriod,
@@ -62,12 +60,8 @@ contract ControllerImpl is Claimable, Controller
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore
         )
-        external
-        onlyOwner
+        public
     {
-        require(!initialized, "INITIALIZED_ALREADY");
-        initialized = true;
-
         moduleRegistry = _moduleRegistry;
         walletRegistry = _walletRegistry;    
 

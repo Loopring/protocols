@@ -31,7 +31,7 @@ import "./Forwarder.sol";
 ///
 /// The design of this contract is inspired by GSN's contract codebase:
 /// https://github.com/opengsn/gsn/contracts
-abstract contract ForwarderModule is Forwarder, BaseModule
+contract ForwarderModule is Forwarder, BaseModule
 {
     using MathUint for uint;
     uint public constant GAS_OVERHEAD = 200000; // TODO
