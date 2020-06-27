@@ -16,23 +16,22 @@
 */
 pragma solidity ^0.6.6;
 
-import "./ModuleRegistry.sol";
-import "./WalletRegistry.sol";
+import "../iface/Controller.sol";
 
-import "../iface/PriceOracle.sol";
+import "../stores/NonceStore.sol";
+import "../stores/QuotaStore.sol";
+import "../stores/SecurityStore.sol";
+import "../stores/DappAddressStore.sol";
+import "../stores/WhitelistStore.sol";
 
-import "../base/WalletENSManager.sol";
-
-/// @title Controller
+/// @title ControllerV1
 ///
 /// @author Daniel Wang - <daniel@loopring.org>
-abstract contract Controller
+abstract contract ControllerV2 is Controller
 {
-    address public collectTo;
-    uint    public defaultLockPeriod;
-
-    ModuleRegistry          public moduleRegistry;
-    WalletRegistry          public walletRegistry;
-    PriceOracle             public priceOracle;
-    WalletENSManager        public ensManager;
+    QuotaStore              public quotaStore;
+    SecurityStore           public securityStore;
+    DappAddressStore        public dappAddressStore;
+    WhitelistStore          public whitelistStore;
+    NonceStore              public nonceStore;
 }

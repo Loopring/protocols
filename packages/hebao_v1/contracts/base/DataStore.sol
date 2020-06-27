@@ -27,7 +27,7 @@ import "../iface/Wallet.sol";
 ///
 /// The design of this contract is inspired by Argent's contract codebase:
 /// https://github.com/argentlabs/argent-contracts
-contract DataStore
+abstract contract DataStore
 {
   modifier onlyWalletModule(address wallet)
     {
