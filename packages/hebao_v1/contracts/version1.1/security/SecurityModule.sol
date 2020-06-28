@@ -49,14 +49,28 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyFromWallet(address wallet)
         override
     {
-        require(msgSender() == wallet, "NOT_FROM_WALLET");
+        require(logicalSender() == wallet, "NOT_FROM_WALLET");
+        controller.securityStore().touchLastActive(wallet);
+        _;
+    }
+
+    modifier onlyFromWalletOrOwner(address wallet)
+        override
+    {
+        require(
+            logicalSender() == wallet || logicalSender() == Wallet(wallet).owner(),
+            "NOT_FROM_WALLET_OR_OWNER"
+        );
         controller.securityStore().touchLastActive(wallet);
         _;
     }
 
     modifier onlyFromGuardian(address wallet)
     {
-        require(controller.securityStore().isGuardian(wallet, msgSender()), "NOT_FROM_GUARDIAN");
+        require(
+            controller.securityStore().isGuardian(wallet, logicalSender()),
+            "NOT_FROM_GUARDIAN"
+        );
         _;
     }
 

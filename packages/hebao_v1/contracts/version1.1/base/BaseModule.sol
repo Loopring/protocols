@@ -40,8 +40,24 @@ abstract contract BaseModule is ReentrancyGuard, Module
     event Activated   (address indexed wallet);
     event Deactivated (address indexed wallet);
 
+    function logicalSender()
+        internal
+        virtual
+        returns(address payable)
+    {
+        return msg.sender;
+    }
+
     modifier onlyFromWallet(address wallet) virtual {
-        require(msg.sender == wallet, "NOT_FROM_WALLET");
+        require(logicalSender() == wallet, "NOT_FROM_WALLET");
+        _;
+    }
+
+    modifier onlyFromWalletOrOwner(address wallet) virtual {
+        require(
+            logicalSender() == wallet || logicalSender() == Wallet(wallet).owner(),
+            "NOT_FROM_WALLET_OR_OWNER"
+        );
         _;
     }
 
@@ -53,7 +69,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
     }
 
     modifier notWalletOwner(address wallet, address addr)
-    virtual
+        virtual
     {
         require(Wallet(wallet).owner() != addr, "IS_WALLET_OWNER");
         _;
@@ -67,13 +83,24 @@ abstract contract BaseModule is ReentrancyGuard, Module
         controller = _controller;
     }
 
+    function addModule(
+        address wallet,
+        address module
+        )
+        external
+        nonReentrant
+        onlyFromWalletOrOwner(wallet)
+    {
+        Wallet(wallet).addModule(module);
+    }
+
     /// @dev This method will cause an re-entry to the same module contract.
     function activate()
         external
         override
         virtual
     {
-        address wallet = msg.sender;
+        address wallet = logicalSender();
         bindMethods(wallet);
         emit Activated(wallet);
     }
@@ -84,7 +111,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         override
         virtual
     {
-        address wallet = msg.sender;
+        address wallet = logicalSender();
         unbindMethods(wallet);
         emit Deactivated(wallet);
     }

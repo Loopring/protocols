@@ -68,7 +68,7 @@ contract InheritanceModule is SecurityModule
         nonReentrant
     {
         (address who, uint lastActive) = controller.securityStore().inheritor(wallet);
-        require(msgSender() == who, "NOT_ALLOWED");
+        require(logicalSender() == who, "NOT_ALLOWED");
 
         require(lastActive > 0 && now >= lastActive + waitingPeriod, "NEED_TO_WAIT");
 
