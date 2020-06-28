@@ -127,7 +127,7 @@ contract ApprovedTransferModule is TransferModule
                 request.nonce,
                 to,
                 value,
-                data
+                keccak256(data)
             )
         );
         controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
@@ -156,7 +156,7 @@ contract ApprovedTransferModule is TransferModule
             to,
             amount,
             value,
-            data
+            keccak256(data)
         );
 
         controller.verifyRequest(

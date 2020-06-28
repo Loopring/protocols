@@ -31,10 +31,13 @@ contract ForwarderModule is BaseModule
 {
     using SignatureUtil for bytes32;
 
-    uint    public constant GAS_OVERHEAD = 200000; // TODO
+    // TODO(kongliang):figure out this GAS_OVERHEAD value.
+    uint    public constant GAS_OVERHEAD = 200000; 
     bytes32 public DOMAIN_SEPARATOR;
 
-    constructor(ControllerImpl _controller)
+    constructor(
+        ControllerImpl _controller
+        )
         public
         BaseModule(_controller)
     {

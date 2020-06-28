@@ -80,7 +80,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     	bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            _label,
+            keccak256(bytes(_label)),
             keccak256(_labelApproval),
             keccak256(abi.encode(_modules)) // TODO: is this correct?
 		);
