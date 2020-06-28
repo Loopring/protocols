@@ -18,6 +18,7 @@ pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
 import "../../iface/Wallet.sol";
+import "../../lib/AddressUtil.sol";
 import "../../lib/SignatureUtil.sol";
 import "../../thirdparty/BytesUtil.sol";
 import "../../thirdparty/ERC1271.sol";
@@ -29,6 +30,7 @@ import "../base/BaseModule.sol";
 contract ERC1271Module is ERC1271, BaseModule
 {
     using SignatureUtil for bytes32;
+    using AddressUtil   for address;
 
     constructor(ControllerImpl _controller)
         public
@@ -61,10 +63,12 @@ contract ERC1271Module is ERC1271, BaseModule
         } else {
             hash = keccak256(_data);
         }
-        if (hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
-            return MAGICVALUE;
-        } else {
-            return 0;
+
+        address owner = Wallet(msg.sender).owner();
+        if (owner.isContract()) {
+            return ERC1271(owner).isValidSignature(_data, _signature);
         }
+
+        return (hash.recoverECDSASigner(_signature) == owner) ? MAGICVALUE : bytes4(0);
     }
 }

@@ -38,7 +38,7 @@ library SignedRequest {
     }
 
     function verifyRequest(
-        ControllerImpl                 controller,
+        ControllerImpl               controller,
         bytes32                      domainSeperator,
         GuardianUtils.SigRequirement sigRequirement,
         Request memory               request,
