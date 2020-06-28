@@ -33,13 +33,14 @@ library SignatureUtil
 {
     using BytesUtil     for bytes;
     using MathUint      for uint;
+    using AddressUtil   for address;
 
     enum SignatureType {
         ILLEGAL,
         INVALID,
         EIP_712,
         ETH_SIGN,
-        WALLET
+        WALLET   // deprecated
     }
 
     bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
@@ -74,14 +75,16 @@ library SignatureUtil
         view
         returns (bool)
     {
+        if (signer.isContract()) {
+            return verifyERC1271Signature(signHash, signer, signature);
+        }
+
         uint signatureTypeOffset = signature.length.sub(1);
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
 
-        if (signatureType == SignatureType.WALLET) {
-            return verifyERC1271Signature(signHash, signer, stripped);
-        } else if (signatureType == SignatureType.EIP_712) {
+        if (signatureType == SignatureType.EIP_712) {
             return recoverECDSASigner(signHash, stripped) == signer;
         } else if (signatureType == SignatureType.ETH_SIGN) {
             bytes32 hash = keccak256(

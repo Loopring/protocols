@@ -64,11 +64,10 @@ contract ERC1271Module is ERC1271, BaseModule
             hash = keccak256(_data);
         }
 
-        address owner = Wallet(msg.sender).owner();
-        if (owner.isContract()) {
-            return ERC1271(owner).isValidSignature(_data, _signature);
+        if (hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
+            return MAGICVALUE;
+        } else {
+            return 0;
         }
-
-        return (hash.recoverECDSASigner(_signature) == owner) ? MAGICVALUE : bytes4(0);
     }
 }
