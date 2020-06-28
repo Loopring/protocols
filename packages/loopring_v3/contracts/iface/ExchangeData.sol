@@ -37,7 +37,8 @@ library ExchangeData
         NEW_ACCOUNT,
         WITHDRAWAL,
         PUBLICKEY_UPDATE,
-        TRANSFER
+        TRANSFER,
+        OWNER_CHANGE
     }
 
     // -- Structs --
@@ -141,7 +142,7 @@ library ExchangeData
     function FEE_BLOCK_FINE_MAX_DURATION() internal pure returns (uint32) { return 6 hours; }
     function MIN_AGE_PROTOCOL_FEES_UNTIL_UPDATED() internal pure returns (uint32) { return 1 days; }
     function MIN_TIME_IN_SHUTDOWN() internal pure returns (uint32) { return 28 days; }
-    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 68; }
+    function TX_DATA_AVAILABILITY_SIZE() internal pure returns (uint32) { return 100; }
     function MAX_AGE_DEPOSIT_UNTIL_WITHDRAWABLE() internal pure returns (uint32) { return 1 days; }
 
 

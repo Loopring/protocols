@@ -7,7 +7,7 @@ export class Constants {
   static readonly BINARY_TREE_DEPTH_ACCOUNTS = 24;
   static readonly BINARY_TREE_DEPTH_TOKENS = 10;
 
-  static readonly TX_DATA_AVAILABILITY_SIZE = 68;
+  static readonly TX_DATA_AVAILABILITY_SIZE = 100;
 
   static readonly NUM_BITS_ACCOUNTID = Constants.BINARY_TREE_DEPTH_ACCOUNTS;
   static readonly NUM_BITS_ORDERID = 20;

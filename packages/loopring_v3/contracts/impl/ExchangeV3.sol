@@ -39,7 +39,7 @@ import "../iface/IExchangeV3.sol";
 /// @author Daniel Wang  - <daniel@loopring.org>
 contract ExchangeV3 is IExchangeV3
 {
-    bytes32 constant public genesisBlockHash = 0x06e87035e6fc38ad207ed1d9d94faa4011e38c30295c09a158e479ca05c5d9f5;
+    bytes32 constant public genesisBlockHash = 0x1dacdc3f6863d9db1d903e7285ebf74b61f02d585ccb52ecaeaf97dbb773becf;
 
     using MathUint              for uint;
     using ExchangeAdmins        for ExchangeData.State;

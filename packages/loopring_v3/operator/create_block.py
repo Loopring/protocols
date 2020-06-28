@@ -130,6 +130,7 @@ def publicKeyUpdateFromJSON(jUpdate):
     update.nonce = str(jUpdate["nonce"])
     update.publicKeyX = str(jUpdate["publicKeyX"])
     update.publicKeyY = str(jUpdate["publicKeyY"])
+    update.walletHash = str(jUpdate["walletHash"])
     update.feeTokenID = int(jUpdate["feeTokenID"])
     update.fee = str(jUpdate["fee"])
     update.onchainSignature = str(jUpdate["onchainSignature"])
@@ -145,8 +146,20 @@ def newAccountFromJSON(jCreate):
     create.newOwner = str(jCreate["newOwner"])
     create.newPublicKeyX = str(jCreate["newPublicKeyX"])
     create.newPublicKeyY = str(jCreate["newPublicKeyY"])
+    create.newWalletHash = str(jCreate["newWalletHash"])
     create.signature = jCreate["signature"]
     return create
+
+def ownerChangeFromJSON(jChange):
+    change = GeneralObject()
+    change.owner = str(jChange["owner"])
+    change.accountID = int(jChange["accountID"])
+    change.feeTokenID = int(jChange["feeTokenID"])
+    change.fee = str(jChange["fee"])
+    change.nonce = int(jChange["nonce"])
+    change.newOwner = str(jChange["newOwner"])
+    change.walletHash = str(jChange["walletHash"])
+    return change
 
 def ringFromJSON(jRing, state):
     orderA = orderFromJSON(jRing["orderA"], state)
@@ -187,6 +200,8 @@ def createBlock(state, data):
             transaction = publicKeyUpdateFromJSON(transactionInfo)
         if txType == "NewAccount":
             transaction = newAccountFromJSON(transactionInfo)
+        if txType == "OwnerChange":
+            transaction = ownerChangeFromJSON(transactionInfo)
 
         transaction.txType = txType
         tx = state.executeTransaction(context, transaction)
@@ -206,6 +221,8 @@ def createBlock(state, data):
             txWitness.publicKeyUpdate = tx.input
         if txType == "NewAccount":
             txWitness.newAccount = tx.input
+        if txType == "OwnerChange":
+            txWitness.ownerChange = tx.input
         txWitness.witness.numConditionalTransactionsAfter = context.numConditionalTransactions
         block.transactions.append(txWitness)
 

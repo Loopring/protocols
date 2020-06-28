@@ -178,6 +178,9 @@ contract("Exchange", (accounts: string[]) => {
       const ownerA = exchangeTestUtil.testContext.orderOwners[0];
       const ownerB = exchangeTestUtil.testContext.orderOwners[1];
       const ownerC = exchangeTestUtil.testContext.orderOwners[2];
+      const ownerD = exchangeTestUtil.testContext.orderOwners[3];
+      const ownerE = exchangeTestUtil.testContext.orderOwners[4];
+      const ownerF = exchangeTestUtil.testContext.orderOwners[5];
 
       // Do a transfer
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
@@ -192,11 +195,13 @@ contract("Exchange", (accounts: string[]) => {
         token,
         amount,
         feeToken,
-        /*fee*/new BN(0),
+        new BN(0),
         3
       );
 
-      await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerC)
+      await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE)
+
+      await exchangeTestUtil.requestOwnerChange(ownerE, ownerF, "ETH", new BN(0));
 
       /*await exchangeTestUtil.requestWithdrawalOnchain(
         exchangeID,

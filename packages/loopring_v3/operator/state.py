@@ -13,7 +13,7 @@ from ethsnarks.merkletree import MerkleTree
 from ethsnarks.poseidon import poseidon, poseidon_params
 from ethsnarks.field import SNARK_SCALAR_FIELD
 
-poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 6, 6, 52, b'poseidon', 5, security_target=128)
+poseidonParamsAccount = poseidon_params(SNARK_SCALAR_FIELD, 7, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsBalance = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 poseidonParamsTradingHistory = poseidon_params(SNARK_SCALAR_FIELD, 5, 6, 52, b'poseidon', 5, security_target=128)
 
@@ -71,8 +71,9 @@ class Signature(object):
             self.s = "0"
 
 class BalanceLeaf(object):
-    def __init__(self, balance = 0):
+    def __init__(self, balance = 0, index = 10**18):
         self.balance = str(balance)
+        self.index = str(index)
         # Trading history
         self._tradingHistoryTree = SparseMerkleTree(BINARY_TREE_DEPTH_TRADING_HISTORY // 2, 4)
         self._tradingHistoryTree.newTree(TradeHistoryLeaf().hash())
@@ -82,12 +83,13 @@ class BalanceLeaf(object):
 
     def hash(self):
         #print("balance: " + self.balance)
-        temp = [int(self.balance), int(self._tradingHistoryTree._root)]
+        temp = [int(self.balance), int(self.index), int(self._tradingHistoryTree._root)]
         #print(temp)
         return poseidon(temp, poseidonParamsBalance)
 
     def fromJSON(self, jBalance):
         self.balance = jBalance["balance"]
+        self.index = jBalance["index"]
         # Trading history
         tradeHistoryLeafsDict = jBalance["_tradeHistoryLeafs"]
         for key, val in tradeHistoryLeafsDict.items():
@@ -149,20 +151,22 @@ class Account(object):
         self.publicKeyX = str(publicKey.x)
         self.publicKeyY = str(publicKey.y)
         self.nonce = 0
+        self.walletHash = str(0)
         # Balances
         self._balancesTree = SparseMerkleTree(BINARY_TREE_DEPTH_TOKENS // 2, 4)
         self._balancesTree.newTree(BalanceLeaf().hash())
         self._balancesLeafs = {}
-        #print("Empty balances tree: " + str(self._balancesTree._root))
+        # print("Empty balances tree: " + str(self._balancesTree._root))
 
     def hash(self):
-        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self._balancesTree._root)], poseidonParamsAccount)
+        return poseidon([int(self.owner), int(self.publicKeyX), int(self.publicKeyY), int(self.nonce), int(self.walletHash), int(self._balancesTree._root)], poseidonParamsAccount)
 
     def fromJSON(self, jAccount):
         self.owner = jAccount["owner"]
         self.publicKeyX = jAccount["publicKeyX"]
         self.publicKeyY = jAccount["publicKeyY"]
         self.nonce = int(jAccount["nonce"])
+        self.walletHash = jAccount["walletHash"]
         # Balances
         balancesLeafsDict = jAccount["_balancesLeafs"]
         for key, val in balancesLeafsDict.items():
@@ -473,11 +477,14 @@ class State(object):
         newState.accountA_Owner = None
         newState.accountA_PublicKeyX = None
         newState.accountA_PublicKeyY = None
+        newState.accountA_WalletHash = None
         newState.accountA_Nonce = None
         newState.balanceA_S_Address = None
         newState.balanceA_S_Balance = None
+        newState.balanceA_S_Index = None
         newState.balanceA_B_Address = None
         newState.balanceA_B_Balance = None
+        newState.balanceA_B_Index = None
         newState.tradeHistoryA_Address = None
         newState.tradeHistoryA_Filled = None
         newState.tradeHistoryA_OrderId = None
@@ -486,11 +493,14 @@ class State(object):
         newState.accountB_Owner = None
         newState.accountB_PublicKeyX = None
         newState.accountB_PublicKeyY = None
+        newState.accountB_WalletHash = None
         newState.accountB_Nonce = None
         newState.balanceB_S_Address = None
         newState.balanceB_S_Balance = None
+        newState.balanceB_S_Index = None
         newState.balanceB_B_Address = None
         newState.balanceB_B_Balance = None
+        newState.balanceB_B_Index = None
         newState.tradeHistoryB_Address = None
         newState.tradeHistoryB_Filled = None
         newState.tradeHistoryB_OrderId = None
@@ -708,6 +718,7 @@ class State(object):
 
             newState.accountA_PublicKeyX = txInput.publicKeyX
             newState.accountA_PublicKeyY = txInput.publicKeyY
+            newState.accountA_WalletHash = txInput.walletHash
             newState.accountA_Nonce = accountA.nonce + 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
@@ -729,6 +740,7 @@ class State(object):
             newState.accountB_Owner = txInput.newOwner
             newState.accountB_PublicKeyX = txInput.newPublicKeyX
             newState.accountB_PublicKeyY = txInput.newPublicKeyY
+            newState.accountB_WalletHash = txInput.newWalletHash
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
@@ -736,6 +748,21 @@ class State(object):
             newState.balanceDeltaB_O = feeValue
 
             newState.signatureA = txInput.signature
+
+        elif txInput.txType == "OwnerChange":
+
+            feeValue = roundToFloatValue(int(txInput.fee), Float16Encoding)
+
+            newState.accountA_Address = txInput.accountID
+            newState.accountA_Owner = txInput.newOwner
+            accountA = self.getAccount(newState.accountA_Address)
+            newState.accountA_Nonce = accountA.nonce + 1
+
+            newState.balanceA_S_Address = txInput.feeTokenID
+            newState.balanceA_S_Balance = -feeValue
+
+            newState.balanceDeltaB_O = feeValue
+
 
 
         # Set default values if none provided
@@ -746,14 +773,17 @@ class State(object):
         newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
         newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
         newState.accountA_Nonce = setValue(newState.accountA_Nonce, accountA.nonce)
+        newState.accountA_WalletHash = setValue(newState.accountA_WalletHash, accountA.walletHash)
 
 
         newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
         balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
         newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
+        newState.balanceA_S_Index = setValue(newState.balanceA_S_Index, 0)
 
         newState.balanceA_B_Address = setValue(newState.balanceA_B_Address, 0)
         newState.balanceA_B_Balance = setValue(newState.balanceA_B_Balance, 0)
+        newState.balanceA_B_Index = setValue(newState.balanceA_B_Index, 0)
 
         newState.tradeHistoryA_Address = setValue(newState.tradeHistoryA_Address, 0)
         tradeHistoryA = balanceLeafA_S.getTradeHistory(newState.tradeHistoryA_Address)
@@ -767,14 +797,17 @@ class State(object):
         newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
         newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
         newState.accountB_Nonce = setValue(newState.accountB_Nonce, accountB.nonce)
+        newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
 
 
         newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
         balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
         newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
+        newState.balanceB_S_Index = setValue(newState.balanceB_S_Index, 0)
 
         newState.balanceB_B_Address = setValue(newState.balanceB_B_Address, 0)
         newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
+        newState.balanceB_B_Index = setValue(newState.balanceB_B_Index, 0)
 
         newState.tradeHistoryB_Address = setValue(newState.tradeHistoryB_Address, 0)
         tradeHistoryB = balanceLeafB_S.getTradeHistory(newState.tradeHistoryB_Address)
@@ -815,6 +848,7 @@ class State(object):
         accountA.publicKeyX = newState.accountA_PublicKeyX
         accountA.publicKeyY = newState.accountA_PublicKeyY
         accountA.nonce = newState.accountA_Nonce
+        accountA.walletHash = newState.accountA_WalletHash
 
         self.updateAccountTree(newState.accountA_Address)
         accountAfter = copyAccountInfo(self.getAccount(newState.accountA_Address))
@@ -844,6 +878,7 @@ class State(object):
         accountB.publicKeyX = newState.accountB_PublicKeyX
         accountB.publicKeyY = newState.accountB_PublicKeyY
         accountB.nonce = newState.accountB_Nonce
+        accountB.walletHash = newState.accountB_WalletHash
 
         self.updateAccountTree(newState.accountB_Address)
         accountAfter = copyAccountInfo(self.getAccount(newState.accountB_Address))

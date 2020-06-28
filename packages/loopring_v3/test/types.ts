@@ -96,6 +96,7 @@ export interface PublicKeyUpdate {
   nonce: number;
   publicKeyX: string;
   publicKeyY: string;
+  walletHash: string;
   feeTokenID: number;
   fee: BN;
 
@@ -176,8 +177,26 @@ export interface NewAccount {
   newOwner: string;
   newPublicKeyX: string;
   newPublicKeyY: string;
+  newWalletHash: string;
 
   signature?: any;
+}
+
+export interface OwnerChange {
+  txType?: "OwnerChange";
+  owner: string;
+  accountID: number;
+  feeTokenID: number;
+  fee: BN;
+  nonce: number;
+  walletHash: string;
+  newOwner: string;
+  walletAddress: string;
+  walletDataHash: string;
+  walletCalldata: string;
+
+  onchainSignatureOldOwner?: any;
+  onchainSignatureNewOwner?: any;
 }
 
 export interface Block {
@@ -211,6 +230,7 @@ export interface Account {
   publicKeyX: string;
   publicKeyY: string;
   secretKey: string;
+  wallet?: Wallet;
   nonce: number;
 }
 
@@ -267,3 +287,19 @@ export interface DepositInfo {
   depositIdx: number;
 }
 
+export interface Guardian {
+  addr: string;
+  group: number;
+}
+
+export interface Wallet {
+  accountID: number;
+  guardians: Guardian[];
+  inheritor: string;
+  inheritableSince: number;
+}
+
+export interface PermissionData {
+  signers: string[];
+  signatures: string[];
+}

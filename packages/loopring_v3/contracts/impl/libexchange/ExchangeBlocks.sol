@@ -33,6 +33,7 @@ import "../libtransactions/TransferTransaction.sol";
 import "../libtransactions/PublicKeyUpdateTransaction.sol";
 import "../libtransactions/DepositTransaction.sol";
 import "../libtransactions/WithdrawTransaction.sol";
+import "../libtransactions/OwnerChangeTransaction.sol";
 
 
 /// @title ExchangeBlocks.
@@ -297,6 +298,12 @@ library ExchangeBlocks
                     );
                 }  else if (txType == ExchangeData.TransactionType.PUBLICKEY_UPDATE) {
                     txFeeETH = PublicKeyUpdateTransaction.process(
+                        S,
+                        txData,
+                        txAuxiliaryData[i].data
+                    );
+                } else if (txType == ExchangeData.TransactionType.OWNER_CHANGE) {
+                    txFeeETH = OwnerChangeTransaction.process(
                         S,
                         txData,
                         txAuxiliaryData[i].data

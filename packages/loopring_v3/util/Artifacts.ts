@@ -15,6 +15,7 @@ export class Artifacts {
   public INDBToken: any;
   public TESTToken: any;
   public Operator: any;
+  public StatelessWallet: any;
   public TestAccountContract: any;
   public LzDecompressor: any;
   public TransferContract: any;
@@ -36,6 +37,7 @@ export class Artifacts {
     this.ExchangeV3 = artifacts.require("impl/ExchangeV3");
     this.BlockVerifier = artifacts.require("impl/BlockVerifier");
     this.Operator = artifacts.require("impl/Operator");
+    this.StatelessWallet = artifacts.require("impl/StatelessWallet");
 
     this.DummyToken = artifacts.require("test/DummyToken");
     this.LRCToken = artifacts.require("test/tokens/LRC");

@@ -30,6 +30,7 @@ import {
 import { Context } from "./context";
 import { expectThrow } from "./expectThrow";
 import { doDebugLogging, logDebug, logInfo } from "./logs";
+import * as sigUtil from 'eth-sig-util';
 
 import { Simulator } from "./simulator";
 import { ExchangeTestContext } from "./testExchangeContext";
@@ -51,11 +52,15 @@ import {
   TradeHistory,
   WithdrawalRequest,
   NewAccount,
+  Wallet,
+  Guardian,
+  OwnerChange,
+  PermissionData,
 } from "./types";
 import { OffchainWithdrawal } from "loopringV3.js";
 
 
-type TxType = Noop | SpotTrade | Transfer | WithdrawalRequest | Deposit | PublicKeyUpdate | NewAccount;
+type TxType = Noop | SpotTrade | Transfer | WithdrawalRequest | Deposit | PublicKeyUpdate | NewAccount | OwnerChange;
 
 // JSON replacer function for BN values
 function replacer(name: any, val: any) {
@@ -136,8 +141,7 @@ export namespace PublicKeyUpdateUtils {
 
   export function getHash(update: PublicKeyUpdate, verifyingContract: string) {
     const typedData = this.toTypedData(update, verifyingContract);
-    const orderHash = getEIP712Message(typedData);
-    return orderHash;
+    return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
 
@@ -185,8 +189,7 @@ export namespace WithdrawalUtils {
 
   export function getHash(withdrawal: WithdrawalRequest, verifyingContract: string) {
     const typedData = this.toTypedData(withdrawal, verifyingContract);
-    const orderHash = getEIP712Message(typedData);
-    return orderHash;
+    return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
 
@@ -236,8 +239,155 @@ export namespace TransferUtils {
 
   export function getHash(transfer: Transfer, verifyingContract: string) {
     const typedData = this.toTypedData(transfer, verifyingContract);
-    const orderHash = getEIP712Message(typedData);
-    return orderHash;
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+}
+
+export namespace WalletUtils {
+  export function toTypedDataStatelessWallet(wallet: Wallet, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        Guardian: [
+          { name: "addr", type: "address" },
+          { name: "group", type: "uint256" }
+        ],
+        StatelessWallet: [
+          { name: "accountID", type: "uint24" },
+          { name: "guardians", type: "Guardian[]" },
+          { name: "inheritor", type: "address" },
+          { name: "inheritableSince", type: "uint256" }
+        ]
+      },
+      primaryType: "StatelessWallet" as const,
+      domain: {
+        name: "Loopring Stateless Wallet",
+        version: "1.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        accountID: wallet.accountID,
+        guardians: wallet.guardians,
+        inheritor: wallet.inheritor,
+        inheritableSince: wallet.inheritableSince
+      }
+    };
+    return typedData;
+  }
+
+  export function toTypedDataWallet(walletAddress: string, walletDataHash: string, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        Wallet: [
+          { name: "walletAddress", type: "address" },
+          { name: "walletDataHash", type: "bytes32" }
+        ]
+      },
+      primaryType: "Wallet" as const,
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        walletAddress,
+        walletDataHash
+      }
+    };
+    return typedData;
+  }
+
+
+  export function getWalletHash(wallet: Wallet, verifyingContract: string) {
+    /*const utils = sigUtil.TypedDataUtils;
+    const privateKey = SHA256(Buffer.from("FF"), "hex");
+    const message = "0x" + utils.sign(typedData).toString("hex");
+    const sig = sigUtil.signTypedData_v4(privateKey, { data: typedData });
+    console.log(message);
+    console.log(sig);*/
+    //const typedData = this.toTypedData(wallet, verifyingContract);
+    //const hash = "0x" + sigUtil.TypedDataUtils.sign(typedData).toString("hex");
+    //return hash;
+    const typedData = this.toTypedDataStatelessWallet(wallet, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+
+  export function getHash(wallet: Wallet, walletAddress: string, verifyingContract: string) {
+    /*const utils = sigUtil.TypedDataUtils;
+    const privateKey = SHA256(Buffer.from("FF"), "hex");
+    const message = "0x" + utils.sign(typedData).toString("hex");
+    const sig = sigUtil.signTypedData_v4(privateKey, { data: typedData });
+    console.log(message);
+    console.log(sig);*/
+    //const typedData = this.toTypedData(wallet, verifyingContract);
+    //const hash = "0x" + sigUtil.TypedDataUtils.sign(typedData).toString("hex");
+    //return hash;
+    const walletDataHash = "0x" + this.getWalletHash(wallet, walletAddress).toString("hex");
+    const typedData = this.toTypedDataWallet(walletAddress, walletDataHash, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
+  }
+}
+
+export namespace OwnerChangeUtils {
+  export function toTypedData(ownerChange: OwnerChange, verifyingContract: string) {
+    const typedData = {
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          { name: "chainId", type: "uint256" },
+          { name: "verifyingContract", type: "address" }
+        ],
+        OwnerChange: [
+          { name: "owner", type: "address" },
+          { name: "accountID", type: "uint24" },
+          { name: "feeTokenID", type: "uint16" },
+          { name: "fee", type: "uint256" },
+          { name: "newOwner", type: "address" },
+          { name: "nonce", type: "uint32" },
+          { name: "walletAddress", type: "address" },
+          { name: "walletDataHash", type: "bytes32" },
+          { name: "walletCalldata", type: "bytes" }
+        ]
+      },
+      primaryType: "OwnerChange",
+      domain: {
+        name: "Loopring Protocol",
+        version: "3.6.0",
+        chainId: new BN(/*await web3.eth.net.getId()*/ 1),
+        verifyingContract
+      },
+      message: {
+        owner: ownerChange.owner,
+        accountID: ownerChange.accountID,
+        feeTokenID: ownerChange.feeTokenID,
+        fee: ownerChange.fee,
+        newOwner: ownerChange.newOwner,
+        nonce: ownerChange.nonce,
+        walletAddress: ownerChange.walletAddress,
+        walletDataHash: ownerChange.walletDataHash,
+        walletCalldata: ownerChange.walletCalldata
+      }
+    };
+    return typedData;
+  }
+
+  export function getHash(ownerChange: OwnerChange, verifyingContract: string) {
+    const typedData = this.toTypedData(ownerChange, verifyingContract);
+    return sigUtil.TypedDataUtils.sign(typedData);
   }
 }
 
@@ -247,7 +397,7 @@ export class ExchangeTestUtil {
 
   public explorer: Explorer;
 
-  public blockSizes = [1, 2, 4, 8, 16];
+  public blockSizes = [8];
 
   public loopringV3: any;
   public blockVerifier: any;
@@ -270,6 +420,8 @@ export class ExchangeTestUtil {
   public protocolFeeVault: any;
   public protocolFeeVaultContract: any;
   public universalRegistry: any;
+
+  public statelessWallet: any;
 
   public blocks: Block[][] = [];
   public accounts: Account[][] = [];
@@ -308,7 +460,7 @@ export class ExchangeTestUtil {
 
   public autoCommit = true;
 
-  public useProverServer: boolean = false;
+  public useProverServer: boolean = true;
 
   private pendingTransactions: TxType[][] = [];
 
@@ -322,6 +474,8 @@ export class ExchangeTestUtil {
   public async initialize(accounts: string[]) {
     this.context = await this.createContractContext();
     this.testContext = await this.createExchangeTestContext(accounts);
+
+    this.statelessWallet = await this.contracts.StatelessWallet.new();
 
     this.explorer = new Explorer();
     await this.explorer.initialize(web3, this.universalRegistry.address);
@@ -943,6 +1097,7 @@ export class ExchangeTestUtil {
         nonce: this.accounts[this.exchangeId][account.accountID].nonce++,
         publicKeyX,
         publicKeyY,
+        walletHash: "0",
         feeTokenID: tokenID,
         fee: new BN(0)
       };
@@ -961,6 +1116,7 @@ export class ExchangeTestUtil {
           nonce: this.accounts[this.exchangeId][account.accountID].nonce++,
           publicKeyX,
           publicKeyY,
+          walletHash: "0",
           feeTokenID: tokenID,
           fee: new BN(0)
         };
@@ -1299,6 +1455,18 @@ export class ExchangeTestUtil {
     }
     const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
 
+    const guardians: Guardian[] = [{addr: newOwner, group: 1}];
+    guardians.push({addr: newOwner, group: 0});
+    const wallet: Wallet = {
+      accountID: this.accounts[this.exchangeId].length,
+      guardians,
+      inheritor: newOwner,
+      inheritableSince: 0
+    };
+    const walletHash = WalletUtils.getHash(wallet, this.statelessWallet.address, this.exchange.address);
+    console.log(walletHash);
+    console.log(this.hashToFieldElement("0x" + walletHash.toString("hex")));
+
     const keypair = this.getKeyPairEDDSA();
     const account: Account = {
       accountID: this.accounts[this.exchangeId].length,
@@ -1306,6 +1474,7 @@ export class ExchangeTestUtil {
       publicKeyX: keypair.publicKeyX,
       publicKeyY: keypair.publicKeyY,
       secretKey: keypair.secretKey,
+      wallet,
       nonce: 0
     };
     this.accounts[this.exchangeId].push(account);
@@ -1319,12 +1488,79 @@ export class ExchangeTestUtil {
       newOwner: this.hexToDecString(newOwner),
       newAccountID: account.accountID,
       newPublicKeyX: account.publicKeyX,
-      newPublicKeyY: account.publicKeyY
+      newPublicKeyY: account.publicKeyY,
+      newWalletHash: this.hashToFieldElement("0x" + walletHash.toString("hex"))
     };
     this.signNewAccount(newAccount);
 
     this.pendingTransactions[this.exchangeId].push(newAccount);
     return newAccount;
+  }
+
+  public async requestOwnerChange(
+    owner: string,
+    newOwner: string,
+    feeToken: string,
+    fee: BN,
+  ) {
+    if (!feeToken.startsWith("0x")) {
+      feeToken = this.testContext.tokenSymbolAddrMap.get(feeToken);
+    }
+    const feeTokenID = this.tokenAddressToIDMap.get(feeToken);
+
+    const account = this.findAccount(owner);
+
+    const walletHash = WalletUtils.getHash(account.wallet, this.statelessWallet.address, this.exchange.address);
+    const walletDataHash = WalletUtils.getWalletHash(account.wallet, this.statelessWallet.address);
+
+    const permissionData: PermissionData = {signers: [], signatures: []};
+
+    const testResult = await this.statelessWallet.recover(
+      account.accountID,
+      account.nonce,
+      owner,
+      newOwner,
+      "0x" + walletDataHash.toString("hex"),
+      account.wallet,
+      permissionData
+    );
+    console.log(testResult);
+
+    console.log("Stateless wallet: " + this.statelessWallet.address);
+    console.log("walletHash: " + walletHash.toString("hex"));
+    console.log("walletDataHash: " + walletDataHash.toString("hex"));
+
+    const walletCalldata = this.statelessWallet.contract.methods.recover(
+      account.accountID,
+      account.nonce,
+      owner,
+      newOwner,
+      "0x" + walletDataHash.toString("hex"),
+      account.wallet,
+      permissionData
+    ).encodeABI();
+    console.log(walletCalldata);
+
+    const ownerChange: OwnerChange = {
+      txType: "OwnerChange",
+      owner: this.hexToDecString(owner),
+      accountID: account.accountID,
+      feeTokenID,
+      fee,
+      walletHash: this.hashToFieldElement("0x" + walletHash.toString("hex")),
+      nonce: account.nonce++,
+      newOwner: this.hexToDecString(newOwner),
+      walletAddress: this.statelessWallet.address,
+      walletDataHash: "0x" + walletDataHash.toString("hex"),
+      walletCalldata
+    };
+
+    const hash = OwnerChangeUtils.getHash(ownerChange, this.exchange.address);
+    ownerChange.onchainSignatureNewOwner = await sign(newOwner, hash, SignatureType.EIP_712);
+    await verifySignature(newOwner, hash, ownerChange.onchainSignatureNewOwner);
+
+    this.pendingTransactions[this.exchangeId].push(ownerChange);
+    return ownerChange;
   }
 
   public addDeposit(
@@ -1444,13 +1680,17 @@ export class ExchangeTestUtil {
     return { blockIdx: nextBlockIdx, blockFilename: outputFilename };
   }
 
+  public hashToFieldElement(hash: string) {
+    const fieldHash = new BN(hash.slice(2), 16)
+      .shrn(3)
+      .toString(10);
+    return fieldHash;
+  }
+
   public getPublicDataHashAndInput(data: string) {
     const publicDataHash =
       "0x" + SHA256(Buffer.from(data.slice(2), "hex")).toString("hex");
-    const publicInput = new BN(publicDataHash.slice(2), 16)
-      .shrn(3)
-      .toString(10);
-    return { publicDataHash, publicInput };
+    return { publicDataHash, publicInput: this.hashToFieldElement(publicDataHash) };
   }
 
   public async validateBlock(filename: string) {
@@ -2069,6 +2309,20 @@ export class ExchangeTestUtil {
           //console.log("PublicKeyUpdate");
           numConditionalTransactions++;
           auxiliaryData.push([i, web3.utils.hexToBytes(transaction.onchainSignature)]);
+        } else if (transaction.txType === "OwnerChange") {
+          //console.log("PublicKeyUpdate");
+          numConditionalTransactions++;
+          const encodedOwnerChangeData = web3.eth.abi.encodeParameter(
+            'tuple(bytes,bytes,address,bytes32,bytes)',
+            [
+              web3.utils.hexToBytes(transaction.onchainSignatureOldOwner ? transaction.onchainSignatureOldOwner : "0x"),
+              web3.utils.hexToBytes(transaction.onchainSignatureNewOwner ? transaction.onchainSignatureNewOwner : "0x"),
+              transaction.walletAddress,
+              transaction.walletDataHash,
+              transaction.walletCalldata
+            ]
+          );
+          auxiliaryData.push([i, web3.utils.hexToBytes(encodedOwnerChangeData)]);
         }
       }
       console.log("numConditionalTransactions: " + numConditionalTransactions);
@@ -2211,18 +2465,29 @@ export class ExchangeTestUtil {
             da.addNumber(update.accountID, 3);
             da.addNumber(update.nonce, 4);
             da.addBN(new BN(EdDSA.pack(update.publicKeyX, update.publicKeyY), 16), 32);
+            da.addBN(new BN(update.walletHash), 32);
             da.addNumber(update.feeTokenID, 2);
             da.addNumber(toFloat(new BN(update.fee), Constants.Float16Encoding), 2);
           } else if (tx.newAccount) {
             const create = tx.newAccount;
             da.addNumber(BlockType.NEW_ACCOUNT, 1);
             da.addNumber(create.payerAccountID, 3);
-            da.addNumber(create.nonce, 4);
             da.addNumber(create.feeTokenID, 2);
             da.addNumber(toFloat(new BN(create.fee), Constants.Float16Encoding), 2);
             da.addNumber(create.newAccountID, 3);
             da.addBN(new BN(create.newOwner), 20);
             da.addBN(new BN(EdDSA.pack(create.newPublicKeyX, create.newPublicKeyY), 16), 32);
+            da.addBN(new BN(create.newWalletHash), 32);
+          } else if (tx.ownerChange) {
+            const change = tx.ownerChange;
+            da.addNumber(BlockType.OWNER_CHANGE, 1);
+            da.addBN(new BN(change.owner), 20);
+            da.addNumber(change.accountID, 3);
+            da.addNumber(change.nonce, 4);
+            da.addNumber(change.feeTokenID, 2);
+            da.addNumber(toFloat(new BN(change.fee), Constants.Float16Encoding), 2);
+            da.addBN(new BN(change.newOwner), 20);
+            da.addBN(new BN(change.walletHash), 32);
           }
 
           assert(da.length() <= Constants.TX_DATA_AVAILABILITY_SIZE, "tx uses too much da");
@@ -2399,6 +2664,15 @@ export class ExchangeTestUtil {
 
   public getAccount(accountId: number) {
     return this.accounts[this.exchangeId][accountId];
+  }
+
+  public findAccount(owner: string) {
+    for (let i = 0; i < this.accounts[this.exchangeId].length; i++) {
+      if (this.accounts[this.exchangeId][i].owner === owner) {
+        return this.accounts[this.exchangeId][i];
+      }
+    }
+    return undefined;
   }
 
   public async createExchange(

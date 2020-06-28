@@ -59,6 +59,8 @@ library PublicKeyUpdateTransaction
         offset += 4;
         uint publicKey = data.bytesToUint(offset);
         offset += 32;
+        uint walletHash = data.bytesToUint(offset);
+        offset += 32;
         uint16 feeTokenID = data.bytesToUint16(offset);
         offset += 2;
         uint fee = uint(data.bytesToUint16(offset)).decodeFloat(16);
