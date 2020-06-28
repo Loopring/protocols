@@ -23,19 +23,19 @@ import "./TransferModule.sol";
 /// @title ApprovedTransferModule
 contract ApprovedTransferModule is TransferModule
 {
-    bytes32 public constant TRANSFER_TOKEN_HASHTYPE = keccak256(
+    bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
         "transferToken(address wallet,uint256 nonce,address token,address to,uint256 amount,bytes logdata)"
     );
 
-    bytes32 public constant APPROVE_TOKEN_HASHTYPE = keccak256(
+    bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
         "approveToken(address wallet,uint256 nonce,address token,address to,uint256 amount)"
     );
 
-    bytes32 public constant CALL_CONTRACT_HASHTYPE = keccak256(
+    bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
         "callContract(address wallet,uint256 nonce,address to,uint256 value,bytes data)"
     );
 
-    bytes32 public constant APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
+    bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
         "approveThenCallContract(address wallet,uint256 nonce,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
@@ -64,7 +64,7 @@ contract ApprovedTransferModule is TransferModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                TRANSFER_TOKEN_HASHTYPE,
+                TRANSFER_TOKEN_TYPEHASH,
                 request.wallet,
                 request.nonce,
                 token,
@@ -93,7 +93,7 @@ contract ApprovedTransferModule is TransferModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                APPROVE_TOKEN_HASHTYPE,
+                APPROVE_TOKEN_TYPEHASH,
                 request.wallet,
                 request.nonce,
                 token,
@@ -122,7 +122,7 @@ contract ApprovedTransferModule is TransferModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                CALL_CONTRACT_HASHTYPE,
+                CALL_CONTRACT_TYPEHASH,
                 request.wallet,
                 request.nonce,
                 to,
@@ -149,7 +149,7 @@ contract ApprovedTransferModule is TransferModule
         returns (bytes memory returnData)
     {
         bytes memory encoded = abi.encode(
-            APPROVE_THEN_CALL_CONTRACT_HASHTYPE,
+            APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
             request.wallet,
             request.nonce,
             token,

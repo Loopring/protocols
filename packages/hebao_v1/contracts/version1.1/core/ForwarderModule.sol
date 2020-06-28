@@ -93,7 +93,7 @@ contract ForwarderModule is BaseModule
         require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
         require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
-        bytes memory encoded = abi.encodePacked(
+        bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
             to,

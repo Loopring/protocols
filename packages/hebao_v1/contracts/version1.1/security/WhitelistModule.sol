@@ -23,7 +23,7 @@ import "./SecurityModule.sol";
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
 {
-    bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
+    bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
         "addToWhitelistImmediately(address wallet,uint256 nonce,address addr)"
     );
 
@@ -66,7 +66,7 @@ contract WhitelistModule is SecurityModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
+                ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
                 request.wallet,
                 request.nonce,
                 addr
