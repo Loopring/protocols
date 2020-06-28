@@ -1,3 +1,4 @@
+
 /*
 
   Copyright 2017 Loopring Project Ltd (Loopring Foundation).
@@ -140,7 +141,7 @@ contract ForwarderModule is BaseModule
         );
 
         if (address(this).balance > 0) {
-            payable(controller.collectTo()).transfer(address(this).balance); 
+            payable(controller.collectTo()).transfer(address(this).balance);
         }
 
         emit MetaTxExecuted(msg.sender, metaTx.from, metaTx.nonce);
