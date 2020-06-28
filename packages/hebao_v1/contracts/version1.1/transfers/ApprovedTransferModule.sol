@@ -37,7 +37,7 @@ contract ApprovedTransferModule is TransferModule
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
         "approveThenCallContract(address wallet,uint256 nonce,address token,address to,uint256 amount,uint256 value,bytes data)"
-    ); 
+    );
 
     constructor(
         ControllerImpl _controller,

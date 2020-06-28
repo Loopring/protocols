@@ -1,5 +1,5 @@
-const ModuleRegistryImpl = artifacts.require("./base/ModuleRegistryImpl.sol");
-const WalletRegistryImpl = artifacts.require("./base/WalletRegistryImpl.sol");
+const ModuleRegistryImpl = artifacts.require("ModuleRegistryImpl");
+const WalletRegistryImpl = artifacts.require("WalletRegistryImpl");
 
 module.exports = function(deployer) {
   deployer.then(() => {

@@ -17,25 +17,29 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
+import "../../lib/MathUint.sol";
+
+import "../../iface/Wallet.sol";
+
 import "./SecurityModule.sol";
+
+import "./GuardianUtils.sol";
+
 
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
 {
-    bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
-        "addToWhitelistImmediately(address wallet,uint256 nonce,address addr)"
-    );
+    using MathUint for uint;
 
     uint public delayPeriod;
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder,
         uint         _delayPeriod
         )
         public
-        SecurityModule(_controller, _trustedForwarder)
+        SecurityModule(_controller)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
         delayPeriod = _delayPeriod;
@@ -48,31 +52,21 @@ contract WhitelistModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.whitelistStore().addToWhitelist(wallet, addr, now.add(delayPeriod));
     }
 
     function addToWhitelistImmediately(
-        SignedRequest.Request calldata request,
-        address addr
+        address            wallet,
+        address            addr
         )
         external
         nonReentrant
-        onlyWhenWalletUnlocked(request.wallet)
+        onlyWhenWalletUnlocked(wallet)
+        onlyFromMetaTx
     {
-        controller.verifyRequest(
-            DOMAIN_SEPERATOR,
-            GuardianUtils.SigRequirement.OwnerRequired,
-            request,
-            abi.encode(
-                ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE,
-                request.wallet,
-                request.nonce,
-                addr
-            )
-        );
-        controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
+        controller.whitelistStore().addToWhitelist(wallet, addr, now);
     }
 
     function removeFromWhitelist(
@@ -82,7 +76,7 @@ contract WhitelistModule is SecurityModule
         external
         nonReentrant
         onlyWhenWalletUnlocked(wallet)
-        onlyFromWallet(wallet)
+        onlyFromMetaTxOrWalletOwner(wallet)
     {
         controller.whitelistStore().removeFromWhitelist(wallet, addr);
     }
@@ -109,5 +103,31 @@ contract WhitelistModule is SecurityModule
         )
     {
         return controller.whitelistStore().isWhitelisted(wallet, addr);
+    }
+
+    function verifySigners(
+        address   wallet,
+        bytes4    method,
+        bytes     memory /*data*/,
+        address[] memory signers
+        )
+        internal
+        view
+        override
+        returns (bool)
+    {
+        if (method == this.addToWhitelist.selector ||
+            method == this.removeFromWhitelist.selector) {
+            return isOnlySigner(Wallet(wallet).owner(), signers);
+        } else if (method == this.addToWhitelistImmediately.selector) {
+            return GuardianUtils.requireMajority(
+                controller.securityStore(),
+                wallet,
+                signers,
+                GuardianUtils.SigRequirement.OwnerRequired
+            );
+        } else {
+            revert("INVALID_METHOD");
+        }
     }
 }
