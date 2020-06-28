@@ -30,7 +30,8 @@ contract OfficialGuardian is OwnerManagable, ERC1271
 
     function isValidSignature(
         bytes memory _data,
-        bytes memory _signature)
+        bytes memory _signature
+        )
         public
         view
         override
