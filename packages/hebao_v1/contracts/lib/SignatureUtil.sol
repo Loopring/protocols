@@ -35,14 +35,6 @@ library SignatureUtil
     using MathUint      for uint;
     using AddressUtil   for address;
 
-    enum SignatureType {
-        ILLEGAL,
-        INVALID,
-        EIP_712,
-        ETH_SIGN,
-        WALLET   // deprecated
-    }
-
     bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
 
     function verifySignatures(
@@ -99,26 +91,9 @@ library SignatureUtil
         view
         returns (bool)
     {
-        if (signer.isContract()) {
-            return verifyERC1271Signature(data, signer, signature);
-        }
-
-        uint signatureTypeOffset = signature.length.sub(1);
-        SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
-
-        bytes memory stripped = signature.slice(0, signatureTypeOffset);
-        bytes32 hash = (data.length == 32) ? BytesUtil.toBytes32(data, 0): keccak256(data);
-
-        if (signatureType == SignatureType.EIP_712) {
-            return recoverECDSASigner(hash, stripped) == signer;
-        } else if (signatureType == SignatureType.ETH_SIGN) {
-            hash = keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-            );
-            return recoverECDSASigner(hash, stripped) == signer;
-        } else {
-            return false;
-        }
+        return signer.isContract() ?
+            verifyERC1271Signature(data, signer, signature) :
+            recoverECDSASigner(data, signature) == signer;
     }
 
     function verifyERC1271Signature(
@@ -144,13 +119,28 @@ library SignatureUtil
     }
 
     function recoverECDSASigner(
-        bytes32      signHash,
+        bytes32      data,
         bytes memory signature
         )
         internal
         pure
         returns (address)
     {
+        return recoverECDSASigner(abi.encodePacked(data), signature);
+    }
+
+    function recoverECDSASigner(
+        bytes memory data,
+        bytes memory signature
+        )
+        internal
+        pure
+        returns (address)
+    {
+        bytes32 hash = (data.length == 32) ?
+            BytesUtil.toBytes32(data, 0) :
+            keccak256(data);
+
         if (signature.length != 65) {
             return address(0);
         }
@@ -171,7 +161,7 @@ library SignatureUtil
             return address(0);
         }
         if (v == 27 || v == 28) {
-            return ecrecover(signHash, v, r, s);
+            return ecrecover(hash, v, r, s);
         } else {
             return address(0);
         }
