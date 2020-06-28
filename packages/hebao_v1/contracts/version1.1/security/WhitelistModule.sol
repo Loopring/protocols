@@ -17,22 +17,12 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/Wallet.sol";
-import "../../lib/EIP712.sol";
-import "../../lib/MathUint.sol";
-import "../../lib/SignatureUtil.sol";
-import "../../version1.0/security/GuardianUtils.sol";
-import "../base/SignedRequest.sol";
 import "./SecurityModule.sol";
-
 
 /// @title WhitelistModule
 /// @dev Manages whitelisted addresses.
 contract WhitelistModule is SecurityModule
 {
-    using MathUint      for uint;
-    using SignatureUtil for bytes32;
-
     bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_HASHTYPE = keccak256(
         "addToWhitelistImmediately(address wallet,uint256 nonce,address addr)"
     );

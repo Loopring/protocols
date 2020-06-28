@@ -19,8 +19,8 @@ pragma experimental ABIEncoderV2;
 
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../version1.0/security/GuardianUtils.sol";
 import "../ControllerImpl.sol";
+import "./GuardianUtils.sol";
 
 
 /// @title SignedRequest

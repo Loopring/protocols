@@ -17,16 +17,15 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/ERC20.sol";
 import "./TransferModule.sol";
 
 
-/// @title DappTransfers
-contract DappTransfers is TransferModule
+/// @title DappTransferModule
+contract DappTransferModule is TransferModule
 {
     constructor(
         ControllerImpl _controller,
-        address      _trustdRelayer
+        address        _trustdRelayer
         )
         public
         TransferModule(_controller, _trustdRelayer)

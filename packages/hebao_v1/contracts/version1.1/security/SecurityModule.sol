@@ -17,9 +17,9 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../version1.0/security/GuardianUtils.sol";
 import "../base/MetaTxModule.sol";
-
+import "./GuardianUtils.sol";
+import "./SignedRequest.sol";
 
 /// @title SecurityStore
 ///
@@ -29,6 +29,8 @@ import "../base/MetaTxModule.sol";
 /// https://github.com/argentlabs/argent-contracts
 abstract contract SecurityModule is MetaTxModule
 {
+    using SignedRequest for ControllerImpl;
+
     // The minimal number of guardians for recovery and locking.
     uint constant public MIN_ACTIVE_GUARDIANS = 2;
 
@@ -55,7 +57,7 @@ abstract contract SecurityModule is MetaTxModule
     modifier onlyFromGuardian(address wallet)
     {
         require(controller.securityStore().isGuardian(wallet, msgSender()), "NOT_FROM_GUARDIAN");
-        _; 
+        _;
     }
 
     modifier onlyWhenWalletLocked(address wallet)

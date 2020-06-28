@@ -17,15 +17,12 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/MathUint.sol";
 import "../security/SecurityModule.sol";
 
 
 /// @title TransferModule
 abstract contract TransferModule is SecurityModule
 {
-    using MathUint      for uint;
-
     event Transfered(
         address indexed wallet,
         address indexed token,

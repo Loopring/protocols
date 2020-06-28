@@ -17,15 +17,11 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/PriceOracle.sol";
-import "../../iface/Wallet.sol";
-import "../../lib/Claimable.sol";
-import "../../lib/ERC20.sol";
 import "./TransferModule.sol";
 
 
-/// @title QuotaTransfers
-contract QuotaTransfers is TransferModule
+/// @title QuotaTransferModule
+contract QuotaTransferModule is TransferModule
 {
     bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(
         "changeDailyQuotaImmediately(address wallet,uint256 nonce,uint256 newQuota)"

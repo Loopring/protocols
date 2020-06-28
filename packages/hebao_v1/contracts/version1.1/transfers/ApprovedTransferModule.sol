@@ -17,13 +17,11 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../lib/ERC20.sol";
-import "../base/SignedRequest.sol";
 import "./TransferModule.sol";
 
 
-/// @title ApprovedTransfers
-contract ApprovedTransfers is TransferModule
+/// @title ApprovedTransferModule
+contract ApprovedTransferModule is TransferModule
 {
     bytes32 public constant TRANSFER_TOKEN_HASHTYPE = keccak256(
         "transferToken(address wallet,uint256 nonce,address token,address to,uint256 amount,bytes logdata)"
@@ -39,7 +37,7 @@ contract ApprovedTransfers is TransferModule
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_HASHTYPE = keccak256(
         "approveThenCallContract(address wallet,uint256 nonce,address token,address to,uint256 amount,uint256 value,bytes data)"
-    ); 
+    );
 
     constructor(
         ControllerImpl _controller,

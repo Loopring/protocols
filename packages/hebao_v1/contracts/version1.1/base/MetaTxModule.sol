@@ -17,13 +17,10 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/Module.sol";
 import "../../lib/EIP712.sol";
 import "../../lib/SignatureUtil.sol";
-import "../../version1.0/security/GuardianUtils.sol";
 import "./BaseModule.sol";
 import "./MetaTxAware.sol";
-import "./SignedRequest.sol";
 
 
 /// @title MetaTxModule
@@ -36,7 +33,6 @@ import "./SignedRequest.sol";
 abstract contract MetaTxModule is MetaTxAware, BaseModule
 {
     using SignatureUtil for bytes32;
-    using SignedRequest for ControllerImpl;
 
     bytes32 public DOMAIN_SEPERATOR;
 

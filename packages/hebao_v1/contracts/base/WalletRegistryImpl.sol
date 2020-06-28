@@ -40,8 +40,6 @@ contract WalletRegistryImpl is Claimable, WalletRegistry
         _;
     }
 
-    constructor() public Claimable() {}
-
     function setWalletFactory(address _factory)
         external
         onlyOwner

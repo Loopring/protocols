@@ -17,10 +17,6 @@
 pragma solidity ^0.6.6;
 pragma experimental ABIEncoderV2;
 
-import "../../iface/Wallet.sol";
-import "../../lib/MathUint.sol";
-import "../../thirdparty/ERC1271.sol";
-import "../base/SignedRequest.sol";
 import "./SecurityModule.sol";
 
 
@@ -51,8 +47,8 @@ contract GuardianModule is SecurityModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder,
-        uint         _pendingPeriod
+        address        _trustedForwarder,
+        uint           _pendingPeriod
         )
         public
         SecurityModule(_controller, _trustedForwarder)
