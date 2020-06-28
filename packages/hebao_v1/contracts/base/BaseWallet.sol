@@ -66,6 +66,13 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
+
+    modifier onlyModuleOrWalletOwner
+    {
+        require(modules[msg.sender] || msg.sender == _owner, "UNAUTHORIZED");
+        _;
+    }
+
     function owner() override external view returns (address)
     {
         return _owner;
@@ -107,7 +114,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         external
         override
         // allowReentrant (bindMethod)
-        onlyModule
+        onlyModuleOrWalletOwner
     {
         addModuleInternal(_module);
     }

@@ -49,46 +49,13 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
         );
     }
 
-    /// @dev Override to use msgSender()
-    modifier onlyFromWallet(address wallet)
-        override
+   function logicalSender()
+        internal
         virtual
-    {
-        require(msgSender() == wallet, "NOT_FROM_WALLET");
-        _;
-    }
-
-    function addModule(
-        address wallet,
-        address module
-        )
-        external
-        nonReentrant
-        onlyFromWallet(wallet)
-    {
-        Wallet(wallet).addModule(module);
-    }
-
-    /// @dev Override to use msgSender()
-    function activate()
-        external
         override
-        virtual
+        returns(address payable)
     {
-        address wallet = msgSender();
-        bindMethods(wallet);
-        emit Activated(wallet);
-    }
-
-    /// @dev Override to use msgSender()
-    function deactivate()
-        external
-        override
-        virtual
-    {
-        address wallet = msgSender();
-        unbindMethods(wallet);
-        emit Deactivated(wallet);
+        return msgSender();
     }
 }
 
