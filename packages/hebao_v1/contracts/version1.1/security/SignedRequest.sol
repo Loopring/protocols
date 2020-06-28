@@ -48,7 +48,7 @@ library SignedRequest {
         public
         view
     {
-        bytes32 txHash = EIP712.hashPacked(domainSeperator, keccak256(encodedRequest));
+        bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
         require(
             txHash.verifySignatures(request.signers, request.signatures),
             "INVALID_SIGNATURES"

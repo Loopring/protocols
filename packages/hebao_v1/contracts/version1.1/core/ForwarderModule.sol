@@ -104,7 +104,7 @@ contract ForwarderModule is BaseModule
             keccak256(data)
         );
 
-        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, keccak256(encoded));
+        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
     }
 
