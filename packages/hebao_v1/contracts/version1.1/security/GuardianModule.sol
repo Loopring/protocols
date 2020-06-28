@@ -171,6 +171,8 @@ contract GuardianModule is SecurityModule
             )
         );
 
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);
 

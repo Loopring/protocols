@@ -72,6 +72,8 @@ contract WhitelistModule is SecurityModule
                 addr
             )
         );
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }
 

@@ -72,6 +72,7 @@ contract QuotaTransferModule is TransferModule
                 newQuota
             )
         );
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         controller.quotaStore().changeQuota(request.wallet, newQuota, now);
     }

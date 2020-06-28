@@ -73,6 +73,8 @@ contract ApprovedTransferModule is TransferModule
                 keccak256(logdata)
             )
         );
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+
         transferInternal(request.wallet, token, to, amount, logdata);
     }
 
@@ -99,6 +101,8 @@ contract ApprovedTransferModule is TransferModule
                 amount
             )
         );
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+
         approveInternal(request.wallet, token, to, amount);
     }
 
@@ -126,6 +130,7 @@ contract ApprovedTransferModule is TransferModule
                 data
             )
         );
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         return callContractInternal(request.wallet, to, value, data);
     }
@@ -160,6 +165,7 @@ contract ApprovedTransferModule is TransferModule
             request,
             encoded
         );
+        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);
