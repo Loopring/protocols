@@ -33,19 +33,32 @@ library SignatureUtil
 {
     using BytesUtil     for bytes;
     using MathUint      for uint;
+    using AddressUtil   for address;
 
     enum SignatureType {
         ILLEGAL,
         INVALID,
         EIP_712,
         ETH_SIGN,
-        WALLET
+        WALLET   // deprecated
     }
 
     bytes4 constant private ERC1271_MAGICVALUE = 0x20c13b0b;
 
     function verifySignatures(
-        bytes32   signHash,
+        bytes32   data,
+        address[] memory signers,
+        bytes[]   memory signatures
+        )
+        internal
+        view
+        returns (bool)
+    {
+        return verifySignatures(abi.encodePacked(data), signers, signatures);
+    }
+
+    function verifySignatures(
+        bytes     memory data,
         address[] memory signers,
         bytes[]   memory signatures
         )
@@ -58,7 +71,7 @@ library SignatureUtil
         for (uint i = 0; i < signers.length; i++) {
             require(signers[i] > lastSigner, "INVALID_SIGNERS_ORDER");
             lastSigner = signers[i];
-            if (!verifySignature(signHash, signers[i], signatures[i])) {
+            if (!verifySignature(data, signers[i], signatures[i])) {
                 return false;
             }
         }
@@ -66,7 +79,7 @@ library SignatureUtil
     }
 
     function verifySignature(
-        bytes32 signHash,
+        bytes32 data,
         address signer,
         bytes   memory signature
         )
@@ -74,18 +87,33 @@ library SignatureUtil
         view
         returns (bool)
     {
+        return verifySignature(abi.encodePacked(data), signer, signature);
+    }
+
+    function verifySignature(
+        bytes   memory data,
+        address signer,
+        bytes   memory signature
+        )
+        internal
+        view
+        returns (bool)
+    {
+        if (signer.isContract()) {
+            return verifyERC1271Signature(data, signer, signature);
+        }
+
         uint signatureTypeOffset = signature.length.sub(1);
         SignatureType signatureType = SignatureType(signature.toUint8(signatureTypeOffset));
 
         bytes memory stripped = signature.slice(0, signatureTypeOffset);
+        bytes32 hash = (data.length == 32) ? BytesUtil.toBytes32(data, 0): keccak256(data);
 
-        if (signatureType == SignatureType.WALLET) {
-            return verifyERC1271Signature(signHash, signer, stripped);
-        } else if (signatureType == SignatureType.EIP_712) {
-            return recoverECDSASigner(signHash, stripped) == signer;
+        if (signatureType == SignatureType.EIP_712) {
+            return recoverECDSASigner(hash, stripped) == signer;
         } else if (signatureType == SignatureType.ETH_SIGN) {
-            bytes32 hash = keccak256(
-                abi.encodePacked("\x19Ethereum Signed Message:\n32", signHash)
+            hash = keccak256(
+                abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
             );
             return recoverECDSASigner(hash, stripped) == signer;
         } else {
@@ -94,7 +122,7 @@ library SignatureUtil
     }
 
     function verifyERC1271Signature(
-        bytes32 signHash,
+        bytes   memory data,
         address signer,
         bytes   memory signature
         )
@@ -104,7 +132,7 @@ library SignatureUtil
     {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271(0).isValidSignature.selector,
-            abi.encode(signHash),
+            abi.encode(data),
             signature
         );
         (bool success, bytes memory result) = signer.staticcall(callData);
