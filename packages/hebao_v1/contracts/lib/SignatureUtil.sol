@@ -107,7 +107,7 @@ library SignatureUtil
     {
         bytes memory callData = abi.encodeWithSelector(
             ERC1271(0).isValidSignature.selector,
-            abi.encode(data),
+            data,
             signature
         );
         (bool success, bytes memory result) = signer.staticcall(callData);

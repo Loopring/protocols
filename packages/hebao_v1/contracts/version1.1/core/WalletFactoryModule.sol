@@ -80,12 +80,12 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     	bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
-            _label,
+            keccak256(bytes(_label)),
             keccak256(_labelApproval),
-            keccak256(abi.encode(_modules)) // TODO: is this correct?
+            keccak256(abi.encode(_modules))
 		);
 
-        bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, keccak256(encodedRequest));
+        bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
         _wallet == createWalletInternal(controller, walletImplementation, _owner, address(this));

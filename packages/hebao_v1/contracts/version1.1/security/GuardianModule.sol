@@ -41,7 +41,7 @@ contract GuardianModule is SecurityModule
         bool            removedAsGuardian
     );
 
-    bytes32 public constant RECOVER_HASHTYPE = keccak256(
+    bytes32 public constant RECOVER_TYPEHASH = keccak256(
         "recover(address wallet,uint256 nonce,address newOwner)"
     );
 
@@ -164,7 +164,7 @@ contract GuardianModule is SecurityModule
             GuardianUtils.SigRequirement.OwnerNotAllowed,
             request,
             abi.encode(
-                RECOVER_HASHTYPE,
+                RECOVER_TYPEHASH,
                 request.wallet,
                 request.nonce,
                 newOwner

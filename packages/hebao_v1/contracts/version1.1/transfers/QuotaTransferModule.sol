@@ -23,7 +23,7 @@ import "./TransferModule.sol";
 /// @title QuotaTransferModule
 contract QuotaTransferModule is TransferModule
 {
-    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE = keccak256(
+    bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
         "changeDailyQuotaImmediately(address wallet,uint256 nonce,uint256 newQuota)"
     );
 
@@ -66,7 +66,7 @@ contract QuotaTransferModule is TransferModule
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
-                CHANGE_DAILY_QUOTE_IMMEDIATELY_HASHTYPE,
+                CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
                 request.wallet,
                 request.nonce,
                 newQuota

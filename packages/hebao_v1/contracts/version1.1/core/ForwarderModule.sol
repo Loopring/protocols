@@ -31,10 +31,13 @@ contract ForwarderModule is BaseModule
 {
     using SignatureUtil for bytes32;
 
-    uint    public constant GAS_OVERHEAD = 200000; // TODO
+    // TODO(kongliang):figure out this GAS_OVERHEAD value.
+    uint    public constant GAS_OVERHEAD = 200000; 
     bytes32 public DOMAIN_SEPARATOR;
 
-    constructor(ControllerImpl _controller)
+    constructor(
+        ControllerImpl _controller
+        )
         public
         BaseModule(_controller)
     {
@@ -90,7 +93,7 @@ contract ForwarderModule is BaseModule
         require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
         require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
-        bytes memory encoded = abi.encodePacked(
+        bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
             to,
@@ -101,7 +104,7 @@ contract ForwarderModule is BaseModule
             keccak256(data)
         );
 
-        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, keccak256(encoded));
+        bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
         require(metaTxHash.verifySignature(from, signature), "INVALID_SIGNATURE");
     }
 
