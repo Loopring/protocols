@@ -144,13 +144,28 @@ library SignatureUtil
     }
 
     function recoverECDSASigner(
-        bytes32      signHash,
+        bytes32      data,
         bytes memory signature
         )
         internal
         pure
         returns (address)
     {
+        return recoverECDSASigner(abi.encodePacked(data), signature);
+    }
+
+    function recoverECDSASigner(
+        bytes memory data,
+        bytes memory signature
+        )
+        internal
+        pure
+        returns (address)
+    {
+        bytes32 hash = (data.length == 32) ?
+            BytesUtil.toBytes32(data, 0) :
+            keccak256(data);
+
         if (signature.length != 65) {
             return address(0);
         }
@@ -171,7 +186,7 @@ library SignatureUtil
             return address(0);
         }
         if (v == 27 || v == 28) {
-            return ecrecover(signHash, v, r, s);
+            return ecrecover(hash, v, r, s);
         } else {
             return address(0);
         }
