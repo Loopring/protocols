@@ -45,9 +45,9 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder,
-        address      _walletImplementation,
-        bool         _allowEmptyENS
+        address        _trustedForwarder,
+        address        _walletImplementation,
+        bool           _allowEmptyENS
         )
         public
         MetaTxModule(_controller, _trustedForwarder)

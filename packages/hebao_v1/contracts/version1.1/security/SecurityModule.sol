@@ -41,7 +41,7 @@ abstract contract SecurityModule is MetaTxModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder
+        address        _trustedForwarder
         )
         public
         MetaTxModule(_controller, _trustedForwarder) {}

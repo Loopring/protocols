@@ -41,7 +41,7 @@ contract ApprovedTransferModule is TransferModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder
+        address        _trustedForwarder
         )
         public
         TransferModule(_controller, _trustedForwarder)
