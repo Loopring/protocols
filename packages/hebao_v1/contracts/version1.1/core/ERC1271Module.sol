@@ -51,7 +51,7 @@ contract ERC1271Module is ERC1271, BaseModule
     {
         methods = new bytes4[](2);
         methods[0] = ERC1271_FUNCTION1_SELECTOR;
-        methods[2] = ERC1271_FUNCTION2_SELECTOR;
+        methods[1] = ERC1271_FUNCTION2_SELECTOR;
     }
 
     // Will use msg.sender to detect the wallet, so this function should be called through
