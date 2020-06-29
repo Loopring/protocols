@@ -31,8 +31,8 @@ contract QuotaTransferModule is TransferModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder,
-        uint         _delayPeriod
+        address        _trustedForwarder,
+        uint           _delayPeriod
         )
         public
         TransferModule(_controller, _trustedForwarder)

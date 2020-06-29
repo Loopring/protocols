@@ -45,7 +45,7 @@ abstract contract TransferModule is SecurityModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder
+        address        _trustedForwarder
         )
         public
         SecurityModule(_controller, _trustedForwarder)

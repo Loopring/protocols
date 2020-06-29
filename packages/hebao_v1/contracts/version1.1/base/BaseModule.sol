@@ -48,16 +48,14 @@ abstract contract BaseModule is ReentrancyGuard, Module
         return msg.sender;
     }
 
-    modifier onlyFromWallet(address wallet) virtual {
-        require(logicalSender() == wallet, "NOT_FROM_WALLET");
-        _;
-    }
-
-    modifier onlyFromWalletOrOwner(address wallet) virtual {
+    modifier onlyFromWallet(address wallet)
+        virtual
+    {
+        address payable _logicalSender = logicalSender();
+        // We DO accept the wallet owner as the sender on behalf of the wallet!!!
         require(
-            logicalSender() == wallet || logicalSender() == Wallet(wallet).owner(),
-            "NOT_FROM_WALLET_OR_OWNER"
-        );
+            _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
+            "NOT_FROM_WALLET_OR_OWNER");
         _;
     }
 
@@ -81,17 +79,6 @@ abstract contract BaseModule is ReentrancyGuard, Module
         public
     {
         controller = _controller;
-    }
-
-    function addModule(
-        address wallet,
-        address module
-        )
-        external
-        nonReentrant
-        onlyFromWalletOrOwner(wallet)
-    {
-        Wallet(wallet).addModule(module);
     }
 
     /// @dev This method will cause an re-entry to the same module contract.

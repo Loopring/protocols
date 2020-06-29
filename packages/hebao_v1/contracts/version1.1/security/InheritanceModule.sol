@@ -42,8 +42,8 @@ contract InheritanceModule is SecurityModule
 
     constructor(
         ControllerImpl _controller,
-        address      _trustedForwarder,
-        uint        _waitingPeriod
+        address        _trustedForwarder,
+        uint           _waitingPeriod
         )
         public
         SecurityModule(_controller, _trustedForwarder)
