@@ -96,7 +96,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         override
-        nonReentrant
     {
         require(_owner == address(0), "INITIALIZED_ALREADY");
         require(initialOwner != address(0), "ZERO_ADDRESS");
@@ -143,7 +142,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function bindMethod(bytes4 _method, address _module)
         external
         override
-        nonReentrant
         onlyModule
     {
         require(_method != bytes4(0), "BAD_METHOD");
@@ -204,8 +202,8 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         );
 
         modules[_module] = true;
-        Module(_module).activate();
         emit ModuleAdded(_module);
+        Module(_module).activate();
     }
 
     receive() external payable { }
