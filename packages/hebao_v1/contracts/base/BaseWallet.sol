@@ -97,6 +97,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         )
         external
         override
+        nonReentrant
     {
         require(_owner == address(0), "INITIALIZED_ALREADY");
         require(initialOwner != address(0), "ZERO_ADDRESS");
@@ -112,7 +113,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function addModule(address _module)
         external
         override
-        // allowReentrant (bindMethod)
+        nonReentrant
         onlyModuleOrWalletOwner
     {
         addModuleInternal(_module);
@@ -121,7 +122,7 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
     function removeModule(address _module)
         external
         override
-        // allowReentrant (bindMethod)
+        nonReentrant
         onlyModule
     {
         // Allow deactivate to fail to make sure the module can be removed
