@@ -66,7 +66,6 @@ abstract contract BaseWallet is ReentrancyGuard, Wallet
         _;
     }
 
-
     modifier onlyModuleOrWalletOwner
     {
         require(modules[msg.sender] || msg.sender == _owner, "UNAUTHORIZED");
