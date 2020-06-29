@@ -46,13 +46,14 @@ abstract contract SecurityModule is MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder) {}
 
-    modifier onlyFromWalletOrOwner(address wallet)
+    modifier onlyFromWallet(address wallet)
         override
     {
         address payable _logicalSender = logicalSender();
+        // We DO accept the wallet owner as the sender on behalf of the wallet!!!
         require(
             _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
-             "NOT_FROM_WALLET"
+             "NOT_FROM_WALLET_OR_OWNER"
         );
         controller.securityStore().touchLastActive(wallet);
         _;

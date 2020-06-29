@@ -48,13 +48,14 @@ abstract contract BaseModule is ReentrancyGuard, Module
         return msg.sender;
     }
 
-    modifier onlyFromWalletOrOwner(address wallet)
+    modifier onlyFromWallet(address wallet)
         virtual
     {
         address payable _logicalSender = logicalSender();
+        // We DO accept the wallet owner as the sender on behalf of the wallet!!!
         require(
             _logicalSender == wallet || _logicalSender == Wallet(wallet).owner(),
-            "NOT_FROM_WALLET");
+            "NOT_FROM_WALLET_OR_OWNER");
         _;
     }
 
