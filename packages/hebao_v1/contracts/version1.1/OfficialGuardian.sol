@@ -26,7 +26,7 @@ import "../thirdparty/ERC1271.sol";
 /// @author Freeman Zhong - <kongliang@loopring.org>
 contract OfficialGuardian is OwnerManagable, ERC1271
 {
-    using SignatureUtil for bytes;
+    using SignatureUtil for bytes32;
 
     function isValidSignature(
         bytes memory _data,
@@ -37,7 +37,13 @@ contract OfficialGuardian is OwnerManagable, ERC1271
         override
         returns (bytes4)
     {
-        address signer = _data.recoverECDSASigner(_signature);
+        bytes32 hash;
+        if (_data.length == 32) {
+            hash = BytesUtil.toBytes32(_data, 0);
+        } else {
+            hash = keccak256(_data);
+        }
+        address signer = hash.recoverECDSASigner(_signature);
         return isManager(signer) ?  MAGICVALUE : bytes4(0);
     }
 }
