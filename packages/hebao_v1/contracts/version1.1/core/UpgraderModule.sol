@@ -19,7 +19,7 @@ contract UpgraderModule is BaseModule {
     address[]  public modulesToAdd;
 
     constructor(
-        ControllerImpl     _controller,
+        ControllerImpl   _controller,
         address          _implementation,
         address[] memory _modulesToAdd,
         address[] memory _modulesToRemove

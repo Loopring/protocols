@@ -29,7 +29,14 @@ import "../base/BaseModule.sol";
 /// @dev This module enables our smart wallets to message signers.
 contract ERC1271Module is ERC1271, BaseModule
 {
+    bytes4 constant private ERC1271_FUNCTION1_SELECTOR =
+        bytes4(keccak256(bytes("isValidSignature(bytes,bytes)")));
+
+    bytes4 constant private ERC1271_FUNCTION2_SELECTOR =
+        bytes4(keccak256(bytes("isValidSignature(bytes32,bytes)")));
+
     using SignatureUtil for bytes;
+    using SignatureUtil for bytes32;
     using AddressUtil   for address;
 
     constructor(ControllerImpl _controller)
@@ -42,8 +49,9 @@ contract ERC1271Module is ERC1271, BaseModule
         override
         returns (bytes4[] memory methods)
     {
-        methods = new bytes4[](1);
-        methods[0] = this.isValidSignature.selector;
+        methods = new bytes4[](2);
+        methods[0] = ERC1271_FUNCTION1_SELECTOR;
+        methods[1] = ERC1271_FUNCTION2_SELECTOR;
     }
 
     // Will use msg.sender to detect the wallet, so this function should be called through
@@ -58,6 +66,21 @@ contract ERC1271Module is ERC1271, BaseModule
         returns (bytes4 magicValue)
     {
         if (_data.verifySignature(Wallet(msg.sender).owner(), _signature)) {
+            return MAGICVALUE;
+        } else {
+            return 0;
+        }
+    }
+
+    function isValidSignature(
+        bytes32      _hash,
+        bytes memory _signature
+        )
+        public
+        view
+        returns (bytes4 magicValue)
+    {
+        if (_hash.verifySignature(Wallet(msg.sender).owner(), _signature)) {
             return MAGICVALUE;
         } else {
             return 0;
