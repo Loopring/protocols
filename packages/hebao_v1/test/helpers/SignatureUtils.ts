@@ -32,17 +32,12 @@ export function signCreateWallet(
   const TYPE_STR =
     "createWallet(address owner,string label,bytes labelApproval,address[] modules)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
-  // console.log(`CREATE_WALLET_TYPEHASH: ${CREATE_WALLET_TYPEHASH.toString("hex")}`);
 
-  console.log(`labelApproval: ${labelApproval}`);
   const encodedLabel = ethUtil.keccak(Buffer.from(label, "utf8"));
   const encodedApproval = ethUtil.keccak(labelApproval);
   const encodedModules = ethUtil.keccak(
     web3.eth.abi.encodeParameter("address[]", modules)
   );
-
-  console.log(`encodedApproval: ${encodedApproval.toString("hex")}`);
-  console.log(`encodedModules: ${encodedModules.toString("hex")}`);
 
   const encodedRequest = web3.eth.abi.encodeParameters(
     ["bytes32", "address", "bytes32", "bytes32", "bytes32"],
@@ -54,19 +49,16 @@ export function signCreateWallet(
       encodedModules
     ]
   );
-  // console.log(`encodedRequest: ${encodedRequest}`);
 
   const domainSeprator = getMetaTxDomainSeprator(moduleAddress);
-  // console.log(`domainSeprator: ${domainSeprator.toString("hex")}`);
 
   const hash = ethUtil.keccak(
-    [
+    Buffer.concat([
       Buffer.from(EIP191_HEADER, "utf8"),
-      Buffer.from(domainSeprator.slice(2), "hex"),
-      Buffer.from(ethUtil.keccak(encodedRequest).slice(2), "hex")
-    ].reduce((a: Uint8Array[], b: Uint8Array[]) => Buffer.concat(a, b))
+      domainSeprator,
+      ethUtil.keccak(encodedRequest)
+    ])
   );
-  console.log(`hash: ${hash}`);
 
-  return sign(owner, Buffer.from(hash.slice(2), "hex"));
+  return sign(owner, hash);
 }

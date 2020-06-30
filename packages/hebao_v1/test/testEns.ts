@@ -32,10 +32,18 @@ contract("BaseENSManager", () => {
       const walletName = "mywalleta" + new Date().getTime();
 
       // sign with non-manager address:
-      // let signer = ctx.miscAddresses[1];
-      // let signature = await getEnsApproval(wallet, walletName, signer);
-
       const modules = [ctx.guardianModule.address];
+
+      let signer = ctx.miscAddresses[1];
+      let signature = await getEnsApproval(wallet, walletName, signer);
+      let txSignature = signCreateWallet(
+        ctx.walletFactoryModule.address,
+        owner,
+        "",
+        signature,
+        modules
+      );
+
       // await expectThrow(
       //   executeTransaction(
       //     ctx.walletFactoryModule.contract.methods.createWallet(
@@ -54,10 +62,9 @@ contract("BaseENSManager", () => {
       //   "UNAUTHORIZED"
       // );
 
-      const signer = ctx.owners[0];
-      const signature = await getEnsApproval(wallet, walletName, signer);
-
-      const txSignature = signCreateWallet(
+      signer = ctx.owners[0];
+      signature = await getEnsApproval(wallet, walletName, signer);
+      txSignature = signCreateWallet(
         ctx.walletFactoryModule.address,
         owner,
         walletName,
@@ -79,15 +86,6 @@ contract("BaseENSManager", () => {
         [owner],
         { from: owner, gasPrice: new BN(1) }
       );
-
-      const allEvents = await ctx.walletFactoryModule.contract.getPastEvents(
-        "allEvents",
-        {
-          fromBlock: web3.eth.blockNumber,
-          toBlock: web3.eth.blockNumber
-        }
-      );
-      console.log(`allEvents: ${util.inspect(allEvents)}`);
     });
 
     // it("will be able get address by ens subdomain ans vice versa", async () => {

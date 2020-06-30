@@ -55,7 +55,7 @@ module.exports = function(deployer, network, accounts) {
           ControllerImpl.address,
           ForwarderModule.address,
           WalletImpl.address,
-          false
+          true
         ),
         deployer.deploy(
           GuardianModule,
