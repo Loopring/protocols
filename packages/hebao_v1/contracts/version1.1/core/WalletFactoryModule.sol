@@ -39,7 +39,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     address public walletImplementation;
     bool    public allowEmptyENS;
 
-	bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
+    bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
     );
 
@@ -56,6 +56,8 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         allowEmptyENS = _allowEmptyENS;
     }
 
+    event logBytes(bytes bs);
+    event logBytes32(bytes32 b32);
     /// @dev Create a new wallet by deploying a proxy.
     /// @param _owner The wallet's owner.
     /// @param _label The ENS subdomain to register, use "" to skip.
@@ -75,38 +77,46 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         nonReentrant
         returns (address _wallet)
     {
-    	require(_modules.length > 0, "EMPTY_MODULES");
+        require(_modules.length > 0, "EMPTY_MODULES");
 
-    	bytes memory encodedRequest = abi.encode(
+        emit logBytes(_labelApproval);
+
+        bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
             keccak256(bytes(_label)),
             keccak256(_labelApproval),
             keccak256(abi.encode(_modules))
-		);
+        );
 
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
-        require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
-        _wallet == createWalletInternal(controller, walletImplementation, _owner, address(this));
+        /* emit logBytes32(CREATE_WALLET_TYPEHASH); */
+        /* emit logBytes(encodedRequest); */
+        emit logBytes32(keccak256(_labelApproval));
+        emit logBytes32(keccak256(abi.encode(_modules)));
+        emit logBytes32(txHash);
+        // require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
-        Wallet w = Wallet(_wallet);
-        for(uint i = 0; i < _modules.length; i++) {
-            w.addModule(_modules[i]);
-        }
+        /* _wallet == createWalletInternal(controller, walletImplementation, _owner, address(this)); */
 
-        if (controller.ensManagerAddress() != address(0)) {
-            if (bytes(_label).length > 0) {
-                BaseENSManager(controller.ensManagerAddress()).register(
-                    _wallet,
-                    _label,
-                    _labelApproval
-                );
-            } else {
-            	require(allowEmptyENS, "INVALID_ENS_LABEL");
-            }
-        }
+        /* Wallet w = Wallet(_wallet); */
+        /* for(uint i = 0; i < _modules.length; i++) { */
+        /*     w.addModule(_modules[i]); */
+        /* } */
 
-        w.removeModule(address(this));
+        /* if (controller.ensManagerAddress() != address(0)) { */
+        /*     if (bytes(_label).length > 0) { */
+        /*         BaseENSManager(controller.ensManagerAddress()).register( */
+        /*             _wallet, */
+        /*             _label, */
+        /*             _labelApproval */
+        /*         ); */
+        /*     } else { */
+        /*      require(allowEmptyENS, "INVALID_ENS_LABEL"); */
+        /*     } */
+        /* } */
+
+        /* w.removeModule(address(this)); */
     }
 }

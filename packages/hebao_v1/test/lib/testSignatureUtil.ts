@@ -27,12 +27,7 @@ contract("signatureUtil", () => {
       const signer = ctx.owners[0];
       const hashStr = web3.utils.sha3(src);
       const hashBuf = Buffer.from(hashStr.slice(2), "hex");
-      const signatureStr = await sign(
-        undefined,
-        signer,
-        hashBuf,
-        SignatureType.ETH_SIGN
-      );
+      const signatureStr = await sign(signer, hashBuf, SignatureType.ETH_SIGN);
 
       const verifyRes = await signatureUtilWrapper.verifySignature(
         hashStr,
@@ -55,7 +50,7 @@ contract("signatureUtil", () => {
       const signer = ctx.owners[0];
       const hashStr = web3.utils.sha3(src);
       const hashBuf = Buffer.from(hashStr.slice(2), "hex");
-      const signatureStr = await sign(undefined, signer, hashBuf);
+      const signatureStr = await sign(signer, hashBuf);
 
       const verifyRes = await signatureUtilWrapper.verifySignature(
         hashStr,

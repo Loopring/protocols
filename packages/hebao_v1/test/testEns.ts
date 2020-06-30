@@ -12,6 +12,8 @@ import { getEventsFromContract, assertEventEmitted } from "../util/Events";
 import { expectThrow } from "../util/expectThrow";
 import { Constants } from "./helpers/Constants";
 import { sign, SignatureType } from "./helpers/Signature";
+import { signCreateWallet } from "./helpers/SignatureUtils";
+import util = require("util");
 
 contract("BaseENSManager", () => {
   let defaultCtx: Context;
@@ -30,59 +32,46 @@ contract("BaseENSManager", () => {
       const walletName = "mywalleta" + new Date().getTime();
 
       // sign with non-manager address:
-      let signer = ctx.miscAddresses[1];
-      let signature = await getEnsApproval(wallet, walletName, signer);
-      await expectThrow(
-        executeTransaction(
-          ctx.walletFactoryModule.contract.methods.createWallet(
-            owner,
-            walletName,
-            signature,
-            []
-          ),
-          ctx,
-          false,
-          wallet,
-          [owner],
-          { from: owner, gasPrice: new BN(1) }
-        ),
-        "UNAUTHORIZED"
-      );
+      // let signer = ctx.miscAddresses[1];
+      // let signature = await getEnsApproval(wallet, walletName, signer);
 
-      signer = ctx.owners[0];
-      signature = await getEnsApproval(wallet, walletName, signer);
-      await executeTransaction(
-        ctx.walletFactoryModule.contract.methods.createWallet(
-          owner,
-          walletName,
-          signature,
-          []
-        ),
-        ctx,
-        false,
-        wallet,
-        [owner],
-        { from: owner, gasPrice: new BN(1) }
-      );
-    });
-
-    it("will be able get address by ens subdomain ans vice versa", async () => {
-      // ethers.utils.namehash only support the characters [a-z0-9.-],
-      // so only there characters are allowed in our walletName.
-      // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash
-      const owner = ctx.miscAddresses[1];
-      const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
-      const walletName = "mywalleta" + new Date().getTime();
+      const modules = [ctx.guardianModule.address];
+      // await expectThrow(
+      //   executeTransaction(
+      //     ctx.walletFactoryModule.contract.methods.createWallet(
+      //       owner,
+      //       walletName,
+      //       signature,
+      //       [],
+      //       txSignature
+      //     ),
+      //     ctx,
+      //     false,
+      //     wallet,
+      //     [owner],
+      //     { from: owner, gasPrice: new BN(1) }
+      //   ),
+      //   "UNAUTHORIZED"
+      // );
 
       const signer = ctx.owners[0];
       const signature = await getEnsApproval(wallet, walletName, signer);
 
+      const txSignature = signCreateWallet(
+        ctx.walletFactoryModule.address,
+        owner,
+        walletName,
+        signature,
+        modules
+      );
+
       await executeTransaction(
         ctx.walletFactoryModule.contract.methods.createWallet(
           owner,
           walletName,
           signature,
-          []
+          modules,
+          txSignature
         ),
         ctx,
         false,
@@ -91,15 +80,58 @@ contract("BaseENSManager", () => {
         { from: owner, gasPrice: new BN(1) }
       );
 
-      const ensManager = ctx.baseENSManager;
-      const fullName = walletName + walletDomain;
-      const nameHash = ethers.utils.namehash(fullName);
-
-      const ensAddr = await ensManager.resolveEns(nameHash);
-      assert.equal(ensAddr, wallet, "ens address not match");
-
-      const fullNameFromENS = await ensManager.resolveName(wallet);
-      assert.equal(fullNameFromENS, fullName, "ens name not match");
+      const allEvents = await ctx.walletFactoryModule.contract.getPastEvents(
+        "allEvents",
+        {
+          fromBlock: web3.eth.blockNumber,
+          toBlock: web3.eth.blockNumber
+        }
+      );
+      console.log(`allEvents: ${util.inspect(allEvents)}`);
     });
+
+    // it("will be able get address by ens subdomain ans vice versa", async () => {
+    //   // ethers.utils.namehash only support the characters [a-z0-9.-],
+    //   // so only there characters are allowed in our walletName.
+    //   // see https://docs.ethers.io/ethers.js/html/api-utils.html#namehash
+    //   const owner = ctx.miscAddresses[1];
+    //   const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+    //   const walletName = "mywalleta" + new Date().getTime();
+
+    //   const signer = ctx.owners[0];
+    //   const signature = await getEnsApproval(wallet, walletName, signer);
+    //   const txSignature = signCreateWallet(
+    //     ctx.walletFactoryModule.address,
+    //     owner,
+    //     walletName,
+    //     signature,
+    //     []
+    //   );
+
+    //   await executeTransaction(
+    //     ctx.walletFactoryModule.contract.methods.createWallet(
+    //       owner,
+    //       walletName,
+    //       signature,
+    //       [],
+    //       txSignature
+    //     ),
+    //     ctx,
+    //     false,
+    //     wallet,
+    //     [owner],
+    //     { from: owner, gasPrice: new BN(1) }
+    //   );
+
+    //   const ensManager = ctx.baseENSManager;
+    //   const fullName = walletName + walletDomain;
+    //   const nameHash = ethers.utils.namehash(fullName);
+
+    //   const ensAddr = await ensManager.resolveEns(nameHash);
+    //   assert.equal(ensAddr, wallet, "ens address not match");
+
+    //   const fullNameFromENS = await ensManager.resolveName(wallet);
+    //   assert.equal(fullNameFromENS, fullName, "ens name not match");
+    // });
   });
 });

@@ -11,8 +11,7 @@ export enum SignatureType {
   WALLET
 }
 
-export async function batchSign(
-  ctx: Context,
+export function batchSign(
   signers: string[],
   message: Buffer,
   types: SignatureType[]
@@ -20,13 +19,12 @@ export async function batchSign(
   assert(types.length >= signers.length, "invalid input arrays");
   let signatures: string[] = [];
   for (const [i, signer] of signers.entries()) {
-    signatures.push(await sign(ctx, signer, message, types[i]));
+    signatures.push(sign(signer, message, types[i]));
   }
   return signatures;
 }
 
-export async function sign(
-  ctx: Context,
+export function sign(
   signer: string,
   message: Buffer,
   type: SignatureType = SignatureType.EIP_712
@@ -35,33 +33,33 @@ export async function sign(
   switch (+type) {
     case SignatureType.ETH_SIGN: {
       const privateKey = getPrivateKey(signer);
-      signature = appendType(await signEthereum(message, privateKey), type);
+      signature = appendType(signEthereum(message, privateKey), type);
       break;
     }
     case SignatureType.EIP_712: {
       const privateKey = getPrivateKey(signer);
-      signature = appendType(await signEIP712(message, privateKey), type);
+      signature = appendType(signEIP712(message, privateKey), type);
       break;
     }
-    case SignatureType.WALLET: {
-      try {
-        const wallet = await ctx.contracts.BaseWallet.at(signer);
-        const walletOwner = await wallet.owner();
-        const privateKey = getPrivateKey(walletOwner);
+    // case SignatureType.WALLET: {
+    //   try {
+    //     const wallet = await ctx.contracts.BaseWallet.at(signer);
+    //     const walletOwner = await wallet.owner();
+    //     const privateKey = getPrivateKey(walletOwner);
 
-        // Sign using the wallet owner
-        signature = appendType(
-          appendType(
-            await signEIP712(message, privateKey),
-            SignatureType.EIP_712
-          ),
-          type
-        );
-      } catch {
-        signature = appendType("", type);
-      }
-      break;
-    }
+    //     // Sign using the wallet owner
+    //     signature = appendType(
+    //       appendType(
+    //         await signEIP712(message, privateKey),
+    //         SignatureType.EIP_712
+    //       ),
+    //       type
+    //     );
+    //   } catch {
+    //     signature = appendType("", type);
+    //   }
+    //   break;
+    // }
     default: {
       // console.log("Unsupported signature type: " + type);
       signature = appendType("", type);
@@ -76,7 +74,7 @@ export function appendType(str: string, type: SignatureType) {
   return data.getData();
 }
 
-async function signEthereum(message: Buffer, privateKey: string) {
+function signEthereum(message: Buffer, privateKey: string) {
   const parts = [
     Buffer.from("\x19Ethereum Signed Message:\n32", "utf8"),
     message
@@ -91,7 +89,7 @@ async function signEthereum(message: Buffer, privateKey: string) {
   return data.getData();
 }
 
-async function signEIP712(message: Buffer, privateKey: string) {
+function signEIP712(message: Buffer, privateKey: string) {
   const signature = ethUtil.ecsign(message, new Buffer(privateKey, "hex"));
 
   const data = new Bitstream();
@@ -101,24 +99,18 @@ async function signEIP712(message: Buffer, privateKey: string) {
   return data.getData();
 }
 
-export async function verifySignatures(
-  ctx: Context,
+export function verifySignatures(
   signers: string[],
   message: Buffer,
   signatures: string[]
 ) {
   assert(signers.length == signatures.length, "invalid input");
   for (let i = 0; i < signatures.length; i++) {
-    await verifySignature(ctx, signers[i], message, signatures[i]);
+    verifySignature(signers[i], message, signatures[i]);
   }
 }
 
-async function verifySignature(
-  ctx: Context,
-  signer: string,
-  message: Buffer,
-  signature: string
-) {
+function verifySignature(signer: string, message: Buffer, signature: string) {
   const data = new Bitstream(signature);
   const type = data.extractUint8(data.length() - 1);
   if (type === SignatureType.ETH_SIGN) {
@@ -129,15 +121,15 @@ async function verifySignature(
     );
   } else if (type === SignatureType.EIP_712) {
     assert(verifyECDSA(message, data, signer), "invalid EIP_712 signature");
-  } else if (type === SignatureType.WALLET) {
-    try {
-      const wallet = await ctx.contracts.BaseWallet.at(signer);
-      const walletOwner = await wallet.owner();
-      assert(signature.length > 0, "invalid WALLET signature");
-      await verifySignature(ctx, walletOwner, message, signature.slice(0, -1));
-    } catch {
-      assert(false, "invalid WALLET signature");
-    }
+    // } else if (type === SignatureType.WALLET) {
+    //   try {
+    //     const wallet = await ctx.contracts.BaseWallet.at(signer);
+    //     const walletOwner = await wallet.owner();
+    //     assert(signature.length > 0, "invalid WALLET signature");
+    //     await verifySignature(ctx, walletOwner, message, signature.slice(0, -1));
+    //   } catch {
+    //     assert(false, "invalid WALLET signature");
+    //   }
   } else {
     assert(false, "invalid signature type");
   }

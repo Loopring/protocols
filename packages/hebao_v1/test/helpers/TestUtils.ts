@@ -209,12 +209,7 @@ export async function getEnsApproval(
   const messageHash = web3.utils.sha3(messageBuf);
   const hashBuf = Buffer.from(messageHash.slice(2), "hex");
 
-  let signature = await sign(
-    undefined,
-    signer,
-    hashBuf,
-    SignatureType.ETH_SIGN
-  );
+  let signature = sign(signer, hashBuf, SignatureType.ETH_SIGN);
   signature = signature.slice(0, -2);
   return signature;
 }

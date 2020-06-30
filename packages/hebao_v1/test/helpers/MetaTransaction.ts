@@ -136,9 +136,9 @@ export async function executeMetaTransaction(
 
   // Sign the meta transaction
   const hash = getHash(metaTransaction);
-  const signatures = await batchSign(ctx, actualSigners, hash, signatureTypes);
+  const signatures = await batchSign(actualSigners, hash, signatureTypes);
   if (checkSignatures) {
-    await verifySignatures(ctx, signers, hash, signatures);
+    await verifySignatures(signers, hash, signatures);
   }
 
   // Execute the meta transaction
