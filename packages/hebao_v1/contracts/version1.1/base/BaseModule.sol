@@ -160,10 +160,10 @@ abstract contract BaseModule is ReentrancyGuard, Module
         uint    amount
         )
         internal
-        returns (bool success)
     {
         if (token == address(0)) {
-            return transactCall(wallet, to, amount, "");
+            transactCall(wallet, to, amount, "");
+            return;
         }
 
         bytes memory txData = abi.encodeWithSelector(
@@ -174,12 +174,8 @@ abstract contract BaseModule is ReentrancyGuard, Module
         bytes memory returnData = transactCall(wallet, token, 0, txData);
         // `transactCall` will revert if the call was unsuccessful.
         // The only extra check we have to do is verify if the return value (if there is any) is correct.
-        if (returnData.length > 0) {
-            success = abi.decode(returnData, (bool));
-        } else {
-            // If there is no return value then a failure would have resulted in a revert
-            success = true;
-        }
+        bool success = returnData.length == 0 ? true :  abi.decode(returnData, (bool));
+        require(success, "ERC20_TRANSFER_FAILED");
     }
 
     // Special case for transactCall to support approvals on "bad" ERC20 tokens
@@ -190,7 +186,6 @@ abstract contract BaseModule is ReentrancyGuard, Module
         uint    amount
         )
         internal
-        returns (bool success)
     {
         require(token != address(0), "INVALID_TOKEN");
         bytes memory txData = abi.encodeWithSelector(
@@ -201,12 +196,8 @@ abstract contract BaseModule is ReentrancyGuard, Module
         bytes memory returnData = transactCall(wallet, token, 0, txData);
         // `transactCall` will revert if the call was unsuccessful.
         // The only extra check we have to do is verify if the return value (if there is any) is correct.
-        if (returnData.length > 0) {
-            success = abi.decode(returnData, (bool));
-        } else {
-            // If there is no return value then a failure would have resulted in a revert
-            success = true;
-        }
+        bool success = returnData.length == 0 ? true :  abi.decode(returnData, (bool));
+        require(success, "ERC20_APPROVE_FAILED");
     }
 
     function transactDelegateCall(
@@ -232,7 +223,6 @@ abstract contract BaseModule is ReentrancyGuard, Module
         return Wallet(wallet).transact(uint8(3), to, 0, data);
     }
 
-
     function reimburseGasFee(
         address     wallet,
         address     recipient,
@@ -247,9 +237,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         if (value > 0) {
           controller.quotaStore().checkAndAddToSpent(wallet, value);
         }
-        require(
-            transactTokenTransfer(wallet, gasToken, recipient, gasCost),
-            "TRANSFER_FAILED"
-        );
+
+        transactTokenTransfer(wallet, gasToken, recipient, gasCost);
     }
 }

@@ -61,10 +61,7 @@ abstract contract TransferModule is SecurityModule
         )
         internal
     {
-        require(
-            transactTokenTransfer(wallet, token, to, amount),
-            "TRANSFER_FAILED"
-        );
+        transactTokenTransfer(wallet, token, to, amount);
         emit Transfered(wallet, token, to, amount, logdata);
     }
 
@@ -83,17 +80,11 @@ abstract contract TransferModule is SecurityModule
         if (amount != allowance) {
             // First reset the approved amount if needed
             if (allowance > 0) {
-                require(
-                    transactTokenApprove(wallet, token, spender, 0),
-                    "APPROVAL_FAILED"
-                );
+                transactTokenApprove(wallet, token, spender, 0);
             }
 
             // Now approve the requested amount
-            require(
-                transactTokenApprove(wallet, token, spender, amount),
-                "APPROVAL_FAILED"
-            );
+            transactTokenApprove(wallet, token, spender, amount);
         }
 
         // If we increased the allowance, calculate by how much
