@@ -162,6 +162,10 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
         returns (bool success)
     {
+        if (token == address(0)) {
+            return transactCall(wallet, to, amount, "");
+        }
+
         bytes memory txData = abi.encodeWithSelector(
             ERC20(0).transfer.selector,
             to,
@@ -188,6 +192,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
         internal
         returns (bool success)
     {
+        require(token != address(0), "INVALID_TOKEN");
         bytes memory txData = abi.encodeWithSelector(
             ERC20(0).approve.selector,
             spender,
@@ -242,14 +247,9 @@ abstract contract BaseModule is ReentrancyGuard, Module
         if (value > 0) {
           controller.quotaStore().checkAndAddToSpent(wallet, value);
         }
-
-        if (gasToken == address(0)) {
-            transactCall(wallet, recipient, gasCost, "");
-        } else {
-            require(
-                transactTokenTransfer(wallet, gasToken, recipient, gasCost),
-                "TRANSFER_FAILED"
-            );
-        }
+        require(
+            transactTokenTransfer(wallet, gasToken, recipient, gasCost),
+            "TRANSFER_FAILED"
+        );
     }
 }

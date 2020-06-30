@@ -61,14 +61,10 @@ abstract contract TransferModule is SecurityModule
         )
         internal
     {
-        if (token == address(0)) {
-            transactCall(wallet, to, amount, "");
-        } else {
-            require(
-                transactTokenTransfer(wallet, token, to, amount),
-                "TRANSFER_FAILED"
-            );
-        }
+        require(
+            transactTokenTransfer(wallet, token, to, amount),
+            "TRANSFER_FAILED"
+        );
         emit Transfered(wallet, token, to, amount, logdata);
     }
 
@@ -81,8 +77,6 @@ abstract contract TransferModule is SecurityModule
         internal
         returns (uint additionalAllowance)
     {
-        require(token != address(0), "UNSUPPORTED");
-
         // Current allowance
         uint allowance = ERC20(token).allowance(wallet, spender);
 
