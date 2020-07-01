@@ -89,7 +89,7 @@ contract ForwarderModule is BaseModule
         public
         view
     {
-        require(to != address(this), "CANNOT_FORWARD_TO_SELF");
+        require(to != address(this) && Wallet(from).hasModule(to), "INVALID_DESTINATION");
         require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
         require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
