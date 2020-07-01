@@ -79,7 +79,7 @@ contract ForwarderModule is BaseModule
         public
         view
     {
-        require(to != address(this), "CANNOT_FORWARD_TO_SELF");
+        require(to != address(this) && Wallet(from).hasModule(to), "INVALID_DESTINATION");
 
         // If a non-zero txInnerHash is provided, we do not verify signature against
         // the `data` field. The actual function call in the real transaction will have to
@@ -135,6 +135,7 @@ contract ForwarderModule is BaseModule
 
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txInnerHash)
+            // encode or encodePacked? @Brecht
         );
 
         if (address(this).balance > 0) {
