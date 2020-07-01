@@ -20,8 +20,8 @@ import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
 
 
-/// @title NonceStore
-/// @dev This store maintains all nonces.
+/// @title HashStore
+/// @dev This store maintains all hashes for SignedRequest.
 contract HashStore
 {
     mapping(bytes32 => bool) public hashes;

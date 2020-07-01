@@ -21,7 +21,7 @@ import "../lib/MathUint.sol";
 
 
 /// @title NonceStore
-/// @dev This store maintains all nonces.
+/// @dev This store maintains all nonces for metaTx
 contract NonceStore is DataStore
 {
     mapping(address => uint) public nonces;

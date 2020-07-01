@@ -65,16 +65,6 @@ contract ForwarderModule is BaseModule
         "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txInnerHash,bytes data)"
     );
 
-    // mapping(address => uint256) public nonces;
-
-    /* function getNonce(address from) */
-    /*     external */
-    /*     view */
-    /*     returns(uint) */
-    /* { */
-    /*     return nonces[from]; */
-    /* } */
-
     function validateMetaTx(
         address from,
         address to,
