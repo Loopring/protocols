@@ -36,18 +36,18 @@ contract NonceStore is DataStore
         return nonces[wallet];
     }
 
-    function verifyNonce(address wallet, uint nonce)
+    function isNonceValid(address wallet, uint nonce)
         public
         view
+        returns(bool)
     {
-        require(nonce > nonces[wallet], "NONCE_TOO_SMALL");
-        require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
+        return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
     }
 
     function verifyAndUpdateNonce(address wallet, uint nonce)
         public
     {
-        verifyNonce(wallet, nonce);
+        require(isNonceValid(wallet, nonce), "INVALID_NONCE");
         nonces[wallet] = nonce;
     }
 }
