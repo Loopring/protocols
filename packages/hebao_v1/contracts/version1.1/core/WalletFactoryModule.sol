@@ -52,6 +52,9 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         public
         MetaTxModule(_controller, _trustedForwarder)
     {
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("WalletFactoryModule", "1.1", address(this))
+        );
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
     }

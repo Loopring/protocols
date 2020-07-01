@@ -38,6 +38,10 @@ contract QuotaTransferModule is TransferModule
         TransferModule(_controller, _trustedForwarder)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
+
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("QuotaTransferModule", "1.1", address(this))
+        );
         delayPeriod = _delayPeriod;
     }
 

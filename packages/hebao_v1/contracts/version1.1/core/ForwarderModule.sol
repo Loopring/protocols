@@ -40,7 +40,7 @@ contract ForwarderModule is BaseModule
         BaseModule(_controller)
     {
         DOMAIN_SEPARATOR = EIP712.hash(
-            EIP712.Domain("Loopring Wallet MetaTx", "2.0", address(0))
+            EIP712.Domain("ForwarderModule", "1.1", address(this))
         );
     }
 

@@ -53,6 +53,9 @@ contract GuardianModule is SecurityModule
         public
         SecurityModule(_controller, _trustedForwarder)
     {
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("GuardianModule", "1.1", address(this))
+        );
         require(_pendingPeriod > 0, "INVALID_DELAY");
         pendingPeriod = _pendingPeriod;
     }

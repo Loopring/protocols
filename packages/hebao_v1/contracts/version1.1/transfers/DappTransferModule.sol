@@ -30,6 +30,9 @@ contract DappTransferModule is TransferModule
         public
         TransferModule(_controller, _trustdRelayer)
     {
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("DappTransferModule", "1.1", address(this))
+        );
     }
 
     modifier onlyWhitelistedDapp(address addr)
