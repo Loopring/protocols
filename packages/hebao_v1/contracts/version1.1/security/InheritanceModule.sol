@@ -51,7 +51,7 @@ contract InheritanceModule is SecurityModule
         require(_waitingPeriod > 0, "INVALID_DELAY");
         
         DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("InheritanceModule", "1.1", address(this))
+            EIP712.Domain("InheritanceModule", "1.1.0", address(this))
         );
         waitingPeriod = _waitingPeriod;
     }

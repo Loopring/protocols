@@ -31,7 +31,7 @@ contract DappTransferModule is TransferModule
         TransferModule(_controller, _trustdRelayer)
     {
         DOMAIN_SEPERATOR = EIP712.hash(
-            EIP712.Domain("DappTransferModule", "1.1", address(this))
+            EIP712.Domain("DappTransferModule", "1.1.0", address(this))
         );
     }
 
