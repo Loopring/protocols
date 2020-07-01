@@ -133,6 +133,8 @@ contract ForwarderModule is BaseModule
 
         uint gasLeft = gasleft();
 
+        // The trick is to append the really logical message sender and the
+        // transaction-aware hash to the end of the call data.
         (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
         );
