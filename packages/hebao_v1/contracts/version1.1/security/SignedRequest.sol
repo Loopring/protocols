@@ -53,9 +53,10 @@ library SignedRequest {
 
         // Verify if businessSignedHash from the mata-transaction is non-zero,
         // if so, we must verify it matches with the real transaction input.
-        if (businessSignedHash != bytes32(0)) {
-          require(txHash == businessSignedHash, "BUSINESS_SIGNED_HASH_MISMATCH");
-        }
+        require(
+            businessSignedHash == 0 || businessSignedHash == txHash,
+            "BUSINESS_SIGNED_HASH_MISMATCH"
+        );
 
         require(
             txHash.verifySignatures(request.signers, request.signatures),

@@ -96,7 +96,7 @@ contract ForwarderModule is BaseModule
         // If a non-zero businessSignedHash is provided, we do not verify signature against
         // the `data` field. The actual function call in the real transaction will have to
         // check that businessSignedHash is indeed valid.
-        bytes32 dataHash = (businessSignedHash == bytes32(0)) ? keccak256(data) : bytes32(0);
+        bytes memory data_ = (businessSignedHash == 0) ? data : bytes("");
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
@@ -106,7 +106,7 @@ contract ForwarderModule is BaseModule
             gasPrice,
             gasLimit,
             businessSignedHash,
-            dataHash
+            keccak256(data_)
         );
 
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);

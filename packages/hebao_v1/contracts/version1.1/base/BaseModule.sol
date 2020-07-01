@@ -42,6 +42,7 @@ abstract contract BaseModule is ReentrancyGuard, Module
 
     function logicalSender()
         internal
+        view
         virtual
         returns(address payable)
     {

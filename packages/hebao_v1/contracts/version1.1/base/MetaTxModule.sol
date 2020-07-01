@@ -51,6 +51,7 @@ abstract contract MetaTxModule is MetaTxAware, BaseModule
 
    function logicalSender()
         internal
+        view
         virtual
         override
         returns(address payable)
