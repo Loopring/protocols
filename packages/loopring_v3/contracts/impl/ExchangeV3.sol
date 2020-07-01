@@ -451,7 +451,8 @@ contract ExchangeV3 is IExchangeV3
 
     function withdrawFromDepositRequest(
         address owner,
-        address token
+        address token,
+        uint    index
         )
         external
         override
@@ -459,7 +460,8 @@ contract ExchangeV3 is IExchangeV3
     {
         state.withdrawFromDepositRequest(
             owner,
-            token
+            token,
+            index
         );
     }
 

@@ -50,6 +50,9 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
     // Max total amount that can be stored per token
     uint constant public MAX_TOTAL_TOKEN_BALANCE = 2 ** 96 - 1;
 
+    // Index base
+    uint constant public INDEX_BASE = 10 ** 18;
+
     address public exchange;
     ILoopringV3 public loopring;
 
@@ -73,7 +76,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         address loopringAddress
         )
         external
-        nonReentrant
         onlyWhenUninitialized
     {
         exchange = exchangeAddress;
@@ -87,16 +89,10 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         external
         override
-        nonReentrant
         payable
         onlyExchange
-        returns (uint)
+        returns (uint actualAmount, uint tokenIndex)
     {
-        // Keep track how many tokens are deposited in the exchange
-        exchangeBalance[token] = exchangeBalance[token].add(amount);
-        // Make sure the total max amount per token in the exchange is capped
-        require(exchangeBalance[token] <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
-
         // Check msg.value
         if (isETHInternal(token)) {
             require(msg.value == amount, "INVALID_ETH_DEPOSIT");
@@ -112,7 +108,13 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
             }
         }
 
-        return amount;
+        // Keep track how many tokens are deposited in the exchange
+        exchangeBalance[token] = exchangeBalance[token].add(amount);
+        // Make sure the total max amount per token in the exchange is capped
+        require(exchangeBalance[token] <= MAX_TOTAL_TOKEN_BALANCE, "MAX_AMOUNT_REACHED");
+
+        actualAmount = amount;
+        tokenIndex = INDEX_BASE;
     }
 
     function withdraw(
@@ -122,7 +124,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         )
         external
         override
-        nonReentrant
         onlyExchange
     {
         // Keep track how many tokens are deposited in the exchange
@@ -155,9 +156,6 @@ contract BasicDepositContract is IDepositContract, ReentrancyGuard
         return isETHInternal(addr);
     }
 
-    /// @dev Withdraws all tokens not owned by users, e.g., candies, airdrops, to fee vault.
-    /// @param token The address of the token.
-    /// @return amount The amount of tokens withdrawn
     function withdrawTokenNotOwnedByUsers(
         address token
         )

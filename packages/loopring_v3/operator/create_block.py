@@ -120,6 +120,7 @@ def depositFromJSON(jDeposit):
     deposit.accountID = int(jDeposit["accountID"])
     deposit.tokenID = int(jDeposit["tokenID"])
     deposit.amount = str(jDeposit["amount"])
+    deposit.index = str(jDeposit["index"])
     return deposit
 
 
@@ -181,8 +182,9 @@ def createBlock(state, data):
 
     context = Context(block.operatorAccountID, block.timestamp, block.protocolTakerFeeBips, block.protocolMakerFeeBips)
 
-    # Protocol fee payment / Operator payment
+    # Protocol fee payment / index
     accountBefore_P = copyAccountInfo(state.getAccount(0))
+    accountBefore_I = copyAccountInfo(state.getAccount(1))
 
     for transactionInfo in data["transactions"]:
         txType = transactionInfo["txType"]
@@ -234,14 +236,25 @@ def createBlock(state, data):
     rootAfter = state._accountsTree._root
     block.accountUpdate_P = AccountUpdateData(0, proof, rootBefore, rootAfter, accountBefore_P, accountAfter)
 
+    # Index
+    rootBefore = state._accountsTree._root
+    proof = state._accountsTree.createProof(1)
+    state.updateAccountTree(1)
+    accountAfter = copyAccountInfo(state.getAccount(1))
+    rootAfter = state._accountsTree._root
+    block.accountUpdate_I = AccountUpdateData(1, proof, rootBefore, rootAfter, accountBefore_I, accountAfter)
+
     # Operator payments
     account = state.getAccount(context.operatorAccountID)
     rootBefore = state._accountsTree._root
     accountBefore = copyAccountInfo(state.getAccount(context.operatorAccountID))
     proof = state._accountsTree.createProof(context.operatorAccountID)
-    for tx in block.transactions:
-        tx.witness.balanceUpdateA_O = account.updateBalance(tx.witness.balanceO_A_Address, tx.witness.balanceDeltaA_O)
-        tx.witness.balanceUpdateB_O = account.updateBalance(tx.witness.balanceO_B_Address, tx.witness.balanceDeltaB_O)
+    #for tx in block.transactions:
+    #    print("tx.witness.balanceA_O_AutoApplyIndex: " + str(tx.witness.balanceA_O_AutoApplyIndex))
+    #    print("tx.witness.balanceB_O_AutoApplyIndex: " + str(tx.witness.balanceB_O_AutoApplyIndex))
+    #    tx.witness.balanceUpdateB_O = account.updateBalance(tx.witness.balanceO_B_Address, tx.witness.balanceDeltaB_O, None, tx.witness.balanceB_O_AutoApplyIndex)
+    #    tx.witness.balanceUpdateA_O = account.updateBalance(tx.witness.balanceO_A_Address, tx.witness.balanceDeltaA_O, None, tx.witness.balanceA_O_AutoApplyIndex)
+
     account.nonce += 1
     state.updateAccountTree(context.operatorAccountID)
     accountAfter = copyAccountInfo(state.getAccount(context.operatorAccountID))

@@ -68,7 +68,8 @@ abstract contract IExchangeV3 is IExchange
     event DepositRequested(
         address indexed owner,
         address indexed token,
-        uint96          amount
+        uint96          amount,
+        uint96          index
     );
 
     event WithdrawalRequested(
@@ -596,9 +597,11 @@ abstract contract IExchangeV3 is IExchange
     ///
     /// @param  owner The address of the account the withdrawal was done for.
     /// @param  token The token address
+    /// @param  index The token index at the time of deposit
     function withdrawFromDepositRequest(
         address owner,
-        address token
+        address token,
+        uint    index
         )
         external
         virtual;

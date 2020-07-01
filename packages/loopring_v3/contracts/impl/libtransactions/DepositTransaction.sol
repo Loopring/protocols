@@ -30,13 +30,13 @@ library DepositTransaction
 {
     using BytesUtil            for bytes;
     using MathUint             for uint;
-    using SignatureUtil        for bytes32;
 
     event DepositConsumed(
         address indexed owner,
         uint24  indexed accountId,
         uint16          token,
-        uint            amount
+        uint            amount,
+        uint            index
     );
 
     function process(
@@ -55,18 +55,23 @@ library DepositTransaction
         offset += 3;
         uint16 tokenID = data.bytesToUint16(offset);
         offset += 2;
-        uint amount = uint(data.bytesToUint24(offset)).decodeFloat(24);
-        offset += 3;
+        uint96 amount = data.bytesToUint96(offset);
+        offset += 12;
+        uint96 index = data.bytesToUint96(offset);
+        offset += 12;
 
-        if (S.pendingDeposits[owner][tokenID].amount > 0) {
+        // Make sure the deposit was actually done (this also verifies the index is correct)
+        require(S.pendingDeposits[owner][tokenID][index].timestamp > 0, "DEPOSIT_DOESNT_EXIST");
+
+        if (S.pendingDeposits[owner][tokenID][index].amount > 0) {
             // Earn a fee relative to the amount actually processed
-            feeETH = uint(S.pendingDeposits[owner][tokenID].fee).mul(amount) / S.pendingDeposits[owner][tokenID].amount;
+            feeETH = uint(S.pendingDeposits[owner][tokenID][index].fee).mul(amount) / S.pendingDeposits[owner][tokenID][index].amount;
 
             // Consume what was deposited
-            S.pendingDeposits[owner][tokenID].amount = uint96(uint(S.pendingDeposits[owner][tokenID].amount).sub(amount));
-            S.pendingDeposits[owner][tokenID].fee = uint64(uint(S.pendingDeposits[owner][tokenID].fee).sub(feeETH));
+            S.pendingDeposits[owner][tokenID][index].amount = uint96(uint(S.pendingDeposits[owner][tokenID][index].amount).sub(amount));
+            S.pendingDeposits[owner][tokenID][index].fee = uint64(uint(S.pendingDeposits[owner][tokenID][index].fee).sub(feeETH));
         }
 
-        emit DepositConsumed(owner, accountID, tokenID, amount);
+        emit DepositConsumed(owner, accountID, tokenID, amount, index);
     }
 }

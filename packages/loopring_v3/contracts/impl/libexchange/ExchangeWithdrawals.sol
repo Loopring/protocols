@@ -147,12 +147,13 @@ library ExchangeWithdrawals
     function withdrawFromDepositRequest(
         ExchangeData.State storage S,
         address owner,
-        address token
+        address token,
+        uint    index
         )
         external
     {
         uint16 tokenID = S.getTokenID(token);
-        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID];
+        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
 
         // Only allow withdrawing from deposit when the time limit
         // to process it has been exceeded.
@@ -162,7 +163,7 @@ library ExchangeWithdrawals
         uint fee = deposit.fee;
 
         // Reset the deposit request
-        S.pendingDeposits[owner][tokenID] = ExchangeData.Deposit(0, 0, 0);
+        S.pendingDeposits[owner][tokenID][index] = ExchangeData.Deposit(0, 0, 0);
 
         // Transfer the tokens
         transferTokens(

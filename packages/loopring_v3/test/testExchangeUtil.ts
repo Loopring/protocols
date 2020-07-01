@@ -78,7 +78,8 @@ function replacer(name: any, val: any) {
     name === "transferAmountTrade" ||
     name === "triggerPrice" ||
     name === "transferAmount" ||
-    name === "transferFee"
+    name === "transferFee" ||
+    name === "index"
   ) {
     return new BN(val, 16).toString(10);
   } else {
@@ -525,7 +526,7 @@ export class ExchangeTestUtil {
         secretKey: "0",
         nonce: 0
       };
-      const insuranceAccount: Account = {
+      const indexAccount: Account = {
         accountID: 1,
         owner: Constants.zeroAddress,
         publicKeyX: "0",
@@ -533,7 +534,23 @@ export class ExchangeTestUtil {
         secretKey: "0",
         nonce: 0
       };
-      this.accounts.push([protocolFeeAccount, insuranceAccount]);
+      const dummyAccountA: Account = {
+        accountID: 2,
+        owner: Constants.zeroAddress,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
+        nonce: 0
+      };
+      const dummyAccountB: Account = {
+        accountID: 3,
+        owner: Constants.zeroAddress,
+        publicKeyX: "0",
+        publicKeyY: "0",
+        secretKey: "0",
+        nonce: 0
+      };
+      this.accounts.push([protocolFeeAccount, indexAccount, dummyAccountA, dummyAccountB]);
     }
 
     await this.createExchange(
@@ -1152,7 +1169,7 @@ export class ExchangeTestUtil {
       { from: caller, value: ethToSend, gasPrice: 0 }
     );
     const ethBlock = await web3.eth.getBlock(tx.receipt.blockNumber);
-    // logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
+    logInfo("\x1b[46m%s\x1b[0m", "[Deposit] Gas used: " + tx.receipt.gasUsed);
 
     // Check if the correct fee amount was paid
     const callerEthBalanceAfter = await this.getOnchainBalance(
@@ -1166,11 +1183,13 @@ export class ExchangeTestUtil {
       "fee paid by the depositer needs to match exactly with the fee needed"
     );
 
-    /*const event = await this.assertEventEmitted(
+    const event = await this.assertEventEmitted(
       this.exchange,
       "DepositRequested"
     );
-    accountID = event.accountID.toNumber();*/
+    //accountID = event.accountID.toNumber();
+    const index = event.index;
+    console.log("index: " + index.toString(10));
 
     const depositInfo: DepositInfo = {
       owner,
@@ -1187,7 +1206,8 @@ export class ExchangeTestUtil {
       owner,
       depositInfo.accountID,
       this.tokenAddressToIDMap.get(token),
-      amount
+      amount,
+      index
     );
     deposit.timestamp = ethBlock.timestamp;
     deposit.transactionHash = tx.receipt.transactionHash;
@@ -1568,14 +1588,16 @@ export class ExchangeTestUtil {
     owner: string,
     accountID: number,
     tokenID: number,
-    amount: BN
+    amount: BN,
+    index: BN
   ) {
     const deposit: Deposit = {
       txType: "Deposit",
       owner: new BN(owner.slice(2), 16).toString(10),
       accountID,
       tokenID,
-      amount
+      amount,
+      index
     };
     //console.log("Owner address: " + owner);
     //console.log("Owner value: " + deposit.owner);
@@ -2457,6 +2479,7 @@ export class ExchangeTestUtil {
             da.addNumber(deposit.accountID, 3);
             da.addNumber(deposit.tokenID, 2);
             da.addBN(new BN(deposit.amount), 12);
+            da.addBN(new BN(deposit.index), 12);
           } else if (tx.publicKeyUpdate) {
             const update = tx.publicKeyUpdate;
             da.addNumber(BlockType.PUBLIC_KEY_UPDATE, 1);

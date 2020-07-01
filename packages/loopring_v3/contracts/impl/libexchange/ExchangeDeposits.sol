@@ -38,7 +38,8 @@ library ExchangeDeposits
     event DepositRequested(
         address indexed owner,
         address indexed token,
-        uint96          amount
+        uint96          amount,
+        uint96          index
     );
 
     function deposit(
@@ -57,7 +58,7 @@ library ExchangeDeposits
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
         // Transfer the tokens to this contract
-        uint amountDeposited = transferDeposit(
+        (uint amountDeposited, uint tokenIndex) = transferDeposit(
             S,
             from,
             tokenAddress,
@@ -66,14 +67,15 @@ library ExchangeDeposits
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
-        S.pendingDeposits[to][tokenID].amount += uint96(amountDeposited);
-        S.pendingDeposits[to][tokenID].timestamp = uint32(now);
-        S.pendingDeposits[to][tokenID].fee += uint64(S.depositFeeETH);
+        S.pendingDeposits[to][tokenID][tokenIndex].amount += uint96(amountDeposited);
+        S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
+        S.pendingDeposits[to][tokenID][tokenIndex].fee += uint64(S.depositFeeETH);
 
         emit DepositRequested(
             to,
             tokenAddress,
-            amount
+            uint96(amountDeposited),
+            uint96(tokenIndex)
         );
     }
 
@@ -85,7 +87,7 @@ library ExchangeDeposits
         uint    feeETH
         )
         private
-        returns (uint amountDeposited)
+        returns (uint amountDeposited, uint tokenIndex)
     {
         uint totalRequiredETH = feeETH;
         uint depositValueETH = 0;
@@ -101,6 +103,6 @@ library ExchangeDeposits
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)
-        amountDeposited = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
+        (amountDeposited, tokenIndex) = S.depositContract.deposit{value: depositValueETH}(from, tokenAddress, amount);
     }
 }

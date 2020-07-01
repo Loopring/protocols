@@ -88,7 +88,7 @@ library ExchangeData
         bytes32 blockDataHash;
     }
 
-    // Represents an onchain deposit request.  `tokenID` being `0x0` means depositing Ether.
+    // Represents an onchain deposit request.
     struct Deposit
     {
         uint96 amount;
@@ -195,8 +195,8 @@ library ExchangeData
         // A map from an account to a token to the forced withdrawal (always full balance)
         mapping (uint24 => mapping (uint16 => ForcedWithdrawal)) pendingForcedWithdrawals;
 
-        // A map from an address to a token to a deposit
-        mapping (address => mapping (uint16 => Deposit)) pendingDeposits;
+        // A map from an address to a token to an index to a deposit
+        mapping (address => mapping (uint16 => mapping (uint => Deposit))) pendingDeposits;
 
         // A map from an account owner to an approved general hash to a boolean for some transaction
         mapping (address => mapping (bytes32 => bool)) approvedTx;

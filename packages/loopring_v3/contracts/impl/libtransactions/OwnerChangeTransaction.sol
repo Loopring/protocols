@@ -109,19 +109,6 @@ library OwnerChangeTransaction
             S.approvedTx[ownerChange.newOwner][txHash] = false;
         }
 
-        // Calculate the tx hash
-        bytes32 walletHash = EIP712.hashPacked(
-            S.DOMAIN_SEPARATOR,
-            keccak256(
-                abi.encode(
-                    WALLET_TYPEHASH,
-                    auxData.walletAddress,
-                    auxData.walletDataHash
-                )
-            )
-        );
-        require((uint(walletHash) >> 3) == uint(ownerChange.walletHash), "INVALID_WALLET_HASH");
-
         if (auxData.walletAddress == address(0)) {
             // We also allow the owner of the account to change when authorized by the current owner.
             // Verify the signature if one is provided, otherwise fall back to an approved tx
@@ -132,8 +119,24 @@ library OwnerChangeTransaction
                 S.approvedTx[ownerChange.owner][txHash] = false;
             }
         } else {
-            require(walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
-            // Check that the calldata contains the correct inputs for data coming from layer 2
+            require(ownerChange.walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
+
+            // Calculate the wallet hash
+            bytes32 walletHash = EIP712.hashPacked(
+                S.DOMAIN_SEPARATOR,
+                keccak256(
+                    abi.encode(
+                        WALLET_TYPEHASH,
+                        auxData.walletAddress,
+                        auxData.walletDataHash
+                    )
+                )
+            );
+            // Hashes are stored using only 253 bits so the value fits inside a SNARK field element.
+            require((uint(walletHash) >> 3) == uint(ownerChange.walletHash), "INVALID_WALLET_HASH");
+
+            // Check that the calldata contains the correct inputs for data coming from layer 2.
+            // This data is also padded with zeros to 32 bytes (at the MSB) inside the calldata.
             // parameter 0: accountID
             // parameter 1: nonce
             // parameter 2: oldOwner

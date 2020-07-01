@@ -23,6 +23,8 @@ BINARY_TREE_DEPTH_TOKENS = 12
 
 MAX_AMOUNT = 2 ** 96 - 1
 
+INDEX_BASE = 10 ** 18
+
 class GeneralObject(object):
     pass
 
@@ -45,6 +47,14 @@ def copyAccountInfo(account):
 
 def getDefaultAccount():
     return Account(0, Point(0, 0))
+
+
+def applyInterest(balance, oldIndex, newIndex):
+    assert(int(newIndex) >= int(oldIndex))
+    indexDiff = int(newIndex) - int(oldIndex)
+    balanceDiff = (int(balance) * indexDiff) // INDEX_BASE
+    newBalance = int(balance) + balanceDiff
+    return newBalance
 
 class Fill(object):
     def __init__(self, amountS, amountB):
@@ -186,7 +196,7 @@ class Account(object):
     def getBalance(self, address):
         return self.getBalanceLeaf(address).balance
 
-    def updateBalance(self, tokenID, deltaBalance):
+    def updateBalance(self, tokenID, deltaBalance, set_index, apply_index):
         # Make sure the leaf exists in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -194,6 +204,12 @@ class Account(object):
         balancesBefore = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         rootBefore = self._balancesTree._root
 
+        if apply_index is not None:
+            self._balancesLeafs[str(tokenID)].balance = str(applyInterest(self._balancesLeafs[str(tokenID)].balance, self._balancesLeafs[str(tokenID)].index, apply_index))
+            self._balancesLeafs[str(tokenID)].index = str(apply_index)
+        if set_index is not None:
+            #print("set_index: " + set_index)
+            self._balancesLeafs[str(tokenID)].index = str(set_index)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(deltaBalance))
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
@@ -205,7 +221,7 @@ class Account(object):
                                  rootBefore, rootAfter,
                                  balancesBefore, balancesAfter)
 
-    def updateBalanceAndTradeHistory(self, tokenID, orderID, filled, delta_balance):
+    def updateBalanceAndTradeHistory(self, tokenID, orderID, filled, delta_balance, set_index, apply_index):
         # Make sure the leaf exist in our map
         if not(str(tokenID) in self._balancesLeafs):
             self._balancesLeafs[str(tokenID)] = BalanceLeaf()
@@ -215,7 +231,20 @@ class Account(object):
 
         # Update filled amounts
         tradeHistoryUpdate = self._balancesLeafs[str(tokenID)].updateTradeHistory(orderID, filled)
+        if apply_index is not None:
+            #print("tokenID: " + str(tokenID))
+            #print("oldIndex: " + self._balancesLeafs[str(tokenID)].index)
+            #print("newIndex: " + apply_index)
+            #print("balance: " + self._balancesLeafs[str(tokenID)].balance)
+            self._balancesLeafs[str(tokenID)].balance = str(applyInterest(self._balancesLeafs[str(tokenID)].balance, self._balancesLeafs[str(tokenID)].index, apply_index))
+            self._balancesLeafs[str(tokenID)].index = str(apply_index)
+            #print("newBalance: " + self._balancesLeafs[str(tokenID)].balance)
+        if set_index is not None:
+            self._balancesLeafs[str(tokenID)].index = str(set_index)
         self._balancesLeafs[str(tokenID)].balance = str(int(self._balancesLeafs[str(tokenID)].balance) + int(delta_balance))
+
+        #print("str(delta_balance): " + str(delta_balance))
+        #print("endBalance: " + self._balancesLeafs[str(tokenID)].balance)
 
         balancesAfter = copyBalanceInfo(self._balancesLeafs[str(tokenID)])
         proof = self._balancesTree.createProof(tokenID)
@@ -357,9 +386,9 @@ class Witness(object):
                  tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                  balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                  balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
+                 balanceUpdateA_O, balanceUpdateB_O, accountUpdate_O,
                  balanceUpdateA_P, balanceUpdateB_P,
-                 balanceO_A_Address, balanceO_B_Address,
-                 balanceDeltaA_O, balanceDeltaB_O):
+                 balanceUpdateA_I, balanceUpdateB_I):
         if signatureA is not None:
             self.signatureA = signatureA
         if signatureB is not None:
@@ -378,14 +407,15 @@ class Witness(object):
         self.balanceUpdateB_B = balanceUpdateB_B
         self.accountUpdate_B = accountUpdate_B
 
+        self.balanceUpdateA_O = balanceUpdateA_O
+        self.balanceUpdateB_O = balanceUpdateB_O
+        self.accountUpdate_O = accountUpdate_O
+
         self.balanceUpdateA_P = balanceUpdateA_P
         self.balanceUpdateB_P = balanceUpdateB_P
 
-        self.balanceO_A_Address = balanceO_A_Address
-        self.balanceO_B_Address = balanceO_B_Address
-
-        self.balanceDeltaA_O = balanceDeltaA_O
-        self.balanceDeltaB_O = balanceDeltaB_O
+        self.balanceUpdateA_I = balanceUpdateA_I
+        self.balanceUpdateB_I = balanceUpdateB_I
 
 
 class State(object):
@@ -472,6 +502,9 @@ class State(object):
         newState = GeneralObject()
         newState.signatureA = None
         newState.signatureB = None
+        # Tokens
+        newState.balanceA_S_Address = None
+        newState.balanceA_S_Address = None
         # A
         newState.accountA_Address = None
         newState.accountA_Owner = None
@@ -482,9 +515,10 @@ class State(object):
         newState.balanceA_S_Address = None
         newState.balanceA_S_Balance = None
         newState.balanceA_S_Index = None
-        newState.balanceA_B_Address = None
+        newState.balanceA_S_AutoApplyIndex = False
         newState.balanceA_B_Balance = None
         newState.balanceA_B_Index = None
+        newState.balanceA_B_AutoApplyIndex = False
         newState.tradeHistoryA_Address = None
         newState.tradeHistoryA_Filled = None
         newState.tradeHistoryA_OrderId = None
@@ -497,21 +531,25 @@ class State(object):
         newState.accountB_Nonce = None
         newState.balanceB_S_Address = None
         newState.balanceB_S_Balance = None
-        newState.balanceB_S_Index = None
-        newState.balanceB_B_Address = None
+        newState.balanceB_S_AutoApplyIndex = False
         newState.balanceB_B_Balance = None
-        newState.balanceB_B_Index = None
+        newState.balanceB_B_AutoApplyIndex = False
         newState.tradeHistoryB_Address = None
         newState.tradeHistoryB_Filled = None
         newState.tradeHistoryB_OrderId = None
         # Operator
         newState.balanceDeltaA_O = None
+        newState.balanceA_O_AutoApplyIndex = False
         newState.balanceDeltaB_O = None
+        newState.balanceB_O_AutoApplyIndex = False
         # Protocol fees
-        #newState.balanceA_P_Address = None
         newState.balanceDeltaA_P = None
-        #newState.balanceB_P_Address = None
+        newState.balanceA_P_AutoApplyIndex = False
         newState.balanceDeltaB_P = None
+        newState.balanceB_P_AutoApplyIndex = False
+        # Index
+        newState.indexA_I = None
+        newState.indexB_I = None
 
         if txInput.txType == "Noop":
 
@@ -609,9 +647,11 @@ class State(object):
 
             newState.balanceA_S_Address = ring.orderA.tokenS
             newState.balanceA_S_Balance = -fillA.S
+            newState.balanceA_S_AutoApplyIndex = True
 
-            newState.balanceA_B_Address = ring.orderA.tokenB
+            newState.balanceB_S_Address = ring.orderA.tokenB
             newState.balanceA_B_Balance = fillA.B - fee_A + rebate_A
+            newState.balanceA_B_AutoApplyIndex = True
 
             newState.tradeHistoryA_Address = ring.orderA.orderID
             newState.tradeHistoryA_Filled = filled_A + (fillA.B if ring.orderA.buy else fillA.S)
@@ -625,9 +665,11 @@ class State(object):
 
             newState.balanceB_S_Address = ring.orderB.tokenS
             newState.balanceB_S_Balance = -fillB.S
+            newState.balanceB_S_AutoApplyIndex = True
 
-            newState.balanceB_B_Address = ring.orderB.tokenB
+            newState.balanceA_S_Address = ring.orderB.tokenB
             newState.balanceB_B_Balance = fillB.B - fee_B + rebate_B
+            newState.balanceB_B_AutoApplyIndex = True
 
             newState.tradeHistoryB_Address = ring.orderB.orderID
             newState.tradeHistoryB_Filled = filled_B + (fillB.B if ring.orderB.buy else fillB.S)
@@ -635,9 +677,13 @@ class State(object):
 
             newState.balanceDeltaA_O = fee_A - protocolFee_A - rebate_A
             newState.balanceDeltaB_O = fee_B - protocolFee_B - rebate_B
+            newState.balanceA_O_AutoApplyIndex = True
+            newState.balanceB_O_AutoApplyIndex = True
 
             newState.balanceDeltaA_P = protocolFee_A
             newState.balanceDeltaB_P = protocolFee_B
+            newState.balanceA_P_AutoApplyIndex = True
+            newState.balanceB_P_AutoApplyIndex = True
 
         elif txInput.txType == "Transfer":
 
@@ -652,16 +698,19 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.tokenID
             newState.balanceA_S_Balance = -transferAmount
+            newState.balanceA_S_AutoApplyIndex = True
 
-            newState.balanceA_B_Address = txInput.feeTokenID
+            newState.balanceB_S_Address = txInput.feeTokenID
             newState.balanceA_B_Balance = -feeValue
+            newState.balanceA_B_AutoApplyIndex = True
 
             newState.accountB_Address = txInput.accountToID
             accountB = self.getAccount(newState.accountB_Address)
             newState.accountB_Owner = txInput.ownerTo
 
-            newState.balanceB_B_Address = txInput.tokenID
+            newState.balanceA_S_Address = txInput.tokenID
             newState.balanceB_B_Balance = transferAmount
+            newState.balanceB_B_AutoApplyIndex = True
 
             newState.accountA_Nonce = accountA.nonce + 1
 
@@ -669,6 +718,7 @@ class State(object):
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
 
             newState.balanceDeltaA_O = feeValue
+            newState.balanceA_O_AutoApplyIndex = True
 
         elif txInput.txType == "Withdraw":
 
@@ -688,24 +738,48 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.tokenID
             newState.balanceA_S_Balance = -int(txInput.amount)
+            newState.balanceA_S_AutoApplyIndex = True
 
-            newState.balanceA_B_Address = txInput.feeTokenID
+            newState.balanceB_S_Address = txInput.feeTokenID
             newState.balanceA_B_Balance = -feeValue
+            newState.balanceA_B_AutoApplyIndex = True
 
             if int(txInput.type) == 0 or int(txInput.type) == 1:
                 newState.accountA_Nonce = accountA.nonce + 1
 
             newState.balanceDeltaA_O = feeValue
+            newState.balanceA_O_AutoApplyIndex = True
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
         elif txInput.txType == "Deposit":
 
+            # Update the index if needed
+            accountIndex = self.getAccount(1)
+            newIndex = max(int(txInput.index), int(accountIndex.getBalanceLeaf(txInput.tokenID).index))
+
+            #print("Token: " + str(txInput.tokenID))
+            #print("current index: " + accountIndex.getBalanceLeaf(txInput.tokenID).index)
+            #print("deposit index: " + txInput.index)
+            #print("newIndex     : " + str(newIndex))
+
+            # Apply interest on the existing balance and the deposited amount
+            balanceLeaf = self.getAccount(txInput.accountID).getBalanceLeaf(txInput.tokenID)
+            updatedBalance = applyInterest(balanceLeaf.balance, balanceLeaf.index, newIndex)
+            depositedAmount = applyInterest(txInput.amount, txInput.index, newIndex)
+
             newState.accountA_Address = txInput.accountID
             newState.accountA_Owner = txInput.owner
 
             newState.balanceA_S_Address = txInput.tokenID
-            newState.balanceA_S_Balance = txInput.amount
+            newState.balanceA_S_Balance = (updatedBalance + depositedAmount) - int(balanceLeaf.balance)
+            newState.balanceA_S_Index = str(newIndex)
+
+            #newState.balanceA_B_Address = txInput.tokenID
+            #newState.balanceA_B_Index = str(newIndex)
+
+            #newState.indexA_I = str(newIndex)
+            newState.indexB_I = str(newIndex)
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
@@ -723,8 +797,15 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
+            newState.balanceA_S_AutoApplyIndex = True
+
+            #newState.balanceA_B_Address = txInput.feeTokenID
+            #newState.balanceA_B_AutoApplyIndex = True
 
             newState.balanceDeltaB_O = feeValue
+
+            #newState.balanceA_O_AutoApplyIndex = True
+            newState.balanceB_O_AutoApplyIndex = True
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
 
@@ -744,8 +825,10 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
+            newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceDeltaB_O = feeValue
+            newState.balanceB_O_AutoApplyIndex = True
 
             newState.signatureA = txInput.signature
 
@@ -760,14 +843,45 @@ class State(object):
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
+            newState.balanceA_S_AutoApplyIndex = True
 
             newState.balanceDeltaB_O = feeValue
+            newState.balanceB_O_AutoApplyIndex = True
 
 
 
         # Set default values if none provided
+        newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
+        newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
+
+        # Index
+        #print("newState.indexA_I: " + newState.indexA_I)
+        #print("newState.indexB_I: " + newState.indexB_I)
+        balanceUpdateB_I = self.getAccount(1).updateBalance(newState.balanceA_S_Address, 0, newState.indexB_I, None)
+        balanceUpdateA_I = self.getAccount(1).updateBalance(newState.balanceB_S_Address, 0, newState.indexA_I, None)
+        #print("self.getAccount(1).getBalanceLeaf(0).index: " + self.getAccount(1).getBalanceLeaf(0).index)
+        ###
+
+        accountIndex = self.getAccount(1)
+        #print("accountIndex.getBalanceLeaf(0).index: " + accountIndex.getBalanceLeaf(0).index)
+        #print("accountIndex.getBalanceLeaf(newState.balanceA_B_Address).index: " + accountIndex.getBalanceLeaf(newState.balanceA_B_Address).index)
+        #print("accountIndex.getBalanceLeaf(newState.balanceB_B_Address).index: " + accountIndex.getBalanceLeaf(newState.balanceB_B_Address).index)
+        #print("accountIndex.getBalanceLeaf(0).index: " + accountIndex.getBalanceLeaf(0).index)
+        #print("accountIndex.getBalanceLeaf(0).index: " + accountIndex.getBalanceLeaf(0).index)
+        #newState.indexB_I = setValue(newState.indexB_I, accountIndex.getBalanceLeaf(newState.balanceA_S_Address).index)
+        #if newState.balanceA_S_Address == newState.balanceB_S_Address:
+        #    newState.indexA_I = newState.indexB_I
+        #else:
+        #    newState.indexA_I = setValue(newState.indexA_I, accountIndex.getBalanceLeaf(newState.balanceB_S_Address).index)
+        newState.indexB_I = accountIndex.getBalanceLeaf(newState.balanceA_S_Address).index
+        newState.indexA_I = accountIndex.getBalanceLeaf(newState.balanceB_S_Address).index
+
+
+        #print("newState.indexB_I: " + newState.indexB_I)
+        #print("newState.indexA_I: " + newState.indexA_I)
+
         # A
-        newState.accountA_Address = setValue(newState.accountA_Address, 1)
+        newState.accountA_Address = setValue(newState.accountA_Address, 2)
         accountA = self.getAccount(newState.accountA_Address)
         newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
         newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
@@ -776,14 +890,14 @@ class State(object):
         newState.accountA_WalletHash = setValue(newState.accountA_WalletHash, accountA.walletHash)
 
 
-        newState.balanceA_S_Address = setValue(newState.balanceA_S_Address, 0)
         balanceLeafA_S = accountA.getBalanceLeaf(newState.balanceA_S_Address)
         newState.balanceA_S_Balance = setValue(newState.balanceA_S_Balance, 0)
-        newState.balanceA_S_Index = setValue(newState.balanceA_S_Index, 0)
+        newState.balanceA_S_Index = setValue(newState.balanceA_S_Index, None)
+        newState.balanceA_S_AutoApplyIndex = newState.indexB_I if newState.balanceA_S_AutoApplyIndex else None
 
-        newState.balanceA_B_Address = setValue(newState.balanceA_B_Address, 0)
         newState.balanceA_B_Balance = setValue(newState.balanceA_B_Balance, 0)
-        newState.balanceA_B_Index = setValue(newState.balanceA_B_Index, 0)
+        newState.balanceA_B_Index = setValue(newState.balanceA_B_Index, None)
+        newState.balanceA_B_AutoApplyIndex = newState.indexA_I if newState.balanceA_B_AutoApplyIndex else None
 
         newState.tradeHistoryA_Address = setValue(newState.tradeHistoryA_Address, 0)
         tradeHistoryA = balanceLeafA_S.getTradeHistory(newState.tradeHistoryA_Address)
@@ -791,7 +905,7 @@ class State(object):
         newState.tradeHistoryA_OrderId = setValue(newState.tradeHistoryA_OrderId, tradeHistoryA.orderID)
 
         # B
-        newState.accountB_Address = setValue(newState.accountB_Address, 1)
+        newState.accountB_Address = setValue(newState.accountB_Address, 3)
         accountB = self.getAccount(newState.accountB_Address)
         newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
         newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
@@ -800,14 +914,12 @@ class State(object):
         newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
 
 
-        newState.balanceB_S_Address = setValue(newState.balanceB_S_Address, 0)
         balanceLeafB_S = accountB.getBalanceLeaf(newState.balanceB_S_Address)
         newState.balanceB_S_Balance = setValue(newState.balanceB_S_Balance, 0)
-        newState.balanceB_S_Index = setValue(newState.balanceB_S_Index, 0)
+        newState.balanceB_S_AutoApplyIndex = newState.indexA_I if newState.balanceB_S_AutoApplyIndex else None
 
-        newState.balanceB_B_Address = setValue(newState.balanceB_B_Address, 0)
         newState.balanceB_B_Balance = setValue(newState.balanceB_B_Balance, 0)
-        newState.balanceB_B_Index = setValue(newState.balanceB_B_Index, 0)
+        newState.balanceB_B_AutoApplyIndex = newState.indexB_I if newState.balanceB_B_AutoApplyIndex else None
 
         newState.tradeHistoryB_Address = setValue(newState.tradeHistoryB_Address, 0)
         tradeHistoryB = balanceLeafB_S.getTradeHistory(newState.tradeHistoryB_Address)
@@ -817,10 +929,14 @@ class State(object):
         # Operator
         newState.balanceDeltaA_O = setValue(newState.balanceDeltaA_O, 0)
         newState.balanceDeltaB_O = setValue(newState.balanceDeltaB_O, 0)
+        newState.balanceA_O_AutoApplyIndex = newState.indexA_I if newState.balanceA_O_AutoApplyIndex else None
+        newState.balanceB_O_AutoApplyIndex = newState.indexB_I if newState.balanceB_O_AutoApplyIndex else None
 
         # Protocol fees
         newState.balanceDeltaA_P = setValue(newState.balanceDeltaA_P, 0)
         newState.balanceDeltaB_P = setValue(newState.balanceDeltaB_P, 0)
+        newState.balanceA_P_AutoApplyIndex = newState.indexA_I if newState.balanceA_P_AutoApplyIndex else None
+        newState.balanceB_P_AutoApplyIndex = newState.indexB_I if newState.balanceB_P_AutoApplyIndex else None
 
 
         # Copy the initial merkle root
@@ -837,11 +953,15 @@ class State(object):
             newState.balanceA_S_Address,
             newState.tradeHistoryA_OrderId,
             newState.tradeHistoryA_Filled,
-            newState.balanceA_S_Balance
+            newState.balanceA_S_Balance,
+            newState.balanceA_S_Index,
+            newState.balanceA_S_AutoApplyIndex
         )
         balanceUpdateB_A = accountA.updateBalance(
-            newState.balanceA_B_Address,
-            newState.balanceA_B_Balance
+            newState.balanceB_S_Address,
+            newState.balanceA_B_Balance,
+            newState.balanceA_B_Index,
+            newState.balanceA_B_AutoApplyIndex
         )
 
         accountA.owner = newState.accountA_Owner
@@ -863,15 +983,22 @@ class State(object):
         accountBefore = copyAccountInfo(self.getAccount(newState.accountB_Address))
         proof = self._accountsTree.createProof(newState.accountB_Address)
 
+        #print("newState.balanceA_S_Address: " + str(newState.balanceA_S_Address))
+        #print("newState.balanceB_S_Address: " + str(newState.balanceB_S_Address))
+
         (balanceUpdateS_B, tradeHistoryUpdate_B) = accountB.updateBalanceAndTradeHistory(
             newState.balanceB_S_Address,
             newState.tradeHistoryB_OrderId,
             newState.tradeHistoryB_Filled,
-            newState.balanceB_S_Balance
+            newState.balanceB_S_Balance,
+            None,
+            newState.balanceB_S_AutoApplyIndex
         )
         balanceUpdateB_B = accountB.updateBalance(
-            newState.balanceB_B_Address,
-            newState.balanceB_B_Balance
+            newState.balanceA_S_Address,
+            newState.balanceB_B_Balance,
+            None,
+            newState.balanceB_B_AutoApplyIndex
         )
 
         accountB.owner = newState.accountB_Owner
@@ -886,22 +1013,54 @@ class State(object):
         accountUpdate_B = AccountUpdateData(newState.accountB_Address, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Protocol fee payment
-        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceA_B_Address, newState.balanceDeltaA_P)
-        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceB_B_Address, newState.balanceDeltaB_P)
+        # Update balances Operator
+        accountO = self.getAccount(context.operatorAccountID)
+
+        rootBefore = self._accountsTree._root
+        accountBefore = copyAccountInfo(self.getAccount(context.operatorAccountID))
+        proof = self._accountsTree.createProof(context.operatorAccountID)
+
+        balanceUpdateB_O = accountO.updateBalance(
+            newState.balanceA_S_Address,
+            newState.balanceDeltaB_O,
+            None,
+            newState.balanceB_O_AutoApplyIndex
+        )
+        balanceUpdateA_O = accountO.updateBalance(
+            newState.balanceB_S_Address,
+            newState.balanceDeltaA_O,
+            None,
+            newState.balanceA_O_AutoApplyIndex
+        )
+
+        self.updateAccountTree(context.operatorAccountID)
+        accountAfter = copyAccountInfo(self.getAccount(context.operatorAccountID))
+        rootAfter = self._accountsTree._root
+        accountUpdate_O = AccountUpdateData(context.operatorAccountID, proof, rootBefore, rootAfter, accountBefore, accountAfter)
         ###
 
-        # Operator payment
+        # Protocol fee payment
+        balanceUpdateA_P = self.getAccount(0).updateBalance(newState.balanceB_S_Address, newState.balanceDeltaA_P, None, newState.balanceA_P_AutoApplyIndex)
+        balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P, None, newState.balanceB_P_AutoApplyIndex)
+        ###
+
+
+        #newBalance = applyInterest("10000000", INDEX_BASE, "1020000000000000000")
+        #print("newBalance: " + str(newBalance))
+
         # The Merkle tree update is done after all rings are settled
+
+        #print("newState.balanceA_O_AutoApplyIndex: " + str(newState.balanceA_O_AutoApplyIndex))
+        #print("newState.balanceB_O_AutoApplyIndex: " + str(newState.balanceB_O_AutoApplyIndex))
 
         witness = Witness(newState.signatureA, newState.signatureB,
                           accountsMerkleRoot,
                           tradeHistoryUpdate_A, tradeHistoryUpdate_B,
                           balanceUpdateS_A, balanceUpdateB_A, accountUpdate_A,
                           balanceUpdateS_B, balanceUpdateB_B, accountUpdate_B,
+                          balanceUpdateA_O, balanceUpdateB_O, accountUpdate_O,
                           balanceUpdateA_P, balanceUpdateB_P,
-                          newState.balanceA_B_Address, newState.balanceB_B_Address,
-                          newState.balanceDeltaA_O, newState.balanceDeltaB_O)
+                          balanceUpdateA_I, balanceUpdateB_I)
 
         return TxWitness(witness, txInput)
 
