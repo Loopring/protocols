@@ -20,34 +20,18 @@ import "../base/DataStore.sol";
 import "../lib/MathUint.sol";
 
 
-/// @title NonceStore
-/// @dev This store maintains all nonces for metaTx
-contract NonceStore is DataStore
+/// @title HashStore
+/// @dev This store maintains all hashes for SignedRequest.
+contract HashStore
 {
-    mapping(address => uint) public nonces;
+    mapping(bytes32 => bool) public hashes;
 
-    constructor() public DataStore() {}
+    constructor() public {}
 
-    function last(address wallet)
-        public
-        view
-        returns (uint)
-    {
-        return nonces[wallet];
-    }
-
-    function isNonceValid(address wallet, uint nonce)
-        public
-        view
-        returns(bool)
-    {
-        return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
-    }
-
-    function verifyAndUpdate(address wallet, uint nonce)
+    function verifyAndUpdate(bytes32 hash)
         public
     {
-        require(isNonceValid(wallet, nonce), "INVALID_NONCE");
-        nonces[wallet] = nonce;
+        require(!hashes[hash], "HASH_EXIST");
+        hashes[hash] = true;
     }
 }
