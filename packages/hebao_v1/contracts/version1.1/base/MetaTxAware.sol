@@ -58,10 +58,22 @@ abstract contract MetaTxAware
         view
         returns (address payable)
     {
-        if (msg.data.length >= 24 && isTrustedForwarder(msg.sender)) {
-            return msg.data.toAddress(msg.data.length - 20).toPayable();
+        if (msg.data.length >= 56 && isTrustedForwarder(msg.sender)) {
+            return msg.data.toAddress(msg.data.length - 52).toPayable();
         } else {
             return msg.sender;
+        }
+    }
+
+    function businessSignedHash()
+        internal
+        view
+        returns (bytes32)
+    {
+        if (msg.data.length >= 56 && isTrustedForwarder(msg.sender)) {
+            return msg.data.toBytes32(msg.data.length - 32);
+        } else {
+            return 0;
         }
     }
 }

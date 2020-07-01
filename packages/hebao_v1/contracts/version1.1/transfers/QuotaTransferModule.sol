@@ -63,6 +63,7 @@ contract QuotaTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            businessSignedHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(

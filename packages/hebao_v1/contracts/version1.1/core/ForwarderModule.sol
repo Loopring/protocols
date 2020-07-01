@@ -57,11 +57,12 @@ contract ForwarderModule is BaseModule
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
+        bytes32 businessSignedHash;
         bytes   data;
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
+        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 businessSignedHash,bytes data)"
     );
 
     mapping(address => uint256) public nonces;
@@ -81,6 +82,7 @@ contract ForwarderModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
+        bytes32 businessSignedHash,
         bytes   memory data,
         bytes   memory signature
         )
@@ -91,6 +93,7 @@ contract ForwarderModule is BaseModule
         require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
         require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
+        bytes32 dataHash = (businessSignedHash == 0) ? keccak256(data) : bytes32(0);
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
@@ -99,7 +102,8 @@ contract ForwarderModule is BaseModule
             gasToken,
             gasPrice,
             gasLimit,
-            keccak256(data)
+            businessSignedHash,
+            dataHash
         );
 
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
@@ -129,6 +133,7 @@ contract ForwarderModule is BaseModule
             metaTx. gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
+            metaTx.businessSignedHash,
             metaTx.data,
             signature
         );
@@ -138,7 +143,7 @@ contract ForwarderModule is BaseModule
         nonces[metaTx.from] = metaTx.nonce;
 
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(metaTx.data, metaTx.from)
+            abi.encodePacked(metaTx.data, metaTx.from, metaTx.businessSignedHash)
         );
 
         if (address(this).balance > 0) {

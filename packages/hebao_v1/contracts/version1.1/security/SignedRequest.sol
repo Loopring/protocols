@@ -41,6 +41,7 @@ library SignedRequest {
     function verifyRequest(
         ControllerImpl               controller,
         bytes32                      domainSeperator,
+        bytes32                      businessSignedHash,
         GuardianUtils.SigRequirement sigRequirement,
         Request memory               request,
         bytes   memory               encodedRequest
@@ -49,6 +50,10 @@ library SignedRequest {
         view
     {
         bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        if (businessSignedHash != bytes32(0)) {
+          require(txHash == businessSignedHash, "BUSINESS_SIGNED_HASH_MISMATCH");
+        }
+
         require(
             txHash.verifySignatures(request.signers, request.signatures),
             "INVALID_SIGNATURES"

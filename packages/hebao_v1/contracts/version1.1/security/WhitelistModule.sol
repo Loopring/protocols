@@ -63,6 +63,7 @@ contract WhitelistModule is SecurityModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            businessSignedHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(

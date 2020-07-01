@@ -61,6 +61,7 @@ contract ApprovedTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            businessSignedHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
@@ -90,6 +91,7 @@ contract ApprovedTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            businessSignedHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
@@ -119,6 +121,7 @@ contract ApprovedTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            businessSignedHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
@@ -161,6 +164,7 @@ contract ApprovedTransferModule is TransferModule
 
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            businessSignedHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             encoded
