@@ -1,4 +1,5 @@
 const DappAddressStore = artifacts.require("DappAddressStore");
+const HashStore = artifacts.require("HashStore");
 const NonceStore = artifacts.require("NonceStore");
 const QuotaStore = artifacts.require("QuotaStore");
 const SecurityStore = artifacts.require("SecurityStore");

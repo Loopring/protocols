@@ -65,16 +65,6 @@ contract ForwarderModule is BaseModule
         "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txInnerHash,bytes data)"
     );
 
-    mapping(address => uint256) public nonces;
-
-    function getNonce(address from)
-        external
-        view
-        returns(uint)
-    {
-        return nonces[from];
-    }
-
     function validateMetaTx(
         address from,
         address to,
@@ -90,8 +80,6 @@ contract ForwarderModule is BaseModule
         view
     {
         require(to != address(this) && Wallet(from).hasModule(to), "INVALID_DESTINATION");
-        require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
-        require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
         // If a non-zero txInnerHash is provided, we do not verify signature against
         // the `data` field. The actual function call in the real transaction will have to
@@ -129,6 +117,8 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
+        controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+
         validateMetaTx(
             metaTx.from,
             metaTx.to,
@@ -142,8 +132,6 @@ contract ForwarderModule is BaseModule
         );
 
         uint gasLeft = gasleft();
-
-        nonces[metaTx.from] = metaTx.nonce;
 
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txInnerHash)

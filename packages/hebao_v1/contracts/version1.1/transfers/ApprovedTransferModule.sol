@@ -24,19 +24,19 @@ import "./TransferModule.sol";
 contract ApprovedTransferModule is TransferModule
 {
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferToken(address wallet,uint256 nonce,address token,address to,uint256 amount,bytes logdata)"
+        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveToken(address wallet,uint256 nonce,address token,address to,uint256 amount)"
+        "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
 
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContract(address wallet,uint256 nonce,address to,uint256 value,bytes data)"
+        "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContract(address wallet,uint256 nonce,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
     constructor(
@@ -67,14 +67,13 @@ contract ApprovedTransferModule is TransferModule
             abi.encode(
                 TRANSFER_TOKEN_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 token,
                 to,
                 amount,
                 keccak256(logdata)
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         transferInternal(request.wallet, token, to, amount, logdata);
     }
@@ -97,13 +96,12 @@ contract ApprovedTransferModule is TransferModule
             abi.encode(
                 APPROVE_TOKEN_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 token,
                 to,
                 amount
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         approveInternal(request.wallet, token, to, amount);
     }
@@ -127,13 +125,12 @@ contract ApprovedTransferModule is TransferModule
             abi.encode(
                 CALL_CONTRACT_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 to,
                 value,
                 keccak256(data)
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         return callContractInternal(request.wallet, to, value, data);
     }
@@ -154,7 +151,7 @@ contract ApprovedTransferModule is TransferModule
         bytes memory encoded = abi.encode(
             APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
             request.wallet,
-            request.nonce,
+            request.validUntil,
             token,
             to,
             amount,
@@ -169,7 +166,6 @@ contract ApprovedTransferModule is TransferModule
             request,
             encoded
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);

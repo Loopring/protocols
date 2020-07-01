@@ -42,7 +42,7 @@ contract GuardianModule is SecurityModule
     );
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
-        "recover(address wallet,uint256 nonce,address newOwner)"
+        "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
     constructor(
@@ -167,12 +167,10 @@ contract GuardianModule is SecurityModule
             abi.encode(
                 RECOVER_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 newOwner
             )
         );
-
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);

@@ -24,7 +24,7 @@ import "./TransferModule.sol";
 contract QuotaTransferModule is TransferModule
 {
     bytes32 public constant CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH = keccak256(
-        "changeDailyQuotaImmediately(address wallet,uint256 nonce,uint256 newQuota)"
+        "changeDailyQuotaImmediately(address wallet,uint256 validUntil,uint256 newQuota)"
     );
 
     uint public delayPeriod;
@@ -69,11 +69,10 @@ contract QuotaTransferModule is TransferModule
             abi.encode(
                 CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 newQuota
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         controller.quotaStore().changeQuota(request.wallet, newQuota, now);
     }
