@@ -113,9 +113,10 @@ export async function createWallet(
   modules = modules === undefined ? getAllModuleAddresses(ctx) : modules;
 
   const wallet = await ctx.walletFactoryModule.computeWalletAddress(owner);
+  const walletName = "mywalleta" + new Date().getTime();
   await ctx.walletFactoryModule.createWallet(
     owner,
-    "",
+    walletName,
     Constants.emptyBytes,
     modules,
     {

@@ -10,9 +10,9 @@ import { Context } from "./TestUtils";
 import { getTokenAddress } from "./TokenUtils";
 import { getEIP712Message } from "../../util/EIP712";
 
-export interface MetaTransaction {
-  wallet: string;
-  module: string;
+export interface MetaTx {
+  from: string;
+  to: string;
 
   value: BN;
   data: string;
