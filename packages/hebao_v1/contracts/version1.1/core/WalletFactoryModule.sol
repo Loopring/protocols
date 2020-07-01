@@ -39,7 +39,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     address public walletImplementation;
     bool    public allowEmptyENS;
 
-	bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
+    bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
         "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
     );
 
@@ -75,20 +75,20 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         nonReentrant
         returns (address _wallet)
     {
-    	require(_modules.length > 0, "EMPTY_MODULES");
+        require(_modules.length > 0, "EMPTY_MODULES");
 
-    	bytes memory encodedRequest = abi.encode(
+        bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
             _owner,
             keccak256(bytes(_label)),
             keccak256(_labelApproval),
             keccak256(abi.encode(_modules))
-		);
+        );
 
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
-        _wallet == createWalletInternal(controller, walletImplementation, _owner, address(this));
+        _wallet = createWalletInternal(controller, walletImplementation, _owner, address(this));
 
         Wallet w = Wallet(_wallet);
         for(uint i = 0; i < _modules.length; i++) {
@@ -103,7 +103,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
                     _labelApproval
                 );
             } else {
-            	require(allowEmptyENS, "INVALID_ENS_LABEL");
+                require(allowEmptyENS, "INVALID_ENS_LABEL");
             }
         }
 
