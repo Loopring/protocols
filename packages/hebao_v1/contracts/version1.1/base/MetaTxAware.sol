@@ -42,15 +42,6 @@ abstract contract MetaTxAware
         trustedForwarder = _trustedForwarder;
     }
 
-    /// @dev Returns if a forwarder is a trusted meta-tx forwarder.
-    function isTrustedForwarder(address forwarder)
-        public
-        view
-        returns(bool)
-    {
-        return forwarder == trustedForwarder;
-    }
-
     /// @dev Return's the function's logicial message sender. This method should be
     // used to replace `msg.sender` for all meta-tx enabled functions.
     function msgSender()
@@ -58,7 +49,7 @@ abstract contract MetaTxAware
         view
         returns (address payable)
     {
-        if (msg.data.length >= 56 && isTrustedForwarder(msg.sender)) {
+        if (msg.data.length >= 56 && msg.sender == trustedForwarder) {
             return msg.data.toAddress(msg.data.length - 52).toPayable();
         } else {
             return msg.sender;
@@ -70,7 +61,7 @@ abstract contract MetaTxAware
         view
         returns (bytes32)
     {
-        if (msg.data.length >= 56 && isTrustedForwarder(msg.sender)) {
+        if (msg.data.length >= 56 && msg.sender == trustedForwarder) {
             return msg.data.toBytes32(msg.data.length - 32);
         } else {
             return 0;
