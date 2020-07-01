@@ -42,7 +42,7 @@ contract GuardianModule is SecurityModule
     );
 
     bytes32 public constant RECOVER_TYPEHASH = keccak256(
-        "recover(address wallet,uint256 nonce,address newOwner)"
+        "recover(address wallet,uint256 validUntil,address newOwner)"
     );
 
     constructor(
@@ -171,8 +171,6 @@ contract GuardianModule is SecurityModule
                 newOwner
             )
         );
-
-        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);

@@ -37,12 +37,13 @@ contract ControllerImpl is Claimable, Controller
     uint                public defaultLockPeriod;
     address             public ensManagerAddress;
     PriceOracle         public priceOracle;
+    DappAddressStore    public dappAddressStore;
+    HashStore           public hashStore;
+    NonceStore          public nonceStore;
     QuotaStore          public quotaStore;
     SecurityStore       public securityStore;
-    DappAddressStore    public dappAddressStore;
     WhitelistStore      public whitelistStore;
-    NonceStore          public nonceStore;
-    HashStore           public hashStore;
+
 
     event ValueChanged(
         string  indexed name,
@@ -57,8 +58,8 @@ contract ControllerImpl is Claimable, Controller
         address           _ensManagerAddress,
         PriceOracle       _priceOracle,
         DappAddressStore  _dappAddressStore,
-        NonceStore        _nonceStore,
         HashStore         _hashStore,
+        NonceStore        _nonceStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
         WhitelistStore    _whitelistStore
@@ -76,8 +77,8 @@ contract ControllerImpl is Claimable, Controller
         ensManagerAddress = _ensManagerAddress;
         priceOracle = _priceOracle;
         dappAddressStore = _dappAddressStore;
-        nonceStore = _nonceStore;
         hashStore = _hashStore;
+        nonceStore = _nonceStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;
         whitelistStore = _whitelistStore;

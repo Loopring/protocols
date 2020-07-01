@@ -24,19 +24,19 @@ import "./TransferModule.sol";
 contract ApprovedTransferModule is TransferModule
 {
     bytes32 public constant TRANSFER_TOKEN_TYPEHASH = keccak256(
-        "transferToken(address wallet,uint256 nonce,address token,address to,uint256 amount,bytes logdata)"
+        "transferToken(address wallet,uint256 validUntil,address token,address to,uint256 amount,bytes logdata)"
     );
 
     bytes32 public constant APPROVE_TOKEN_TYPEHASH = keccak256(
-        "approveToken(address wallet,uint256 nonce,address token,address to,uint256 amount)"
+        "approveToken(address wallet,uint256 validUntil,address token,address to,uint256 amount)"
     );
 
     bytes32 public constant CALL_CONTRACT_TYPEHASH = keccak256(
-        "callContract(address wallet,uint256 nonce,address to,uint256 value,bytes data)"
+        "callContract(address wallet,uint256 validUntil,address to,uint256 value,bytes data)"
     );
 
     bytes32 public constant APPROVE_THEN_CALL_CONTRACT_TYPEHASH = keccak256(
-        "approveThenCallContract(address wallet,uint256 nonce,address token,address to,uint256 amount,uint256 value,bytes data)"
+        "approveThenCallContract(address wallet,uint256 validUntil,address token,address to,uint256 amount,uint256 value,bytes data)"
     );
 
     constructor(
@@ -74,7 +74,6 @@ contract ApprovedTransferModule is TransferModule
                 keccak256(logdata)
             )
         );
-        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         transferInternal(request.wallet, token, to, amount, logdata);
     }
@@ -103,7 +102,6 @@ contract ApprovedTransferModule is TransferModule
                 amount
             )
         );
-        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         approveInternal(request.wallet, token, to, amount);
     }
@@ -133,7 +131,6 @@ contract ApprovedTransferModule is TransferModule
                 keccak256(data)
             )
         );
-        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         return callContractInternal(request.wallet, to, value, data);
     }
@@ -169,7 +166,6 @@ contract ApprovedTransferModule is TransferModule
             request,
             encoded
         );
-        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);

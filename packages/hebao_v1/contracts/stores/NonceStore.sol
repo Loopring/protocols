@@ -28,7 +28,7 @@ contract NonceStore is DataStore
 
     constructor() public DataStore() {}
 
-    function getLastNonce(address wallet)
+    function last(address wallet)
         public
         view
         returns (uint)
@@ -44,7 +44,7 @@ contract NonceStore is DataStore
         return nonce > nonces[wallet] && (nonce >> 128) <= block.number;
     }
 
-    function verifyAndUpdateNonce(address wallet, uint nonce)
+    function verifyAndUpdate(address wallet, uint nonce)
         public
     {
         require(isNonceValid(wallet, nonce), "INVALID_NONCE");

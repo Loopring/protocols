@@ -47,11 +47,13 @@ library SignedRequest {
         bytes   memory               encodedRequest
         )
         public
-        view
+        returns (bytes32 txHash)
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
-        bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+
+        controller.hashStore().verifyAndUpdate(txHash);
 
         // Verify if txInnerHash from the mata-transaction is non-zero,
         // if so, we must verify it matches with the real transaction input.

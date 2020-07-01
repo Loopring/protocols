@@ -24,7 +24,7 @@ import "./SecurityModule.sol";
 contract WhitelistModule is SecurityModule
 {
     bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
-        "addToWhitelistImmediately(address wallet,uint256 nonce,address addr)"
+        "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
 
     uint public delayPeriod;
@@ -73,7 +73,6 @@ contract WhitelistModule is SecurityModule
                 addr
             )
         );
-        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }

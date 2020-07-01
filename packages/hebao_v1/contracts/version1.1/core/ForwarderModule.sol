@@ -117,7 +117,7 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
-        controller.nonceStore().verifyAndUpdateNonce(metaTx.from, metaTx.nonce);
+        controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
 
         validateMetaTx(
             metaTx.from,
