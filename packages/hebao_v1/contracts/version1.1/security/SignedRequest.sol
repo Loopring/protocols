@@ -47,7 +47,6 @@ library SignedRequest {
         bytes   memory               encodedRequest
         )
         public
-        returns (bytes32 txHash)
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
