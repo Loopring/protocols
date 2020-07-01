@@ -88,7 +88,7 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
         require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
 
-        _wallet == createWalletInternal(controller, walletImplementation, _owner, address(this));
+        _wallet = createWalletInternal(controller, walletImplementation, _owner, address(this));
 
         Wallet w = Wallet(_wallet);
         for(uint i = 0; i < _modules.length; i++) {

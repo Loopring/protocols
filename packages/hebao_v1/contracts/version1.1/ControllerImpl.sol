@@ -20,6 +20,7 @@ import "../base/Controller.sol";
 import "../iface/PriceOracle.sol";
 import "../lib/Claimable.sol";
 import "../stores/DappAddressStore.sol";
+import "../stores/HashStore.sol";
 import "../stores/NonceStore.sol";
 import "../stores/QuotaStore.sol";
 import "../stores/SecurityStore.sol";
@@ -36,11 +37,13 @@ contract ControllerImpl is Claimable, Controller
     uint                public defaultLockPeriod;
     address             public ensManagerAddress;
     PriceOracle         public priceOracle;
+    DappAddressStore    public dappAddressStore;
+    HashStore           public hashStore;
+    NonceStore          public nonceStore;
     QuotaStore          public quotaStore;
     SecurityStore       public securityStore;
-    DappAddressStore    public dappAddressStore;
     WhitelistStore      public whitelistStore;
-    NonceStore          public nonceStore;
+
 
     event ValueChanged(
         string  indexed name,
@@ -55,6 +58,7 @@ contract ControllerImpl is Claimable, Controller
         address           _ensManagerAddress,
         PriceOracle       _priceOracle,
         DappAddressStore  _dappAddressStore,
+        HashStore         _hashStore,
         NonceStore        _nonceStore,
         QuotaStore        _quotaStore,
         SecurityStore     _securityStore,
@@ -63,16 +67,17 @@ contract ControllerImpl is Claimable, Controller
         public
     {
         moduleRegistry = _moduleRegistry;
-        walletRegistry = _walletRegistry;    
+        walletRegistry = _walletRegistry;
 
         defaultLockPeriod = _defaultLockPeriod;
 
         require(_collectTo != address(0), "ZERO_ADDRESS");
-        collectTo = _collectTo;  
+        collectTo = _collectTo;
 
         ensManagerAddress = _ensManagerAddress;
-        priceOracle = _priceOracle;     
+        priceOracle = _priceOracle;
         dappAddressStore = _dappAddressStore;
+        hashStore = _hashStore;
         nonceStore = _nonceStore;
         quotaStore = _quotaStore;
         securityStore = _securityStore;

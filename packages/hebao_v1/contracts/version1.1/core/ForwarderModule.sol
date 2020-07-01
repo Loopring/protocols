@@ -57,22 +57,13 @@ contract ForwarderModule is BaseModule
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
+        bytes32 txInnerHash;
         bytes   data;
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes data)"
+        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txInnerHash,bytes data)"
     );
-
-    mapping(address => uint256) public nonces;
-
-    function getNonce(address from)
-        external
-        view
-        returns(uint)
-    {
-        return nonces[from];
-    }
 
     function validateMetaTx(
         address from,
@@ -81,16 +72,19 @@ contract ForwarderModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
+        bytes32 txInnerHash,
         bytes   memory data,
         bytes   memory signature
         )
         public
         view
     {
-        require(to != address(this), "CANNOT_FORWARD_TO_SELF");
-        require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
-        require(nonce > nonces[from], "NONCE_TOO_SMALL");
+        require(to != address(this) && Wallet(from).hasModule(to), "INVALID_DESTINATION");
 
+        // If a non-zero txInnerHash is provided, we do not verify signature against
+        // the `data` field. The actual function call in the real transaction will have to
+        // check that txInnerHash is indeed valid.
+        bytes memory data_ = (txInnerHash == 0) ? data : bytes("");
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
@@ -99,7 +93,8 @@ contract ForwarderModule is BaseModule
             gasToken,
             gasPrice,
             gasLimit,
-            keccak256(data)
+            txInnerHash,
+            keccak256(data_)
         );
 
         bytes32 metaTxHash = EIP712.hashPacked(DOMAIN_SEPARATOR, encoded);
@@ -122,23 +117,25 @@ contract ForwarderModule is BaseModule
             "INSUFFICIENT_GAS"
         );
 
+        controller.nonceStore().verifyAndUpdate(metaTx.from, metaTx.nonce);
+
         validateMetaTx(
             metaTx.from,
             metaTx.to,
             metaTx.nonce,
-            metaTx. gasToken,
+            metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
+            metaTx.txInnerHash,
             metaTx.data,
             signature
         );
 
         uint gasLeft = gasleft();
 
-        nonces[metaTx.from] = metaTx.nonce;
-
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(metaTx.data, metaTx.from)
+            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txInnerHash)
+            // encode or encodePacked? @Brecht
         );
 
         if (address(this).balance > 0) {

@@ -24,7 +24,7 @@ import "./SecurityModule.sol";
 contract WhitelistModule is SecurityModule
 {
     bytes32 public constant ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH = keccak256(
-        "addToWhitelistImmediately(address wallet,uint256 nonce,address addr)"
+        "addToWhitelistImmediately(address wallet,uint256 validUntil,address addr)"
     );
 
     uint public delayPeriod;
@@ -63,16 +63,16 @@ contract WhitelistModule is SecurityModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
+            txInnerHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
                 ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 addr
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
 
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }

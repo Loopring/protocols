@@ -34,21 +34,33 @@ library SignedRequest {
     struct Request {
         address[] signers;
         bytes[]   signatures;
-        uint      nonce;
+        uint      validUntil;
         address   wallet;
     }
 
     function verifyRequest(
         ControllerImpl               controller,
         bytes32                      domainSeperator,
+        bytes32                      txInnerHash,
         GuardianUtils.SigRequirement sigRequirement,
         Request memory               request,
         bytes   memory               encodedRequest
         )
         public
-        view
     {
-        bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
+
+        txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+
+        controller.hashStore().verifyAndUpdate(txHash);
+
+        // Verify if txInnerHash from the mata-transaction is non-zero,
+        // if so, we must verify it matches with the real transaction input.
+        require(
+            txInnerHash == 0 || txInnerHash == txHash,
+            "TX_INNER_HASH_MISMATCH"
+        );
+
         require(
             txHash.verifySignatures(request.signers, request.signatures),
             "INVALID_SIGNATURES"
