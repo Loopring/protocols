@@ -50,6 +50,9 @@ library SignedRequest {
         view
     {
         bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+
+        // Verify if businessSignedHash from the mata-transaction is non-zero,
+        // if so, we must verify it matches with the real transaction input.
         if (businessSignedHash != bytes32(0)) {
           require(txHash == businessSignedHash, "BUSINESS_SIGNED_HASH_MISMATCH");
         }

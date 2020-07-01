@@ -93,7 +93,10 @@ contract ForwarderModule is BaseModule
         require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
         require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
-        bytes32 dataHash = (businessSignedHash == 0) ? keccak256(data) : bytes32(0);
+        // If a non-zero businessSignedHash is provided, we do not verify signature against
+        // the `data` field. The actual function call in the real transaction will have to
+        // check that businessSignedHash is indeed valid.
+        bytes32 dataHash = (businessSignedHash == bytes32(0)) ? keccak256(data) : bytes32(0);
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
