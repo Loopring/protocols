@@ -161,7 +161,7 @@ contract GuardianModule is SecurityModule
 
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
-            txInnerHash(),
+            txAwareHash(),
             GuardianUtils.SigRequirement.OwnerNotAllowed,
             request,
             abi.encode(

@@ -56,7 +56,7 @@ abstract contract MetaTxAware
         }
     }
 
-    function txInnerHash()
+    function txAwareHash()
         internal
         view
         returns (bytes32)

@@ -41,7 +41,7 @@ library SignedRequest {
     function verifyRequest(
         ControllerImpl               controller,
         bytes32                      domainSeperator,
-        bytes32                      txInnerHash,
+        bytes32                      txAwareHash,
         GuardianUtils.SigRequirement sigRequirement,
         Request memory               request,
         bytes   memory               encodedRequest
@@ -54,10 +54,10 @@ library SignedRequest {
 
         controller.hashStore().verifyAndUpdate(txHash);
 
-        // Verify if txInnerHash from the mata-transaction is non-zero,
-        // if so, we must verify it matches with the real transaction input.
+        // If txAwareHash from the mata-transaction is non-zero,
+        // we must verify it matches the hash signed by the respective signers.
         require(
-            txInnerHash == 0 || txInnerHash == txHash,
+            txAwareHash == 0 || txAwareHash == txHash,
             "TX_INNER_HASH_MISMATCH"
         );
 
