@@ -147,6 +147,7 @@ contract ForwarderModule is BaseModule
 
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txInnerHash)
+            // encode or encodePacked? @Brecht
         );
 
         if (address(this).balance > 0) {
