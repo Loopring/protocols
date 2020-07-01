@@ -57,12 +57,12 @@ contract ForwarderModule is BaseModule
         address gasToken;
         uint    gasPrice;
         uint    gasLimit;
-        bytes32 businessSignedHash;
+        bytes32 txInnerHash;
         bytes   data;
     }
 
     bytes32 constant public META_TX_TYPEHASH = keccak256(
-        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 businessSignedHash,bytes data)"
+        "MetaTx(address from,address to,uint256 nonce,address gasToken,uint256 gasPrice,uint256 gasLimit,bytes32 txInnerHash,bytes data)"
     );
 
     mapping(address => uint256) public nonces;
@@ -82,7 +82,7 @@ contract ForwarderModule is BaseModule
         address gasToken,
         uint    gasPrice,
         uint    gasLimit,
-        bytes32 businessSignedHash,
+        bytes32 txInnerHash,
         bytes   memory data,
         bytes   memory signature
         )
@@ -93,10 +93,10 @@ contract ForwarderModule is BaseModule
         require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
         require(nonce > nonces[from], "NONCE_TOO_SMALL");
 
-        // If a non-zero businessSignedHash is provided, we do not verify signature against
+        // If a non-zero txInnerHash is provided, we do not verify signature against
         // the `data` field. The actual function call in the real transaction will have to
-        // check that businessSignedHash is indeed valid.
-        bytes memory data_ = (businessSignedHash == 0) ? data : bytes("");
+        // check that txInnerHash is indeed valid.
+        bytes memory data_ = (txInnerHash == 0) ? data : bytes("");
         bytes memory encoded = abi.encode(
             META_TX_TYPEHASH,
             from,
@@ -105,7 +105,7 @@ contract ForwarderModule is BaseModule
             gasToken,
             gasPrice,
             gasLimit,
-            businessSignedHash,
+            txInnerHash,
             keccak256(data_)
         );
 
@@ -133,10 +133,10 @@ contract ForwarderModule is BaseModule
             metaTx.from,
             metaTx.to,
             metaTx.nonce,
-            metaTx. gasToken,
+            metaTx.gasToken,
             metaTx.gasPrice,
             metaTx.gasLimit,
-            metaTx.businessSignedHash,
+            metaTx.txInnerHash,
             metaTx.data,
             signature
         );
@@ -146,7 +146,7 @@ contract ForwarderModule is BaseModule
         nonces[metaTx.from] = metaTx.nonce;
 
         (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
-            abi.encodePacked(metaTx.data, metaTx.from, metaTx.businessSignedHash)
+            abi.encodePacked(metaTx.data, metaTx.from, metaTx.txInnerHash)
         );
 
         if (address(this).balance > 0) {
