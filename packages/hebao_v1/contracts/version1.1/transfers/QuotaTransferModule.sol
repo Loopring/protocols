@@ -69,11 +69,11 @@ contract QuotaTransferModule is TransferModule
             abi.encode(
                 CHANGE_DAILY_QUOTE_IMMEDIATELY_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 newQuota
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         controller.quotaStore().changeQuota(request.wallet, newQuota, now);
     }

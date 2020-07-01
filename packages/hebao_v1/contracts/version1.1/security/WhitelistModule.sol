@@ -69,11 +69,11 @@ contract WhitelistModule is SecurityModule
             abi.encode(
                 ADD_TO_WHITELIST_IMMEDIATELY_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 addr
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         controller.whitelistStore().addToWhitelist(request.wallet, addr, now);
     }

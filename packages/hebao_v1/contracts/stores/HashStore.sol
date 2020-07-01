@@ -22,32 +22,16 @@ import "../lib/MathUint.sol";
 
 /// @title NonceStore
 /// @dev This store maintains all nonces.
-contract NonceStore is DataStore
+contract HashStore
 {
-    mapping(address => uint) public nonces;
+    mapping(bytes32 => bool) public hashes;
 
-    constructor() public DataStore() {}
+    constructor() public {}
 
-    function getLastNonce(address wallet)
-        public
-        view
-        returns (uint)
-    {
-        return nonces[wallet];
-    }
-
-    function verifyNonce(address wallet, uint nonce)
-        public
-        view
-    {
-        require(nonce > nonces[wallet], "NONCE_TOO_SMALL");
-        require((nonce >> 128) <= (block.number), "NONCE_TOO_LARGE");
-    }
-
-    function verifyAndUpdateNonce(address wallet, uint nonce)
+    function verifyAndUpdate(bytes32 hash)
         public
     {
-        verifyNonce(wallet, nonce);
-        nonces[wallet] = nonce;
+        require(!hashes[hash], "HASH_EXIST");
+        hashes[hash] = true;
     }
 }

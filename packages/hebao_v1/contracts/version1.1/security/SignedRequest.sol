@@ -34,7 +34,7 @@ library SignedRequest {
     struct Request {
         address[] signers;
         bytes[]   signatures;
-        uint      nonce;
+        uint      validUntil;
         address   wallet;
     }
 
@@ -49,6 +49,8 @@ library SignedRequest {
         public
         view
     {
+        require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
+
         bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
         // Verify if txInnerHash from the mata-transaction is non-zero,

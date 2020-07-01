@@ -67,14 +67,14 @@ contract ApprovedTransferModule is TransferModule
             abi.encode(
                 TRANSFER_TOKEN_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 token,
                 to,
                 amount,
                 keccak256(logdata)
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         transferInternal(request.wallet, token, to, amount, logdata);
     }
@@ -97,13 +97,13 @@ contract ApprovedTransferModule is TransferModule
             abi.encode(
                 APPROVE_TOKEN_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 token,
                 to,
                 amount
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         approveInternal(request.wallet, token, to, amount);
     }
@@ -127,13 +127,13 @@ contract ApprovedTransferModule is TransferModule
             abi.encode(
                 CALL_CONTRACT_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 to,
                 value,
                 keccak256(data)
             )
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         return callContractInternal(request.wallet, to, value, data);
     }
@@ -154,7 +154,7 @@ contract ApprovedTransferModule is TransferModule
         bytes memory encoded = abi.encode(
             APPROVE_THEN_CALL_CONTRACT_TYPEHASH,
             request.wallet,
-            request.nonce,
+            request.validUntil,
             token,
             to,
             amount,
@@ -169,7 +169,7 @@ contract ApprovedTransferModule is TransferModule
             request,
             encoded
         );
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         approveInternal(request.wallet, token, to, amount);
         return callContractInternal(request.wallet, to, value, data);

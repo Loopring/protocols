@@ -167,12 +167,12 @@ contract GuardianModule is SecurityModule
             abi.encode(
                 RECOVER_TYPEHASH,
                 request.wallet,
-                request.nonce,
+                request.validUntil,
                 newOwner
             )
         );
 
-        controller.nonceStore().verifyAndUpdateNonce(request.wallet, request.nonce);
+        controller.hashStore().verifyAndUpdate(txInnerHash());
 
         SecurityStore securityStore = controller.securityStore();
         bool removedAsGuardian = securityStore.isGuardianOrPendingAddition(request.wallet, newOwner);
