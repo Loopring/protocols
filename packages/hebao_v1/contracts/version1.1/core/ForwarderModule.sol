@@ -109,7 +109,7 @@ contract ForwarderModule is BaseModule
         nonReentrant
         returns (
             bool         success,
-            bytes memory returnValue
+            bytes memory ret
         )
     {
         require(
@@ -133,7 +133,7 @@ contract ForwarderModule is BaseModule
 
         uint gasLeft = gasleft();
 
-        (success, returnValue) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
+        (success, ret) = metaTx.to.call{gas : metaTx.gasLimit, value : 0}(
             abi.encodePacked(metaTx.data, metaTx.from, metaTx.txAwareHash)
             // encode or encodePacked? @Brecht
         );
