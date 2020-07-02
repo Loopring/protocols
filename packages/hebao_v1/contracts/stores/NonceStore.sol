@@ -28,7 +28,7 @@ contract NonceStore is DataStore
 
     constructor() public DataStore() {}
 
-    function last(address wallet)
+    function lastNonce(address wallet)
         public
         view
         returns (uint)
