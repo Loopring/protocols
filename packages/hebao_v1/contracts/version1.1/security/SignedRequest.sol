@@ -50,7 +50,7 @@ library SignedRequest {
     {
         require(now <= request.validUntil, "EXPIRED_SIGNED_REQUEST");
 
-        txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
+        bytes32 txHash = EIP712.hashPacked(domainSeperator, encodedRequest);
 
         controller.hashStore().verifyAndUpdate(txHash);
 
