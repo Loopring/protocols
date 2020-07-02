@@ -119,49 +119,12 @@ contract("Exchange", (accounts: string[]) => {
     it("should be able to call agent functions", async () => {
       await createExchange();
 
-      const fees = await exchange.getFees();
-      const accountCreationFee = fees._accountCreationFeeETH;
-      const depositFee = fees._depositFeeETH;
-      const withdrawalFee = fees._withdrawalFeeETH;
+      const withdrawalFee = await exchangeTestUtil.loopringV3.forcedWithdrawalFee();
+      const depositFee = exchangeTestUtil.getRandomFee();
 
       const agent = ownerC;
 
       const token = exchangeTestUtil.getTokenAddress("LRC");
-
-      // Create an extra account for ownerB
-      await exchange.createOrUpdateAccount(
-        ownerB,
-        new BN(1),
-        new BN(1),
-        Constants.emptyBytes,
-        { from: ownerB, value: accountCreationFee.add(depositFee) }
-      );
-
-      // Try calling the functions without authorizing the agents first
-
-      await expectThrow(
-        exchange.createOrUpdateAccount(
-          ownerA,
-          new BN(1),
-          new BN(1),
-          Constants.emptyBytes,
-          { from: agent, value: accountCreationFee.add(depositFee) }
-        ),
-        "UNAUTHORIZED"
-      );
-
-      await expectThrow(
-        exchange.updateAccountAndDeposit(
-          ownerA,
-          new BN(1),
-          new BN(1),
-          token,
-          new BN(0),
-          Constants.emptyBytes,
-          { from: agent, value: depositFee }
-        ),
-        "UNAUTHORIZED"
-      );
 
       await expectThrow(
         exchange.deposit(ownerA, ownerA, token, new BN(0), {
@@ -202,24 +165,6 @@ contract("Exchange", (accounts: string[]) => {
       await authorizeAgentsChecked(ownerA, [agent], [true], ownerA);
 
       // Now call the functions successfully
-
-      await exchange.createOrUpdateAccount(
-        ownerA,
-        new BN(1),
-        new BN(1),
-        Constants.emptyBytes,
-        { from: agent, value: accountCreationFee.add(depositFee) }
-      );
-
-      await exchange.updateAccountAndDeposit(
-        ownerA,
-        new BN(1),
-        new BN(1),
-        token,
-        new BN(0),
-        Constants.emptyBytes,
-        { from: agent, value: depositFee }
-      );
 
       await exchange.deposit(ownerA, ownerA, token, new BN(0), {
         from: agent,

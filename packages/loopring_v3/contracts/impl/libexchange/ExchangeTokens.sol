@@ -91,7 +91,7 @@ library ExchangeTokens
 
         if (amountToBurn > 0) {
             address feeVault = S.loopring.protocolFeeVault();
-            S.lrcAddress.safeTransferFromAndVerify(msg.sender, feeVault, amountToBurn);
+            S.loopring.lrcAddress().safeTransferFromAndVerify(msg.sender, feeVault, amountToBurn);
         }
 
         ExchangeData.Token memory token = ExchangeData.Token(

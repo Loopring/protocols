@@ -50,6 +50,8 @@ export interface RingExpectation {
   orderB?: OrderExpectation;
 }
 
+// Transactions
+
 export interface Noop {
   txType?: "Noop";
 }
@@ -66,19 +68,6 @@ export interface SpotTrade {
   expected?: RingExpectation;
 }
 
-export interface TxBlock {
-  transactions: any[];
-  protocolTakerFeeBips?: number;
-  protocolMakerFeeBips?: number;
-
-  onchainDataAvailability?: boolean;
-  timestamp?: number;
-  exchangeID?: number;
-  operatorAccountID?: number;
-
-  signature?: Signature;
-}
-
 export interface Deposit {
   txType?: "Deposit";
   owner: string;
@@ -86,6 +75,9 @@ export interface Deposit {
   tokenID: number;
   amount: BN;
   index: BN;
+
+  fee: BN;
+  token: string;
   timestamp?: number;
   transactionHash?: string;
 }
@@ -155,9 +147,6 @@ export interface WithdrawalRequest {
 
   to: string;
 
-  withdrawalIdx?: number;
-  slotIdx?: number;
-
   withdrawalFee?: BN;
 
   signature?: Signature;
@@ -200,6 +189,21 @@ export interface OwnerChange {
   onchainSignatureNewOwner?: any;
 }
 
+// Blocks
+
+export interface TxBlock {
+  transactions: any[];
+  protocolTakerFeeBips?: number;
+  protocolMakerFeeBips?: number;
+
+  onchainDataAvailability?: boolean;
+  timestamp?: number;
+  exchangeID?: number;
+  operatorAccountID?: number;
+
+  signature?: Signature;
+}
+
 export interface Block {
   blockIdx: number;
   filename: string;
@@ -221,8 +225,8 @@ export interface Block {
   blockFeeFined?: BN;
   timestamp: number;
   transactionHash: string;
+  internalBlock: TxBlock;
   shutdown?: boolean;
-  internalBlock?: any;
 }
 
 export interface Account {
@@ -235,58 +239,7 @@ export interface Account {
   nonce: number;
 }
 
-export interface TradeHistory {
-  filled: BN;
-  orderID: number;
-}
-
-export interface Balance {
-  balance: BN;
-  position: BN;
-  fundingIndex: BN;
-  tradeHistory: { [key: number]: TradeHistory };
-}
-
-export interface AccountLeaf {
-  publicKeyX: string;
-  publicKeyY: string;
-  nonce: number;
-  balances: { [key: number]: Balance };
-}
-
-export interface ExchangeState {
-  accounts: AccountLeaf[];
-}
-
-export interface DetailedTokenTransfer {
-  description: string;
-  token: number;
-  from: number;
-  to: number;
-  amount: BN;
-  subPayments: DetailedTokenTransfer[];
-}
-
-export interface DetailedSimulatorReport {
-  exchangeStateBefore: ExchangeState;
-  exchangeStateAfter: ExchangeState;
-  detailedTransfers: DetailedTokenTransfer[];
-}
-
-export interface SimulatorReport {
-  exchangeStateBefore: ExchangeState;
-  exchangeStateAfter: ExchangeState;
-}
-
-export interface DepositInfo {
-  owner: string;
-  token: string;
-  amount: BN;
-  fee: BN;
-  timestamp: number;
-  accountID: number;
-  depositIdx: number;
-}
+// Wallet
 
 export interface Guardian {
   addr: string;

@@ -4,14 +4,6 @@ import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil } from "./testExchangeUtil";
 import { OrderInfo, SpotTrade } from "./types";
 
-export interface TransferOptions {
-  conditionalTransfer?: boolean;
-  useDualAuthoring?: boolean;
-  useOnchainSignature?: boolean;
-  autoApprove?: boolean;
-  amountToDeposit?: BN;
-  feeToDeposit?: BN;
-}
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -24,74 +16,8 @@ contract("Exchange", (accounts: string[]) => {
 
   const verify = async () => {
     if (bVerify) {
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
     }
-  };
-
-  const transfer = async (
-    from: string,
-    to: string,
-    token: string,
-    amount: BN,
-    feeToken: string,
-    fee: BN,
-    options: TransferOptions = {}
-  ) => {
-    const amountToDeposit = options.amountToDeposit
-      ? options.amountToDeposit
-      : amount;
-    const feeToDeposit = options.feeToDeposit ? options.feeToDeposit : fee;
-    const conditionalTransfer =
-      options.conditionalTransfer !== undefined
-        ? options.conditionalTransfer
-        : false;
-    const useDualAuthoring =
-        options.useDualAuthoring !== undefined
-          ? options.useDualAuthoring
-          : false;
-    const useOnchainSignature =
-        options.useOnchainSignature !== undefined
-          ? options.useOnchainSignature
-          : false;
-    const autoApprove =
-      options.autoApprove !== undefined ? options.autoApprove : true;
-    // From
-    let accountFromId = await exchangeTestUtil.depositToOwner(
-      from,
-      token,
-      amountToDeposit
-    );
-    await exchangeTestUtil.depositToOwner(from, feeToken, feeToDeposit);
-    // To
-    let accountToId = await exchangeTestUtil.depositToOwner(
-      to,
-      token,
-      new BN(0)
-    );
-    if (conditionalTransfer && autoApprove && !useOnchainSignature) {
-      await exchangeTestUtil.approveOffchainTransfer(from, to, token, amount);
-      await exchangeTestUtil.approveOffchainTransfer(
-        from,
-        operator,
-        feeToken,
-        fee
-      );
-    }
-    // Do the transfer
-    const request = await exchangeTestUtil.requestInternalTransfer(
-      exchangeID,
-      accountFromId,
-      accountToId,
-      token,
-      amount,
-      feeToken,
-      fee,
-      undefined,
-      conditionalTransfer,
-      useDualAuthoring,
-      useOnchainSignature
-    );
-    return request;
   };
 
   before(async () => {
@@ -117,7 +43,7 @@ contract("Exchange", (accounts: string[]) => {
   describe("Trade", function() {
     this.timeout(0);
 
-    it.only("Multiple txs", async () => {
+    it("Multiple txs", async () => {
       const ringA: SpotTrade = {
         orderA: {
           tokenS: "ETH",
@@ -184,32 +110,23 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do a transfer
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee);
-      await transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true, useOnchainSignature: true});
+      await exchangeTestUtil.transfer(ownerA, ownerB, token, amount, feeToken, fee, {conditionalTransfer: true, useOnchainSignature: true});
       //await transfer(ownerA, ownerB, token, amount, feeToken, fee, {useDualAuthoring: true});
 
       const ownerB_ID = await exchangeTestUtil.getAccountID(ownerB);
 
-      await exchangeTestUtil.requestWithdrawalOffchain(
-        exchangeID,
-        ownerB_ID,
+      await exchangeTestUtil.requestWithdrawal(
+        ownerB,
         token,
         amount,
         feeToken,
         new BN(0),
-        3
+        0
       );
 
-      await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE)
+      //await exchangeTestUtil.requestNewAccount(ownerB_ID, "ETH", new BN(0), ownerE)
 
-      await exchangeTestUtil.requestOwnerChange(ownerE, ownerF, "ETH", new BN(0));
-
-      /*await exchangeTestUtil.requestWithdrawalOnchain(
-        exchangeID,
-        ownerB_ID,
-        token,
-        amount,
-        ownerB
-      );*/
+      //await exchangeTestUtil.requestOwnerChange(ownerE, ownerF, "ETH", new BN(0));
 
       await exchangeTestUtil.submitTransactions();
 
@@ -340,17 +257,15 @@ contract("Exchange", (accounts: string[]) => {
         }
       };
 
-      await exchangeTestUtil.setupRing(ringA, false, true);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringA.orderB.tokenB,
         ringA.orderB.amountB
       );
+
+      await exchangeTestUtil.setupRing(ringA, false, true);
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -431,22 +346,22 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringA.orderB.tokenB,
         ringA.orderB.amountB
       );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringB.orderB.tokenB,
         ringB.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -506,16 +421,15 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ringA, false, true);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringA.orderB.tokenB,
         ringA.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -596,22 +510,22 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, false, true);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringA.orderB.tokenB,
         ringA.orderB.amountB
       );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringB.orderB.tokenB,
         ringB.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -691,22 +605,22 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, true, false);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringA.orderB.tokenB,
         ringA.orderB.amountB
       );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringB.orderB.tokenB,
         ringB.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -786,17 +700,16 @@ contract("Exchange", (accounts: string[]) => {
 
       await exchangeTestUtil.setupRing(ringA, false, true);
       await exchangeTestUtil.setupRing(ringB, true, false);
-      await exchangeTestUtil.sendRing(exchangeID, ringA);
-      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ringA.orderB.tokenB,
         ringA.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ringA);
+      await exchangeTestUtil.sendRing(exchangeID, ringB);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -884,16 +797,15 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ring.orderB.tokenB,
         ring.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.submitTransactions();
 
@@ -929,21 +841,21 @@ contract("Exchange", (accounts: string[]) => {
       };
 
       await exchangeTestUtil.setupRing(ring);
-      await exchangeTestUtil.sendRing(exchangeID, ring);
 
-      const operatorAccountID = await exchangeTestUtil.getActiveOperator(
-        exchangeID
-      );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ring.orderA.tokenB,
         ring.orderA.amountB
       );
-      await exchangeTestUtil.depositTo(
-        operatorAccountID,
+      await exchangeTestUtil.deposit(
+        exchangeTestUtil.exchangeOperator,
+        exchangeTestUtil.exchangeOperator,
         ring.orderB.tokenB,
         ring.orderB.amountB
       );
+
+      await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.submitTransactions();
 

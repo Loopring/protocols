@@ -73,16 +73,16 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const withdrawFromDepositRequestChecked = async (
-    requestIdx: number,
     owner: string,
     token: string,
+    index: BN,
     expectedAmount: BN
   ) => {
     const balanceBefore = await exchangeTestUtil.getOnchainBalance(
       owner,
       token
     );
-    await exchangeTestUtil.withdrawFromDepositRequest(requestIdx);
+    await exchangeTestUtil.exchange.withdrawFromDepositRequest(owner, token, index);
     const balanceAfter = await exchangeTestUtil.getOnchainBalance(owner, token);
     assert(
       balanceAfter.eq(balanceBefore.add(expectedAmount)),
@@ -118,14 +118,14 @@ contract("Exchange", (accounts: string[]) => {
     it("should go into withdrawal mode when a withdrawal request isn't processed", async () => {
       await createExchange(true);
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Commit the deposits
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
       // Wait
       await exchangeTestUtil.advanceBlockTimestamp(
         exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE * 2
@@ -151,7 +151,7 @@ contract("Exchange", (accounts: string[]) => {
       // Do a deposit
       const deposit = await exchangeTestUtil.doRandomDeposit();
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
       // We shouldn't be in withdrawal mode yet
       await checkWithdrawalMode(false);
       // Wait
@@ -189,19 +189,16 @@ contract("Exchange", (accounts: string[]) => {
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
 
-      const depositInfo = await exchangeTestUtil.deposit(
-        exchangeID,
+      const deposit = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         token,
         balance
       );
-      const accountID = depositInfo.accountID;
+      const accountID = deposit.accountID;
 
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(owner, token),
@@ -209,12 +206,13 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(
-        exchangeID,
-        accountID,
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
         token,
         balance,
-        owner
+        "ETH",
+        new BN(0),
+        2
       );
 
       // Operator doesn't do anything for a long time
@@ -245,18 +243,15 @@ contract("Exchange", (accounts: string[]) => {
       const balance = new BN(web3.utils.toWei("1.7", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
 
-      const depositInfo = await exchangeTestUtil.deposit(
-        exchangeID,
+      const deposit = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         token,
         balance
       );
 
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
 
       await expectThrow(
         exchangeTestUtil.withdrawFromMerkleTree(owner, token),
@@ -265,11 +260,8 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do another deposit with the same amount to the account and process it in a block
       await exchangeTestUtil.deposit(
-        exchangeID,
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         token,
         balance
       );
@@ -309,7 +301,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.sendRing(exchangeID, ring);
 
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
 
       // Expected protocol fees earned
       const protocolFeeA = ring.orderA.amountB
@@ -328,12 +320,13 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(
-        exchangeID,
-        0,
+      await exchangeTestUtil.requestWithdrawal(
+        Constants.zeroAddress,
         ring.orderA.tokenB,
         protocolFeeA.mul(new BN(2)),
-        Constants.zeroAddress
+        "ETH",
+        new BN(0),
+        2
       );
 
       // Operator doesn't do anything for a long time
@@ -369,55 +362,43 @@ contract("Exchange", (accounts: string[]) => {
       const tokenD = "WETH";
       const balanceD = new BN(web3.utils.toWei("23.7", "ether"));
 
-      const depositInfoA = await exchangeTestUtil.deposit(
-        exchangeID,
+      const depositA = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         tokenA,
         balanceA
       );
 
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
 
-      const depositInfoB = await exchangeTestUtil.deposit(
-        exchangeID,
+      const depositB = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         tokenB,
         balanceB
       );
 
       await exchangeTestUtil.submitTransactions();
 
-      const depositInfoC = await exchangeTestUtil.deposit(
-        exchangeID,
+      const depositC = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         tokenC,
         balanceC
       );
 
       await exchangeTestUtil.submitTransactions();
 
-      const depositInfoD = await exchangeTestUtil.deposit(
-        exchangeID,
+      const depositD = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         tokenD,
         balanceD
       );
 
       await expectThrow(
-        exchangeTestUtil.withdrawFromDepositRequest(depositInfoA.depositIdx),
+        exchangeTestUtil.exchange.withdrawFromDepositRequest(depositA.owner, depositA.token, depositA.index),
         "NOT_IN_WITHDRAW_MODE"
       );
 
@@ -426,34 +407,34 @@ contract("Exchange", (accounts: string[]) => {
         exchangeTestUtil.MAX_AGE_REQUEST_UNTIL_WITHDRAW_MODE + 1
       );
 
-      // Cannot withdraw from deposit blocks that are included in a block
-      await expectThrow(
-        exchangeTestUtil.withdrawFromDepositRequest(depositInfoA.depositIdx),
-        "REQUEST_INCLUDED_IN_BLOCK"
-      );
       // We should be in withdrawal mode and able to withdraw from the pending deposits
       await withdrawFromDepositRequestChecked(
-        depositInfoB.depositIdx,
-        owner,
-        tokenB,
+        depositB.owner,
+        depositB.token,
+        depositB.index,
         balanceB
       );
       await withdrawFromDepositRequestChecked(
-        depositInfoC.depositIdx,
-        owner,
-        tokenC,
+        depositC.owner,
+        depositC.token,
+        depositC.index,
         balanceC
       );
       await withdrawFromDepositRequestChecked(
-        depositInfoD.depositIdx,
-        owner,
-        tokenD,
-        balanceD
+        depositD.owner,
+        depositD.token,
+        depositD.index,
+        balanceC
       );
 
       // Try to withdraw again
       await expectThrow(
-        exchangeTestUtil.withdrawFromDepositRequest(depositInfoC.depositIdx),
+        withdrawFromDepositRequestChecked(
+          depositC.owner,
+          depositC.token,
+          depositC.index,
+          balanceC
+        ),
         "WITHDRAWN_ALREADY"
       );
     });
@@ -461,32 +442,29 @@ contract("Exchange", (accounts: string[]) => {
     it("Should not be able to do any more block state changes", async () => {
       await createExchange();
 
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const balance = new BN(web3.utils.toWei("7.1", "ether"));
       const token = exchangeTestUtil.getTokenAddress("LRC");
 
-      const depositInfo = await exchangeTestUtil.deposit(
-        exchangeID,
+      const deposit = await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         token,
         balance
       );
-      const accountID = depositInfo.accountID;
+      const accountID = deposit.accountID;
 
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeID);
+      await exchangeTestUtil.submitPendingBlocks();
 
       // Request withdrawal onchain
-      await exchangeTestUtil.requestWithdrawalOnchain(
-        exchangeID,
-        accountID,
+      await exchangeTestUtil.requestWithdrawal(
+        owner,
         token,
         balance,
-        owner
+        "ETH",
+        new BN(0),
+        2
       );
 
       // Operator doesn't do anything for a long time

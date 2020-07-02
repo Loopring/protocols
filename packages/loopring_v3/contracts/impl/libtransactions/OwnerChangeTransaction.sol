@@ -76,7 +76,7 @@ library OwnerChangeTransaction
         bytes memory auxiliaryData
         )
         internal
-        returns (uint feeETH)
+        returns (uint /*feeETH*/)
     {
         OwnerChange memory ownerChange = readOwnerChange(data);
 
@@ -119,6 +119,7 @@ library OwnerChangeTransaction
                 S.approvedTx[ownerChange.owner][txHash] = false;
             }
         } else {
+            require(auxData.walletAddress != address(S.depositContract), "INVALID_WALLET_ADDRESS");
             require(ownerChange.walletHash != 0, "ACCOUNT_HAS_NO_WALLET");
 
             // Calculate the wallet hash

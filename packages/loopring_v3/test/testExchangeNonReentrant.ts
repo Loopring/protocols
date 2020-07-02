@@ -70,11 +70,7 @@ contract("Exchange", (accounts: string[]) => {
         );
         const owner = exchangeTestUtil.testContext.orderOwners[0];
         const amount = new BN(web3.utils.toWei("7", "ether"));
-
-        // The correct deposit fee expected by the contract
-        const fees = await exchange.getFees();
-        const accountCreationFee = fees._accountCreationFeeETH;
-        const depositFee = fees._depositFeeETH;
+        const depositFee = exchangeTestUtil.getRandomFee();
 
         // Set the correct balance/approval
         await exchangeTestUtil.setBalanceAndApprove(
@@ -131,7 +127,7 @@ contract("Exchange", (accounts: string[]) => {
         await TestToken.setCalldata(web3.utils.hexToBytes(calldata));
 
         // TESTToken will check if the revert message is REENTRANCY.
-        const ethToSend = accountCreationFee.add(depositFee);
+        const ethToSend = depositFee;
         await expectThrow(
           exchange.updateAccountAndDeposit(
             owner,

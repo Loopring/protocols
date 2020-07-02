@@ -39,7 +39,8 @@ library ExchangeDeposits
         address indexed owner,
         address indexed token,
         uint96          amount,
-        uint96          index
+        uint96          index,
+        uint            fee
     );
 
     function deposit(
@@ -58,24 +59,24 @@ library ExchangeDeposits
         require(!S.tokens[tokenID].depositDisabled, "TOKEN_DEPOSIT_DISABLED");
 
         // Transfer the tokens to this contract
-        (uint amountDeposited, uint tokenIndex) = transferDeposit(
+        (uint amountDeposited, uint tokenIndex, uint fee) = transferDeposit(
             S,
             from,
             tokenAddress,
-            amount,
-            S.depositFeeETH
+            amount
         );
 
         // Add the amount to the deposit request and reset the time the operator has to process it
         S.pendingDeposits[to][tokenID][tokenIndex].amount += uint96(amountDeposited);
         S.pendingDeposits[to][tokenID][tokenIndex].timestamp = uint32(now);
-        S.pendingDeposits[to][tokenID][tokenIndex].fee += uint64(S.depositFeeETH);
+        S.pendingDeposits[to][tokenID][tokenIndex].fee += uint64(fee);
 
         emit DepositRequested(
             to,
             tokenAddress,
             uint96(amountDeposited),
-            uint96(tokenIndex)
+            uint96(tokenIndex),
+            fee
         );
     }
 
@@ -83,23 +84,17 @@ library ExchangeDeposits
         ExchangeData.State storage S,
         address from,
         address tokenAddress,
-        uint    amount,
-        uint    feeETH
+        uint    amount
         )
         private
-        returns (uint amountDeposited, uint tokenIndex)
+        returns (uint amountDeposited, uint tokenIndex, uint fee)
     {
-        uint totalRequiredETH = feeETH;
         uint depositValueETH = 0;
         if (S.depositContract.isETH(tokenAddress)) {
-            totalRequiredETH = totalRequiredETH.add(amount);
             depositValueETH = amount;
-        }
-
-        require(msg.value >= totalRequiredETH, "INSUFFICIENT_FEE");
-        uint feeSurplus = msg.value.sub(totalRequiredETH);
-        if (feeSurplus > 0) {
-            msg.sender.sendETHAndVerify(feeSurplus, gasleft());
+            fee = msg.value.sub(amount);
+        } else {
+            fee = msg.value;
         }
 
         // Transfer the tokens to the deposit contract (excluding the ETH fee)

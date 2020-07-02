@@ -1,7 +1,7 @@
 import BN = require("bn.js");
 import { Constants } from "loopringV3.js";
 import { ExchangeTestUtil } from "./testExchangeUtil";
-import { DepositInfo, SpotTrade } from "./types";
+import { Deposit, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -32,7 +32,6 @@ contract("Exchange", (accounts: string[]) => {
 
   const doRandomDeposit = async () => {
     const orderOwners = exchangeTestUtil.testContext.orderOwners;
-    const keyPair = exchangeTestUtil.getKeyPairEDDSA();
     const owner =
       orderOwners[Number(exchangeTestUtil.getRandomInt(orderOwners.length))];
     const amount = new BN(
@@ -43,31 +42,28 @@ contract("Exchange", (accounts: string[]) => {
     );
     const token = exchangeTestUtil.getTokenAddress("LRC");
     return await exchangeTestUtil.deposit(
-      exchangeId,
       owner,
-      keyPair.secretKey,
-      keyPair.publicKeyX,
-      keyPair.publicKeyY,
+      owner,
       token,
       amount
     );
   };
 
-  const doRandomOnchainWithdrawal = async (depositInfo: DepositInfo) => {
-    await exchangeTestUtil.requestWithdrawalOnchain(
-      exchangeId,
-      depositInfo.accountID,
-      depositInfo.token,
+  const doRandomOnchainWithdrawal = async (deposit: Deposit) => {
+    await exchangeTestUtil.requestWithdrawal(
+      deposit.owner,
+      deposit.token,
       exchangeTestUtil.getRandomAmount(),
-      depositInfo.owner
+      "ETH",
+      new BN(0),
+      2
     );
   };
 
-  const doRandomOffchainWithdrawal = async (depositInfo: DepositInfo) => {
-    await exchangeTestUtil.requestWithdrawalOffchain(
-      exchangeId,
-      depositInfo.accountID,
-      depositInfo.token,
+  const doRandomOffchainWithdrawal = async (deposit: Deposit) => {
+    await exchangeTestUtil.requestWithdrawal(
+      deposit.owner,
+      deposit.token,
       exchangeTestUtil.getRandomAmount(),
       "LRC",
       new BN(0)
@@ -75,17 +71,16 @@ contract("Exchange", (accounts: string[]) => {
   };
 
   const doRandomInternalTransfer = async (
-    depositInfoA: DepositInfo,
-    depositInfoB: DepositInfo
+    depositA: Deposit,
+    depositB: Deposit
   ) => {
-    await exchangeTestUtil.requestInternalTransfer(
-      exchangeId,
-      depositInfoA.accountID,
-      depositInfoB.accountID,
-      depositInfoA.token,
-      depositInfoA.amount.div(new BN(10)),
-      depositInfoA.token,
-      depositInfoA.amount.div(new BN(100))
+    await exchangeTestUtil.transfer(
+      depositA.owner,
+      depositB.owner,
+      depositA.token,
+      depositA.amount.div(new BN(10)),
+      depositA.token,
+      depositA.amount.div(new BN(100))
     );
   };
 
@@ -100,7 +95,7 @@ contract("Exchange", (accounts: string[]) => {
   const bVerify = true;
   const verify = async () => {
     if (bVerify) {
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
     }
   };
 
@@ -153,7 +148,7 @@ contract("Exchange", (accounts: string[]) => {
 
       // Do some deposits
       const numDeposits = 8;
-      const deposits: DepositInfo[] = [];
+      const deposits: Deposit[] = [];
       for (let i = 0; i < numDeposits; i++) {
         deposits.push(await doRandomDeposit());
       }
@@ -178,7 +173,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Do some deposits
         const numDeposits = 8;
-        const deposits: DepositInfo[] = [];
+        const deposits: Deposit[] = [];
         for (let i = 0; i < numDeposits; i++) {
           deposits.push(await doRandomDeposit());
         }
@@ -204,7 +199,7 @@ contract("Exchange", (accounts: string[]) => {
 
         // Do some deposits
         const numDeposits = 8;
-        const deposits: DepositInfo[] = [];
+        const deposits: Deposit[] = [];
         for (let i = 0; i < numDeposits; i++) {
           deposits.push(await doRandomDeposit());
         }

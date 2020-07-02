@@ -144,6 +144,7 @@ library WithdrawTransaction
 
         // Try to transfer the tokens with the provided gas limit
         S.distributeWithdrawal(
+            withdrawal.owner,
             withdrawal.to,
             withdrawal.tokenID,
             withdrawal.amount,

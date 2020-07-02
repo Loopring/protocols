@@ -38,14 +38,13 @@ contract("Operator 1", (accounts: string[]) => {
     subOperators = [];
     for (let i = 0; i < numSubOperators; i++) {
       const subOperator = await exchangeTestUtil.createOperator(
-        exchangeId,
         exchangeTestUtil.testContext.operators[i]
       );
       subOperators.push(subOperator);
     }
 
     await exchangeTestUtil.submitTransactions();
-    await exchangeTestUtil.submitPendingBlocks(exchangeId);
+    await exchangeTestUtil.submitPendingBlocks();
   });
 
   const commitDepositBlock = async () => {
@@ -69,7 +68,7 @@ contract("Operator 1", (accounts: string[]) => {
         await exchangeTestUtil.setActiveOperator(await getActiveOperator());
         await commitDepositBlock();
         // Verify all blocks
-        await exchangeTestUtil.submitPendingBlocks(exchangeId);
+        await exchangeTestUtil.submitPendingBlocks();
         // Wait a bit
         await exchangeTestUtil.advanceBlockTimestamp(100);
       }

@@ -69,7 +69,8 @@ contract StatelessWallet
 
     modifier validateWallet(
         Wallet memory wallet,
-        bytes32       expectedWalletHash
+        bytes32       expectedWalletHash,
+        uint24        accountID
     )
     {
         {
@@ -96,6 +97,7 @@ contract StatelessWallet
             )
         );
         require(walletHash == expectedWalletHash, "INVALID_WALLET_DATA");
+        require(wallet.accountID == accountID, "INVALID_WALLET_ACCOUNT");
         }
         _;
     }
@@ -118,7 +120,7 @@ contract StatelessWallet
         )
         external
         view
-        validateWallet(wallet, walletHash)
+        validateWallet(wallet, walletHash, accountID)
         returns (bytes4)
     {
         require(permissionData.signers.length == permissionData.signatures.length, "INVALID_DATA");
@@ -137,15 +139,15 @@ contract StatelessWallet
 
     function inherit(
         uint24                accountID,
-        uint32                nonce,
-        address               oldOwner,
+        uint32                /*nonce*/,
+        address               /*oldOwner*/,
         address               newOwner,
         bytes32               walletHash,
         Wallet         memory wallet
         )
         external
         view
-        validateWallet(wallet, walletHash)
+        validateWallet(wallet, walletHash, accountID)
         returns (bytes4)
     {
         require(now >= wallet.inheritableSince, "TOO_SOON_TO_INHERIT");

@@ -78,7 +78,7 @@ contract LoopringV3Owner is DelayedOwner
             loopringV3.protocolFeeVault(),
             loopringV3.blockVerifierAddress(),
             loopringV3.exchangeCreationCostLRC(),
-            loopringV3.maxWithdrawalFee(),
+            loopringV3.forcedWithdrawalFee(),
             loopringV3.tokenRegistrationFeeLRCBase(),
             loopringV3.tokenRegistrationFeeLRCDelta(),
             lrcCosts.minExchangeStakeDA,

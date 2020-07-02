@@ -68,7 +68,7 @@ abstract contract ILoopringV3 is ILoopring
     address public wethAddress;
     uint    public totalStake;
     address public blockVerifierAddress;
-    uint    public maxWithdrawalFee;
+    uint    public forcedWithdrawalFee;
     uint    public tokenRegistrationFeeLRCBase;
     uint    public tokenRegistrationFeeLRCDelta;
     uint    public minExchangeStakeWithDataAvailability;
@@ -101,7 +101,7 @@ abstract contract ILoopringV3 is ILoopring
         address payable _protocolFeeVault,   // address(0) not allowed
         address _blockVerifierAddress,       // address(0) not allowed
         uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
+        uint    _forcedWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,

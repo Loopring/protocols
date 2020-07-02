@@ -73,9 +73,9 @@ contract FastWithdrawalAgent is ReentrancyGuard
         address from;                   // The owner of the account
         address to;                     // The address that will receive the tokens withdrawn
         address token;
-        uint    amount;
+        uint96  amount;
         address feeToken;
-        uint    fee;
+        uint96  fee;
         uint32  nonce;
         uint    validUntil;
 
@@ -84,7 +84,7 @@ contract FastWithdrawalAgent is ReentrancyGuard
 
     // EIP712
     bytes32 constant public FASTWITHDRAWAL_TYPEHASH = keccak256(
-        "FastWithdrawal(address exchange,address from,address to,address token,uint256 amount,address feeToken,uint256 fee,uint32 nonce,uint256 validUntil)"
+        "FastWithdrawal(address exchange,address from,address to,address token,uint96 amount,address feeToken,uint96 fee,uint32 nonce,uint256 validUntil)"
     );
     bytes32 public DOMAIN_SEPARATOR;
 

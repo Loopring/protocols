@@ -56,7 +56,7 @@ library TransferTransaction
         // Check that this is a conditional transfer
         uint transferType = data.bytesToUint8(offset);
         offset += 1;
-        require(transferType == 1, "INVALID_AUXILIARYDATA_DATA_2");
+        require(transferType == 1, "INVALID_AUXILIARYDATA_DATA");
 
         // Extract the transfer data
         //uint24 fromAccountID = data.bytesToUint24(offset);
@@ -112,6 +112,7 @@ library TransferTransaction
         uint32  nonce
         )
         internal
+        pure
         returns (bytes32)
     {
         return EIP712.hashPacked(

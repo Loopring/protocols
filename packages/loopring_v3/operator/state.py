@@ -643,8 +643,6 @@ class State(object):
             newState.accountA_Address = ring.orderA.accountID
             accountA = self.getAccount(ring.orderA.accountID)
 
-            newState.accountA_Nonce = accountA.nonce
-
             newState.balanceA_S_Address = ring.orderA.tokenS
             newState.balanceA_S_Balance = -fillA.S
             newState.balanceA_S_AutoApplyIndex = True
@@ -660,8 +658,6 @@ class State(object):
 
             newState.accountB_Address = ring.orderB.accountID
             accountB = self.getAccount(ring.orderB.accountID)
-
-            newState.accountB_Nonce = accountB.nonce
 
             newState.balanceB_S_Address = ring.orderB.tokenS
             newState.balanceB_S_Balance = -fillB.S
@@ -712,7 +708,7 @@ class State(object):
             newState.balanceB_B_Balance = transferAmount
             newState.balanceB_B_AutoApplyIndex = True
 
-            newState.accountA_Nonce = accountA.nonce + 1
+            newState.accountA_Nonce = 1
 
             if txInput.type != 0:
                 context.numConditionalTransactions = context.numConditionalTransactions + 1
@@ -725,7 +721,10 @@ class State(object):
             ## calculate how much can be withdrawn
             account = self.getAccount(txInput.accountID)
             if int(txInput.type) == 2:
-                txInput.amount = account.getBalance(txInput.tokenID)
+                # Full balance with intrest
+                newIndex = self.getAccount(1).getBalanceLeaf(txInput.tokenID).index
+                balanceLeaf = account.getBalance(txInput.tokenID)
+                txInput.amount =  applyInterest(balanceLeaf.balance, balanceLeaf.index, newIndex)
             elif int(txInput.type) == 3:
                 txInput.amount = str(0)
 
@@ -745,7 +744,7 @@ class State(object):
             newState.balanceA_B_AutoApplyIndex = True
 
             if int(txInput.type) == 0 or int(txInput.type) == 1:
-                newState.accountA_Nonce = accountA.nonce + 1
+                newState.accountA_Nonce = 1
 
             newState.balanceDeltaA_O = feeValue
             newState.balanceA_O_AutoApplyIndex = True
@@ -793,18 +792,13 @@ class State(object):
             newState.accountA_PublicKeyX = txInput.publicKeyX
             newState.accountA_PublicKeyY = txInput.publicKeyY
             newState.accountA_WalletHash = txInput.walletHash
-            newState.accountA_Nonce = accountA.nonce + 1
+            newState.accountA_Nonce = 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
             newState.balanceA_S_AutoApplyIndex = True
 
-            #newState.balanceA_B_Address = txInput.feeTokenID
-            #newState.balanceA_B_AutoApplyIndex = True
-
             newState.balanceDeltaB_O = feeValue
-
-            #newState.balanceA_O_AutoApplyIndex = True
             newState.balanceB_O_AutoApplyIndex = True
 
             context.numConditionalTransactions = context.numConditionalTransactions + 1
@@ -815,13 +809,13 @@ class State(object):
 
             newState.accountA_Address = txInput.payerAccountID
             accountA = self.getAccount(newState.accountA_Address)
-            newState.accountA_Nonce = accountA.nonce + 1
 
             newState.accountB_Address = txInput.newAccountID
             newState.accountB_Owner = txInput.newOwner
             newState.accountB_PublicKeyX = txInput.newPublicKeyX
             newState.accountB_PublicKeyY = txInput.newPublicKeyY
             newState.accountB_WalletHash = txInput.newWalletHash
+            newState.accountA_Nonce = 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
@@ -839,7 +833,7 @@ class State(object):
             newState.accountA_Address = txInput.accountID
             newState.accountA_Owner = txInput.newOwner
             accountA = self.getAccount(newState.accountA_Address)
-            newState.accountA_Nonce = accountA.nonce + 1
+            newState.accountA_Nonce = 1
 
             newState.balanceA_S_Address = txInput.feeTokenID
             newState.balanceA_S_Balance = -feeValue
@@ -886,7 +880,7 @@ class State(object):
         newState.accountA_Owner = setValue(newState.accountA_Owner, accountA.owner)
         newState.accountA_PublicKeyX = setValue(newState.accountA_PublicKeyX, accountA.publicKeyX)
         newState.accountA_PublicKeyY = setValue(newState.accountA_PublicKeyY, accountA.publicKeyY)
-        newState.accountA_Nonce = setValue(newState.accountA_Nonce, accountA.nonce)
+        newState.accountA_Nonce = setValue(newState.accountA_Nonce, 0)
         newState.accountA_WalletHash = setValue(newState.accountA_WalletHash, accountA.walletHash)
 
 
@@ -910,7 +904,7 @@ class State(object):
         newState.accountB_Owner = setValue(newState.accountB_Owner, accountB.owner)
         newState.accountB_PublicKeyX = setValue(newState.accountB_PublicKeyX, accountB.publicKeyX)
         newState.accountB_PublicKeyY = setValue(newState.accountB_PublicKeyY, accountB.publicKeyY)
-        newState.accountB_Nonce = setValue(newState.accountB_Nonce, accountB.nonce)
+        newState.accountB_Nonce = setValue(newState.accountB_Nonce, 0)
         newState.accountB_WalletHash = setValue(newState.accountB_WalletHash, accountB.walletHash)
 
 
@@ -967,7 +961,7 @@ class State(object):
         accountA.owner = newState.accountA_Owner
         accountA.publicKeyX = newState.accountA_PublicKeyX
         accountA.publicKeyY = newState.accountA_PublicKeyY
-        accountA.nonce = newState.accountA_Nonce
+        accountA.nonce = accountA.nonce + newState.accountA_Nonce
         accountA.walletHash = newState.accountA_WalletHash
 
         self.updateAccountTree(newState.accountA_Address)
@@ -1004,7 +998,7 @@ class State(object):
         accountB.owner = newState.accountB_Owner
         accountB.publicKeyX = newState.accountB_PublicKeyX
         accountB.publicKeyY = newState.accountB_PublicKeyY
-        accountB.nonce = newState.accountB_Nonce
+        accountB.nonce = accountB.nonce + newState.accountB_Nonce
         accountB.walletHash = newState.accountB_WalletHash
 
         self.updateAccountTree(newState.accountB_Address)
@@ -1044,11 +1038,6 @@ class State(object):
         balanceUpdateB_P = self.getAccount(0).updateBalance(newState.balanceA_S_Address, newState.balanceDeltaB_P, None, newState.balanceB_P_AutoApplyIndex)
         ###
 
-
-        #newBalance = applyInterest("10000000", INDEX_BASE, "1020000000000000000")
-        #print("newBalance: " + str(newBalance))
-
-        # The Merkle tree update is done after all rings are settled
 
         #print("newState.balanceA_O_AutoApplyIndex: " + str(newState.balanceA_O_AutoApplyIndex))
         #print("newState.balanceB_O_AutoApplyIndex: " + str(newState.balanceB_O_AutoApplyIndex))

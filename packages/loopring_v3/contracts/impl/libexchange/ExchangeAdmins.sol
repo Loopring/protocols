@@ -40,14 +40,6 @@ library ExchangeAdmins
         address         newOperator
     );
 
-    event FeesUpdated(
-        uint    indexed exchangeId,
-        uint            accountCreationFeeETH,
-        uint            accountUpdateFeeETH,
-        uint            depositFeeETH,
-        uint            withdrawalFeeETH
-    );
-
     function setOperator(
         ExchangeData.State storage S,
         address payable _operator
@@ -64,35 +56,6 @@ library ExchangeAdmins
             S.id,
             oldOperator,
             _operator
-        );
-    }
-
-    function setFees(
-        ExchangeData.State storage S,
-        uint _accountCreationFeeETH,
-        uint _accountUpdateFeeETH,
-        uint _depositFeeETH,
-        uint _withdrawalFeeETH
-        )
-        external
-    {
-        require(!S.isInWithdrawalMode(), "INVALID_MODE");
-        require(
-            _withdrawalFeeETH <= S.loopring.maxWithdrawalFee(),
-            "AMOUNT_TOO_LARGE"
-        );
-
-        S.accountCreationFeeETH = _accountCreationFeeETH;
-        S.accountUpdateFeeETH = _accountUpdateFeeETH;
-        S.depositFeeETH = _depositFeeETH;
-        S.withdrawalFeeETH = _withdrawalFeeETH;
-
-        emit FeesUpdated(
-            S.id,
-            _accountCreationFeeETH,
-            _accountUpdateFeeETH,
-            _depositFeeETH,
-            _withdrawalFeeETH
         );
     }
 

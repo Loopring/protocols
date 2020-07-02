@@ -1,20 +1,16 @@
 import BN = require("bn.js");
-import { Bitstream, Constants } from "loopringV3.js";
-import { fromFloat, roundToFloatValue } from "loopringV3.js";
+import fs = require("fs");
+import { Constants } from "loopringV3.js";
+import { roundToFloatValue } from "loopringV3.js";
 import { logDebug, logInfo } from "./logs";
 import {
-  AccountLeaf,
-  Balance,
   Deposit,
-  DetailedTokenTransfer,
-  ExchangeState,
   OrderInfo,
   SpotTrade,
-  DetailedSimulatorReport,
-  SimulatorReport,
-  TradeHistory,
   WithdrawalRequest,
-  Transfer
+  Transfer,
+  TxBlock,
+  PublicKeyUpdate
 } from "./types";
 
 interface SettlementValues {
@@ -41,290 +37,511 @@ interface MatchResult {
   matchable: boolean;
 }
 
+function applyInterest(balance: BN, oldIndex: BN, newIndex: BN) {
+  assert(newIndex.gte(oldIndex), "Invalid balance state");
+  const indexDiff = newIndex.sub(oldIndex);
+  const balanceDiff = balance.mul(indexDiff).div(Constants.INDEX_BASE);
+  const newBalance = balance.add(balanceDiff)
+  return newBalance
+}
+
+
+export class TradeHistory {
+  filled: BN;
+  orderID: number;
+
+  constructor() {
+    this.filled = new BN(0);
+    this.orderID = 0;
+  }
+}
+
+export class Balance {
+  balance: BN;
+  index: BN;
+  tradeHistory: { [key: number]: TradeHistory };
+
+  constructor() {
+    this.balance = new BN(0);
+    this.index = new BN(0);
+    this.tradeHistory = {};
+  }
+
+  public init(
+    balance: BN,
+    index: BN,
+    tradeHistory: { [key: number]: TradeHistory }
+    ) {
+    this.balance = balance;
+    this.index = index;
+    this.tradeHistory = tradeHistory;
+  }
+
+  public getTradeHistory(orderID: number) {
+    const address = orderID % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
+    if (this.tradeHistory[address] === undefined) {
+      this.tradeHistory[address] = new TradeHistory();
+    }
+    return this.tradeHistory[address];
+  }
+}
+
+export class AccountLeaf {
+  publicKeyX: string;
+  publicKeyY: string;
+  nonce: number;
+  walletHash: string;
+  balances: { [key: number]: Balance };
+
+  constructor() {
+    this.publicKeyX = "0";
+    this.publicKeyY = "0";
+    this.nonce = 0;
+    this.walletHash = "0";
+    this.balances = {};
+  }
+
+  public init(
+    publicKeyX: string,
+    publicKeyY: string,
+    nonce: number,
+    walletHash: string,
+    balances: { [key: number]: Balance } = {}
+    ) {
+    this.publicKeyX = publicKeyX;
+    this.publicKeyY = publicKeyY;
+    this.nonce = nonce;
+    this.walletHash = walletHash;
+    this.balances = balances;
+  }
+
+  public getBalanceRaw(tokenID: number) {
+    if (this.balances[tokenID] === undefined) {
+      this.balances[tokenID] = new Balance();
+    }
+    return this.balances[tokenID];
+  }
+
+  public getBalance(tokenID: number, index: AccountLeaf) {
+    if (this.balances[tokenID] === undefined) {
+      this.balances[tokenID] = new Balance();
+    }
+    const newIndex = index.getBalanceRaw(tokenID).index;
+    this.balances[tokenID].balance = applyInterest(this.balances[tokenID].balance, this.balances[tokenID].index, newIndex);
+    this.balances[tokenID].index = newIndex;
+    return this.balances[tokenID];
+  }
+}
+
+export class ExchangeState {
+  accounts: AccountLeaf[];
+
+  constructor(accounts: AccountLeaf[] = []) {
+    this.accounts = accounts;
+  }
+
+  public getAccount(accountID: number) {
+    if (accountID === this.accounts.length) {
+      this.accounts.push(new AccountLeaf());
+    }
+    return this.accounts[accountID];
+  }
+}
+
+// Simulator
+
+export interface DetailedTokenTransfer {
+  description: string;
+  token: number;
+  from: number;
+  to: number;
+  amount: BN;
+  subPayments: DetailedTokenTransfer[];
+}
+
+export interface DetailedSimulatorReport {
+  exchangeStateAfter: ExchangeState;
+  detailedTransfers: DetailedTokenTransfer[];
+}
+
+export interface SimulatorReport {
+  exchangeStateAfter: ExchangeState;
+}
+
 export class Simulator {
-  public deposit(deposit: Deposit, exchangeState: ExchangeState) {
-    const newExchangeState = this.copyExchangeState(exchangeState);
-    assert(
-      deposit.accountID <= exchangeState.accounts.length,
-      "accountID not incremented by 1: " + deposit.accountID + " <= " + exchangeState.accounts.length,
+
+  public static async loadExchangeState(exchangeID: number, blockIdx?: number) {
+    // Read in the state
+    /*if (blockIdx === undefined) {
+      blockIdx = this.blocks[exchangeID].length - 1;
+    }*/
+    //console.log("blockIdx:" + blockIdx);
+    const accounts: AccountLeaf[] = [];
+    if (blockIdx > 0) {
+      const stateFile = "states/state_" + exchangeID + "_" + blockIdx + ".json";
+      const jState = JSON.parse(fs.readFileSync(stateFile, "ascii"));
+
+      const accountsKeys: string[] = Object.keys(jState.accounts_values);
+      let numAccounts = 4;
+      for (const accountKey of accountsKeys) {
+        numAccounts =
+          Number(accountKey) >= numAccounts
+            ? Number(accountKey) + 1
+            : numAccounts;
+      }
+      for (let i = 0; i < numAccounts; i++) {
+        accounts.push(new AccountLeaf());
+      }
+      for (const accountKey of accountsKeys) {
+        const jAccount = jState.accounts_values[accountKey];
+
+        const balances: { [key: number]: Balance } = {};
+        const balancesKeys: string[] = Object.keys(jAccount._balancesLeafs);
+        for (const balanceKey of balancesKeys) {
+          const jBalance = jAccount._balancesLeafs[balanceKey];
+
+          const tradeHistory: { [key: number]: TradeHistory } = {};
+          const tradeHistoryKeys: string[] = Object.keys(
+            jBalance._tradeHistoryLeafs
+          );
+          for (const tradeHistoryKey of tradeHistoryKeys) {
+            const jTradeHistory = jBalance._tradeHistoryLeafs[tradeHistoryKey];
+            tradeHistory[Number(tradeHistoryKey)] = {
+              filled: new BN(jTradeHistory.filled, 10),
+              orderID: jTradeHistory.orderID
+            };
+          }
+          balances[Number(balanceKey)] = new Balance();
+          balances[Number(balanceKey)].init(
+            new BN(jBalance.balance, 10),
+            new BN(jBalance.index, 10),
+            tradeHistory
+          );
+        }
+        const account = new AccountLeaf();
+        account.init(
+          jAccount.publicKeyX,
+          jAccount.publicKeyY,
+          jAccount.nonce,
+          jAccount.walletHash,
+          balances
+        );
+        accounts[Number(accountKey)] = account;
+      }
+    } else {
+      accounts.push(new AccountLeaf());
+      accounts.push(new AccountLeaf());
+      accounts.push(new AccountLeaf());
+      accounts.push(new AccountLeaf());
+    }
+
+    const exchangeState = new ExchangeState(accounts);
+    return exchangeState;
+  }
+
+  public static compareStates(stateA: ExchangeState, stateB: ExchangeState) {
+    assert.equal(
+      stateA.accounts.length,
+      stateA.accounts.length,
+      "number of accounts does not match"
     );
-    if (deposit.accountID === exchangeState.accounts.length) {
-      // Make sure all tokens exist
-      const balances: { [key: number]: Balance } = {};
-      for (let i = 0; i < Constants.MAX_NUM_TOKENS; i++) {
-        balances[i] = {
-          balance: new BN(0),
-          position: new BN(0),
-          fundingIndex: new BN(0),
-          tradeHistory: {}
+    for (let accountID = 0; accountID < stateA.accounts.length; accountID++) {
+      console.log("accountID: " + accountID);
+      const accountA = stateA.accounts[accountID];
+      const accountB = stateB.accounts[accountID];
+      this.compareAccounts(accountA, accountB);
+    }
+  }
+
+  public static compareAccounts(accountA: any, accountB: any) {
+    for (let tokenID = 0; tokenID < Constants.MAX_NUM_TOKENS; tokenID++) {
+      let balanceValueA = accountA.balances[tokenID];
+      let balanceValueB = accountB.balances[tokenID];
+
+      balanceValueA = balanceValueA || { balance: new BN(0), tradeHistory: {} };
+      balanceValueB = balanceValueB || { balance: new BN(0), tradeHistory: {} };
+
+      for (const orderID of Object.keys(balanceValueA.tradeHistory).concat(
+        Object.keys(balanceValueB.tradeHistory)
+      )) {
+        let tradeHistoryValueA = balanceValueA.tradeHistory[Number(orderID)];
+        let tradeHistoryValueB = balanceValueB.tradeHistory[Number(orderID)];
+
+        tradeHistoryValueA = tradeHistoryValueA || {
+          filled: new BN(0),
+          orderID: 0
         };
+        tradeHistoryValueB = tradeHistoryValueB || {
+          filled: new BN(0),
+          orderID: 0
+        };
+
+        assert(
+          tradeHistoryValueA.filled.eq(tradeHistoryValueB.filled),
+          "trade history filled does not match"
+        );
+        assert.equal(
+          tradeHistoryValueA.orderID,
+          tradeHistoryValueB.orderID,
+          "orderID does not match"
+        );
       }
-      const emptyAccount: AccountLeaf = {
-        publicKeyX: "0",
-        publicKeyY: "0",
-        nonce: 0,
-        balances
-      };
-      newExchangeState.accounts.push(emptyAccount);
-    }
-    const account = newExchangeState.accounts[deposit.accountID];
-    account.balances[deposit.tokenID].balance = account.balances[
-      deposit.tokenID
-    ].balance.add(deposit.amount);
-    if (account.balances[deposit.tokenID].balance.gt(Constants.MAX_AMOUNT)) {
-      account.balances[deposit.tokenID].balance = Constants.MAX_AMOUNT;
-    }
-    //account.publicKeyX = deposit.publicKeyX;
-    //account.publicKeyY = deposit.publicKeyY;
-
-    const simulatorReport: SimulatorReport = {
-      exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState
-    };
-    return simulatorReport;
-  }
-
-  public onchainWithdraw(
-    withdrawal: WithdrawalRequest,
-    shutdown: boolean,
-    exchangeState: ExchangeState
-  ) {
-    const newExchangeState = this.copyExchangeState(exchangeState);
-
-    // When a withdrawal is done before the deposit (account creation) we shouldn't
-    // do anything. Just leave everything as it is.
-    if (withdrawal.accountID < newExchangeState.accounts.length) {
-      const account = newExchangeState.accounts[withdrawal.accountID];
-
-      const balance = account.balances[withdrawal.tokenID].balance;
-      const amountToWithdrawMin = balance.lt(withdrawal.amount)
-        ? balance
-        : withdrawal.amount;
-      const amountToWithdraw = shutdown ? balance : amountToWithdrawMin;
-      const amountWithdrawn = roundToFloatValue(
-        amountToWithdraw,
-        Constants.Float24Encoding
+      assert(
+        balanceValueA.balance.eq(balanceValueB.balance),
+        "balance does not match"
       );
+    }
+    assert.equal(
+      accountA.publicKeyX,
+      accountB.publicKeyX,
+      "pubKeyX does not match"
+    );
+    assert.equal(
+      accountA.publicKeyY,
+      accountB.publicKeyY,
+      "pubKeyY does not match"
+    );
+    assert.equal(accountA.nonce, accountB.nonce, "nonce does not match");
+  }
 
-      let amountToSubtract = amountWithdrawn;
-      if (shutdown) {
-        amountToSubtract = amountToWithdraw;
+  public static executeBlock(
+    block: TxBlock,
+    stateBefore: ExchangeState,
+    stateAfter: ExchangeState
+  ) {
+    logInfo("----------------------------------------------------");
+    let latestState = stateBefore;
+    //const addressBook = this.getAddressBookBlock(block);
+    for (const [index, tx] of block.transactions.entries()) {
+      const state = this.copyExchangeState(latestState);
+      let report: any;
+      if (tx.txType === "Noop") {
+        // Nothing to do
+        report = {
+          exchangeStateAfter: state
+        };
+        logInfo("#" + index + " Noop");
+      } else if (tx.txType === "Deposit") {
+        const deposit: Deposit = tx;
+        report = this.deposit(state, block, deposit);
+
+        logInfo("#" + index + " Deposit");
+        const accountBefore = latestState.getAccount(deposit.accountID);
+        const accountAfter = state.getAccount(deposit.accountID);
+        this.prettyPrintBalanceChange(
+          deposit.accountID,
+          deposit.tokenID,
+          accountBefore.getBalanceRaw(deposit.tokenID).balance,
+          accountAfter.getBalanceRaw(deposit.tokenID).balance
+        );
+      } else if (tx.txType === "PublicKeyUpdate") {
+        const update: PublicKeyUpdate = tx;
+        report = this.updateAccount(state, block, tx);
+
+        logInfo("#" + index + " PublicKeyUpdate");
+        const accountBefore = latestState.getAccount(update.accountID);
+        const accountAfter = state.getAccount(update.accountID);
+        if (accountBefore.publicKeyX !== accountAfter.publicKeyX) {
+          logInfo("publicKeyX: " + accountBefore.publicKeyX + " -> " + accountAfter.publicKeyX);
+        }
+        if (accountBefore.publicKeyY !== accountAfter.publicKeyY) {
+          logInfo("publicKeyY: " + accountBefore.publicKeyY + " -> " + accountAfter.publicKeyY);
+        }
+        if (accountBefore.walletHash !== accountAfter.walletHash) {
+          logInfo("walletHash: " + accountBefore.walletHash + " -> " + accountAfter.walletHash);
+        }
+        this.prettyPrintBalanceChange(
+          update.accountID,
+          update.feeTokenID,
+          accountBefore.getBalanceRaw(update.feeTokenID).balance,
+          accountAfter.getBalanceRaw(update.feeTokenID).balance
+        );
+      } else if (tx.txType === "Transfer") {
+        const transfer: Transfer = tx;
+        report = this.transfer(state, block, transfer);
+
+        const accountFromBefore = latestState.getAccount(transfer.accountFromID);
+        const accountFromAfter = state.getAccount(transfer.accountFromID);
+
+        const accountToBefore = latestState.getAccount(transfer.accountToID);
+        const accountToAfter = state.getAccount(transfer.accountToID);
+
+        const accountOperatorBefore = latestState.getAccount(block.operatorAccountID);
+        const accountOperatorAfter = state.getAccount(block.operatorAccountID);
+
+        /*for (const detailedTransfer of report.detailedTransfers) {
+          this.logDetailedTokenTransfer(detailedTransfer, {});
+        }*/
+
+        logInfo("#" + index + " Transfer");
+        logInfo("+ State changes:");
+        logInfo("- From:");
+        this.prettyPrintBalanceChange(
+          transfer.accountFromID,
+          transfer.tokenID,
+          accountFromBefore.getBalanceRaw(transfer.tokenID).balance,
+          accountFromAfter.getBalanceRaw(transfer.tokenID).balance
+        );
+        this.prettyPrintBalanceChange(
+          transfer.accountFromID,
+          transfer.feeTokenID,
+          accountFromBefore.getBalanceRaw(transfer.feeTokenID).balance,
+          accountFromAfter.getBalanceRaw(transfer.feeTokenID).balance
+        );
+        logInfo("- To:");
+        this.prettyPrintBalanceChange(
+          transfer.accountToID,
+          transfer.tokenID,
+          accountToBefore.getBalanceRaw(transfer.tokenID).balance,
+          accountToAfter.getBalanceRaw(transfer.tokenID).balance
+        );
+        logInfo("- Operator:");
+        this.prettyPrintBalanceChange(
+          block.operatorAccountID,
+          transfer.feeTokenID,
+          accountOperatorBefore.getBalanceRaw(transfer.feeTokenID).balance,
+          accountOperatorAfter.getBalanceRaw(transfer.feeTokenID).balance
+        );
+        logInfo("----");
+      } else if (tx.txType === "SpotTrade") {
+        report = this.spotTrade(state, block, tx);
+
+        logInfo("#" + index + " SpotTrade");
+        for (const detailedTransfer of report.detailedTransfers) {
+          this.logDetailedTokenTransfer(detailedTransfer, {});
+        }
+        this.logFilledAmountsSpotTrade(
+          tx,
+          latestState,
+          report.exchangeStateAfter
+        );
+      } else if (tx.txType === "Withdraw") {
+        const withdrawal: WithdrawalRequest = tx;
+        report = this.withdraw(state, block, tx);
+
+        logInfo("#" + index + " Withdraw");
+        const accountBefore = latestState.getAccount(withdrawal.accountID);
+        const accountAfter = state.getAccount(withdrawal.accountID);
+        this.prettyPrintBalanceChange(
+          withdrawal.accountID,
+          withdrawal.tokenID,
+          accountBefore.getBalanceRaw(withdrawal.tokenID).balance,
+          accountAfter.getBalanceRaw(withdrawal.tokenID).balance
+        );
+      } else {
+        assert(false, "Unknown tx type: " + tx.txType);
       }
-
-      // Update balance
-      account.balances[withdrawal.tokenID].balance = account.balances[
-        withdrawal.tokenID
-      ].balance.sub(amountToSubtract);
-
-      if (shutdown) {
-        account.publicKeyX = "0";
-        account.publicKeyY = "0";
-        account.nonce = 0;
-        account.balances[withdrawal.tokenID].tradeHistory = {};
-      }
+      latestState = report.exchangeStateAfter;
     }
 
+    // Update operator nonce
+    latestState.getAccount(block.operatorAccountID).nonce++;
+
+    // Verify resulting state
+    this.compareStates(stateAfter, latestState);
+    logInfo("----------------------------------------------------");
+  }
+
+  public static deposit(state: ExchangeState, block: TxBlock, deposit: Deposit) {
+    const accountIndex = state.getAccount(1);
+    const account = state.getAccount(deposit.accountID);
+
+    const newIndex = deposit.index.gt(accountIndex.getBalanceRaw(deposit.tokenID).index)
+      ? deposit.index : accountIndex.getBalanceRaw(deposit.tokenID).index;
+
+    const balance = account.getBalanceRaw(deposit.tokenID);
+    const newBalance = applyInterest(balance.balance, balance.index, newIndex);
+    const newDepositAmount = applyInterest(deposit.amount, deposit.index, newIndex);
+
+    balance.balance = newBalance.add(newDepositAmount);
+    balance.index = newIndex;
+
+    accountIndex.getBalanceRaw(deposit.tokenID).index = newIndex;
+
     const simulatorReport: SimulatorReport = {
-      exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState
+      exchangeStateAfter: state
     };
     return simulatorReport;
   }
 
-  public offchainWithdrawFromInputData(
-    withdrawal: WithdrawalRequest,
-    exchangeState: ExchangeState,
-    operatorAccountID: number
-  ) {
-    const fee = roundToFloatValue(withdrawal.fee, Constants.Float16Encoding);
+  public static updateAccount(state: ExchangeState, block: TxBlock, update: PublicKeyUpdate) {
+    const index = state.getAccount(1);
 
-    const account = exchangeState.accounts[withdrawal.accountID];
-    let balance = account.balances[withdrawal.tokenID].balance;
-    if (withdrawal.tokenID === withdrawal.feeTokenID) {
-      balance = balance.sub(fee);
-    }
-    const amountToWithdraw = balance.lt(withdrawal.amount)
-      ? balance
-      : withdrawal.amount;
-    const amountWithdrawn = roundToFloatValue(
-      amountToWithdraw,
-      Constants.Float24Encoding
-    );
-
-    // Update the Merkle tree with the input data
-    const newExchangeState = this.offchainWithdraw(
-      exchangeState,
-      operatorAccountID,
-      withdrawal.accountID,
-      withdrawal.tokenID,
-      amountWithdrawn,
-      withdrawal.feeTokenID,
-      fee
-    );
-
-    const simulatorReport: SimulatorReport = {
-      exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState
-    };
-    return simulatorReport;
-  }
-
-  public offchainWithdraw(
-    exchangeState: ExchangeState,
-    operatorAccountID: number,
-    accountID: number,
-    tokenID: number,
-    amountWithdrawn: BN,
-    feeTokenID: number,
-    fee: BN
-  ) {
-    const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const account = newExchangeState.accounts[accountID];
-
-    // Update balanceF
-    account.balances[feeTokenID].balance = account.balances[
-      feeTokenID
-    ].balance.sub(fee);
-
-    // Update balance
-    account.balances[tokenID].balance = account.balances[tokenID].balance.sub(
-      amountWithdrawn
-    );
+    const account = state.getAccount(update.accountID);
+    account.publicKeyX = update.publicKeyX;
+    account.publicKeyY = update.publicKeyY;
+    account.walletHash = update.walletHash;
     account.nonce++;
 
-    // Update operator
-    const operator = newExchangeState.accounts[operatorAccountID];
-    operator.balances[feeTokenID].balance = operator.balances[
-      feeTokenID
-    ].balance.add(fee);
+    const balance = account.getBalance(update.feeTokenID, index);
+    balance.balance.isub(update.fee);
 
-    return newExchangeState;
-  }
+    const operator = state.getAccount(block.operatorAccountID);
+    const balanceO = operator.getBalance(update.feeTokenID, index);
+    balanceO.balance.iadd(update.fee);
 
-  public internalTransfer(
-    exchangeState: ExchangeState,
-    operatorAccountID: number,
-    accountFromID: number,
-    accountToID: number,
-    tokenID: number,
-    amountWithdrawn: BN,
-    feeTokenID: number,
-    fee: BN,
-    type: number
-  ) {
-    const newExchangeState = this.copyExchangeState(exchangeState);
-
-    const accountFrom = newExchangeState.accounts[accountFromID];
-    const accountTo = newExchangeState.accounts[accountToID];
-
-    // Update balanceF
-    accountFrom.balances[feeTokenID].balance = accountFrom.balances[
-      feeTokenID
-    ].balance.sub(fee);
-
-    // Update balance from
-    accountFrom.balances[tokenID].balance = accountFrom.balances[
-      tokenID
-    ].balance.sub(amountWithdrawn);
-    if (type === 0) {
-      accountFrom.nonce++;
-    }
-
-    // Update balance to
-    accountTo.balances[tokenID].balance = accountTo.balances[
-      tokenID
-    ].balance.add(amountWithdrawn);
-
-    // Update operator
-    const operator = newExchangeState.accounts[operatorAccountID];
-    operator.balances[feeTokenID].balance = operator.balances[
-      feeTokenID
-    ].balance.add(fee);
-
-    return newExchangeState;
-  }
-
-  public internalTransferFromInputData(
-    transfer: Transfer,
-    exchangeState: ExchangeState,
-    operatorAccountID: number
-  ) {
-    const fee = roundToFloatValue(transfer.fee, Constants.Float16Encoding);
-
-    const accountFrom = exchangeState.accounts[transfer.accountFromID];
-    let balanceFrom = accountFrom.balances[transfer.tokenID].balance;
-    if (transfer.tokenID === transfer.feeTokenID) {
-      balanceFrom = balanceFrom.sub(fee);
-    }
-    const amountTrans = roundToFloatValue(
-      transfer.amount,
-      Constants.Float24Encoding
-    );
-
-    // Update the Merkle tree with the input data
-    const newExchangeState = this.internalTransfer(
-      exchangeState,
-      operatorAccountID,
-      transfer.accountFromID,
-      transfer.accountToID,
-      transfer.tokenID,
-      amountTrans,
-      transfer.feeTokenID,
-      fee,
-      transfer.type
-    );
-
-    const paymentsFrom: DetailedTokenTransfer = {
-      description: "From",
-      token: 0,
-      from: transfer.accountFromID,
-      to: operatorAccountID,
-      amount: new BN(0),
-      subPayments: []
-    };
-    const payAmount: DetailedTokenTransfer = {
-      description: "Amount",
-      token: transfer.tokenID,
-      from: transfer.accountFromID,
-      to: transfer.accountToID,
-      amount: transfer.amount,
-      subPayments: []
-    };
-    const payFee: DetailedTokenTransfer = {
-      description: "Fee",
-      token: transfer.feeTokenID,
-      from: transfer.accountFromID,
-      to: operatorAccountID,
-      amount: transfer.fee,
-      subPayments: []
-    };
-    paymentsFrom.subPayments.push(payAmount);
-    paymentsFrom.subPayments.push(payFee);
-
-    const simulatorReport: DetailedSimulatorReport = {
-      exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState,
-      detailedTransfers: [paymentsFrom]
+    const simulatorReport: SimulatorReport = {
+      exchangeStateAfter: state
     };
     return simulatorReport;
   }
 
-  public settleRingFromInputData(
-    ring: SpotTrade,
-    exchangeState: ExchangeState,
-    timestamp: number,
-    operatorAccountID: number,
-    protocolFeeTakerBips: number,
-    protocolFeeMakerBips: number
-  ) {
+  public static transfer(state: ExchangeState, block: TxBlock, transfer: Transfer) {
+    const index = state.getAccount(1);
+
+    const from = state.getAccount(transfer.accountFromID);
+    const to = state.getAccount(transfer.accountToID);
+
+    from.getBalance(transfer.tokenID, index).balance.isub(transfer.amount);
+    to.getBalance(transfer.tokenID, index).balance.iadd(transfer.amount);
+
+    from.getBalance(transfer.feeTokenID, index).balance.isub(transfer.fee);
+
+    from.nonce++;
+
+    const operator = state.getAccount(block.operatorAccountID);
+    operator.getBalance(transfer.feeTokenID, index).balance.iadd(transfer.fee);
+
+    const simulatorReport: SimulatorReport = {
+      exchangeStateAfter: state
+    };
+    return simulatorReport;
+  }
+
+  public static withdraw(state: ExchangeState, block: TxBlock, withdrawal: WithdrawalRequest) {
+    const index = state.getAccount(1);
+
+    const account = state.getAccount(withdrawal.accountID);
+    let amount = withdrawal.amount;
+    if (withdrawal.type === 2) {
+      amount = account.getBalance(withdrawal.tokenID, index).balance;
+    } else if (withdrawal.type === 3) {
+      amount = new BN(0);
+    }
+    account.getBalance(withdrawal.tokenID, index).balance.isub(amount);
+    account.getBalance(withdrawal.feeTokenID, index).balance.isub(withdrawal.fee);
+
+    const operator = state.getAccount(block.operatorAccountID);
+    operator.getBalance(withdrawal.feeTokenID, index).balance.iadd(withdrawal.fee);
+
+    if (withdrawal.type === 0 || withdrawal.type === 1) {
+      account.nonce++;
+    }
+
+    const simulatorReport: SimulatorReport = {
+      exchangeStateAfter: state
+    };
+    return simulatorReport;
+  }
+
+  public static spotTrade(state: ExchangeState, block: TxBlock, spotTrade: SpotTrade) {
     const fillA = this.getMaxFillAmounts(
-      ring.orderA,
-      exchangeState.accounts[ring.orderA.accountID]
+      spotTrade.orderA,
+      state.accounts[spotTrade.orderA.accountID]
     );
     const fillB = this.getMaxFillAmounts(
-      ring.orderB,
-      exchangeState.accounts[ring.orderB.accountID]
+      spotTrade.orderB,
+      state.accounts[spotTrade.orderB.accountID]
     );
 
     /*console.log("MaxFillA.S: " + fillA.S.toString(10));
@@ -333,18 +550,18 @@ export class Simulator {
     console.log("MaxFillB.B: " + fillB.B.toString(10));*/
 
     let matchResult: MatchResult;
-    if (ring.orderA.buy) {
-      matchResult = this.match(ring.orderA, fillA, ring.orderB, fillB);
+    if (spotTrade.orderA.buy) {
+      matchResult = this.match(spotTrade.orderA, fillA, spotTrade.orderB, fillB);
       fillA.S = fillB.B;
     } else {
-      matchResult = this.match(ring.orderB, fillB, ring.orderA, fillA);
+      matchResult = this.match(spotTrade.orderB, fillB, spotTrade.orderA, fillA);
       fillA.B = fillB.S;
     }
     logDebug("spread:     " + matchResult.spread.toString(10));
 
     let valid = matchResult.matchable;
-    valid = valid && this.checkValid(ring.orderA, fillA.S, fillA.B, timestamp);
-    valid = valid && this.checkValid(ring.orderB, fillB.S, fillB.B, timestamp);
+    valid = valid && this.checkValid(spotTrade.orderA, fillA.S, fillA.B, block.timestamp);
+    valid = valid && this.checkValid(spotTrade.orderB, fillB.S, fillB.B, block.timestamp);
 
     if (!valid) {
       fillA.S = new BN(0);
@@ -358,63 +575,63 @@ export class Simulator {
 
     // Validate
     this.validateOrder(
-      exchangeState,
-      ring.orderA,
-      ring.orderB,
+      state,
+      spotTrade.orderA,
+      spotTrade.orderB,
       false,
       fillA.S,
       fillA.B,
       valid
     );
     this.validateOrder(
-      exchangeState,
-      ring.orderB,
-      ring.orderB,
+      state,
+      spotTrade.orderB,
+      spotTrade.orderB,
       true,
       fillB.S,
       fillB.B,
       valid
     );
 
-    const { newExchangeState, s } = this.settleRing(
-      exchangeState,
-      protocolFeeTakerBips,
-      protocolFeeMakerBips,
-      operatorAccountID,
+    const s = this.settleRing(
+      state,
+      block.protocolTakerFeeBips,
+      block.protocolMakerFeeBips,
+      block.operatorAccountID,
       fillA.S,
       fillB.S,
-      ring.orderA.buy,
-      ring.orderB.buy,
-      ring.orderA.tokenIdS,
-      ring.orderB.tokenIdS,
-      ring.orderA.orderID,
-      ring.orderA.accountID,
-      ring.orderA.feeBips,
-      ring.orderA.rebateBips,
-      ring.orderB.orderID,
-      ring.orderB.accountID,
-      ring.orderB.feeBips,
-      ring.orderB.rebateBips
+      spotTrade.orderA.buy,
+      spotTrade.orderB.buy,
+      spotTrade.orderA.tokenIdS,
+      spotTrade.orderB.tokenIdS,
+      spotTrade.orderA.orderID,
+      spotTrade.orderA.accountID,
+      spotTrade.orderA.feeBips,
+      spotTrade.orderA.rebateBips,
+      spotTrade.orderB.orderID,
+      spotTrade.orderB.accountID,
+      spotTrade.orderB.feeBips,
+      spotTrade.orderB.rebateBips
     );
 
     // Check expected
-    if (ring.expected) {
-      if (ring.expected.orderA) {
-        const filledFraction = ring.orderA.buy
+    if (spotTrade.expected) {
+      if (spotTrade.expected.orderA) {
+        const filledFraction = spotTrade.orderA.buy
           ? fillA.B.mul(new BN(10000))
-              .div(ring.orderA.amountB)
+              .div(spotTrade.orderA.amountB)
               .toNumber() / 10000
           : fillA.S.mul(new BN(10000))
-              .div(ring.orderA.amountS)
+              .div(spotTrade.orderA.amountS)
               .toNumber() / 10000;
         this.assertAlmostEqual(
           filledFraction,
-          ring.expected.orderA.filledFraction,
+          spotTrade.expected.orderA.filledFraction,
           "OrderA filled",
           -3
         );
-        if (ring.expected.orderA.spread !== undefined) {
-          const nSpread = Number(ring.expected.orderA.spread.toString(10));
+        if (spotTrade.expected.orderA.spread !== undefined) {
+          const nSpread = Number(spotTrade.expected.orderA.spread.toString(10));
           this.assertAlmostEqual(
             Number(matchResult.spread.toString(10)),
             nSpread,
@@ -423,17 +640,17 @@ export class Simulator {
           );
         }
       }
-      if (ring.expected.orderB) {
-        const filledFraction = ring.orderB.buy
+      if (spotTrade.expected.orderB) {
+        const filledFraction = spotTrade.orderB.buy
           ? fillB.B.mul(new BN(10000))
-              .div(ring.orderB.amountB)
+              .div(spotTrade.orderB.amountB)
               .toNumber() / 10000
           : fillB.S.mul(new BN(10000))
-              .div(ring.orderB.amountS)
+              .div(spotTrade.orderB.amountS)
               .toNumber() / 10000;
         this.assertAlmostEqual(
           filledFraction,
-          ring.expected.orderB.filledFraction,
+          spotTrade.expected.orderB.filledFraction,
           "OrderB filled",
           -3
         );
@@ -443,16 +660,16 @@ export class Simulator {
     const paymentsA: DetailedTokenTransfer = {
       description: "OwnerA",
       token: 0,
-      from: operatorAccountID,
-      to: operatorAccountID,
+      from: block.operatorAccountID,
+      to: block.operatorAccountID,
       amount: new BN(0),
       subPayments: []
     };
     const detailedTransfersA = this.getDetailedTransfers(
-      operatorAccountID,
-      ring,
-      ring.orderA,
-      ring.orderB,
+      block.operatorAccountID,
+      spotTrade,
+      spotTrade.orderA,
+      spotTrade.orderB,
       fillA.S,
       fillA.B,
       s.feeA
@@ -462,16 +679,16 @@ export class Simulator {
     const paymentsB: DetailedTokenTransfer = {
       description: "OwnerB",
       token: 0,
-      from: operatorAccountID,
-      to: operatorAccountID,
+      from: block.operatorAccountID,
+      to: block.operatorAccountID,
       amount: new BN(0),
       subPayments: []
     };
     const detailedTransfersB = this.getDetailedTransfers(
-      operatorAccountID,
-      ring,
-      ring.orderB,
-      ring.orderA,
+      block.operatorAccountID,
+      spotTrade,
+      spotTrade.orderB,
+      spotTrade.orderA,
       fillB.S,
       fillB.B,
       s.feeB
@@ -481,39 +698,39 @@ export class Simulator {
     const paymentsOperator: DetailedTokenTransfer = {
       description: "Operator",
       token: 0,
-      from: operatorAccountID,
-      to: operatorAccountID,
+      from: block.operatorAccountID,
+      to: block.operatorAccountID,
       amount: new BN(0),
       subPayments: []
     };
     const payRebateA: DetailedTokenTransfer = {
       description: "RebateA",
-      token: ring.orderA.tokenIdB,
-      from: operatorAccountID,
-      to: ring.orderA.accountID,
+      token: spotTrade.orderA.tokenIdB,
+      from: block.operatorAccountID,
+      to: spotTrade.orderA.accountID,
       amount: s.rebateA,
       subPayments: []
     };
     const payRebateB: DetailedTokenTransfer = {
       description: "RebateB",
-      token: ring.orderB.tokenIdB,
-      from: operatorAccountID,
-      to: ring.orderB.accountID,
+      token: spotTrade.orderB.tokenIdB,
+      from: block.operatorAccountID,
+      to: spotTrade.orderB.accountID,
       amount: s.rebateB,
       subPayments: []
     };
     const payProtocolFeeA: DetailedTokenTransfer = {
       description: "ProtocolFeeA",
-      token: ring.orderA.tokenIdB,
-      from: operatorAccountID,
+      token: spotTrade.orderA.tokenIdB,
+      from: block.operatorAccountID,
       to: 0,
       amount: s.protocolFeeA,
       subPayments: []
     };
     const payProtocolFeeB: DetailedTokenTransfer = {
       description: "ProtocolFeeB",
-      token: ring.orderB.tokenIdB,
-      from: operatorAccountID,
+      token: spotTrade.orderB.tokenIdB,
+      from: block.operatorAccountID,
       to: 0,
       amount: s.protocolFeeB,
       subPayments: []
@@ -529,14 +746,13 @@ export class Simulator {
     detailedTransfers.push(paymentsOperator);
 
     const simulatorReport: DetailedSimulatorReport = {
-      exchangeStateBefore: exchangeState,
-      exchangeStateAfter: newExchangeState,
+      exchangeStateAfter: state,
       detailedTransfers
     };
     return simulatorReport;
   }
 
-  public calculateSettlementValues(
+  public static calculateSettlementValues(
     protocolFeeTakerBips: number,
     protocolFeeMakerBips: number,
     fillSA: BN,
@@ -590,8 +806,8 @@ export class Simulator {
     return settlementValues;
   }
 
-  public settleRing(
-    exchangeState: ExchangeState,
+  public static settleRing(
+    state: ExchangeState,
     protocolFeeTakerBips: number,
     protocolFeeMakerBips: number,
     operatorId: number,
@@ -621,85 +837,47 @@ export class Simulator {
       rebateBipsB
     );
 
-    const newExchangeState = this.copyExchangeState(exchangeState);
+    const index = state.getAccount(1);
 
     // Update accountA
-    const accountA = newExchangeState.accounts[accountIdA];
-    accountA.balances[tokenA].balance = accountA.balances[tokenA].balance.sub(
-      s.fillSA
-    );
-    accountA.balances[tokenB].balance = accountA.balances[tokenB].balance.add(
-      s.fillBA.sub(s.feeA).add(s.rebateA)
-    );
+    {
+      const accountA = state.getAccount(accountIdA);
+      accountA.getBalance(tokenA, index).balance.isub(s.fillSA);
+      accountA.getBalance(tokenB, index).balance.iadd(s.fillBA).isub(s.feeA).iadd(s.rebateA);
 
+      const tradeHistoryA = accountA.getBalanceRaw(tokenA).getTradeHistory(orderIdA);
+      tradeHistoryA.filled = orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
+      tradeHistoryA.filled.iadd(buyA ? s.fillBA : s.fillSA);
+      tradeHistoryA.orderID = orderIdA > tradeHistoryA.orderID ? orderIdA : tradeHistoryA.orderID;
+    }
     // Update accountB
-    const accountB = newExchangeState.accounts[accountIdB];
-    accountB.balances[tokenB].balance = accountB.balances[tokenB].balance.sub(
-      s.fillSB
-    );
-    accountB.balances[tokenA].balance = accountB.balances[tokenA].balance.add(
-      s.fillBB.sub(s.feeB).add(s.rebateB)
-    );
+    {
+      const accountB = state.getAccount(accountIdB);
+      accountB.getBalance(tokenB, index).balance.isub(s.fillSB);
+      accountB.getBalance(tokenA, index).balance.iadd(s.fillBB).isub(s.feeB).iadd(s.rebateB);
 
-    // Update trade history A
-    {
-      const tradeHistorySlotA =
-        orderIdA % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
-      const tradeHistoryA =
-        accountA.balances[tokenA].tradeHistory[tradeHistorySlotA];
-      tradeHistoryA.filled =
-        orderIdA > tradeHistoryA.orderID ? new BN(0) : tradeHistoryA.filled;
-      tradeHistoryA.filled = tradeHistoryA.filled.add(
-        buyA ? s.fillBA : s.fillSA
-      );
-      tradeHistoryA.orderID =
-        orderIdA > tradeHistoryA.orderID ? orderIdA : tradeHistoryA.orderID;
-    }
-    // Update trade history B
-    {
-      const tradeHistorySlotB =
-        orderIdB % 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
-      const tradeHistoryB =
-        accountB.balances[tokenB].tradeHistory[tradeHistorySlotB];
-      tradeHistoryB.filled =
-        orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
-      tradeHistoryB.filled = tradeHistoryB.filled.add(
-        buyB ? s.fillBB : s.fillSB
-      );
-      tradeHistoryB.orderID =
-        orderIdB > tradeHistoryB.orderID ? orderIdB : tradeHistoryB.orderID;
+      const tradeHistoryB = accountB.getBalanceRaw(tokenB).getTradeHistory(orderIdB);
+      tradeHistoryB.filled = orderIdB > tradeHistoryB.orderID ? new BN(0) : tradeHistoryB.filled;
+      tradeHistoryB.filled.iadd(buyB ? s.fillBB : s.fillSB);
+      tradeHistoryB.orderID = orderIdB > tradeHistoryB.orderID ? orderIdB : tradeHistoryB.orderID;
     }
 
-    // Update protocol fee recipient
-    const protocolFeeAccount = newExchangeState.accounts[0];
-    // - Order A
-    protocolFeeAccount.balances[tokenB].balance = protocolFeeAccount.balances[
-      tokenB
-    ].balance.add(s.protocolFeeA);
-    // - Order B
-    protocolFeeAccount.balances[tokenA].balance = protocolFeeAccount.balances[
-      tokenA
-    ].balance.add(s.protocolFeeB);
+    // Update protocol fee
+    const protocol = state.getAccount(0);
+    protocol.getBalance(tokenA, index).balance.iadd(s.protocolFeeB);
+    protocol.getBalance(tokenB, index).balance.iadd(s.protocolFeeA);
 
     // Update operator
-    const operator = newExchangeState.accounts[operatorId];
-    // - FeeA
-    operator.balances[tokenB].balance = operator.balances[tokenB].balance
-      .add(s.feeA)
-      .sub(s.protocolFeeA)
-      .sub(s.rebateA);
-    // - FeeB
-    operator.balances[tokenA].balance = operator.balances[tokenA].balance
-      .add(s.feeB)
-      .sub(s.protocolFeeB)
-      .sub(s.rebateB);
+    const operator = state.getAccount(operatorId);
+    operator.getBalance(tokenA, index).balance.iadd(s.feeB).isub(s.protocolFeeB).isub(s.rebateB);
+    operator.getBalance(tokenB, index).balance.iadd(s.feeA).isub(s.protocolFeeA).isub(s.rebateA);
 
-    return { newExchangeState, s };
+    return s;
   }
 
-  private getDetailedTransfers(
+  private static getDetailedTransfers(
     operatorAccountID: number,
-    ring: SpotTrade,
+    spotTrade: SpotTrade,
     order: OrderInfo,
     orderTo: OrderInfo,
     fillAmountS: BN,
@@ -730,7 +908,7 @@ export class Simulator {
     return detailedTransfers;
   }
 
-  private validateOrder(
+  private static validateOrder(
     exchangeState: ExchangeState,
     order: OrderInfo,
     makerOrder: OrderInfo,
@@ -820,7 +998,7 @@ export class Simulator {
     }
   }
 
-  private getFilled(order: OrderInfo, accountData: any) {
+  private static getFilled(order: OrderInfo, accountData: any) {
     const numSlots = 2 ** Constants.BINARY_TREE_DEPTH_TRADING_HISTORY;
     const tradeHistorySlot = order.orderID % numSlots;
     let tradeHistory =
@@ -839,7 +1017,7 @@ export class Simulator {
     return filled;
   }
 
-  private getMaxFillAmounts(order: OrderInfo, accountData: any) {
+  private static getMaxFillAmounts(order: OrderInfo, accountData: any) {
     const tradeHistoryFilled = this.getFilled(order, accountData);
     const balanceS = new BN(accountData.balances[order.tokenIdS].balance);
 
@@ -865,7 +1043,7 @@ export class Simulator {
     return fill;
   }
 
-  private match(
+  private static match(
     takerOrder: OrderInfo,
     takerFill: Fill,
     makerOrder: OrderInfo,
@@ -890,7 +1068,7 @@ export class Simulator {
     return result;
   }
 
-  private calculateFees(
+  private static calculateFees(
     fillB: BN,
     protocolFeeBips: number,
     feeBips: number,
@@ -902,7 +1080,7 @@ export class Simulator {
     return [fee, protocolFee, rebate];
   }
 
-  private checkFillRate(
+  private static checkFillRate(
     amountS: BN,
     amountB: BN,
     fillAmountS: BN,
@@ -914,7 +1092,7 @@ export class Simulator {
       .lte(fillAmountB.mul(amountS).mul(new BN(1001)));
   }
 
-  private checkValid(
+  private static checkValid(
     order: OrderInfo,
     fillAmountS: BN,
     fillAmountB: BN,
@@ -956,7 +1134,7 @@ export class Simulator {
     return valid;
   }
 
-  private copyAccount(account: AccountLeaf) {
+  private static copyAccount(account: AccountLeaf) {
     const balances: { [key: number]: Balance } = {};
     for (const tokenID of Object.keys(account.balances)) {
       const balanceValue = account.balances[Number(tokenID)];
@@ -969,23 +1147,25 @@ export class Simulator {
           orderID: tradeHistoryValue.orderID
         };
       }
-      balances[Number(tokenID)] = {
-        balance: balanceValue.balance,
-        position: balanceValue.position,
-        fundingIndex: balanceValue.fundingIndex,
+      balances[Number(tokenID)] = new Balance();
+      balances[Number(tokenID)].init(
+        balanceValue.balance,
+        balanceValue.index,
         tradeHistory
-      };
+      );
     }
-    const accountCopy: AccountLeaf = {
-      publicKeyX: account.publicKeyX,
-      publicKeyY: account.publicKeyY,
-      nonce: account.nonce,
+    const accountCopy = new AccountLeaf();
+    accountCopy.init(
+      account.publicKeyX,
+      account.publicKeyY,
+      account.nonce,
+      account.walletHash,
       balances
-    };
+    );
     return accountCopy;
   }
 
-  private copyExchangeState(exchangeState: ExchangeState) {
+  private static copyExchangeState(exchangeState: ExchangeState) {
     const accounts: AccountLeaf[] = [];
     for (
       let accountID = 0;
@@ -994,20 +1174,18 @@ export class Simulator {
     ) {
       accounts[accountID] = this.copyAccount(exchangeState.accounts[accountID]);
     }
-    const exchangeStateCopy: ExchangeState = {
-      accounts
-    };
+    const exchangeStateCopy = new ExchangeState(accounts);
     return exchangeStateCopy;
   }
 
-  private ensure(valid: boolean, description: string) {
+  private static ensure(valid: boolean, description: string) {
     if (!valid) {
       logInfo(description);
     }
     return valid;
   }
 
-  private assertAlmostEqual(
+  private static assertAlmostEqual(
     n1: number,
     n2: number,
     description: string,
@@ -1017,5 +1195,127 @@ export class Simulator {
     // console.log("n2: " + n2);
     // console.log("precision: " + (10 ** precision));
     return assert(Math.abs(n1 - n2) < 10 ** precision, description);
+  }
+
+  public static prettyPrintBalance(accountID: number, tokenID: number, balance: BN) {
+    const prettyBalance = this.getPrettyAmount(tokenID, balance);
+    logInfo(accountID + ": " + prettyBalance);
+  }
+
+  public static prettyPrintBalanceChange(
+    accountID: number,
+    tokenID: number,
+    balanceBefore: BN,
+    balanceAfter: BN
+  ) {
+    const prettyBalanceBefore = this.getPrettyAmount(tokenID, balanceBefore);
+    const prettyBalanceAfter = this.getPrettyAmount(tokenID, balanceAfter);
+    logInfo(
+      accountID + ": " + prettyBalanceBefore + " -> " + prettyBalanceAfter
+    );
+  }
+
+  private static logDetailedTokenTransfer(
+    payment: DetailedTokenTransfer,
+    addressBook: { [id: number]: string } = {},
+    depth: number = 0
+  ) {
+    if (payment.amount.eq(new BN(0)) && payment.subPayments.length === 0) {
+      return;
+    }
+    const whiteSpace = " ".repeat(depth);
+    const description = payment.description ? payment.description : "";
+    const prettyAmount = this.getPrettyAmount(payment.token, payment.amount);
+    if (payment.subPayments.length === 0) {
+      const toName =
+        addressBook[payment.to] !== undefined
+          ? addressBook[payment.to]
+          : payment.to;
+      logInfo(
+        whiteSpace +
+          "- " +
+          " [" +
+          description +
+          "] " +
+          prettyAmount +
+          " -> " +
+          toName
+      );
+    } else {
+      logInfo(whiteSpace + "+ " + " [" + description + "] ");
+      for (const subPayment of payment.subPayments) {
+        this.logDetailedTokenTransfer(subPayment, addressBook, depth + 1);
+      }
+    }
+  }
+
+  private static getPrettyAmount(tokenID: number, amount: BN) {
+    /*const tokenAddress = this.tokenIDToAddressMap.get(tokenID);
+    const tokenSymbol = this.testContext.tokenAddrSymbolMap.get(tokenAddress);
+    const decimals = this.testContext.tokenAddrDecimalsMap.get(tokenAddress);
+    let amountDec = Number(amount.toString(10)) / 10 ** decimals;
+    if (Math.abs(amountDec) < 0.0000000000001) {
+      amountDec = 0;
+    }
+    return amountDec + " " + tokenSymbol;*/
+    return amount.toString(10) + " " + tokenID;
+  }
+
+  private static logFilledAmountsSpotTrade(
+    spotTrade: SpotTrade,
+    stateBefore: ExchangeState,
+    stateAfter: ExchangeState
+  ) {
+    this.logFilledAmountOrder(
+      "[Filled] OrderA",
+      stateBefore.accounts[spotTrade.orderA.accountID],
+      stateAfter.accounts[spotTrade.orderA.accountID],
+      spotTrade.orderA
+    );
+    this.logFilledAmountOrder(
+      "[Filled] OrderB",
+      stateBefore.accounts[spotTrade.orderB.accountID],
+      stateAfter.accounts[spotTrade.orderB.accountID],
+      spotTrade.orderB
+    );
+  }
+
+  private static logFilledAmountOrder(
+    description: string,
+    accountBefore: AccountLeaf,
+    accountAfter: AccountLeaf,
+    order: OrderInfo
+  ) {
+    const before =  accountBefore.getBalanceRaw(order.tokenIdS).getTradeHistory(order.orderID);
+    const after = accountAfter.getBalanceRaw(order.tokenIdS).getTradeHistory(order.orderID);
+    const filledBeforePercentage = before.filled
+      .mul(new BN(100))
+      .div(order.buy ? order.amountB : order.amountS);
+    const filledAfterPercentage = after.filled
+      .mul(new BN(100))
+      .div(order.buy ? order.amountB : order.amountS);
+    const filledBeforePretty = this.getPrettyAmount(
+      order.buy ? order.tokenIdB : order.tokenIdS,
+      before.filled
+    );
+    const filledAfterPretty = this.getPrettyAmount(
+      order.buy ? order.tokenIdB : order.tokenIdS,
+      after.filled
+    );
+    logInfo(
+      description +
+        ": " +
+        filledBeforePretty +
+        " -> " +
+        filledAfterPretty +
+        " (" +
+        filledBeforePercentage.toString(10) +
+        "% -> " +
+        filledAfterPercentage.toString(10) +
+        "%)" +
+        " (slot " +
+        order.orderID +
+        ")"
+    );
   }
 }

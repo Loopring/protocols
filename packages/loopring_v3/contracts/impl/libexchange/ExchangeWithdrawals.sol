@@ -40,21 +40,23 @@ library ExchangeWithdrawals
     using ExchangeMode      for ExchangeData.State;
     using ExchangeTokens    for ExchangeData.State;
 
-    event WithdrawalRequested(
+    event ForcedWithdrawalRequested(
         address indexed owner,
-        address indexed token,
+        address         token,
         uint24  indexed accountID
     );
 
     event WithdrawalCompleted(
+        address indexed from,
         address indexed to,
-        address indexed token,
+        address         token,
         uint96          amount
     );
 
     event WithdrawalFailed(
+        address indexed from,
         address indexed to,
-        address indexed token,
+        address         token,
         uint96          amount
     );
 
@@ -71,11 +73,13 @@ library ExchangeWithdrawals
 
         uint16 tokenID = S.getTokenID(token);
 
+        uint withdrawalFeeETH = S.loopring.forcedWithdrawalFee();
+
         // Check ETH value sent, can be larger than the expected withdraw fee
-        require(msg.value >= S.withdrawalFeeETH, "INSUFFICIENT_FEE");
+        require(msg.value >= withdrawalFeeETH, "INSUFFICIENT_FEE");
 
         // Send surplus of ETH back to the sender
-        uint feeSurplus = msg.value.sub(S.withdrawalFeeETH);
+        uint feeSurplus = msg.value.sub(withdrawalFeeETH);
         if (feeSurplus > 0) {
             msg.sender.sendETHAndVerify(feeSurplus, gasleft());
         }
@@ -84,11 +88,11 @@ library ExchangeWithdrawals
 
         S.pendingForcedWithdrawals[accountID][tokenID].owner = owner;
         S.pendingForcedWithdrawals[accountID][tokenID].timestamp = uint32(now);
-        S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(S.withdrawalFeeETH);
+        S.pendingForcedWithdrawals[accountID][tokenID].fee = uint64(withdrawalFeeETH);
 
         S.numPendingForcedTransactions++;
 
-        emit WithdrawalRequested(
+        emit ForcedWithdrawalRequested(
             owner,
             token,
             accountID
@@ -137,6 +141,7 @@ library ExchangeWithdrawals
         transferTokens(
             S,
             owner,
+            owner,
             tokenID,
             balance,
             gasleft(),
@@ -169,6 +174,7 @@ library ExchangeWithdrawals
         transferTokens(
             S,
             owner,
+            owner,
             tokenID,
             amount,
             gasleft(),
@@ -199,6 +205,7 @@ library ExchangeWithdrawals
             transferTokens(
                 S,
                 owner,
+                owner,
                 tokenID,
                 amount,
                 gasleft(),
@@ -209,7 +216,8 @@ library ExchangeWithdrawals
 
     function distributeWithdrawal(
         ExchangeData.State storage S,
-        address owner,
+        address from,
+        address to,
         uint16 tokenID,
         uint amount,
         uint gasLimit
@@ -221,7 +229,8 @@ library ExchangeWithdrawals
             // Try to transfer the tokens
             success = transferTokens(
                 S,
-                owner,
+                from,
+                to,
                 tokenID,
                 amount,
                 gasLimit,
@@ -230,7 +239,7 @@ library ExchangeWithdrawals
         }
         if (!success) {
             // Allow the amount to be withdrawn using `withdrawFromApprovedWithdrawal`.
-            S.amountWithdrawable[owner][tokenID] = S.amountWithdrawable[owner][tokenID].add(amount);
+            S.amountWithdrawable[to][tokenID] = S.amountWithdrawable[to][tokenID].add(amount);
         }
     }
 
@@ -243,6 +252,7 @@ library ExchangeWithdrawals
     // as much gas as needed, otherwise it throws. The function always returns true.
     function transferTokens(
         ExchangeData.State storage S,
+        address from,
         address to,
         uint16  tokenID,
         uint    amount,
@@ -274,12 +284,14 @@ library ExchangeWithdrawals
 
         if (success) {
             emit WithdrawalCompleted(
+                from,
                 to,
                 token,
                 uint96(amount)
             );
         } else {
             emit WithdrawalFailed(
+                from,
                 to,
                 token,
                 uint96(amount)

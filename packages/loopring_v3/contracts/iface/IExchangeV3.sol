@@ -47,46 +47,45 @@ abstract contract IExchangeV3 is IExchange
         address         newOperator
     );
 
-    event FeesUpdated(
-        uint    indexed exchangeId,
-        uint            accountCreationFeeETH,
-        uint            accountUpdateFeeETH,
-        uint            depositFeeETH,
-        uint            withdrawalFeeETH
+    event Shutdown(
+        uint            timestamp
     );
 
-    event Shutdown(
+    event WithdrawalModeActivated(
         uint            timestamp
     );
 
     event BlockSubmitted(
         uint    indexed blockIdx,
-        bytes32 indexed publicDataHash,
-        uint    indexed blockFee
+        bytes32         publicDataHash,
+        uint            blockFee
     );
 
     event DepositRequested(
         address indexed owner,
         address indexed token,
         uint96          amount,
-        uint96          index
+        uint96          index,
+        uint            fee
     );
 
-    event WithdrawalRequested(
+    event ForcedWithdrawalRequested(
         address indexed owner,
-        address indexed token,
+        address         token,
         uint24  indexed accountID
     );
 
     event WithdrawalCompleted(
+        address indexed from,
         address indexed to,
-        address indexed token,
+        address         token,
         uint96          amount
     );
 
     event WithdrawalFailed(
+        address indexed from,
         address indexed to,
-        address indexed token,
+        address         token,
         uint96          amount
     );
 
@@ -699,9 +698,9 @@ abstract contract IExchangeV3 is IExchange
         address from,
         address to,
         address token,
-        uint    amount,
+        uint96  amount,
         address feeToken,
-        uint    fee,
+        uint96  fee,
         uint32  nonce
         )
         external
@@ -739,6 +738,20 @@ abstract contract IExchangeV3 is IExchange
         external
         virtual;
 
+    /// @dev Checks if a rollup tx is approved using the tx's hash.
+    ///
+    /// @param owner The owner of the account
+    /// @param txHash The hash of the transaction
+    /// @return True if the tx is approved, else false
+    function isTransactionApproved(
+        address owner,
+        bytes32 txHash
+        )
+        external
+        virtual
+        view
+        returns (bool);
+
     // -- Admins --
 
     /// @dev Sets the operator address.
@@ -758,37 +771,6 @@ abstract contract IExchangeV3 is IExchange
         virtual
         view
         returns (address payable);
-
-    /// @dev Updates fee settings.
-    ///      This function is only callable by the exchange owner.
-    /// @param _accountCreationFeeETH The fee in ETH for account creation
-    /// @param _accountUpdateFeeETH The fee in ETH for account update
-    /// @param _depositFeeETH The fee in ETH for deposits
-    /// @param _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function setFees(
-        uint _accountCreationFeeETH,
-        uint _accountUpdateFeeETH,
-        uint _depositFeeETH,
-        uint _withdrawalFeeETH
-        )
-        external
-        virtual;
-
-    /// @dev Gets current fee settings.
-    /// @return _accountCreationFeeETH The fee in ETH for account creation
-    /// @return _accountUpdateFeeETH The fee in ETH for account update
-    /// @return _depositFeeETH The fee in ETH for deposits
-    /// @return _withdrawalFeeETH The fee in ETH for onchain withdrawal requests
-    function getFees()
-        external
-        virtual
-        view
-        returns (
-            uint _accountCreationFeeETH,
-            uint _accountUpdateFeeETH,
-            uint _depositFeeETH,
-            uint _withdrawalFeeETH
-        );
 
     /// @dev Gets the time the exchange was created.
     /// @return timestamp The time the exchange was created.

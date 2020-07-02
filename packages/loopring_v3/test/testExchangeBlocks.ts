@@ -2,7 +2,7 @@ import BN = require("bn.js");
 import { Bitstream, BlockType, Constants } from "loopringV3.js";
 import { expectThrow } from "./expectThrow";
 import { ExchangeTestUtil, OnchainBlock } from "./testExchangeUtil";
-import { Block, DepositInfo, SpotTrade } from "./types";
+import { Block, Deposit, SpotTrade } from "./types";
 
 contract("Exchange", (accounts: string[]) => {
   let exchangeTestUtil: ExchangeTestUtil;
@@ -349,19 +349,15 @@ contract("Exchange", (accounts: string[]) => {
           );
           const numRequests = 4;
           // Do some deposit
-          const fees = await exchange.getFees();
-          const keyPair = exchangeTestUtil.getKeyPairEDDSA();
+          const withdrawalFee = await exchangeTestUtil.loopringV3.forcedWithdrawalFee();
           const owner = exchangeTestUtil.testContext.orderOwners[0];
           const token = exchangeTestUtil.getTokenAddress("LRC");
           const amount = new BN(web3.utils.toWei("3", "ether"));
           // Deposits
           for (let i = 0; i < numRequests; i++) {
             await exchangeTestUtil.deposit(
-              exchangeId,
               owner,
-              keyPair.secretKey,
-              keyPair.publicKeyX,
-              keyPair.publicKeyY,
+              owner,
               token,
               amount
             );
@@ -370,7 +366,7 @@ contract("Exchange", (accounts: string[]) => {
           for (let i = 0; i < numRequests; i++) {
             await exchange.withdraw(owner, token, amount, {
               from: owner,
-              value: fees._withdrawalFeeETH
+              value: withdrawalFee
             });
           }
 
@@ -562,7 +558,7 @@ contract("Exchange", (accounts: string[]) => {
           await exchangeTestUtil.submitTransactions();
           // Try to submit the rings
           await expectThrow(
-            exchangeTestUtil.submitPendingBlocks(exchangeId),
+            exchangeTestUtil.submitPendingBlocks(),
             "DEPOSIT_BLOCK_FORCED"
           );
           // Revert the nonce of the operator
@@ -571,17 +567,18 @@ contract("Exchange", (accounts: string[]) => {
         it("On-chain requests should be forced after MAX_AGE_REQUEST_UNTIL_FORCED", async () => {
           await createExchange();
           await exchangeTestUtil.submitTransactions();
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
+          await exchangeTestUtil.submitPendingBlocks();
 
           // Do a deposit
           const deposit = await exchangeTestUtil.doRandomDeposit(5);
           // Do a withdrawal
-          await exchangeTestUtil.requestWithdrawalOnchain(
-            exchangeId,
-            deposit.accountID,
+          await exchangeTestUtil.requestWithdrawal(
+            deposit.owner,
             "ETH",
             new BN(123),
-            deposit.owner
+            "ETH",
+            new BN(0),
+            2
           );
           // Wait
           await exchangeTestUtil.advanceBlockTimestamp(
@@ -623,7 +620,7 @@ contract("Exchange", (accounts: string[]) => {
 
           // Commit the withdrawals
           await exchangeTestUtil.submitTransactions();
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
+          await exchangeTestUtil.submitPendingBlocks();
           // Try to commit the rings again
           await expectThrow(
             exchange.submitBlocks(
@@ -642,7 +639,7 @@ contract("Exchange", (accounts: string[]) => {
           );*/
           await exchangeTestUtil.submitTransactions();
           // Submit the blocks
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
+          await exchangeTestUtil.submitPendingBlocks();
         });
 
         it("should be able to submit blocks of different types", async () => {
@@ -652,7 +649,7 @@ contract("Exchange", (accounts: string[]) => {
           await commitSomeWork();
           await commitSomeWork();
           // Verify all blocks
-          await exchangeTestUtil.submitPendingBlocks(exchangeId);
+          await exchangeTestUtil.submitPendingBlocks();
         });
 
         it("should not be able to submit blocks when one of the proofs is incorrect", async () => {
@@ -664,7 +661,6 @@ contract("Exchange", (accounts: string[]) => {
           // Try so submit blocks with invalid proofs
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
-              exchangeId,
               (blocks: OnchainBlock[]) => {
                 // Change a random proof
                 const blockToModify = exchangeTestUtil.getRandomInt(
@@ -694,7 +690,6 @@ contract("Exchange", (accounts: string[]) => {
           // Try so submit blocks with invalid proofs
           await expectThrow(
             exchangeTestUtil.submitPendingBlocks(
-              exchangeId,
               (blocks: OnchainBlock[]) => {
                 // Change the data of a random block
                 const blockToModify = exchangeTestUtil.getRandomInt(

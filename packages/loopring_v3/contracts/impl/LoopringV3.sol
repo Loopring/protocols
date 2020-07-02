@@ -113,7 +113,7 @@ contract LoopringV3 is ILoopringV3
         address payable _protocolFeeVault,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
+        uint    _forcedWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -128,7 +128,7 @@ contract LoopringV3 is ILoopringV3
             _protocolFeeVault,
             _blockVerifierAddress,
             _exchangeCreationCostLRC,
-            _maxWithdrawalFee,
+            _forcedWithdrawalFee,
             _tokenRegistrationFeeLRCBase,
             _tokenRegistrationFeeLRCDelta,
             _minExchangeStakeWithDataAvailability,
@@ -364,7 +364,7 @@ contract LoopringV3 is ILoopringV3
         address payable  _protocolFeeVault,
         address _blockVerifierAddress,
         uint    _exchangeCreationCostLRC,
-        uint    _maxWithdrawalFee,
+        uint    _forcedWithdrawalFee,
         uint    _tokenRegistrationFeeLRCBase,
         uint    _tokenRegistrationFeeLRCDelta,
         uint    _minExchangeStakeWithDataAvailability,
@@ -378,7 +378,7 @@ contract LoopringV3 is ILoopringV3
         protocolFeeVault = _protocolFeeVault;
         blockVerifierAddress = _blockVerifierAddress;
         exchangeCreationCostLRC = _exchangeCreationCostLRC;
-        maxWithdrawalFee = _maxWithdrawalFee;
+        forcedWithdrawalFee = _forcedWithdrawalFee;
         tokenRegistrationFeeLRCBase = _tokenRegistrationFeeLRCBase;
         tokenRegistrationFeeLRCDelta = _tokenRegistrationFeeLRCDelta;
         minExchangeStakeWithDataAvailability = _minExchangeStakeWithDataAvailability;

@@ -51,8 +51,8 @@ library ExchangeBlocks
 
     event BlockSubmitted(
         uint    indexed blockIdx,
-        bytes32 indexed publicDataHash,
-        uint    indexed blockFee
+        bytes32         publicDataHash,
+        uint            blockFee
     );
 
     event ProtocolFeesUpdated(
@@ -78,9 +78,6 @@ library ExchangeBlocks
             "INSUFFICIENT_EXCHANGE_STAKE"
         );
 
-        // Cache if user requests are enabled for efficiency
-        bool areUserRequestsEnabled = S.areUserRequestsEnabled();
-
         // Commit the blocks
         bytes32[] memory publicDataHashes = new bytes32[](blocks.length);
         for (uint i = 0; i < blocks.length; i++) {
@@ -91,8 +88,7 @@ library ExchangeBlocks
                 S,
                 blocks[i],
                 feeRecipient,
-                publicDataHashes[i],
-                areUserRequestsEnabled
+                publicDataHashes[i]
             );
         }
 
@@ -110,8 +106,7 @@ library ExchangeBlocks
         ExchangeData.State storage S,
         ExchangeData.Block memory _block,
         address payable feeRecipient,
-        bytes32 publicDataHash,
-        bool areUserRequestsEnabled
+        bytes32 publicDataHash
         )
         private
     {
@@ -171,13 +166,15 @@ library ExchangeBlocks
         S.blocks.push(ExchangeData.BlockInfo(publicDataHash));
     }
 
+    event LogBatchSize(uint size);
+
     function verifyBlocks(
         ExchangeData.State storage S,
         ExchangeData.Block[] memory blocks,
         bytes32[] memory publicDataHashes
         )
         private
-        view
+        //view
     {
         uint numBlocksVerified = 0;
         bool[] memory blockVerified = new bool[](blocks.length);
@@ -232,6 +229,8 @@ library ExchangeBlocks
                 "INVALID_PROOF"
             );
 
+            emit LogBatchSize(batchLength);
+
             numBlocksVerified += batchLength;
         }
     }
@@ -259,7 +258,7 @@ library ExchangeBlocks
             ExchangeData.AuxiliaryData[] memory txAuxiliaryData = abi.decode(auxiliaryData, (ExchangeData.AuxiliaryData[]));
             require(txAuxiliaryData.length == numConditionalTransactions, "INVALID_AUXILIARYDATA_LENGTH");
 
-            uint24 operatorAccountID = data.bytesToUint24(offset);
+            // uint24 operatorAccountID = data.bytesToUint24(offset);
             offset += 3;
 
             // Run over all conditional transfers
@@ -274,9 +273,9 @@ library ExchangeBlocks
                 bytes memory txData = data.slice(transferOffset, ExchangeData.TX_DATA_AVAILABILITY_SIZE());
 
                 ExchangeData.TransactionType txType = ExchangeData.TransactionType(txData.bytesToUint8(0));
-                emit LogUint(uint(txType));
-                emit LogBytes(txData);
-                emit LogBytes(txAuxiliaryData[i].data);
+                //emit LogUint(uint(txType));
+                //emit LogBytes(txData);
+                //emit LogBytes(txAuxiliaryData[i].data);
 
                 if (txType == ExchangeData.TransactionType.TRANSFER) {
                     txFeeETH = TransferTransaction.process(

@@ -556,9 +556,9 @@ contract ExchangeV3 is IExchangeV3
         address from,
         address to,
         address token,
-        uint    amount,
+        uint96  amount,
         address feeToken,
-        uint    fee,
+        uint96  fee,
         uint32  nonce
         )
         external
@@ -579,6 +579,7 @@ contract ExchangeV3 is IExchangeV3
             nonce
         );
         state.approvedTx[from][transactionHash] = true;
+        emit TransactionApproved(owner, transactionHash);
     }
 
     function onchainTransferFrom(
@@ -608,6 +609,18 @@ contract ExchangeV3 is IExchangeV3
         emit TransactionApproved(owner, transactionHash);
     }
 
+    function isTransactionApproved(
+        address owner,
+        bytes32 transactionHash
+        )
+        external
+        override
+        view
+        returns (bool)
+    {
+        return state.approvedTx[owner][transactionHash];
+    }
+
     // -- Admins --
     function setOperator(
         address payable _operator
@@ -628,42 +641,6 @@ contract ExchangeV3 is IExchangeV3
         returns (address payable)
     {
         return state.operator;
-    }
-
-    function setFees(
-        uint _accountCreationFeeETH,
-        uint _accountUpdateFeeETH,
-        uint _depositFeeETH,
-        uint _withdrawalFeeETH
-        )
-        external
-        override
-        nonReentrant
-        onlyOwner
-    {
-        state.setFees(
-            _accountCreationFeeETH,
-            _accountUpdateFeeETH,
-            _depositFeeETH,
-            _withdrawalFeeETH
-        );
-    }
-
-    function getFees()
-        external
-        override
-        view
-        returns (
-            uint _accountCreationFeeETH,
-            uint _accountUpdateFeeETH,
-            uint _depositFeeETH,
-            uint _withdrawalFeeETH
-        )
-    {
-        _accountCreationFeeETH = state.accountCreationFeeETH;
-        _accountUpdateFeeETH = state.accountUpdateFeeETH;
-        _depositFeeETH = state.depositFeeETH;
-        _withdrawalFeeETH = state.withdrawalFeeETH;
     }
 
     function getExchangeCreationTimestamp()

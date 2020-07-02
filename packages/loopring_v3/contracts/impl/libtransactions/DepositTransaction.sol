@@ -49,6 +49,7 @@ library DepositTransaction
     {
         uint offset = 1;
 
+        // Read in the deposit data
         address owner = data.bytesToAddress(offset);
         offset += 20;
         uint24 accountID = data.bytesToUint24(offset);
@@ -60,16 +61,22 @@ library DepositTransaction
         uint96 index = data.bytesToUint96(offset);
         offset += 12;
 
+        ExchangeData.Deposit storage deposit = S.pendingDeposits[owner][tokenID][index];
         // Make sure the deposit was actually done (this also verifies the index is correct)
-        require(S.pendingDeposits[owner][tokenID][index].timestamp > 0, "DEPOSIT_DOESNT_EXIST");
-
-        if (S.pendingDeposits[owner][tokenID][index].amount > 0) {
-            // Earn a fee relative to the amount actually processed
-            feeETH = uint(S.pendingDeposits[owner][tokenID][index].fee).mul(amount) / S.pendingDeposits[owner][tokenID][index].amount;
-
-            // Consume what was deposited
-            S.pendingDeposits[owner][tokenID][index].amount = uint96(uint(S.pendingDeposits[owner][tokenID][index].amount).sub(amount));
-            S.pendingDeposits[owner][tokenID][index].fee = uint64(uint(S.pendingDeposits[owner][tokenID][index].fee).sub(feeETH));
+        require(deposit.timestamp > 0, "DEPOSIT_DOESNT_EXIST");
+        // Earn a fee relative to the amount actually made available on layer 2
+        // This is done to ensure the user can do multiple deposits after each other
+        // without invalidating work done by the operator for previous deposit amounts.
+        if (amount > 0 && deposit.amount > 0) {
+            feeETH = uint(deposit.fee).mul(amount) / deposit.amount;
+            deposit.fee = uint64(uint(deposit.fee).sub(feeETH));
+        }
+        // Consume what was deposited
+        deposit.amount = uint96(uint(deposit.amount).sub(amount));
+        // If the deposit was fully consumed, reset it so the storage is freed up
+        // and the operator receives a gas refund.
+        if (deposit.amount == 0 && deposit.fee == 0) {
+            deposit.timestamp = 0;
         }
 
         emit DepositConsumed(owner, accountID, tokenID, amount, index);

@@ -195,8 +195,8 @@ contract("Loopring", (accounts: string[]) => {
         newProtocolFeeVault,
         exchangeTestUtil.testContext.orderOwners[2],
         exchangeTestUtil.testContext.orderOwners[3],
-        new BN(web3.utils.toWei("0.01", "ether")),
         new BN(web3.utils.toWei("9000", "ether")),
+        new BN(web3.utils.toWei("0.01", "ether")),
         new BN(web3.utils.toWei("1000", "ether")),
         new BN(web3.utils.toWei("2", "ether")),
         new BN(web3.utils.toWei("125000", "ether")),
@@ -242,9 +242,8 @@ contract("Loopring", (accounts: string[]) => {
         loopring.updateSettings(
           exchangeTestUtil.testContext.orderOwners[1], // fee vault
           exchangeTestUtil.testContext.orderOwners[2], // block verifier
-          exchangeTestUtil.testContext.orderOwners[3], // downtime cost calculator
-          new BN(web3.utils.toWei("0.02", "ether")),
           new BN(web3.utils.toWei("10000", "ether")),
+          new BN(web3.utils.toWei("0.02", "ether")),
           new BN(web3.utils.toWei("2000", "ether")),
           new BN(web3.utils.toWei("1", "ether")),
           new BN(web3.utils.toWei("250000", "ether")),

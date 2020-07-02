@@ -76,16 +76,12 @@ contract("Exchange", (accounts: string[]) => {
       await exchangeTestUtil.submitTransactions();
 
       // Do a deposit
-      const keyPair = exchangeTestUtil.getKeyPairEDDSA();
       const owner = exchangeTestUtil.testContext.orderOwners[0];
       const amount = new BN(web3.utils.toWei("3", "ether"));
       const token = exchangeTestUtil.getTokenAddress("ETH");
-      const depositInfo = await exchangeTestUtil.deposit(
-        exchangeId,
+      await exchangeTestUtil.deposit(
         owner,
-        keyPair.secretKey,
-        keyPair.publicKeyX,
-        keyPair.publicKeyY,
+        owner,
         token,
         amount
       );
@@ -99,7 +95,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       // Verify all blocks until shutdown
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
 
       // Shut down the exchange
       await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
@@ -115,7 +111,7 @@ contract("Exchange", (accounts: string[]) => {
       // Make sure all deposits are done
       await exchangeTestUtil.submitTransactions();
       // Verify the block
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
 
       // Try to withdraw before the exchange is completely reverted to the
       // initial state.
@@ -127,7 +123,7 @@ contract("Exchange", (accounts: string[]) => {
       );
 
       await exchangeTestUtil.submitTransactions();
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
 
       // Withdraw the exchange stake
       await exchangeTestUtil.withdrawExchangeStakeChecked(
@@ -162,7 +158,7 @@ contract("Exchange", (accounts: string[]) => {
       await exchange.shutdown({ from: exchangeTestUtil.exchangeOwner });
 
       // Verify the block
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
 
       // Wait for 2 days
       await exchangeTestUtil.advanceBlockTimestamp(2 * 24 * 3600);

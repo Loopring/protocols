@@ -161,16 +161,9 @@ library ExchangeData
         IBlockVerifier   blockVerifier;
         IDepositContract depositContract;
 
-        address lrcAddress;
-
         uint    totalTimeInMaintenanceSeconds;
         uint    numDowntimeMinutes;
         uint    downtimeStart;
-
-        uint    accountCreationFeeETH;
-        uint    accountUpdateFeeETH;
-        uint    depositFeeETH;
-        uint    withdrawalFeeETH;
 
         // List of all tokens
         Token[] tokens;
@@ -198,7 +191,7 @@ library ExchangeData
         // A map from an address to a token to an index to a deposit
         mapping (address => mapping (uint16 => mapping (uint => Deposit))) pendingDeposits;
 
-        // A map from an account owner to an approved general hash to a boolean for some transaction
+        // A map from an account owner to an approved transaction hash to if the transaction is approved or not
         mapping (address => mapping (bytes32 => bool)) approvedTx;
 
         // Whitelisted agents

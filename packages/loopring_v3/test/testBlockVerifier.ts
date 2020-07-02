@@ -364,7 +364,7 @@ contract("BlockVerifier", (accounts: string[]) => {
       );
 
       // Generate the proofs
-      await exchangeTestUtil.submitPendingBlocks(exchangeId);
+      await exchangeTestUtil.submitPendingBlocks();
     });
 
     it("should be able to verify a single block with a valid proof", async () => {
