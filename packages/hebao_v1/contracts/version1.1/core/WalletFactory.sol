@@ -42,6 +42,11 @@ contract WalletFactory is ReentrancyGuard
     using AddressUtil for address;
     using SignatureUtil for bytes32;
 
+    event WalletCreated(
+        address indexed wallet,
+        address indexed owner
+    );
+
     address        public walletImplementation;
     bool           public allowEmptyENS;
     ControllerImpl public controller;
@@ -65,11 +70,6 @@ contract WalletFactory is ReentrancyGuard
         walletImplementation = _walletImplementation;
         allowEmptyENS = _allowEmptyENS;
     }
-
-    event WalletCreated(
-        address indexed wallet,
-        address indexed owner
-    );
 
     function computeWalletAddress(
         address owner
