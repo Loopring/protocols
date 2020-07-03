@@ -1,11 +1,6 @@
 import BN = require("bn.js");
 import { Constants } from "./Constants";
-import {
-  SignatureType,
-  batchSign,
-  verifySignatures,
-  appendType
-} from "./Signature";
+import { SignatureType, sign, verifySignatures, appendType } from "./Signature";
 import { Context } from "./TestUtils";
 import { getTokenAddress } from "./TokenUtils";
 import { getEIP712Message } from "../../util/EIP712";
@@ -21,6 +16,20 @@ export interface MetaTx {
   data: string;
 
   chainId: number;
+}
+
+export interface TransactionOptions {
+  from?: string;
+  gas?: number;
+  value?: BN;
+  nonce?: number;
+  gasToken?: string;
+  gasPrice?: BN;
+  gasLimit?: number;
+  gasOverhead?: number;
+  feeRecipient?: string;
+  signatureTypes?: SignatureType[];
+  checkSignatures?: boolean;
 }
 
 function toTypedData(metaTx: MetaTx) {
@@ -101,24 +110,9 @@ export async function executeMetaTx(
 
   // Sign the meta transaction
   const hash = getHash(metaTx);
-  const signature = "";
+  const signature = sign(hash, from);
 
   return ctx.contracts.forwarderModule.methods
     .executeMetaTx(metaTx, signature)
     .send({ from, gas, gasPrice: 0 });
-}
-
-export interface TransactionOptions {
-  from?: string;
-  gas?: number;
-  value?: BN;
-  gasToken?: string;
-  gasPrice?: BN;
-  gasLimit?: number;
-  gasOverhead?: number;
-  feeRecipient?: string;
-  signatureTypes?: SignatureType[];
-  nonce?: number;
-  checkSignatures?: boolean;
-  actualSigners?: string[];
 }

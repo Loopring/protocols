@@ -1,26 +1,8 @@
 import ethUtil = require("ethereumjs-util");
 import { sign, SignatureType } from "./Signature";
-
-const EIP191_HEADER = "\x19\x01";
-const CHAIN_ID = 1;
-const EIP712_DOMAIN_TYPEHASH = ethUtil.keccak(
-  "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
-);
-
-export function getMetaTxDomainSeprator(moduleAddress: string) {
-  const domainEncoded = web3.eth.abi.encodeParameters(
-    ["bytes32", "bytes32", "bytes32", "uint256", "address"],
-    [
-      EIP712_DOMAIN_TYPEHASH,
-      ethUtil.keccak("MetaTxModule"),
-      ethUtil.keccak("2.0"),
-      CHAIN_ID,
-      moduleAddress
-    ]
-  );
-
-  return ethUtil.keccak(domainEncoded);
-}
+import { MetaTx } from "./MetaTx";
+import { Constants } from "./Constants";
+import * as eip712 from "./eip712";
 
 export function signCreateWallet(
   moduleAddress: string,
@@ -29,6 +11,8 @@ export function signCreateWallet(
   labelApproval: string,
   modules: string[]
 ) {
+  const domainSeprator = eip712.hash("MetaTxModule", "2.0", moduleAddress);
+
   const TYPE_STR =
     "createWallet(address owner,string label,bytes labelApproval,address[] modules)";
   const CREATE_WALLET_TYPEHASH = ethUtil.keccak(Buffer.from(TYPE_STR));
@@ -50,15 +34,49 @@ export function signCreateWallet(
     ]
   );
 
-  const domainSeprator = getMetaTxDomainSeprator(moduleAddress);
-
-  const hash = ethUtil.keccak(
-    Buffer.concat([
-      Buffer.from(EIP191_HEADER, "utf8"),
-      domainSeprator,
-      ethUtil.keccak(encodedRequest)
-    ])
-  );
+  const hash = eip712.hashPacked(domainSeprator, encodedRequest);
 
   return sign(owner, hash);
+}
+
+export function signMetaTx(metaTx: MetaTx) {
+  const META_TX_TYPEHASH = ethUtil.keccak(
+    "MetaTx(address from,address to,\
+uint256 nonce,address gasToken,uint256 gasPrice,\
+uint256 gasLimit,bytes32 txInnerHash,bytes data)"
+  );
+
+  const encoded = web3.eth.abi.encodeParameters(
+    [
+      "bytes32",
+      "address",
+      "address",
+      "uint256",
+      "address",
+      "uint256",
+      "uint256",
+      "bytes32",
+      "bytes32"
+    ],
+    [
+      META_TX_TYPEHASH,
+      metaTx.from,
+      metaTx.to,
+      metaTx.nonce,
+      metaTx.gasToken,
+      metaTx.gasPrice,
+      metaTx.gasLimit,
+      metaTx.txInnerHash,
+      ethUtil.keccak(metaTx.data)
+    ]
+  );
+
+  const domainSeprator = eip712.hash(
+    "Loopring Wallet MetaTx",
+    "2.0",
+    Constants.zeroAddress
+  );
+
+  const hash = eip712.hashPacked(domainSeprator, encoded);
+  return sign(metaTx.from, hash);
 }

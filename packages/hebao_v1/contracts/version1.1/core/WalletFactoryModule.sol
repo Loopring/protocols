@@ -39,8 +39,15 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     address public walletImplementation;
     bool    public allowEmptyENS;
 
+    struct WalletCreation {
+        address owner;
+        string label;
+        bytes labelApproval;
+        address[] modules;
+    }
+
     bytes32 public constant CREATE_WALLET_TYPEHASH = keccak256(
-        "createWallet(address owner,string label,bytes labelApproval,address[] modules)"
+        "WalletCreation(address owner,string label,bytes labelApproval,address[] modules)"
     );
 
     constructor(
@@ -57,50 +64,49 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
     }
 
     /// @dev Create a new wallet by deploying a proxy.
-    /// @param _owner The wallet's owner.
-    /// @param _label The ENS subdomain to register, use "" to skip.
-    /// @param _labelApproval The signature for ENS subdomain approval.
-    /// @param _modules The wallet's modules.
-    /// @param _signature The wallet owner's signature.
+    /// @param wc wallet creation params
+    /// @param signature The wallet owner's signature.
     /// @return _wallet The newly created wallet's address.
     function createWallet(
-        address            _owner,
-        string    calldata _label,
-        bytes     calldata _labelApproval,
-        address[] calldata _modules,
-        bytes     calldata _signature
+        WalletCreation calldata wc,
+        bytes          calldata signature
         )
         external
         payable
         nonReentrant
         returns (address _wallet)
     {
-        require(_modules.length > 0, "EMPTY_MODULES");
+        require(wc.modules.length > 0, "EMPTY_MODULES");
 
         bytes memory encodedRequest = abi.encode(
             CREATE_WALLET_TYPEHASH,
-            _owner,
-            keccak256(bytes(_label)),
-            keccak256(_labelApproval),
-            keccak256(abi.encode(_modules))
+            wc.owner,
+            keccak256(bytes(wc.label)),
+            keccak256(wc.labelApproval),
+            keccak256(abi.encode(wc.modules))
         );
 
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
-        require(txHash.verifySignature(_owner, _signature), "INVALID_SIGNATURE");
+        require(txHash.verifySignature(wc.owner, signature), "INVALID_SIGNATURE");
 
-        _wallet = createWalletInternal(controller, walletImplementation, _owner, address(this));
+        _wallet = createWalletInternal(
+            controller,
+            walletImplementation,
+            wc.owner,
+            address(this)
+        );
 
         Wallet w = Wallet(_wallet);
-        for(uint i = 0; i < _modules.length; i++) {
-            w.addModule(_modules[i]);
+        for(uint i = 0; i < wc.modules.length; i++) {
+            w.addModule(wc.modules[i]);
         }
 
         if (controller.ensManagerAddress() != address(0)) {
-            if (bytes(_label).length > 0) {
+            if (bytes(wc.label).length > 0) {
                 BaseENSManager(controller.ensManagerAddress()).register(
                     _wallet,
-                    _label,
-                    _labelApproval
+                    wc.label,
+                    wc.labelApproval
                 );
             } else {
                 require(allowEmptyENS, "INVALID_ENS_LABEL");

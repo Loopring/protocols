@@ -57,7 +57,6 @@ contract("MetaTxmodule", () => {
           [owner],
           {
             from: owner,
-            actualSigners: [ctx.miscAddresses[0]],
             signatureTypes: [tests[i].type],
             checkSignatures: false
           }
@@ -65,70 +64,6 @@ contract("MetaTxmodule", () => {
         tests[i].error
       );
     }
-  });
-
-  it("should not be able to have duplicate meta tx signers", async () => {
-    const owner = ctx.owners[0];
-    const { wallet, guardians } = await createWallet(ctx, owner, 3);
-    const tests = [
-      [owner, ...guardians, owner],
-      [...guardians, owner, guardians[0]]
-    ];
-    for (const test of tests) {
-      const signers = test.sort();
-      await expectThrow(
-        executeTransaction(
-          ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-            wallet,
-            ctx.miscAddresses[0]
-          ),
-          ctx,
-          true,
-          wallet,
-          signers,
-          { from: owner }
-        ),
-        "INVALID_SIGNERS_ORDER"
-      );
-    }
-  });
-
-  it("signers data should match with the signatures provided", async () => {
-    const owner = ctx.owners[0];
-    const { wallet, guardians } = await createWallet(ctx, owner, 3);
-    const signers = [owner, ...guardians].sort();
-    await expectThrow(
-      executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
-          ctx.miscAddresses[0]
-        ),
-        ctx,
-        true,
-        wallet,
-        signers,
-        {
-          from: owner,
-          actualSigners: signers.slice(-1),
-          checkSignatures: false
-        }
-      ),
-      "BAD_SIGNATURE_DATA"
-    );
-    await expectThrow(
-      executeTransaction(
-        ctx.whitelistModule.contract.methods.addToWhitelistImmediately(
-          wallet,
-          ctx.miscAddresses[0]
-        ),
-        ctx,
-        true,
-        wallet,
-        signers,
-        { from: owner, actualSigners: [], checkSignatures: false }
-      ),
-      "BAD_SIGNATURE_DATA"
-    );
   });
 
   it("should be able to sign with EIP712", async () => {

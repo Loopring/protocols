@@ -8,7 +8,7 @@ export enum SignatureType {
   INVALID,
   EIP_712,
   ETH_SIGN,
-  WALLET
+  WALLET // deprecated
 }
 
 export function batchSign(
@@ -41,25 +41,6 @@ export function sign(
       signature = appendType(signEIP712(message, privateKey), type);
       break;
     }
-    // case SignatureType.WALLET: {
-    //   try {
-    //     const wallet = await ctx.contracts.BaseWallet.at(signer);
-    //     const walletOwner = await wallet.owner();
-    //     const privateKey = getPrivateKey(walletOwner);
-
-    //     // Sign using the wallet owner
-    //     signature = appendType(
-    //       appendType(
-    //         await signEIP712(message, privateKey),
-    //         SignatureType.EIP_712
-    //       ),
-    //       type
-    //     );
-    //   } catch {
-    //     signature = appendType("", type);
-    //   }
-    //   break;
-    // }
     default: {
       // console.log("Unsupported signature type: " + type);
       signature = appendType("", type);
@@ -121,15 +102,6 @@ function verifySignature(signer: string, message: Buffer, signature: string) {
     );
   } else if (type === SignatureType.EIP_712) {
     assert(verifyECDSA(message, data, signer), "invalid EIP_712 signature");
-    // } else if (type === SignatureType.WALLET) {
-    //   try {
-    //     const wallet = await ctx.contracts.BaseWallet.at(signer);
-    //     const walletOwner = await wallet.owner();
-    //     assert(signature.length > 0, "invalid WALLET signature");
-    //     await verifySignature(ctx, walletOwner, message, signature.slice(0, -1));
-    //   } catch {
-    //     assert(false, "invalid WALLET signature");
-    //   }
   } else {
     assert(false, "invalid signature type");
   }

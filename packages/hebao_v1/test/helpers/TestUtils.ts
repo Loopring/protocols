@@ -1,4 +1,4 @@
-import { executeMetaTransaction, TransactionOptions } from "./MetaTransaction";
+import { executeMetaTx, TransactionOptions } from "./MetaTx";
 import { Artifacts } from "./Artifacts";
 import { addGuardian } from "./GuardianUtils";
 import { assertEventEmitted } from "../../util/Events";
@@ -143,12 +143,11 @@ export async function executeTransaction(
   const contract = txData._parent;
   const data = txData.encodeABI();
   if (useMetaTx) {
-    const result = await executeMetaTransaction(
+    const result = await executeMetaTx(
       ctx,
       contract,
+      "0x" + "00".repeat(32),
       data,
-      wallet,
-      signers,
       options
     );
 
