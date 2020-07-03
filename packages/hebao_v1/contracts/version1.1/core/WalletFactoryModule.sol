@@ -63,6 +63,8 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         allowEmptyENS = _allowEmptyENS;
     }
 
+    event logBytes32(bytes32 hash);
+
     /// @dev Create a new wallet by deploying a proxy.
     /// @param wc wallet creation params
     /// @param signature The wallet owner's signature.
@@ -87,32 +89,33 @@ contract WalletFactoryModule is WalletFactory, MetaTxModule
         );
 
         bytes32 txHash = EIP712.hashPacked(DOMAIN_SEPERATOR, encodedRequest);
-        require(txHash.verifySignature(wc.owner, signature), "INVALID_SIGNATURE");
+        emit logBytes32(txHash);
+        /* require(txHash.verifySignature(wc.owner, signature), "INVALID_SIGNATURE"); */
 
-        _wallet = createWalletInternal(
-            controller,
-            walletImplementation,
-            wc.owner,
-            address(this)
-        );
+        /* _wallet = createWalletInternal( */
+        /*     controller, */
+        /*     walletImplementation, */
+        /*     wc.owner, */
+        /*     address(this) */
+        /* ); */
 
-        Wallet w = Wallet(_wallet);
-        for(uint i = 0; i < wc.modules.length; i++) {
-            w.addModule(wc.modules[i]);
-        }
+        /* Wallet w = Wallet(_wallet); */
+        /* for(uint i = 0; i < wc.modules.length; i++) { */
+        /*     w.addModule(wc.modules[i]); */
+        /* } */
 
-        if (controller.ensManagerAddress() != address(0)) {
-            if (bytes(wc.label).length > 0) {
-                BaseENSManager(controller.ensManagerAddress()).register(
-                    _wallet,
-                    wc.label,
-                    wc.labelApproval
-                );
-            } else {
-                require(allowEmptyENS, "INVALID_ENS_LABEL");
-            }
-        }
+        /* if (controller.ensManagerAddress() != address(0)) { */
+        /*     if (bytes(wc.label).length > 0) { */
+        /*         BaseENSManager(controller.ensManagerAddress()).register( */
+        /*             _wallet, */
+        /*             wc.label, */
+        /*             wc.labelApproval */
+        /*         ); */
+        /*     } else { */
+        /*         require(allowEmptyENS, "INVALID_ENS_LABEL"); */
+        /*     } */
+        /* } */
 
-        w.removeModule(address(this));
+        /* w.removeModule(address(this)); */
     }
 }
