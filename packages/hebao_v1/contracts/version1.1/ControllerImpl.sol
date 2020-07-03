@@ -36,6 +36,7 @@ contract ControllerImpl is Claimable, Controller
     address             public collectTo;
     uint                public defaultLockPeriod;
     address             public ensManagerAddress;
+    address             public walletFactory;
     PriceOracle         public priceOracle;
     DappAddressStore    public dappAddressStore;
     HashStore           public hashStore;
@@ -99,5 +100,14 @@ contract ControllerImpl is Claimable, Controller
     {
         priceOracle = _priceOracle;
         emit ValueChanged("PriceOracle", address(priceOracle));
+    }
+
+    function setWalletFactory(address _walletFactory)
+        external
+        onlyOwner
+    {
+        require(_walletFactory != address(0), "ZERO_ADDRESS");
+        walletFactory = _walletFactory;
+        emit ValueChanged("WalletFactory", walletFactory);
     }
 }

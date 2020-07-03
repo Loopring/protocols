@@ -9,7 +9,7 @@ const ERC1271Module = artifacts.require("ERC1271Module");
 const ControllerImpl = artifacts.require("ControllerImpl");
 const WalletImpl = artifacts.require("WalletImpl");
 
-const WalletFactoryModule = artifacts.require("WalletFactoryModule");
+const WalletFactory = artifacts.require("WalletFactory");
 const GuardianModule = artifacts.require("GuardianModule");
 const InheritanceModule = artifacts.require("InheritanceModule");
 const WhitelistModule = artifacts.require("WhitelistModule");
@@ -32,7 +32,6 @@ module.exports = function(deployer, network, accounts) {
       let dest = [
         ForwarderModule,
         ERC1271Module,
-        WalletFactoryModule,
         GuardianModule,
         InheritanceModule,
         WhitelistModule,
@@ -50,13 +49,6 @@ module.exports = function(deployer, network, accounts) {
     })
     .then(() => {
       return Promise.all([
-        deployer.deploy(
-          WalletFactoryModule,
-          ControllerImpl.address,
-          ForwarderModule.address,
-          WalletImpl.address,
-          false
-        ),
         deployer.deploy(
           GuardianModule,
           ControllerImpl.address,
@@ -99,7 +91,6 @@ module.exports = function(deployer, network, accounts) {
           return Promise.all([
             moduleRegistry.registerModule(ForwarderModule.address),
             moduleRegistry.registerModule(ERC1271Module.address),
-            moduleRegistry.registerModule(WalletFactoryModule.address),
             moduleRegistry.registerModule(GuardianModule.address),
             moduleRegistry.registerModule(InheritanceModule.address),
             moduleRegistry.registerModule(WhitelistModule.address),
@@ -114,7 +105,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         WalletRegistryImpl.deployed().then(walletRegistry => {
           return Promise.all([
-            walletRegistry.setWalletFactory(WalletFactoryModule.address)
+            walletRegistry.setWalletFactory(WalletFactory.address)
           ]);
         })
       ]);
@@ -124,17 +115,14 @@ module.exports = function(deployer, network, accounts) {
       if (web3.utils.isAddress(ensManagerAddr.toLowerCase())) {
         // should be done manually.
         console.log(
-          "You will have to do ensManager.addManager(WalletFactoryModule.address) manually"
+          "You will have to do ensManager.addManager(WalletFactory.address) manually"
         );
       } else {
-        console.log(
-          "add manager for BaseENSManager:",
-          WalletFactoryModule.address
-        );
+        console.log("add manager for BaseENSManager:", WalletFactory.address);
         return Promise.all([
           BaseENSManager.deployed().then(ensManager => {
             return Promise.all([
-              ensManager.addManager(WalletFactoryModule.address),
+              ensManager.addManager(WalletFactory.address),
               ensManager.addManager(accounts[1])
             ]);
           })

@@ -14,6 +14,7 @@ module.exports = function(deployer, network, accounts) {
       return Promise.all([
         deployer.deploy(DappAddressStore),
         deployer.deploy(NonceStore),
+        deployer.deploy(HashStore),
         deployer.deploy(QuotaStore, 1000), // 1000 wei for unit test
         deployer.deploy(SecurityStore),
         deployer.deploy(WhitelistStore)
