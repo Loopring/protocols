@@ -79,7 +79,11 @@ contract ForwarderModule is BaseModule
         public
         view
     {
-        require(to != address(this) && Wallet(from).hasModule(to), "INVALID_DESTINATION");
+        require(
+            (to == controller.walletFactory()) ||
+            (to != address(this) && Wallet(from).hasModule(to)),
+            "INVALID_DESTINATION"
+        );
 
         // If a non-zero txAwareHash is provided, we do not verify signature against
         // the `data` field. The actual function call in the real transaction will have to
