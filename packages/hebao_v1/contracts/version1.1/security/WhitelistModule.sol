@@ -38,6 +38,10 @@ contract WhitelistModule is SecurityModule
         SecurityModule(_controller, _trustedForwarder)
     {
         require(_delayPeriod > 0, "INVALID_DELAY");
+
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("WhitelistModule", "1.1.0", address(this))
+        );
         delayPeriod = _delayPeriod;
     }
 
@@ -63,7 +67,7 @@ contract WhitelistModule is SecurityModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
-            txInnerHash(),
+            txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(

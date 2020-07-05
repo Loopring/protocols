@@ -46,6 +46,9 @@ contract ApprovedTransferModule is TransferModule
         public
         TransferModule(_controller, _trustedForwarder)
     {
+        DOMAIN_SEPERATOR = EIP712.hash(
+            EIP712.Domain("ApprovedTransferModule", "1.1.0", address(this))
+        );
     }
 
     function transferToken(
@@ -61,7 +64,7 @@ contract ApprovedTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
-            txInnerHash(),
+            txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
@@ -90,7 +93,7 @@ contract ApprovedTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
-            txInnerHash(),
+            txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
@@ -119,7 +122,7 @@ contract ApprovedTransferModule is TransferModule
     {
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
-            txInnerHash(),
+            txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             abi.encode(
@@ -161,7 +164,7 @@ contract ApprovedTransferModule is TransferModule
 
         controller.verifyRequest(
             DOMAIN_SEPERATOR,
-            txInnerHash(),
+            txAwareHash(),
             GuardianUtils.SigRequirement.OwnerRequired,
             request,
             encoded
