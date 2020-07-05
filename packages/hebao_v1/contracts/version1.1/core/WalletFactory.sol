@@ -86,12 +86,17 @@ contract WalletFactory is ReentrancyGuard
     }
 
     /// @dev Create a new wallet by deploying a proxy.
-    /// @param wc wallet creation params
-    /// @param signature The wallet owner's signature.
-    /// @return _wallet The newly created wallet's address.
+    /// @param _owner The wallet's owner.
+    /// @param _label The ENS subdomain to register, use "" to skip.
+    /// @param _labelApproval The signature for ENS subdomain approval.
+    /// @param _modules The wallet's modules.
+    /// @param _signature The wallet owner's signature.
     function createWallet(
-        WalletCreation calldata wc,
-        bytes          calldata signature
+        address            _owner,
+        string    calldata _label,
+        bytes     calldata _labelApproval,
+        address[] calldata _modules,
+        bytes     calldata _signature
         )
         external
         payable
